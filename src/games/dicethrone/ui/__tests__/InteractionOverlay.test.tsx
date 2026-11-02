@@ -18,6 +18,7 @@ import { ModalStackProvider, useModalStack } from '../../../../contexts/ModalSta
 import { ModalStackRoot } from '../../../../components/system/ModalStackRoot';
 import { useSyncedModalStackEntry } from '../../../../hooks/ui/useSyncedModalStackEntry';
 import { ChoiceModal } from '../ChoiceModal';
+import { ChoiceObjectSelection } from '../ChoiceObjectSelection';
 
 // Mock i18next
 vi.mock('react-i18next', () => ({
@@ -67,7 +68,8 @@ vi.mock('react-i18next', () => ({
     },
 }));
 
-vi.mock('../../../../components/common/media/CardPreview', () => ({
+vi.mock('../../../../components/common/media/CardPreview', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('../../../../components/common/media/CardPreview')>()),
     CardPreview: ({
         previewRef,
         className,
@@ -840,6 +842,7 @@ describe('InteractionOverlay', () => {
 
         it('牌库候选应使用真实卡面牌池，不退化成文字按钮列表或重复说明卡牌本身信息', () => {
             const onSelectHandCard = vi.fn();
+            const onMagnifyCard = vi.fn();
 
             render(
                 <InteractionOverlay
@@ -847,6 +850,7 @@ describe('InteractionOverlay', () => {
                     players={playersWithDeckCards}
                     currentPlayerId="0"
                     onSelectHandCard={onSelectHandCard}
+                    onMagnifyCard={onMagnifyCard}
                     {...mockHandlers}
                 />
             );
@@ -859,22 +863,13 @@ describe('InteractionOverlay', () => {
             expect(screen.getByTestId('dt-card-pool-overlay').className).not.toContain('bg-black');
             expect(screen.getByTestId('dt-card-pool-panel')).toBeInTheDocument();
             expect(screen.getByTestId('dt-card-pool-panel').className).toContain('inset-x-0');
-            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('top-[clamp(4.25rem,9vh,6.25rem)]');
-            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('bottom-[max(0.75rem,env(safe-area-inset-bottom))]');
-            expect(screen.getByTestId('dt-card-pool-panel').className).toContain('pointer-events-auto');
+            expect(screen.getByTestId('dt-card-pool-surface').className).toContain('pointer-events-auto');
             expect(screen.getByTestId('dt-card-pool-surface').className).toContain('max-w-[70rem]');
-            expect(screen.getByTestId('dt-card-pool-surface').className).toContain('h-full');
-            expect(screen.getByTestId('dt-card-pool-surface').className).toContain('flex-col');
             expect(screen.getByTestId('dt-card-pool-backdrop').className).toContain('border-y');
-            expect(screen.getByTestId('dt-card-pool-backdrop')).toHaveAttribute('data-card-pool-hand-clearance', 'hand-area-top');
-            expect((screen.getByTestId('dt-card-pool-backdrop') as HTMLElement).style.bottom)
-                .toContain('--mobile-board-shell-inline-unit');
-            expect(screen.getByTestId('dt-card-pool-backdrop').className).not.toContain('inset-y-0');
             expect(screen.getByTestId('dt-card-pool-title').className).toContain('text-center');
             expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-kind', 'deck');
             expect(screen.getByTestId('dt-card-pool-selection')).toHaveAttribute('data-card-pool-visible-rows', 'two');
             expect(screen.getByTestId('dt-card-pool-selection').className).toContain('scrollbar-thin');
-            expect(screen.getByTestId('dt-card-pool-selection').className).toContain('max-h-[min(50vh,28rem)]');
             expect(screen.getByTestId('dt-card-pool-selection').className).toContain('overflow-y-auto');
             expect(screen.getByTestId('dt-card-pool-selection').className).not.toContain('overflow-x-auto');
             expect(screen.getByTestId('dt-card-pool-track').className).toContain('justify-center');
@@ -897,8 +892,6 @@ describe('InteractionOverlay', () => {
             expect(screen.getByTestId('dt-card-choice-preview-card-vampire-lord-gushing-blood').className).not.toContain('aspect-[0.61]');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-atlas-id', 'dicethrone:vampire_lord-cards');
             expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-index', '21');
-            expect(screen.getAllByTestId('mock-card-preview')[2]).toHaveAttribute('data-preview-width', 'clamp(104px, min(14vw, 23vh), 188px)');
-            expect(screen.getAllByTestId('mock-card-preview')[2].className).toContain('bg-[#150609]');
             expect(targetOption.textContent?.trim()).toBe('');
             expect(screen.queryByText('血潮')).not.toBeInTheDocument();
             expect(screen.queryByText('畅饮！')).not.toBeInTheDocument();
@@ -909,6 +902,9 @@ describe('InteractionOverlay', () => {
             expect(screen.getByRole('button', { name: '确认' }).className).toContain('min-h-[32px]');
             expect(screen.getByRole('button', { name: '确认' }).className).not.toContain('px-8');
 
+            fireEvent.contextMenu(targetOption);
+            expect(onMagnifyCard).toHaveBeenCalledWith(expect.objectContaining({ id: 'card-vampire-lord-gushing-blood' }));
+            expect(onSelectHandCard).not.toHaveBeenCalled();
             fireEvent.click(targetOption);
             expect(onSelectHandCard).toHaveBeenCalledWith('card-vampire-lord-gushing-blood');
         });
@@ -931,11 +927,8 @@ describe('InteractionOverlay', () => {
             expect(selectedOption).toHaveAttribute('data-selection-focus', 'selected');
             expect(selectedOption.className).toContain('z-10');
             expect(selectedOption.className).not.toContain('scale-');
-            expect(selectedOption.className).not.toContain('-translate-y-');
-            expect(screen.getByTestId(`dt-card-choice-preview-${selectedCardId}`).className).toContain('ring-[3px]');
-            expect(screen.getByTestId(`dt-card-choice-selected-${selectedCardId}`)).toBeVisible();
-            expect(otherOption).toHaveAttribute('data-selection-focus', 'deemphasized');
-            expect(otherOption.className).toContain('opacity-75');
+            expect(otherOption).toHaveAttribute('data-selection-focus', 'available');
+            expect(otherOption.className).not.toContain('opacity-75');
         });
 
         it('抽牌标题应使用交互传入的数量，而不是把数量写死', () => {
@@ -1578,37 +1571,34 @@ describe('useSyncedModalStackEntry', () => {
 });
 
 
-describe('通用候选弹窗的素材与权限', () => {
-    it('单张卡牌候选在收窄后的弹窗中居中显示', () => {
+describe('卡牌选择复用既有完整选择器', () => {
+    const card = { id: 'card-test', name: '测试卡', type: 'action', cpCost: 0,
+        previewRef: { type: 'atlas', atlasId: 'dicethrone:thor-cards', index: 27 } } as AbilityCard;
+    const players = { '0': { characterId: 'thor', hand: [], deck: [card], discard: [], statusEffects: {}, tokens: {} } as unknown as HeroState };
+    const options = [{ id: 'card-0', label: '测试卡', choiceKind: 'card' as const,
+        cardId: card.id, cardSourceZone: 'deck' as const }];
+    it('从来源牌库渲染卡面，选中并确认后才提交原选项ID', () => {
         const onResolve = vi.fn();
-        render(<MemoryRouter><ModalStackProvider><ChoiceModal
-            choice={{ title: 'common.confirm', options: [
-                { id: 'card-0', label: 'cards.thor-worthy.name', previewRef: { type: 'atlas', atlasId: 'dicethrone:thor', index: 27 } },
-            ] }} canResolve onResolve={onResolve}
-        /></ModalStackProvider></MemoryRouter>);
-
-        const cardOption = screen.getByRole('button', { name: 'cards.thor-worthy.name' });
-        expect(cardOption).toHaveClass('w-40');
-        expect(cardOption.parentElement).toHaveClass('flex', 'flex-wrap', 'justify-center');
-        expect(cardOption.closest('.max-w-xl')).not.toBeNull();
-
-        fireEvent.click(cardOption);
-        expect(onResolve).toHaveBeenCalledWith('card-0');
-    });
-
-    it('卡牌候选显示卡图，显式跳过选项保持为独立候选', () => {
-        const onResolve = vi.fn();
-        render(<MemoryRouter><ModalStackProvider><ChoiceModal
-            choice={{ title: 'common.confirm', options: [
-                { id: 'card-0', label: 'cards.thor-worthy.name', previewRef: { type: 'atlas', atlasId: 'dicethrone:thor', index: 27 } },
-                { id: 'skip', label: 'tokenResponse.skip' },
-            ] }} canResolve onResolve={onResolve}
+        render(<MemoryRouter><ModalStackProvider><ChoiceObjectSelection
+            choiceId="test-choice" playerId="0" currentPlayerId="0" title="common.confirm"
+            options={options} players={players} canResolve onResolve={onResolve}
         /></ModalStackProvider></MemoryRouter>);
         expect(screen.getByTestId('mock-card-preview')).toHaveAttribute('data-preview-index', '27');
-        fireEvent.click(screen.getByRole('button', { name: 'cards.thor-worthy.name' }));
-        expect(onResolve).toHaveBeenLastCalledWith('card-0');
+        fireEvent.click(screen.getByTestId('dt-deck-card-option-card-test'));
+        expect(onResolve).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+        expect(onResolve).toHaveBeenCalledWith('card-0');
+    });
+    it('显式跳过沿用原动作区，不把卡图重新造进文字选项弹窗', () => {
+        const onResolve = vi.fn();
+        render(<MemoryRouter><ModalStackProvider><ChoiceObjectSelection
+            choiceId="test-skip" playerId="0" currentPlayerId="0" title="common.confirm"
+            options={[...options, { id: 'skip', label: 'tokenResponse.skip', choiceKind: 'skip' }]}
+            players={players} canResolve onResolve={onResolve}
+        /></ModalStackProvider></MemoryRouter>);
+        expect(screen.getByTestId('mock-card-preview')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'tokenResponse.skip' }));
-        expect(onResolve).toHaveBeenLastCalledWith('skip');
+        expect(onResolve).toHaveBeenCalledWith('skip');
     });
 });
 

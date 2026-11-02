@@ -4,10 +4,10 @@ import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { expect, type Page } from '@playwright/test';
 
-type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; layout?: { panel: { left: number; top: number; width: number; height: number } | null; regions: Array<{ left: number; top: number; width: number; height: number }> }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
+type State = { regionTipVisible: boolean; at: number; phase: string | null; state: string | null; text: string; labels: Array<{ id: string | null; text: string; color: string; fill: string; font: string; visibility: string; opacity: string; width: number; height: number }>; surfaces: Array<{ id: string | null; background: string; borderWidths: string[] }>; layout?: { panel: { left: number; top: number; width: number; height: number } | null; regions: Array<{ left: number; top: number; width: number; height: number }> }; dice: Array<{ type: string | null; settled: string | null; ready: string | null; failure: string | null }> };
 
 /** 只观察正式页面：连续采集实际视口，按墙钟间隔编码，不注入或重演投掷。 */
-export async function beginBattleRecording(page: Page, directory: string) {
+export async function beginBattleRecording(page: Page, directory: string, flow: 'natural-flow' | 'representative-state' = 'natural-flow') {
     const frameDirectory = resolve(tmpdir(), 'BoardGame-qidahen-annual-20261030', basename(dirname(directory)), basename(directory), 'battle-frames');
     mkdirSync(frameDirectory, { recursive: true });
     const ffmpeg = execFileSync('python', ['-c', 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())'], { encoding: 'utf8' }).trim();
@@ -17,6 +17,17 @@ export async function beginBattleRecording(page: Page, directory: string) {
             const panel = document.querySelector<HTMLElement>('[data-testid="qidahen-battle-roll-sequence"]');
             const next: State = { regionTipVisible: document.querySelector('[data-testid="qidahen-map-region-tip"]') != null, at: Date.now() / 1000, phase: panel?.getAttribute('data-battle-roll-phase') ?? null,
                 state: panel?.getAttribute('data-battle-roll-state') ?? null, text: panel?.innerText ?? '',
+                labels: [...(panel?.querySelectorAll<HTMLElement>('[data-qidahen-battle-label]') ?? [])].map(element => {
+                    const style = getComputedStyle(element); const rect = element.getBoundingClientRect();
+                    return { id: element.getAttribute('data-qidahen-battle-label'), text: element.innerText, color: style.color,
+                        fill: style.webkitTextFillColor, font: style.font, visibility: style.visibility, opacity: style.opacity,
+                        width: rect.width, height: rect.height };
+                }),
+                surfaces: panel ? [panel, ...panel.querySelectorAll('[data-testid^="qidahen-battle-side-"], [data-testid^="qidahen-battle-dice-"]')].map(element => {
+                    const style = getComputedStyle(element);
+                    return { id: element.getAttribute('data-testid'), background: style.backgroundColor,
+                        borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth] };
+                }) : [],
                 dice: [...(panel?.querySelectorAll('[data-dice-physics-source][data-die-type]') ?? [])].map(die => ({
                     type: die.getAttribute('data-die-type'), settled: die.getAttribute('data-dice-settled'),
                     ready: die.getAttribute('data-dice-engine-ready'), failure: die.getAttribute('data-dice-engine-failure'),
@@ -68,7 +79,7 @@ export async function beginBattleRecording(page: Page, directory: string) {
             const record = (window as unknown as { __annualBattleObservation: { states: State[]; observer: MutationObserver } }).__annualBattleObservation;
             record.observer.disconnect(); return record.states;
         });
-        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, timebase: 'UTC seconds; actual composed viewport capture interval midpoints', captureMethod: 'Continuous same-page Page.captureScreenshot sampling; every recorded frame is an actual composed viewport at real elapsed time', flow: 'natural-flow' }, null, 2));
+        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, timebase: 'UTC seconds; actual composed viewport capture interval midpoints', captureMethod: 'Continuous same-page Page.captureScreenshot sampling; every recorded frame is an actual composed viewport at real elapsed time', flow }, null, 2));
         expect(frames.length).toBeGreaterThan(15);
         expect(states.flatMap(state => state.dice).filter(die => die.failure)).toEqual([]);
         expect(states.filter(state => state.phase != null && state.regionTipVisible), 'map hover information must leave before battle playback').toEqual([]);
@@ -79,6 +90,17 @@ export async function beginBattleRecording(page: Page, directory: string) {
                 const moment = states.find(item => item.phase === phase && item.state === state &&
                     item.dice.length > 0 && item.dice.every(die => die.ready === 'true' && die.settled === (state === 'damage' ? 'true' : 'false')));
                 expect(moment, `${phase} ${state} actual physics observation`).toBeDefined();
+                for (const label of moment!.labels.filter(label => state === 'damage' || !label.id?.match(/total|damage/))) {
+                    expect(label.visibility).toBe('visible');
+                    expect(label.opacity).toBe('1');
+                    expect(label.color).toBe('rgb(255, 243, 220)');
+                    expect(label.fill).toBe(label.color);
+                    expect(label.width > 0 && label.height > 0, `${label.id} has actual text bounds`).toBe(true);
+                }
+                for (const surface of moment!.surfaces) {
+                    expect(surface.background, `${surface.id} does not paint an opaque dice window`).toBe('rgba(0, 0, 0, 0)');
+                    expect(surface.borderWidths.every(width => parseFloat(width) === 0), `${surface.id} does not enclose the dice`).toBe(true);
+                }
                 const panel = moment!.layout?.panel;
                 expect(panel, 'actual battle panel bounds').toBeTruthy();
                 expect(moment!.layout?.regions.length, 'both complete battle regions must be projected').toBeGreaterThanOrEqual(2);
@@ -97,7 +119,7 @@ export async function beginBattleRecording(page: Page, directory: string) {
                 selectedFrames.push({ id: `battle-${phase}-${state}`, sourceFrameIndex: frames.indexOf(frame!), sourceFramePath: frame!.path, captureStartedAt: frame!.startedAt, captureEndedAt: frame!.endedAt, windowStart: moment!.at, windowEnd: end!.at });
             }
         }
-        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, selectedFrames, timebase: 'UTC seconds; actual capture intervals retained, timeline uses interval midpoints', captureMethod: 'Continuous same-page actual composed viewport sampling; selected source frame indices disambiguate byte-identical static result frames', flow: 'natural-flow' }, null, 2));
+        writeFileSync(resolve(directory, 'battle-recording.json'), JSON.stringify({ frames, states, selectedFrames, timebase: 'UTC seconds; actual capture intervals retained, timeline uses interval midpoints', captureMethod: 'Continuous same-page actual composed viewport sampling; selected source frame indices disambiguate byte-identical static result frames', flow }, null, 2));
         const list = resolve(frameDirectory, 'frames.txt');
         writeFileSync(list, frames.map((frame, index) => `file '${frame.path.replaceAll('\\', '/')}'\noption framerate 1000${index + 1 < frames.length ? '\nduration ' + (frames[index + 1].at - frame.at) : ''}`).join('\n'));
         const video = resolve(directory, 'battle-real-time.webm');

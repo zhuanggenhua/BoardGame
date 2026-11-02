@@ -7,6 +7,7 @@ import type { GameSubmissionRecord } from '../../api/game-submissions';
 import type { CreatorClaim, ExternalGame } from '../../shared/externalGames';
 import { useAuth } from '../../contexts/AuthContext';
 import { PrivateEvidence } from '../../components/home/CreatorCenter';
+import { GameRulesDocumentLink } from '../../components/external/GameRulesDocumentLink';
 import './creator-review.css';
 
 function SubmissionReview({ token, record, refresh }: { token: string; record: GameSubmissionRecord; refresh: () => void }) {
@@ -24,6 +25,7 @@ function SubmissionReview({ token, record, refresh }: { token: string; record: G
         <p>{t('platform.creatorReview.author')}: {record.author || t('platform.creatorReview.notProvided')} · {t('platform.creatorReview.category')}: {record.category === 'uncategorized' ? t('platform.uploadWorkspace.uncategorized') : t(`common:category.${record.category}`, { defaultValue: record.category })}</p>
         <p>{t('platform.creatorReview.players')}: {record.minPlayers != null && record.maxPlayers != null ? t('platform.creatorReview.playerRange', { min: record.minPlayers, max: record.maxPlayers }) : t('platform.creatorReview.notProvided')} · {t('platform.creatorReview.duration')}: {record.durationMinutes != null ? t('platform.creatorReview.durationMinutes', { minutes: record.durationMinutes }) : t('platform.creatorReview.notProvided')}</p>
         <p>{t('platform.creatorReview.gameDescription')}: {record.description}</p><p className="review-long-text">{t('platform.creatorReview.rules')}: {record.rules || t('platform.creatorReview.notProvided')}</p>
+        <GameRulesDocumentLink document={record.rulesDocument} />
         <p><a href={record.url} target="_blank" rel="noopener noreferrer">{t('platform.creatorReview.openGameSite')} ↗</a>{record.authorProfileUrl && <> · <a href={record.authorProfileUrl} target="_blank" rel="noopener noreferrer">{t('platform.creatorReview.authorProfile')} ↗</a></>}</p>
         {record.coverUrl && <img className="review-cover" src={record.coverUrl} alt={t('platform.creatorReview.submissionCoverAlt', { name: record.name })} />}
         <label>{t('platform.creatorReview.reviewComment')}<textarea value={comment} onChange={event => setComment(event.target.value)} maxLength={2000} /></label>

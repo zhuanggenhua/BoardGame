@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getExternalGame } from '../../api/external-games';
 import { useAuth } from '../../contexts/AuthContext';
 import { ExternalGameText } from '../external/ExternalGameText';
+import { GameRulesDocumentLink } from '../external/GameRulesDocumentLink';
 import { playerOptionsFromRange, resolveExternalEmbed } from '../../shared/externalGames';
 import { HomeGameDetailsPresentation } from './HomeGameDetailsPresentation';
 import { PlatformGameDetails } from './PlatformGameDetails';
@@ -54,6 +55,7 @@ export function ExternalGameDetails({ gameId, onClose, closeOnBackdrop = true, p
                 {embed?.restricted && <p className="platform-details-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}
                 {embed && !embed.safeHttps && <p className="platform-details-notice">{t('platform.externalGamePage.insecureHttp')}</p>}
                 {embed?.sameOrigin && <p className="platform-details-notice">{t('platform.externalGamePage.sameOrigin')}</p>}
+                <GameRulesDocumentLink document={item.rulesDocument} />
                 {item.rules && <p><ExternalGameText text={item.rules} /></p>}
             </PlatformGameDetails>}
     </HomeGameDetailsPresentation>;

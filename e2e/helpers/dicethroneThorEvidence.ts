@@ -1,12 +1,13 @@
 import type { MatchState } from '../../src/engine/types';
 import type { DiceThroneCore } from '../../src/games/dicethrone/domain/types';
 import type { Page, TestInfo } from '@playwright/test';
-import { dirname, relative } from 'node:path';
+import { createHash } from 'node:crypto';
+import { dirname, join, relative } from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { findRuntimeById } from '../../scripts/infra/e2e-runtime-registry.js';
 import { captureEvidenceSourceIdentity } from '../framework/sourceIdentity';
 import { expect } from '../framework';
-import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { getEvidenceScreenshotPath, sanitizeEvidencePathSegment } from '../framework/evidenceScreenshots';
 
 type SourceFileHash = { path: string; hash: string };
 type ThorSourceTracker = {
@@ -18,7 +19,18 @@ type ThorSourceTracker = {
 };
 
 const sourceTrackers = new WeakMap<Page, ThorSourceTracker>();
+const runtimeSourceTrackers = new Map<string, ThorSourceTracker>();
 const debugLoggedPages = new WeakSet<Page>();
+
+function hashThorSourceIdentity(tracker: ThorSourceTracker): string {
+ const hash = createHash('sha256');
+ const files = [
+  ...[...tracker.frontendFiles].map(([path, fileHash]) => ({ path, hash: fileHash })),
+  ...[...tracker.backendFiles].map(([path, fileHash]) => ({ path, hash: fileHash })),
+ ].sort((a, b) => a.path.localeCompare(b.path));
+ for (const file of files) hash.update(file.path).update('\0').update(file.hash).update('\0');
+ return hash.digest('hex');
+}
 
 async function observeThorSources(page: Page, runtimeId: string) {
  const captured = await captureEvidenceSourceIdentity(page, 'dicethrone');
@@ -53,7 +65,8 @@ async function observeThorSources(page: Page, runtimeId: string) {
    backendScope: summarize(captured.backendSourceIdentity.scope),
   }));
  }
- const tracker = sourceTrackers.get(page) ?? {
+ const pageTracker = sourceTrackers.get(page);
+ const tracker = runtimeSourceTrackers.get(runtimeId) ?? pageTracker ?? {
   runtimeId,
   sourceRevision: captured.sourceRevision,
   frontendFiles: new Map<string, string>(),
@@ -73,7 +86,8 @@ async function observeThorSources(page: Page, runtimeId: string) {
   if (previous && previous !== file.hash) throw new Error('Thor 后端依赖在采集期间变化: ' + file.path);
   tracker.backendFiles.set(file.path, file.hash);
  }
- tracker.sourceRevision = captured.sourceRevision;
+ tracker.sourceRevision = hashThorSourceIdentity(tracker);
+ runtimeSourceTrackers.set(runtimeId, tracker);
  sourceTrackers.set(page, tracker);
  return tracker;
 }
@@ -95,19 +109,94 @@ export async function finalizeThorEvidenceSourceIdentity(page: Page) {
  if (!runtime?.runtimeId || runtime.runtimeId !== tracker.runtimeId) throw new Error('Thor 证据收口时 runtime 身份发生变化');
  await observeThorSources(page, runtime.runtimeId);
  await syncThorSourceSidecars(tracker);
+ tracker.stateFiles.clear();
+ return tracker.sourceRevision;
 }
 
-export async function shot(page: Page, info: TestInfo, name: string) {
- const path=getEvidenceScreenshotPath(info,name,{filename:`${name}.png`,format:'png',requireChineseName:true});
+export async function shot(
+ page: Page,
+ info: TestInfo,
+ name: string,
+ options: {
+  preservePointer?: boolean;
+  settleMs?: number;
+  observeSourcesBeforeScreenshot?: boolean;
+  captureCardSpotlight?: boolean;
+  destinationDirectory?: string;
+ } = {},
+) {
+ const stagedFileName=`${sanitizeEvidencePathSegment(name)||'screenshot'}.png`;
+ const path=options.destinationDirectory
+  ? join(options.destinationDirectory,stagedFileName)
+  : getEvidenceScreenshotPath(info,name,{filename:stagedFileName,format:'png',requireChineseName:true});
  await mkdir(dirname(path),{recursive:true});
  const runtime=findRuntimeById(process.env.PW_MANAGED_RUNTIME_ID);
  if(!runtime?.runtimeId) throw new Error('截图必须绑定当前托管运行时身份');
- const tracker=await observeThorSources(page,runtime.runtimeId);
- await page.mouse.move(15,15);
+ let tracker=options.observeSourcesBeforeScreenshot === false
+  ? sourceTrackers.get(page)
+  : await observeThorSources(page,runtime.runtimeId);
+ if (!options.preservePointer) await page.mouse.move(15,15);
  await expect(page.locator('[data-testid="dice-2d"][data-roll-animation="dice2d-cube-tumble"]')).toHaveCount(0);
- await page.waitForTimeout(1150);
- await page.screenshot({path,fullPage:false});
- await observeThorSources(page,runtime.runtimeId);
+ const settleMs=options.settleMs ?? 1150;
+ if (settleMs > 0) await page.waitForTimeout(settleMs);
+ let cardSpotlightAtCapture: {
+  visible: boolean;
+  cardId: string | null;
+  bounds: { left: number; top: number; right: number; bottom: number } | null;
+ } | null = null;
+ if (options.captureCardSpotlight) {
+  await expect.poll(async () => page.evaluate(() => {
+   const element = document.querySelector<HTMLElement>('[data-testid="card-spotlight-overlay"]');
+   if (!element) return false;
+   const bounds = element.getBoundingClientRect();
+   const expectedWidth = window.innerWidth * 0.16;
+   return Math.abs(bounds.width - expectedWidth) <= 5
+    && Math.abs((bounds.left + bounds.right) / 2 - window.innerWidth / 2) <= 5;
+  }), { timeout: 2200 }).toBe(true);
+  cardSpotlightAtCapture = await page.evaluate(() => {
+   const element = document.querySelector<HTMLElement>('[data-testid="card-spotlight-overlay"]');
+   if (!element) return { visible: false, cardId: null, bounds: null };
+   const bounds = element.getBoundingClientRect();
+   const style = window.getComputedStyle(element);
+   return {
+    visible: style.display !== 'none' && style.visibility !== 'hidden' && bounds.width > 0 && bounds.height > 0,
+    cardId: element.getAttribute('data-card-id'),
+    bounds: { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom },
+   };
+  });
+  expect(cardSpotlightAtCapture.visible).toBe(true);
+  if (!cardSpotlightAtCapture.bounds) throw new Error('卡牌特写截图缺少可见范围');
+  const expectedWidth = await page.evaluate(() => window.innerWidth * 0.16);
+  const capturedWidth = cardSpotlightAtCapture.bounds.right - cardSpotlightAtCapture.bounds.left;
+  const capturedCenterX = (cardSpotlightAtCapture.bounds.left + cardSpotlightAtCapture.bounds.right) / 2;
+  const viewportWidth = await page.evaluate(() => window.innerWidth);
+  expect(capturedWidth).toBeGreaterThanOrEqual(expectedWidth - 5);
+  expect(Math.abs(capturedCenterX - viewportWidth / 2)).toBeLessThanOrEqual(5);
+ }
+ await page.screenshot({path,fullPage:false,animations:'allow'});
+ let cardSpotlightAfterScreenshot: typeof cardSpotlightAtCapture = null;
+ if (options.captureCardSpotlight) {
+  cardSpotlightAfterScreenshot = await page.evaluate(() => {
+   const element = document.querySelector<HTMLElement>('[data-testid="card-spotlight-overlay"]');
+   if (!element) return { visible: false, cardId: null, bounds: null };
+   const bounds = element.getBoundingClientRect();
+   const style = window.getComputedStyle(element);
+   return {
+    visible: style.display !== 'none' && style.visibility !== 'hidden' && bounds.width > 0 && bounds.height > 0,
+    cardId: element.getAttribute('data-card-id'),
+    bounds: { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom },
+   };
+  });
+  expect(cardSpotlightAfterScreenshot.visible).toBe(true);
+  if (!cardSpotlightAfterScreenshot.bounds) throw new Error('卡牌特写截图后缺少可见范围');
+  const expectedWidth = await page.evaluate(() => window.innerWidth * 0.16);
+  const capturedWidth = cardSpotlightAfterScreenshot.bounds.right - cardSpotlightAfterScreenshot.bounds.left;
+  const capturedCenterX = (cardSpotlightAfterScreenshot.bounds.left + cardSpotlightAfterScreenshot.bounds.right) / 2;
+  const viewportWidth = await page.evaluate(() => window.innerWidth);
+  expect(capturedWidth).toBeGreaterThanOrEqual(expectedWidth - 5);
+  expect(Math.abs(capturedCenterX - viewportWidth / 2)).toBeLessThanOrEqual(5);
+ }
+ tracker=await observeThorSources(page,runtime.runtimeId);
  const snapshot=await page.evaluate(()=>{
   const state=(window as unknown as {__BG_TEST_HARNESS__:{state:{get:()=>MatchState<DiceThroneCore>}}}).__BG_TEST_HARNESS__.state.get(),core=state.core;
   const header=document.querySelector('[data-testid="dt-top-header-1"]')?.getBoundingClientRect();
@@ -125,7 +214,7 @@ export async function shot(page: Page, info: TestInfo, name: string) {
   return {visible:{text:document.body.innerText,hintGeometry,handDiscardHintGeometry,handCardRects:handCardRects.map(card=>({cardId:card.cardId,bounds:rect(card.bounds)})),thorCardImages,viewport:{width:innerWidth,height:innerHeight,scrollX,scrollY},protectedHeader:rect(header),protectedTip:rect(tip),protectedDiceTray:rect(diceTray),scrollers,handCards:handCardRects.map(card=>card.cardId)},authoritative:{phase:state.sys.phase,players:Object.fromEntries(Object.entries(core.players).map(([id,p])=>[id,{characterId:p.characterId,hp:p.resources.hp,cp:p.resources.cp,tokens:p.tokens,hand:p.hand.map(c=>c.id)}])),pendingAttack:core.pendingAttack,pendingBonusDiceSettlement:core.pendingBonusDiceSettlement,currentRollContext:core.currentRollContext,mjolnirThrowsThisTurn:core.mjolnirThrowsThisTurn}};
  });
  const statePath=path+'.state.json';
- await writeFile(statePath,JSON.stringify({runtimeId:runtime.runtimeId,...snapshot},null,2));
+ await writeFile(statePath,JSON.stringify({runtimeId:runtime.runtimeId,...snapshot,...(cardSpotlightAtCapture ? { cardSpotlightAtCapture } : {}),...(cardSpotlightAfterScreenshot ? { cardSpotlightAfterScreenshot } : {})},null,2));
  tracker.stateFiles.add(statePath);
  await syncThorSourceSidecars(tracker);
  const hintGeometry=snapshot.visible.hintGeometry;
@@ -145,12 +234,86 @@ export async function shot(page: Page, info: TestInfo, name: string) {
  }
 }
 
-/** 骰子交互提示只渲染一次：普通选骰位于视口顶部居中，效果骰贴 DiceTray。 */
-export async function expectDiceHintSurface(page: Page, expectedAnchor: 'viewport' | 'dice-tray') {
+/** 骰子交互提示只渲染一次，并按正式承载合同检查锚点和位置。 */
+export async function expectDiceHintSurface(
+ page: Page,
+ expectedSurface: 'game-hints-top-center' | 'dice-tray-top',
+) {
  const hints=page.getByTestId('dice-interaction-hint');
  const anchors=page.getByTestId('dice-interaction-hint-anchor');
+ const expectedAnchor=expectedSurface === 'game-hints-top-center' ? 'viewport' : 'dice-tray';
+ const expectedPlacement=expectedSurface === 'game-hints-top-center' ? 'top-center' : 'tray-top';
  await expect(hints).toHaveCount(1);
  await expect(anchors).toHaveCount(1);
  await expect(anchors).toHaveAttribute('data-anchor',expectedAnchor);
- await expect(anchors).toHaveAttribute('data-placement',expectedAnchor === 'viewport' ? 'top-center' : 'tray-top');
+ await expect(anchors).toHaveAttribute('data-placement',expectedPlacement);
+}
+
+/** 等待伤害数字从动效帧收口，避免把飘字残留误当成稳定结算界面。 */
+export async function waitForDamageNumbersToSettle(page: Page): Promise<void> {
+ const damageNumbers = page.locator('[data-testid="damage-number-float"]');
+ // The final effect can mount its float after earlier damage numbers have
+ // already faded. Require a continuous hidden window after the full impact
+ // sequence instead of sampling once before and once after a fixed delay.
+ await page.waitForTimeout(5000);
+ const readVisibleDamageNumbers = async () => {
+  const visibleDamageNumbers = await damageNumbers.evaluateAll((nodes) => nodes.filter((node) => {
+   let opacity = 1;
+   let current: HTMLElement | null = node as HTMLElement;
+   while (current) {
+    const style = window.getComputedStyle(current);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    opacity *= Number(style.opacity || 1);
+    current = current.parentElement;
+   }
+   const bounds = node.getBoundingClientRect();
+   return opacity > 0.02
+    && bounds.width > 0
+    && bounds.height > 0
+    && bounds.right > 0
+    && bounds.left < window.innerWidth
+    && bounds.bottom > 0
+    && bounds.top < window.innerHeight;
+  }));
+  return visibleDamageNumbers.map((node) => {
+   const element = node as HTMLElement;
+   const bounds = element.getBoundingClientRect();
+   const style = window.getComputedStyle(element);
+   return {
+    text: element.textContent?.trim() ?? '',
+    opacity: style.opacity,
+    bounds: { left: bounds.left, top: bounds.top, right: bounds.right, bottom: bounds.bottom },
+   };
+  });
+ };
+ let hiddenSince: number | null = null;
+ let lastVisible: Awaited<ReturnType<typeof readVisibleDamageNumbers>> = [];
+ try {
+  await expect.poll(async () => {
+   lastVisible = await readVisibleDamageNumbers();
+   if (lastVisible.length > 0) {
+    hiddenSince = null;
+    return false;
+   }
+   hiddenSince ??= Date.now();
+   return Date.now() - hiddenSince >= 1200;
+  }, { timeout: 12000, intervals: [100, 200, 400] }).toBe(true);
+ } catch (error) {
+  console.error('[Thor damage-float wait] Visible floats at timeout:', JSON.stringify(lastVisible));
+  throw error;
+ }
+}
+
+/** 等待其他玩家的卡牌特写自动关闭，随后再截取不被过渡层覆盖的交互状态。 */
+export async function waitForCardSpotlightToClose(page: Page): Promise<void> {
+ await expect(page.getByTestId('card-spotlight-overlay')).toHaveCount(0, { timeout: 5000 });
+}
+
+/** 普通卡牌阅读现在由玩家关闭；点击卡牌外的既有遮罩，再等待队列清空。 */
+export async function dismissCardSpotlightWithBackdrop(page: Page): Promise<void> {
+ const spotlight = page.getByTestId('card-spotlight-overlay');
+ if (await spotlight.count() === 0) return;
+ const root = page.getByTestId('spotlight-container-root');
+ await root.click({ position: { x: 15, y: 15 } });
+ await expect(spotlight).toHaveCount(0, { timeout: 5000 });
 }

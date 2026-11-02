@@ -28,7 +28,7 @@ export function FateSelfDock({core, playerId, name, sealEnabled, pileInfo, onDet
         <div className="fd-self-objects">
             <div className="fd-self-piles">
                 <button type="button" aria-label={t('ui.selfDock.drawPileCount', { count: view.deckCount })} onClick={() => onPile('deck')}><Layers className="board-shell-fixed-icon" size={22}/><b>{view.deckCount}</b></button>
-                <button type="button" aria-label={t('ui.selfDock.discardPileCount', { count: view.discardCount })} onClick={() => onPile('discard')}><Archive className="board-shell-fixed-icon" size={22}/><b>{view.discardCount}</b></button>
+                <button type="button" data-tutorial-id="fate-self-discard" aria-label={t('ui.selfDock.discardPileCount', { count: view.discardCount })} onClick={() => onPile('discard')}><Archive className="board-shell-fixed-icon" size={22}/><b>{view.discardCount}</b></button>
                 {pileInfo && <div className="fd-self-pile-info" role="status">{pileInfo}</div>}
             </div>
             <button type="button" data-tutorial-id="fate-self-seals" className="fd-self-seals" aria-label={t('ui.selfDock.useCommandSeal')} disabled={!sealEnabled} onClick={onSeal}>

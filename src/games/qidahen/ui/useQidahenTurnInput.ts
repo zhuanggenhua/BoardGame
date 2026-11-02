@@ -1,21 +1,25 @@
 import { useState } from 'react';
 import type { MatchState } from '../../../engine/types';
-import type { SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
+import type { PromptOption, SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import { getQidahenTurnResolutionFrame } from '../domain/turnResolutionOpportunities';
-import { QIDAHEN_TURN_RESOLUTION_CHOICE } from '../domain/turnResolutionTypes';
+import { QIDAHEN_TURN_RESOLUTION_CHOICE, type QidahenTurnResolutionFact } from '../domain/turnResolutionTypes';
 import type { QidahenCore } from '../domain/types';
 import { getQidahenDispatchDraftTargets } from '../domain/wheelDispatchDraft';
 
 /** UI仅选择正式请求中的实体；候选、数量和最终效果仍由规则owner决定。 */
 export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: string | null, dispatch: (type: string, payload?: unknown) => void, disabled: boolean) {
     const current = state.sys.interaction?.current;
-    const data = current?.data as SimpleChoiceData | undefined;
+    const data = current?.data as SimpleChoiceData<QidahenTurnResolutionFact> | undefined;
     const active = data?.sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE;
     const frame = getQidahenTurnResolutionFrame(state);
     const step = frame?.metadata.qidahenTurn.step;
+    const maintenanceFortificationId = active && (step === 'maintenance' || step === 'maintenance-payment')
+        ? state.core.fortifications[frame!.metadata.qidahenTurn.maintenanceIndex].id : null;
     const [draft, setDraft] = useState<{ interactionId?: string; ids: string[] }>({ ids: [] });
     const selectedIds = draft.interactionId === current?.id ? draft.ids : [];
     const options = active ? data.options : [];
+    const handOptions = options.filter((option): option is PromptOption<Extract<QidahenTurnResolutionFact, { kind: 'choose-hand' }>> => option.value.kind === 'choose-hand');
+    const handActionCardIds = handOptions.flatMap(option => option.value.sourceHandCardId ? [option.value.sourceHandCardId] : []);
     const min = data?.multi?.min ?? 1;
     const max = data?.multi?.max ?? 1;
     const tutorialStep = state.sys.tutorial?.active ? state.sys.tutorial.step : null;
@@ -27,9 +31,9 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
     const cardIds = active ? options.filter(option => state.core.handCards.some(card => card.id === option.id)).map(option => option.id) : [];
     const pieceIds = step === 'dispatch-troops' || step === 'upkeep' ? options.filter(option => state.core.pieces.some(piece => piece.id === option.id)).map(option => option.id) : [];
     const allowedTargets = state.sys.tutorial?.active ? state.sys.tutorial.step?.allowedTargets : undefined;
-    const authoredSelectionAllowed = !allowedTargets?.length || selectedIds.length > 0 && selectedIds.every(id => allowedTargets.includes(id)
+    const authoredSelectionAllowed = (ids: string[]) => !allowedTargets?.length || ids.length > 0 && ids.every(id => allowedTargets.includes(id)
         || allowedTargets.includes(state.core.handCards.find(card => card.id === id)?.cardDefId ?? ''))
-        && (!data?.multi || allowedTargets.every(id => selectedIds.includes(id)));
+        && (!data?.multi || allowedTargets.every(id => ids.includes(id)));
     const troopsCanReach = step !== 'dispatch-troops' || !frame || getQidahenDispatchDraftTargets(state.core, frame.metadata.qidahenTurn.factionId, frame.metadata.qidahenTurn.sourceRegionId!, selectedIds).length > 0;
     const toggle = (id: string) => {
         if (!canAct || !options.some(option => option.id === id && !option.disabled)) return;
@@ -45,17 +49,27 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
         if (mapCandidateIds.length) { toggle(regionId); return true; }
         return false;
     };
-    const confirm = () => {
-        if (!canAct || !troopsCanReach || selectedIds.length < min || selectedIds.length > max) return;
-        if (!authoredSelectionAllowed) {
+    const submit = (ids: string[]) => {
+        if (!canAct || ids.length < min || ids.length > max || ids.some(id => !options.some(option => option.id === id && !option.disabled))) return;
+        if (!authoredSelectionAllowed(ids)) {
             // 正式候选仍可选择；偏离本次示范时复用教程完整检查点，不提交另一套规则结果。
             dispatch('SYS_TUTORIAL_RESTART_STEP', {});
             setDraft({ ids: [] });
             return;
         }
-        dispatch('SYS_INTERACTION_RESPOND', { interactionId: current!.id, ...(data?.multi ? { optionIds: selectedIds } : { optionId: selectedIds[0] }) });
+        dispatch('SYS_INTERACTION_RESPOND', { interactionId: current!.id, ...(data?.multi ? { optionIds: ids } : { optionId: ids[0] }) });
     };
-    return { active, canAct, step, title: active ? data.title : '', options, selectedIds, mapCandidateIds, cardIds, pieceIds,
+    const confirm = () => { if (troopsCanReach) submit(selectedIds); };
+    // 单次抽象动作没有实体草稿；实体选择或真正的多选继续保留确认。
+    const isDirectChoice = (id: string) => max === 1 && !mapCandidateIds.includes(id) && !cardIds.includes(id) && !pieceIds.includes(id);
+    const choose = (id: string) => { if (isDirectChoice(id)) submit([id]); };
+    const chooseHandCard = (cardId: string) => {
+        const option = handOptions.find(option => option.value.sourceHandCardId === cardId);
+        if (option) choose(option.id);
+    };
+    return { active, canAct, step, maintenanceFortificationId, title: active ? data.title : '', options, handOptions, handActionCardIds, chooseHandCard, selectedIds, mapCandidateIds, cardIds, pieceIds,
+        committedPieceIds: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.selectedPieceIds ?? [] : [],
+        season: frame?.metadata.qidahenTurn.season ?? null, choose, isDirectChoice,
         selectedPieceIds: selectedIds.filter(id => pieceIds.includes(id)), selectedCardIds: selectedIds.filter(id => cardIds.includes(id)), selectedRegionId: selectedIds.find(id => regionIds.has(id)),
         canConfirm: canAct && troopsCanReach && selectedIds.length >= min && selectedIds.length <= max, toggle, selectRegion, confirm,
     };

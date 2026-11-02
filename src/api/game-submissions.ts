@@ -1,4 +1,5 @@
 import { UGC_API_URL } from '../config/server';
+import type { GameRulesDocument } from '../shared/externalGames';
 
 export interface GameSubmissionDraft {
     name: string;
@@ -13,6 +14,7 @@ export interface GameSubmissionDraft {
     rules: string;
 }
 export interface GameSubmissionRecord extends GameSubmissionDraft {
+    rulesDocument?: GameRulesDocument;
     submissionId: string;
     coverUrl: string;
     status: 'draft' | 'pending' | 'approved' | 'rejected';
@@ -43,3 +45,8 @@ export const uploadSubmissionCover = (token: string, id: string, file: File) => 
     const form = new FormData(); form.append('file', file);
     return request<{ coverUrl: string }>(token, `/${encodeURIComponent(id)}/cover`, 'POST', form);
 };
+export const uploadSubmissionRules = (token: string, id: string, file: File) => {
+    const form = new FormData(); form.append('file', file);
+    return request<{ rulesDocument: GameRulesDocument }>(token, `/${encodeURIComponent(id)}/rules`, 'POST', form);
+};
+export const removeSubmissionRules = (token: string, id: string) => request<{ removed: boolean }>(token, `/${encodeURIComponent(id)}/rules`, 'DELETE');

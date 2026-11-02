@@ -1,3 +1,4 @@
+import './helpers/i18n';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { expect, it, vi } from 'vitest';
@@ -14,7 +15,6 @@ vi.mock('framer-motion', async (importOriginal) => ({
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: endgameActions.vote, registerReset: endgameActions.registerReset }) }));
 vi.mock('../../../contexts/MatchRoomExitContext', () => ({ useMatchRoomExit: () => ({ exitToLobby: endgameActions.exit }) }));
 vi.mock('../../../contexts/ToastContext', () => ({ useToast: () => ({ warning: vi.fn() }) }));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'zh-CN' } }) }));
 vi.mock('../../../contexts/UndoContext', () => ({ UndoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock('../../../hooks/ui/useDeferredRender', () => ({ useDeferredRender: (active: boolean) => active }));
 vi.mock('../../../components/common/animations', () => ({ VictoryParticles: () => null }));

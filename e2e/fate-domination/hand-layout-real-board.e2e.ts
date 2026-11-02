@@ -665,6 +665,9 @@ test('Fate 攻击牌在原位打出与撤回，出牌区密集时相机仍独立
     await capture('从对方悬浮牌排点击放大卡图','desktop-opponent-card-inspection','玩家将指针移入头像旁的牌排后，点击公开牌本体打开正式完整卡面。','desktop-narrow',page,DESKTOP_NORMAL_CHAIN_ID);
     steps.push({id:'desktop-opponent-card-inspection',chainId:DESKTOP_NORMAL_CHAIN_ID,action:'点击悬浮牌排中的公开牌',before:afterRow,after:inspectedRow,assertions:[assertion('public-card-inspection-visible',await page.locator('.fd-runtime-inspection.is-pinned').isVisible(),true)]});
     await page.locator('.fd-runtime-inspection.is-pinned button').click();
+    // 放大期间宽限可能已经到期；从真实头像入口重新展开，不假定旧牌排仍挂载。
+    await peerAvatar.hover();
+    await expect(peerRow).toBeVisible();
     await peerRow.hover();
     await page.mouse.move(8,8);
     await expect(peerRow).toBeHidden({timeout:4000});

@@ -1,8 +1,9 @@
 import {createEvidenceScreenshotRun,promoteEvidenceScreenshotRun} from '../framework/evidenceScreenshots';
+import {captureEvidenceSourceIdentity,releaseSourceSession,startSourceSession} from '../framework/sourceIdentity';
 import {test,expect,type BrowserContext,type Page} from '@playwright/test';
 import {mkdir,unlink,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {readFileSync,readdirSync} from 'node:fs';
+import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {buildLocalMatchSnapshotKey} from '../../src/engine/transport/localSession';
 import {initContext,attachPageDiagnostics,assertNoFatalFrontendErrors} from '../helpers/common';
@@ -10,6 +11,7 @@ import {chooseFateIdentity} from './identitySelection';
 import {assertFateHandCardsUnclipped} from './handVisibility';
 
 test.use({viewport:{width:1920,height:1080}});
+test.afterEach(async({context})=>{await releaseSourceSession(context);});
 type State={core:any;sys:any;tutorialContext:any};
 async function state(page:Page):Promise<State>{return page.evaluate(()=>{const w=window as any;const s=w.__BG_TEST_HARNESS__.state.get();return {core:s.core,sys:{tutorial:{active:s.sys.tutorial.active,step:s.sys.tutorial.step,aiActions:s.sys.tutorial.aiActions,stepIndex:s.sys.tutorial.stepIndex,selectedBranch:s.sys.tutorial.selectedBranch},undo:{rollbackRevision:s.sys.undo.rollbackRevision},interaction:{current:s.sys.interaction.current},gameover:s.sys.gameover},tutorialContext:w.__BG_TUTORIAL_CONTEXT_DIAGNOSTICS__??null};});}
 async function waitStep(page:Page,id:string){await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id,{timeout:20000}).not.toBe(id);}
@@ -100,14 +102,6 @@ async function expectDeploymentChoicesUnobscured(page:Page){
   expect(overlap,`教程提示必须避开地图上的标题与地利信息 ${landmark.id}；定位=${JSON.stringify({tooltip,landmark})}`).toBe(0);
  }
 }
-function fateSourceRevision(){
- const hash=createHash('sha256');
- for(const file of readdirSync('src/games/fate-domination',{recursive:true}).map(String).filter(file=>/\.(tsx?|css)$/.test(file)&&!file.includes('__tests__')).sort()){
-  hash.update(file);hash.update(readFileSync(path.join('src/games/fate-domination',file)));
- }
- for(const file of ['src/hooks/ui/useTouchLongPress.ts','src/engine/types.ts','src/engine/pipeline.ts','src/engine/systems/TutorialSystem.ts','src/contexts/TutorialContext.tsx','src/pages/matchRoomBridges.tsx','src/components/tutorial/TutorialOverlay.tsx','public/locales/zh-CN/game-fate-domination.json','public/locales/en/game-fate-domination.json']){hash.update(file);hash.update(readFileSync(file));}
- return 'tree-sha256:'+hash.digest('hex');
-}
 async function snapshot(page:Page,current?:State){
  const s=current??await state(page);
  const visible=await page.evaluate(()=>({tutorialText:document.querySelector('[data-testid="tutorial-overlay-card"]')?.textContent??null,primaryLabel:document.querySelector('[data-testid="fate-domination-primary-action"]')?.textContent??null,dialogCount:document.querySelectorAll('[role="dialog"]').length,inspectionVisible:Boolean(document.querySelector('[data-testid="fate-runtime-inspection"]')),gameOver:Boolean(document.querySelector('[aria-label="圣杯战争结果"]')),identityVisible:Boolean(document.querySelector('.fd-identity-setup')),opponentPowers:Array.from(document.querySelectorAll('.fd-seat-power')).map(node=>node.textContent),mapStatus:document.querySelector('[data-testid="fate-pixi-map-canvas-host"]')?.getAttribute('data-map-resource-status')??null}));
@@ -137,24 +131,25 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  // 整课包含多轮和完整界面采集；动作等待仍各自受 20 秒/5 秒断言约束。
  test.setTimeout(900000);page.setDefaultTimeout(15000);
  await initContext(context,{skipImageGate:false,skipTutorial:false});
+ await startSourceSession(context,baseURL!);
  await startFreshTutorialSession(context,`${testInfo.testId}-${testInfo.retry}`);
  const diagnostics=attachPageDiagnostics(page),run=await createEvidenceScreenshotRun(testInfo,{requireChineseName:true}),directory=run.stagingDir;
  await mkdir(directory,{recursive:true});
- const sourceRevision=fateSourceRevision(),trace:any[]=[],media:any[]=[],seen=new Set<string>(),seenHashes=new Map<string,string>();
+ const trace:any[]=[],media:any[]=[],seen=new Set<string>(),seenHashes=new Map<string,string>();
  // 完整操作与选图分开：正文逐步核对，截图只保留决定、模式变化及结果的必要连接。
  const lessonCaptures:Record<string,string>={
   deploymentChoice:'魔术工房的三个 +1 点位可选',
   masterAbility:'前哨阶段使用战略部署',
-  masterReading:'使用战略部署前，先学会通过本人头像读取御主能力',
   mixedAttack:'第一次选牌：点牌选择、再点撤回，选齐后确认攻击',
   movement:'先移动再出牌及移动目的',engagement:'抵达交战战场后无法常规移动的原因',cardReading:'攻击牌费用、威力与时机',sealMana:'技能出牌门槛与令咒恢复魔力',
   riding:'已打出的骑乘可以发动',actionAbility:'发动已打出的急行前往新都',
   battle:'行动结束，进入战斗阶段',settlement:'战力结算',
   discard:'回合结束后，技能返回技能区，普通攻击进入弃牌堆',
+  battleDeployment:'后续回合部署到深山町的最高空位，读取地利',
   battlefieldDarkAttack:'在战场准备一明一暗两张攻击',
   postBattle:'战后恢复令咒选择',revelation:'真实从者揭示与技能公开',elimination:'第十日淘汰状态',
  };
- const expectedLessonIds=new Set(['opening','preparation','deploymentChoice','masterReading','masterAbility','phaseOrder','movement','engagement','cardReading','sealMana','mixedAttack','riding','ridingChoice','actionAbility','publicPower','battle','settlement','discard','battleDeployment','battlefieldDarkAttack','postBattle','revelation','sealBattle','elimination']);
+ const expectedLessonIds=new Set(['opening','preparation','deploymentChoice','masterAbility','phaseOrder','movement','engagement','cardReading','sealMana','mixedAttack','riding','ridingChoice','actionAbility','publicPower','battle','settlement','discard','battleDeployment','battlefieldDarkAttack','postBattle','revelation','sealBattle','elimination']);
  const capturedLessonIds=new Set<string>();
  const capturedAbilityIds=new Set<string>();
  const observedLessons=new Set<string>();
@@ -323,28 +318,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    await page.locator('.fd-runtime-map-card-hit').first().click();await closeInspection(page);
    const deck=page.getByRole('button',{name:/抽牌堆 \d+ 张/});await deck.click();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);await capture('deck-count','牌堆计数与一级资源威力同帧可读');await deck.click();
   }
-  if(step.id.startsWith('ui-detail')){
-   expect(lessonId).toBe('masterReading');
-   expect(step.fateUiDetailTarget).toBe('0');
-   await expect(page.locator('[data-tutorial-id="fate-self-avatar"]')).toBeVisible();
-   await expect(page.getByTestId('tutorial-overlay-card')).toContainText('韦伯头像');
-   await optionalDetail('0','detail','从本人头像打开御主资料，为接下来的战略部署读卡');
-   await page.getByRole('button',{name:'检视御主能力',exact:true}).click();
-   await capture('detail-inspection','点御主卡后完整阅读战略部署，教学不穿透当前卡面');
-   await page.setViewportSize({width:936,height:432});await capture('inspection-constrained','受限横屏完整检视与关闭入口');
-   await page.setViewportSize({width:1920,height:1080});await closeInspection(page);
-   const hiddenPeer=Object.values(before.core.players).find((player:any)=>player.id!=='0'&&!player.isRevealed) as any;
-   expect(hiddenPeer).toBeTruthy();
-   await page.getByRole('button',{name:new RegExp('切换到玩家'+(Number(hiddenPeer.id)+1))}).click();
-   const hiddenDetail=page.getByRole('dialog');
-   await expect(hiddenDetail.getByAltText('未解放从者牌背')).toBeVisible();
-   await expect(hiddenDetail.locator('.fd-player-detail-skills button')).toHaveCount(3);
-   await expect(hiddenDetail.locator('.fd-player-detail-skills button:not([disabled])')).toHaveCount(0);
-   await capture('opponent-detail-hidden','可选切席：尚未真名解放的对手保持从者与技能牌背');
-   await page.getByRole('button',{name:/切换到玩家1/}).click();
-   expect((await state(page)).core).toEqual(before.core);
-   await page.getByRole('button',{name:'关闭玩家详情',exact:true}).click();
-  }else if(step.id.startsWith('ui-inspection')){
+  if(step.id.startsWith('ui-inspection')){
    const card=page.locator('[data-tutorial-id='+JSON.stringify(step.highlightTarget)+']');await card.scrollIntoViewIfNeeded();
    const box=await card.boundingBox();expect(box).toBeTruthy();
    await page.mouse.click(box!.x+box!.width/2,box!.y+box!.height/2,{button:'right'});
@@ -352,8 +326,17 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    await capture('hand-inspection','首次读骑乘原卡后再筹备费用与选牌');
    await closeInspection(page);
   }else if(step.id.startsWith('ui-pile')){
+   await expect(page.getByTestId('tutorial-overlay-card')).toContainText('点击弃牌堆');
+   await expect(page.locator('[data-tutorial-id="fate-self-discard"]')).toHaveAccessibleName(/弃牌堆 \d+ 张/);
    await page.getByRole('button',{name:/弃牌堆 \d+ 张/}).click();
-   const discard=page.getByRole('dialog',{name:/弃牌/});await expect(discard).toBeVisible();await capture('discard','回合收牌后检视弃牌堆，只说明当前查看动作');
+   const discard=page.getByRole('dialog',{name:/弃牌/});await expect(discard).toBeVisible();
+   const discardCount=(await state(page)).core.players['0'].discard.length;
+   await expect(discard.getByRole('button',{name:/检视/})).toHaveCount(discardCount);
+   await expect.poll(()=>discard.locator('.fd-discard-cards > button').evaluateAll(buttons=>buttons.every(button=>{
+    const image=button.querySelector<HTMLImageElement>('img'),rect=button.getBoundingClientRect();
+    return image?.complete&&image.naturalWidth>0&&rect.height>100&&!button.querySelector('.atlas-shimmer');
+   })),{message:'弃牌窗口不能只见计数和空白卡区；每张正式卡面须已解码且有可读高度',timeout:30000}).toBe(true);
+   await capture('discard','回合收牌后检视弃牌堆，只说明当前查看动作');
    await discard.getByRole('button',{name:/检视/}).first().click();await closeInspection(page);
    await page.getByRole('button',{name:/关闭弃牌/}).click();
   }else if(step.id.startsWith('ui-public-cards')){
@@ -502,7 +485,8 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
      const abilityButton=page.getByRole('button',{name:'发动'+master.name,exact:true});
      await abilityButton.hover();
      await expect(page.getByTestId('info-tooltip')).toContainText('你能支付1魔力来抽2张牌。');
-     await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
+     await expect(page.getByTestId('tutorial-overlay-card')).toBeVisible();
+     await expect(page.getByTestId('tutorial-overlay-card')).toContainText(master.name);
      const tipBox=await page.getByTestId('info-tooltip').boundingBox(),buttonBox=await abilityButton.boundingBox();
      expect(tipBox!.x).toBeGreaterThanOrEqual(buttonBox!.x+buttonBox!.width);
      await capture('master-ability-tooltip','御主能力直接位于角色旁，右侧只读说明，不打开详情发动');
@@ -621,7 +605,9 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  trace.push({id:'after-completion',action:'教程退场后正式选角仍能作出新决定',before:beforeCompletion,after:await snapshot(page),assertions:[{name:'new-master-and-servant-choice-accepted',actual:true,expected:true}]});
  await assertNoFatalFrontendErrors([{label:'fate-tutorial',diagnostics}]);
  if(deploymentMapPanned)expect(seen.has('deployment-map-pan'),'真实发生的部署拖图必须有独立画面，不能被截图白名单静默漏掉').toBe(true);
- expect(fateSourceRevision(),'完整教程运行期间产品源码指纹必须保持一致').toBe(sourceRevision);
+ const sourceIdentity=await captureEvidenceSourceIdentity(page,'fate-domination');
+ const {sourceRevision}=sourceIdentity;
+ await writeFile(path.join(directory,'source-identity.json'),JSON.stringify(sourceIdentity,null,2));
  await writeFile(path.join(directory,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-natural-11-rounds',status:'PASS',visualStatus:'pending',outcome:'固定身份从中文规则课程自然十一轮至终局；可选UI、刷新、随机回退、合法偏离、退出与正式再来一局均通过',browserContextId:'single-tutorial-context',steps:trace,uiStates:media.map(item=>({id:item.key,stepId:item.stepId,change:'panel',viewport:'desktop',viewportSize:item.key==='cards-wide-desktop'?'2560x1225':item.key==='inspection-constrained'?'936x432':item.key==='identity-constrained'?'1366x768':'1920x1080',sha256:item.sha256})),media:media.map(item=>({...item,path:path.join(run.stableDir,path.basename(item.path))})),terminal:{expected:true,actual:true,visible:true,visibleVerifiedBeforeRematch:true}},null,2));
  await promoteEvidenceScreenshotRun(run,{gameId:'fate-domination',evidenceCategory:'tutorial',capturePolicy:'distinct-ui-state',media:media.map((item,index)=>({path:path.relative(process.cwd(),path.join(run.stableDir,path.basename(item.path))).replace(/\\/g,'/'),chainId:'fate-tutorial-natural-11-rounds',chainStep:index+1,stage:'独特界面态',role:'main-flow',transition:item.description,uiStateId:item.key,uiChange:'panel',uiChangeReason:item.description,behaviorStepId:item.stepId,sourceRevision,description:item.description,viewport:'desktop',viewportSize:item.key==='cards-wide-desktop'?'2560x1225':item.key==='inspection-constrained'?'936x432':item.key==='identity-constrained'?'1366x768':'1920x1080',requirements:['中文原句教学、无选角首课、正式角色UI、一级威力与自然操作生命周期']}))});
 });
@@ -630,6 +616,7 @@ test('教程中途从正式菜单退出，进入普通对局后教程状态与�
  test.setTimeout(90000);page.setDefaultTimeout(15000);
  const run=await createEvidenceScreenshotRun(testInfo,{requireChineseName:true});await mkdir(run.stagingDir,{recursive:true});
  await initContext(context,{skipImageGate:false,skipTutorial:false});
+ await startSourceSession(context,baseURL!);
  await startFreshTutorialSession(context,`${testInfo.testId}-${testInfo.retry}`);
  await page.goto(baseURL+'/play/fate-domination/tutorial',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>(window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.(),undefined,{timeout:30000});
@@ -643,7 +630,9 @@ test('教程中途从正式菜单退出，进入普通对局后教程状态与�
  await page.getByTestId('fab-menu').locator('button[data-fab-id]').first().click();await page.getByRole('button',{name:'离开',exact:true}).click();
  await page.getByTestId('fab-panel-exit').getByRole('button',{name:/返回大厅/}).click();await expect(page).toHaveURL(/\/$/);
  await page.goto(baseURL+'/play/fate-domination?players=3&playerID=0&seed=tutorial-exit-cleanup&disableLocalAiAutomation=true',{waitUntil:'domcontentloaded'});
- await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible();await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
+ await expect(page.getByRole('region',{name:'选择御主与从者'})).toBeVisible({timeout:30000});await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
  await chooseFateIdentity(page,'master','m_rin');await expect.poll(async()=>(await state(page)).core.players['0'].masterId).toBe('m_rin');
- await writeFile(path.join(run.stagingDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision:fateSourceRevision(),sourceRun:run.runId,chainId:'fate-tutorial-exit-cleanup',status:'PASS',visualStatus:'pending',outcome:'正式菜单退出后新局真实角色选择可用',steps:[{id:'exit-and-select',action:'退出教程后正式新局选择角色',before:beforeExit,after:await snapshot(page),assertions:[{name:'new-match-decision-accepted',actual:(await state(page)).core.players['0'].masterId,expected:'m_rin'}]}],uiStates:[]},null,2));
+ const sourceIdentity=await captureEvidenceSourceIdentity(page,'fate-domination');
+ await writeFile(path.join(run.stagingDir,'source-identity.json'),JSON.stringify(sourceIdentity,null,2));
+ await writeFile(path.join(run.stagingDir,'behavior-trace.json'),JSON.stringify({gameId:'fate-domination',evidenceCategory:'tutorial',sourceRevision:sourceIdentity.sourceRevision,sourceRun:run.runId,chainId:'fate-tutorial-exit-cleanup',status:'PASS',visualStatus:'pending',outcome:'正式菜单退出后新局真实角色选择可用',steps:[{id:'exit-and-select',action:'退出教程后正式新局选择角色',before:beforeExit,after:await snapshot(page),assertions:[{name:'new-match-decision-accepted',actual:(await state(page)).core.players['0'].masterId,expected:'m_rin'}]}],uiStates:[]},null,2));
 });

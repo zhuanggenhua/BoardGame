@@ -13,7 +13,7 @@ import type { CardiaCore } from '../domain/core-types';
 import type { RandomFn, MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { Cardia } from '../game';
-import { createFactionSelectionInteraction } from '../domain/interactionHandlers';
+import { createFactionSelectionInteraction, type CardiaChoiceInteraction } from '../domain/interactionHandlers';
 import { createCardiaEventSystem } from '../domain/systems';
 import { createSimpleChoiceSystem } from '../../../engine/systems/SimpleChoiceSystem';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
@@ -93,6 +93,120 @@ describe('Cardia - 交互系统', () => {
                     value: { faction: 'academy' },
                 }),
             ]));
+        });
+
+        it('第一步响应后返回的通用 choice 应继续入队并把 option 传回旧 handler', () => {
+            const cardiaSystem = createCardiaEventSystem();
+            const simpleChoiceSystem = createSimpleChoiceSystem<CardiaCore>();
+            let handlerValue: unknown;
+            const choiceInteraction: CardiaChoiceInteraction = {
+                type: 'choice',
+                interactionId: 'court-guard-opponent-choice',
+                abilityId: 'test_choice_interaction',
+                playerId: '1',
+                title: '选择是否弃牌',
+                description: '弃牌或让对手的牌增加影响力',
+                options: [
+                    { id: 'discard', label: '弃掉一张手牌', description: '弃掉所选派系的一张手牌' },
+                    { id: 'decline', label: '不弃牌', description: '对手的牌增加影响力' },
+                ],
+                context: { faction: 'dynasty', cardId: 'source-card' },
+            };
+
+            registerInteractionHandler('test_choice_interaction', (state, _playerId, value) => {
+                if ((value as { faction?: string })?.faction) {
+                    return { state, events: [], interaction: choiceInteraction };
+                }
+                handlerValue = value;
+                return { state, events: [] };
+            });
+
+            const queued = cardiaSystem.afterEvents?.({
+                state: matchState,
+                command: { type: 'TEST_COMMAND', playerId: '0', payload: {} },
+                events: [{
+                    type: CARDIA_EVENTS.ABILITY_INTERACTION_REQUESTED.type,
+                    timestamp: 1,
+                    payload: {
+                        abilityId: 'test_choice_interaction',
+                        cardId: 'source-card',
+                        playerId: '0',
+                        interaction: createFactionSelectionInteraction(
+                            'court-guard-faction-choice',
+                            'test_choice_interaction',
+                            '0',
+                            '选择派系',
+                            '选择一个派系',
+                        ),
+                    },
+                }],
+                random,
+                playerIds: ['0', '1'],
+            });
+            const queuedState = queued?.state ?? matchState;
+            const firstInteraction = queuedState.sys.interaction.current as any;
+            const factionOption = firstInteraction.data.options.find(
+                (option: any) => option.value?.faction === 'dynasty',
+            );
+            const firstResponse = simpleChoiceSystem.beforeCommand?.({
+                state: queuedState,
+                command: {
+                    type: INTERACTION_COMMANDS.RESPOND,
+                    playerId: '0',
+                    payload: {
+                        interactionId: 'court-guard-faction-choice',
+                        optionId: factionOption.id,
+                    },
+                },
+                random,
+                playerIds: ['0', '1'],
+            });
+            const followedUp = cardiaSystem.afterEvents?.({
+                state: firstResponse?.state ?? queuedState,
+                command: { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: {} },
+                events: firstResponse?.events ?? [],
+                random,
+                playerIds: ['0', '1'],
+            });
+            const followedUpState = followedUp?.state ?? queuedState;
+            const secondInteraction = followedUpState.sys.interaction.current as any;
+
+            expect(secondInteraction).toMatchObject({
+                id: 'court-guard-opponent-choice',
+                kind: 'simple-choice',
+                playerId: '1',
+                data: {
+                    interactionType: 'choice',
+                    options: [
+                        { id: 'discard', value: { option: 'discard' }, description: '弃掉所选派系的一张手牌' },
+                        { id: 'decline', value: { option: 'decline' }, description: '对手的牌增加影响力' },
+                    ],
+                    context: { faction: 'dynasty', cardId: 'source-card' },
+                },
+            });
+
+            const secondResponse = simpleChoiceSystem.beforeCommand?.({
+                state: followedUpState,
+                command: {
+                    type: INTERACTION_COMMANDS.RESPOND,
+                    playerId: '1',
+                    payload: {
+                        interactionId: 'court-guard-opponent-choice',
+                        optionId: 'decline',
+                    },
+                },
+                random,
+                playerIds: ['0', '1'],
+            });
+            cardiaSystem.afterEvents?.({
+                state: secondResponse?.state ?? followedUpState,
+                command: { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: {} },
+                events: secondResponse?.events ?? [],
+                random,
+                playerIds: ['0', '1'],
+            });
+
+            expect(handlerValue).toEqual({ option: 'decline' });
         });
 
         it('卡牌多选交互应声明 simple-choice multi，并把 optionIds 解析成旧 handler 需要的 cardUids', () => {

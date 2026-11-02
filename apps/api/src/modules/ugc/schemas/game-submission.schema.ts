@@ -1,5 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { HydratedDocument } from 'mongoose';
+import type { GameRulesDocument } from '../../../../../../src/shared/externalGames';
+import { GameRulesDocumentSchema } from '../game-rules-file';
 export type GameSubmissionDocument = HydratedDocument<GameSubmission>;
 
 /** An external game's review record, never a runnable engine package. */
@@ -20,6 +22,7 @@ export class GameSubmission {
     @Prop({ type: String }) reviewerId?: string;
     @Prop({ type: String, default: '' }) description!: string;
     @Prop({ type: String, default: '' }) rules!: string;
+    @Prop({ type: GameRulesDocumentSchema }) rulesDocument?: GameRulesDocument;
     @Prop({ type: String, default: '' }) coverUrl!: string;
     @Prop({ type: String, enum: ['draft', 'pending', 'approved', 'rejected'], default: 'draft' }) status!: 'draft' | 'pending' | 'approved' | 'rejected';
     @Prop({ type: String, default: '' }) reviewComment!: string;

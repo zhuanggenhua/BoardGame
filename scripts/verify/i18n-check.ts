@@ -122,6 +122,7 @@ const LOCALE_VISIBLE_TECHNICAL_TERMS = new Set([
     'AI',
     'API',
     'APP',
+    'AVIF',
     'Android',
     'afterEvents',
     'Bug',

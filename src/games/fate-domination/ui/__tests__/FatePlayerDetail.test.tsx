@@ -1,3 +1,4 @@
+import '../../__tests__/helpers/i18n';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { createReplayAdapter } from '../../../../engine/adapter';

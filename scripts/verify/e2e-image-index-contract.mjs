@@ -79,6 +79,9 @@ const readJsonFile = (filePath, label) => {
 };
 
 const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestDir, projectRoot, indexDir, visualOnly = false }) => {
+    // 新功能中的旧 UI 恢复仍须对照基线，不能靠 changeType 跳过。
+    const requiresBaselineReview = manifest.changeType === 'refactor'
+        || manifest.existingUiPolicy === 'restore-and-reuse';
     const visualReview = manifest?.visualReview;
     if (!visualReview || visualReview.mode !== 'all-media' || visualReview.claimScope !== 'interaction-ui' || visualReview.status !== 'PASS') {
         throw new Error('最终 PASS 必须声明 visualReview=all-media / interaction-ui / PASS，禁止用关键图抽查代替全量视觉验收');
@@ -142,7 +145,7 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
         if (reviewedPaths.has(resolvedPath)) {
             throw new Error(`逐图视觉审计存在重复媒体: ${entry.path}`);
         }
-        if (visualOnly || manifest.changeType === 'refactor') {
+        if (visualOnly || requiresBaselineReview) {
             const resolve = (reference) => resolveMediaReference(reference, { projectRoot, manifestDir, indexDir });
             const requireFile = (reference, label) => {
                 assertString(reference, label);
@@ -156,7 +159,7 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
                 throw new Error(`视觉媒体与来源 SHA 不一致: ${entry.path}`);
             }
             const originalReviewFile = requireFile(entry.independentReviewFile, 'independentReviewFile');
-            if (manifest.changeType === 'refactor') {
+            if (requiresBaselineReview) {
                 if (realpathSync(originalReviewFile) === realpathSync(reviewPath ?? manifestPath)) throw new Error('原审查报告不能指向聚合报告自身');
                 assertString(entry.sourceReviewEntry, 'sourceReviewEntry');
                 if (!entry.sourceReviewEntry.startsWith('/')) throw new Error('sourceReviewEntry 必须是 JSON Pointer');
@@ -178,7 +181,7 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
         throw new Error('逐图视觉审计与 PASS 清单 media/images 未一一对应');
     }
 
-    if (manifest.changeType === 'refactor') {
+    if (requiresBaselineReview) {
         assertString(visualReview.baselineReviewFile, 'baselineReviewFile');
         const baseline = readJsonFile(path.resolve(manifestDir, visualReview.baselineReviewFile), '旧新职责对照');
         if (baseline.status !== 'PASS' || !Array.isArray(baseline.requirements) || baseline.requirements.length !== manifest.requirements?.length) throw new Error('旧新职责对照缺项或未通过');

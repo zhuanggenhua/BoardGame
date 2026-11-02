@@ -1,6 +1,7 @@
 import type { ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
-import { hasRemainingFactionAction, computeQidahenSelectedPaymentValue, getQidahenHandCardPaymentValue } from './factionActionWindow';
+import { hasRemainingFactionAction, computeQidahenSelectedPaymentValue, getQidahenHandCardPaymentValue, wouldRepeatLastFactionAction } from './factionActionWindow';
 import { hasActiveCharacter } from './characterPresenceAccessors';
+import { getQidahenDirectActionIdForHandCard } from './handCardIdentity';
 import { getQidahenPopulationCap } from './populationRules';
 import { getQidahenFarmTargets, getQidahenHireTargets, getQidahenWheelDiplomacyTargets, getQidahenWheelSlotActions } from './wheelSlotActions';
 import { getQidahenDispatchDraftTargets, getQidahenDispatchSourcePieces, getQidahenDispatchSourceRegionIds } from './wheelDispatchDraft';
@@ -44,8 +45,20 @@ export function buildQidahenTurnChoice(core: QidahenCore, data: QidahenTurnResol
             id: card.id, label: card.label, value: card.id, displayMode: 'card', metadata: { cardId: card.id, previewRef: card.previewRef },
         })), resolve,
     });
+    // 势力行动选择真实动作，事件／军备选择真实来源卡；不再让任意手牌充当进入模式的按钮。
+    const handChoices = (): ChoiceRequestCandidate<QidahenTurnResolutionFact>[] => !hasRemainingFactionAction(core) || cards(factionId).length === 0 ? [] : [
+        ...core.actionChoices.filter(action => !wouldRepeatLastFactionAction(core, action.id)).map(action => ({
+            ...option(`hand-action:${action.id}`, action.label, { kind: 'choose-hand', actionId: action.id }),
+            metadata: { handAction: true, actionId: action.id },
+        })),
+        ...cards(factionId).flatMap(card => {
+            const actionId = getQidahenDirectActionIdForHandCard(card);
+            return actionId && !wouldRepeatLastFactionAction(core, actionId) ? [{ ...option(`hand-card:${card.id}`, card.label, { kind: 'choose-hand', actionId, sourceHandCardId: card.id }),
+                metadata: { handAction: true, actionId, sourceHandCardId: card.id } }] : [];
+        }),
+    ];
     switch (data.step) {
-        case 'finish-hand': return button('手牌行动', [...(cards(factionId).length ? [option('hand-action', '执行手牌行动', { kind: 'choose-hand' })] : []), option('skip-hand', '不执行手牌行动', { kind: 'skip-hand' })]);
+        case 'finish-hand': return button('手牌行动', [...handChoices(), option('skip-hand', '不执行手牌行动', { kind: 'skip-hand' })]);
         case 'menu': {
             const available = getQidahenWheelSlotActions(data.positionId).filter(action => (
                 (action === 'hire' || !data.completedSubactions.includes(action))
@@ -57,7 +70,7 @@ export function buildQidahenTurnChoice(core: QidahenCore, data: QidahenTurnResol
                 && (action !== 'play-character' || getQidahenChronologyCharacterCandidates(core, factionId).length > 0)
             ));
             return button('轮盘行动', [
-                ...(hasRemainingFactionAction(core) && cards(factionId).length ? [option('hand-action', '先执行手牌行动', { kind: 'choose-hand' })] : []),
+                ...handChoices(),
                 ...available.map(action => option(action, LABELS[action], { kind: 'choose-action', action })),
                 option('finish-slot', data.season ? '进入结算' : '结束轮盘行动', { kind: 'finish-slot' }),
             ]);

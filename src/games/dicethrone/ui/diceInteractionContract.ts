@@ -23,9 +23,9 @@ export type DiceInteractionMeta = {
 export type DiceInteractionHintSurface = 'game-hints' | 'dice-tray' | 'response-window';
 
 export type DiceInteractionHint = InteractionHint & {
-    /** 普通骰子交互沿用 GameHints；效果骰整组重掷提示贴其骰盘。 */
+    /** 选骰/改骰提示由原骰盘承载；Token 响应提示仍由响应窗口承载。 */
     surface: DiceInteractionHintSurface;
-    /** 保留操作语义与下一步，不能在达到额度时退化为孤立的“完成”。 */
+    /** 新交互的附加说明，不覆盖既有提示文案与承载。 */
     detail?: InteractionHint;
 };
 
@@ -302,25 +302,16 @@ function getSelectDieHint(input: {
     }
 
     const count = completedCount + result.selectedDiceIds.length;
-    const selected = result.selectedDiceIds.length;
-    const remaining = meta.selectCount - count;
     let key = meta.targetOpponentDice ? 'interaction.hint_select_opponent' : 'interaction.hint_select';
     if (meta.diceOwnerId && meta.diceOwnerId !== input.rootPlayerId) {
         const ownerTeam = input.teamIdByPlayerId?.[meta.diceOwnerId];
         const rootTeam = input.teamIdByPlayerId?.[input.rootPlayerId];
         key = ownerTeam && ownerTeam === rootTeam ? 'interaction.hint_select_ally' : 'interaction.hint_select_opponent';
     }
-    const ready = count >= meta.selectCount;
-    const canFinish = completedCount > 0 && selected === 0;
-    const detailKey = ready
-        ? selected > 0 ? 'interaction.hint_reroll_ready_detail' : 'interaction.hint_reroll_done_detail'
-        : canFinish
-            ? meta.allowRepeatedDieSelection ? 'interaction.hint_reroll_continue_repeat_detail' : 'interaction.hint_reroll_continue_detail'
-            : meta.allowRepeatedDieSelection ? 'interaction.hint_reroll_repeat_detail' : 'interaction.hint_reroll_detail';
+    const done = count >= meta.selectCount;
     return {
-        key: ready ? selected > 0 ? 'interaction.hint_reroll_ready' : 'interaction.hint_reroll_done' : key,
+        key: done ? 'interaction.hint_done' : key,
         params: { current: count, max: meta.selectCount },
-        detail: { key: detailKey, params: { completed: completedCount, selected, remaining } },
     };
 }
 
@@ -517,15 +508,6 @@ export function createDiceInteractionContract(input: {
         ? result.selectedDiceIds.length
         : 0;
     const isBonusGroupSettlement = isBonusGroupReroll && isBonusDiceSettlement;
-    const isOrdinaryReroll = meta.dtType === 'selectDie' && meta.selectionMode === 'reroll';
-    const hasPendingReroll = isOrdinaryReroll && result && 'selectedDiceIds' in result
-        && result.selectedDiceIds.length > 0;
-    const rerollLabel = !hasPendingReroll && completedCount > 0
-        ? 'interaction.finish_reroll'
-        : !hasPendingReroll && controller.canConfirm
-            ? 'interaction.skip_reroll'
-            : 'interaction.confirm_reroll';
-
     const left = isBonusGroupSettlement
         ? selectedGroupRerollCount > 0
             ? {
@@ -552,7 +534,7 @@ export function createDiceInteractionContract(input: {
         }
         : {
             kind: 'confirmInteraction',
-            labelKey: isOrdinaryReroll ? rerollLabel : 'common.confirm',
+            labelKey: 'common.confirm',
             buttonTestId: 'dice-interaction-confirm-button',
         };
 
@@ -566,7 +548,7 @@ export function createDiceInteractionContract(input: {
         result,
         hint: {
             ...hint,
-            surface: isBonusGroupSettlement ? 'dice-tray' : 'game-hints',
+            surface: 'dice-tray',
         },
         controller,
         actions: { left, right },

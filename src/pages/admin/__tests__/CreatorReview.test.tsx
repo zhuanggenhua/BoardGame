@@ -2,6 +2,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '../../../lib/i18n';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({ queue: vi.fn() }));
@@ -20,11 +22,11 @@ describe('管理员审核队列', () => {
             games: [{ gameId: 'game-1', name: '新投稿游戏' }],
         });
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-        render(<QueryClientProvider client={client}><MemoryRouter><CreatorReview /></MemoryRouter></QueryClientProvider>);
+        render(<I18nextProvider i18n={i18n}><QueryClientProvider client={client}><MemoryRouter><CreatorReview /></MemoryRouter></QueryClientProvider></I18nextProvider>);
         expect(await screen.findByText('暂无待审核投稿。')).toBeTruthy();
         fireEvent.click(screen.getByRole('button', { name: '作者认领' }));
         expect(await screen.findByRole('heading', { name: '新投稿游戏' })).toBeTruthy();
-        expect(screen.getByText('申请人：新作者')).toBeTruthy();
+        expect(screen.getByText(/^申请人\s*[:：]\s*新作者$/)).toBeTruthy();
         expect(api.queue).toHaveBeenCalledTimes(2);
     });
 });

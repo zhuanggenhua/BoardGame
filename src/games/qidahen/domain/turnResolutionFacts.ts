@@ -15,7 +15,9 @@ import { beginQidahenWheelRecruitTrain } from './wheelRecruitTrain';
 import { applyQidahenWheelDiplomacy } from './wheelSlotActions';
 import { advanceQidahenTurnIfReady } from './turnAdvance';
 import { applyQidahenVictoryStatus } from './victoryResolution';
+import { applyQidahenPreviewAction } from './previewActionReducer';
 import { applyQidahenChronologyCharacter, applyQidahenChronologyTransition } from './chronologyResolution';
+import { buildQidahenActualYearCardSlots } from './chronologyCards';
 import { applyQidahenCharacterJudgement } from './characterJudgement';
 import type { QidahenTurnResolutionAppliedEvent } from './turnResolutionTypes';
 import type { QidahenCore, QidahenFactionId } from './types';
@@ -31,6 +33,7 @@ export function reduceQidahenTurnResolutionFact(core: QidahenCore, event: Qidahe
     const { factionId, fact } = event.payload;
     let next = core;
     switch (fact.kind) {
+        case 'choose-hand': next = applyQidahenPreviewAction(core, fact.actionId, fact.sourceHandCardId, event.timestamp); break;
         case 'skip-hand': next = { ...core, factionActionUsed: true, bonusFactionActionUsed: true }; break;
         case 'choose-action':
             if (fact.action === 'recruit-train') next = beginQidahenWheelRecruitTrain(core, 'wheel', event.timestamp);
@@ -117,6 +120,7 @@ export function reduceQidahenTurnResolutionFact(core: QidahenCore, event: Qidahe
             })(), chronology: { ...core.chronology, claimedCardIds: { ...core.chronology.claimedCardIds, [fact.factionId]: [...(core.chronology.claimedCardIds[fact.factionId] ?? []), core.chronology.currentCardId] } } };
             break;
         case 'year-transition': next = applyQidahenChronologyTransition(core); break;
+        case 'reveal-next-year': next = { ...core, yearCards: buildQidahenActualYearCardSlots(core.chronology) }; break;
         case 'character': next = applyQidahenChronologyCharacter(core, fact.factionId, fact.characterIds); break;
         case 'replace-character':
             if (fact.characterId) next = { ...core, factions: { ...core.factions, [fact.factionId]: { ...core.factions[fact.factionId], characters: core.factions[fact.factionId].characters.map(character => character.id === fact.characterId ? { ...character, inPlay: true } : character) } } };

@@ -11,14 +11,14 @@ const external = { gameId: 'external-yuanyi-games', name: '山中小屋', url: '
 const submissions = ['draft', 'pending', 'rejected'].map((status, i) => ({ ...external, name: ['林间探险', '午后纸牌', '星空棋盘'][i], submissionId: `visual-submission-${i}`, status, reviewComment: status === 'rejected' ? '请补充清晰封面和完整的游玩规则。' : '', updatedAt: date }));
 const changelogs = gameId => [0, 1, 2].map(i => ({ id: `visual-${gameId}-${i}`, gameId, title: ['秋日版本：全新英雄与对战体验', '对战平衡与英雄技能调整', '界面与新手教学优化'][i], versionLabel: `0.6.${47 - i}`, content: ['## 本次更新\n\n- 新增英雄与练习内容，完善技能说明。\n- 优化多人联机时的回合提示与房间信息。\n\n## 体验改进\n\n现在可以更清楚地查看英雄状态、更新内容和好友邀请。', '调整部分英雄能力的使用时机，修复对战中的文字显示问题。', '改进手机阅读与房间列表，补充新玩家操作指引。'][i], pinned: i === 0, publishedAt: `2026-10-${30 - i}T00:00:00.000Z`, createdAt: date, updatedAt: date }));
 
-export async function createHomeVisualFixture() {
+export async function createHomeVisualFixture({ roomCount = 5 } = {}) {
     const http = createServer();
     const io = new Server(http, { cors: { origin: true, credentials: true }, parser, path: '/lobby-socket' });
     let version = 0;
     io.on('connection', socket => {
         socket.on('lobby:subscribe', ({ gameId }) => {
             const games = gameId === 'all' ? ['dicethrone', 'summonerwars', 'smashup'] : [gameId];
-            const matches = games.flatMap((gameName, gameIndex) => Array.from({ length: 5 }, (_, i) => ({ matchID: `${gameName === 'dicethrone' ? 'd1ce' : (0xab00 + gameIndex).toString(16)}${i.toString(16).padStart(4, '0')}`, gameName, roomName: ['周末轻松对战', '新手友好 · 欢迎加入', '老友切磋，来一局', '英雄练习与策略交流', '夜间休闲房'][i], totalSeats: i % 2 ? 4 : 2, players: [{ id: 0, name: ['山间晚风', '棋逢对手', '阿橙', '白夜', '麦芽'][i], isConnected: true }, ...(i === 2 ? [{ id: 1, name: '小满', isConnected: true }] : [])], createdAt: Date.now() - i * 60000, updatedAt: Date.now(), ownerType: 'guest', isLocked: i === 3, status: i === 2 ? 'playing' : 'waiting' })));
+            const matches = games.flatMap((gameName, gameIndex) => Array.from({ length: roomCount }, (_, i) => ({ matchID: `${gameName === 'dicethrone' ? 'd1ce' : (0xab00 + gameIndex).toString(16)}${i.toString(16).padStart(4, '0')}`, gameName, roomName: ['周末轻松对战', '新手友好 · 欢迎加入', '老友切磋，来一局', '英雄练习与策略交流', '夜间休闲房'][i % 5], totalSeats: i % 2 ? 4 : 2, players: [{ id: 0, name: ['山间晚风', '棋逢对手', '阿橙', '白夜', '麦芽'][i % 5], isConnected: true }, ...(i === 2 ? [{ id: 1, name: '小满', isConnected: true }] : [])], createdAt: Date.now() - i * 60000, updatedAt: Date.now(), ownerType: 'guest', isLocked: i === 3, status: i === 2 ? 'playing' : 'waiting' })));
             socket.emit('lobby:update', { gameId, version: ++version, matches });
         });
     });

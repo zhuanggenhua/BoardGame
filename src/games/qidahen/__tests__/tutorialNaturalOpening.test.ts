@@ -40,9 +40,8 @@ describe('正式入门同源的正常对局选择分支', () => {
         const game = normalGame();
         game.skip(); game.skip();
         game.send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
-        game.choose('hand-action');
+        game.choose('hand-action:recruit');
         const before = game.state.core.regions.find(region => region.id === 'city-region-28')!.troops;
-        game.send('CONFIRM_PREVIEW_ACTION', { actionId: 'recruit' });
         const card = game.state.core.handCards.find(card => card.faction === 'ming' && card.cardKind === 'silver')!;
         game.send('SELECT_PAYMENT_CARD', { cardId: card.id });
         game.send('EXECUTE_SELECTED_ACTION', {});

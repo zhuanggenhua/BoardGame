@@ -58,7 +58,7 @@ it('教程从正式开局复演至终局，包含混选、御主、骑乘和多�
     expect(plan.commands.some(command => command.type === 'CONFIRM_ATTACK' && (command.payload as { cardIds: string[] }).cardIds.some(id => id.startsWith('sc_iskandar_1')))).toBe(true);
     expect(plan.commands.some(command => command.type === 'PLAY_SKILL' && String((command.payload as { skillId: string }).skillId).startsWith('sc_iskandar_1'))).toBe(true);
     expect(plan.steps.some(step => step.id.startsWith('ui-public-cards'))).toBe(true);
-    expect(plan.steps.filter(step => step.id.startsWith('ui-detail'))).toHaveLength(1);
+    expect(plan.steps.filter(step => step.id.startsWith('ui-detail'))).toHaveLength(0);
     const observedBattleDeployment=plan.steps.find(step=>step.fateCopy?.lessonId==='battleDeployment'&&step.fateCommand?.type==='DEPLOY_MASTER');
     expect(observedBattleDeployment?.highlightTarget).toBe(`fate-deployment-${observedBattleDeployment?.fateCommand?.payload.locationId}`);
     expect(['miyama','shinto']).toContain(observedBattleDeployment?.fateCommand?.payload.locationId);
@@ -81,9 +81,8 @@ it('首席先占工房+2，学员面对三个合法+1点位并以正式输入部
     expect(new Set(deployment.fateCommandOptions?.map(option=>option.payload.locationId))).toEqual(new Set(['workshop','miyama','shinto']));
     expect(deployment.fateCommandOptions?.filter(option=>option.payload.locationId==='workshop').map(option=>option.payload.deploymentSlot)).toEqual([1,2,3]);
     const index = plan.steps.indexOf(deployment);
-    expect(plan.steps[index+1].fateCopy?.lessonId).toBe('masterReading');
-    expect(plan.steps[index+2].fateCommand?.type).toBe('PLAY_SKILL');
-    expect(plan.steps[index+2].fateCopy?.passages).toContain('outpostAbility');
+    expect(plan.steps[index+1].fateCommand?.type).toBe('PLAY_SKILL');
+    expect(plan.steps[index+1].fateCopy?.passages).toContain('outpostAbility');
     expect(plan.steps.some(step=>step.fateCommand?.type==='SELECT_MASTER'||step.fateCommand?.type==='SELECT_SERVANT')).toBe(false);
     const random=createSeededRandom(FATE_TUTORIAL_SEED),ids=['1','0','2'];
     let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,FATE_TUTORIAL_SEED)};

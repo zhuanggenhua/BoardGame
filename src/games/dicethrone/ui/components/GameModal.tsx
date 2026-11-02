@@ -87,8 +87,8 @@ export const GameModal = ({
 
                         {/* Footer */}
                         {footer && (
-                            <div className={clsx("flex justify-center relative z-10 shrink-0",
-                                compact ? "px-4 pb-4 pt-1 gap-3" : "p-6 pt-0 sm:pt-0 sm:pb-8 gap-4")}>
+                            <div className={clsx("flex justify-center relative z-10",
+                                compact ? "px-4 pb-4 pt-1 gap-3 shrink-0" : "p-6 pt-0 sm:pt-0 sm:pb-8 gap-4")}>
                                 {footer}
                             </div>
                         )}

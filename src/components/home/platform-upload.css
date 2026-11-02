@@ -1,17 +1,27 @@
-.platform-upload-workspace { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100%; color: #000; background: #f3f3f3; }
+.platform-upload-workspace { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100%; color: #000; background: #fff; }
 .platform-upload-list { border-right: 3px solid #000; background: #fff; }
 .platform-upload-list button { display: flex; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px; padding: 12px; border-bottom: 1px solid #ccc; text-align: left; cursor: pointer; }
 .platform-upload-list button[aria-current="page"] { background: #000; color: #fff; }
 .platform-upload-form { padding: 24px; min-width: 0; }
+.platform-submission-form { width: 100%; padding: 32px 40px; max-width: 1240px; margin-inline: auto; }
 .platform-upload-form h2, .platform-upload-login h2 { font-size: 28px; font-weight: 800; }
 .platform-upload-form-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; margin-bottom: 12px; }
 .platform-upload-form-heading > h2 { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .platform-upload-form > p { margin: 12px 0 24px; }
 .platform-upload-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.platform-submission-form > .platform-upload-fields { grid-template-columns: minmax(0, 1fr) 256px; grid-template-areas: 'basic cover' 'content content' 'published published'; gap: 28px 40px; align-items: start; }
+.platform-upload-section { min-width: 0; padding: 0; border: 0; }
+.platform-upload-section h3 { margin: 0 0 20px; font-size: 18px; line-height: 1.4; font-weight: 800; }
+.platform-upload-basic { grid-area: basic; }
+.platform-upload-cover-section { grid-area: cover; }
+.platform-upload-content-section { grid-area: content; padding-top: 24px; border-top: 1px solid #ddd; }
+.platform-upload-input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+.platform-upload-game-meta { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; align-items: start; }
+.platform-upload-fields .platform-upload-published { grid-area: published; flex-direction: row; align-items: center; }
 .platform-upload-form > fieldset { padding: 0; border: 0; min-width: 0; }
 .platform-upload-fields input[type="checkbox"] { width: 20px; min-height: 20px; }
 .platform-upload-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 16px; margin-top: 24px; }
-.platform-upload-actions > button:not(.platform-submit) {
+.platform-upload-actions > button:not(.platform-submit), .platform-upload-withdraw {
     min-height: 48px; padding: 10px 24px; border: 3px solid #000; background: #fff; font-weight: 800; box-shadow: 5px 5px #000;
 }
 .platform-upload-back { min-height: 48px; padding: 8px 16px; border: 3px solid #000; background: #fff; font-weight: 800; margin: 16px 24px 0; }
@@ -19,10 +29,57 @@
 .platform-upload-fields input, .platform-upload-fields textarea, .platform-upload-fields select { width: 100%; min-height: 44px; padding: 10px; border: 3px solid #000; background: #fff; color: #000; font-weight: 400; border-radius: 0; }
 .platform-upload-fields small { font-size: 12px; font-weight: 400; }
 .platform-upload-fields textarea { min-height: 160px; resize: vertical; }
-.platform-player-range { display: flex; gap: 12px; align-items: center; }
+.platform-submission-form .platform-upload-fields { margin: 0; }
+.platform-submission-form .platform-upload-fields label { font-size: 14px; line-height: 22px; font-weight: 600; }
+.platform-submission-form .platform-upload-fields :is(input, textarea, select) { min-height: 44px; border: 1px solid #888; padding: 10px 12px; font-size: 14px; line-height: 22px; }
+.platform-submission-form .platform-upload-fields textarea { min-height: 160px; }
+.platform-upload-content-section .platform-upload-input-grid { align-items: stretch; }
+.platform-upload-content-section .platform-upload-input-grid > label > textarea { flex: 1; }
+.platform-upload-rules { display: grid; gap: 16px; min-width: 0; }
+.platform-submission-form .platform-upload-rules textarea { min-height: 112px; }
+.platform-rules-label { display: block; margin-bottom: 8px; font-size: 14px; line-height: 22px; font-weight: 600; }
+.platform-rules-picker { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 76px; width: 100%; border: 1px dashed #888; background: #fafafa; cursor: pointer; font-weight: 600; }
+.platform-rules-file-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border: 1px solid #ccc; }
+.platform-rules-file-info { flex: 1; min-width: 0; }
+.platform-rules-file-info > :first-child { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.platform-rules-file-info a { text-decoration: underline; text-underline-offset: 3px; }
+.platform-rules-file-info small, .platform-rules-help { display: block; color: #555; font-size: 12px; line-height: 20px; }
+.platform-rules-help { margin-top: 8px; }
+.platform-rules-replace, .platform-rules-remove { flex: 0 0 auto; min-height: 44px; padding: 8px; cursor: pointer; }
+.platform-rules-remove { display: grid; place-items: center; width: 44px; }
+.platform-rules-upload button:not(:disabled):hover, .platform-rules-upload.is-dragging .platform-rules-picker { background: #f5ffd1; border-color: #111; }
+.platform-rules-upload button:focus-visible { outline: 3px solid #ff008a; outline-offset: 2px; }
+.platform-rules-upload button:disabled { cursor: default; }
+.platform-rules-upload [role="alert"] { margin: 8px 0 0; font-size: 13px; }
+.platform-rules-error { display: flex; align-items: center; gap: 8px; }
+.platform-rules-error > span { flex: 1; }
+.platform-submission-form .platform-upload-fields select { padding-right: 8px; }
+.platform-submission-form .platform-upload-players { display: block; margin: 0; padding: 0; border: 0; }
+.platform-upload-players legend { margin: 0 0 8px; padding: 0; font-size: 14px; line-height: 22px; font-weight: 600; }
+.platform-submission-form .platform-upload-fields :is(input, textarea, select):focus-visible { outline: 3px solid #ff008a; outline-offset: 2px; }
+.platform-player-range { display: flex; gap: 8px; align-items: center; }
+.platform-player-range select { flex: 1; min-width: 0; }
 .platform-cover-upload img { width: min(150px, 100%); height: auto; max-height: 200px; object-fit: contain; }
+.platform-cover-picker { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 208px; padding: 18px 12px; border: 1px dashed #888; background: #f5f5f5; color: #111; cursor: pointer; font-weight: 700; }
+.platform-cover-picker img { display: block; width: 100%; height: 188px; object-fit: contain; }
+.platform-cover-picker.has-preview { padding: 12px; border-style: solid; border-color: #ddd; background: #f5f5f5; }
+.platform-cover-picker:not(:disabled):hover, .platform-cover-upload.is-dragging .platform-cover-picker { background: #f5ffd1; border-color: #111; }
+.platform-cover-picker:focus-visible { outline: 3px solid #ff008a; outline-offset: 3px; }
+.platform-cover-picker:disabled { cursor: default; }
+.platform-cover-drag-hint { display: none; color: #555; }
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) { .platform-cover-drag-hint { display: block; } }
+.platform-cover-help { margin: 12px 0 0; font-size: 12px; line-height: 1.6; font-weight: 400; color: #555; }
+.platform-cover-file-name { margin: 10px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; }
+.platform-cover-upload [role="alert"] { margin: 12px 0 0; font-size: 13px; line-height: 1.5; }
 .platform-submit, .platform-upload-login button { min-height: 48px; background: #ff008a; color: white; border: 3px solid #000; box-shadow: 5px 5px #000; padding: 10px 24px; margin-top: 24px; font-weight: 800; cursor: pointer; }
 .platform-upload-actions .platform-submit { margin-top: 0; }
+.platform-submission-form .platform-upload-actions > button { cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease; }
+.platform-submission-form .platform-upload-actions > button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 7px 7px #111; }
+.platform-submission-form .platform-upload-actions > button:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 2px 2px #111; }
+.platform-submission-form .platform-upload-actions > button:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; }
+.platform-submission-form .platform-upload-actions > button:disabled { cursor: wait; }
+.platform-upload-withdraw { margin-top: 24px; cursor: pointer; }
+.platform-upload-withdraw:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; }
 .platform-profile .platform-upload-form .platform-submit { background: #ff008a; color: #fff; border: 3px solid #000; }
 body:has(.platform-upload-form) .platform-global-fab,
 body:has(.creator-center) .platform-global-fab { visibility: hidden; pointer-events: none; }
@@ -30,6 +87,10 @@ body:has(.creator-center) .platform-global-fab { visibility: hidden; pointer-eve
 .platform-upload-form [role="alert"] { color: #9d003b; }
 .platform-upload-list-toggle { display: none; flex: 0 0 auto; min-height: 44px; padding: 8px 16px; border: 3px solid #000; background: #d5ff00; font-weight: 800; }
 .platform-upload-login { padding: 32px; }
+@media (min-width: 1024px) and (max-width: 1279px) {
+    .platform-submission-form { padding-inline: 24px; }
+    .platform-submission-form > .platform-upload-fields { grid-template-columns: minmax(0, 1fr) 208px; column-gap: 24px; }
+}
 @media (max-width: 1023px) {
     .platform-upload-workspace { display: block; }
     .platform-upload-list { display: none; border-right: 0; }
@@ -39,9 +100,20 @@ body:has(.creator-center) .platform-global-fab { visibility: hidden; pointer-eve
     .platform-upload-form { padding: 16px; }
     .platform-upload-back { margin: 16px 16px 0; }
     .platform-upload-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .platform-submission-form > .platform-upload-fields { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'basic' 'cover' 'content' 'published'; gap: 28px; }
+    .platform-submission-form { padding: 20px 16px; }
+    .platform-upload-section h3 { margin-bottom: 16px; }
+    .platform-upload-input-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .platform-upload-game-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+    .platform-upload-game-meta { grid-template-columns: minmax(0, 1fr); }
+    .platform-cover-picker { min-height: 160px; }
+    .platform-cover-picker img { height: 160px; }
     .platform-upload-actions { flex-direction: column; align-items: stretch; }
+    .platform-submission-form .platform-upload-actions { flex-direction: row; gap: 12px; }
+    .platform-submission-form .platform-upload-actions > button { flex: 1; padding-inline: 12px; }
     .platform-upload-actions > button, .platform-submit { width: 100%; }
 }
+@media (prefers-reduced-motion: reduce) { .platform-submission-form .platform-upload-actions > button { transition: none; } }
 
 .platform-upload-empty { padding:16px; color:#555; font-size:14px; line-height:1.6; }
 

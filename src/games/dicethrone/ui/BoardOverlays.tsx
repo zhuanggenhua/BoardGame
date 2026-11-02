@@ -7,7 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
-import { CardPreview } from '../../../components/common/media/CardPreview';
+import { CardPreview, getCardPreviewAspectRatio } from '../../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardSpotlightOverlay } from './CardSpotlightOverlay';
@@ -91,7 +91,12 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const isMultiCardPreview = props.magnifiedCards.length > 0;
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(props.viewCharacterId);
     const playerBoardPreviewWidth = `min(90vw, calc(90vh * ${playerBoardAspectRatio}))`;
-    const magnifiedCardWidth = 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';
+    const magnifiedCardAspectRatio = props.magnifiedCard?.previewRef
+        ? getCardPreviewAspectRatio(props.magnifiedCard.previewRef, props.locale)
+        : undefined;
+    const magnifiedCardWidth = magnifiedCardAspectRatio
+        ? `min(54.9vh, 39.65vw, 396px, 60vw, 400px, calc(90vh * ${magnifiedCardAspectRatio}), calc((100vh - 4rem) * ${magnifiedCardAspectRatio}))`
+        : 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';
     const magnifiedMultiCardWidth = 'min(28vw, 350px, calc(54.9vh - 2.44vw))';
     const shouldRenderMagnifiedAbilityOverlay = isPlayerBoardPreview && Boolean(props.viewCharacterId);
     const magnifyContainerClassName = `
@@ -149,8 +154,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 style={{
                                     backgroundColor: '#0f172a',
                                     width: magnifiedCardWidth,
-                                    height: `calc(${magnifiedCardWidth} / 0.61)`,
-                                    aspectRatio: '0.61 / 1',
+                                    height: magnifiedCardAspectRatio ? `calc(${magnifiedCardWidth} / ${magnifiedCardAspectRatio})` : undefined,
                                 }}
                                 previewRef={props.magnifiedCard.previewRef}
                                 locale={props.locale}

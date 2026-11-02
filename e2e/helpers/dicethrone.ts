@@ -825,6 +825,8 @@ export const setupDTOnlineMatchWithPlayers = async (
         skipCharacterSelectionWait?: boolean;
         blockLobbySocket?: boolean;
         skipImageGate?: boolean;
+        /** 只把正式匹配页及其资源记入 UI 证据，不把首页预热模块算入目标依赖。 */
+        sourceIdentityStartAtMatchRoute?: boolean;
     },
 ): Promise<DTMultiMatchSetup | null> => {
     const numPlayers = options.numPlayers;
@@ -842,7 +844,7 @@ export const setupDTOnlineMatchWithPlayers = async (
         ...options.contextOptions,
         baseURL,
     });
-    await startSourceSession(hostContext, baseURL!);
+    if (!options.sourceIdentityStartAtMatchRoute) await startSourceSession(hostContext, baseURL!);
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
@@ -878,6 +880,7 @@ export const setupDTOnlineMatchWithPlayers = async (
     }
 
     await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
+    if (options.sourceIdentityStartAtMatchRoute) await startSourceSession(hostContext, baseURL!);
     await gotoDTMatchRoom(hostPage, matchId, '0');
     if (!options.skipCharacterSelectionWait && !shouldBatchWaitForCharacterSelection) {
         await waitForCharacterSelectionInRoom(hostPage, {
@@ -897,7 +900,7 @@ export const setupDTOnlineMatchWithPlayers = async (
             ...options.contextOptions,
             baseURL,
         });
-        await startSourceSession(guestContext, baseURL!);
+        if (!options.sourceIdentityStartAtMatchRoute) await startSourceSession(guestContext, baseURL!);
         await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
         const guestPage = await guestContext.newPage();
 
@@ -916,6 +919,7 @@ export const setupDTOnlineMatchWithPlayers = async (
         }
 
         await seedDTMatchCredentials(guestContext, matchId, playerId, guestCredentials);
+        if (options.sourceIdentityStartAtMatchRoute) await startSourceSession(guestContext, baseURL!);
         await gotoDTMatchRoom(guestPage, matchId, playerId);
         if (!options.skipCharacterSelectionWait && !shouldBatchWaitForCharacterSelection) {
             await waitForCharacterSelectionInRoom(guestPage, {

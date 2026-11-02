@@ -171,7 +171,7 @@ export const CenterBoard = ({
         return (
             <div
                 className="absolute z-30 flex flex-col overflow-hidden rounded-md border border-amber-200/45 bg-slate-950/85 p-[1.5%] shadow-xl"
-                style={{ left: '0.6%', top: '60%', width: '15.5%', height: '38.2%' }}
+                style={{ left: '0.6%', top: '60%', width: '15.5%', height: '38.2%', zIndex: UI_Z_INDEX.hud + 1 }}
                 data-prepared-spell-zone="public"
                 data-player-panel-slot="vishanti-book-prepared-spells"
                 onClick={event => event.stopPropagation()}
@@ -184,15 +184,15 @@ export const CenterBoard = ({
                         <button
                             key={card.id}
                             type="button"
-                            className="h-full min-w-0 shrink-0 overflow-hidden rounded-sm border border-white/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-                            style={{ width: '46%', aspectRatio: '669 / 1086' }}
+                            className="min-w-0 shrink-0 self-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                            style={{ width: '46%' }}
                             aria-label={t(card.name, { defaultValue: card.name })}
                             data-prepared-spell-card={card.id}
                             data-board-magnify-ignore="true"
                             onClick={() => onMagnifyCard(card)}
                         >
                             <CardPreview previewRef={card.previewRef} locale={locale} alt={t(card.name, { defaultValue: card.name })}
-                                className="h-full w-full" style={{ aspectRatio: '669 / 1086' }} />
+                                className="w-full" />
                         </button>
                     ))}
                 </div>

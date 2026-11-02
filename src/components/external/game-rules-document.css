@@ -1,0 +1,6 @@
+.external-rules-document { display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 56px; padding: 12px 8px; color: inherit; border-bottom: 1px solid #ddd; text-decoration: none; }
+.external-rules-document > svg { flex-shrink: 0; }
+.external-rules-document > span { flex: 1; min-width: 0; font-weight: 700; }
+.external-rules-document small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; color: #555; }
+.external-rules-document:hover { background: #f5ffd1; }
+.external-rules-document:focus-visible { outline: 3px solid #ff008a; outline-offset: 2px; }

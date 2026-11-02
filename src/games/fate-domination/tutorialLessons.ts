@@ -8,7 +8,6 @@ export const FATE_TUTORIAL_LESSONS = {
  deploymentChoice:{goal:'选择合法部署地点与点位',when:'首次部署选择',why:'在学员首次选点时解释部署地点与工房顺序，工房收益不在两段重复；地利留到实际战场部署',passages:['deploymentPlaces','workshopOrder']},
  battleDeployment:{goal:'选择战场地利',when:'首次在战场部署',why:'战场的印刷位置影响战力，不能当作工房收益的同类重复',passages:['terrain']},
  outpost:{goal:'识别前哨能力时机',when:'首次部署后',why:'部署后仍能使用前哨能力',passages:['outpostAbility']},
- masterReading:{goal:'通过头像读取即将使用的御主能力',when:'首次使用战略部署之前',why:'先教角色资料与原卡检视入口，再立即使用所读能力；不在移动中插入无关窗口参观',passages:[]},
  cardReading:{goal:'读出攻击牌费用与威力',when:'首次费用准备之前',why:'用即将打出的骑乘识别两个数字；卡文本身已写明打出时，不再另讲被动分类',passages:['attackFields']},
  normalAttack:{goal:'选择两张常规攻击',when:'首次普通牌出牌',why:'建立本轮攻击',passages:['attack']},
  mixedAttack:{goal:'从手牌及技能区选择常规攻击',when:'首次使用技能攻击',why:'区分两个真实来源',passages:['attack','mixedAttack']},

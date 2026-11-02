@@ -19,7 +19,6 @@ import {
     readBoardShellInlineUnitPixelValue,
     readBoardShellScaleValue,
 } from '../../../shared/runtimeLayoutUnits';
-import { DICETHRONE_HAND_AREA_HEIGHT_UNITS } from './handLayoutConstants';
 import {
     isHandCardReleaseOverDiscardPile,
     resolveHandDragReleaseIntent,
@@ -32,7 +31,7 @@ const HAND_CARD_SIDE_OFFSET_UNITS = HAND_CARD_WIDTH_UNITS / 2;
 const HAND_CARD_Y_OFFSET_UNITS = 0.8;
 const HAND_CARD_ROTATION_STEP_DEGREES = 5;
 const HAND_CARD_ANCHOR_Y_UNITS = 6;
-const HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS = 3;
+const HAND_CARD_VIEWPORT_BOTTOM_GAP_UNITS = 0;
 const HAND_CARD_HOVER_LIFT_UNITS = 3.1;
 const HAND_TUTORIAL_FALLBACK_WIDTH_UNITS = 20;
 const HAND_TUTORIAL_VISIBLE_HEIGHT_UNITS = 18;
@@ -930,7 +929,7 @@ export const HandArea = ({
             className="absolute bottom-0 left-0 right-0 flex justify-center items-end pb-0 pointer-events-none"
             style={{
                 zIndex: UI_Z_INDEX.hud,
-                height: buildBoardShellInlineUnitValue(DICETHRONE_HAND_AREA_HEIGHT_UNITS),
+                height: buildBoardShellInlineUnitValue(22),
                 display: isHidden ? 'none' : undefined,
             }}
         >

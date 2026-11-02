@@ -39,6 +39,9 @@ describe('DiceThrone 角色目录生命周期状态合同', () => {
             variant: 'disabled-overlay',
         });
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).toContain('doctor_strange');
+        const firstInProgressIndex = DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.findIndex(character => character.setupOptionStatus === 'in_progress');
+        expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.slice(firstInProgressIndex)
+            .every(character => character.setupOptionStatus === 'in_progress')).toBe(true);
     });
 
     it('女猎手当前仍保留 implementation_in_progress 徽标', () => {

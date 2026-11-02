@@ -1,7 +1,6 @@
 import { useId, type ReactNode, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import './platform-details.css';
 
 interface PlatformGameDetailsProps<T extends string> {
@@ -29,8 +28,7 @@ export function PlatformGameDetails<T extends string>({ presentation = 'modal', 
     primaryActions, secondaryActions, author, overlayControls, tabs, selectedTab, onTab, onClose, children }: PlatformGameDetailsProps<T>) {
     const { t } = useTranslation(['lobby', 'common']);
     const contentId = useId();
-    const mobile = useMobileViewport();
-    const modal = presentation === 'modal' || mobile;
+    const modal = presentation === 'modal';
     const counts = [...new Set(playerOptions)].sort((a, b) => a - b);
     const countLabel = counts.length > 1 && counts.every((value, index) => value === counts[0] + index)
         ? `${counts[0]}–${counts[counts.length - 1]}` : counts.join(' / ');
@@ -39,6 +37,8 @@ export function PlatformGameDetails<T extends string>({ presentation = 'modal', 
         role={modal ? 'dialog' : 'region'} aria-modal={modal ? true : undefined} aria-labelledby={`${contentId}-title`}>
         <button type="button" className="platform-details-close" data-testid="game-details-close-button"
             aria-label={t('common:close')} onClick={onClose}><X aria-hidden="true" size={22} /></button>
+        <div className="platform-details-scroll" role={modal ? 'region' : undefined}
+            aria-labelledby={modal ? `${contentId}-title` : undefined} tabIndex={modal ? 0 : undefined}>
         <header data-testid="game-details-sidebar" className="platform-details-summary">
             <div className="platform-details-cover">{thumbnail}</div>
             <div className="platform-details-copy">
@@ -67,6 +67,7 @@ export function PlatformGameDetails<T extends string>({ presentation = 'modal', 
                 </button>)}
             </nav>
             <div className="platform-details-content">{children}</div>
+        </div>
         </div>
         {overlayControls}
     </div>;

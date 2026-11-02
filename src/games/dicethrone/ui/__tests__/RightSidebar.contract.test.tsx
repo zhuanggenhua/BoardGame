@@ -158,13 +158,13 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
         expect(screen.getByTestId('response-window-wiring')).toHaveTextContent('true');
     });
 
-    it('效果骰结算提示沿用骰盘上方承载', () => {
+    it('效果骰结算提示与选骰共用骰盘左侧，保留上方攻击修正槽', () => {
         const diceInteraction = createBonusSettlementContract();
         render(<RightSidebar {...requiredProps} diceInteraction={diceInteraction} isBonusDiceSettlement />);
 
         expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_bonus_settlement');
         expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-anchor', 'dice-tray');
-        expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-placement', 'tray-top');
+        expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-placement', 'tray-left-center');
     });
 
     it('骰盘隐藏时不留下脱离候选对象的骰子提示', () => {
@@ -178,7 +178,7 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
         expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
     });
 
-    it('选骰提示锚定骰盘上沿，骰盘和动作区收到同一合同', () => {
+    it('选骰提示锚定骰盘左侧中点，骰盘和动作区收到同一合同', () => {
         const diceInteraction = createGroupRerollContract();
         if (!diceInteraction) throw new Error('组选重掷必须生成交互合同');
 
@@ -191,9 +191,10 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
         expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_group_reroll_selected');
         const hintAnchor = screen.getByTestId('dice-interaction-hint-anchor');
         const diceTray = screen.getByTestId('dice-contract-tray');
-        expect(hintAnchor).toHaveAttribute('data-placement', 'tray-top');
-        expect(hintAnchor.style.right).toBe('0px');
-        expect(hintAnchor.style.bottom).toBe('100%');
+        expect(hintAnchor).toHaveAttribute('data-placement', 'tray-left-center');
+        expect(hintAnchor.className).toContain('right-full');
+        expect(hintAnchor.className).toContain('top-1/2');
+        expect(hintAnchor.style.transform).toBe('translateY(-50%)');
         expect(hintAnchor.style.top).toBe('');
         expect(hintAnchor.parentElement).toBe(diceTray.parentElement);
         expect(diceTray).toHaveAttribute('data-interaction-id', 'thor-group-reroll-test');
@@ -204,7 +205,7 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
         expect(screen.getByTestId('dice-contract-actions')).toHaveAttribute('data-right-action', 'confirmSettlement');
     });
 
-    it('普通待结算选骰由 GameHints 承载提示，右侧栏只负责骰盘与动作', () => {
+    it('普通待结算选骰保留骰盘左侧提示和原确认动作', () => {
         const diceInteraction = createOrdinaryRerollContract();
         if (!diceInteraction) throw new Error('普通选骰必须生成交互合同');
 
@@ -214,8 +215,8 @@ describe('右侧骰盘消费 Board 提供的共享交互合同', () => {
             isBonusDiceSettlement
         />);
 
-        expect(diceInteraction.hint.surface).toBe('game-hints');
-        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
+        expect(diceInteraction.hint.surface).toBe('dice-tray');
+        expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-placement', 'tray-left-center');
         expect(screen.getByTestId('dice-contract-actions')).toHaveAttribute('data-left-action', 'cancel');
         expect(screen.getByTestId('dice-contract-actions')).toHaveAttribute('data-right-action', 'confirmInteraction');
         expect(mocks.diceActions.mock.calls.at(-1)?.[0].diceInteraction).toBe(diceInteraction);

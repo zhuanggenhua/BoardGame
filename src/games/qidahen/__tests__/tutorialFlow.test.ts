@@ -39,7 +39,7 @@ describe('连续年度教程生命周期', () => {
         expect(h.state.sys.tutorial.step?.id).toBe('opening-move');
         expect(h.state.core).toEqual(before);
         h.send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
-        expect(h.state.sys.tutorial.step?.id).toBe('prepare-hand');
+        expect(h.state.sys.tutorial.step?.id).toBe('farm-action');
         expect(getCurrentInteractionSummary(h.state).playerId).toBe('0');
     });
     it('回到移动前检查点后重做，移动和抽牌不会重复累加', () => {
@@ -66,7 +66,7 @@ describe('连续年度教程生命周期', () => {
             const command = createRespondToPromptCommand(h.state, { playerId: prompt.playerId, optionId });
             h.send(command.type, command.payload, command.playerId);
         };
-        respond('hand-action');
+        respond('hand-action:recruit');
         h.send('CANCEL_PREVIEW_ACTION');
         expect(h.state.core.factionActionUsed).toBe(false);
         expect(getCurrentInteractionSummary(h.state).id).toBeDefined();

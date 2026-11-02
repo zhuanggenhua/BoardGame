@@ -58,6 +58,8 @@ const STABLE_OPTIMIZE_DEPS = [
   // keep its CJS style parser in Vite's ESM prebundle instead of serving it raw.
   'react-markdown',
   'style-to-js',
+  // 后台图表的传递依赖包含 CJS；显式预构建整个入口，覆盖懒加载路由。
+  'recharts',
   'socket.io-msgpack-parser',
   // Pixi 8 ships CommonJS internals through eventemitter3; prebundle the full
   // chain so Vite dev/E2E does not load the nested CJS file as a raw ESM module.

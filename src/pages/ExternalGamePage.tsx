@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getExternalGame, getOwnedGame } from '../api/external-games';
 import { useAuth } from '../contexts/AuthContext';
 import { ExternalGameText } from '../components/external/ExternalGameText';
+import { GameRulesDocumentLink } from '../components/external/GameRulesDocumentLink';
 import { useExternalPlay } from '../components/external/useExternalPlay';
 import { ExternalGameAuthor } from '../components/home/GameAuthorInfo';
 import { resolveExternalEmbed } from '../shared/externalGames';
@@ -82,6 +83,7 @@ export default function ExternalGamePage() {
                     <p className="external-author"><ExternalGameAuthor author={item.author} authorProfileUrl={item.authorProfileUrl} gameId={item.gameId} gameName={item.name}
                         isOwner={Boolean(user && item.ownerUserId === user.id)} onManageWorks={() => navigate('/?section=profile&tab=works')} /></p>
                     <p className="external-description"><ExternalGameText text={item.description} /></p>
+                    <GameRulesDocumentLink document={item.rulesDocument} />
                     {item.rules && <details><summary>{t('platform.externalGamePage.rules')}</summary><p className="external-description"><ExternalGameText text={item.rules} /></p></details>}
                     <p className="external-meta">{item.minPlayers && item.maxPlayers ? t('platform.externalGamePage.playerRange', { min: item.minPlayers, max: item.maxPlayers }) : t('platform.externalGamePage.playersUnknown')}{item.durationMinutes ? ` · ${t('platform.externalGamePage.durationMinutes', { minutes: item.durationMinutes })}` : ''}</p>
                     {restricted && <p className="external-notice" role="status">{item.embedReason || t('platform.externalGamePage.embedRestricted')}</p>}

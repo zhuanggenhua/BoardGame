@@ -35,6 +35,7 @@
 .platform-details-tabs button[aria-current="page"] { border-color: #ff008a; color: #000; }
 .platform-details-tab-mobile { display: none; }
 .platform-details-content { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.platform-details-scroll { display: contents; }
 @media (max-width: 1023px) {
     .platform-game-details { width: 100vw; height: min(640px, calc(var(--runtime-viewport-height, 100dvh) * .8)); max-height: min(640px, calc(var(--runtime-viewport-height, 100dvh) * .8)); min-height: 0; border: 0; border-top: 3px solid #000; border-radius: 16px 16px 0 0; box-shadow: none; overflow: hidden; }
     .platform-details-close { position: absolute; top: max(8px, env(safe-area-inset-top)); right: 8px; }
@@ -146,14 +147,22 @@ html[data-home-entry-style="modern"] .platform-details-author button { display: 
 html[data-home-entry-style="modern"] .platform-details-author button:hover { color: #b00060; }
 html[data-home-entry-style="modern"] .platform-details-author button:focus-visible { outline: 3px solid #ff008a; outline-offset: 2px; }
 @media (min-width: 1024px) {
-    html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) { height: min(42rem, 95vh, calc(var(--runtime-viewport-height, 100dvh) - 3rem)); }
+    html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) { height: min(42rem, 95vh, calc(var(--runtime-viewport-height, 100dvh) - 3rem)); max-height: min(95vh, calc(var(--runtime-viewport-height, 100dvh) - 3rem)); box-shadow: 7px 7px #d5ff00; }
     html[data-home-entry-style="modern"] .platform-details-summary { grid-template-areas: 'cover copy' 'cover players' 'cover actions'; }
 }
+/* 弹窗只有一个纵向阅读窗口；关闭按钮留在窗口外，业务列表自然排版。 */
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-scroll { display: block; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-scroll:focus-visible { outline: 2px solid #ff008a; outline-offset: -2px; }
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-main { flex: none; min-height: 0; overflow: visible; }
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-tabs { position: sticky; top: 0; z-index: 1; background: #f3f3f3; padding-right: 44px; }
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-content { display: block; overflow: visible; }
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-content > div,
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-content > div > .h-full,
+html[data-home-entry-style="modern"] .platform-game-details:not(.platform-game-details--inline) .platform-details-content .custom-scrollbar { height: auto; min-height: 0; overflow-y: visible; flex: none; }
 @media (max-width: 1023px) {
     html[data-home-entry-style="modern"] .home-game-details-layer { align-items: flex-end; }
     html[data-home-entry-style="modern"] .platform-details-summary { gap: 6px 12px; }
     html[data-home-entry-style="modern"] .platform-details-heading { align-self: start; }
-    html[data-home-entry-style="modern"] .platform-details-title { align-self: start; }
     html[data-home-entry-style="modern"] .platform-details-description { max-height: 76px; font-size: 13px; }
     html[data-home-entry-style="modern"] .platform-details-secondary button { padding-inline: 8px; }
     html[data-home-entry-style="modern"] .platform-details-secondary .platform-details-favorite { padding: 8px 12px; font-size: 13px; gap: 6px; }

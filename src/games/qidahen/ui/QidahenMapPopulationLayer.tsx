@@ -23,13 +23,15 @@ export type QidahenMapPopulationRegion = {
     y: number;
     population: number;
     isLogicalRegion: boolean;
+    controller?: string;
 };
 
 export const QidahenMapPopulationLayer: React.FC<{
     regions: readonly QidahenMapPopulationRegion[];
     ownership: readonly (string | null)[] | null;
     tokens: readonly { x: number; y: number; size?: number }[];
-}> = ({ regions, ownership, tokens }) => {
+    protectedRegionIds?: readonly string[];
+}> = ({ regions, ownership, tokens, protectedRegionIds = [] }) => {
     const sites = React.useMemo(() => {
         const result = ownership
             ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, geometry)
@@ -74,6 +76,9 @@ export const QidahenMapPopulationLayer: React.FC<{
                     className="pointer-events-none absolute grid place-items-center font-black tabular-nums"
                     data-testid={`qidahen-map-population-${region.id}`}
                     data-qidahen-map-population="true"
+                    data-qidahen-map-population-faction={region.controller}
+                    data-qidahen-map-population-region={region.id}
+                    data-qidahen-map-protected-population={protectedRegionIds.includes(region.id) ? 'true' : undefined}
                     data-population={String(region.population)}
                     data-population-placement={callout ? 'callout' : 'interior'}
                     data-population-anchor-x={anchor.x}

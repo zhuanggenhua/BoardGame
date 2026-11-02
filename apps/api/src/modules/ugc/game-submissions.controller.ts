@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Inject, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe, BadRequestException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Inject, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors, UsePipes, ValidationPipe, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { GameSubmissionDto } from './dtos/game-submission.dto';
 import { GameSubmissionsService } from './game-submissions.service';
+import { MAX_RULES_FILE_BYTES } from '../../../../../src/shared/externalGames';
+import type { GameRulesUpload } from './game-rules-file';
 
 @Controller('ugc/submissions')
 @UseGuards(JwtAuthGuard)
@@ -26,6 +28,14 @@ export class GameSubmissionsController {
         if (!file) throw new BadRequestException('请选择封面');
         return this.submissions.uploadCover(user.userId, id, file.buffer);
     }
+    @Post(':id/rules')
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_RULES_FILE_BYTES } }))
+    rules(@CurrentUser() user: { userId: string }, @Param('id') id: string, @UploadedFile() file?: GameRulesUpload) {
+        if (!file) throw new BadRequestException('请选择规则文件');
+        return this.submissions.uploadRules(user.userId, id, file);
+    }
+    @Delete(':id/rules')
+    removeRules(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.submissions.removeRules(user.userId, id); }
     @Post(':id/submit')
     submit(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.submissions.submit(user.userId, id); }
     @Post(':id/withdraw')

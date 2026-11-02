@@ -28,6 +28,7 @@ import { recalculateEncounterState } from './execute';
 type CardiaSimpleChoiceOption = {
     id: string;
     label: string;
+    description?: string;
     value: unknown;
     displayMode?: 'card' | 'button';
     disabled?: boolean;
@@ -245,6 +246,15 @@ function wrapCardiaInteraction(
             id: `modifier_${value}`,
             label: value > 0 ? `+${value}` : `${value}`,
             value: { modifierValue: value },
+            displayMode: 'button',
+        }));
+    } else if (cardiaInteraction.type === 'choice') {
+        interactionType = 'choice';
+        options = cardiaInteraction.options.map(option => ({
+            id: option.id,
+            label: option.label,
+            description: option.description,
+            value: { option: option.id },
             displayMode: 'button',
         }));
     } else {

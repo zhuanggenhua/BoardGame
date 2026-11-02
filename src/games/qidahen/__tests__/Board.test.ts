@@ -57,7 +57,7 @@ const REQUIRED_TEST_IDS = [
     '年中',
     'data-testid="qidahen-raid-intent"',
     'data-testid="qidahen-post-battle-selection"',
-    'data-testid="qidahen-post-battle-dice-summary"',
+    '<QidahenBattleReport',
     'data-testid={`qidahen-post-battle-choice-${choice.id}`}',
     'data-testid="qidahen-wheel-dispatch-selection"',
     'data-testid="qidahen-actions-zone"',
@@ -310,7 +310,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('!actionPaymentPreviewVisible');
         expect(boardSource).toContain("const wheelStageEmphasized = wheelStageAvailable && tutorialStep?.id !== 'welcome';");
         expect(boardSource).toContain('emphasized={wheelStageEmphasized}');
-        expect(boardSource).toContain('const tutorialPrimaryWheelMoveId = tutorialStep?.highlightTarget?.startsWith(\'qidahen-wheel-move-\')');
+        expect(boardSource).toContain("event.type === 'WHEEL_MOVE_EXECUTED'");
         expect(boardSource).toContain("tutorialStep?.id === 'wheel-move'");
         expect(boardSource).toContain('primaryMoveId={tutorialPrimaryWheelMoveId}');
         expect(boardSource).not.toContain("emphasized={!setupStagePending && primaryStageMode === 'wheel'");
@@ -532,7 +532,7 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain('data-testid="qidahen-map-region-mask-overlay"');
         expect(boardSource).toContain('data-qidahen-region-outline="true"');
         expect(boardSource).toContain('turnInput.selectRegion');
-        expect(boardSource).toContain('const autoFocusMapTargetRegionIdsKey = (battleFocusKey ? battleRegionIds : mapSelectionCandidateIds).join');
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIdsKey = (battleFocusKey ? battleRegionIds : [...new Set([...mapSelectionCandidateIds, ...maintenanceContextRegionIds])]).join');
         expect(boardSource).toContain('focusQidahenMapRegion');
         expect(boardSource).toContain('protectedRects');
         expect(boardSource).not.toContain('data-testid={`qidahen-map-guide-target-label-${candidate.targetRegionId}`}');
@@ -650,15 +650,12 @@ describe('Qidahen Board 结构门禁', () => {
         expect(koreaZoneSource).not.toContain('right-[80px] top-[92px]');
     });
 
-    it('战后处理必须展示本次掷骰本体，而不是只剩文字摘要', () => {
-        expect(boardSource).toContain('const formatQidahenBattleRollPhaseLabel = (phase: QidahenBattleRollPhase): string => {');
-        expect(boardSource).toContain('const formatQidahenBattleRollFace = (roll: QidahenBattleRoll): string => (');
-        expect(boardSource).toContain('const QidahenBattleRollDiceSummary: React.FC<');
-        expect(boardSource).toContain('data-testid="qidahen-post-battle-dice-summary"');
+    it('战后明细交由唯一战报组件，主决策不常显第二套骰盘', () => {
+        expect(boardSource).not.toContain('const QidahenBattleRollDiceSummary');
         expect(boardSource).not.toContain('Dice3D');
         expect(boardSource).not.toContain('data-testid="dice-3d"');
         expect(boardSource).toContain('{postBattleSelection.battleRolls && postBattleMode == null ? (');
-        expect(boardSource).toContain('<QidahenBattleRollDiceSummary battleRolls={postBattleSelection.battleRolls} />');
+        expect(boardSource).toContain('<QidahenBattleReport battleRolls={postBattleSelection.battleRolls} />');
         expect(boardSource).toContain("defaultValue: '{{summary}} · 幸存 {{survivingTroops}}'");
     });
 
@@ -821,7 +818,8 @@ describe('Qidahen Board 结构门禁', () => {
         expect(boardSource).toContain("style={{ top: 'var(--qidahen-mobile-chronology-top, 542px)' }}");
         expect(boardSource).toContain('data-testid="qidahen-action-slot"');
         expect(boardSource).toContain('className="mt-3 shrink-0"');
-        expect(boardSource).toContain('className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="qidahen-action-slot"');
+        expect(boardSource).toContain('className={`min-h-0 flex-1 pr-1 ${wheelRecruitTrainProgress');
+        expect(boardSource).toContain("? 'flex flex-col overflow-hidden' : 'overflow-y-auto'");
         expect(boardSource).toContain('left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,');
         expect(boardSource).toContain('width: suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,');
         expect(boardSource).toContain('height: expandedSelectionPanel ? STAGE_HEIGHT - ACTIONS_DOCK_TOP');
@@ -1208,7 +1206,7 @@ describe('Qidahen Board 结构门禁', () => {
     });
 
     it("地图自动聚焦必须使用稳定目标键，并禁止把相同视角反复写回状态", () => {
-        expect(boardSource).toContain('const autoFocusMapTargetRegionIdsKey = (battleFocusKey ? battleRegionIds : mapSelectionCandidateIds).join');
+        expect(boardSource).toContain('const autoFocusMapTargetRegionIdsKey = (battleFocusKey ? battleRegionIds : [...new Set([...mapSelectionCandidateIds, ...maintenanceContextRegionIds])]).join');
         expect(boardSource).toContain('const targetIds = autoFocusMapTargetRegionIdsKey');
         expect(boardSource).toContain('current.zoom === nextViewport.zoom && current.panX === nextViewport.panX && current.panY === nextViewport.panY');
         expect(boardSource).toContain('? current : nextViewport');

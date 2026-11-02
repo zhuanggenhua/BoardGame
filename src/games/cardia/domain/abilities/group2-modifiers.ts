@@ -10,7 +10,7 @@ import { CARDIA_EVENTS } from '../events';
 import { abilityExecutorRegistry } from '../abilityExecutor';
 import { getCardiaStoredOngoingAbilitiesOnCard, hasCardiaStoredOngoingAbilitiesOnCard } from '../effectHost';
 import { getPlayerFieldCards, calculateCurrentInfluence, getCardModifiers } from '../utils';
-import { createCardSelectionInteraction, filterCards, createModifierSelectionInteraction, createFactionSelectionInteraction } from '../interactionHandlers';
+import { createCardSelectionInteraction, filterCards, createModifierSelectionInteraction, createFactionSelectionInteraction, type CardiaChoiceInteraction } from '../interactionHandlers';
 import { registerInteractionHandler } from '../abilityInteractionHandlers';
 import type { CardiaAbilityContext } from '../abilityExecutor';
 import type { CardiaEvent } from '../events';
@@ -799,7 +799,7 @@ export function registerModifierInteractionHandlers(): void {
             
             // 对手有该派系手牌，创建对手的选择交互
             console.log('[CourtGuard] Creating opponent choice interaction');
-            const opponentInteraction: any = {
+            const opponentInteraction: CardiaChoiceInteraction = {
                 type: 'choice',
                 interactionId: `${ABILITY_IDS.COURT_GUARD}_opponent_${timestamp}`,
                 playerId: opponentId,

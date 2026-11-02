@@ -51,9 +51,7 @@ it('每张可见课程来自登记摘句与必要功能说明，首课不要求�
     expect(visible[0].id).toBe('intro');
     expect(visible.some(step=>['SELECT_MASTER','SELECT_SERVANT'].includes(step.fateCommand?.type??''))).toBe(false);
     const reading=visible.filter(step=>step.id.startsWith('ui-detail'));
-    expect(reading).toHaveLength(1);
-    expect(reading[0].fateCopy?.lessonId).toBe('masterReading');
-    expect(reading[0].fateUiDetailTarget).toBe('0');
+    expect(reading).toHaveLength(0);
     for(const step of visible){
         expect(step.fateCopy,step.id).toBeDefined();
         expect(step.fateCopy?.lessonId,step.id).toBeDefined();

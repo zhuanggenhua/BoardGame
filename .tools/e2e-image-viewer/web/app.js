@@ -65,6 +65,7 @@ let renderedTiles = new Map();
 let renderStats = { visible: 0, mounted: 0, loaded: 0 };
 let listSignature = "";
 let hasLoadedDirectory = false;
+let directoryLoadPromise = null;
 let suppressTileClickUntil = 0;
 let indexCollapsed = false;
 let lastAppliedFocusToken = "";
@@ -697,73 +698,78 @@ const applyFocusRequest = (request) => {
   return true;
 };
 
-const loadDirectory = async ({ preserveView = true } = {}) => {
-  const hasDirectoryTarget = Boolean(directory || directoryKey || staticListUrl);
-  directoryLabel.textContent = hasDirectoryTarget ? "正在读取截图目录..." : "未提供目录";
-  if (!hasDirectoryTarget) {
-    summary.textContent = "缺少 dir 或 key 参数。";
-    empty.textContent = "缺少 dir 或 key 参数。";
-    return;
-  }
-
-  const previousSignature = listSignature;
-  const query = new URLSearchParams();
-  if (directoryKey) {
-    query.set("key", directoryKey);
-  } else {
-    query.set("dir", directory);
-  }
-  if (focusPath) {
-    query.set("focus", focusPath);
-  }
-  for (const selectedPath of selectedPaths) {
-    query.append("show", selectedPath);
-  }
-  const response = await fetch(staticListUrl || `/api/list?${query.toString()}`, { cache: "no-store" });
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(body || `读取失败: ${response.status}`);
-  }
-
-  const payload = await response.json();
-  const nextItems = payload.items;
-  const focusRequest = focusRequestFromPayload(payload, nextItems);
-  if (focusRequest && !selectedPath) {
-    selectedPath = focusRequest.item.relativePath;
-  }
-  const nextSignature = `${payload.directory}|${signatureForItems(nextItems)}`;
-  summary.dataset.directory = payload.directory;
-  directoryLabel.textContent = payload.directoryTitle
-    ? `${payload.directoryTitle}${payload.autoSelectedDirectory ? "（自动定位最新截图）" : ""}`
-    : "端到端截图目录";
-
-  if (hasLoadedDirectory && previousSignature === nextSignature) {
-    applyFocusRequest(focusRequest);
-    updateSummary();
-    return;
-  }
-
-  items = nextItems;
-  listSignature = nextSignature;
-  hasLoadedDirectory = true;
-  if (detailItem) {
-    const refreshedDetailItem = nextItems.find((item) => item.relativePath === detailItem.relativePath);
-    if (refreshedDetailItem) {
-      detailItem = refreshedDetailItem;
-      updateDetailNavigation();
-    } else {
-      closeDetail();
+// 自动轮询与手动刷新共享当前读取，慢响应不能积成阻塞图片的请求队列。
+const loadDirectory = ({ preserveView = true } = {}) => {
+  if (directoryLoadPromise) return directoryLoadPromise;
+  directoryLoadPromise = (async () => {
+    const hasDirectoryTarget = Boolean(directory || directoryKey || staticListUrl);
+    if (!hasLoadedDirectory) directoryLabel.textContent = hasDirectoryTarget ? "正在读取截图目录..." : "未提供目录";
+    if (!hasDirectoryTarget) {
+      summary.textContent = "缺少 dir 或 key 参数。";
+      empty.textContent = "缺少 dir 或 key 参数。";
+      return;
     }
-  }
-  renderBoard();
-  indexMatchedCount = payload.indexMatchedCount ?? 0;
-  renderIndex();
-  if (!preserveView || previousSignature.length === 0) {
-    resetView({ rerender: false });
-  } else {
-    applyTransform();
-  }
-  applyFocusRequest(focusRequest);
+
+    const previousSignature = listSignature;
+    const query = new URLSearchParams();
+    if (directoryKey) {
+      query.set("key", directoryKey);
+    } else {
+      query.set("dir", directory);
+    }
+    if (focusPath) {
+      query.set("focus", focusPath);
+    }
+    for (const selectedPath of selectedPaths) {
+      query.append("show", selectedPath);
+    }
+    const response = await fetch(staticListUrl || `/api/list?${query.toString()}`, { cache: "no-store" });
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(body || `读取失败: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const nextItems = payload.items;
+    const focusRequest = focusRequestFromPayload(payload, nextItems);
+    if (focusRequest && !selectedPath) {
+      selectedPath = focusRequest.item.relativePath;
+    }
+    const nextSignature = `${payload.directory}|${signatureForItems(nextItems)}`;
+    summary.dataset.directory = payload.directory;
+    directoryLabel.textContent = payload.directoryTitle
+      ? `${payload.directoryTitle}${payload.autoSelectedDirectory ? "（自动定位最新截图）" : ""}`
+      : "端到端截图目录";
+
+    if (hasLoadedDirectory && previousSignature === nextSignature) {
+      applyFocusRequest(focusRequest);
+      updateSummary();
+      return;
+    }
+
+    items = nextItems;
+    listSignature = nextSignature;
+    hasLoadedDirectory = true;
+    if (detailItem) {
+      const refreshedDetailItem = nextItems.find((item) => item.relativePath === detailItem.relativePath);
+      if (refreshedDetailItem) {
+        detailItem = refreshedDetailItem;
+        updateDetailNavigation();
+      } else {
+        closeDetail();
+      }
+    }
+    renderBoard();
+    indexMatchedCount = payload.indexMatchedCount ?? 0;
+    renderIndex();
+    if (!preserveView || previousSignature.length === 0) {
+      resetView({ rerender: false });
+    } else {
+      applyTransform();
+    }
+    applyFocusRequest(focusRequest);
+  })().finally(() => { directoryLoadPromise = null; });
+  return directoryLoadPromise;
 };
 
 refreshButton.addEventListener("click", () => {

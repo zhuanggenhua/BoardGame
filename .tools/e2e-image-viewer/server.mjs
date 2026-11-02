@@ -18,7 +18,8 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
+import { directoryIdFromRealPath, recoverDirectoryByKey } from "./directory-key-lookup.mjs";
 import { fileURLToPath } from "node:url";
 import { ARCHIVE_DIRECTORY_NAMES, assertUserVisibleMediaDirectory, FORBIDDEN_CROP_DIRECTORY_NAMES } from "../../scripts/verify/e2e-image-index-contract.mjs";
 
@@ -32,7 +33,6 @@ const APP_NAME = "boardgame-e2e-image-viewer";
 const DEFAULT_PORT = 4867;
 const MAX_MEDIA_FILES = 1500;
 const MAX_INDEX_FILES = 80;
-const MAX_KEY_LOOKUP_DIRECTORIES = 20000;
 const OFFLINE_VIEWER_FILE_NAME = "index.html";
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".avif"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov", ".m4v", ".mkv"]);
@@ -283,7 +283,7 @@ const clearServerState = ({ port = null, pid = null, instanceId: expectedInstanc
 
 const directoryKey = (dirPath) => realpathSync.native(dirPath).toLowerCase();
 
-const directoryId = (dirPath) => createHash("sha1").update(directoryKey(dirPath)).digest("hex").slice(0, 12);
+const directoryId = (dirPath) => directoryIdFromRealPath(directoryKey(dirPath));
 
 const comparablePathKey = (targetPath) => path.normalize(path.resolve(targetPath)).toLowerCase();
 
@@ -365,7 +365,7 @@ const resolveMediaSelection = (dirPath, files) => {
   return selection;
 };
 
-const resolveDirectoryFromKey = (key) => {
+const resolveDirectoryFromKey = async (key) => {
   if (!key || typeof key !== "string") {
     throw new Error("缺少目录 key");
   }
@@ -380,44 +380,10 @@ const resolveDirectoryFromKey = (key) => {
     path.join(PROJECT_ROOT, "evidence"),
     path.join(PROJECT_ROOT, "artifacts"),
   ].filter((root, index, roots) => roots.indexOf(root) === index && existsSync(root));
-  const matches = [];
-  let scanned = 0;
-  const walk = (currentDir) => {
-    if (matches.length > 1 || scanned >= MAX_KEY_LOOKUP_DIRECTORIES) return;
-    let entries;
-    try {
-      entries = readdirSync(currentDir, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const child of entries) {
-      if (matches.length > 1 || scanned >= MAX_KEY_LOOKUP_DIRECTORIES) return;
-      if (!child.isDirectory()) continue;
-      const candidate = path.join(currentDir, child.name);
-      scanned += 1;
-      try {
-        if (directoryId(candidate) === key) {
-          matches.push(realpathSync.native(candidate));
-          continue;
-        }
-      } catch {
-        continue;
-      }
-      walk(candidate);
-    }
-  };
-  for (const root of lookupRoots) walk(root);
-
-  if (matches.length > 1) {
-    throw new Error(`目录 key 不唯一: ${key}`);
-  }
-  if (matches.length === 1) {
-    return resolveDirectory(matches[0]);
-  }
-  throw new Error(`找不到目录 key: ${key}`);
+  return resolveDirectory(await recoverDirectoryByKey(key, lookupRoots));
 };
 
-const resolveDirectoryFromUrl = (url) => {
+const resolveDirectoryFromUrl = async (url) => {
   const key = url.searchParams.get("key");
   if (key) return resolveDirectoryFromKey(key);
   return resolveDirectory(url.searchParams.get("dir"));
@@ -1040,9 +1006,9 @@ const serveStatic = (res, relativePath) => {
   createReadStream(real).pipe(res);
 };
 
-const serveMedia = (req, res, url) => {
+const serveMedia = async (req, res, url) => {
   const mediaKey = url.searchParams.get("key");
-  const dirPath = mediaKey ? resolveDirectoryFromKey(mediaKey) : resolveDirectory(url.searchParams.get("dir"));
+  const dirPath = mediaKey ? await resolveDirectoryFromKey(mediaKey) : resolveDirectory(url.searchParams.get("dir"));
   const relativeFile = url.searchParams.get("file");
   if (!relativeFile) throw new Error("缺少媒体文件路径");
   const target = path.resolve(dirPath, relativeFile);
@@ -1140,6 +1106,7 @@ const serveMedia = (req, res, url) => {
 const createViewerServer = (port) => createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? "/", `http://127.0.0.1:${port}`);
+
     if (req.method === "GET" && url.pathname === "/api/health") {
       jsonResponse(res, 200, { ok: true, app: APP_NAME, projectRoot: PROJECT_ROOT, port, pid: process.pid, instanceId, startedAt });
       return;
@@ -1166,7 +1133,7 @@ const createViewerServer = (port) => createServer(async (req, res) => {
       return;
     }
     if (req.method === "GET" && url.pathname === "/api/list") {
-      const listing = resolveListingDirectory(resolveDirectoryFromUrl(url), { focus: url.searchParams.get("focus") });
+      const listing = resolveListingDirectory(await resolveDirectoryFromUrl(url), { focus: url.searchParams.get("focus") });
       const directoryState = ensureDirectoryState(listing.directory, port);
       const mediaIndex = readMediaIndex(listing.directory);
       const requestedSelection = resolveMediaSelection(listing.directory, url.searchParams.getAll("show"));
@@ -1191,7 +1158,7 @@ const createViewerServer = (port) => createServer(async (req, res) => {
       return;
     }
     if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/media") {
-      serveMedia(req, res, url);
+      await serveMedia(req, res, url);
       return;
     }
     if (req.method === "GET" && url.pathname === "/") {

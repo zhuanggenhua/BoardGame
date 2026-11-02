@@ -1,3 +1,4 @@
+import './helpers/i18n';
 import { act, render, screen, fireEvent } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { createReplayAdapter } from '../../../engine/adapter';
@@ -43,7 +44,6 @@ it('部署先选择、可取消或改选，确认前不发领域命令，确认�
 });
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: vi.fn(), registerReset: vi.fn() }) }));
 vi.mock('../../../contexts/ToastContext', () => ({useToast: () => ({warning:vi.fn()})}));
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key === 'commands.passAction' ? '结束行动' : key, i18n: { language: 'zh-CN' } }) }));
 vi.mock('../../../contexts/UndoContext', () => ({ UndoProvider: ({ children }: {
         children: React.ReactNode;
     }) => <>{children}</> }));

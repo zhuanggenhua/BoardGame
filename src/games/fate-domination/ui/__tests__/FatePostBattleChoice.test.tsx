@@ -1,3 +1,4 @@
+import '../../__tests__/helpers/i18n';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { expect, it, vi } from 'vitest';
 import { createSimpleChoice } from '../../../../engine/systems/InteractionSystem';

@@ -585,3 +585,10 @@
     z-index: 160;
     transform: translateY(calc(-1 * max(var(--qidahen-card-rest-lift), var(--qidahen-card-hover-lift)))) scale(var(--qidahen-card-scale));
 }
+.qidahen-faction-action:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.qidahen-faction-action:active:not(:disabled) {
+    transform: translateY(2px);
+}

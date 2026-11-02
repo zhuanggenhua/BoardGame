@@ -12,6 +12,7 @@ import {
     getQidahenHandCardPaymentValue,
     getQidahenSelectedActionPaymentProgress,
     hasRemainingFactionAction,
+    wouldRepeatLastFactionAction,
 } from './factionActionWindow';
 import {
     isQidahenWheelDispatchPaymentPending,
@@ -140,12 +141,6 @@ const hasBlockingSelection = (state: MatchState<QidahenCore>): boolean => (
     || state.core.instigateDefectionSelection != null
     || state.core.wuzhenChaohaSelection != null
     || state.core.wheelRecruitTrainProgress != null
-);
-
-const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string): boolean => (
-    core.factionActionUsed
-    && hasRemainingFactionAction(core)
-    && core.lastFactionActionId === actionId
 );
 
 const isCurrentSeatCommand = (state: MatchState<QidahenCore>, command: QidahenCommand): boolean => (

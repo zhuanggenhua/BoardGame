@@ -81,7 +81,7 @@
     -webkit-touch-callout:none;
 }
 
-.fd-runtime-card > img { display: block; width: 100%; height: auto; object-fit: contain; }
+.fd-runtime-card > img { display: block; width: 100%; height: auto; aspect-ratio: auto 544 / 768; object-fit: contain; }
 .fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); z-index: 3; }
 .fd-runtime-table .fd-runtime-card:focus-visible { outline: 2px solid #dcc68c; outline-offset: 2px; }
 .fd-runtime-card.is-available { outline: 1px solid #b8cba4; outline-offset: 1px; }
@@ -149,7 +149,7 @@
     pointer-events: auto;
 }
 
-.fd-riding-status { text-align: center; }
+.fd-riding-status { padding: 4px 8px; background: rgb(9 12 13 / .9); color: #f0e7d0; text-align: center; }
 .fd-riding-controls button { min-height: 44px; padding: 6px 12px; border: 1px solid #758578; border-radius: 4px; background: #182321; color: #f8e8b3; pointer-events: auto; }
 .fd-riding-controls button:disabled { opacity: .5; cursor: not-allowed; }
 .fd-riding-controls button:focus-visible { outline: 2px solid #e3ca7b; outline-offset: 2px; }

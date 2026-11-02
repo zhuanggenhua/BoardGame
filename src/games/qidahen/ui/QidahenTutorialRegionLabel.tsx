@@ -2,6 +2,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { UI_Z_INDEX } from '../../../core';
 import type { QidahenMapViewport } from './mapRegionFocus';
+import { getQidahenRuntimeRegionAnchorTargetPoint } from './mapGraph';
+import { QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT } from './mapRegions';
 
 interface Props {
     anchorRef: React.RefObject<HTMLElement | null>;
@@ -18,8 +20,18 @@ export const QidahenTutorialRegionLabel: React.FC<Props> = ({ anchorRef, viewpor
         if (!anchor) return;
         let resizeFrame = 0;
         const place = () => {
-            const rect = anchor.getBoundingClientRect();
-            const next = { left: rect.left, top: rect.top - 4 };
+            const marker = document.querySelector<HTMLElement>(`[data-qidahen-map-token-region="${regionId}"][data-qidahen-map-token-type="control"]`);
+            const rect = marker?.getBoundingClientRect();
+            const map = anchor.closest('[data-testid="qidahen-map-content"]')?.getBoundingClientRect();
+            const point = getQidahenRuntimeRegionAnchorTargetPoint(regionId);
+            // 地区名属于真实地图标记，不能放在仅供镜头取景的外接矩形角落。
+            const next = rect && rect.width > 0 && rect.height > 0
+                ? { left: rect.left, top: rect.top - 6 }
+                : map && point ? {
+                    left: map.left + point.x / QIDAHEN_MAP_WIDTH * map.width,
+                    top: map.top + point.y / QIDAHEN_MAP_HEIGHT * map.height - 6,
+                } : null;
+            if (!next) { setPosition(null); return; }
             setPosition(current => current?.left === next.left && current.top === next.top ? current : next);
         };
         const schedule = () => {

@@ -1,3 +1,7 @@
+export const MAX_RULES_FILE_BYTES = 10 * 1024 * 1024;
+/** 文件描述由上传服务生成，不属于普通表单可编辑字段。 */
+export interface GameRulesDocument { url: string; name: string; size: number; }
+
 /** 外链目录的公开字段；不承载本站领域引擎或建房配置。 */
 export interface ExternalGameFields {
     name: string;
@@ -13,6 +17,7 @@ export interface ExternalGameFields {
 }
 export type EmbedStatus = 'unknown' | 'allowed' | 'blocked';
 export interface ExternalGame extends ExternalGameFields {
+    rulesDocument?: GameRulesDocument;
     gameId: string;
     coverUrl: string;
     published: boolean;

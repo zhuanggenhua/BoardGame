@@ -293,11 +293,14 @@ test('重构必须逐项对照旧新画面且不可把原观察改成模板好�
     const f=makeFixture({descriptions:['初始对象清楚可见','操作对象清楚可见','结束对象清楚可见']});
     const dir=path.dirname(f.manifestPath), rp=path.join(dir,'.visual-review.json');
     const m=JSON.parse(readFileSync(f.manifestPath)), r=JSON.parse(readFileSync(rp));
-    m.changeType='refactor';m.requirements=[{requirement:'保留已有信息与动作',status:'PASS',evidence:[path.join(dir,r.media[0].path)]}];
+    m.changeType='new';m.requirements=[{requirement:'保留已有信息与动作',status:'PASS',evidence:[path.join(dir,r.media[0].path)]}];
     const originalPath=path.join(f.root,'original-review.json'), before=path.join(f.root,'before.png');writeFileSync(before,'old-frame');
     r.media.forEach((entry,i)=>Object.assign(entry,{sha256:createHash('sha256').update('fixture').digest('hex'),source:path.join(dir,entry.path),independentReviewFile:originalPath,sourceReviewEntry:`/media/${i}`}));
     writeFileSync(originalPath,JSON.stringify(r));
     const run=()=>{writeFileSync(rp,JSON.stringify(r));return validateE2EImageIndex({manifest:m,manifestPath:f.manifestPath,projectRoot:f.root});};
+    // 原失败：新增派系里恢复旧 UI，却以 new 跳过全部基线对照。
+    assert.doesNotThrow(run);
+    m.existingUiPolicy='restore-and-reuse';
     assert.throws(run,/baselineReviewFile/);
     const baseline={status:'PASS',requirements:[{requirement:m.requirements[0].requirement,status:'PASS',before:[before],after:[path.join(dir,r.media[0].path)],baselineSource:'用户认可的旧版本牌桌截图',preservedInformation:'威力读数仍然可见',preservedActions:'选牌与撤回保留',changes:'恢复原位置',duplicateDecision:'没有第二个同职责入口',changeAuthority:'用户要求恢复旧布局'}]};
     const originalBaselinePath=path.join(f.root,'original-baseline.json');
@@ -305,6 +308,9 @@ test('重构必须逐项对照旧新画面且不可把原观察改成模板好�
     baseline.requirements[0].independentReviewFile=originalBaselinePath;
     baseline.requirements[0].sourceReviewEntry='/requirements/0';
     const bp=path.join(dir,'baseline.json');m.visualReview.baselineReviewFile=bp;writeFileSync(bp,JSON.stringify(baseline));assert.doesNotThrow(run);
+    // 纯新增、恢复旧界面及原重构均使用各自实际合同。
+    m.changeType='refactor'; delete m.existingUiPolicy; assert.doesNotThrow(run);
+    m.changeType='new'; m.existingUiPolicy='restore-and-reuse'; assert.doesNotThrow(run);
     const originalBaseline=JSON.parse(readFileSync(originalBaselinePath));
     originalBaseline.requirements[0].status='REVISE';writeFileSync(originalBaselinePath,JSON.stringify(originalBaseline));
     assert.throws(run,/原基线/);

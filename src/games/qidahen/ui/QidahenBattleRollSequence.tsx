@@ -6,6 +6,7 @@ import type { QidahenBattleRoll, QidahenBattleRolls } from '../domain/types';
 import { createQidahenD6Skin, QIDAHEN_BATTLE_DICE_STYLES } from './battleDiceAppearance';
 
 export const QIDAHEN_BATTLE_DAMAGE_HOLD_MS = 1800;
+const battleLabelStyle: React.CSSProperties = { background: 'rgba(36,19,9,0.78)', padding: '2px 8px' };
 
 type Props = {
     rolls: QidahenBattleRolls;
@@ -42,6 +43,7 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, onCom
         }
         return result;
     }, [stage, index, d6Skin]);
+    const sides = (['attacker', 'defender'] as const).filter(side => groups.some(group => group.side === side));
 
     React.useEffect(() => {
         if (!stage) { completeRef.current(); return; }
@@ -70,45 +72,57 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, onCom
 
     if (!stage) return null;
     return (
-        <section data-testid="qidahen-battle-roll-sequence" data-battle-roll-phase={stage.phase} data-battle-roll-state={showDamage ? 'damage' : 'rolling'} className="flex flex-col border border-[#d8b36e]/60 bg-[#321b13] p-2 text-[#ffe9c9]" style={{ height: 'var(--qidahen-battle-panel-height, 370px)' }}>
-            <div className="flex shrink-0 items-center justify-between gap-3 text-[15px] font-black leading-5"><span>{sourceName} → {targetName}</span><span>{t(`board.battleRoll.phase.${stage.phase}`)}</span></div>
-            <div className={`mt-1 grid min-h-0 flex-1 auto-rows-fr gap-2 ${groups.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                {groups.map(group => (
-                    <div key={group.id} data-testid={`qidahen-battle-dice-${group.id}`} className="flex min-h-0 min-w-0 flex-col border border-[#d8b36e]/30 bg-[#e9d6b5] text-[#382217]">
-                        <div className="shrink-0 px-2 pt-1 text-[13px] font-bold leading-4">{t(`board.battleRoll.${group.side}`)} · {group.dieType}</div>
-                        <DiceBoxPhysicsSource
-                            dice={group.physicsDice}
-                            motion={{ type: 'roll', id: group.id }}
-                            dieType={group.dieType}
-                            styleProfile={QIDAHEN_BATTLE_DICE_STYLES[group.dieType]}
-                            dieSkins={group.skins}
-                            rendererMode="debug-visible"
-                            testId={`qidahen-battle-dice-physics-${group.id}`}
-                            canvasTestId={`qidahen-battle-dice-canvas-${group.id}`}
-                            settledIdentity={group.id}
-                            className="min-h-0 w-full flex-1" style={{ height: 0 }}
-                            onSettledChange={ready => setSettled(current => {
-                                if (current.has(group.id) === ready) return current;
-                                const next = new Set(current);
-                                if (ready) next.add(group.id); else next.delete(group.id);
-                                return next;
-                            })}
-                        />
-                        <div className="min-h-6 shrink-0 px-2 pb-1 text-[14px] font-bold leading-5" style={{ visibility: showDamage ? 'visible' : 'hidden' }} data-testid={`qidahen-battle-dice-calculation-${group.id}`}>
-                            {group.dice.map((die, dieIndex) => {
-                                // 原生十面骰将十点印作0；读数保留该面并同时标出实际点数。
-                                const faceLabel = group.dieType === 'd10' && die.raw === 10 ? '0（10）' : `${die.raw}`;
-                                return <span key={dieIndex} className="mr-3 inline-block">
-                                    {die.value === die.raw ? faceLabel : `${faceLabel} ${die.value > die.raw ? '+' : '−'} ${Math.abs(die.value - die.raw)} = ${die.value}`}
-                                </span>;
-                            })}
+        <section data-testid="qidahen-battle-roll-sequence" data-battle-roll-phase={stage.phase} data-battle-roll-state={showDamage ? 'damage' : 'rolling'} className="flex h-full flex-col" style={{ height: 'var(--qidahen-battle-panel-height, 370px)', color: '#fff3dc', fontFamily: 'ui-serif, "STSong", "SimSun", serif', textShadow: '0 1px 2px #241309' }}>
+            <div className="flex shrink-0 flex-wrap items-baseline justify-center gap-x-3 text-center font-black leading-7">
+                <span data-testid="qidahen-battle-roll-context" data-qidahen-battle-label="context" className="text-[16px]" style={battleLabelStyle}>{sourceName} → {targetName}</span>
+                <span data-qidahen-battle-label="phase" className="text-[22px]" style={battleLabelStyle}>{t(`board.battleRoll.phase.${stage.phase}`)}</span>
+            </div>
+            <div className={`mt-2 grid min-h-0 flex-1 gap-6 ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                {sides.map(side => (
+                    <div key={side} data-testid={`qidahen-battle-side-${side}`} className="flex min-h-0 min-w-0 flex-col">
+                        <div className="shrink-0 text-center text-[16px] font-bold leading-6"><span data-qidahen-battle-label={side} style={battleLabelStyle}>{t(`board.battleRoll.${side}`)}</span></div>
+                        <div className="flex min-h-0 flex-1 gap-2">
+                            {groups.filter(group => group.side === side).map(group => (
+                                <div key={group.id} data-testid={`qidahen-battle-dice-${group.id}`} className="flex min-h-0 min-w-0 flex-1 flex-col">
+                                    <DiceBoxPhysicsSource
+                                        dice={group.physicsDice}
+                                        motion={{ type: 'roll', id: group.id }}
+                                        dieType={group.dieType}
+                                        styleProfile={QIDAHEN_BATTLE_DICE_STYLES[group.dieType]}
+                                        dieSkins={group.skins}
+                                        rendererMode="debug-visible"
+                                        testId={`qidahen-battle-dice-physics-${group.id}`}
+                                        canvasTestId={`qidahen-battle-dice-canvas-${group.id}`}
+                                        settledIdentity={group.id}
+                                        className="min-h-0 w-full flex-1" style={{ height: 0 }}
+                                        onSettledChange={ready => setSettled(current => {
+                                            if (current.has(group.id) === ready) return current;
+                                            const next = new Set(current);
+                                            if (ready) next.add(group.id); else next.delete(group.id);
+                                            return next;
+                                        })}
+                                    />
+                                    <div className="min-h-6 shrink-0 text-center text-[16px] font-bold leading-6" style={{ visibility: showDamage ? 'visible' : 'hidden' }} data-testid={`qidahen-battle-dice-calculation-${group.id}`}>
+                                        {group.dice.map((die, dieIndex) => {
+                                            if (die.raw === die.value && !(group.dieType === 'd10' && die.raw === 10)) return null;
+                                            // 原生十面骰将十点印作0；读数保留该面并同时标出实际点数。
+                                            const faceLabel = group.dieType === 'd10' && die.raw === 10 ? '0（10）' : `${die.raw}`;
+                                            return <span key={dieIndex} className="mx-1 inline-block">
+                                                {die.value === die.raw ? faceLabel : `${faceLabel} ${die.value > die.raw ? '+' : '−'} ${Math.abs(die.value - die.raw)} = ${die.value}`}
+                                            </span>;
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ))}
             </div>
-            <div className="mt-1 min-h-[40px] shrink-0 text-[14px] leading-5" data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
-                <div>{t('board.battleRoll.totals', { attacker: stage.attackerTotal, defender: stage.defenderTotal, defaultValue: '骰点合计：攻方 {{attacker}} · 守方 {{defender}}' })}</div>
-                {t('board.battleRoll.damage', { attacker: stage.attackerDamage, defender: stage.defenderDamage })}
+            <div className={`mt-1 grid min-h-[52px] shrink-0 gap-6 text-center font-bold ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`} data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
+                {sides.map(side => <div key={side} data-testid={`qidahen-battle-result-${side}`} style={{ ...battleLabelStyle, justifySelf: 'center' }}>
+                    <div data-qidahen-battle-label={`${side}-total`} className="text-[22px] leading-7">{t('board.battleRoll.total', { total: side === 'attacker' ? stage.attackerTotal : stage.defenderTotal })}</div>
+                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[16px] leading-6">{t('board.battleRoll.inflictedDamage', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage })}</div>
+                </div>)}
             </div>
         </section>
     );

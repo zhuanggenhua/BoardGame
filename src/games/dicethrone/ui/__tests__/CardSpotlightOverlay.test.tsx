@@ -23,6 +23,7 @@ vi.mock('../../../../core', async () => {
 
 vi.mock('../../../../components/common/media/CardPreview', () => ({
     CardPreview: () => <div data-testid="mock-card-preview" />,
+    getCardAtlasSource: () => undefined,
 }));
 
 vi.mock('framer-motion', () => {
@@ -47,11 +48,11 @@ afterEach(() => {
 });
 
 describe('CardSpotlightOverlay', () => {
-    it('卡牌特写默认 3 秒自动关闭，内容点击不会关闭', () => {
+    it('卡牌阅读超过原三秒及同项重渲染后仍可见，内容点击不会关闭', () => {
         vi.useFakeTimers();
         const onClose = vi.fn();
 
-        render(
+        const renderCard = () => (
             <CardSpotlightOverlay
                 queue={[{
                     id: 'watch-out-1000',
@@ -66,8 +67,9 @@ describe('CardSpotlightOverlay', () => {
                     },
                 }]}
                 onClose={onClose}
-            />,
+            />
         );
+        const { rerender } = render(renderCard());
 
         fireEvent.click(document.querySelector('[data-testid="card-spotlight-overlay"]') as Element);
         expect(onClose).not.toHaveBeenCalled();
@@ -78,9 +80,13 @@ describe('CardSpotlightOverlay', () => {
         expect(onClose).not.toHaveBeenCalled();
 
         act(() => {
-            vi.advanceTimersByTime(1);
+            vi.advanceTimersByTime(7001);
         });
-        expect(onClose).toHaveBeenCalledWith('watch-out-1000');
+        expect(onClose).not.toHaveBeenCalled();
+        rerender(renderCard());
+        act(() => { vi.advanceTimersByTime(10000); });
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByTestId('card-spotlight-overlay')).toBeInTheDocument();
     });
 
     it('点击特写外的空白背景会立即关闭', () => {

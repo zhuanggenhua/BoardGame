@@ -6,23 +6,22 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import type { AbilityCard, InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
 import { UI_Z_INDEX } from '../../../core';
 import { CardPreview } from '../../../components/common/media/CardPreview';
+import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
 import { getDiceThroneCardPreviewRef } from './cardPreviewHelper';
-import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
-import { DICETHRONE_HAND_AREA_HEIGHT_UNITS } from './handLayoutConstants';
 
 type TeamTone = 'self' | 'ally' | 'enemy';
 
 const CARD_POOL_CARD_WIDTH = 'clamp(88px, min(7.2vw, 12.5vh), 132px)';
-const CARD_POOL_FOCUSED_CARD_WIDTH = 'clamp(104px, min(14vw, 23vh), 188px)';
+const CARD_POOL_PANEL_TOP = 'min(clamp(4.25rem, 9vh, 6.25rem), 9vh)';
 const CARD_POOL_CARD_MAX_WIDTH_PX = 132;
 const CARD_POOL_PANEL_MAX_WIDTH_PX = 1120;
 const CARD_POOL_PANEL_SAFE_PADDING_PX = 96;
@@ -94,7 +93,7 @@ const PlayerCardShell = ({
         data-selected={selected ? 'true' : 'false'}
         className={containerClassName}
     >
-        <div className="mb-2 flex items-start justify-between gap-3">
+        <div className="mb-3 flex items-start justify-between gap-3">
             <div className="min-w-0">
                 <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
                     {displayName}
@@ -137,6 +136,8 @@ export interface InteractionOverlayProps {
     onSelectPlayer: (playerId: PlayerId) => void;
     /** 选择手牌回调 */
     onSelectHandCard?: (cardId: string) => void;
+    /** 复用牌桌既有放大阅读，不改变当前选择。 */
+    onMagnifyCard?: (card: AbilityCard) => void;
     /** 确认交互 */
     onConfirm: () => void;
     /** 取消交互 */
@@ -167,6 +168,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     onSelectStatus,
     onSelectPlayer,
     onSelectHandCard = () => undefined,
+    onMagnifyCard,
     onConfirm,
     onCancel,
     statusIconAtlas,
@@ -180,8 +182,17 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const { t, i18n } = useTranslation('game-dicethrone');
     const interactionType = interaction.type;
     const selectedItems = interaction.selected ?? [];
+    const isDoctorStrangeInteraction = players[interaction.playerId]?.characterId === 'doctor_strange';
+    const cardReading = useTouchLongPress<string, AbilityCard>({
+        enabled: Boolean(onMagnifyCard),
+        durationMs: 420,
+        moveCancelPx: 14,
+        clickBlockMs: 450,
+        onLongPress: (_id, card) => onMagnifyCard?.(card),
+    });
     const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(players);
     const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
+    const compactSingleStatusHolder = isDoctorStrangeInteraction && isStatusSelection && targetPlayerIds.length === 1;
     const isTransferStatusSelection = (
         (interactionType === 'selectStatus' || interactionType === 'selectTargetStatus')
         && interaction.transferConfig !== undefined
@@ -373,14 +384,9 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const isOpen = true; // Controlled by BoardOverlays
 
     if (isCardSelection) {
-        const useFocusedCardSize = cardSelectionCards.length <= 6;
-        const hasFocusedSingleCardSelection = useFocusedCardSize
-            && (interaction.selectCount ?? 1) <= 1
-            && selectedItems.length > 0;
         const cardPoolCardStyle: React.CSSProperties = {
-            backgroundColor: '#0f172a',
-            borderRadius: '0.25rem',
-            width: useFocusedCardSize ? CARD_POOL_FOCUSED_CARD_WIDTH : CARD_POOL_CARD_WIDTH,
+            ...(isDoctorStrangeInteraction ? {} : { backgroundColor: '#0f172a', borderRadius: '0.25rem' }),
+            width: CARD_POOL_CARD_WIDTH,
         };
 
         return (
@@ -389,37 +395,37 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                 data-card-pool-layout="center-stage"
                 data-card-pool-hand-protection="shared-stage-visible-hand"
                 data-card-pool-browse-mode="grid-scroll"
-                className="fixed inset-0 pointer-events-none"
+                className="dt-card-pool fixed inset-0 pointer-events-none"
                 style={{ zIndex: UI_Z_INDEX.overlay }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div
                     data-testid="dt-card-pool-panel"
-                    className="pointer-events-auto absolute inset-x-0 bottom-[max(0.75rem,env(safe-area-inset-bottom))] top-[clamp(4.25rem,9vh,6.25rem)] min-h-0 px-4"
+                    className="dt-card-pool-panel pointer-events-auto absolute inset-x-0 top-[clamp(4.25rem,9vh,6.25rem)] px-4"
+                    style={{ top: CARD_POOL_PANEL_TOP }}
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
                 >
                     <div
                         data-testid="dt-card-pool-surface"
-                        className="relative isolate mx-auto flex h-full min-h-0 w-full max-w-[70rem] flex-col px-3 py-3"
+                        className="dt-card-pool-surface pointer-events-auto relative isolate mx-auto flex w-full max-w-[70rem] flex-col px-3 py-3"
+                        style={{ height: `min(calc(min(40vh, 28rem) + 11rem), calc(100dvh - ${CARD_POOL_PANEL_TOP} - 1rem))` }}
                     >
                         <div
                             aria-hidden="true"
                             data-testid="dt-card-pool-backdrop"
-                            data-card-pool-hand-clearance="hand-area-top"
-                            className="pointer-events-none absolute inset-x-[2%] top-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
-                            style={{ bottom: buildBoardShellInlineUnitValue(DICETHRONE_HAND_AREA_HEIGHT_UNITS) }}
+                            className="dt-card-pool-backdrop pointer-events-none absolute inset-x-[2%] inset-y-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
                         />
                         <h2
                             data-testid="dt-card-pool-title"
-                            className="mb-2 shrink-0 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
+                            className="dt-card-pool-title mb-2 shrink-0 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
                         >
                             {t(interaction.titleKey, { count: interaction.selectCount })}
                         </h2>
                         {shouldShowCardPoolSearch ? (
                             <div
                                 data-testid="dt-card-pool-search"
-                                className="mx-auto mb-1 max-w-[min(100%,30rem)]"
+                                className="dt-card-pool-search mx-auto mb-1 w-full max-w-[min(100%,30rem)] shrink-0"
                             >
                                 <div className="relative">
                                     <span
@@ -429,9 +435,18 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         <Search className="h-4 w-4" strokeWidth={2.1} />
                                     </span>
                                     <input
-                                        type="search"
+                                        type="text"
+                                        inputMode="search"
+                                        role="searchbox"
                                         value={cardPoolSearch}
                                         onChange={(event) => setCardPoolSearch(event.target.value)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Escape' && cardPoolSearch) {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                setCardPoolSearch('');
+                                            }
+                                        }}
                                         placeholder={t('interaction.cardPoolSearchPlaceholder')}
                                         data-testid="dt-card-pool-search-input"
                                         className="h-9 w-full rounded-full border border-red-200/25 bg-[#1a0509]/72 pl-10 pr-10 text-sm font-bold text-amber-50 outline-none placeholder:text-red-100/38 focus:border-red-200/60 focus:ring-2 focus:ring-red-300/20"
@@ -442,6 +457,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             onClick={() => setCardPoolSearch('')}
                                             data-testid="dt-card-pool-search-clear"
                                             className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-red-100/10 text-amber-50 transition-colors hover:bg-red-100/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
+                                            style={{ translate: 'none', transform: 'translateY(-50%)' }}
                                             aria-label={t('interaction.cardPoolSearchClear')}
                                         >
                                             <X size={14} strokeWidth={2.2} />
@@ -463,11 +479,11 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                             data-testid="dt-card-pool-selection"
                             data-card-pool-kind={cardSourceZone}
                             data-card-pool-visible-rows="two"
-                            className="scrollbar-thin mx-auto min-h-0 max-h-[min(50vh,28rem)] w-fit max-w-full overflow-y-auto overflow-x-hidden rounded-xl border border-amber-100/25 bg-[#100910]/95 px-1 py-3 shadow-[0_12px_32px_rgba(0,0,0,0.65)] [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
+                            className="dt-card-pool-selection scrollbar-thin mx-auto min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
                         >
                             <div
                                 data-testid="dt-card-pool-track"
-                                className="mx-auto flex min-w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3"
+                                className="dt-card-pool-track mx-auto flex min-w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3"
                             >
                                 {visibleCardSelectionCards.length === 0 ? (
                                     <div
@@ -479,6 +495,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 ) : visibleCardSelectionCards.map(card => {
                                     const ownerCharacterId = players[interaction.playerId]?.characterId;
                                     const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
+                                    const inspectableCard = previewRef ? { ...card, previewRef } : undefined;
                                     const cardName = resolveCardName(card);
                                     const isSelected = selectedItems.includes(card.id);
                                     return (
@@ -489,47 +506,49 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             data-selected={isSelected ? 'true' : 'false'}
                                             data-card-pool-mode="preview"
                                             data-card-preview-ready={previewRef ? 'true' : 'false'}
-                                            data-selection-focus={isSelected
-                                                ? 'selected'
-                                                : hasFocusedSingleCardSelection ? 'deemphasized' : 'available'}
+                                            data-selection-focus={isSelected ? 'selected' : 'available'}
                                             aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
                                             aria-pressed={isSelected}
-                                            onClick={() => onSelectHandCard(card.id)}
+                                            onClick={() => {
+                                                if (!cardReading.shouldBlockClick(card.id)) onSelectHandCard(card.id);
+                                            }}
+                                            onPointerDown={event => {
+                                                if (inspectableCard) cardReading.handlePointerDown(event, card.id, inspectableCard);
+                                            }}
+                                            onPointerMove={event => cardReading.handlePointerMove(event, card.id)}
+                                            onPointerUp={() => cardReading.handlePointerUp(card.id)}
+                                            onPointerCancel={() => cardReading.handlePointerUp(card.id)}
+                                            onTouchEnd={event => {
+                                                if (cardReading.shouldBlockClick(card.id)) event.preventDefault();
+                                            }}
+                                            onContextMenu={onMagnifyCard && inspectableCard ? event => {
+                                                event.preventDefault();
+                                                onMagnifyCard(inspectableCard);
+                                            } : undefined}
                                             className={`
-                                                group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-[transform,opacity] duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
-                                                ${isSelected
-                                                    ? 'z-10'
-                                                    : hasFocusedSingleCardSelection
-                                                        ? 'opacity-75 hover:-translate-y-1 hover:scale-[1.02] hover:opacity-100 hover:z-10'
-                                                        : 'hover:-translate-y-1 hover:scale-[1.02] hover:z-10'}
+                                                group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
+                                                ${isSelected ? '-translate-y-2 z-10' : 'hover:-translate-y-1 hover:z-10'}
                                             `}
                                         >
                                             <div
                                                 data-testid={`dt-card-choice-preview-${card.id}`}
                                                 className={`
-                                                    overflow-hidden rounded-[0.3rem] transition-[box-shadow,filter] duration-200
+                                                    overflow-hidden transition-[box-shadow,filter] duration-200 ${isDoctorStrangeInteraction ? '' : 'rounded-[0.3rem]'}
                                                     ${isSelected
-                                                        ? 'ring-[3px] ring-amber-200 shadow-[0_0_0_2px_rgba(127,29,29,0.96),0_0_28px_rgba(251,191,36,0.72),0_18px_28px_rgba(0,0,0,0.58)]'
-                                                        : 'outline-solid outline-2 outline-slate-100/85 outline-offset-0 shadow-[0_12px_22px_rgba(0,0,0,0.65)] group-hover:outline-amber-100 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
+                                                        ? 'ring-2 ring-amber-200 shadow-[0_0_0_1px_rgba(127,29,29,0.86),0_0_24px_rgba(248,113,113,0.52),0_14px_24px_rgba(0,0,0,0.48)]'
+                                                        : isDoctorStrangeInteraction
+                                                            ? 'brightness-110 drop-shadow-[0_8px_10px_rgba(0,0,0,0.7)] group-hover:brightness-125'
+                                                            : 'shadow-[0_12px_22px_rgba(0,0,0,0.42)] group-hover:ring-1 group-hover:ring-red-200/75 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
                                                 `}
                                             >
                                                 <CardPreview
                                                     previewRef={previewRef}
                                                     locale={locale}
-                                                    className="rounded-[0.3rem] bg-[#150609]"
+                                                    className={isDoctorStrangeInteraction ? undefined : 'rounded-[0.3rem] bg-[#150609]'}
                                                     style={cardPoolCardStyle}
                                                     alt={cardName}
                                                 />
                                             </div>
-                                            {isSelected && (
-                                                <span
-                                                    aria-hidden="true"
-                                                    data-testid={`dt-card-choice-selected-${card.id}`}
-                                                    className="absolute -right-2 -top-2 z-20 grid h-8 w-8 place-items-center rounded-full border-[3px] border-[#2b0808] bg-amber-300 text-[#321010] shadow-[0_0_0_2px_rgba(255,244,214,0.9),0_4px_12px_rgba(0,0,0,0.6)]"
-                                                >
-                                                    <Check size={18} strokeWidth={3} />
-                                                </span>
-                                            )}
                                         </button>
                                     );
                                 })}
@@ -537,14 +556,14 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                         </div>
                         <div
                             data-testid="dt-card-pool-actions"
-                            className="mt-2 flex shrink-0 items-center justify-center gap-3"
+                            className="dt-card-pool-actions mt-2 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3"
                         >
                             {canCancel && (
                                 <GameButton
                                     onClick={onCancel}
                                     variant="secondary"
                                     size="sm"
-                                    className="min-h-[44px]"
+                                    className="col-start-1 row-start-1 justify-self-end"
                                     data-testid="dt-interaction-clear"
                                 >
                                     {t(cancelLabelKey)}
@@ -555,7 +574,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 disabled={!canConfirm}
                                 variant="primary"
                                 size="sm"
-                                className="min-h-[44px]"
+                                className="col-start-2 row-start-1"
                                 data-testid="dt-interaction-confirm"
                             >
                                 {t(confirmLabelKey)}
@@ -580,8 +599,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     )}
                 </div>
             }
-            width={targetPlayerIds.length <= 1 ? 'sm' : targetPlayerIds.length === 2 ? 'lg' : 'xl'}
-            density="compact"
+            width={compactSingleStatusHolder ? 'sm' : 'xl'}
+            density={compactSingleStatusHolder ? 'compact' : 'normal'}
             closeOnBackdrop={false} // Force interaction
             allowBackgroundInteraction={allowBackgroundInteraction}
             footer={
@@ -611,7 +630,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             <div className="flex flex-col w-full p-2">
                 {/* 玩家选择区域 */}
                 {(shouldRenderStatusOwners || isPlayerSelection) && (
-                    <div className="flex flex-wrap gap-4 justify-center">
+                    <div data-testid="dt-status-owners" className="flex flex-wrap gap-4 justify-center">
                         {targetPlayerIds.map(pid => {
                             const player = players[pid];
                             if (!player) return null;
@@ -639,7 +658,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
                                         selected={isSelected}
                                         containerClassName={`
-                                            p-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                            p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                             ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'opacity-50 cursor-not-allowed'}
                                             ${isSelected
                                                 ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
@@ -682,7 +701,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     relationLabel={relationLabel}
                                     seatLabel={seatLabel}
                                     containerClassName={`
-                                        p-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                        ${compactSingleStatusHolder ? 'p-3' : 'p-4'} rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${hasStatus
                                             ? passiveBorderClassName
                                             : 'border-slate-700 bg-slate-800/30 opacity-50'}
@@ -695,7 +714,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             selectedId={interaction.selectedStatusPlayerId === pid ? selectedStatusId : undefined}
                                             highlightAll={true}
                                             onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}
-                                            tooltipPlacementBoundarySelector={targetPlayerIds.length === 1 ? '[data-testid="dt-game-modal"]' : undefined}
+                                            tooltipPlacementBoundarySelector={isDoctorStrangeInteraction ? (targetPlayerIds.length === 1 ? '[data-testid="dt-game-modal"]' : '[data-testid="dt-status-owners"]') : undefined}
+                                            tooltipAvoidSelector={isDoctorStrangeInteraction && targetPlayerIds.length > 1 ? '#modal-root [data-testid^="dt-status-owner-"], #modal-root h2, #modal-root button' : undefined}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="normal"
                                             className="justify-center"
@@ -749,7 +769,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 : '点击作为接收目标'
                                     }
                                     containerClassName={`
-                                        p-3 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                        p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'cursor-not-allowed opacity-75'}
                                         ${isSourcePlayer
                                             ? `${passiveBorderClassName} ring-2 ring-white/10`

@@ -25,6 +25,22 @@ describe('固定结果与批量重掷的共享操作合同', () => {
         const final = diceModifyReducer(chosen, { action: 'select', dieId: 0, dieValue: 1 }, config, 1);
         expect(diceModifyToCommands(final)).toEqual([{ type: 'MODIFY_DIE', payload: { dieId: 0, newValue: value } }]);
     });
+    it('固定结果改骰提示由原骰盘左侧承载', () => {
+        const contract = createDiceInteractionContract({
+            interaction,
+            controller: {
+                result: { modifications: {}, modCount: 0, totalAdjustment: 0 },
+                stepCount: 0,
+                canConfirm: false,
+                step: () => undefined,
+                confirm: () => undefined,
+                cancel: () => undefined,
+            },
+            rootPlayerId: '0',
+        });
+
+        expect(contract?.hint).toMatchObject({ key: 'interaction.hint_choose_value', surface: 'dice-tray' });
+    });
     it('非候选值不能进入固定结果选择', () => {
         const initial = { modifications: {}, modCount: 0, totalAdjustment: 0 };
         expect(diceModifyReducer(initial, { action: 'chooseValue', value: 6 }, config, 1)).toEqual(initial);
@@ -83,7 +99,6 @@ describe('固定结果与批量重掷的共享操作合同', () => {
         })).toEqual({
             key: 'interaction.hint_select',
             params: { current: 1, max: 2 },
-            detail: { key: 'interaction.hint_reroll_detail', params: { completed: 0, selected: 1, remaining: 1 } },
         });
     });
 
@@ -143,7 +158,7 @@ describe('固定结果与批量重掷的共享操作合同', () => {
         });
     });
 
-    it('奖励骰仍待结算时，普通多步选择保留自身右侧确认和GameHints提示', () => {
+    it('奖励骰仍待结算时，普通多步选择保留自身右侧确认和骰盘提示', () => {
         const interaction: InteractionDescriptor = {
             id: 'ordinary-select-ui-contract',
             kind: 'multistep-choice',
@@ -179,13 +194,13 @@ describe('固定结果与批量重掷的共享操作合同', () => {
         expect(contract?.kind === 'multistep' ? contract.hint : undefined).toMatchObject({
             key: 'interaction.hint_select',
             params: { current: 0, max: 2 },
-            surface: 'game-hints',
+            surface: 'dice-tray',
         });
         expect(contract?.actions).toEqual({
             left: { kind: 'cancel', labelKey: 'common.cancel' },
             right: {
                 kind: 'confirmInteraction',
-                labelKey: 'interaction.skip_reroll',
+                labelKey: 'common.confirm',
                 buttonTestId: 'dice-interaction-confirm-button',
             },
         });
@@ -205,13 +220,17 @@ describe('固定结果与批量重掷的共享操作合同', () => {
             rootPlayerId: '0',
         });
         const ready = create([0, 0], []);
-        expect(ready?.hint).toMatchObject({ key: 'interaction.hint_reroll_ready', params: { current: 2, max: 2 },
-            detail: { key: 'interaction.hint_reroll_ready_detail', params: { completed: 0, selected: 2, remaining: 0 } } });
-        expect(ready?.actions.right.labelKey).toBe('interaction.confirm_reroll');
+        expect(ready?.hint).toMatchObject({
+            key: 'interaction.hint_done',
+            params: { current: 2, max: 2 },
+        });
+        expect(ready?.hint.detail).toBeUndefined();
+        expect(ready?.actions.right.labelKey).toBe('common.confirm');
         const done = create([], [0, 0]);
-        expect(done?.hint).toMatchObject({ key: 'interaction.hint_reroll_done',
-            detail: { key: 'interaction.hint_reroll_done_detail', params: { completed: 2, selected: 0, remaining: 0 } } });
-        expect(done?.actions.right.labelKey).toBe('interaction.finish_reroll');
+        expect(done?.hint).toMatchObject({
+            key: 'interaction.hint_done',
+        });
+        expect(done?.actions.right.labelKey).toBe('common.confirm');
     });
 
     it('不可取消的骰子交互隐藏取消动作，但仍提供提示与确认', () => {

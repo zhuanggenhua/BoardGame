@@ -5,10 +5,11 @@ import { QidahenDomain } from '../domain';
 import type { QidahenCore, QidahenHandLimitDiscardSelection } from '../domain/types';
 import { QidahenHandInteractionTray } from '../ui/QidahenHandInteractionTray';
 import { resolveQidahenHandInteraction } from '../ui/handInteractionView';
+import { random } from './helpers/paymentSelectionHarness';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (_key: string, values: Record<string, unknown>) => String(values.defaultValue)
+        t: (key: string, values: Record<string, unknown> = {}) => String(values.defaultValue ?? key)
             .replace(/\{\{(\w+)\}\}/g, (_match, key: string) => String(values[key])),
     }),
 }));
@@ -16,7 +17,8 @@ vi.mock('react-i18next', () => ({
 afterEach(cleanup);
 
 const freshCore = (): QidahenCore => ({
-    ...QidahenDomain.setup(['0', '1', '2'], () => 0.5),
+    ...QidahenDomain.setup(['0', '1', '2'], random),
+    currentPlayer: '0',
     selectedActionId: null,
     sunYuanhuaTechSelection: null,
     wheelRecruitTrainProgress: null,
@@ -35,6 +37,7 @@ const mountTray = (
         onResolveSunYuanhuaTech: vi.fn(),
         onConfirmWheelDispatchPayment: vi.fn(),
         onConfirmWheelRecruitTrainPayment: vi.fn(),
+        onConfirmTurnChoice: vi.fn(),
     };
     const view = render(
         <QidahenHandInteractionTray
@@ -47,6 +50,19 @@ const mountTray = (
 };
 
 describe('七大恨手牌决策托盘', () => {
+    it('年度支持选择在手牌托盘保留所选牌身份，并提交当前正式选择', () => {
+        const core = freshCore();
+        const cards = core.handCards.filter(card => card.faction === 'ming').slice(0, 2);
+        const input = { active: true, cardIds: cards.map(card => card.id), selectedCardIds: cards.map(card => card.id),
+            selectedPieceIds: [], canConfirm: true, title: '叶赫部 · 尚需支持2支部队' };
+        const { rerender, actions } = mountTray(core, false);
+        rerender(<QidahenHandInteractionTray interaction={resolveQidahenHandInteraction(core, false, null, [], input)} bottom={309} {...actions} />);
+        const summary = screen.getByTestId('qidahen-turn-selected-card-summary');
+        for (const card of cards) expect(summary.textContent).toContain(card.label);
+        fireEvent.click(screen.getByTestId('qidahen-turn-confirm'));
+        expect(actions.onConfirmTurnChoice).toHaveBeenCalledOnce();
+        expect(actions.onConfirmSelectedAction).not.toHaveBeenCalled();
+    });
     it('没有当前手牌决策时不占槽位，过期行动选中值不会重新打开支付', () => {
         const core = { ...freshCore(), selectedActionId: 'grant-pardon' };
         mountTray(core, false);
@@ -126,7 +142,7 @@ describe('七大恨手牌决策托盘', () => {
         rerender(<QidahenHandInteractionTray interaction={{
             kind: 'action', action: { id: 'raid', label: '突袭作战', cost: 1 },
             selectedCardLabels: ['银两'], selectedCount: 1, canConfirm: true,
-            raidTarget: { targetRegionName: '叶赫部', resolutionHint: '辽东 → 叶赫部 · 平原 3 · 出兵3/战力8' },
+            raidSourceSelected: true, raidTarget: { targetRegionName: '叶赫部', resolutionHint: '辽东 → 叶赫部 · 平原 3 · 出兵3/战力8' },
         }} bottom={309} {...actions} />);
         expect(screen.getByTestId('qidahen-action-payment-hint').textContent).toContain('辽东 → 叶赫部 · 平原 3');
         expect(screen.getByTestId('qidahen-action-payment-selected-cards').textContent).toContain('银两');

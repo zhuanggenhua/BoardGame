@@ -13,6 +13,7 @@ type QidahenTutorialSetupData = {
 
 const NATURAL_OPENING_CONTRACT = {
     entryKind: 'natural-opening', startingPoint: 'formal-opening', formalEntryPhase: 'action-window',
+    learnerFaction: 'ming',
     currentActorFaction: 'mongol', precedingAtoms: ['setup-complete'], firstRealDecision: 'choose-wheel-move',
     injectedDifferences: [], scope: 'mainline',
 } as const;

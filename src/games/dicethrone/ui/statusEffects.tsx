@@ -1207,6 +1207,7 @@ export const SelectableStatusBadge = ({
     characterId,
     visualDefinitions,
     tooltipPlacementBoundarySelector,
+    tooltipAvoidSelector,
 }: {
     effectId: string;
     stacks: number;
@@ -1220,6 +1221,7 @@ export const SelectableStatusBadge = ({
     characterId?: string;
     visualDefinitions?: TokenDef[];
     tooltipPlacementBoundarySelector?: string;
+    tooltipAvoidSelector?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const preferredDefinitions = resolveVisualDefinitions(characterId, visualDefinitions);
@@ -1308,6 +1310,7 @@ export const SelectableStatusBadge = ({
                 isVisible={isHovered}
                 position="right"
                 placementBoundarySelector={tooltipPlacementBoundarySelector}
+                avoidSelector={tooltipAvoidSelector}
             />
         </div>
     );
@@ -1329,6 +1332,7 @@ export const SelectableEffectsContainer = ({
     characterId,
     visualDefinitions,
     tooltipPlacementBoundarySelector,
+    tooltipAvoidSelector,
 }: {
     effects: Record<string, number>;
     tokens?: Record<string, number>;
@@ -1344,6 +1348,7 @@ export const SelectableEffectsContainer = ({
     characterId?: string;
     visualDefinitions?: TokenDef[];
     tooltipPlacementBoundarySelector?: string;
+    tooltipAvoidSelector?: string;
 }) => {
     const activeEffects = Object.entries(effects).filter(([, stacks]) => stacks > 0);
     const activeTokens = tokens ? Object.entries(tokens).filter(([, amount]) => amount > 0) : [];
@@ -1368,6 +1373,7 @@ export const SelectableEffectsContainer = ({
                     characterId={characterId}
                     visualDefinitions={visualDefinitions}
                     tooltipPlacementBoundarySelector={tooltipPlacementBoundarySelector}
+                    tooltipAvoidSelector={tooltipAvoidSelector}
                 />
             ))}
         </div>

@@ -11,7 +11,7 @@ import {
 } from '../../../core';
 import { getOptimizedImageUrls, getLocalizedAssetPath } from '../../../core/AssetLoader';
 import { OptimizedImage } from './OptimizedImage';
-import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteImgStyle, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
+import { type SpriteAtlasConfig, type SpriteAtlasFrameConfig, computeSpriteAspectRatio, computeSpriteImgStyle, computeSpriteStyle } from '../../../engine/primitives/spriteAtlas';
 import {
     registerCardAtlasSource,
     getCardAtlasSource,
@@ -110,6 +110,10 @@ export function getCardPreviewAspectRatio(
     previewRef: CardPreviewRef,
     locale?: string,
 ): number | undefined {
+    if (previewRef.type === 'atlas') {
+        const source = getCardAtlasSource(previewRef.atlasId);
+        return source ? computeSpriteAspectRatio(previewRef.index, source.config) : undefined;
+    }
     if (previewRef.type !== 'renderer') return undefined;
     const ratio = previewRendererMetaRegistry
         .get(previewRef.rendererId)

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { InteractionDescriptor, HeroState } from '../domain/types';
+import type { AbilityCard, InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
 import { InteractionOverlay } from './InteractionOverlay';
@@ -24,6 +24,7 @@ interface ChoiceObjectSelectionProps {
     statusIconAtlas?: StatusAtlases | null;
     locale?: string;
     onResolve: (optionId: string) => void;
+    onMagnifyCard?: (card: AbilityCard) => void;
 }
 
 /**
@@ -46,6 +47,7 @@ export const ChoiceObjectSelection: React.FC<ChoiceObjectSelectionProps> = ({
     statusIconAtlas,
     locale,
     onResolve,
+    onMagnifyCard,
 }) => {
     const [selectedPlayerId, setSelectedPlayerId] = React.useState<PlayerId | undefined>();
     const [selectedCardId, setSelectedCardId] = React.useState<string | undefined>();
@@ -133,6 +135,7 @@ export const ChoiceObjectSelection: React.FC<ChoiceObjectSelectionProps> = ({
             onSelectStatus={selectStatus}
             onSelectPlayer={selectPlayer}
             onSelectHandCard={selectCard}
+            onMagnifyCard={onMagnifyCard}
             onConfirm={confirm}
             statusIconAtlas={statusIconAtlas}
             locale={locale}

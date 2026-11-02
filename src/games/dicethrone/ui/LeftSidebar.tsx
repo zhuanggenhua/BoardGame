@@ -162,7 +162,7 @@ export const LeftSidebar = ({
                         locale={locale}
                         atlas={statusIconAtlas}
                         characterId={viewPlayer.characterId}
-                        tooltipPosition="top"
+                        tooltipPosition={viewPlayer.characterId === 'doctor_strange' ? 'top' : undefined}
                         tooltipPlacementBoundarySelector={viewPlayer.characterId === 'doctor_strange' ? '[data-tutorial-id="status-tokens"]' : undefined}
                         tokenDefinitions={tokenDefinitions}
                         tokenStackLimits={viewPlayer.tokenStackLimits}

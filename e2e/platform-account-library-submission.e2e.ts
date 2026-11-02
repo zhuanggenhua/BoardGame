@@ -33,7 +33,8 @@ const SOURCE_FILES = [
     'package.json', 'package-lock.json', 'src/server/storage/UGCStorageService.ts',
     'src/App.tsx', 'src/pages/Home.tsx', 'src/pages/HomeEntry.tsx',
     'src/components/home/PlatformHomeSurface.tsx', 'src/components/home/PlatformGameCatalog.tsx',
-    'src/components/home/PlatformFavoriteButton.tsx', 'src/components/home/PlatformUploadWorkspace.tsx',
+    'src/components/home/PlatformFavoriteButton.tsx', 'src/components/home/PlatformUploadWorkspace.tsx', 'src/components/home/SubmissionCoverField.tsx',
+    'src/components/home/platform-upload.css', 'public/locales/zh-CN/lobby.json', 'public/locales/en/lobby.json',
     'src/components/home/useGameLibrary.ts', 'src/components/lobby/thumbnails.tsx',
     'src/components/common/media/OptimizedImage.tsx', 'src/config/games.config.tsx',
     'src/core/AssetLoader.ts', 'src/api/user-library.ts', 'src/api/game-submissions.ts',
@@ -486,6 +487,10 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             await page.getByRole('button', { name: '菜单', exact: true }).click();
             await page.getByRole('button', { name: '上传', exact: true }).click();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
+            await expect(page.getByRole('heading', { name: '基本资料', exact: true })).toBeVisible();
+            await expect(page.getByRole('heading', { name: '介绍与规则', exact: true })).toBeVisible();
+            await expect(page.getByRole('button', { name: '添加封面', exact: true })).toBeVisible();
+            await expect(page.locator('input[type="file"]')).toBeHidden();
             const title = `合成桌游投稿-${RUN_ID.slice(-6)}`;
             const editedTitle = `${title}-已修改`;
             const fillDraft = async (name: string, description: string) => {

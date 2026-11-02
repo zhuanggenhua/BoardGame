@@ -7,7 +7,6 @@ import type { StatusAtlases } from './statusEffects';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 import { resolveI18nList } from './utils';
 import { getVisualMetaById } from '../domain/statusEffects';
-import { CardPreview } from '../../../components/common/media/CardPreview';
 import type { CardPreviewRef } from '../../../core';
 import type { HeroState } from '../domain/types';
 import { getPortraitStyle } from './assets';
@@ -100,7 +99,6 @@ export const ChoiceModal = ({
     const hasValidOptions = choice && choice.options && choice.options.length > 0;
     const isOpen = !!hasValidOptions;
     const isSlider = !!choice?.slider;
-    const cardOptions = choice?.options.filter(option => option.previewRef) ?? [];
 
     // slider 约定：第一个 option = 确认（value=max），最后一个 = 跳过（value=0）
     const confirmOption = isSlider ? choice!.options[0] : undefined;
@@ -147,10 +145,10 @@ export const ChoiceModal = ({
         <GameModal
             isOpen={isOpen}
             title={t('choices.title')}
-            width={cardOptions.length > 2 ? "xl" : cardOptions.length > 0 ? "lg" : "md"}
+            width="md"
             closeOnBackdrop={false}
         >
-            <div className="flex flex-col gap-6 max-[1023px]:gap-2 w-full items-center">
+            <div className="flex flex-col gap-6 w-full items-center">
                 {choice && (
                     <p className="text-lg text-slate-200 font-medium">
                         {t(choice.title)}
@@ -229,48 +227,13 @@ export const ChoiceModal = ({
                                             key={option.id}
                                             onClick={() => onResolve(option.id)}
                                             disabled={!canResolve || option.disabled}
-                                            variant="ghost"
+                                            variant="secondary"
                                             className="min-w-[100px]"
                                             data-option-id={option.id}
                                             data-choice-custom-id={option.customId}
                                         >
                                             {resolveOptionLabel(option)}
                                         </GameButton>
-                                    ))}
-                                </div>
-                            );
-                        }
-
-                        if (cardOptions.length) {
-                            return (
-                                <div className="flex flex-col items-center gap-4 w-full">
-                                    <div className="flex flex-wrap justify-center gap-4 w-full">
-                                        {cardOptions.map(option => (
-                                            <button
-                                                key={option.id}
-                                                type="button"
-                                                aria-label={resolveOptionLabel(option)}
-                                                disabled={!canResolve || option.disabled}
-                                                onClick={() => onResolve(option.id)}
-                                                data-option-id={option.id}
-                                                data-choice-custom-id={option.customId}
-                                                className="w-40 max-w-full min-w-0 rounded-lg focus-visible:outline-amber-400 hover:ring-2 hover:ring-amber-400 disabled:opacity-50"
-                                                style={cardOptions.length === 1
-                                                    ? { maxWidth: 'min(10rem, calc(var(--runtime-viewport-height, 100vh) * .31))' }
-                                                    : undefined}
-                                            >
-                                                <CardPreview previewRef={option.previewRef} locale={locale}
-                                                    alt={resolveOptionLabel(option)}
-                                                    className="w-full rounded-lg overflow-hidden"
-                                                    style={{ aspectRatio: '669 / 1086' }} />
-                                                <span className="block pt-2 max-[1023px]:pt-0 text-sm text-amber-100">{resolveOptionLabel(option)}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {choice?.options.filter(option => !option.previewRef).map(option => (
-                                        <GameButton key={option.id} variant="ghost" disabled={!canResolve || option.disabled}
-                                            data-option-id={option.id} data-choice-custom-id={option.customId}
-                                            onClick={() => onResolve(option.id)}>{resolveOptionLabel(option)}</GameButton>
                                     ))}
                                 </div>
                             );
@@ -287,7 +250,7 @@ export const ChoiceModal = ({
                                             key={option.id}
                                             onClick={() => onResolve(option.id)}
                                             disabled={!canResolve || option.disabled}
-                                            variant={isCancelOption ? 'ghost' : 'option'}
+                                            variant={isCancelOption ? 'secondary' : 'option'}
                                             fullWidth
                                             className={option.dicePreview || target ? 'flex-col' : undefined}
                                             data-option-id={option.id}
@@ -500,7 +463,7 @@ const SliderChoice = ({
                     <GameButton
                         onClick={onSkip}
                         disabled={!canResolve}
-                        variant="ghost"
+                        variant="secondary"
                         className="min-w-[100px]"
                     >
                         {skipLabel}

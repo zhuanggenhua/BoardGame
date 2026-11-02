@@ -57,7 +57,9 @@ export function applyQidahenChronologyTransition(core: QidahenCore): QidahenCore
         ? core.regions.map(region => ({ ...region, eventMarkers: region.eventMarkers.filter(marker => marker.kind !== 'drought') })) : core.regions;
     const chronology = { ...core.chronology, currentCardId: nextCard.cardId, drawPile: core.chronology.drawPile.slice(1), yearStats: buildQidahenYearStats({ regions }) };
     return { ...core, regions, chronology, currentYearIndex: core.currentYearIndex + 1, currentYear: getYearLabelByIndex(core.currentYearIndex + 1),
-        currentFactionOrder: filterFactionOrderForScenario(core.scenarioId, nextCard.factionOrder), yearCards: buildQidahenActualYearCardSlots(chronology) };
+        currentFactionOrder: filterFactionOrderForScenario(core.scenarioId, nextCard.factionOrder),
+        // PDF p5：先按新纪年出人物，全部完成后才公开再下一年的取分条件。
+        yearCards: buildQidahenActualYearCardSlots(chronology).filter(card => card.id === 'current-year') };
 }
 
 export function applyQidahenChronologyCharacter(core: QidahenCore, factionId: QidahenFactionId, characterIds: string[]): QidahenCore {

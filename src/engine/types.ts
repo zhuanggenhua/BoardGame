@@ -411,6 +411,8 @@ export interface TutorialStepSnapshot {
     /** 可选的教程内参考图，用于首次讲清卡面、图标或帮助卡读法。 */
     visual?: TutorialStepVisual;
     highlightTarget?: string;
+    /** 说明贴近的真实阅读对象；省略时沿用高亮目标，不改变场景聚焦与输入权限。 */
+    tooltipAnchorTarget?: string;
     /**
      * CSS selectors for continuous reading surfaces or other protected regions
      * that the tutorial card must avoid covering when choosing a placement.

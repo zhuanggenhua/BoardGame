@@ -9,7 +9,7 @@ export type QidahenWheelSubaction = 'reclaim' | 'military-farm' | 'diplomacy' | 
 export type QidahenTurnResolutionStep = 'menu' | 'reclaim-targets' | 'farm-target' | 'diplomacy-targets'
     | 'hire-payment' | 'hire-target' | 'dispatch-payment' | 'dispatch-source' | 'dispatch-troops' | 'dispatch-target'
     | 'slot-character' | 'await-child' | 'await-hand' | 'finish-hand' | 'await-fact' | 'midyear-income' | 'character-judgement' | 'tribute'
-    | 'maintenance' | 'maintenance-payment' | 'upkeep' | 'chronology' | 'chronology-payment' | 'year-characters' | 'character-conflict' | 'wei-extra-character' | 'income-bonus' | 'complete';
+    | 'maintenance' | 'maintenance-payment' | 'upkeep' | 'chronology' | 'chronology-payment' | 'year-characters' | 'character-conflict' | 'wei-extra-character' | 'reveal-next-year' | 'income-bonus' | 'complete';
 
 export interface QidahenUpkeepTask {
     regionId: string;
@@ -61,7 +61,7 @@ export interface QidahenTurnResolutionFrame extends ResolutionFrame {
 
 export type QidahenTurnResolutionFact =
     | { kind: 'choose-action'; action: QidahenWheelSubaction }
-    | { kind: 'choose-hand' }
+    | { kind: 'choose-hand'; actionId: string; sourceHandCardId?: string }
     | { kind: 'skip-hand' }
     | { kind: 'finish-slot' }
     | { kind: 'cancel-selection' }
@@ -88,6 +88,7 @@ export type QidahenTurnResolutionFact =
     | { kind: 'judgement'; task: QidahenCharacterJudgementTask; rawRoll: number; outcome: QidahenCharacterOutcome }
     | { kind: 'chronology'; factionId: QidahenFactionId; cardIds: string[]; accept: boolean }
     | { kind: 'year-transition' }
+    | { kind: 'reveal-next-year' }
     | { kind: 'character'; factionId: QidahenFactionId; characterIds: string[] }
     | { kind: 'finish-wheel' };
 

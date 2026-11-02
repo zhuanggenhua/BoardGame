@@ -1,5 +1,5 @@
 import { UGC_API_URL } from '../config/server';
-import type { CreatorClaim, ExternalGame, ExternalGameFields, ExternalPlayHistory } from '../shared/externalGames';
+import type { CreatorClaim, ExternalGame, ExternalGameFields, ExternalPlayHistory, GameRulesDocument } from '../shared/externalGames';
 import type { GameSubmissionRecord } from './game-submissions';
 
 async function request<T>(path: string, options: { token?: string; method?: string; data?: unknown; keepalive?: boolean } = {}): Promise<T> {
@@ -28,6 +28,9 @@ export const updateOwnedGame = (token: string, gameId: string, data: ExternalGam
     request<ExternalGame>(`/external-games/${id(gameId)}`, { token, method: 'PUT', data });
 export const uploadOwnedCover = (token: string, gameId: string, file: File) =>
     request<{ coverUrl: string }>(`/external-games/${id(gameId)}/cover`, { token, method: 'POST', data: upload(file) });
+export const uploadOwnedRules = (token: string, gameId: string, file: File) =>
+    request<{ rulesDocument: GameRulesDocument }>(`/external-games/${id(gameId)}/rules`, { token, method: 'POST', data: upload(file) });
+export const removeOwnedRules = (token: string, gameId: string) => request<{ removed: boolean }>(`/external-games/${id(gameId)}/rules`, { token, method: 'DELETE' });
 export const listCreatorClaims = (token: string) => request<{ items: CreatorClaim[] }>('/creator-claims', { token });
 export const createCreatorClaim = (token: string, data: { gameId: string; profileUrl: string; explanation: string }) =>
     request<CreatorClaim>('/creator-claims', { token, method: 'POST', data });

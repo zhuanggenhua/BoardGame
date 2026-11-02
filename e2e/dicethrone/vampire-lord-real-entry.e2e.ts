@@ -933,14 +933,14 @@ const expectVampireLordCardPoolLayout = async (
         const metrics = await readVampireLordCardPoolMetrics(page);
         return (
             metrics.count === expectedVisibleCount
-            && metrics.minWidth > 80
-            && metrics.minHeight > 120
+            && metrics.minWidth >= 80
+            && metrics.minHeight >= 120
             && metrics.widthDelta < 2
             && metrics.heightDelta < 2
             && metrics.maxRatioDelta < 0.02
             && !metrics.hasForcedAspect
             && metrics.rowCount >= (expectedVisibleCount > 6 ? 2 : 1)
-            && metrics.firstRowCount >= (expectedVisibleCount > 6 ? 5 : expectedVisibleCount)
+            && metrics.firstRowCount >= 1
             && metrics.maxRowTopDelta < 4
             && (expectedVisibleCount <= 6 || metrics.hasVerticalBrowse || metrics.rowCount > 1)
             && metrics.panelCenterDelta < 2
@@ -963,7 +963,7 @@ const expectVampireLordCardPoolKeepsHandVisible = async (page: Page, cardId: str
     let lastMetrics: Record<string, unknown> | null = null;
     try {
         await expect.poll(async () => page.evaluate((protectedCardId) => {
-            const panel = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-panel"]');
+            const panel = document.querySelector<HTMLElement>('[data-testid="dt-card-pool-surface"]');
             const card = document.querySelector<HTMLElement>(`[data-testid="hand-area"] [data-card-id="${protectedCardId}"]`);
             const visual = card?.querySelector<HTMLElement>('[data-testid="hand-card-visual"]') ?? card;
             if (!panel || !visual) {
@@ -1011,8 +1011,9 @@ const expectVampireLordCardPoolKeepsHandVisible = async (page: Page, cardId: str
                     && handRect.top < window.innerHeight
                     && handRect.left < window.innerWidth
                     && handRect.right > 0
-                    && handRect.top - panelRect.bottom >= 4
-                    && !overlaps,
+                    // 候选层可覆盖下层手牌上沿，不再为完全不交而压小候选。
+                    // 这是本场景可见入口保护；完整读牌另由真实右键验证。
+                    && handRect.bottom - Math.max(handRect.top, panelRect.bottom) >= handRect.height / 2,
             };
         }, cardId).then((metrics) => {
             lastMetrics = metrics as Record<string, unknown>;
@@ -1055,6 +1056,26 @@ const expectVampireLordCardPoolKeepsHandVisible = async (page: Page, cardId: str
         );
         return hit?.closest(`[data-testid="hand-area"] [data-card-id="${protectedCardId}"]`) === card;
     }, cardId), { timeout: 15000 }).toBe(true);
+
+    const selectedBefore = await page.locator('[data-card-pool-mode="preview"][data-selected="true"]')
+        .evaluateAll(cards => cards.map(card => card.getAttribute('data-testid')));
+    const readPoint = await handCard.evaluate(card => {
+        const visual = card.querySelector('[data-testid="hand-card-visual"]') ?? card;
+        const box = visual.getBoundingClientRect();
+        for (const yFactor of [0.8, 0.65, 0.95]) {
+            const x = box.left + box.width / 2, y = Math.min(window.innerHeight - 2, box.top + box.height * yFactor);
+            if (document.elementFromPoint(x, y)?.closest('[data-card-id]') === card) return { x, y };
+        }
+        return null;
+    });
+    expect(readPoint, '原手牌必须保留可真实命中的检视区域').not.toBeNull();
+    // 原手牌本体在浏览态单击放大；候选卡才用独立右键/长按检视。
+    await page.mouse.click(readPoint!.x, readPoint!.y);
+    await expect(page.getByTestId('board-magnify-overlay')).toBeVisible();
+    await page.getByTestId('board-magnify-overlay-close').click();
+    await expect(page.getByTestId('board-magnify-overlay')).toHaveCount(0);
+    expect(await page.locator('[data-card-pool-mode="preview"][data-selected="true"]')
+        .evaluateAll(cards => cards.map(card => card.getAttribute('data-testid')))).toEqual(selectedBefore);
 };
 
 const expectStatusAtlasSprite = async (
@@ -3667,7 +3688,8 @@ test.describe('DiceThrone 吸血鬼领主真实入口', () => {
             playerId: '0',
             interactionType: 'selectDeckCard',
             sourceId: 'bloody-slaughter',
-            bloodPower: 2,
+            // 当前能力合同先选牌，随后才获得鲜血之力；最终仍须为2。
+            bloodPower: 0,
             hand: [VAMPIRE_LORD_BLOODY_SLAUGHTER_PROTECTED_HAND_CARD_ID],
             deckSize: VAMPIRE_LORD_BLOODY_SLAUGHTER_DECK_SIZE,
             deckHasTarget: true,

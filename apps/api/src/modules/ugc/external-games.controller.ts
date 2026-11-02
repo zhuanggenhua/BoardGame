@@ -1,10 +1,12 @@
-import { BadRequestException, Body, Controller, Get, Inject, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors, ValidationPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { ExternalGamesService } from './external-games.service';
 import { ExternalPlayService } from './external-play.service';
 import { ExternalGameEditDto, PlayHeartbeatDto } from './dtos/external-game.dto';
+import { MAX_RULES_FILE_BYTES } from '../../../../../src/shared/externalGames';
+import type { GameRulesUpload } from './game-rules-file';
 
 const validated = <T>(expectedType: new () => T) => new ValidationPipe({ whitelist: true, transform: true, expectedType });
 @Controller('ugc/external-games')
@@ -28,6 +30,14 @@ export class ExternalGamesController {
         if (!file) throw new BadRequestException('请选择封面图片');
         return this.games.uploadCover(user.userId, id, file.buffer);
     }
+    @Post(':id/rules') @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_RULES_FILE_BYTES } }))
+    rules(@CurrentUser() user: { userId: string }, @Param('id') id: string, @UploadedFile() file?: GameRulesUpload) {
+        if (!file) throw new BadRequestException('请选择规则文件');
+        return this.games.uploadRules(user.userId, id, file);
+    }
+    @Delete(':id/rules') @UseGuards(JwtAuthGuard)
+    removeRules(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.games.removeRules(user.userId, id); }
     @Post(':id/sessions') @UseGuards(JwtAuthGuard)
     start(@CurrentUser() user: { userId: string }, @Param('id') id: string) { return this.plays.start(user.userId, id); }
     @Put('sessions/:sessionId') @UseGuards(JwtAuthGuard)

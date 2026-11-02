@@ -67,6 +67,7 @@ export function advanceQidahenTurnResolutionData(core: QidahenCore, data: Qidahe
         case 'begin-chronology': return { ...data, step: 'chronology-payment', paymentCardIds: [] };
         case 'chronology': return { ...data, step: fact.accept ? 'year-characters' : 'chronology', chronologyIndex: fact.accept ? data.chronologyIndex : data.chronologyIndex + 1, paymentCardIds: [], yearCharacterIndex: -1 };
         case 'year-transition': return { ...data, step: 'year-characters', yearCharacterIndex: 0 };
+        case 'reveal-next-year': return { ...data, step: 'complete' };
         case 'character': {
             const weiSelected = fact.characterIds.includes('ming-wei-zhongxian');
             const next = fromStep === 'slot-character' ? completeSubaction(data) : { ...data, step: 'year-characters' as const, yearCharacterIndex: data.yearCharacterIndex + 1 };
@@ -94,7 +95,7 @@ export function normalizeQidahenTurnResolutionData(core: QidahenCore, data: Qida
     if (data.step === 'maintenance' && data.maintenanceIndex >= core.fortifications.length) return { ...data, step: 'upkeep', upkeepTasks: buildQidahenUpkeepTasks(core), upkeepIndex: 0 };
     if (data.step === 'upkeep' && data.upkeepIndex >= data.upkeepTasks.length) return { ...data, step: 'chronology', chronologyCandidates: getQidahenChronologyClaimOrder(core), chronologyIndex: 0 };
     if (data.step === 'chronology' && data.chronologyIndex >= data.chronologyCandidates.length) return { ...data, step: 'year-characters', yearCharacterIndex: -1 };
-    if (data.step === 'year-characters' && data.yearCharacterIndex >= core.currentFactionOrder.length) return { ...data, step: 'complete' };
+    if (data.step === 'year-characters' && data.yearCharacterIndex >= core.currentFactionOrder.length) return { ...data, step: 'reveal-next-year' };
     return data;
 }
 
@@ -103,6 +104,7 @@ export function getQidahenAutomaticTurnFact(core: QidahenCore, data: QidahenTurn
     if (data.step === 'tribute') return { kind: 'tribute' };
     if (data.step === 'complete') return { kind: 'finish-wheel' };
     if (data.step === 'year-characters' && data.yearCharacterIndex < 0) return { kind: 'year-transition' };
+    if (data.step === 'reveal-next-year') return { kind: 'reveal-next-year' };
     if (data.step === 'maintenance-payment') {
         const fortification = core.fortifications[data.maintenanceIndex];
         if (computeQidahenSelectedPaymentValue(core.handCards, data.paymentCardIds) >= getQidahenFortificationMaintenanceCost(core, fortification.id)) return { kind: 'maintenance', fortificationId: fortification.id, cardIds: data.paymentCardIds, maintain: true };

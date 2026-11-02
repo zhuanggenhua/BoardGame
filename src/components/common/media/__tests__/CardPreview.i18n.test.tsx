@@ -26,6 +26,18 @@ const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
     rowHeights: [200],
 };
 
+it('卡牌放大读取实际帧比例而不是整张图集比例', () => {
+    registerCardAtlasSource('test:inspect-frame-ratios', {
+        image: 'test/frame-ratios',
+        config: { imageW: 1000, imageH: 2000, frames: [
+            { x: 0, y: 0, width: 600, height: 1000 },
+            { x: 600, y: 0, width: 400, height: 1000 },
+        ] },
+    });
+    expect(getCardPreviewAspectRatio({ type: 'atlas', atlasId: 'test:inspect-frame-ratios', index: 0 })).toBe(0.6);
+    expect(getCardPreviewAspectRatio({ type: 'atlas', atlasId: 'test:inspect-frame-ratios', index: 1 })).toBe(0.4);
+});
+
 describe('CardPreview i18n atlas path', () => {
     beforeEach(() => {
         vi.unstubAllEnvs();
@@ -239,7 +251,9 @@ describe('CardPreview i18n atlas path', () => {
                 expect(img?.getAttribute('data-debug-local-fetch')).toBe('direct-native');
             });
 
-            expect(fetchSpy).not.toHaveBeenCalled();
+            // 只核对当前图片；后台语言包请求不属于图片的 fetch/blob 路径。
+            const imageFetches = fetchSpy.mock.calls.filter(([input]) => String(input).includes('tts_atlas_8789f47742'));
+            expect(imageFetches).toHaveLength(0);
         } finally {
             Object.defineProperty(globalThis, 'fetch', {
                 configurable: true,

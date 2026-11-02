@@ -18,16 +18,16 @@ export const fateDominationCriticalImageResolver:CriticalImageResolver=(gameStat
   if(!core.shintoEventFaceDown)critical.push(...core.currentEvents.shinto.map(card=>card.assetPath));
   for(const id of core.playerIds){
    const player=core.players[id];critical.push(FATE_MASTER_BY_ID[player.masterId]?.assetPath);
-   if(player.locationId)critical.push(fateTokenAsset(player.masterId));
+   critical.push(fateTokenAsset(player.masterId));
    const publicCards=player.publicView?.playedCards??player.hand.filter(card=>player.activeAttackIds.includes(card.id));
    warm.push(...projectFateSkillCards(player,viewerId).flatMap(card=>card?[card.assetPath]:[]));
    warm.push(...publicCards.map(card=>FATE_ATTACK_BY_ID[card.definitionId]?.assetPath));
    if(id===viewerId || player.isRevealed){
-    const identity=FATE_SERVANT_BY_ID[player.servantId];warm.push(identity?.assetPath,...(identity?.skillAssetPaths??[]));
+    const identity=FATE_SERVANT_BY_ID[player.servantId];critical.push(identity?.assetPath,...(identity?.skillAssetPaths??[]));
    }
    const seal=fateCommandSealPreview(player.masterId);
-   if(seal?.type==='image')warm.push(seal.src);
-   else if(seal?.type==='atlas')warm.push('fate-domination/seals/command-seal-shared-atlas');
+   if(seal?.type==='image')critical.push(seal.src);
+   else if(seal?.type==='atlas')critical.push('fate-domination/seals/command-seal-shared-atlas');
   }
  }
  if(viewer && core?.phase!=='preparation')critical.push(...viewer.hand.map(card=>FATE_ATTACK_BY_ID[card.definitionId]?.assetPath),...(servant?.skillAssetPaths??[]));

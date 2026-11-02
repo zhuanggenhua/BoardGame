@@ -144,7 +144,8 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
                         }} />}
                   </div>
                 </div>
-            </> : section === 'upload' ? <PlatformUploadWorkspace onLogin={onLogin} initialSubmissionId={searchParams.get('submission') ?? undefined} onBack={searchParams.get('fromProfile') ? () => {
+            </> : section === 'upload' ? <PlatformUploadWorkspace onLogin={onLogin} submissionId={searchParams.get('submission') ?? undefined}
+                onSelectSubmission={id => { setSearchParams(current => { const next = new URLSearchParams(current); if (id) next.set('submission', id); else next.delete('submission'); return next; }, { replace: true }); }} onBack={searchParams.get('fromProfile') ? () => {
                 setSearchParams(current => { const next = new URLSearchParams(current); next.set('section', 'profile'); next.set('tab', 'submissions'); next.delete('submission'); next.delete('fromProfile'); return next; });
             } : undefined} />
                 : <PlatformProfile favoriteCount={allCards.filter(game => favoriteIds.has(game.id)).length} onLogin={onLogin} tab={searchParams.get('tab') ?? 'overview'}

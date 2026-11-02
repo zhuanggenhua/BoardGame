@@ -7,12 +7,36 @@ import { QidahenBattleRollSequence } from '../ui/QidahenBattleRollSequence';
 
 const { inputs } = vi.hoisted(() => ({ inputs: [] as DiceBoxPhysicsSourceProps[] }));
 vi.mock('../../../lib/dice-physics/DiceBoxPhysicsSource', () => ({
-    DiceBoxPhysicsSource: (props: DiceBoxPhysicsSourceProps) => { inputs.push(props); return <div />; },
+    DiceBoxPhysicsSource: (props: DiceBoxPhysicsSourceProps) => { inputs.push(props); return <div data-testid={props.testId} />; },
 }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); inputs.length = 0; });
 
 describe('战斗权威骰果的物理显示投影', () => {
+    it('同侧混合骰种仍归同侧，双方所有骰子停稳前不揭示结果', async () => {
+        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+            fillRect() {}, beginPath() {}, arc() {}, fill() {},
+        } as unknown as CanvasRenderingContext2D);
+        const rolls = { stages: [{
+            phase: 'melee', attackerRolls: [{ dieSides: 6, raw: 3, value: 3 }, { dieSides: 10, raw: 5, value: 5 }],
+            defenderRolls: [{ dieSides: 8, raw: 4, value: 4 }], attackerTotal: 8, defenderTotal: 4, attackerDamage: 2, defenderDamage: 1,
+        }] } as unknown as QidahenBattleRolls;
+        const view = render(<QidahenBattleRollSequence rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
+        expect(view.getByTestId('qidahen-battle-roll-context')).toBeVisible();
+        expect(view.getByTestId('qidahen-battle-roll-context').textContent).toBe('辽北 → 叶赫部');
+        const attacker = view.getByTestId('qidahen-battle-side-attacker');
+        expect(attacker.contains(view.getByTestId('qidahen-battle-dice-physics-0-attacker-6'))).toBe(true);
+        expect(attacker.contains(view.getByTestId('qidahen-battle-dice-physics-0-attacker-10'))).toBe(true);
+        expect(view.getByTestId('qidahen-battle-side-defender').contains(view.getByTestId('qidahen-battle-dice-physics-0-defender-8'))).toBe(true);
+        const physicalGroups = [...inputs];
+        await act(async () => { physicalGroups[0].onSettledChange!(true); physicalGroups[1].onSettledChange!(true); });
+        expect(view.queryByTestId('qidahen-battle-stage-damage')).toBeNull();
+        await act(async () => { physicalGroups[2].onSettledChange!(true); });
+        expect(view.getByTestId('qidahen-battle-stage-damage')).toBeTruthy();
+        expect(view.getByTestId('qidahen-battle-roll-context')).toBeVisible();
+        expect(view.getByTestId('qidahen-battle-dice-calculation-0-attacker-6').textContent).toBe('');
+        expect(view.getByTestId('qidahen-battle-dice-calculation-0-attacker-10').textContent).toBe('');
+    });
     it('原生十面骰的零面明确对应十点，不把印刷零当伤害零', async () => {
         vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
             fillRect() {}, beginPath() {}, arc() {}, fill() {},

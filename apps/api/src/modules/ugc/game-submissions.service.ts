@@ -9,6 +9,7 @@ import type { GameSubmissionDto } from './dtos/game-submission.dto';
 import type { ReviewSubmissionDto } from './dtos/external-game.dto';
 import { ExternalGamesService } from './external-games.service';
 import { editableGameFields, gameFieldsUpdate, validateExternalFields } from './external-game-fields';
+import { validateGameRulesFile, type GameRulesUpload } from './game-rules-file';
 
 @Injectable()
 export class GameSubmissionsService {
@@ -55,6 +56,30 @@ export class GameSubmissionsService {
         if (!updated) throw new ConflictException('投稿已发生变化，请刷新后重试上传');
         return { coverUrl };
     }
+    async uploadRules(ownerId: string, id: string, file: GameRulesUpload) {
+        const record = await this.rulesEditable(ownerId, id);
+        const validated = validateGameRulesFile(file);
+        const url = await this.storage.upload({ userId: ownerId, packageId: `submission-${id}`, fileName: validated.fileName, fileBuffer: file.buffer, contentType: validated.contentType });
+        const rulesDocument = { url, name: validated.name, size: validated.size };
+        const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
+            { $set: { rulesDocument, status: 'draft' }, $unset: { reviewRevision: 1, reviewerId: 1 } }, { new: true });
+        if (!updated) throw new ConflictException('投稿已发生变化，请刷新后重试上传');
+        return { rulesDocument };
+    }
+    private async rulesEditable(ownerId: string, id: string) {
+        const record = await this.owned(ownerId, id);
+        await this.games.assertSubmissionEditable(ownerId, record.gameId);
+        if (record.status === 'pending') throw new ConflictException('投稿正在审核，请先撤回再修改规则文件');
+        if (record.status === 'approved' && !record.gameId) throw new ConflictException('投稿正在收录，请稍后再修改规则文件');
+        return record;
+    }
+    async removeRules(ownerId: string, id: string) {
+        const record = await this.rulesEditable(ownerId, id);
+        const updated = await this.records.findOneAndUpdate({ ownerId, submissionId: id, status: { $ne: 'pending' }, updatedAt: record.updatedAt },
+            { $set: { status: 'draft' }, $unset: { rulesDocument: 1, reviewRevision: 1, reviewerId: 1 } }, { new: true });
+        if (!updated) throw new ConflictException('投稿已发生变化，请刷新后重试');
+        return { removed: true };
+    }
     async submit(ownerId: string, id: string) {
         const record = await this.owned(ownerId, id);
         await this.games.assertSubmissionEditable(ownerId, record.gameId);
@@ -91,7 +116,7 @@ export class GameSubmissionsService {
             { $set: { status: data.decision, reviewComment: data.comment, reviewRevision: data.revision, reviewerId } }, { new: true });
         if (!reviewed) throw new ConflictException('投稿审核时发生变化，请刷新');
         if (data.decision === 'approved') {
-            const gameId = await this.games.publishSubmission(reviewed.submissionId, reviewed.ownerId, reviewed, reviewed.coverUrl);
+            const gameId = await this.games.publishSubmission(reviewed.submissionId, reviewed.ownerId, reviewed, reviewed.coverUrl, reviewed.rulesDocument);
             await this.records.updateOne({ submissionId: id, status: 'approved', updatedAt: reviewed.updatedAt }, { $set: { gameId } });
             reviewed.gameId = gameId;
         }

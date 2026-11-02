@@ -16,7 +16,7 @@ import {resolveFateAttack} from './domain/attackSelection';
 import {resolveFateMovement} from './domain/movement';
 
 export const FATE_TUTORIAL_ID = 'fate-domination-foundation';
-export const FATE_TUTORIAL_REVISION = 28;
+export const FATE_TUTORIAL_REVISION = 30;
 // 与正式页面 buildTutorialProgressSeed 合同一致，测试直接比对。
 export const FATE_TUTORIAL_SEED = `tutorial-progress:v1:fate-domination:${FATE_TUTORIAL_ID}:r${FATE_TUTORIAL_REVISION}`;
 // 学员排第二顺位：前一席正常占用工房 +2 后，学员能实际选择三个同值 +1 点位。
@@ -26,7 +26,7 @@ const ids = ['1', '0', '2'];
 export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='workshop', seed=FATE_TUTORIAL_SEED) {
     const random = createSeededRandom(seed);
     let state: MatchState<FateDominationCore> = { core: FateDominationDomain.setup(ids, random), sys: createInitialSystemState(ids, engineConfig.systems, seed) };
-    const introCopy: FateTutorialCopy = fateLessonCopy('opening',{text:'你是玩家1，控制韦伯与伊斯坎达尔。玩家2（间桐慎二）和玩家3（言峰绮礼）是由电脑控制的对手。',owner:'FateTutorialSetup'});
+    const introCopy: FateTutorialCopy = fateLessonCopy('opening',{text:'你控制韦伯与伊斯坎达尔。',owner:'FateTutorialSetup'});
     const steps: FateTutorialStep[] = [{ id: 'intro', fateCopy:introCopy, content:fateTutorialText(introCopy), infoStep: true, position: 'center', targetlessPlacement: 'center' }];
     const setupActions: TutorialAiAction[] = [];
     const commands: Command[] = [];
@@ -177,12 +177,6 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
         if (!chosen) throw new Error(`Fate教程缺合法动作：${state.core.round}/${state.core.phase}/${playerId}`);
         if(firstOpponentWorkshopDeployment)planned.add('opponent-opening-workshop');
         const command=chosen.commands[0];
-        if(playerId==='0' && command.type==='PLAY_SKILL' && String((command.payload as {skillId?:string}).skillId).split(':')[0]==='s2' && !planned.has('master-reading')){
-            planned.add('master-reading');
-            ui('detail',fateLessonCopy('masterReading',{text:'先点左下角的韦伯头像，查看“战略部署”；再点御主卡放大阅读，读完返回牌桌使用能力。',owner:'FateSelfDock'}),'fate-self-avatar');
-            steps[steps.length-1].fateUiDetailTarget='0';
-            steps[steps.length-1].highlightFrame=undefined;
-        }
         const isOpeningDeployment=firstDeployment&&command.type==='DEPLOY_MASTER';
         const deploymentOptions=isOpeningDeployment?legalActions.flatMap(action=>action.commands).filter(candidate=>candidate.type==='DEPLOY_MASTER').map(candidate=>({type:candidate.type,payload:candidate.payload as Record<string,unknown>})):undefined;
         if (!publicCardsTaught && playerId === '0' && state.core.phase === 'battle') {
@@ -196,7 +190,8 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
             steps[steps.length-1].fateUiInspectionSource='hand';
         }
         if (playerId === '0' && player.discard.length && !planned.has('nonempty-discard')) {
-            ui('pile', fateLessonCopy('discard'), 'fate-self');
+            ui('pile', fateLessonCopy('discard',{text:'点击弃牌堆查看本轮收回的普通攻击牌。',owner:'FateSelfDock'}), 'fate-self-discard');
+            steps[steps.length-1].highlightFrame='ring';
             planned.add('nonempty-discard');
         }
         const revealedPeer=Object.values(state.core.players).find(other=>other.id!=='0'&&other.isRevealed);

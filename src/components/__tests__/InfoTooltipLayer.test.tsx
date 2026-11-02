@@ -19,6 +19,45 @@ vi.mock('framer-motion', async () => {
 });
 
 describe('InfoTooltip layer context', () => {
+    it('横屏多人候选的侧向空间不足时，说明避让全部候选、标题和操作', () => {
+        const rect = (left: number, top: number, width: number, height: number) => ({
+            x: left, y: top, left, top, width, height, right: left + width, bottom: top + height,
+            toJSON: () => ({}),
+        }) as DOMRect;
+        const protectedRects = [rect(198, 105, 200, 139), rect(414, 105, 200, 139),
+            rect(22, 25, 768, 45), rect(350, 283, 110, 50)];
+        const width = Object.getOwnPropertyDescriptor(window, 'innerWidth')!;
+        const height = Object.getOwnPropertyDescriptor(window, 'innerHeight')!;
+        Object.defineProperty(window, 'innerWidth', { configurable: true, value: 812 });
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 375 });
+        const geometry = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+            if (this.dataset.testid === 'info-tooltip') return rect(0, 0, 320, 68);
+            if (this.classList.contains('tooltip-anchor')) return rect(264, 175, 57, 57);
+            if (this.classList.contains('candidate-group')) return rect(198, 105, 416, 139);
+            if (this.dataset.protected !== undefined) return protectedRects[Number(this.dataset.protected)];
+            return rect(0, 0, 0, 0);
+        });
+        try {
+            render(<div className="candidate-group">
+                {protectedRects.map((_, index) => <div key={index} data-protected={index} />)}
+                <div className="tooltip-anchor"><InfoTooltip title="致盲" content={['规则说明']} isVisible
+                    placementBoundarySelector=".candidate-group" avoidSelector="[data-protected]" /></div>
+            </div>);
+            const tooltip = screen.getByTestId('info-tooltip');
+            const left = parseFloat(tooltip.style.left), top = parseFloat(tooltip.style.top);
+            expect(left).toBeGreaterThanOrEqual(12);
+            expect(top).toBeGreaterThanOrEqual(12);
+            expect(left + 320).toBeLessThanOrEqual(800);
+            expect(top + 68).toBeLessThanOrEqual(363);
+            for (const target of protectedRects) expect(left + 320 <= target.left || left >= target.right
+                || top + 68 <= target.top || top >= target.bottom).toBe(true);
+        } finally {
+            geometry.mockRestore();
+            Object.defineProperty(window, 'innerWidth', width);
+            Object.defineProperty(window, 'innerHeight', height);
+        }
+    });
+
     it('在 ModalBase 内默认继承 modal tooltip 层级', () => {
         render(
             <ModalBase>

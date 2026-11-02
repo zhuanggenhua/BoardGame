@@ -13,6 +13,19 @@ vi.mock('../../../../core/AssetLoader', () => ({
 }));
 
 describe('封面缓存与加载占位', () => {
+    it('默认扫光加载及失败切换时不显示浏览器破图文本，成功后恢复图片说明', () => {
+        const { container } = render(<OptimizedImage src="cover" alt="正式卡面" />);
+        const image = container.querySelector('img')!;
+        expect(image.alt).toBe('');
+        expect(image.getAttribute('aria-label')).toBe('正式卡面');
+        expect(image.style.animation).toContain('img-shimmer');
+        fireEvent.error(image);
+        expect(image.alt).toBe('');
+        expect(image.style.animation).toContain('img-shimmer');
+        fireEvent.load(image);
+        expect(image.alt).toBe('正式卡面');
+        expect(image.style.animation).toBe('');
+    });
     it('已有缓存提示时，当前图片解码前和失败切换期间仍隐藏原生缺图显示', () => {
         const { container } = render(<OptimizedImage src="cover" alt="封面" placeholder={false} />);
         const image = container.querySelector('img')!;

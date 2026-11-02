@@ -1998,17 +1998,6 @@
     "hint_copy_step1": "Select source die to copy",
     "hint_copy_step2": "Select target die to set to {{value}}",
     "hint_done": "Done",
-    "skip_reroll": "Skip reroll",
-    "finish_reroll": "Finish reroll",
-    "confirm_reroll": "Confirm reroll",
-    "hint_reroll_continue_repeat_detail": "{{completed}} rerolls used; {{remaining}} selections left, including the same die. You can also finish at the dice tray.",
-    "hint_reroll_continue_detail": "{{completed}} rerolls used; {{remaining}} selections left. You can also finish at the dice tray.",
-    "hint_reroll_done_detail": "Rerolls have resolved. Choose Finish reroll at the dice tray to continue.",
-    "hint_reroll_ready_detail": "{{completed}} rerolls used; {{selected}} queued. Choose Confirm reroll at the dice tray.",
-    "hint_reroll_repeat_detail": "{{remaining}} selections left. The same die can be chosen more than once. Confirm at the dice tray.",
-    "hint_reroll_detail": "{{remaining}} selections left. Confirm the reroll at the dice tray.",
-    "hint_reroll_done": "Rerolls complete ({{current}}/{{max}})",
-    "hint_reroll_ready": "Ready to reroll ({{current}}/{{max}})",
     "hint_choose_value": "Choose the target value",
     "hint_bonus_settlement": "Confirm these bonus dice results to continue settlement",
     "set_value": "Set to {{value}}",
@@ -5501,6 +5490,14 @@
     "strange-mystic-bolt": {
       "name": "Mystic Bolt",
       "description": "Small Straight: deal 6 attack damage, then cast 1 spell. Large Straight: deal 9 attack damage, then cast 1 spell."
+    },
+    "strange-mystic-bolt-small": {
+      "name": "Mystic Bolt (Small Straight)",
+      "description": "Deal 6 attack damage, then cast 1 spell."
+    },
+    "strange-mystic-bolt-large": {
+      "name": "Mystic Bolt (Large Straight)",
+      "description": "Deal 9 attack damage, then cast 1 spell."
     },
     "strange-wand-of-watoomb": {
       "name": "Wand of Watoomb",

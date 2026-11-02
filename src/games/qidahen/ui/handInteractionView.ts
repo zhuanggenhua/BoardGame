@@ -4,6 +4,7 @@ import { getCurrentFactionId } from '../domain/factionTurnAccessors';
 import { getExplicitRaidTargetAction } from '../domain/pendingTargetActionBuilder';
 import { isQidahenWheelDispatchPaymentPending, QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED } from '../domain/wheelDispatchPayment';
 import { isQidahenWheelRecruitTrainPaymentPending } from '../domain/wheelRecruitTrain';
+import type { useQidahenTurnInput } from './useQidahenTurnInput';
 
 type PaymentCards = {
     selectedCardLabels: string[];
@@ -12,6 +13,7 @@ type PaymentCards = {
 };
 
 export type QidahenHandInteractionView =
+    | (PaymentCards & { kind: 'turn-resolution'; title: string; selectedUnits: Array<{ label: string; level: number; regionName: string }> })
     | (PaymentCards & { kind: 'wheel-dispatch' })
     | (PaymentCards & { kind: 'wheel-recruit-train'; extraTraining: boolean })
     | (PaymentCards & {
@@ -40,7 +42,17 @@ export const resolveQidahenHandInteraction = (
     actionPaymentPreviewVisible: boolean,
     handLimitDiscardSelection: QidahenHandLimitDiscardSelection | null,
     selectedHandLimitCardIds: readonly string[],
+    turnInput?: Pick<ReturnType<typeof useQidahenTurnInput>, 'active' | 'cardIds' | 'selectedCardIds' | 'selectedPieceIds' | 'canConfirm' | 'title'>,
 ): QidahenHandInteractionView | null => {
+    if (turnInput?.active && turnInput.cardIds.length > 0) return {
+        kind: 'turn-resolution', title: turnInput.title, canConfirm: turnInput.canConfirm,
+        selectedCount: turnInput.selectedCardIds.length,
+        selectedCardLabels: turnInput.selectedCardIds.map(id => core.handCards.find(card => card.id === id)!.label),
+        selectedUnits: turnInput.selectedPieceIds.map(id => {
+            const piece = core.pieces.find(piece => piece.id === id)!;
+            return { label: piece.label, level: piece.level, regionName: core.regions.find(region => region.id === piece.regionId)!.name };
+        }),
+    };
     const selectedCount = core.selectedPaymentCardIds.length;
     const selectedCardLabels = core.selectedPaymentCardIds.map((cardId) => (
         core.handCards.find((card) => card.id === cardId)?.label ?? cardId

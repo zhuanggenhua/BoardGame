@@ -1674,6 +1674,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         return {
             ...interaction,
             selected,
+            selectedStatusPlayerId: localInteraction.selectedStatus?.playerId ?? interaction.selectedStatusPlayerId,
         };
     }, [
         pendingInteraction,
@@ -1763,6 +1764,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 onSelectStatus={handleSelectStatus}
                 onSelectPlayer={handleSelectPlayer}
                 onSelectHandCard={handleSelectHandCard}
+                onMagnifyCard={setMagnifiedCard}
                 onConfirm={handleStatusInteractionConfirm}
                 onCancel={handleCancelInteraction}
                 statusIconAtlas={statusIconAtlas}
@@ -1779,6 +1781,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         handleStatusInteractionConfirm,
         handleSelectPlayer,
         handleSelectHandCard,
+        setMagnifiedCard,
         handleSelectStatus,
         locale,
         playerNames,
@@ -1892,6 +1895,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     title={choice.title ?? ''}
                     options={choice.options}
                     canResolve={canResolveChoice}
+                    onMagnifyCard={setMagnifiedCard}
                     players={G.players}
                     tokenDefinitions={G.tokenDefinitions}
                     playerNames={playerNames}
@@ -1925,7 +1929,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 />
             )
         ),
-    }), [G.players, G.seatingOrder, G.teamIdByPlayerId, G.tokenDefinitions, activeResolutionFrameId, canResolveChoice, choice, dispatch, hasObjectChoice, locale, playerNames, rootPid, statusIconAtlas, sysInteraction]);
+    }), [G.players, G.seatingOrder, G.teamIdByPlayerId, G.tokenDefinitions, activeResolutionFrameId, canResolveChoice, choice, dispatch, hasObjectChoice, locale, playerNames, rootPid, setMagnifiedCard, statusIconAtlas, sysInteraction]);
 
     const defenderChoiceModalEntry = React.useMemo<Omit<ModalEntry, 'id'>>(() => ({
         ...(defenderChoice ? {

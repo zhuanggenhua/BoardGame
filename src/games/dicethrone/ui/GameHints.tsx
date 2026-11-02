@@ -136,48 +136,6 @@ const HandDiscardHint: React.FC<{
     );
 };
 
-/** 普通选骰/改骰提示固定在视口顶部居中，并与手牌弃置提示共用顶部间距。 */
-const DiceInteractionHint: React.FC<{ interaction: DiceInteractionContract }> = ({ interaction }) => {
-    const { t } = useTranslation('game-dicethrone');
-
-    if (interaction.hint.surface !== 'game-hints') return null;
-
-    return (
-        <div
-            data-testid="dice-interaction-hint-anchor"
-            data-anchor="viewport"
-            data-placement="top-center"
-            className="fixed left-1/2 -translate-x-1/2 pointer-events-none"
-            style={{
-                zIndex: UI_Z_INDEX.hint,
-                position: 'fixed',
-                top: dtViewportInlineUnit(HAND_DISCARD_HINT_TOP_UNITS),
-                left: '50%',
-                transform: 'translateX(-50%)',
-            }}
-        >
-            <div
-                data-testid="dice-interaction-hint"
-                className="w-max max-w-[calc(100vw-2rem)] rounded-lg border border-amber-300/70 bg-[#241505]/95 text-left shadow-lg"
-                style={{
-                    maxWidth: 'min(15rem, calc(100vw - 2rem))',
-                    boxSizing: 'border-box',
-                    padding: '10px 12px',
-                }}
-            >
-                <span data-testid="dice-interaction-hint-title" className="block text-amber-100 font-bold leading-snug" style={{ fontSize: 'clamp(14px, 1.1vw, 17px)' }}>
-                    {t(interaction.hint.key, interaction.hint.params)}
-                </span>
-                {interaction.hint.detail && (
-                    <span data-testid="dice-interaction-hint-detail" className="mt-1 block text-amber-50/90 leading-relaxed" style={{ fontSize: 'clamp(12px, 0.9vw, 14px)' }}>
-                        {t(interaction.hint.detail.key, interaction.hint.detail.params)}
-                    </span>
-                )}
-            </div>
-        </div>
-    );
-};
-
 // 用不可见字符占位，保证宽度稳定，避免点数变化导致布局抖动。
 const ThinkingDot: React.FC<{ delayMs: number }> = ({ delayMs }) => (
     <span
@@ -402,8 +360,6 @@ export const GameHints: React.FC<GameHintsProps> = ({
                     interaction={handDiscardInteraction}
                 />
             )}
-
-            {diceInteraction && <DiceInteractionHint interaction={diceInteraction} />}
 
             {/* 被动重掷选择提示 */}
             {isPassiveRerollSelecting && (

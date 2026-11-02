@@ -58,7 +58,7 @@ const isFactionActionSelectable = (
     actionId: string,
 ): boolean => (
     getActionChoicesForFaction(factionId).some((choice) => choice.id === actionId)
-    && (!state.factionActionUsed || !hasRemainingFactionAction(state, factionId) || state.lastFactionActionId !== actionId)
+    && !wouldRepeatLastFactionAction(state, actionId, factionId)
 );
 
 export const getActionChoicesForFaction = (factionId: QidahenFactionId): QidahenActionChoice[] => (
@@ -194,6 +194,10 @@ export const hasRemainingFactionAction = (
         && state.bonusFactionActionAvailable
         && !state.bonusFactionActionUsed;
 };
+
+export const wouldRepeatLastFactionAction = (core: QidahenCore, actionId: string, factionId = getCurrentFactionId(core)): boolean => (
+    core.factionActionUsed && hasRemainingFactionAction(core, factionId) && core.lastFactionActionId === actionId
+);
 
 export const isFactionActionTurnComplete = (
     state: QidahenCore,

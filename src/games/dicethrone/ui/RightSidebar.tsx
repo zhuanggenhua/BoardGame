@@ -141,11 +141,11 @@ export const RightSidebar = ({
     };
     const hintContainerStyle: CSSProperties = {
         zIndex: UI_Z_INDEX.hint,
-        position: 'absolute',
-        right: 0,
-        bottom: '100%',
-        marginBottom: buildBoardShellInlineUnitValue(0.6),
-        maxWidth: 'min(calc(100vw - 1rem), 22rem)',
+        // 显式保留旧锚点；当前运行页的 Tailwind translate 计算为 none。
+        translate: 'none',
+        transform: 'translateY(-50%)',
+        marginRight: buildBoardShellInlineUnitValue(0.6),
+        maxWidth: 'calc(100vw - 1rem)',
         overflow: 'visible',
     };
     const hintBubbleStyle: CSSProperties = {
@@ -215,11 +215,11 @@ export const RightSidebar = ({
                 <div className="relative" style={diceTrayFrameStyle}>
                     {interactionHint && (
                         <div
-                            className="absolute z-10 pointer-events-none"
+                            className="absolute right-full top-1/2 -translate-y-1/2 z-10 pointer-events-none"
                             style={hintContainerStyle}
                             data-testid="dice-interaction-hint-anchor"
                             data-anchor="dice-tray"
-                            data-placement="tray-top"
+                            data-placement="tray-left-center"
                         >
                             <div
                                 className="flex min-w-0 items-start border border-amber-500/50 bg-amber-950/95 shadow-lg shadow-amber-900/40 backdrop-blur-sm whitespace-normal"
@@ -228,6 +228,7 @@ export const RightSidebar = ({
                             >
                                 <MousePointerClick className="text-amber-400 shrink-0" style={hintIconStyle} />
                                 <span
+                                    data-testid="dice-interaction-hint-title"
                                     className="min-w-0 overflow-wrap-anywhere break-words text-amber-200 font-medium leading-snug"
                                     style={hintTextStyle}
                                 >

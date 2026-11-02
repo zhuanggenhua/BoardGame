@@ -17,9 +17,9 @@ interface HomeGameDetailsPresentationProps {
 /** 详情承载沿用原弹窗；只有现代入口选择短促的桌面浮现 / 手机底部进退。 */
 export function HomeGameDetailsPresentation({ presentation, children, skipEnterAnimation, ...modalProps }: HomeGameDetailsPresentationProps) {
     const mobile = useMobileViewport();
-    useDocumentScrollLock(presentation === 'modal' || mobile);
     const reduced = useReducedMotion();
     const modern = resolveHomeEntryStyle() === 'modern';
+    useDocumentScrollLock(modern && presentation === 'modal');
     const [keyboardOpened] = useState(() => Boolean(document.activeElement?.matches(':focus-visible')));
     const keyboardInput = useRef(keyboardOpened);
     useEffect(() => {
@@ -32,7 +32,7 @@ export function HomeGameDetailsPresentation({ presentation, children, skipEnterA
             document.removeEventListener('pointerdown', pointer, true);
         };
     }, []);
-    if (presentation === 'inline' && !mobile) return <>{children}</>;
+    if (presentation === 'inline') return <>{children}</>;
     const rest = 'translateY(0%) scale(1)';
     const displaced = reduced ? rest : mobile ? 'translateY(100%) scale(1)' : 'translateY(18px) scale(.94)';
     const contentMotion: Variants = {

@@ -108,6 +108,26 @@ export const QidahenHoverTip: React.FC<QidahenHoverTipProps> = ({
         };
     }, [open, updateLayout]);
 
+    // 选中/悬停会移动实际卡牌，浮层跟随同一实体的变换；动画结束即停止逐帧测量。
+    useEffect(() => {
+        if (!open || !anchor) return undefined;
+        let frame = 0;
+        const follow = () => {
+            updateLayout();
+            frame = typeof anchor.getAnimations === 'function' && anchor.getAnimations().some(animation => animation.playState === 'running')
+                ? requestAnimationFrame(follow) : 0;
+        };
+        const schedule = () => { if (!frame) frame = requestAnimationFrame(follow); };
+        anchor.addEventListener('transitionrun', schedule);
+        anchor.addEventListener('animationstart', schedule);
+        schedule();
+        return () => {
+            cancelAnimationFrame(frame);
+            anchor.removeEventListener('transitionrun', schedule);
+            anchor.removeEventListener('animationstart', schedule);
+        };
+    }, [open, anchor, updateLayout]);
+
     if (!open || !anchor || !portalRoot) {
         return null;
     }

@@ -41,7 +41,7 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
     // Secondary: Blue/Slate (Info/Neutral)
 
     const variants = {
-        option: "bg-slate-900/60 border border-slate-500/70 text-slate-100 hover:bg-slate-700/70 hover:border-amber-300/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 active:bg-slate-700 shadow-none",
+        option: "bg-slate-600 border border-slate-300 text-white hover:bg-slate-500 hover:border-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300 active:bg-slate-500 shadow-none",
         primary: "bg-gradient-to-b from-amber-400 to-amber-600 border border-amber-300 shadow-[0_4px_0_#b45309] active:shadow-none active:translate-y-1 text-white hover:brightness-110",
         danger: "bg-gradient-to-b from-red-500 to-red-700 border border-red-400 shadow-[0_4px_0_#991b1b] active:shadow-none active:translate-y-1 text-white hover:brightness-110",
         secondary: "bg-slate-700 border border-slate-500 shadow-[0_4px_0_#334155] active:shadow-none active:translate-y-1 text-slate-100 hover:bg-slate-600",

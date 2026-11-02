@@ -19,8 +19,14 @@ function send(state: State, type: string, payload: Record<string, unknown> = {},
     expect(result.success, `${type}: ${result.error}`).toBe(true);
     return result.state as State;
 }
-function begin(ability: string, values: number[], upgraded: boolean | AbilityDef = false): State {
+function begin(
+    ability: string,
+    values: number[],
+    upgraded: boolean | AbilityDef = false,
+    prepare?: (state: State) => void,
+): State {
     let state = createHeroMatchup('thor','monk')(['0','1'],fixedRandom);
+    prepare?.(state);
     const replacement = upgraded === true ? THOR_ODINFORCE_2 : upgraded || undefined;
     if (replacement) state.core.players['0'].abilities = state.core.players['0'].abilities.map(a => a.id === replacement.id ? replacement : a);
     state = send(state,'ADVANCE_PHASE');
@@ -132,6 +138,21 @@ describe('索尔正式命令流程',()=>{
     expect(state.core.players['1'].resources[R.HP]).toBe(hp);
     expect(state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(electro);
     expect(state.sys.phase).toBe('main2');
+ });
+ it.each([
+   {targetHoldsMjolnir:false,bonusDamage:0,hp:43,electrokinesis:1},
+   {targetHoldsMjolnir:true,bonusDamage:2,hp:41,electrokinesis:0},
+ ])('基础雷轰电掣按攻击目标是否持有姆乔尔尼尔结算：持锤=$targetHoldsMjolnir',({targetHoldsMjolnir,bonusDamage,hp,electrokinesis})=>{
+    let state=begin('thor-thunder-strike',[1,2,3,4,4],false,current=>{
+      current.core.players['0'].tokens[T.MJOLNIR]=targetHoldsMjolnir?0:1;
+      current.core.players['1'].tokens[T.MJOLNIR]=targetHoldsMjolnir?1:0;
+    });
+    expect(state.core.pendingAttack?.bonusDamage??0).toBe(bonusDamage);
+    state=send(state,'ROLL_DICE',{},'1');
+    state=send(state,'CONFIRM_ROLL',{},'1');
+    state=send(state,'ADVANCE_PHASE',{},'1');
+    expect(state.core.players['1'].resources[R.HP]).toBe(hp);
+    expect(state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(electrokinesis);
  });
  it('同伴独立伤害响应关闭不跳过父攻击',()=>{
     let state=createHeroMatchup('thor','monk')(['0','1'],fixedRandom);

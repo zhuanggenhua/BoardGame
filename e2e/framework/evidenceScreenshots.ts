@@ -39,6 +39,7 @@ export interface EvidenceScreenshotIndexEntry {
     description: string;
     role?: 'main-flow' | 'auxiliary-detail';
     viewport?: 'desktop' | 'mobile';
+    viewportSize?: string;
     transition?: string;
 }
 
@@ -189,9 +190,15 @@ export function getEvidenceScreenshotPathInDirectory(
 
 export async function createEvidenceScreenshotRun(
     testInfo: TestInfo,
-    options: Pick<EvidenceScreenshotOptions, 'requireChineseName'> = {},
+    options: Pick<EvidenceScreenshotOptions, 'requireChineseName' | 'subdir'> = {},
 ): Promise<EvidenceScreenshotRun> {
-    const stableDir = getEvidenceScreenshotDir(testInfo, undefined, options);
+    const caseDir = getEvidenceScreenshotDir(testInfo, undefined, options);
+    const stableDir = options.subdir
+        ? join(caseDir, sanitizeEvidenceSubdir(options.subdir))
+        : caseDir;
+    if (options.subdir && shouldRequireChineseEvidenceName(options)) {
+        assertChineseEvidenceSegment(options.subdir, '证据链目录名');
+    }
     const caseSubdir = sanitizeEvidencePathSegment(testInfo.title || 'unnamed-test') || 'unnamed-test';
     const runId = `${Date.now()}-${process.pid}-${randomUUID()}`;
     const stagingDir = join(

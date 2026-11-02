@@ -423,7 +423,8 @@ export const OptimizedImage = ({
             <img
                 ref={imgRef}
                 src={renderedSrc}
-                alt={alt ?? ''}
+                alt={effectiveLoaded && !errored ? (alt ?? '') : ''}
+                aria-label={alt || undefined}
                 draggable={draggable}
                 onDragStart={handleDragStart}
                 onError={handleError}
@@ -443,7 +444,8 @@ export const OptimizedImage = ({
         <img
             ref={imgRef}
             src={renderedSrc}
-            alt={alt ?? ''}
+            alt={effectiveLoaded && !errored ? (alt ?? '') : ''}
+            aria-label={alt || undefined}
             draggable={draggable}
             onDragStart={handleDragStart}
             onError={handleError}

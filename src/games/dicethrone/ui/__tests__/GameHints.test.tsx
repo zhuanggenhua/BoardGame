@@ -75,6 +75,34 @@ const createDiceInteraction = (selectionMode: 'reroll' | 'bonusGroupReroll' = 'r
     isBonusDiceSettlement: selectionMode === 'bonusGroupReroll',
 });
 
+const createFixedValueDiceInteraction = () => createDiceInteractionContract({
+    interaction: {
+        id: 'thor-fixed-value-die',
+        kind: 'multistep-choice',
+        playerId: '0',
+        data: {
+            minSteps: 1,
+            allowedDieIds: [0, 1],
+            meta: {
+                dtType: 'modifyDie',
+                dieModifyConfig: { mode: 'set', allowedValues: [4, 5] as [number, ...number[]] },
+                selectCount: 1,
+                diceOwnerId: '0',
+                targetOpponentDice: false,
+            },
+        },
+    },
+    controller: {
+        result: { modifications: {}, modCount: 0, totalAdjustment: 0 } as DiceModifyResult,
+        stepCount: 0,
+        canConfirm: false,
+        step: vi.fn(),
+        confirm: vi.fn(),
+        cancel: vi.fn(),
+    } as MultistepInteractionState<DiceModifyResult | DiceSelectResult>,
+    rootPlayerId: '0',
+});
+
 describe('GameHints', () => {
     it('可取消的手牌弃置提示使用本地化取消按钮并调用取消动作', () => {
         const onCancel = vi.fn();
@@ -92,23 +120,15 @@ describe('GameHints', () => {
         expect(onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('普通选骰提示固定在视口顶部居中', () => {
+    it('普通选骰提示交给原骰盘，GameHints不生成顶部副本', () => {
         const diceInteraction = createDiceInteraction();
         render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
 
-        expect(diceInteraction?.hint.surface).toBe('game-hints');
-        expect(screen.getByTestId('dice-interaction-hint')).toHaveTextContent('interaction.hint_select');
-        expect(screen.getByTestId('dice-interaction-hint-anchor')).toHaveAttribute('data-anchor', 'viewport');
-        const anchor = screen.getByTestId('dice-interaction-hint-anchor');
-        expect(anchor).toHaveAttribute('data-placement', 'top-center');
-        expect(anchor.className).toContain('fixed');
-        expect(anchor.className).toContain('left-1/2');
-        expect(anchor.style.top).toContain('5.6');
-        expect(anchor.style.left).toBe('50%');
-        expect(anchor.style.transform).toBe('translateX(-50%)');
+        expect(diceInteraction?.hint.surface).toBe('dice-tray');
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
     });
 
-    it('骰盘提示合同不会在 GameHints 再渲染第二份提示', () => {
+    it('奖励骰组选提示留在骰盘，不在GameHints生成第二份承载', () => {
         const diceInteraction = createDiceInteraction('bonusGroupReroll');
         render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
 
@@ -116,17 +136,25 @@ describe('GameHints', () => {
         expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
     });
 
-    it('重复重投的未选、已选与达到额度状态持续显示操作说明', () => {
+    it('重复重投沿用原进度提示，选满后仍显示原确认状态', () => {
         const contract = (selected: number[]) => createDiceInteraction('reroll', { selected, max: 2, repeat: true });
         const { rerender } = render(<GameHints {...baseProps} diceInteraction={contract([])} />);
-        expect(screen.getByTestId('dice-interaction-hint-detail')).toBeVisible();
-        expect(screen.getByTestId('dice-interaction-hint-detail')).toHaveTextContent('interaction.hint_reroll_repeat_detail');
+        expect(contract([])?.hint.key).toBe('interaction.hint_select');
+        expect(screen.queryByTestId('dice-interaction-hint-detail')).not.toBeInTheDocument();
         rerender(<GameHints {...baseProps} diceInteraction={contract([0])} />);
-        expect(screen.getByTestId('dice-interaction-hint-detail')).toBeVisible();
+        expect(contract([0])?.hint.key).toBe('interaction.hint_select');
         rerender(<GameHints {...baseProps} diceInteraction={contract([0, 0])} />);
-        expect(screen.getByTestId('dice-interaction-hint-title')).toHaveTextContent('interaction.hint_reroll_ready');
-        expect(screen.getByTestId('dice-interaction-hint-detail')).toBeVisible();
-        expect(screen.getByTestId('dice-interaction-hint-detail')).toHaveTextContent('interaction.hint_reroll_ready_detail');
+        expect(contract([0, 0])?.hint.key).toBe('interaction.hint_done');
+        expect(screen.queryByTestId('dice-interaction-hint-detail')).not.toBeInTheDocument();
+    });
+
+    it('固定4/5改骰由同一骰盘承载，不在GameHints重复显示', () => {
+        const diceInteraction = createFixedValueDiceInteraction();
+        render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
+
+        expect(diceInteraction?.hint.surface).toBe('dice-tray');
+        expect(diceInteraction?.hint.key).toBe('interaction.hint_choose_value');
+        expect(screen.queryByTestId('dice-interaction-hint-anchor')).not.toBeInTheDocument();
     });
 
     it('闪避结算合同复用响应窗口提示承载，不重复生成骰子提示', () => {

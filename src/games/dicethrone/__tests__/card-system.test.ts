@@ -328,10 +328,10 @@ describe('卡牌系统', () => {
             expect(afterResolved.pendingAttack).toBeNull();
         });
 
-        it('不可防御攻击进入主要阶段后不能再打出投掷阶段行动牌下次一定', () => {
+        it('不可防御攻击进入伤害结算前仍可用下次一定防止即将受到的伤害', () => {
             const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 1]));
             const result = runner.run({
-                name: '影步不可防御伤害允许下次不算响应',
+                name: '影步不可防御伤害允许下次一定响应',
                 setup: createHeroMatchup('ninja', 'monk', (core) => {
                     core.players['0'].hand = [];
                     core.players['1'].hand = core.players['1'].hand.filter(card => card.id === 'card-next-time');
@@ -354,19 +354,23 @@ describe('卡牌系统', () => {
                     cmd('PLAY_CARD', '1', { cardId: 'card-next-time' }),
                 ],
                 expect: {
-                    expectError: { command: 'PLAY_CARD', error: 'wrongPhaseForRoll' },
                     players: {
                         '1': {
-                            hp: INITIAL_HEALTH - 6,
-                            handSize: 1,
-                            discardSize: 0,
+                            hp: INITIAL_HEALTH,
+                            handSize: 0,
+                            discardSize: 1,
                         },
                     },
                 },
             });
 
             expect(result.assertionErrors).toEqual([]);
-            expect(result.finalState.core.players['1'].damageShields).toEqual([]);
+            expect(result.finalState.core.players['1'].damageShields).toEqual([
+                expect.objectContaining({
+                    sourceId: 'card-next-time',
+                    value: 6,
+                }),
+            ]);
         });
 
         it('攻击方增伤窗口结束后，不可防御伤害仍允许防御方使用太极减伤', () => {

@@ -5,11 +5,12 @@ import { createHash, randomUUID } from 'node:crypto';
 import { ExternalGameRecord, type ExternalGameDocument } from './schemas/external-game.schema';
 import { CreatorClaimRecord, type CreatorClaimDocument } from './schemas/creator-claim.schema';
 import { EXTERNAL_GAME_SEEDS } from './external-game-seeds';
-import type { ExternalGame, ExternalGameFields } from '../../../../../src/shared/externalGames';
+import type { ExternalGame, ExternalGameFields, GameRulesDocument } from '../../../../../src/shared/externalGames';
 import type { CheckEmbedDto, ExternalGameEditDto } from './dtos/external-game.dto';
 import { editableGameFields, gameFieldsUpdate } from './external-game-fields';
 import { encodeGameImage } from './game-image';
 import { createUGCStorageService } from '../../../../../src/server/storage/UGCStorageService';
+import { validateGameRulesFile, type GameRulesUpload } from './game-rules-file';
 
 @Injectable()
 export class ExternalGamesService implements OnModuleInit {
@@ -33,7 +34,7 @@ export class ExternalGamesService implements OnModuleInit {
             gameId: record.gameId, name: record.name, url: record.url, category: record.category,
             minPlayers: record.minPlayers, maxPlayers: record.maxPlayers, durationMinutes: record.durationMinutes,
             author: record.author, authorProfileUrl: record.authorProfileUrl, description: record.description,
-            rules: record.rules, coverUrl: record.coverUrl, published: record.published,
+            rules: record.rules, rulesDocument: record.rulesDocument, coverUrl: record.coverUrl, published: record.published,
             embedStatus: record.embedStatus, embedReason: record.embedReason,
             embedCheckedUrl: record.embedCheckedUrl, embedCheckedAt: record.embedCheckedAt?.toISOString(),
             ownerUserId: owners.get(record.gameId) ?? null, updatedAt: record.updatedAt.toISOString(),
@@ -83,17 +84,32 @@ export class ExternalGamesService implements OnModuleInit {
         await this.games.updateOne({ gameId }, { $set: { coverUrl } });
         return { coverUrl };
     }
-    async publishSubmission(submissionId: string, submitterId: string, fields: ExternalGameFields, coverUrl: string) {
+    async uploadRules(userId: string, gameId: string, file: GameRulesUpload) {
+        await this.assertOwner(userId, gameId);
+        const validated = validateGameRulesFile(file);
+        const url = await this.storage.upload({ userId, packageId: `external-${gameId}`, fileName: validated.fileName, fileBuffer: file.buffer, contentType: validated.contentType });
+        const rulesDocument = { url, name: validated.name, size: validated.size };
+        const updated = await this.games.updateOne({ gameId }, { $set: { rulesDocument } });
+        if (!updated.matchedCount) throw new NotFoundException('游戏不存在');
+        return { rulesDocument };
+    }
+    async removeRules(userId: string, gameId: string) {
+        await this.assertOwner(userId, gameId);
+        const updated = await this.games.updateOne({ gameId }, { $unset: { rulesDocument: 1 } });
+        if (!updated.matchedCount) throw new NotFoundException('游戏不存在');
+        return { removed: true };
+    }
+    async publishSubmission(submissionId: string, submitterId: string, fields: ExternalGameFields, coverUrl: string, rulesDocument?: GameRulesDocument) {
         const existing = await this.games.findOne({ submissionId });
         await this.assertSubmissionEditable(submitterId, existing?.gameId);
         const values = editableGameFields(fields);
         const fieldUpdate = gameFieldsUpdate(fields);
         const update = {
-            ...fieldUpdate.$set, coverUrl, published: true,
+            ...fieldUpdate.$set, coverUrl, published: true, ...(rulesDocument ? { rulesDocument } : {}),
             ...(existing && existing.url !== values.url ? { embedStatus: 'unknown', embedReason: '', embedCheckedUrl: null, embedCheckedAt: null } : {}),
         };
         const record = await this.games.findOneAndUpdate({ submissionId }, {
-            $set: update, $unset: fieldUpdate.$unset, $setOnInsert: { gameId: `external-${randomUUID()}` },
+            $set: update, $unset: { ...fieldUpdate.$unset, ...(!rulesDocument ? { rulesDocument: 1 } : {}) }, $setOnInsert: { gameId: `external-${randomUUID()}` },
         }, { upsert: true, new: true });
         return record!.gameId;
     }

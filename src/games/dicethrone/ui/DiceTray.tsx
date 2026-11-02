@@ -324,7 +324,6 @@ export const DiceTray = ({
                         ? completedDieIds.filter((completedDieId) => completedDieId === die.id).length
                             + (selectResult?.selectedDiceIds.filter((selectedDieId) => selectedDieId === die.id).length ?? 0)
                         : Number(selected);
-                    const hasSelectionMarker = selected || (allowRepeatedDieSelection && selectedOccurrenceCount > 0);
                     const isModified = isModifyMode && die.id in (modifyResult?.modifications ?? {});
                     const canModifyDie = canInteractWithDie(die);
                     const dieAllowed = isAllowedDie(die.id);
@@ -384,7 +383,7 @@ export const DiceTray = ({
                                 <div
                                     onClick={() => clickable && handleRailDieClick(die.id)}
                                     data-testid={`die-button-${die.id}`}
-                                    data-selected={hasSelectionMarker ? 'true' : 'false'}
+                                    data-selected={selected ? 'true' : 'false'}
                                     data-completed={alreadyCompleted ? 'true' : 'false'}
                                     data-selection-count={selectedOccurrenceCount}
                                     data-clickable={clickable ? 'true' : 'false'}
@@ -395,9 +394,9 @@ export const DiceTray = ({
                                     className={`
                                         relative flex-shrink-0 group transition-all duration-200
                                         ${!isInteractionMode && die.isKept ? 'opacity-80' : ''}
-                                        ${!clickable && !showAdjustButtons && !showAnyModeButtons ? (isReadOnlyDisplayDie || hasSelectionMarker ? 'cursor-default' : 'cursor-not-allowed opacity-50') : ''}
+                                        ${!clickable && !showAdjustButtons && !showAnyModeButtons ? (isReadOnlyDisplayDie ? 'cursor-default' : 'cursor-not-allowed opacity-50') : ''}
                                         ${clickable ? 'cursor-pointer hover:scale-110' : ''}
-                                        ${hasSelectionMarker ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105' : ''}
+                                        ${selected ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900 rounded-full scale-105' : ''}
                                     `}
                                 >
                                     <div className="pointer-events-none">
@@ -417,17 +416,9 @@ export const DiceTray = ({
                                             </div>
                                         </div>
                                     )}
-                                    {hasSelectionMarker && !showAdjustButtons && !showAnyModeButtons && (
-                                        <div
-                                            className={selectedBadgeClassName}
-                                            style={allowRepeatedDieSelection
-                                                ? { ...selectedBadgeStyle, fontSize: dtUnit(0.65), fontWeight: 900 }
-                                                : selectedBadgeStyle}
-                                            data-testid={allowRepeatedDieSelection ? `die-selection-count-${die.id}` : undefined}
-                                        >
-                                            {allowRepeatedDieSelection
-                                                ? selectedOccurrenceCount
-                                                : <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />}
+                                    {selected && !showAdjustButtons && !showAnyModeButtons && (
+                                        <div className={selectedBadgeClassName} style={selectedBadgeStyle}>
+                                            <Check size={12} className={`text-white ${selectedBadgeIconClassName}`} strokeWidth={3} />
                                         </div>
                                     )}
                                 </div>

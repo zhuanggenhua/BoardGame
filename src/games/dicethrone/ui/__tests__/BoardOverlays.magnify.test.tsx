@@ -37,6 +37,7 @@ vi.mock('../AbilityOverlays', () => ({
 
 vi.mock('../../../components/common/media/CardPreview', () => ({
     CardPreview: () => <div data-testid="mock-card-preview" />,
+    getCardPreviewAspectRatio: () => 0.61,
 }));
 
 vi.mock('../../../components/common/media/OptimizedImage', () => ({

@@ -81,9 +81,9 @@ describe('真实管线的轮盘落点与季节事务', () => {
         expect(state.core.actionWheelPosition).toBe('wheel-reclaim');
         expect(state.core.wheelActionUsed).toBe(false);
         expect(getQidahenTurnResolutionFrame(state)?.metadata.qidahenTurn.step).toBe('menu');
-        expect(options(state).map(option => option.id)).toEqual(expect.arrayContaining(['hand-action', 'reclaim', 'military-farm', 'finish-slot']));
+        expect(options(state).map(option => option.id)).toEqual(expect.arrayContaining(['hand-action:raid', 'reclaim', 'military-farm', 'finish-slot']));
         expect(run(state, 'EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' }).success).toBe(false);
-        state = choose(state, 'hand-action');
+        state = choose(state, 'hand-action:raid');
         expect(getQidahenTurnResolutionFrame(state)?.metadata.qidahenTurn.step).toBe('await-hand');
         expect(getCurrentInteractionSummary(state).id).toBeUndefined();
     });
@@ -169,7 +169,7 @@ describe('真实管线的轮盘落点与季节事务', () => {
         expect(state.core.koreaDeckCount).toBe(state.core.koreaDrawPile.length);
         expect(state.sys.resolution).toBeUndefined();
     });
-    it('正常前三轮扩军，年中后从辽北明确选择两支步兵和炮兵跨河进攻，实际打出鸳鸯阵并结算', () => {
+    it('正常年度先军屯开垦再动员，扩张叶赫后稳住大同西线，按实际预算过新年并训练原部队', () => {
         naturalTrace = [];
         let state = initial(1306);
         const send = (type: QidahenCommand['type'], payload: object, playerId?: string) => {
@@ -183,18 +183,17 @@ describe('真实管线的轮盘落点与季节事务', () => {
         }
         expect(state.core.currentPlayer).toBe('0');
         send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
-        state = choose(state, 'hand-action');
-        send('CONFIRM_PREVIEW_ACTION', { actionId: 'recruit' });
+        state = choose(state, 'military-farm');
+        state = choose(state, 'city-region-15');
+        state = choose(state, 'reclaim');
+        state = choose(state, ['city-region-15-liaodong']);
+        state = choose(state, 'hand-action:recruit');
         const payment = state.core.handCards.find(card => card.faction === 'ming' && card.cardKind === 'silver')!;
         expect(payment).toBeDefined();
         send('SELECT_PAYMENT_CARD', { cardId: payment.id });
         send('EXECUTE_SELECTED_ACTION', {});
         send('SELECT_REGION', { regionId: 'city-region-15' });
         state = choose(state, 'level-2-troops');
-        state = choose(state, 'military-farm');
-        state = choose(state, 'city-region-15');
-        state = choose(state, 'reclaim');
-        state = choose(state, ['city-region-15-liaodong']);
         state = choose(state, 'finish-slot');
         for (let turn = 0; turn < 2; turn += 1) {
             send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
@@ -206,10 +205,9 @@ describe('真实管线的轮盘落点与季节事务', () => {
         expect(state.core.currentPlayer).toBe('0');
         expect(state.core.actionWheelPosition).toBe('wheel-midyear');
         send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
-        state = choose(state, 'hand-action');
         const tech = state.core.handCards.find(card => card.faction === 'ming' && card.armamentId === 'artillery-tech')!;
         expect(tech).toBeDefined();
-        send('CONFIRM_PREVIEW_ACTION', { actionId: 'upgrade-armament', sourceHandCardId: tech.id });
+        state = choose(state, `hand-card:${tech.id}`);
         const techFee = state.core.handCards.find(card => card.faction === 'ming' && card.cardKind === 'silver')!;
         send('SELECT_PAYMENT_CARD', { cardId: techFee.id });
         send('EXECUTE_SELECTED_ACTION', {});
@@ -221,7 +219,8 @@ describe('真实管线的轮盘落点与季节事务', () => {
         state = choose(state, options(state).find(option => option.id !== tactic.id)!.id);
         state = choose(state, 'city-region-15');
         const available = getQidahenDispatchSourcePieces(state.core, 'ming', 'city-region-15');
-        const selected = [...available.filter(piece => piece.troopKind === 'infantry').slice(0, 2), ...available.filter(piece => piece.troopKind === 'artillery').slice(0, 1)].map(piece => piece.id);
+        const selected = [...available.filter(piece => piece.id.startsWith('ming-recruit-regular-infantry-lv2')).slice(0, 2), ...available.filter(piece => piece.troopKind === 'artillery').slice(0, 1)].map(piece => piece.id);
+        expect(selected.slice(0, 2)).toEqual([1, 2].map(index => `ming-recruit-regular-infantry-lv2__compat__${index}`));
         state = choose(state, selected);
         expect(options(state).map(option => option.id)).toContain('city-region-7');
         state = choose(state, 'city-region-7');
@@ -251,13 +250,16 @@ describe('真实管线的轮盘落点与季节事务', () => {
         }
         send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
         state = choose(state, 'diplomacy');
-        const diplomaticTarget = options(state).find(option => option.id !== 'finish-diplomacy')!.id;
+        const diplomaticTarget = 'city-region-2';
+        expect(options(state).some(option => option.id === diplomaticTarget)).toBe(true);
         state = choose(state, diplomaticTarget);
+        expect(state.core.regions.find(region => region.id === diplomaticTarget)?.diplomacyMarkerFaction).toBeNull();
         state = choose(state, 'finish-diplomacy');
         state = choose(state, 'hire');
         const hireFee = options(state).find(option => state.core.handCards.find(card => card.id === option.id)?.cardKind === 'silver')!.id;
         state = choose(state, hireFee);
-        state = choose(state, 'city-region-15-liaodong');
+        state = choose(state, 'city-region-1');
+        expect(state.core.regions.find(region => region.id === 'city-region-1')).toMatchObject({ troops: 3, population: 2 });
         state = choose(state, 'finish-slot');
         state = choose(state, 'skip-hand');
         if (state.core.handLimitDiscardSelection) state = choose(state, state.core.handLimitDiscardSelection.candidateCardIds.slice(0, state.core.handLimitDiscardSelection.requiredDiscardCount));
@@ -273,6 +275,22 @@ describe('真实管线的轮盘落点与季节事务', () => {
             if (data.step === 'maintenance') state = choose(state, state.core.fortifications[data.maintenanceIndex].id === 'shanhaiguan' ? 'maintain' : 'abandon');
             else if (data.step === 'maintenance-payment') { const id = options(state)[0].id; maintenancePayments.push(id); state = choose(state, id); }
             else if (data.step === 'upkeep') {
+                if (data.upkeepTasks[data.upkeepIndex].regionId === 'city-region-1') {
+                    const oldGarrison = 'ming-post-sarhu-1619-datong-regular-infantry-lv1__compat__1';
+                    expect(options(state).some(option => option.id === oldGarrison)).toBe(true);
+                    state = choose(state, [oldGarrison]);
+                    expect(state.core.regions.find(region => region.id === 'city-region-1')).toMatchObject({ troops: 2, population: 2 });
+                    expect(state.core.pieces.filter(piece => piece.regionId === 'city-region-1').every(piece => piece.level === 2)).toBe(true);
+                    continue;
+                }
+                const koreaWithdrawal = {
+                    'city-region-18': 'ming-post-sarhu-1619-pyongyang-mercenary-infantry-lv2__compat__1',
+                    'city-region-29': 'ming-post-sarhu-1619-hanseong-mercenary-infantry-lv2__compat__1',
+                }[data.upkeepTasks[data.upkeepIndex].regionId];
+                if (koreaWithdrawal) {
+                    state = choose(state, [koreaWithdrawal]);
+                    continue;
+                }
                 const remaining = data.upkeepRemaining ?? data.upkeepTasks[data.upkeepIndex].required;
                 const cards = options(state).filter(option => state.core.handCards.some(card => card.id === option.id));
                 const isMing = getCurrentInteractionSummary(state).playerId === '0';
@@ -284,15 +302,23 @@ describe('真实管线的轮盘落点与季节事务', () => {
                 }
                 upkeepPayments.push(...paidIds); state = choose(state, paidIds);
             }
-            else if (data.step === 'chronology') { expect(getCurrentInteractionSummary(state).playerId).toBe('0'); state = choose(state, 'claim'); }
+            else if (data.step === 'chronology') {
+                expect(getCurrentInteractionSummary(state).playerId).toBe('0');
+                expect(state.core.factions.ming.handCount).toBe(5);
+                state = choose(state, 'claim');
+            }
             else if (data.step === 'chronology-payment') { const id = options(state)[0].id; chronologyPayments.push(id); state = choose(state, id); }
-            else if (data.step === 'year-characters') state = choose(state, data.yearCharacterIndex === 0 ? 'mongol-gunchu-ketuji' : data.yearCharacterIndex === 1 ? 'ming-yang-gao' : 'jin-daisan');
+            else if (data.step === 'year-characters') {
+                expect(state.core.yearCards.map(card => card.id), '人物尚未全部出场时不泄露下一条件').toEqual(['current-year']);
+                state = choose(state, data.yearCharacterIndex === 0 ? 'mongol-gunchu-ketuji' : data.yearCharacterIndex === 1 ? 'ming-yang-gao' : 'jin-daisan');
+            }
             else if (data.step === 'finish-hand') state = choose(state, 'skip-hand');
             else throw new Error(`Unexpected final annual choice ${data.step}`);
         }
         expect(state.core.currentYearIndex).toBe(1);
+        expect(state.core.yearCards.map(card => card.id)).toEqual(['current-year', 'next-year']);
         expect(state.core.chronology.claimedCardIds.ming).toEqual([1301]);
-        expect(state.core.factions.ming.handCount).toBeGreaterThanOrEqual(1);
+        expect(state.core.factions.ming.handCount).toBe(2);
         send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' });
         state = finishWithoutHandAction(state);
         expect(state.core.currentPlayer).toBe('0');
@@ -306,11 +332,35 @@ describe('真实管线的轮盘落点与季节事务', () => {
         const trainChoice = `train:${artillery.id}`;
         send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: trainChoice });
         expect(state.core.pieces.find(piece => piece.id === artillery.id)?.level).toBe(2);
+        const handAfterTrainingFee = state.core.factions.ming.handCount;
+        for (const pieceId of [selected[0], selected[1]]) {
+            expect(state.core.pieces.find(piece => piece.id === pieceId)?.level).toBe(2);
+            send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: 'action:train' });
+            send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: `train:${pieceId}` });
+            expect(state.core.pieces.find(piece => piece.id === pieceId)?.level).toBe(3);
+            expect(state.core.factions.ming.handCount).toBe(handAfterTrainingFee);
+        }
+        const rearBefore = state.core.regions.find(region => region.id === 'city-region-15-liaodong')!;
+        expect([rearBefore.troops, rearBefore.population]).toEqual([3, 4]);
+        const priorPieces = new Set(state.core.pieces.map(piece => piece.id));
+        send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: 'action:recruit' });
+        send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: 'recruit:city-region-15-liaodong' });
+        expect(state.core.regions.find(region => region.id === rearBefore.id)).toMatchObject({ troops: 4, population: 4 });
+        expect(state.core.pieces.filter(piece => !priorPieces.has(piece.id))).toMatchObject([{ regionId: rearBefore.id, level: 2 }]);
+        expect(state.core.chronology.yearStats.ming.builtTroops).toBe(1);
+        expect(state.core.factions.ming.handCount).toBe(handAfterTrainingFee);
+        expect(state.core.wheelRecruitTrainProgress?.actionsCompleted).toBe(4);
         send('RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE', { choiceId: 'finish' });
+        expect(state.core.factions.ming.handCount).toBe(1);
+        state = finishWithoutHandAction(state);
+        expect(state.core.currentPlayer).toBe('2');
+        expect(state.sys.resolution).toBeUndefined();
+        send('EXECUTE_WHEEL_MOVE', { moveId: 'move-1-free' }, '2');
+        expect(getCurrentInteractionSummary(state).playerId).toBe('2');
         writeFileSync('test-results/qidahen-annual-natural-command-trace.json', JSON.stringify(naturalTrace, null, 2));
         naturalTrace = undefined;
         writeFileSync('test-results/qidahen-annual-natural-battle-report.json', JSON.stringify({
-            actor: state.core.currentPlayer, position: state.core.actionWheelPosition, mingHandCount: state.core.factions.ming.handCount,
+            actor: state.core.currentPlayer, position: state.core.actionWheelPosition, mingHandCount: state.core.factions.ming.handCount, nextInputAccepted: true,
             mingCards: state.core.handCards.filter(card => card.faction === 'ming').map(card => ({ id: card.id, definition: card.cardDefId, kind: card.cardKind })),
             pieces: selected, techCard: tech.id, techFee: techFee.id, occupyChoice: occupy.id, rolls, stats: state.core.chronology.yearStats,
             openingDiscardIds,

@@ -23,9 +23,11 @@ describe('DiceThrone compatibility source guards', () => {
         const spotlightOverlay = readUiSource('CardSpotlightOverlay.tsx');
         const attackShowcase = readUiSource('AttackShowcaseOverlay.tsx');
 
-        expect(boardOverlays).toContain("height: `calc(${magnifiedCardWidth} / 0.61)`");
-        expect(boardOverlays).toContain("height: `calc(${magnifiedMultiCardWidth} / 0.61)`");
-        expect(spotlightOverlay).toContain("height: `calc(${SPOTLIGHT_CARD_WIDTH} / ${SPOTLIGHT_CARD_ASPECT_RATIO})`");
+        expect(boardOverlays).toContain('getCardPreviewAspectRatio(props.magnifiedCard.previewRef, props.locale)');
+        expect(boardOverlays).toContain('`calc(${magnifiedCardWidth} / ${magnifiedCardAspectRatio})`');
+        expect(boardOverlays).toContain('`calc(${magnifiedMultiCardWidth} / 0.61)`');
+        expect(spotlightOverlay).toContain('computeSpriteAspectRatio(preview.index, atlas.config)');
+        expect(spotlightOverlay).toContain('`calc(${SPOTLIGHT_CARD_WIDTH} / ${cardAspectRatio})`');
         expect(attackShowcase).toContain('function buildCardFrameStyle');
     });
 

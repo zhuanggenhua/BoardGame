@@ -29,12 +29,12 @@ interface QidahenPreviewActionConfirmedDependencies {
     ) => QidahenCore;
 }
 
-const reduceQidahenPreviewActionConfirmed = (
+export const applyQidahenPreviewAction = (
     state: QidahenCore,
     actionId: string,
     sourceHandCardId: string | null | undefined,
     _timestamp: number,
-    dependencies: QidahenPreviewActionConfirmedDependencies,
+    dependencies: QidahenPreviewActionConfirmedDependencies = { updateTurnLabel: updateQidahenTurnLabel },
 ): QidahenCore => {
     const sourceCard = sourceHandCardId
         ? state.handCards.find((card) => (
@@ -88,7 +88,7 @@ export const resolveQidahenPreviewActionConfirmedEvent = (
         updateTurnLabel: updateQidahenTurnLabel,
     },
 ): QidahenCore => getActionChoiceById(event.payload.actionId)
-    ? reduceQidahenPreviewActionConfirmed(
+    ? applyQidahenPreviewAction(
         state,
         event.payload.actionId,
         event.payload.sourceHandCardId,

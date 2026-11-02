@@ -159,7 +159,7 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = ([
         id: 'doctor_strange',
         nameKey: 'characters.doctor_strange',
         setupOptionStatus: 'in_progress',
-        setupOptionStatusReason: '当前实施范围已完成审计，等待真人确认进入完成态',
+        setupOptionStatusReason: 'UI 修复与当前版本截图验收实施中，等待真人确认进入完成态',
     },
     { id: 'thor', nameKey: 'characters.thor', setupOptionStatus: 'in_progress', setupOptionStatusReason: '索尔完整玩法已实施，真人完成态确认前保持实施中' },
     { id: 'monk', nameKey: 'characters.monk' },
@@ -201,6 +201,7 @@ export function isDiceThroneCharacterVisibleInPlayerCatalog(character: Character
 
 export const DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG: CharacterDefinition[] = (
     DICETHRONE_CHARACTER_CATALOG.filter(isDiceThroneCharacterVisibleInPlayerCatalog)
+        .sort((a, b) => Number(a.setupOptionStatus === 'in_progress') - Number(b.setupOptionStatus === 'in_progress'))
 );
 
 const DICETHRONE_CHARACTER_NAME_KEY_MAP: Record<SelectableCharacterId, string> = Object.fromEntries(

@@ -13,7 +13,7 @@ import {
     stateOf,
 } from './helpers/paymentSelectionHarness';
 
-const enterRecruitTrain = (core: QidahenCore): QidahenCore => apply({
+const enterRecruitTrain = (core: QidahenCore): QidahenCore => beginQidahenWheelRecruitTrain(apply({
     ...core,
     actionWheelPosition: 'wheel-military-farm',
     selectedRegionId: 'city-region-24',
@@ -21,7 +21,7 @@ const enterRecruitTrain = (core: QidahenCore): QidahenCore => apply({
     type: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
     playerId: core.currentPlayer,
     payload: { moveId: 'move-1-free' },
-});
+}), 'wheel', 1);
 
 const payOneCard = (core: QidahenCore): QidahenCore => {
     const factionId = core.currentPlayer === '0' ? 'ming' : core.currentPlayer === '1' ? 'mongol' : 'jin';
@@ -47,7 +47,8 @@ const resolveChoice = (core: QidahenCore, choiceId: string): QidahenCore => appl
 
 describe('七大恨征兵训练交互', () => {
     it('轮盘落点先弃一张手牌，再由玩家选择本土征兵并建立一支二级正规军', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const setup = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = { ...setup, currentPlayer: setup.factions.ming.playerId };
         const pending = enterRecruitTrain(core);
 
         expect(pending.wheelRecruitTrainProgress).toMatchObject({
@@ -87,11 +88,13 @@ describe('七大恨征兵训练交互', () => {
         expect(finished.wheelRecruitTrainProgress).toBeNull();
         expect(finished.lastSeasonSummary?.title).toBe('轮盘征兵/训练');
         expect(finished.turnPhase).toBe('action-window');
-        expect(finished.wheelActionUsed).toBe(true);
+        // 子行动结束后返回正式轮盘事务；是否结束落点由该事务统一收口。
+        expect(finished.wheelActionUsed).toBe(false);
     });
 
     it('训练只能选一支本回合尚未训练的部队，炮兵等级受火炮技术限制', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const setup = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = { ...setup, currentPlayer: setup.factions.ming.playerId };
         const armedCore: QidahenCore = {
             ...core,
             factions: {
@@ -99,7 +102,7 @@ describe('七大恨征兵训练交互', () => {
                 ming: {
                     ...core.factions.ming,
                     armaments: core.factions.ming.armaments.map((armament) => (
-                        armament.id === 'artillery-tech' ? { ...armament, level: 2 } : armament
+                        armament.id === 'artillery-tech' ? { ...armament, level: 2, sourceCardDefIds: ['qidahen-atlas05-1626-artillery-tech', 'qidahen-korea-1702'] } : armament
                     )),
                 },
             },
@@ -136,7 +139,8 @@ describe('七大恨征兵训练交互', () => {
     });
 
     it('年中只能训练；额外弃牌增加一次额外训练，不占用四次基础行动', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const setup = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = { ...setup, currentPlayer: setup.factions.ming.playerId };
         const regionId = 'city-region-24';
         const withTroops: QidahenCore = {
             ...core,
@@ -190,7 +194,8 @@ describe('七大恨征兵训练交互', () => {
     ] as const)(
         '%s 的等级 3 上限按规则判定',
         (_name, controllerFaction, originalFaction, troopKind, troopClass, label, canReachLevel4) => {
-            const core = QidahenDomain.setup(['0', '1', '2'], random);
+            const setup = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = { ...setup, currentPlayer: setup.factions.ming.playerId };
             const troopId = `training-cap-${label}`;
             const configuredCore: QidahenCore = {
                 ...core,
@@ -231,7 +236,8 @@ describe('七大恨征兵训练交互', () => {
     );
 
     it('炮兵训练上限不得超过火炮技术等级，未开发时不可训练', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const setup = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = { ...setup, currentPlayer: setup.factions.ming.playerId };
         const regionId = 'city-region-24';
         const artilleryCore: QidahenCore = {
             ...core,
@@ -263,7 +269,7 @@ describe('七大恨征兵训练交互', () => {
                     ming: {
                         ...artilleryCore.factions.ming,
                         armaments: artilleryCore.factions.ming.armaments.map((armament) => (
-                            armament.id === 'artillery-tech' ? { ...armament, level: techLevel } : armament
+                            armament.id === 'artillery-tech' ? { ...armament, level: techLevel, sourceCardDefIds: Array.from({ length: techLevel }, () => 'qidahen-atlas05-1626-artillery-tech') } : armament
                         )),
                     },
                 },
@@ -279,7 +285,8 @@ describe('七大恨征兵训练交互', () => {
     });
 
     it('二人局由后金控制的蒙古雇佣骑兵可按组件例外升至 4 级', () => {
-        const core = QidahenDomain.setup(['0', '1', '2'], random);
+        const setup = QidahenDomain.setup(['0', '1', '2'], random);
+        const core = { ...setup, currentPlayer: setup.factions.ming.playerId };
         const jinPlayerId = core.factions.jin.playerId;
         const twoPlayerCore: QidahenCore = {
             ...core,

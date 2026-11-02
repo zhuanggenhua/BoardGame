@@ -14,6 +14,7 @@ interface Props {
     onResolveSunYuanhuaTech: (decision: 'confirm' | 'skip') => void;
     onConfirmWheelDispatchPayment: () => void;
     onConfirmWheelRecruitTrainPayment: () => void;
+    onConfirmTurnChoice: () => void;
 }
 
 const BUTTON_CLASS = 'inline-flex min-h-[44px] min-w-[152px] items-center justify-center border-[3px] px-3 text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0';
@@ -35,6 +36,18 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
     let secondary: { testId: string; label: string; onClick: () => void } | undefined;
 
     switch (interaction.kind) {
+        case 'turn-resolution':
+            panelTestId = 'qidahen-turn-hand-payment';
+            statusTestId = 'qidahen-turn-selected-count';
+            selectedCardsTestId = 'qidahen-turn-selected-card-summary';
+            confirmTestId = 'qidahen-turn-confirm';
+            confirmLabel = t('board.turnChoice.confirm');
+            title = interaction.title;
+            status = interaction.selectedUnits.length > 0
+                ? t('board.turnChoice.selectedSupport', { cards: interaction.selectedCount, units: interaction.selectedUnits.length })
+                : t('board.turnChoice.selectedCards', { cards: interaction.selectedCount });
+            onConfirm = actions.onConfirmTurnChoice;
+            break;
         case 'wheel-dispatch':
             panelTestId = 'qidahen-wheel-dispatch-payment-panel';
             statusTestId = 'qidahen-wheel-dispatch-payment-status';
@@ -151,6 +164,9 @@ export const QidahenHandInteractionTray: React.FC<Props> = ({ interaction, botto
                             })}
                         </div>
                     ) : null}
+                    {interaction.kind === 'turn-resolution' && interaction.selectedUnits.length > 0 ? <div className="mt-1 text-[14px]" data-testid="qidahen-turn-selected-unit-summary">
+                        {interaction.selectedUnits.map(unit => t('board.turnChoice.selectedUnit', unit)).join('、')}
+                    </div> : null}
                     {interaction.kind === 'action' && interaction.action.id === 'raid' ? (
                         <div className="mt-1 text-[14px]" data-testid="qidahen-action-payment-hint" style={{ color: '#f3d1a5' }}>
                             {interaction.raidTarget

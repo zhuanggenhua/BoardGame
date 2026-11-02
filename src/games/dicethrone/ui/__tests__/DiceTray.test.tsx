@@ -637,7 +637,7 @@ describe('共享选骰合同', () => {
         expect(onReroll).not.toHaveBeenCalled();
     });
 
-    it('同一骰被选择两次时，骰面明确显示两次重掷次数', () => {
+    it('同一骰被选择两次时，保留两次预算并沿用原选中标记', () => {
         const interaction = createSelectInteraction();
         interaction.data.meta = {
             ...interaction.data.meta,
@@ -657,7 +657,7 @@ describe('共享选骰合同', () => {
         );
 
         expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selection-count', '2');
-        expect(screen.getByTestId('die-selection-count-0')).toHaveTextContent('2');
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'true');
         expect(screen.getByTestId('die-button-1')).toHaveAttribute('data-selection-count', '0');
     });
 
@@ -682,7 +682,7 @@ describe('共享选骰合同', () => {
         );
 
         expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selection-count', '2');
-        expect(screen.getByTestId('die-selection-count-0')).toHaveTextContent('2');
+        expect(screen.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'true');
     });
 
     it('非重复交互将历史完成骰显示为已处理并禁用后续点击', () => {

@@ -11,6 +11,8 @@ interface InfoTooltipProps {
     position?: InfoTooltipPosition;
     /** 以宿主组的外边界排布说明，避免遮住同组的其它状态。 */
     placementBoundarySelector?: string;
+    /** 当前决策中必须保持可见的对象与操作；仅在调用方明确提供时避让。 */
+    avoidSelector?: string;
     className?: string; // 额外样式
     /** 自定义 z-index，弹窗内使用时传入 UI_Z_INDEX.modalTooltip */
     zIndex?: number;
@@ -26,6 +28,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
     isVisible,
     position = 'right',
     placementBoundarySelector,
+    avoidSelector,
     className = '',
     zIndex,
 }) => {
@@ -70,7 +73,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 : preferredSide === 'left'
                     ? 'right'
                     : preferredSide === 'top' ? 'bottom' : 'top';
-            const side = fitsOnPreferredSide
+            let side = fitsOnPreferredSide
                 ? preferredSide
                 : oppositeSide;
 
@@ -79,7 +82,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 : side === 'left'
                     ? placementRect.left - gap - tooltipRect.width
                     : anchorRect.left + (anchorRect.width - tooltipRect.width) / 2;
-            const left = Math.min(
+            let left = Math.min(
                 Math.max(preferredLeft, viewportPadding),
                 Math.max(viewportPadding, window.innerWidth - tooltipRect.width - viewportPadding),
             );
@@ -88,10 +91,36 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 : side === 'bottom'
                     ? placementRect.bottom + gap
                     : anchorRect.top;
-            const top = Math.min(
+            let top = Math.min(
                 Math.max(preferredTop, viewportPadding),
                 Math.max(viewportPadding, window.innerHeight - tooltipRect.height - viewportPadding),
             );
+
+            if (avoidSelector) {
+                const protectedRects = Array.from(document.querySelectorAll(avoidSelector))
+                    .map(element => element.getBoundingClientRect())
+                    .filter(rect => rect.width > 0 && rect.height > 0);
+                const isClear = (x: number, y: number) => x >= viewportPadding && y >= viewportPadding
+                    && x + tooltipRect.width <= window.innerWidth - viewportPadding
+                    && y + tooltipRect.height <= window.innerHeight - viewportPadding
+                    && protectedRects.every(rect => x + tooltipRect.width <= rect.left || x >= rect.right
+                        || y + tooltipRect.height <= rect.top || y >= rect.bottom);
+                if (!isClear(left, top)) {
+                    const sides: InfoTooltipPosition[] = [position, oppositeSide, 'top', 'bottom', 'right', 'left'];
+                    const candidates = sides.flatMap(candidateSide => {
+                        const vertical = candidateSide === 'top' || candidateSide === 'bottom';
+                        const x = candidateSide === 'right' ? placementRect.right + gap
+                            : candidateSide === 'left' ? placementRect.left - gap - tooltipRect.width
+                                : anchorRect.left + (anchorRect.width - tooltipRect.width) / 2;
+                        const y = candidateSide === 'top' ? placementRect.top - gap - tooltipRect.height
+                            : candidateSide === 'bottom' ? placementRect.bottom + gap : anchorRect.top;
+                        return (vertical ? [x, viewportPadding, window.innerWidth - viewportPadding - tooltipRect.width] : [x])
+                            .map(candidateLeft => ({ side: candidateSide, left: candidateLeft, top: y }));
+                    });
+                    const clear = candidates.find(candidate => isClear(candidate.left, candidate.top));
+                    if (clear) ({ side, left, top } = clear);
+                }
+            }
 
             setLayout({
                 top,
@@ -114,7 +143,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
             window.removeEventListener('resize', updateLayout);
             window.removeEventListener('scroll', updateLayout, true);
         };
-    }, [isVisible, position, placementBoundarySelector]);
+    }, [isVisible, position, placementBoundarySelector, avoidSelector]);
 
     if (!isVisible || typeof document === 'undefined') return null;
 
