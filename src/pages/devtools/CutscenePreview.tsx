@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import {
   createCutsceneDemoRuntime,
@@ -9,20 +10,6 @@ import {
 const SPEED_OPTIONS = [0.5, 1, 1.5] as const;
 const DEFAULT_SPEED = 1;
 
-const PHASE_LABELS: Record<string, string> = {
-  loading: '加载中',
-  'target lock': '镜头锁定',
-  'cut-in': '角色特写',
-  charge: '蓄力',
-  release: '宝具释放',
-  duel: '近身斩击',
-  beam: '光束命中',
-  'final ray': '终段光柱',
-  impact: '命中爆发',
-  settle: '收束',
-  ready: '结束',
-};
-
 const initialStatus: CutsceneRuntimeStatus = {
   time: 0,
   duration: 18.5,
@@ -32,6 +19,7 @@ const initialStatus: CutsceneRuntimeStatus = {
 };
 
 const CutscenePreview = () => {
+  const { t } = useTranslation('lobby');
   const stageRef = useRef<HTMLDivElement | null>(null);
   const runtimeRef = useRef<CutsceneRuntimeHandle | null>(null);
   const [status, setStatus] = useState<CutsceneRuntimeStatus>(initialStatus);
@@ -67,6 +55,22 @@ const CutscenePreview = () => {
   }, []);
 
   const progress = Math.min(100, Math.max(0, (status.time / status.duration) * 100));
+  const phaseLabel = (() => {
+    switch (status.phase) {
+      case 'loading': return t('devtools.fgoPreview.phases.loading');
+      case 'target lock': return t('devtools.fgoPreview.phases.targetLock');
+      case 'cut-in': return t('devtools.fgoPreview.phases.cutIn');
+      case 'charge': return t('devtools.fgoPreview.phases.charge');
+      case 'release': return t('devtools.fgoPreview.phases.release');
+      case 'duel': return t('devtools.fgoPreview.phases.duel');
+      case 'beam': return t('devtools.fgoPreview.phases.beam');
+      case 'final ray': return t('devtools.fgoPreview.phases.finalRay');
+      case 'impact': return t('devtools.fgoPreview.phases.impact');
+      case 'settle': return t('devtools.fgoPreview.phases.settle');
+      case 'ready': return t('devtools.fgoPreview.phases.ready');
+      default: return status.phase;
+    }
+  })();
 
   const updateSpeed = (nextSpeed: number) => {
     setSpeed(nextSpeed);
@@ -86,10 +90,10 @@ const CutscenePreview = () => {
           href="/"
           className="rounded border border-white/10 bg-black/45 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-cyan-200/60 hover:text-white"
         >
-          返回
+          {t('devtools.fgoPreview.back')}
         </a>
         <span className="rounded border border-white/10 bg-black/45 px-3 py-2 text-xs font-semibold tabular-nums text-cyan-100">
-          {PHASE_LABELS[status.phase] ?? status.phase} {status.time.toFixed(2)}s
+          {phaseLabel} {status.time.toFixed(2)}s
         </span>
       </div>
       <div className="fixed bottom-4 left-1/2 z-20 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 rounded border border-white/10 bg-black/55 p-2 backdrop-blur">
@@ -103,7 +107,7 @@ const CutscenePreview = () => {
             <button
               type="button"
               className="flex h-11 w-11 items-center justify-center rounded border border-white/10 bg-white/[0.06] text-white transition hover:border-cyan-300/60 hover:bg-cyan-300/10"
-              aria-label={status.isPlaying ? '暂停演出' : '播放演出'}
+              aria-label={status.isPlaying ? t('devtools.fgoPreview.pause') : t('devtools.fgoPreview.play')}
               onClick={() => {
                 if (status.isPlaying) {
                   runtimeRef.current?.pause();
@@ -117,7 +121,7 @@ const CutscenePreview = () => {
             <button
               type="button"
               className="flex h-11 w-11 items-center justify-center rounded border border-white/10 bg-white/[0.06] text-white transition hover:border-rose-300/60 hover:bg-rose-300/10"
-              aria-label="重播演出"
+              aria-label={t('devtools.fgoPreview.replay')}
               onClick={() => runtimeRef.current?.replay()}
             >
               <RotateCcw size={18} />

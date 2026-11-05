@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LoaderCircle, Pause, Play, RotateCcw, RotateCw, Undo2, Redo2 } from 'lucide-react';
 import {
   type CutsceneRuntimeHandle,
@@ -17,12 +18,13 @@ const defaultAnimation = (entry: FgoCharacterEntry) => ['wait02', 'wait'].find(n
 const initialStatus: CutsceneRuntimeStatus = {
   time: 0,
   duration: 18.5,
-  phase: '加载中',
+  phase: 'loading',
   firedEvents: [],
   isPlaying: false,
 };
 
 const CutsceneThreePreview = () => {
+  const { t } = useTranslation('lobby');
   const effectStageRef = useRef<HTMLDivElement | null>(null);
   const controlsRef = useRef<HTMLElement | null>(null);
   const [controlsHeight, setControlsHeight] = useState(176);
@@ -59,7 +61,7 @@ const CutsceneThreePreview = () => {
         const localized = catalog.characters.map(entry => ({ ...entry, name: fgoCharacterName(entry) }));
         const query = new URLSearchParams(window.location.search);
         const entry = localized.find(entry => entry.id === query.get('character')) ?? localized[0];
-        if (!entry) throw new Error('没有可播放的角色资源');
+        if (!entry) throw new Error(t('devtools.fgoGallery.noPlayableCharacters'));
         setCharacters(localized); setSelectedId(entry.id);
         setAnimation(defaultAnimation(entry)); setEvolution(entry.evolutions[0]);
         setMode(query.get('mode') === 'motion' || !entry.noblePhantasm ? 'motion' : 'noble');
@@ -137,60 +139,60 @@ const CutsceneThreePreview = () => {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-black/65 to-transparent" />
       <header className="absolute left-16 right-4 top-4 z-20 flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="break-words text-sm font-semibold sm:text-base">{selected?.name ?? '角色'}</h1>
-          <p className="mt-1 text-xs text-zinc-400">{selected?.id} · {mode === 'noble' ? '宝具演出' : '动作'}</p>
+          <h1 className="break-words text-sm font-semibold sm:text-base">{selected?.name ?? t('devtools.fgoGallery.character')}</h1>
+          <p className="mt-1 text-xs text-zinc-400">{selected?.id}{' · '}{mode === 'noble' ? t('devtools.fgoGallery.noblePerformance') : t('devtools.fgoGallery.motion')}</p>
         </div>
         <span className="shrink-0 whitespace-nowrap rounded border border-white/20 bg-black/50 px-2 py-2 font-mono text-xs tabular-nums sm:text-sm">
-          {status.time.toFixed(3)}s / {duration.toFixed(3)}s
+          {t('devtools.fgoGallery.timeline', { time: status.time.toFixed(3), duration: duration.toFixed(3) })}
         </span>
       </header>
       {loading && <div role="status" className="pointer-events-none absolute inset-0 z-20 grid place-items-center">
-        <LoaderCircle className="animate-spin text-cyan-200" size={32} aria-label="加载角色" />
+        <LoaderCircle className="animate-spin text-cyan-200" size={32} aria-label={t('devtools.fgoGallery.loadingCharacter')} />
       </div>}
       {error && <p role="alert" className="absolute left-4 top-20 z-20 max-w-lg border border-red-300/40 bg-black/85 px-3 py-2 text-sm text-red-200">{error}</p>}
       <footer ref={controlsRef} className="absolute bottom-4 left-4 right-4 z-20 mx-auto w-auto max-w-[40rem] rounded border border-white/15 bg-black/85 p-3 backdrop-blur">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          {selected?.noblePhantasm && <select aria-label="播放内容" value={mode}
+          {selected?.noblePhantasm && <select aria-label={t('devtools.fgoGallery.playbackContent')} value={mode}
             className="h-9 max-w-full rounded border border-zinc-700 bg-zinc-900 px-2 text-xs"
             onChange={event => setMode(event.currentTarget.value as 'motion' | 'noble')}>
-            <option value="noble">宝具演出</option><option value="motion">角色动作</option>
+            <option value="noble">{t('devtools.fgoGallery.noblePerformance')}</option><option value="motion">{t('devtools.fgoGallery.motion')}</option>
           </select>}
           {mode === 'motion' && <>
-            <select aria-label="动作" value={animation} disabled={loading}
+            <select aria-label={t('devtools.fgoGallery.action')} value={animation} disabled={loading}
               className="h-9 min-w-0 flex-1 rounded border border-zinc-700 bg-zinc-900 px-2 text-xs"
               onChange={event => { setAnimation(event.currentTarget.value); effectRuntimeRef.current?.setAnimation?.(event.currentTarget.value); }}>
-              <optgroup label="基础与战斗动作">
+              <optgroup label={t('devtools.fgoGallery.basicCombatActions')}>
                 {selected?.animations.filter(clip => !isFgoNobleAnimation(clip.name)).map(clip => <option key={clip.name} value={clip.name} title={fgoAnimationMeaning(clip.name)}>{fgoAnimationName(clip.name)}</option>)}
               </optgroup>
-              {selected && fgoNobleClipCount(selected) > 0 && <optgroup label="宝具身体动作片段（不含完整演出）">
+              {selected && fgoNobleClipCount(selected) > 0 && <optgroup label={t('devtools.fgoGallery.nobleActionClips')}>
                 {selected.animations.filter(clip => isFgoNobleAnimation(clip.name)).map(clip => <option key={clip.name} value={clip.name} title={fgoAnimationMeaning(clip.name)}>{fgoAnimationName(clip.name)}</option>)}
               </optgroup>}
             </select>
-            <select aria-label="形态" value={evolution} disabled={loading}
+            <select aria-label={t('devtools.fgoGallery.form')} value={evolution} disabled={loading}
               className="h-9 rounded border border-zinc-700 bg-zinc-900 px-2 text-xs"
               onChange={event => { const level = Number(event.currentTarget.value); setEvolution(level); effectRuntimeRef.current?.setEvolution?.(level); }}>
-              {selected?.evolutions.map(level => <option key={level} value={level}>形态 {level}</option>)}
+              {selected?.evolutions.map(level => <option key={level} value={level}>{t('devtools.fgoGallery.formLevel', { level })}</option>)}
             </select>
             <label className="flex h-9 items-center gap-1 text-xs text-zinc-300">
-              <input type="checkbox" checked={loop} onChange={event => { setLoop(event.currentTarget.checked); effectRuntimeRef.current?.setLoop?.(event.currentTarget.checked); }} />循环
+              <input type="checkbox" checked={loop} onChange={event => { setLoop(event.currentTarget.checked); effectRuntimeRef.current?.setLoop?.(event.currentTarget.checked); }} />{t('devtools.fgoGallery.loop')}
             </label>
           </>}
         </div>
-        {mode === 'motion' && selected && <details aria-label="动作说明" className="mb-3 text-xs leading-5 text-zinc-300">
-          <summary className="cursor-pointer text-cyan-200">动作含义与宝具素材情况</summary>
+        {mode === 'motion' && selected && <details aria-label={t('devtools.fgoGallery.actionDescription')} className="mb-3 text-xs leading-5 text-zinc-300">
+          <summary className="cursor-pointer text-cyan-200">{t('devtools.fgoGallery.actionAndNobleAssets')}</summary>
           <div className="max-h-[18vh] overflow-y-auto pt-1">
             <p>{fgoAnimationMeaning(animation)}</p>
-            <p className="break-all text-zinc-500">原始片段：{animation}</p>
-            <p>{selected.noblePhantasm ? '此角色可切换到完整宝具演出。'
-              : fgoNobleClipCount(selected) > 0 ? `此角色有 ${fgoNobleClipCount(selected)} 段宝具动作；当前未找到配套完整特效包与演出时间轴。`
-                : '当前资源中未找到此角色的宝具动作片段或完整演出。'}</p>
+            <p className="break-all text-zinc-500">{t('devtools.fgoGallery.sourceClip')}: {animation}</p>
+            <p>{selected.noblePhantasm ? t('devtools.fgoGallery.fullPerformanceAvailable')
+              : fgoNobleClipCount(selected) > 0 ? t('devtools.fgoGallery.nobleClipsOnly', { count: fgoNobleClipCount(selected) })
+                : t('devtools.fgoGallery.noNobleAssets')}</p>
           </div>
         </details>}
         <div className="mb-2 h-1 overflow-hidden rounded-full bg-white/15">
           <div className="h-full rounded-full bg-cyan-300" style={{ width: `${progress}%` }} />
         </div>
         <input
-          aria-label="时间"
+          aria-label={t('devtools.fgoGallery.time')}
           className="mb-3 block h-5 w-full cursor-pointer accent-cyan-300"
           type="range"
           min={0}
@@ -206,7 +208,7 @@ const CutsceneThreePreview = () => {
           <button
             type="button"
             className="grid h-10 w-10 shrink-0 place-items-center rounded border border-white/20 hover:border-cyan-200"
-            aria-label={status.isPlaying ? '暂停' : '播放'}
+            aria-label={status.isPlaying ? t('devtools.fgoGallery.pause') : t('devtools.fgoGallery.play')}
             onClick={() => {
               if (status.isPlaying) {
                 effectRuntimeRef.current?.pause();
@@ -218,14 +220,14 @@ const CutsceneThreePreview = () => {
             {status.isPlaying ? <Pause size={18} /> : <Play size={18} />}
           </button>
           {mode === 'motion' && <>
-            <button type="button" aria-label="向左旋转" title="向左旋转" className="grid h-10 w-8 shrink-0 place-items-center rounded hover:bg-zinc-800" onClick={() => effectRuntimeRef.current?.rotate?.(-15)}><Undo2 size={16} /></button>
-            <button type="button" aria-label="向右旋转" title="向右旋转" className="grid h-10 w-8 shrink-0 place-items-center rounded hover:bg-zinc-800" onClick={() => effectRuntimeRef.current?.rotate?.(15)}><Redo2 size={16} /></button>
-            <button type="button" aria-label="重置视角" title="重置视角" className="grid h-10 w-8 shrink-0 place-items-center rounded hover:bg-zinc-800" onClick={() => effectRuntimeRef.current?.resetView?.()}><RotateCw size={16} /></button>
+            <button type="button" aria-label={t('devtools.fgoGallery.rotateLeft')} title={t('devtools.fgoGallery.rotateLeft')} className="grid h-10 w-8 shrink-0 place-items-center rounded hover:bg-zinc-800" onClick={() => effectRuntimeRef.current?.rotate?.(-15)}><Undo2 size={16} /></button>
+            <button type="button" aria-label={t('devtools.fgoGallery.rotateRight')} title={t('devtools.fgoGallery.rotateRight')} className="grid h-10 w-8 shrink-0 place-items-center rounded hover:bg-zinc-800" onClick={() => effectRuntimeRef.current?.rotate?.(15)}><Redo2 size={16} /></button>
+            <button type="button" aria-label={t('devtools.fgoGallery.resetView')} title={t('devtools.fgoGallery.resetView')} className="grid h-10 w-8 shrink-0 place-items-center rounded hover:bg-zinc-800" onClick={() => effectRuntimeRef.current?.resetView?.()}><RotateCw size={16} /></button>
           </>}
           <button
             type="button"
             className="grid h-10 w-10 shrink-0 place-items-center rounded border border-white/20 hover:border-cyan-200"
-            aria-label="重播"
+            aria-label={t('devtools.fgoGallery.replay')}
             onClick={() => {
               effectRuntimeRef.current?.replay();
               effectRuntimeRef.current?.play();
