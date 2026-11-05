@@ -7,7 +7,7 @@ import { TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../domain/ids';
 import { resolveAttack, resolveOffensivePreDefenseEffects } from '../domain/attack';
 import { resolveEffectsToEvents } from '../domain/effects';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
-import { getChoiceEffectHandler } from '../domain/choiceEffects';
+import { getChoiceEffectHandler } from '../domain/choiceEffectRegistry';
 import { getCurrentDamageSummary } from '../domain/damageSummary';
 import { getAvailableAbilityIds, getPlayerDieFace } from '../domain/rules';
 import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CARE_2, VENGEFUL_VINES_2, WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';

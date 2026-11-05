@@ -1,6 +1,6 @@
 /** 蜘蛛侠专属卡牌与公共卡牌。卡图索引来自正式 5×7 物理卡图合同。 */
 
-import type { CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core/cardPreviewTypes';
 import type { RandomFn } from '../../../../engine/types';
 import type { AbilityCard } from '../../types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';

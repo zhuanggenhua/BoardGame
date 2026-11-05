@@ -869,7 +869,7 @@ export function injectPendingInteraction(
         const completedCount = completedSteps ?? completedDieIds.length;
         const remainingSelectCount = Math.max(0, selectCount - completedCount);
 
-        const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> & {
+        const multistepData: MultistepChoiceData<DiceModifyResult> & {
             completedDieIds?: number[];
             completedSteps?: number;
         } = {
@@ -878,9 +878,6 @@ export function injectPendingInteraction(
             maxSteps,
             minSteps,
             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
-            localReducer: (current, step) => diceModifyReducer(current, step, config, remainingSelectCount),
-            toCommands: (result) => diceModifyToCommands(result, remainingSelectCount),
-            getCompletedSteps: (result) => completedCount + result.modCount,
             ...(completedDieIds.length > 0 ? { completedDieIds } : {}),
             ...(completedSteps !== undefined ? { completedSteps } : {}),
             meta: {
@@ -921,15 +918,12 @@ export function injectPendingInteraction(
         ? (completedSteps ?? completedDieIds.length)
         : Array.from(new Set(completedDieIds)).length;
     const remainingSelectCount = Math.max(0, selectCount - completedCount);
-    const multistepData: MultistepChoiceData<DiceSelectStep, DiceSelectResult> = {
+    const multistepData: MultistepChoiceData<DiceSelectResult> = {
         title: interaction.titleKey,
         sourceId: interaction.sourceCardId,
         maxSteps: allowRepeatedDieSelection ? selectCount : undefined,
         minSteps: interaction.minSelectCount ?? 1,
         initialResult: { selectedDiceIds: [] },
-        localReducer: (current, step) => diceSelectReducer(current, step, remainingSelectCount, allowRepeatedDieSelection),
-        toCommands: (result) => diceSelectToCommands(result, remainingSelectCount),
-        getCompletedSteps: (result) => completedCount + result.selectedDiceIds.length,
         ...(completedDieIds.length > 0 ? { completedDieIds } : {}),
         ...(completedSteps !== undefined ? { completedSteps } : {}),
         ...(allowRepeatedDieSelection ? {

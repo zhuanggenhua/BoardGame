@@ -35,13 +35,7 @@ import {
     resolveTurnStartInventoryCardIds,
 } from './possessionActionReadModel';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-    BetrayalPendingDamageAllocationState,
-    BetrayalRecentRollState,
-    BetrayalTurnEndedPayload,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult, BetrayalPendingDamageAllocationState, BetrayalRecentRollState, BetrayalTurnEndedPayload } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type TurnEndedEvent = Extract<BetrayalEvent, { type: 'TURN_ENDED' }>;

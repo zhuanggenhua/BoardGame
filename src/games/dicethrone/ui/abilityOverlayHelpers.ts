@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { AbilityCard } from '../types';
 import { MONK_CARDS } from '../heroes/monk/cards';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';

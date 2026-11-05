@@ -1113,7 +1113,7 @@ function transformationSpring(ctx: BaseAbilityContext): AbilityResult {
                 ctx.matchState,
                 selected,
                 ctx.playerId,
-                ctx.random ?? { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => [...items] },
+                ctx.random ?? (() => { throw new Error('Transformation spring requires the match random source'); })(),
                 ctx.now,
                 {
                     sourceDefId: 'base_transformation_spring',

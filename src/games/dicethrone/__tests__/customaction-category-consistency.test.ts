@@ -20,6 +20,11 @@ import type { DiceThroneEvent } from '../domain/types';
 import { ALL_TOKEN_DEFINITIONS, CHARACTER_DATA_MAP } from '../domain/characters';
 import { RESOURCE_IDS } from '../domain/resources';
 import { LIEREN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { initializeCustomActions } from '../domain/customActions';
+
+// Registry snapshots below are captured while defining the suite.
+initializeCustomActions();
+
 
 // ============================================================================
 // 事件类型 → 必需 category 映射

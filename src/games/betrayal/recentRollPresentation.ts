@@ -1,10 +1,6 @@
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import type { DicePhysicsProjectedLayout } from "../../lib/dice-physics/types";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalRecentRollState,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalRecentRollState } from './domain/types';
 import {
   resolvePendingEventRollResolutionRequiredPlayerIds,
   resolveRecentRollAcknowledgedPlayerIds,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { BetrayalCore } from "../game";
+import type { BetrayalCore } from '../domain/types';
 import { resolveScenarioReaderOpenPlan } from "../scenarioReader";
 
 const createHauntCore = (

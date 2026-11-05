@@ -1,3 +1,5 @@
+import { getFactionAtlasId } from '../cardAtlasIds';
+export { getFactionAtlasId, resolveCardAtlasId } from '../cardAtlasIds';
 /**
  * 召唤师战争 - 卡牌图集配置
  * 底层使用引擎层 SpriteAtlasRegistry，本文件保留游戏特有的阵营映射逻辑
@@ -17,8 +19,6 @@
 import type { CSSProperties } from 'react';
 import { getOptimizedImageUrls, getLocalizedAssetPath } from '../../../core/AssetLoader';
 import { registerCardAtlasSource } from '../../../components/common/media/cardAtlasRegistry';
-import type { FactionId } from '../domain/types';
-import { resolveFactionId } from '../config/factions';
 import {
   type SpriteAtlasConfig,
   type SpriteAtlasSource,
@@ -264,53 +264,8 @@ export const DICE_FACE_SPRITE_MAP = {
   special: [8],
 } as const;
 
-// ========== 阵营名 → 目录名映射 ==========
-
-/** 阵营 ID → 资源目录名（核心使用 FactionId，兼容旧中文输入） */
-const FACTION_DIR_MAP: Record<FactionId, string> = {
-  necromancer: 'Necromancer',
-  trickster: 'Trickster',
-  paladin: 'Paladin',
-  goblin: 'Goblin',
-  frost: 'Frost',
-  barbaric: 'Barbaric',
-  mogu: 'mogu',
-  huijin: 'huijin',
-  shouren: 'shouren',
-  yongheng: 'yongheng',
-  shadow: 'shadow',
-  zhongcai: 'zhongcai',
-};
-
 /** 所有阵营目录名列表 */
 const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow', 'zhongcai'] as const;
-
-/**
- * 根据阵营名获取精灵图 atlas ID
- * @param faction 阵营 ID（如 'necromancer'，兼容旧中文）
- * @param atlasType 'hero' | 'cards'
- */
-export function getFactionAtlasId(faction: FactionId | string, atlasType: 'hero' | 'cards'): string {
-  const factionId = resolveFactionId(faction);
-  const dir = FACTION_DIR_MAP[factionId] ?? 'Necromancer';
-  return `sw:${dir.toLowerCase()}:${atlasType}`;
-}
-
-/** 根据卡牌 ID 前缀推断阵营 */
-const CARD_ID_PREFIX_MAP: Record<string, FactionId> = {
-  necro: 'necromancer',
-  trick: 'trickster',
-  paladin: 'paladin',
-  goblin: 'goblin',
-  frost: 'frost',
-  barb: 'barbaric',
-  mogu: 'mogu',
-  huijin: 'huijin',
-  shouren: 'shouren',
-  yongheng: 'yongheng',
-  shadow: 'shadow',
-  zhongcai: 'zhongcai',
-};
 
 function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'mogu') return MOGU_HERO_ATLAS;
@@ -331,22 +286,6 @@ function getCardsAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'shadow') return SHADOW_CARDS_ATLAS;
   if (dir === 'zhongcai') return ZHONGCAI_CARDS_ATLAS;
   return CARDS_ATLAS;
-}
-
-/**
- * 根据卡牌数据解析精灵图 atlas ID
- * 优先使用 faction 字段（UnitCard），回退到 ID 前缀推断
- */
-export function resolveCardAtlasId(card: { id: string; faction?: FactionId | string }, atlasType: 'hero' | 'cards'): string {
-  if (card.faction) {
-    return getFactionAtlasId(card.faction, atlasType);
-  }
-  for (const [prefix, faction] of Object.entries(CARD_ID_PREFIX_MAP)) {
-    if (card.id.startsWith(prefix)) {
-      return getFactionAtlasId(faction, atlasType);
-    }
-  }
-  return getFactionAtlasId('necromancer', atlasType);
 }
 
 /** 初始化精灵图注册（所有阵营） */

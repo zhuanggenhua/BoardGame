@@ -3,12 +3,7 @@ import { flushSync } from "react-dom";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { HudPortal, UI_Z_INDEX } from "../../core";
-import type {
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalMonsterStatusKind,
-  BetrayalMonsterSummary,
-} from "./game";
+import type { BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalMonsterStatusKind, BetrayalMonsterSummary } from './domain/types';
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { PossessionAtlasFrame } from "./atlasFrameSurface";

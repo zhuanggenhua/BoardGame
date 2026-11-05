@@ -15,7 +15,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
-import { getDiceThroneCardPreviewRef } from './cardPreviewHelper';
+import { getDiceThroneCardPreviewRef } from '../cardPreviewModel';
 
 type TeamTone = 'self' | 'ally' | 'enemy';
 

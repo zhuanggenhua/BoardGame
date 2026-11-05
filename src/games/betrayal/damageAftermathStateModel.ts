@@ -24,10 +24,7 @@ import {
 } from './hauntVictoryModel';
 import { createMummyEndgameResult } from './mummyHauntRules';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type DamageAllocationResolvedEvent = Extract<BetrayalEvent, { type: 'DAMAGE_ALLOCATION_RESOLVED' }>;

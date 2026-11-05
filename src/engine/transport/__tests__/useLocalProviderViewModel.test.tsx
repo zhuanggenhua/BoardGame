@@ -117,7 +117,7 @@ describe('useLocalProviderViewModel', () => {
         });
     });
 
-    it('内部批量命令应逐条执行，并给每条业务命令注入本地视角玩家', () => {
+    it('同一动作只派发一个批次，并给每条业务命令注入本地视角玩家', () => {
         const dispatch = vi.fn();
         const { result } = renderHook(() => useLocalProviderViewModel({
             state: createState(),
@@ -139,14 +139,12 @@ describe('useLocalProviderViewModel', () => {
             });
         });
 
-        expect(dispatch).toHaveBeenCalledTimes(2);
-        expect(dispatch).toHaveBeenNthCalledWith(1, 'REROLL_DIE', {
-            dieId: 0,
-            __internalPlayerId: '1',
-        });
-        expect(dispatch).toHaveBeenNthCalledWith(2, 'REROLL_DIE', {
-            dieId: 1,
-            __internalPlayerId: '1',
+        expect(dispatch).toHaveBeenCalledTimes(1);
+        expect(dispatch).toHaveBeenCalledWith(TRANSPORT_BATCH_COMMAND, {
+            commands: [
+                { type: 'REROLL_DIE', payload: { dieId: 0, __internalPlayerId: '1' } },
+                { type: 'REROLL_DIE', payload: { dieId: 1, __internalPlayerId: '1' } },
+            ],
         });
     });
 });

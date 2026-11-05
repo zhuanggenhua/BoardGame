@@ -10,7 +10,6 @@ import { HealthModule } from './modules/health/health.module';
 import { InviteModule } from './modules/invite/invite.module';
 import { MessageModule } from './modules/message/message.module';
 import { ReviewModule } from './modules/review/review.module';
-import { UgcModule } from './modules/ugc/ugc.module';
 import { LayoutModule } from './modules/layout/layout.module';
 import { UserSettingsModule } from './modules/user-settings/user-settings.module';
 import { CustomDeckModule } from './modules/custom-deck/custom-deck.module';
@@ -91,7 +90,6 @@ function requireMongoUri(configService: ConfigService): string {
         GameChangelogModule,
         NotificationModule,
         HealthModule,
-        UgcModule,
         LayoutModule,
         UserSettingsModule,
         CustomDeckModule,

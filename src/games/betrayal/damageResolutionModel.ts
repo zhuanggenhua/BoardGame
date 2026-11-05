@@ -35,15 +35,7 @@ import {
     resolveTraitDamageAssignableSteps,
     setExplorerTraitPosition,
 } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalMonsterSummary,
-    BetrayalMonsterMovementRollResult,
-    BetrayalPendingDamageAllocationState,
-    BetrayalScenarioRuntimeStatus,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalMonsterMovementRollResult, BetrayalPendingDamageAllocationState, BetrayalScenarioRuntimeStatus, BetrayalTraitKey } from './domain/types';
 import type { BetrayalCommand } from './commandTypes';
 import type { BetrayalCommandMap } from './commandTypes';
 

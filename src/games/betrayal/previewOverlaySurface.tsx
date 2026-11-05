@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { MagnifyOverlay } from "../../components/common/overlays/MagnifyOverlay";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
-import type { BetrayalInventoryCard, BetrayalRoomNode } from "./game";
+import type { BetrayalInventoryCard, BetrayalRoomNode } from './domain/types';
 import {
   BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
 } from "./possessionAtlas";

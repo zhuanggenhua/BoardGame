@@ -1,3 +1,5 @@
+import { getMatchPlayerResult, getMatchWinnerIDs, type MatchRecordOutcome } from '../shared/matchRecord';
+
 interface LeaderboardRecordPlayer {
     id: string;
     name?: string;
@@ -8,7 +10,7 @@ interface LeaderboardRecordPlayer {
     placement?: number;
 }
 
-interface LeaderboardRecord {
+interface LeaderboardRecord extends MatchRecordOutcome {
     players: LeaderboardRecordPlayer[];
     winnerID?: string;
     createdAt?: Date | string | number;
@@ -55,10 +57,12 @@ const MAX_LEADERBOARD_ENTRIES = 50;
 const AI_OPPONENT_RATING_WEIGHT = 1 / 3;
 
 function resolveLeaderboardPlayerKey(player: LeaderboardRecordPlayer): string | null {
+    if (!player.ownerKey && player.id.startsWith('match:')) return null;
     return player.ownerKey || (player.id !== '0' && player.id !== '1' ? player.id : null) || player.name || null;
 }
 
 function resolveLeaderboardContextKey(player: LeaderboardRecordPlayer, isHuman: boolean): string | null {
+    if (!player.ownerKey && player.id.startsWith('match:')) return `anonymous:${player.id}`;
     const playerKey = resolveLeaderboardPlayerKey(player);
     if (playerKey) {
         return `${isHuman ? 'human' : 'ai'}:${playerKey}`;
@@ -105,17 +109,18 @@ function resolveRecordTime(record: LeaderboardRecord): number {
     return 0;
 }
 
-function findRecordWinnerContext(record: LeaderboardRecord, contexts: MatchPlayerContext[]): MatchPlayerContext | undefined {
-    if (!record.winnerID) {
-        return undefined;
+function isRecordWinner(record: LeaderboardRecord, { key, player }: MatchPlayerContext): boolean {
+    const winnerIDs = getMatchWinnerIDs(record);
+    if (winnerIDs.length === 0) {
+        return false;
     }
 
-    return contexts.find(({ key, player }) => (
-        player.id === record.winnerID
-        || player.ownerKey === record.winnerID
-        || player.name === record.winnerID
-        || key === record.winnerID
-    ));
+    return (
+        winnerIDs.includes(player.id)
+        || (player.ownerKey !== undefined && winnerIDs.includes(player.ownerKey))
+        || (player.name !== undefined && winnerIDs.includes(player.name))
+        || winnerIDs.includes(key)
+    );
 }
 
 function resolvePlayerRank(record: LeaderboardRecord, contexts: MatchPlayerContext[]): Map<string, number> {
@@ -142,9 +147,8 @@ function resolvePlayerRank(record: LeaderboardRecord, contexts: MatchPlayerConte
         return new Map(normalizedResults.map(({ key }) => [key, 0]));
     }
 
-    const winner = findRecordWinnerContext(record, contexts);
-    if (winner) {
-        return new Map(contexts.map(({ key }) => [key, key === winner.key ? 0 : 1]));
+    if (contexts.some((context) => isRecordWinner(record, context))) {
+        return new Map(contexts.map((context) => [context.key, isRecordWinner(record, context) ? 0 : 1]));
     }
 
     return new Map(contexts.map(({ key }) => [key, 0]));
@@ -250,7 +254,8 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
 
         const contexts = keyedPlayers.map(({ key, player, isHuman }) => {
             const statsKey = key.replace(/^human:/, '');
-            const playerStats = isHuman ? (stats[statsKey] ?? createEmptyStats(player, statsKey)) : null;
+            const playerStats = isHuman && !key.startsWith('anonymous:')
+                ? (stats[statsKey] ?? createEmptyStats(player, statsKey)) : null;
             if (isHuman && playerStats) {
                 stats[statsKey] = playerStats;
             }
@@ -288,14 +293,20 @@ export function buildLeaderboardEntries(records: LeaderboardRecord[]): Leaderboa
             }
         }
 
-        contexts.forEach(({ key, stats: playerStats }) => {
+        contexts.forEach(({ key, player, stats: playerStats }) => {
             if (!playerStats) {
                 return;
             }
             const rank = ranks.get(key) ?? 0;
-            if (lowestRank === highestRank) {
+            const explicitResult = player.result?.trim().toLowerCase();
+            const result = explicitResult === 'win' || explicitResult === 'loss' || explicitResult === 'draw'
+                ? explicitResult
+                : record.winnerIDs !== undefined || record.winnerID !== undefined || record.draw !== undefined
+                    ? getMatchPlayerResult(record, { id: player.id })
+                    : lowestRank === highestRank ? 'draw' : rank === lowestRank ? 'win' : 'loss';
+            if (result === 'draw') {
                 playerStats.draws += 1;
-            } else if (rank === lowestRank) {
+            } else if (result === 'win') {
                 playerStats.wins += 1;
             } else {
                 playerStats.losses += 1;

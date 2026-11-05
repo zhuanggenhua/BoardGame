@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from './commandFixture';
 /**
  * 大杀四方 - 起手重抽集成测试
  *
@@ -18,7 +19,7 @@ import { SmashUpDomain } from '../domain';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { smashUpFlowHooks } from '../domain/index';
 import { STARTING_HAND_MULLIGAN_SOURCE_ID } from '../domain/mulliganHandlers';
-import { execute } from '../domain/reducer';
+
 import type { AllFactionsSelectedEvent, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { STARTING_HAND_SIZE, SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { expectNoPrompt, getSimpleChoicePrompt, respondToPrompt } from './helpers';
@@ -129,7 +130,7 @@ describe('SmashUp 起手重抽', () => {
             const runner = createRunner(random);
             const midResult = runner.run({ name: '前三步选阵营', commands: [...FIRST_THREE_COMMANDS] });
 
-            const events = execute(midResult.finalState, FOURTH_COMMAND as any, random);
+            const events = settleFixtureCommandEvents(midResult.finalState, FOURTH_COMMAND as any, random);
             const evt = events.find(e => e.type === SU_EVENTS.ALL_FACTIONS_SELECTED) as AllFactionsSelectedEvent;
 
             expect(evt).toBeDefined();
@@ -153,7 +154,7 @@ describe('SmashUp 起手重抽', () => {
             const runner = createRunner(random);
             const midResult = runner.run({ name: '前三步选阵营', commands: [...FIRST_THREE_COMMANDS] });
 
-            const events = execute(midResult.finalState, FOURTH_COMMAND as any, random);
+            const events = settleFixtureCommandEvents(midResult.finalState, FOURTH_COMMAND as any, random);
             const evt = events.find(e => e.type === SU_EVENTS.ALL_FACTIONS_SELECTED) as AllFactionsSelectedEvent;
 
             expect(evt).toBeDefined();
@@ -199,7 +200,7 @@ describe('SmashUp 起手重抽', () => {
             const runner = createRunner(random);
             const midResult = runner.run({ name: '前三步选阵营', commands: [...FIRST_THREE_COMMANDS] });
 
-            const events = execute(midResult.finalState, FOURTH_COMMAND as any, random);
+            const events = settleFixtureCommandEvents(midResult.finalState, FOURTH_COMMAND as any, random);
             const evt = events.find(e => e.type === SU_EVENTS.ALL_FACTIONS_SELECTED) as AllFactionsSelectedEvent;
 
             expect(evt).toBeDefined();

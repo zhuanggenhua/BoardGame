@@ -3,10 +3,7 @@ import type {
     BetrayalTraitKey,
     BetrayalUseEffectSeed,
 } from './scenarioConfig';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary } from './domain/types';
 import { resolveConnectedRoomIds } from './roomMapModel';
 import { damageTraitsAreAssignable } from './traitTrackModel';
 

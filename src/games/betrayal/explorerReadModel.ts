@@ -1,4 +1,4 @@
-import type { BetrayalCore, BetrayalExplorerSummary, BetrayalRoomNode } from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalRoomNode } from './domain/types';
 import { cloneInventoryCard } from "./possessionDeckModel";
 import {
   buildTraitTracksFromValues,

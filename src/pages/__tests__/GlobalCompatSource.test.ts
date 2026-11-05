@@ -51,7 +51,7 @@ describe('Global compatibility source guards', () => {
     it('board-shell 全局默认不应给宽度型游戏补固定高度，避免手机横屏底部 UI 被裁掉', () => {
         const source = readIndexCss();
 
-        expect(source).toContain('height: var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1)));');
+        expect(source).toContain('height: var(--mobile-board-shell-canvas-height, var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1))));');
         expect(source).not.toMatch(/--mobile-board-shell-design-height:\s*1080px;/);
         expect(source).not.toMatch(/--mobile-board-shell-reference-height:\s*1080px;/);
     });

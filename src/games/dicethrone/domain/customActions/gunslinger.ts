@@ -1,4 +1,5 @@
-import { createBonusDiceWithReroll, createDisplayOnlySettlement, registerCustomActionHandler, resolveEffectsToEvents, type CustomActionContext } from '../effects';
+import { createBonusDiceWithReroll, createDisplayOnlySettlement, resolveEffectsToEvents } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { GUNSLINGER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';

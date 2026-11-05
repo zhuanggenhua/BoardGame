@@ -1,7 +1,7 @@
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { Card, EventCard, FactionId, StructureCard, UnitCard, UnitTag } from '../domain/types';
 import { getBaseCardId } from '../domain/ids';
-import { getSummonerWarsCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getSummonerWarsCardPreviewRef } from '../cardPreviewModel';
 import { createDeckByFactionId, FACTION_CATALOG } from './factions';
 
 export const SUMMONER_WARS_CONFIG_REVIEW_VERSION = 'legacy-ts-config-v1';
@@ -152,7 +152,7 @@ const RULE_EVIDENCE = {
   deckValidation: 'src/games/summonerwars/config/deckValidation.ts:144-178',
   symbolMatch: 'src/games/summonerwars/config/deckValidation.ts:231-246',
   setupData: 'src/games/summonerwars/config/factions/index.ts createDeckByFactionId',
-  materialPreview: 'src/games/summonerwars/ui/cardPreviewHelper.ts',
+  materialPreview: 'src/games/summonerwars/cardPreviewModel.ts',
 } as const;
 
 function cardRoot(objectId: string): string {

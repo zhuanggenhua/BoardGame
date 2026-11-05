@@ -14,6 +14,7 @@ import {
     type LocalAiTurnTimeline,
 } from './localAiDiagnostics';
 import type { MatchState } from '../types';
+import { TRANSPORT_BATCH_COMMAND } from '../batchDispatchCommand';
 
 export async function executeLocalAiCommandWithProgress(args: {
     gameId: string;
@@ -31,24 +32,25 @@ export async function executeLocalAiCommandWithProgress(args: {
     getState: () => MatchState<unknown>;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
+    completedCommand?: LocalAiCommandEffect;
 }): Promise<LocalAiCommandEffect> {
     const normalizedPayload = args.command.payload && typeof args.command.payload === 'object'
         ? args.command.payload as Record<string, unknown>
         : {};
-    const snapshotBeforeCommand = buildLocalAiCommandStateSnapshot({
+    const snapshotBeforeCommand = args.completedCommand?.before ?? buildLocalAiCommandStateSnapshot({
         state: args.getState(),
         playerId: args.playerId,
         marker: buildAiProgressMarker(args.getState(), { engineConfig: args.engineConfig }),
     });
     const aiTraceToken = `${args.attemptKey}:${args.commandIndex}:${Date.now()}`;
-    args.dispatch(args.command.type, {
+    if (!args.completedCommand) args.dispatch(args.command.type, {
         ...normalizedPayload,
         __tutorialPlayerId: args.playerId,
         __tutorialAiCommand: true,
         __aiTraceToken: aiTraceToken,
     });
 
-    let commandEffect = args.commandEffectsByToken[aiTraceToken];
+    let commandEffect = args.completedCommand ?? args.commandEffectsByToken[aiTraceToken];
     if (!commandEffect) {
         for (let retry = 0; retry < 3; retry += 1) {
             await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -62,7 +64,7 @@ export async function executeLocalAiCommandWithProgress(args: {
         delete args.commandEffectsByToken[aiTraceToken];
     }
 
-    const snapshotAfterCommand = buildLocalAiCommandStateSnapshot({
+    const snapshotAfterCommand = args.completedCommand?.after ?? buildLocalAiCommandStateSnapshot({
         state: args.getState(),
         playerId: args.playerId,
         marker: buildAiProgressMarker(args.getState(), { engineConfig: args.engineConfig }),
@@ -161,8 +163,6 @@ export async function executeLocalAiCommandBatch(args: {
     turnTimeline?: LocalAiTurnTimeline;
     dispatch: (type: string, payload: unknown) => void;
     getState: () => MatchState<unknown>;
-    getRandomCursor?: () => number;
-    restoreBatchSnapshot?: (snapshot: { state: MatchState<unknown>; randomCursor: number | null }) => void;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     engineConfig?: OnlineAiRecoveryEngineConfig | null;
 }): Promise<{
@@ -171,8 +171,36 @@ export async function executeLocalAiCommandBatch(args: {
     failedCommandType?: string;
     failureReason?: string;
 }> {
-    const snapshotState = args.getState();
-    const snapshotRandomCursor = args.getRandomCursor?.() ?? null;
+    const tracePrefix = `${args.attemptKey}:${Date.now()}`;
+    const traceTokens = args.commands.map((_, index) => `${tracePrefix}:${index}`);
+    args.dispatch(TRANSPORT_BATCH_COMMAND, {
+        commands: args.commands.map((command, index) => ({
+            type: command.type,
+            payload: {
+                ...(command.payload && typeof command.payload === 'object' ? command.payload : {}),
+                __tutorialPlayerId: args.playerId,
+                __tutorialAiCommand: true,
+                __aiTraceToken: traceTokens[index],
+            },
+        })),
+    });
+    const effects = traceTokens.map((token) => {
+        const effect = args.commandEffectsByToken[token] ?? {
+            hasStateDelta: false, markerProgressed: false, rejected: true, failureReason: 'batch_effect_missing',
+        };
+        delete args.commandEffectsByToken[token];
+        return effect;
+    });
+    const failedIndex = effects.findIndex((effect) => effect.rejected && effect.failureReason !== 'batch_cancelled');
+    if (failedIndex >= 0) {
+        const failureReason = effects[failedIndex].failureReason;
+        const failedCommandType = args.commands[failedIndex].type;
+        logLocalAiPerfWarn('batch-rolled-back', {
+            gameId: args.gameId, playerId: args.playerId, failedCommandType, failureReason,
+            commandIndex: failedIndex, commandTotal: args.commands.length,
+        });
+        return { hasAnyCommandEffect: false, rolledBack: true, failedCommandType, failureReason };
+    }
     let hasAnyCommandEffect = false;
 
     for (const [commandIndex, command] of args.commands.entries()) {
@@ -192,30 +220,8 @@ export async function executeLocalAiCommandBatch(args: {
             getState: args.getState,
             commandEffectsByToken: args.commandEffectsByToken,
             engineConfig: args.engineConfig,
+            completedCommand: effects[commandIndex],
         });
-        if (effect.rejected) {
-            args.restoreBatchSnapshot?.({
-                state: snapshotState,
-                randomCursor: snapshotRandomCursor,
-            });
-            logLocalAiPerfWarn('batch-rolled-back', {
-                gameId: args.gameId,
-                matchId: `local:${args.gameId}:${args.seed}`,
-                playerId: args.playerId,
-                source: args.source,
-                actionKind: args.actionKind,
-                failedCommandType: command.type,
-                failureReason: effect.failureReason ?? 'command_failed',
-                commandIndex,
-                commandTotal: args.commands.length,
-            });
-            return {
-                hasAnyCommandEffect: false,
-                rolledBack: true,
-                failedCommandType: command.type,
-                failureReason: effect.failureReason,
-            };
-        }
         if (effect.hasStateDelta) {
             hasAnyCommandEffect = true;
         }

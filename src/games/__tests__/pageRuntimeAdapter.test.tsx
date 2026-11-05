@@ -14,6 +14,7 @@ function DelayedRuntimeProvider({ children }: { children: React.ReactNode }) {
 }
 
 vi.mock('../registry', () => ({
+ retainGameImplementation: () => () => {},
     getGameImplementation: (gameId: string) => (
         gameId === 'smashup' && smashupImplementationLoaded
             ? { runtimeAdapter: smashUpGameRuntimeAdapter }

@@ -8,8 +8,9 @@
  */
 
 import React from 'react';
+import type { DieFace } from '../domain/core-types';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import { UI_Z_INDEX } from '../../../core';
 import SpotlightContainer from './SpotlightContainer';
 

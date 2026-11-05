@@ -1,5 +1,4 @@
 import type {
-    BetrayalAllTraitCheckResult,
     RandomFn,
     ValidationResult,
 } from '../../engine/types';
@@ -54,14 +53,7 @@ import {
     resolveNonCombatTraitCheckValue,
     rollEventTraitCheckWithDice,
 } from './traitRollModel';
-import type {
-    BetrayalCore,
-    BetrayalDiscoveryResolutionStep,
-    BetrayalDiscoverySummary,
-    BetrayalPendingEventChoiceState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalDiscoveryResolutionStep, BetrayalDiscoverySummary, BetrayalPendingEventChoiceState, BetrayalPendingEventRollResolutionState, BetrayalTraitKey } from './domain/types';
 import type { BetrayalCommandMap } from './commandTypes';
 
 type ResolveEventChoicePayload = BetrayalCommandMap[typeof BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE];
@@ -1084,3 +1076,5 @@ export function resolveBetrayalEventChoiceResolvedPayload(
         logText: `${actor.displayName}选择${pending.acceptLabel}：${pending.sourceTitle}（${pending.effect.roll.label} ${rollTotal}，${effectLabel}）`,
     };
 }
+
+import type { BetrayalAllTraitCheckResult } from './domain/types';

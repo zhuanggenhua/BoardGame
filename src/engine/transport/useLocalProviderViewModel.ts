@@ -73,49 +73,46 @@ export function useLocalProviderViewModel(args: {
         state,
     ]);
 
-    const dispatchSingleCommand = useCallback((type: string, payload: unknown) => {
+    const preparePayload = useCallback((type: string, payload: unknown) => {
         if (!localBoardPlayerId) {
-            dispatchCommand(type, payload);
-            return;
+            return payload;
         }
 
         // 交互系统命令的正式执行者是当前交互 owner，不一定等于本地正在跟随的视角席位。
         // 让 localDispatchCommand 根据 state.sys.interaction.current.playerId 解析，
         // 避免年中/新年等跨席位交互被误发成当前视角玩家。
         if (type.startsWith('SYS_INTERACTION_')) {
-            dispatchCommand(type, payload);
-            return;
+            return payload;
         }
 
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-            dispatchCommand(type, payload);
-            return;
+            return payload;
         }
 
         const payloadRecord = payload as Record<string, unknown>;
         if (typeof payloadRecord.__internalPlayerId === 'string') {
-            dispatchCommand(type, payload);
-            return;
+            return payload;
         }
 
         // 仅本地 Provider 用它表达“当前本地视角玩家”，不能当成跨 transport 的业务执行者真相。
-        dispatchCommand(type, {
+        return {
             ...payloadRecord,
             __internalPlayerId: localBoardPlayerId,
-        });
-    }, [dispatchCommand, localBoardPlayerId]);
+        };
+    }, [localBoardPlayerId]);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
         if (type === TRANSPORT_BATCH_COMMAND) {
             const commands = getTransportBatchCommands(payload);
-            for (const command of commands) {
-                dispatchSingleCommand(command.type, command.payload);
-            }
+            dispatchCommand(type, { commands: commands.map((command) => ({
+                ...command,
+                payload: preparePayload(command.type, command.payload),
+            })) });
             return;
         }
 
-        dispatchSingleCommand(type, payload);
-    }, [dispatchSingleCommand]);
+        dispatchCommand(type, preparePayload(type, payload));
+    }, [dispatchCommand, preparePayload]);
 
     const sendUiEvent = useCallback(() => undefined, []);
     const subscribeUiEvent = useCallback(() => () => undefined, []);

@@ -1,11 +1,7 @@
 import { Minus, Plus, Skull } from "lucide-react";
 import type { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalTraitKey } from './domain/types';
 import { BETRAYAL_TRAIT_MARKER_ASSETS } from "./traitAssets";
 import {
   clampTraitTrackPosition,

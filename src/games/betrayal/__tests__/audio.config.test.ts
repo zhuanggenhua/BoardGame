@@ -30,7 +30,7 @@ import {
     BETRAYAL_USE_HOLY_WATER_POSSESSION_KEY,
     BETRAYAL_USE_POSSESSION_KEY,
 } from '../audio.config';
-import { createBetrayalCharacterSelectCore } from '../game';
+import { createBetrayalCharacterSelectCore } from '../domain/stateFactory';
 
 const resolveKey = (event: AudioEvent) => BETRAYAL_AUDIO_CONFIG.feedbackResolver(event, {
     G: createBetrayalCharacterSelectCore(['0', '1', '2']),

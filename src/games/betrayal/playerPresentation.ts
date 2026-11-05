@@ -1,5 +1,5 @@
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
-import type { BetrayalExplorerSummary } from "./game";
+import type { BetrayalExplorerSummary } from './domain/types';
 
 export function resolvePlayerName(
   playerId: string,

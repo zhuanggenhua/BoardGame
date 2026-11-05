@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents, planFixtureCommandEvents } from './commandFixture';
 import { makeMinionDestroyedEvent } from './helpers';
 /**
  * 大杀四方 (Smash Up) - 冒烟测试
@@ -73,7 +74,7 @@ import { runCommand } from './testRunner';
 import type { TitanState } from '../domain/types';
 import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
 import { startDuel } from '../domain/duel';
-import { getSmashUpCardPreviewMeta } from '../ui/cardPreviewHelper';
+import { getSmashUpCardPreviewMeta } from '../cardPreviewModel';
 import engineConfig from '../game';
 import { readSmashUpRuntimeSetupConfig, SMASHUP_DECK_QUERY_SETUP_VALUE } from '../roomSetup';
 import { hasCardActivatableAbility } from '../domain/activationMetadata';
@@ -1204,7 +1205,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate({ ...result.finalState, core }, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute({ ...result.finalState, core }, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents({ ...result.finalState, core }, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -1316,7 +1317,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DRAWN);
 
@@ -1371,7 +1372,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate({ ...result.finalState, core }, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute({ ...result.finalState, core }, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents({ ...result.finalState, core }, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -1496,7 +1497,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const discardPrompt = getSimpleChoicePrompt(state, 'titan_ghosts_creampuff_man_discard');
 
@@ -1573,7 +1574,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const discardPrompt = getSimpleChoicePrompt(state, 'titan_ghosts_creampuff_man_discard');
         expect(getPromptOption(discardPrompt, entry => entry.value?.cardUid === 'ghost-cost')).toBeDefined();
@@ -1870,7 +1871,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map((event) => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_sphinx_talent');
@@ -1922,7 +1923,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_sphinx_talent');
         expect(getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-hand-card')).toBeDefined();
@@ -1998,7 +1999,7 @@ describe('smashup', () => {
         const firstValidation = SmashUpDomain.validate(state, command);
         expect(firstValidation.valid).toBe(true);
 
-        const firstEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const firstEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(firstEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const coreAfterFirstUse = firstEvents.reduce(
@@ -2337,7 +2338,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate({ ...result.finalState, core }, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute({ ...result.finalState, core }, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents({ ...result.finalState, core }, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
     });
 
@@ -2541,7 +2542,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_vampires_ancient_lord_talent');
 
@@ -2587,7 +2588,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_vampires_ancient_lord_talent');
         expect(getPromptOption(prompt, entry => entry.value?.minionUid === 'ancient-target' && entry.value?.baseIndex === 0)).toBeDefined();
@@ -3189,7 +3190,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         const broadsideBasePrompt = getSimpleChoicePrompt(state, 'pirate_broadside_choose_base');
 
         const legalActions = buildSmashUpAiLegalActions({
@@ -4030,7 +4031,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(stateWithMinion, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(stateWithMinion, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(stateWithMinion, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.MADNESS_DRAWN);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
@@ -4158,7 +4159,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        expect(SmashUpDomain.execute(state, command, FIXED_RANDOM)).toEqual([]);
+        expect(settleFixtureCommandEvents(state, command, FIXED_RANDOM)).toEqual([]);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_dinosaurs_fort_titanosaurus_special');
         expect(getPromptOption(prompt, entry => entry.value?.minionUid === 'fort-special-food')).toBeDefined();
@@ -4521,7 +4522,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(ms, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(ms, command, FIXED_RANDOM);
+        const events = planFixtureCommandEvents(ms, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toEqual([
             SU_EVENTS.TALENT_USED,
             SU_EVENTS.MADNESS_DRAWN,
@@ -4565,7 +4566,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(ms, command);
         expect(validation.valid).toBe(true);
 
-        const talentEvents = SmashUpDomain.execute(ms, command, FIXED_RANDOM);
+        const talentEvents = settleFixtureCommandEvents(ms, command, FIXED_RANDOM);
         expect(talentEvents.map(event => event.type)).toEqual([SU_EVENTS.TALENT_USED]);
 
         const current = getSimpleChoicePrompt(ms, 'titan_cthulhu_cthulhu_titan_talent_target');
@@ -4618,7 +4619,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_cthulhu_cthulhu_titan_talent_target');
         expect(getPromptOption(prompt, entry => entry.value?.targetPlayerId === '1')).toBeDefined();
@@ -4690,7 +4691,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(stateWithDuplicates, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(stateWithDuplicates, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(stateWithDuplicates, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), stateWithDuplicates.core);
@@ -4765,7 +4766,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const limitEvent = events.find(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvent).toBeDefined();
@@ -4815,7 +4816,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(stateWithCounters, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(stateWithCounters, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(stateWithCounters, command, FIXED_RANDOM);
         // PR64+：该泰坦 special 需要弃 1 张牌，会创建交互，不会直接打出
         expect(events.map(event => event.type)).toEqual([]);
         expect(getPromptSourceId(getSimpleChoicePrompt(stateWithCounters, 'titan_giant_ants_death_on_six_legs_special')))
@@ -4862,7 +4863,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        expect(SmashUpDomain.execute(state, command, FIXED_RANDOM)).toEqual([]);
+        expect(settleFixtureCommandEvents(state, command, FIXED_RANDOM)).toEqual([]);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_giant_ants_death_on_six_legs_special');
         expect(getPromptOption(prompt, entry => entry.value?.cardUid === 'six-legs-discard')).toBeDefined();
@@ -5023,7 +5024,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const limitEvent = events.find(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvent).toBeDefined();
@@ -5071,7 +5072,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(stateWithOwnMinion, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(stateWithOwnMinion, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(stateWithOwnMinion, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), stateWithOwnMinion.core);
@@ -5109,7 +5110,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_POWER_COUNTER_ADDED);
 
@@ -5151,7 +5152,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_POWER_COUNTER_ADDED);
 
@@ -5238,7 +5239,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_bear_cavalry_major_ursa_choose_destination');
@@ -5305,7 +5306,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const destinationResult = respondToPromptOption(
@@ -5568,7 +5569,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_changerbots_mergacon_talent');
 
@@ -5617,7 +5618,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_changerbots_mergacon_talent');
         expect(getPromptOption(prompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
@@ -5952,7 +5953,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const chooseDiscardPrompt = getSimpleChoicePrompt(state, 'titan_itty_critters_rainboroc_choose_discard');
 
@@ -6021,7 +6022,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const chooseDiscardPrompt = getSimpleChoicePrompt(state, 'titan_itty_critters_rainboroc_choose_discard');
         const chooseDiscardResult = respondToPromptOption(
@@ -6076,7 +6077,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const chooseDiscardResult = respondToPromptOption(
             state,
@@ -6147,7 +6148,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const chooseDiscardPrompt = getSimpleChoicePrompt(state, 'titan_killer_plants_killer_kudzu_talent');
         expect(getPromptOption(chooseDiscardPrompt, entry => entry.value?.cardUid === 'kudzu-discard-minion')).toBeDefined();
@@ -6245,7 +6246,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -6461,7 +6462,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -6513,7 +6514,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -6564,7 +6565,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -7255,7 +7256,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents).toEqual([]);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_ninjas_invisible_ninja_special');
@@ -7341,7 +7342,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const chooseBasePrompt = getSimpleChoicePrompt(state, 'titan_magical_girls_walking_castle_choose_base');
 
@@ -7416,7 +7417,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const chooseBaseResult = respondToPromptOption(
             state,
@@ -7508,7 +7509,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(invalidState, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
     });
 
@@ -7548,7 +7549,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const giveMinionPrompt = getSimpleChoicePrompt(state, 'titan_ignobles_the_hill_that_strolls_give_minion');
 
@@ -7643,7 +7644,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const giveResult = respondToPromptOption(
             state,
@@ -7743,7 +7744,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const choosePlayerPromptState = respondToPromptOption(
             state,
@@ -7808,7 +7809,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const reclaimPrompt = getSimpleChoicePrompt(state, 'titan_ignobles_the_hill_that_strolls_reclaim_minion');
 
@@ -8055,7 +8056,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toEqual([
             SU_EVENTS.TALENT_USED,
             SU_EVENTS.LIMIT_MODIFIED,
@@ -8103,7 +8104,7 @@ describe('smashup', () => {
             error: '额外出牌只能打出力量≤2的随从',
         });
 
-        const lowPowerEvents = SmashUpDomain.execute(postTalentState, lowPowerCommand, FIXED_RANDOM);
+        const lowPowerEvents = settleFixtureCommandEvents(postTalentState, lowPowerCommand, FIXED_RANDOM);
         const afterLowPowerPlay = lowPowerEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
             resolved,
@@ -8153,7 +8154,7 @@ describe('smashup', () => {
         expect(invalidValidation.valid).toBe(false);
         expect(invalidValidation.error).toMatch(/Moon Zero Three|三号空间站|other players minions/i);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -8250,7 +8251,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const choosePlayerPrompt = getSimpleChoicePrompt(state, 'titan_super_spies_moon_zero_three_choose_player');
 
@@ -8313,7 +8314,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const choosePlayerPrompt = getSimpleChoicePrompt(state, 'titan_super_spies_moon_zero_three_choose_player');
@@ -8391,7 +8392,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const chooseResult = respondToPromptOption(
             state,
@@ -8475,7 +8476,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -9232,7 +9233,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, ongoingCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, talentCommand).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, ongoingCommand, FIXED_RANDOM);
+        const events = planFixtureCommandEvents(state, ongoingCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toEqual([SU_EVENTS.MINION_PLAYED]);
 
         const resolved = events.reduce(
@@ -9279,7 +9280,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_penguins_emperor_penguin_talent');
         expect(getPromptOptions(prompt).every((option: any) => option.displayMode === 'card')).toBe(true);
@@ -9347,7 +9348,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_penguins_emperor_penguin_talent');
@@ -9442,7 +9443,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const commandEvents = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_penguins_emperor_penguin_talent');
@@ -9510,7 +9511,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, occupiedBaseCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -9709,7 +9710,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_tricksters_big_funny_giant_choose_minion');
         expect(getPromptOption(prompt, entry => entry.value?.minionUid === 'giant-target-first')).toBeDefined();
@@ -9769,7 +9770,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const chooseMinionResult = respondToPromptOption(
             state,
@@ -9850,7 +9851,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = planFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_pirates_the_kraken_talent');
 
@@ -9879,7 +9880,7 @@ describe('smashup', () => {
         // 注意：泰坦 clash / 冲突属于 postProcessSystemEvents 的派生事件（afterEvents 轮统一处理），
         // eventSystem.afterEvents 本身只负责从 interaction handler 拉取领域事件。
         const postSystemState = hook?.state ?? state;
-        const postProcessed = SmashUpDomain.postProcessSystemEvents(
+        const postProcessed = postProcessSystemEvents(
             postSystemState.core,
             emittedEvents,
             FIXED_RANDOM,
@@ -9955,7 +9956,7 @@ describe('smashup', () => {
         expect(SmashUpDomain.validate(state, validCommand).valid).toBe(true);
         expect(SmashUpDomain.validate(state, invalidCommand).valid).toBe(false);
 
-        const events = SmashUpDomain.execute(state, validCommand, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, validCommand, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_PLAYED);
 
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
@@ -10010,7 +10011,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, sameBaseSecondUse).valid).toBe(true);
         expect(SmashUpDomain.validate(state, outsideBaseSecondUse).valid).toBe(false);
-        const events = SmashUpDomain.execute(state, sameBaseSecondUse, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, sameBaseSecondUse, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TEMP_POWER_ADDED);
 
@@ -10065,7 +10066,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_werewolves_great_wolf_spirit_talent');
 
@@ -10120,7 +10121,7 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
 
-        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        const events = settleFixtureCommandEvents(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_pirates_the_kraken_talent');
 
@@ -10190,7 +10191,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_pirates_the_kraken_talent');
         expect(getPromptOption(prompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
@@ -11526,7 +11527,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_frankenstein_the_bride_talent_add_counter');
         expect(getPromptOption(prompt, entry => entry.value?.minionUid === 'bride-target-counter' && entry.value?.baseIndex === 0)).toBeDefined();
@@ -12593,7 +12594,7 @@ describe('smashup', () => {
         };
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
-        SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        settleFixtureCommandEvents(state, command, FIXED_RANDOM);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_werewolves_great_wolf_spirit_talent');
         expect(getPromptOption(prompt, entry => entry.value?.minionUid === 'wolf-target-stale' && entry.value?.baseIndex === 0)).toBeDefined();

@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 /**
  * 服务端集成测试：增量状态同步的缓存生命周期、事件分发
  *
@@ -247,10 +248,10 @@ const createMutableEngineConfig = (): GameEngineConfig => ({
     systems: [],
 });
 
-const createStoredState = (core?: Record<string, unknown>): StoredMatchState => ({
+const createStoredState = (core?: Record<string, unknown>, playerIds = ['0', '1']): StoredMatchState => ({
     G: {
-        core: core ?? { currentPlayer: '0', counter: 0 },
-        sys: { phase: 'main', turnNumber: 1 },
+        core: { playerIds, ...(core ?? { currentPlayer: '0', counter: 0 }) },
+        sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
     },
     _stateID: 0,
     randomSeed: 'test-seed',
@@ -332,6 +333,7 @@ async function createTestEnv(options?: {
                     ? { ...(engineConfig.domain.setup(playerIds, (() => 0) as any) as object) }
                     : { currentPlayer: '0', counter: 0 })
                 : { currentPlayer: '0', counter: 0 },
+            playerIds,
         ),
         metadata: createMetadata(playerIds),
     });
@@ -365,8 +367,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
      */
     describe('Property 2: Cache Consistency', () => {
         it('after sync, subsequent command sends state:patch (proving cache was written by sync)', async () => {
-            fc.assert(
-                await fc.asyncProperty(
+            await fc.assert(
+                fc.asyncProperty(
                     fc.integer({ min: 1, max: 5 }),
                     async (numCommands) => {
                         const { io, storage, server, matchID } = await createTestEnv();
@@ -435,8 +437,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
      */
     describe('Property 6: Disconnect Cache Cleanup', () => {
         it('after disconnect and reconnect, player receives state:sync (cache was cleared)', async () => {
-            fc.assert(
-                await fc.asyncProperty(
+            await fc.assert(
+                fc.asyncProperty(
                     fc.integer({ min: 0, max: 3 }),
                     async (commandsBeforeDisconnect) => {
                         const { io, storage, server, matchID } = await createTestEnv();
@@ -488,8 +490,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
             process.env.NODE_ENV = 'test';
 
             try {
-                fc.assert(
-                    await fc.asyncProperty(
+                await fc.assert(
+                    fc.asyncProperty(
                         fc.integer({ min: 1, max: 3 }),
                         async (commandsBeforeInject) => {
                             const { io, storage, server, matchID } = await createTestEnv();
@@ -511,8 +513,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
 
                             // 注入新状态（应清空缓存）
                             await server.injectState(matchID, {
-                                core: { currentPlayer: '0', counter: 999 },
-                                sys: { phase: 'main', turnNumber: 1 },
+                                core: { playerIds: ['0', '1'], currentPlayer: '0', counter: 999 },
+                                sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
                             } as any);
 
                             // injectState 内部调用 broadcastState，缓存为空 → 应发送 state:update
@@ -545,8 +547,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
      */
     describe('Property 9: Meta Field Consistency', () => {
         it('state:patch meta contains stateID, randomCursor, and lastCommandPlayerId when present', async () => {
-            fc.assert(
-                await fc.asyncProperty(
+            await fc.assert(
+                fc.asyncProperty(
                     fc.integer({ min: 1, max: 5 }),
                     async (numCommands) => {
                         const { io, storage, server, matchID } = await createTestEnv();
@@ -701,8 +703,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
             process.env.NODE_ENV = 'test';
             try {
                 await server.injectState(matchID, {
-                    core: { currentPlayer: '0', counter: 0 },
-                    sys: { phase: 'main', turnNumber: 1 },
+                    core: { playerIds: ['0', '1'], currentPlayer: '0', counter: 0 },
+                    sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
                 } as any);
                 // injectState 清空缓存 → broadcastState 发送 state:update（全量回退路径）
                 const updateEvents = getEvents(socket, 'state:update');
@@ -731,10 +733,10 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
                 socket.clearSent();
 
                 // 注入新状态
-                const injectedCore = { currentPlayer: '0', counter: 42 };
+                const injectedCore = { playerIds: ['0', '1'], currentPlayer: '0', counter: 42 };
                 await server.injectState(matchID, {
                     core: injectedCore,
-                    sys: { phase: 'main', turnNumber: 1 },
+                    sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
                 } as any);
 
                 // 应收到 state:update（全量），而非 state:patch
@@ -800,8 +802,8 @@ describe('Feature: incremental-state-sync (Server Integration)', () => {
             await socket.clientEmit('command', matchID, 'TEST_CMD', {}, 'cred-0');
 
             await server.injectState(matchID, {
-                core: { currentPlayer: '0', counter: 1 },
-                sys: {
+                core: { playerIds: ['0', '1'], currentPlayer: '0', counter: 1 },
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     phase: 'main',
                     turnNumber: 1,
                     eventStream: {

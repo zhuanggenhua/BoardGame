@@ -8,12 +8,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { PlayerId, EventStreamEntry } from '../../../engine/types';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { DieFace, CharacterId, BonusDieInfo } from '../domain/types';
 import type { CardSpotlightItem } from '../ui/CardSpotlightOverlay';
 import { useEventStreamCursor } from '../../../engine/hooks';
 import { createScopedLogger } from '../../../lib/logger';
-import { getDiceThroneCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getDiceThroneCardPreviewRef } from '../cardPreviewModel';
 
 /**
  * 鍗＄墝鐗瑰啓閰嶇疆

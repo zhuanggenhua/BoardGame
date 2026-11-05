@@ -1,3 +1,5 @@
+import type { RandomFn } from '../../../engine/types';
+const VALIDATION_RANDOM: RandomFn = { random: () => 0, d: () => 1, range: min => min, shuffle: array => [...array] };
 /**
  * 大杀四方 (Smash Up) - 命令验证
  */
@@ -391,7 +393,7 @@ function validateTitanAbility(
             baseIndex,
             targetBaseIndex: command.payload.targetBaseIndex,
             targetMinionUid: command.payload.targetMinionUid,
-            random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+            random: VALIDATION_RANDOM,
             now: core.turnNumber ?? 0,
         });
     }
@@ -405,7 +407,7 @@ function validateTitanAbility(
             baseIndex,
             targetBaseIndex: command.payload.targetBaseIndex,
             targetMinionUid: command.payload.targetMinionUid,
-            random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+            random: VALIDATION_RANDOM,
             now: core.turnNumber ?? 0,
         });
     }
@@ -1052,7 +1054,7 @@ export function validate(
                         baseIndex: typeof targetBase === 'number' ? targetBase : undefined,
                         targetBaseIndex: typeof targetBase === 'number' ? targetBase : undefined,
                         targetMinionUid,
-                        random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                        random: VALIDATION_RANDOM,
                         now: core.turnNumber ?? 0,
                     })
                     : { valid: true };
@@ -1388,7 +1390,7 @@ export function validate(
                     baseIndex,
                     targetBaseIndex,
                     targetMinionUid,
-                    random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                    random: VALIDATION_RANDOM,
                     now: core.turnNumber ?? 0,
                 });
                 if (!talentValidation.valid) {
@@ -1437,7 +1439,7 @@ export function validate(
                 baseIndex,
                 targetBaseIndex,
                 targetMinionUid,
-                random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                random: VALIDATION_RANDOM,
                 now: core.turnNumber ?? 0,
             });
             if (!talentValidation.valid) {
@@ -1510,7 +1512,7 @@ export function validate(
                     baseIndex: spBaseIndex,
                     targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
-                    random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                    random: VALIDATION_RANDOM,
                     now: core.turnNumber ?? 0,
                 });
                 if (!specialValidation.valid) {
@@ -1557,7 +1559,7 @@ export function validate(
                     baseIndex: spBaseIndex,
                     targetBaseIndex: spTargetBaseIndex,
                     targetMinionUid: spTargetMinionUid,
-                    random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                    random: VALIDATION_RANDOM,
                     now: core.turnNumber ?? 0,
                 });
                 if (!specialValidation.valid) {
@@ -1629,7 +1631,7 @@ export function validate(
                 baseIndex: spBaseIndex,
                 targetBaseIndex: spTargetBaseIndex,
                 targetMinionUid: spTargetMinionUid,
-                random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
+                random: VALIDATION_RANDOM,
                 now: core.turnNumber ?? 0,
             });
             if (!specialValidation.valid) {

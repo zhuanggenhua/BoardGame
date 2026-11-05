@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeSmashUpCoreForUi } from '../ui/normalizeRuntimeState';
+import { normalizeSmashUpLegacyCore } from '../domain/legacyRuntimeState';
 
 describe('大杀四方 UI 运行时状态规范化', () => {
     it('会把中局快照里的 null 数组字段统一收敛为空数组', () => {
-        const normalized = normalizeSmashUpCoreForUi({
+        const normalized = normalizeSmashUpLegacyCore({
             players: {
                 '0': {
                     id: '0',
@@ -82,7 +82,7 @@ describe('大杀四方 UI 运行时状态规范化', () => {
     });
 
     it('不会破坏已合法的数组内容', () => {
-        const normalized = normalizeSmashUpCoreForUi({
+        const normalized = normalizeSmashUpLegacyCore({
             players: {
                 '0': {
                     id: '0',
@@ -134,7 +134,7 @@ describe('大杀四方 UI 运行时状态规范化', () => {
     });
 
     it('会保留合法的 madnessDeck defId 字符串数组，不误报 invalid-entry', () => {
-        const normalized = normalizeSmashUpCoreForUi({
+        const normalized = normalizeSmashUpLegacyCore({
             players: {
                 '0': {
                     id: '0',
@@ -163,7 +163,7 @@ describe('大杀四方 UI 运行时状态规范化', () => {
     });
 
     it('会把历史对象型 madnessDeck 夹具收敛为 defId 字符串数组', () => {
-        const normalized = normalizeSmashUpCoreForUi({
+        const normalized = normalizeSmashUpLegacyCore({
             players: {
                 '0': {
                     id: '0',
@@ -195,7 +195,7 @@ describe('大杀四方 UI 运行时状态规范化', () => {
     });
 
     it('会把 UI 会直接渲染的非法数字字段收敛为安全值并上报异常', () => {
-        const normalized = normalizeSmashUpCoreForUi({
+        const normalized = normalizeSmashUpLegacyCore({
             players: {
                 '0': {
                     id: '0',

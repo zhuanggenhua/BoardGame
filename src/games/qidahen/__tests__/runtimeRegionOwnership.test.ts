@@ -6,7 +6,7 @@ import {
     resolveQidahenRuntimeRegionEntryPoint,
     resolveQidahenSharedPrintedRegionAnchors,
 } from '../ui/runtimeRegionOwnership';
-import { getQidahenRuntimeRegionIdsForPrintedRegionId, QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from '../ui/mapGraph';
+import { getQidahenRuntimeRegionIdsForPrintedRegionId, QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from '../data/mapGraph';
 
 const REGION_MASK_PATH = resolve(process.cwd(), 'src/games/qidahen/data/region-mask.png');
 

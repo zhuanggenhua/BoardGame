@@ -19,6 +19,8 @@ import {
     type LocalAiTurnTimeline,
 } from './localAiDiagnostics';
 import { executeLocalDispatch } from './localDispatchExecution';
+import { getTransportBatchCommands, TRANSPORT_BATCH_COMMAND } from '../batchDispatchCommand';
+import { cloneSnapshotState } from '../systems/UndoSystem';
 import { startLocalAiAutomationEffect } from './localAiAutomationEffect';
 import {
     logLocalAiProviderRuntimeTruth,
@@ -66,17 +68,62 @@ export function useLocalAiRuntime(args: {
     const scheduleAiRetry = useCallback(() => {
         setAiRetryVersion((version) => version + 1);
     }, []);
-    const restoreLocalAiBatchSnapshot = useCallback((snapshot: {
-        state: MatchState<unknown>;
-        randomCursor: number | null;
-    }) => {
-        if (typeof snapshot.randomCursor === 'number') {
-            randomRef.current = createLocalProviderRandom(seed, snapshot.randomCursor);
-        }
-        stateRef.current = snapshot.state;
-        setState(snapshot.state);
-    }, [randomRef, seed, setState, stateRef]);
     const dispatch = useCallback((type: string, payload: unknown) => {
+        if (type === TRANSPORT_BATCH_COMMAND) {
+            const commands = getTransportBatchCommands(payload);
+            if (commands.length === 0) return;
+            let stagedState = cloneSnapshotState(stateRef.current);
+            const stagedRandom = createLocalProviderRandom(seed, randomRef.current.getCursor());
+            const stagedEffects = { ...aiCommandEffectByTokenRef.current };
+            const deferredEffects: Array<() => void> = [];
+            let currentCommand: typeof commands[number] | undefined;
+            const rejectBatch = (reason: string) => {
+                for (const command of commands) {
+                    const token = (command.payload as { __aiTraceToken?: unknown } | null)?.__aiTraceToken;
+                    if (typeof token === 'string') aiCommandEffectByTokenRef.current[token] = {
+                        hasStateDelta: false, markerProgressed: false, rejected: true,
+                        failureReason: command === currentCommand ? reason : 'batch_cancelled',
+                    };
+                }
+            };
+            try {
+                for (const command of commands) {
+                    currentCommand = command;
+                    let rejection: string | undefined;
+                    stagedState = executeLocalDispatch({
+                        commandType: command.type,
+                        payload: command.payload,
+                        prevState: stagedState,
+                        config,
+                        seed,
+                        random: stagedRandom,
+                        setupPlayerIds,
+                        seatControllers,
+                        localPregameControlledPlayerId,
+                        commandEffectsByToken: stagedEffects,
+                        onCommandRejected: onCommandRejectedRef.current,
+                        onRejected: (reason) => { rejection = reason; },
+                        deferEffect: (effect) => deferredEffects.push(effect),
+                    });
+                    if (rejection) {
+                        rejectBatch(rejection);
+                        return;
+                    }
+                }
+            } catch (error) {
+                rejectBatch(error instanceof Error ? error.message : 'command_failed');
+                onCommandRejectedRef.current?.(type, error instanceof Error ? error.message : 'command_failed');
+                return;
+            }
+            randomRef.current = stagedRandom;
+            Object.assign(aiCommandEffectByTokenRef.current, stagedEffects);
+            stateRef.current = stagedState;
+            setState(stagedState);
+            for (const effect of deferredEffects) {
+                try { effect(); } catch (error) { console.error('[LocalGame] committed diagnostic failed', error); }
+            }
+            return;
+        }
         const nextState = executeLocalDispatch({
             commandType: type,
             payload,
@@ -166,8 +213,6 @@ export function useLocalAiRuntime(args: {
             startDelay: startCancelableAiDelay,
             dispatch,
             getState: () => stateRef.current,
-            getRandomCursor: () => randomRef.current.getCursor(),
-            restoreBatchSnapshot: restoreLocalAiBatchSnapshot,
             scheduleRetry: scheduleAiRetry,
             onVisibleActionAt: (timestamp) => {
                 lastVisibleAiActionAtRef.current = timestamp;
@@ -187,7 +232,6 @@ export function useLocalAiRuntime(args: {
         randomRef,
         dispatch,
         ensureAiTurnTimeline,
-        restoreLocalAiBatchSnapshot,
         scheduleAiRetry,
     ]);
 

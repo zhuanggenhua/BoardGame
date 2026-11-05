@@ -1,3 +1,6 @@
+import { resolveQidahenWheelDispatchInteractionChoice } from './actionWindowDispatch';
+import { resolveQidahenOpenGateSurrenderInteraction } from './openGateSurrenderSelection';
+import { resolveQidahenRaidAndAmbushChoice } from './raidAndAmbushSelection';
 import {
     resolveQidahenGaoDiDispatchChoice,
     resolveQidahenInternalDispatchInteractionChoice,
@@ -538,6 +541,22 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS_BY_EVENT_TYPE = new Map<
 >();
 
 const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
+    defineResolvedEventReducer(['WHEEL_DISPATCH_CHOICE_RESOLVED'], (state, event) =>
+        resolveQidahenWheelDispatchInteractionChoice(state, event.payload.choiceId, event.timestamp, event.payload.selection, event.payload.committedTroops)),
+    defineResolvedEventReducer(['OPEN_GATE_SURRENDER_CHOICE_RESOLVED'], (state, event) =>
+        resolveQidahenOpenGateSurrenderInteraction(state, event.payload.optionIds, event.timestamp, event.payload.selection)),
+    defineResolvedEventReducer(['RAID_AND_AMBUSH_CHOICE_RESOLVED'], (state, event) =>
+        resolveQidahenRaidAndAmbushChoice(state, event.payload.choiceId, event.timestamp, event.payload.selection)),
+    defineResolvedEventReducer(['FEIGNED_RETREAT_SKIPPED'], (state, event) => {
+        const { selection } = event.payload;
+        return resolveQidahenPendingActionFromPayload({ ...state,
+            pendingTargetAction: { ...selection.pendingTargetAction }, feignedRetreatSelection: null,
+        }, { ...selection.cavalryPlunderPayload,
+            pendingTargetAction: { ...selection.pendingTargetAction }, attackerCavalryPlunder: true,
+            battleRolls: null, feignedRetreatResponseResolved: true,
+        }, event.timestamp);
+    }),
+
     defineResolvedEventReducer(
         ['SCENARIO_VOTE_CAST'],
         resolveQidahenScenarioVoteCastEvent,

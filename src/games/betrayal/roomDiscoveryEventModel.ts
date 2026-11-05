@@ -49,10 +49,7 @@ import {
 } from './roomDiscoveryModel';
 import { canUseBetrayalTraitorPowers } from './traitorPowerRules';
 import { rollEventTraitCheckWithDice } from './traitRollModel';
-import type {
-    BetrayalCore,
-    BetrayalDiscoveryResolutionStep,
-} from './game';
+import type { BetrayalCore, BetrayalDiscoveryResolutionStep } from './domain/types';
 import type { BetrayalCommandMap } from './commandTypes';
 import type { BetrayalEvent } from './events';
 

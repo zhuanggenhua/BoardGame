@@ -231,7 +231,8 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         
         const update: Record<string, unknown> = { state: stateToSave };
 
-        await Match.updateOne({ matchID }, update);
+        const result = await Match.updateOne({ matchID }, update);
+        if (result.matchedCount !== 1) throw new Error(`match_not_found:${matchID}`);
     }
 
     /**
@@ -548,7 +549,7 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
             const idleMs = now - updatedAtMs;
             const isStaleConnected = hasConnectedPlayer && updatedAtMs < this.bootTimeMs;
 
-            if (hasConnectedPlayer) {
+            if (hasConnectedPlayer && metadata) {
                 // 强制降级阈值：isConnected=true 但长时间无更新，视为幽灵连接
                 // 可能原因：setMetadata 失败导致 isConnected 未写回 MongoDB
                 const FORCE_DISCONNECT_MS = 30 * 60 * 1000; // 30 分钟

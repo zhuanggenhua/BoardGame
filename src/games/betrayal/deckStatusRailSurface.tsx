@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import { ResourceTraySkeleton } from "../../components/game/framework";
-import type { BetrayalDeckKind } from "./game";
+import type { BetrayalDeckKind } from './domain/types';
 import type { DeckTrayItem } from "./deckPresentation";
 import type {
   BetrayalHauntRiskStatus,

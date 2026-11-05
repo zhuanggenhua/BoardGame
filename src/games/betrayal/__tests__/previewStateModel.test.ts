@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createBetrayalCharacterSelectCore } from "../game";
+import { createBetrayalCharacterSelectCore } from '../domain/stateFactory';
 import {
   createInitialPreviewState,
   resolveNextPreviewStateAfterCoreChange,

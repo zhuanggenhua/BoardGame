@@ -1,4 +1,4 @@
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../ui/mapGraph';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../data/mapGraph';
 import type { QidahenFactionId, QidahenSpecialTroopStack } from './types';
 
 type QidahenRegionTag =

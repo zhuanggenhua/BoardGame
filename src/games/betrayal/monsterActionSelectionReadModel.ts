@@ -1,10 +1,5 @@
 import { BETRAYAL_COMMANDS } from "./commands";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalMonsterSummary,
-  BetrayalRoomNode,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalRoomNode } from './domain/types';
 import {
   resolveHelpingHandsTrollHandAttackOptions,
   resolveHelpingHandsTrollHandMoveOptions,

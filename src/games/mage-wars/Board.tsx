@@ -1,3 +1,4 @@
+import './client';
 import {
     useCallback,
     useEffect,
@@ -13,7 +14,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion, useAnimate } from 'framer-motion';
-import type { CardPreviewRef } from '../../core';
+import type { CardPreviewRef } from '../../core/cardPreviewTypes';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { CardChoiceOverlay, ZoomPanViewport } from '../../components/game/framework';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
@@ -52,10 +53,10 @@ import {
     MAGE_WARS_COMMANDS,
     MAGE_WARS_MAX_PREPARED_SPELLS,
     type MageWarsArenaObjectState,
-    type MageWarsCastSpellCommand,
     type MageWarsCore,
     type MageWarsPlayerState,
 } from './domain';
+import type { MageWarsCastSpellCommand } from './domain/commands';
 import { MAGE_WARS_PHASE_ORDER, type MageWarsPhase } from './domain/types';
 import type { MageWarsWallState } from './domain/types';
 import {
@@ -83,7 +84,7 @@ import {
     getMageWarsSpellCardAspectRatio,
     getMageWarsSpellCardName,
     getMageWarsSpellCardPreviewRef,
-} from './ui/cardAtlas';
+} from './cardPreviewModel';
 import { mageWarsFxRegistry } from './ui/fxSetup';
 import { MAGE_WARS_FX_TIMING } from './ui/fxTuning';
 import {

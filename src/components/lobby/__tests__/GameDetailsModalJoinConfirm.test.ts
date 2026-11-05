@@ -265,6 +265,7 @@ vi.mock('../../../config/games.config', () => ({
 }));
 
 vi.mock('../../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
     ensureGameCriticalImageResolverLoaded: (...args: unknown[]) => ensureGameCriticalImageResolverLoadedMock(...args),
     hasGameTutorialLoader: (...args: unknown[]) => hasGameTutorialLoaderMock(...args),
     prefetchGameImplementation: (...args: unknown[]) => prefetchGameImplementationMock(...args),

@@ -296,7 +296,7 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
                     ...(payload.bypassShields ? { bypassShields: true } : {}),
                 },
                 sourceCommandType: command.type,
-                timestamp: command.timestamp ?? Date.now(),
+                timestamp: command.timestamp ?? 0,
             };
 
             return {

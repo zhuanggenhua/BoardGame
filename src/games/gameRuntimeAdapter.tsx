@@ -2,6 +2,7 @@ import type { ComponentType, ReactNode } from 'react';
 import type { MatchState } from '../engine/types';
 import type { MatchSeatSwapConfig } from '../components/game/framework/matchSeatSwap';
 import type { GameSetupSelections } from '../shared/gameSetupOptions';
+import type { GameHudLayoutResolver } from '../components/game/framework/widgets/gameHudLayout';
 
 export type GameHudRuntimeMode = 'local' | 'online' | 'tutorial' | 'test';
 
@@ -49,6 +50,7 @@ export type GameRuntimeLocalSetupGateProps = {
 };
 
 export type GameRuntimeAdapter = {
+    resolveHudLayout?: GameHudLayoutResolver;
     PageProvider?: ComponentType<GameRuntimePageProviderProps>;
     dismissTransientUi?: () => boolean;
     forceDismissHud?: (args: GameHudForceDismissInput) => boolean;

@@ -1,3 +1,4 @@
+import { getInteractionSequence } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -113,7 +114,6 @@ type PrincessesGriseldaPodPromptContext = PrincessesRuntimePromptContext & {
     options: Array<{ cardUid: string; defId: string; label: string }>;
 };
 
-let princessesRuntimePromptCounter = 0;
 
 function collectAllMinions(core: SmashUpCore) {
     const targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
@@ -672,7 +672,7 @@ const princessesDestroyMinionPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_apricot',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `${context.sourceId}_${princessesRuntimePromptCounter++}`,
+        `${context.sourceId}_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -807,7 +807,7 @@ const princessesDirectToDvdSequelPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_direct_to_dvd_sequel',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_direct_to_dvd_sequel_${princessesRuntimePromptCounter++}`,
+        `princesses_direct_to_dvd_sequel_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildPrincessesDiscardCardOptions(context.options),
@@ -830,7 +830,7 @@ const princessesGriseldaPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_griselda',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_griselda_${princessesRuntimePromptCounter++}`,
+        `princesses_griselda_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildPrincessesDiscardCardOptions(context.options),
@@ -860,7 +860,7 @@ const princessesGriseldaPodPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_griselda_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_griselda_pod_${princessesRuntimePromptCounter++}`,
+        `princesses_griselda_pod_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '格丽泽尔达：取回一张传家宝，或额外打出一张传家宝行动',
         [
@@ -970,7 +970,7 @@ const princessesSnowWhitePromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_snow_white',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_snow_white_${princessesRuntimePromptCounter++}`,
+        `princesses_snow_white_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -1026,7 +1026,7 @@ const princessesWoodlandHelpersPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_woodland_helpers',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_woodland_helpers_${context.cardUid}_${princessesRuntimePromptCounter++}`,
+        `princesses_woodland_helpers_${context.cardUid}_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         `丛林帮手：你可以将 ${context.cardName} 放到牌库底而不是留在弃牌堆`,
         [
@@ -1083,7 +1083,7 @@ const princessesMoveDestinationPromptProgram = createPromptProgram<
             throw new Error(`Princesses move runtime 缺少 selectedTarget: ${context.sourceId}`);
         }
         return createAbilityRuntimeSimpleChoice(
-            `${context.sourceId}_base_${princessesRuntimePromptCounter++}`,
+            `${context.sourceId}_base_${getInteractionSequence(context.matchState)}`,
             context.playerId,
             context.destinationTitle,
             buildBaseTargetOptions(
@@ -1128,7 +1128,7 @@ const princessesMovePromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_true_loves_kiss',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `${context.sourceId}_${princessesRuntimePromptCounter++}`,
+        `${context.sourceId}_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -1174,7 +1174,7 @@ const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_fairy_godmother_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_fairy_godmother_target_${princessesRuntimePromptCounter++}`,
+        `princesses_fairy_godmother_target_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         `妖精奶奶：选择一个仆从获得 +${context.buffAmount} 力量直到回合结束`,
         buildMinionTargetOptions(collectAllMinions(context.matchState.core), {
@@ -1217,7 +1217,7 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
 >({
     sourceId: 'princesses_fairy_godmother',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `princesses_fairy_godmother_${princessesRuntimePromptCounter++}`,
+        `princesses_fairy_godmother_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         [

@@ -1,3 +1,5 @@
+import { createInitialSystemState } from '../../pipeline';
+import type { MatchState } from '../../types';
 import {
     describe,
     expect,
@@ -828,10 +830,10 @@ describe('online AI watchdog resolved state', () => {
                             displayOnly: true,
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main1',
                         turnNumber: 9,
-                        eventStream: { nextId: 18 },
+                        eventStream: { entries: [], nextId: 18 },
                         interaction: {
                             current: undefined,
                             queue: [],

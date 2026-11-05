@@ -1,11 +1,7 @@
 import React from "react";
 import { Handshake } from "lucide-react";
 
-import type {
-  BetrayalDeckKind,
-  BetrayalInventoryCard,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalDeckKind, BetrayalInventoryCard, BetrayalTraitKey } from './domain/types';
 import {
   BetrayalConfirmButton,
   BetrayalSecondaryButton,

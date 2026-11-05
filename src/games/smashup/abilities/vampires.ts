@@ -106,7 +106,7 @@ type VampireWolfPactPodMinionTargetPromptContext = VampirePromptContext & {
     wolfBaseIndex: number;
 };
 
-function createVampirePromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createVampirePromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,

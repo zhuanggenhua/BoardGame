@@ -5,14 +5,8 @@ import { createDamageCalculation } from '../../../../engine/primitives/damageCal
 import { buildDrawEvents } from '../deckEvents';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { registerChoiceResolvedEventHandler, type ChoiceResolvedEventContext } from '../choiceResolvedEvents';
-import {
-    createBonusDiceWithReroll,
-    createDisplayOnlySettlement,
-    createDTPassiveTriggerHandler,
-    registerCustomActionHandler,
-    type CustomActionContext,
-    type EffectContext,
-} from '../effects';
+import { createBonusDiceWithReroll, createDisplayOnlySettlement, createDTPassiveTriggerHandler, type EffectContext } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { getActiveDice, getAttackMaxDuplicateValueCount, getOpponents, getPlayerDieFace, getSeatingOrder, getSelectedCombatOpponentId, getTokenStackLimit } from '../rules';
 import { isPurifiableDebuffId } from '../statusRemoval';
 import { STATUS_IDS, TIANSHI_DICE_FACE_IDS as FACE, TOKEN_IDS } from '../ids';

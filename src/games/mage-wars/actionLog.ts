@@ -43,7 +43,7 @@ import type {
     MageWarsSpellsPlannedEvent,
     MageWarsTurnAdvancedEvent,
 } from './domain/events';
-import { getMageWarsSpellCardName, getMageWarsSpellCardPreviewRef } from './ui/cardAtlas';
+import { getMageWarsSpellCardName, getMageWarsSpellCardPreviewRef } from './cardPreviewModel';
 
 export const ACTION_ALLOWLIST = [
     MAGE_WARS_COMMANDS.PLAN_SPELLS,

@@ -1,8 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalTraitKey } from './domain/types';
 import { resolveDamageReductionCardNames } from "./inventoryPresentation";
 import {
   TRAIT_DAMAGE_ORDER,

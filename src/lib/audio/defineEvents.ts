@@ -29,7 +29,7 @@ export type EventConfig =
   | AudioStrategy  // 简洁形式：只声明策略，使用默认音效
   | {              // 完整形式：自定义音效
       audio: AudioStrategy;
-      sound: string;
+      sound?: string;
     };
 
 /**

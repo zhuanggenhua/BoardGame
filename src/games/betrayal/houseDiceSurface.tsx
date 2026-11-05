@@ -6,7 +6,7 @@ import type {
   DicePhysicsHighlightState,
   DicePhysicsState,
 } from "../../lib/dice-physics/types";
-import type { BetrayalRecentRollState } from "./game";
+import type { BetrayalRecentRollState } from './domain/types';
 import {
   BETRAYAL_HOUSE_D6_FACE_TO_RULE_VALUE,
   BETRAYAL_HOUSE_DICE_FACE_SYSTEM,

@@ -1,4 +1,4 @@
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import { getExplorersInTurnOrder } from './explorerReadModel';
 import { isBetrayalPlayerControllingMonster } from './hauntScenarioReadModel';
 

@@ -205,4 +205,59 @@ describe('useGameEvents rollback consumer', () => {
       expect(onDiceRollSound).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('wait-confirm 正常确认应消费新增充能事件，重复 reconcile 不重播', () => {
+    let rollbackValue: EventStreamRollbackValue = { watermark: null, seq: 0, reconcileSeq: 0 };
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <EventStreamRollbackContext.Provider value={rollbackValue}>{children}</EventStreamRollbackContext.Provider>
+    );
+    const push = vi.fn();
+    const gate = makeGate();
+    const { rerender } = renderHook(({ entries }: { entries: EventStreamEntry[] }) => useGameEvents({
+      G: makeState(entries), core: makeState(entries) as any, myPlayerId: '0', currentPhase: 'summon',
+      pushDestroyEffect: vi.fn(), fxBus: { push } as unknown as FxBus, gate,
+    }), { initialProps: { entries: [] as EventStreamEntry[] }, wrapper });
+    const charge: EventStreamEntry = { id: 1, event: { type: SW_EVENTS.UNIT_CHARGED,
+      payload: { position: { row: 0, col: 0 }, delta: 1 }, timestamp: 1000 } };
+    rollbackValue = { ...rollbackValue, reconcileSeq: 1 };
+    act(() => rerender({ entries: [charge] }));
+    expect(push).toHaveBeenCalledTimes(1);
+    rollbackValue = { ...rollbackValue, reconcileSeq: 2 };
+    act(() => rerender({ entries: [charge] }));
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+
+  it('位移后的延迟充能 FX 在 rollback 后取消，卸载也不能泄漏旧回调', () => {
+    vi.useFakeTimers();
+    let rollbackValue: EventStreamRollbackValue = { watermark: null, seq: 0, reconcileSeq: 0 };
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <EventStreamRollbackContext.Provider value={rollbackValue}>{children}</EventStreamRollbackContext.Provider>
+    );
+    const push = vi.fn();
+    const gate = makeGate();
+    const { rerender, unmount } = renderHook(({ entries }: { entries: EventStreamEntry[] }) => useGameEvents({
+      G: makeState(entries), core: makeState(entries) as any, myPlayerId: '0', currentPhase: 'move',
+      pushDestroyEffect: vi.fn(), fxBus: { push } as unknown as FxBus, gate,
+    }), { initialProps: { entries: [] as EventStreamEntry[] }, wrapper });
+    const entries: EventStreamEntry[] = [
+      { id: 1, event: { type: SW_EVENTS.UNIT_MOVED, payload: { from: { row: 0, col: 0 }, to: { row: 0, col: 1 } }, timestamp: 1000 } },
+      { id: 2, event: { type: SW_EVENTS.UNIT_CHARGED, payload: { position: { row: 0, col: 1 }, delta: 1 }, timestamp: 1000 } },
+    ];
+    try {
+      act(() => rerender({ entries }));
+      expect(push).not.toHaveBeenCalled();
+      rollbackValue = { ...rollbackValue, seq: 1 };
+      act(() => rerender({ entries: [] }));
+      act(() => vi.advanceTimersByTime(300));
+      expect(push).not.toHaveBeenCalled();
+      // Queue a fresh, still-pending visual after rollback, then unmount before
+      // its delay expires. This exercises teardown independently of rollback.
+      act(() => rerender({ entries: entries.map(entry => ({ ...entry, id: entry.id + 2 })) }));
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      unmount();
+      act(() => vi.runOnlyPendingTimers());
+      expect(push).not.toHaveBeenCalled();
+    } finally { unmount(); vi.useRealTimers(); }
+  });
+
 });

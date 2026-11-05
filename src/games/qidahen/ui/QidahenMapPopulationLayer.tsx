@@ -1,5 +1,5 @@
 import React from 'react';
-import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './mapRegions';
+import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';
 
 const POPULATION_OFFSET_PX = { x: 20, y: 22 };
 const CUBE_SIZE = 26;

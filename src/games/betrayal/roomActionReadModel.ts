@@ -1,4 +1,4 @@
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 
 type BetrayalRoomEnterEffect = 'mysticElevator';
 type BetrayalRoomActionText = (key: string, options?: Record<string, unknown>) => string;

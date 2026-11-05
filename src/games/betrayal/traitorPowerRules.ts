@@ -1,4 +1,4 @@
-import type { BetrayalCore, BetrayalRoomNode } from './game';
+import type { BetrayalCore, BetrayalRoomNode } from './domain/types';
 
 export type BetrayalRoomEndTurnEffect = NonNullable<BetrayalRoomNode['endTurnEffect']>;
 

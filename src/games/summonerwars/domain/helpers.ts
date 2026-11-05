@@ -723,7 +723,7 @@ export function getDrawCount(handSize: number): number {
 // 技能增强的移动/攻击验证
 // ============================================================================
 
-import { abilityRegistry } from './abilities';
+import { abilityRegistry } from './abilityRegistry';
 
 /**
  * 获取单位自身技能（base + temp），不含状态依赖的共享技能

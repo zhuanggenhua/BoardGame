@@ -1,10 +1,16 @@
+import type { MultistepChoiceRuntime, MultistepChoiceBinding } from '../multistepChoiceRuntime';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { TRANSPORT_BATCH_COMMAND } from '../../batchDispatchCommand';
-import type { InteractionDescriptor, MultistepChoiceData } from '../InteractionSystem';
+import type { InteractionDescriptor, MultistepChoiceData as MultistepDescriptorData } from '../InteractionSystem';
 import { INTERACTION_COMMANDS } from '../InteractionSystem';
 import { useMultistepInteraction } from '../useMultistepInteraction';
+type MultistepChoiceData<TStep, TResult> = MultistepDescriptorData<TResult> & MultistepChoiceRuntime<TStep, TResult>;
+function bindTestInteraction<TStep, TResult>(interaction: InteractionDescriptor<MultistepChoiceData<TStep, TResult>> | undefined): MultistepChoiceBinding<TStep, TResult> | undefined {
+    return interaction ? { interaction, runtime: interaction.data } : undefined;
+}
+
 
 type SelectStep = { action: 'toggle'; dieId: number };
 type SelectResult = { selectedDiceIds: number[] };
@@ -17,7 +23,7 @@ function BatchHarness({
     dispatchLog: Array<{ type: string; payload?: unknown }>;
 }) {
     const state = useMultistepInteraction<SelectStep, SelectResult>(
-        interaction,
+        bindTestInteraction(interaction),
         (type, payload) => {
             dispatchLog.push({ type, payload });
         },

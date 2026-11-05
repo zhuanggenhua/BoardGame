@@ -1,5 +1,5 @@
 import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     isBetrayalEventRuntimeSupported,

@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 
 export interface CardPreviewLookupContext {
     playerId?: string | number;

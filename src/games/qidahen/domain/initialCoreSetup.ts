@@ -1,7 +1,7 @@
 import type { PlayerId } from '../../../engine/types';
 import {
     qidahenKoreaSpecialPreview,
-} from '../ui/cardAtlas';
+} from '../data/cardAtlas';
 import {
     buildTurnLabel,
     getActionChoiceById,

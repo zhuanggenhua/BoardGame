@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 import type { DomainCore, GameOverResult, PlayerId, RandomFn } from '../../../engine/types';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
@@ -6,6 +7,7 @@ import type { TheGangCommand, TheGangCore, TheGangEvent } from './types';
 
 export const TheGangDomain: DomainCore<TheGangCore, TheGangCommand, TheGangEvent> = {
     gameId: 'the-gang',
+    statePersistence,
 
     setup: (playerIds: PlayerId[], random: RandomFn): TheGangCore =>
         createInitialHeistCore(playerIds, random),

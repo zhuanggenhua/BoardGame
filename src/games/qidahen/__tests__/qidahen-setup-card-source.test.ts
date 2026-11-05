@@ -6,7 +6,7 @@ import { getActionChoicesForFaction } from '../domain/factionActionWindow';impor
 import { buildDrawnHandCards, QIDAHEN_ATLAS05_TTS_DECK_SEQUENCE_BY_FACTION } from '../domain/handCardState';import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES, QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID } from '../domain/ordinaryHandCardIdentities';
 
 import { getQidahenFortificationConfigs } from '../domain/regionConfig';
-import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_SHAPES, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';import type { QidahenCore } from '../domain/types';
+import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_SHAPES, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';import type { QidahenCore } from '../domain/types';
 import { random, stateOf, apply, factionHandCards } from './helpers/paymentSelectionHarness';
 
 describe('七大恨开局、地图与手牌真相源', () => {

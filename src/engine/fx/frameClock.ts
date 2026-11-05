@@ -80,11 +80,17 @@ function runFrame(now: number) {
     frame: frameIndex,
   };
 
-  for (const subscriber of [...subscribers]) {
-    subscriber(frame);
+  try {
+    for (const subscriber of [...subscribers]) {
+      try {
+        subscriber(frame);
+      } catch (error) {
+        console.error('[FX frame clock] subscriber failed', error);
+      }
+    }
+  } finally {
+    scheduleFrame();
   }
-
-  scheduleFrame();
 }
 
 export function subscribeFxFrame(callback: FxFrameCallback): FxFrameSubscription {

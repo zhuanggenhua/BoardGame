@@ -1,10 +1,5 @@
 import { BETRAYAL_COMMANDS } from "./commands";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalRoomNode,
-  BetrayalRoomPlacementPreview,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalRoomNode, BetrayalRoomPlacementPreview } from './domain/types';
 import type { BetrayalHauntActionContext } from "./hauntActionContextReadModel";
 import type {
   BetrayalHelpingHandsTrollHandMoveEntry,

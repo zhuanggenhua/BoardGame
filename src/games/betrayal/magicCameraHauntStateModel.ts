@@ -15,10 +15,7 @@ import {
 } from './hauntVictoryModel';
 import { clearNextNonCombatTraitRollReplacementsForPlayer } from './possessionActionReadModel';
 import { moveExplorerTraitSteps } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type PhotoTakenEvent = Extract<BetrayalEvent, { type: 'PHOTO_TAKEN' }>;

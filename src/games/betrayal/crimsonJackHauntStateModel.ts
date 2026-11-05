@@ -14,10 +14,7 @@ import {
     createBetrayalCrimsonJackTraitorVictoryResult,
 } from './hauntVictoryModel';
 import { clearNextNonCombatTraitRollReplacementsForPlayer } from './possessionActionReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type JackLearnedEvent = Extract<BetrayalEvent, { type: 'JACK_LEARNED' }>;

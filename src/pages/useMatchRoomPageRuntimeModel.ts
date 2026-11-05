@@ -113,6 +113,7 @@ export type MatchRoomTutorialStageAdapter = {
     aiSupport?: GameManifestAiSupport;
     onCommandRejected: MatchRoomPageStageControllersModel['handleCommandRejected'];
     resolveLocalSetup?: GameRuntimeAdapter['resolveLocalSetup'];
+    resolveHudLayout?: GameRuntimeAdapter['resolveHudLayout'];
     loadingProgressText: MatchRoomPageRuntimeSetupModel['tutorialLoadingProgressText'];
 };
 
@@ -211,6 +212,7 @@ function buildMatchRoomTutorialStageAdapter(args: {
         aiSupport: gameConfig?.ai,
         onCommandRejected: stageControllers.handleCommandRejected,
         resolveLocalSetup: runtimeSetup.runtimeAdapter?.resolveLocalSetup,
+        resolveHudLayout: runtimeSetup.runtimeAdapter?.resolveHudLayout,
         loadingProgressText: runtimeSetup.tutorialLoadingProgressText,
     };
 }
@@ -297,6 +299,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
         ...buildGameHudRuntimeProps({
             gameId,
             gameConfig,
+            resolveHudLayout: runtimeSetup.runtimeAdapter?.resolveHudLayout,
         }),
         hudPlacement: resolveGameHudPlacement(gameConfig),
     };

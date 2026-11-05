@@ -1,11 +1,5 @@
 import type { ValidationResult } from '../../engine/types';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalInventoryCard,
-    BetrayalRecentRollState,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalRecentRollState, BetrayalTraitKey } from './domain/types';
 import {
     POSSESSION_USE_EFFECTS,
     resolveInventoryEffectId,

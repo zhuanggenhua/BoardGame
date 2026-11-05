@@ -14,6 +14,7 @@ import type {
 import type { AiSeatController } from '../ai/types';
 
 export interface GameClientContextValue {
+    localSession?: import('./useLocalProviderSession').LocalSessionStatus;
     /** 完整游戏状态 */
     state: MatchState<unknown> | null;
     /** 发送命令 */

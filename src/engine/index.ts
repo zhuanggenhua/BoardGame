@@ -37,14 +37,12 @@ export * from './RefereeReplay';
 // 系统层
 export * from './systems';
 
-// Hooks
-export * from './hooks';
+// React hooks live in ./client; this barrel is safe for rule-engine imports.
 
 // Board 渲染后端
 export * from './boardRenderer';
 
-// 渲染管线 / 玩家画质设置
-export * from './renderPipeline';
+// Browser render settings and hooks live in ./client.
 
 // 测试工具
 export { 

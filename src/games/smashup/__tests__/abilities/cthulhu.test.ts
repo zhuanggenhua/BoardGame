@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from '../commandFixture';
 import { makeMinionDestroyedEvent } from '../helpers';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
@@ -10,7 +11,7 @@ import { countMadnessCards, madnessVpPenalty } from '../../domain/abilityHelpers
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { execute, reduce } from '../../domain/reducer';
+import { reduce } from '../../domain/reducer';
 import type {
     BaseReplacedEvent,
     CardInstance,
@@ -1943,7 +1944,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         });
 
         const matchState = makeMatchState(core);
-        const events = execute(matchState, {
+        const events = settleFixtureCommandEvents(matchState, {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -1975,13 +1976,13 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         });
 
         const matchState = makeMatchState(core);
-        execute(matchState, {
+        settleFixtureCommandEvents(matchState, {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
         }, dummyRandom);
 
-        const events = execute(matchState, {
+        const events = settleFixtureCommandEvents(matchState, {
             ...respondCommand('__cancel__', '0'),
         } as any, dummyRandom);
 
@@ -2004,7 +2005,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
             madnessDeck: ['madness_def_1'],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -2031,7 +2032,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         });
 
         const matchState = makeMatchState(core);
-        const events = execute(matchState, {
+        const events = settleFixtureCommandEvents(matchState, {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -2059,7 +2060,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         });
 
         const matchState = makeMatchState(core);
-        execute(matchState, {
+        settleFixtureCommandEvents(matchState, {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -2168,7 +2169,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -2191,7 +2192,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },

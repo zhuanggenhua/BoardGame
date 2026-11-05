@@ -3,6 +3,7 @@ import {
     getGameImplementation,
     hasGameTutorialLoader,
     loadGameImplementation,
+    retainGameImplementation,
     resolveGameTutorialManifest,
     subscribeGameImplementationReady,
 } from './registry';
@@ -55,6 +56,7 @@ export function useGameImplementationReady(
 ) {
     const [retryTick, setRetryTick] = useState(0);
     const enabled = options.enabled ?? true;
+    useEffect(() => enabled && gameId ? retainGameImplementation(gameId) : undefined, [enabled, gameId]);
     const includeTutorial = options.includeTutorial ?? false;
     const tutorialId = options.tutorialId;
     const requestKey = enabled && gameId

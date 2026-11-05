@@ -79,7 +79,7 @@ type NinjaDisguiseContext = NinjaPromptContext & {
     playedHandUids?: string[];
 };
 
-function createNinjaPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createNinjaPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<any>,
     playerId: PlayerId,
     now: number,

@@ -23,7 +23,7 @@ import {
     parseQidahenRegionGraph,
     qidahenRegionColorKey,
     resolveQidahenRuntimeRegionIdFromPrintedRegionId,
-} from '../ui/mapGraph';
+} from '../data/mapGraph';
 
 describe('七大恨区域图谱运行时解析', () => {
     it('按无向区域对规范化通路 id', () => {

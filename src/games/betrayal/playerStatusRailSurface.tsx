@@ -6,11 +6,7 @@ import { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import { MagnifyOverlay } from "../../components/common/overlays/MagnifyOverlay";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
-import type {
-  BetrayalExplorerSummary,
-  BetrayalRoomNode,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalExplorerSummary, BetrayalRoomNode, BetrayalTraitKey } from './domain/types';
 import { ExplorerFigureToken } from "./entityTokenSurface";
 import { resolvePlayerName } from "./playerPresentation";
 import {

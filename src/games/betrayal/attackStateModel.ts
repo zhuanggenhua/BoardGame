@@ -51,12 +51,7 @@ import {
 } from './attackRules';
 import { rotateToNextLivingPlayer } from './turnOrderReadModel';
 import { applyTraitLoss } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-    BetrayalExplorerSummary,
-    BetrayalPendingDamageAllocationState,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult, BetrayalExplorerSummary, BetrayalPendingDamageAllocationState } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type DynamiteAttackResolvedEvent = Extract<BetrayalEvent, { type: 'DYNAMITE_ATTACK_RESOLVED' }>;

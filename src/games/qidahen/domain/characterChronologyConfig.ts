@@ -1,4 +1,4 @@
-import { qidahenChronologyPreview } from '../ui/cardAtlas';
+import { qidahenChronologyPreview } from '../data/cardAtlas';
 import { filterFactionOrderForScenario } from './factionTurnOrder';
 import type { QidahenCore, QidahenFactionId, QidahenScenarioId } from './types';
 

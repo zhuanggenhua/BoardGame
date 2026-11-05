@@ -30,16 +30,11 @@ import {
     playFirstScenarioToTraitorVictory,
     setScenarioTestTurnMovement,
 } from '../../testing/firstScenarioTestUtils';
-import {
-    BetrayalDomain,
-    EXPLORER_CATALOG,
-    createBetrayalMonsterFromDefinition,
-    getBetrayalMonsterDefinition,
-    resolveUseEffect,
-    type BetrayalDeckKind,
-    type BetrayalCore,
-    type UseEffectProfile,
-} from '../../game';
+import { BetrayalDomain } from '../../domain/index';
+import { EXPLORER_CATALOG } from '../../domain/stateFactory';
+import { createBetrayalMonsterFromDefinition, getBetrayalMonsterDefinition } from '../../domain/monsterDefinitions';
+import { resolveUseEffect, type UseEffectProfile } from '../../possessionEffects';
+import type { BetrayalDeckKind, BetrayalCore } from '../../domain/types';
 import { BETRAYAL_COMMANDS } from '../../commands';
 import {
     canUseBookForPendingEventRoll,

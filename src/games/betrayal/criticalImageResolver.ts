@@ -1,6 +1,6 @@
 import type { CriticalImageResolver, CriticalImageResolverResult } from '../../core/types';
 import type { MatchState } from '../../engine/types';
-import type { BetrayalCore, BetrayalInventoryCard } from './game';
+import type { BetrayalCore, BetrayalInventoryCard } from './domain/types';
 import { EVENT_FRONT_ATLAS_IMAGE_PATHS, resolveDiscoveryAtlasVisual } from './discoveryAtlas';
 import { BETRAYAL_POSSESSION_ATLAS_IMAGE_PATHS } from './possessionAtlas';
 import {

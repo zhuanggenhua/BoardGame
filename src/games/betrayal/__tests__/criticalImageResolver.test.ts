@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
 import { betrayalCriticalImageResolver, _testExports } from '../criticalImageResolver';
-import type { BetrayalCore } from '../game';
+import type { BetrayalCore } from '../domain/types';
 import { createStartedFirstScenarioTutorialCore } from '../testing/firstScenarioTestUtils';
 
 const stateOf = (state: Partial<MatchState<BetrayalCore>>): MatchState<BetrayalCore> =>

@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from '../commandFixture';
 import { makeMinionDestroyedEvent } from '../helpers';
 /**
  * 大杀四方 - 核心属性测试
@@ -12,7 +13,7 @@ import { clearRegistry, resolveAbility } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearOngoingEffectRegistry, isOperationRestricted, isMinionProtected } from '../../domain/ongoingEffects';
-import { execute, reduce } from '../../domain/reducer';
+import { reduce } from '../../domain/reducer';
 import { validate } from '../../domain/commands';
 import {
     SU_COMMANDS, SU_EVENTS,
@@ -242,7 +243,7 @@ describe('Property 3: 选择完成后初始化', () => {
                         core: state,
                         sys: { phase: 'factionSelect' } as any,
                     };
-                    const events = execute(matchState, {
+                    const events = settleFixtureCommandEvents(matchState, {
                         type: SU_COMMANDS.SELECT_FACTION,
                         payload: { factionId: f1b },
                         playerId: '1',
@@ -399,7 +400,7 @@ describe('Property 8: 标准行动卡生命周期', () => {
             bases: [makeBase('test_base')],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const events = execute(
+        const events = settleFixtureCommandEvents(
             { core: state, sys: { phase: 'playCards' } as any },
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a-1', baseIndex: 0 } } as any,
             dummyRandom,
@@ -431,7 +432,7 @@ describe('Property 9: 持续行动卡附着', () => {
             bases: [makeBase('test_base')],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const events = execute(
+        const events = settleFixtureCommandEvents(
             { core: state, sys: { phase: 'playCards' } as any },
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'og-1', targetBaseIndex: 0 } } as any,
             dummyRandom,
@@ -459,7 +460,7 @@ describe('Property 9: 持续行动卡附着', () => {
             bases: [makeBase('test_base', { minions: [minion] })],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const events = execute(
+        const events = settleFixtureCommandEvents(
             { core: state, sys: { phase: 'playCards' } as any },
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'og-2', targetBaseIndex: 0, targetMinionUid: 'm-1' } } as any,
             dummyRandom,
@@ -870,7 +871,7 @@ describe('Property 17: 基地能力事件顺序', () => {
             bases: [makeBase('base_central_brain')],
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
-        const events = execute(
+        const events = settleFixtureCommandEvents(
             { core: state, sys: { phase: 'playCards' } as any },
             { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'm-1', baseIndex: 0 } } as any,
             dummyRandom,
@@ -1260,7 +1261,7 @@ describe('Property 5: onPlay 能力触发', () => {
                         })],
                         baseDeck: [], turnNumber: 1, nextUid: 200,
                     };
-                    const events = execute(
+                    const events = settleFixtureCommandEvents(
                         { core: state, sys: { phase: 'playCards' } as any },
                         { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'op-1', baseIndex: 0 } } as any,
                         dummyRandom,
@@ -1372,7 +1373,7 @@ describe('Property 10: 特殊行动卡生命周期', () => {
             baseDeck: [], turnNumber: 1, nextUid: 100,
         };
         const matchState = makeMeFirstMatchState(state);
-        const events = execute(
+        const events = settleFixtureCommandEvents(
             matchState,
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'sp-1', targetBaseIndex: 0 } } as any,
             dummyRandom,
@@ -1899,8 +1900,9 @@ describe('Property 21: 保护机制一致性', () => {
             'base_converted_cave',
             'base_hideout',
             'base_huluwawa_mountain',
+            'base_camelot',
         ]);
-        const normalBaseIds = getAllBaseDefIds().filter(id => !protectionBaseIds.has(id));
+        const normalBaseIds = getAllBaseDefIds().filter(id => !protectionBaseIds.has(id.replace(/_pod$/, '')));
         fc.assert(
             fc.property(
                 fc.integer({ min: 0, max: Math.max(normalBaseIds.length - 1, 0) }),

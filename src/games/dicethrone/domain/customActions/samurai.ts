@@ -1,4 +1,5 @@
-import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import type {
     BonusDamageAddedEvent,

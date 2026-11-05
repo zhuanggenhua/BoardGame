@@ -3,12 +3,7 @@ import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { UI_Z_INDEX } from "../../core";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
-import type {
-  BetrayalExplorerSummary,
-  BetrayalMonsterStatusSummary,
-  BetrayalMonsterSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalExplorerSummary, BetrayalMonsterStatusSummary, BetrayalMonsterSummary, BetrayalTraitKey } from './domain/types';
 import { ExplorerFigureToken } from "./entityTokenSurface";
 import {
   MONSTER_DETAIL_TRAIT_ORDER,

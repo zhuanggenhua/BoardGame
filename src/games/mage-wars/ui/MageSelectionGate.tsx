@@ -22,11 +22,11 @@ import {
     loadMageWarsSavedSpellbooks,
     MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
     type MageWarsSavedSpellbook,
-} from '../domain/savedSpellbooks';
+} from '../localSavedSpellbooks';
 import {
     getMageWarsMagePreviewAspectRatio,
     getMageWarsMagePreviewRef,
-} from './cardAtlas';
+} from '../cardPreviewModel';
 import { MageWarsSpellbookBuilderPanel } from './SpellbookBuilderPanel';
 import {
     MAGE_SELECTION_STAGE_HEIGHT,

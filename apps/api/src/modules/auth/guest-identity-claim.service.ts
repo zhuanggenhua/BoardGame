@@ -35,39 +35,45 @@ export class GuestIdentityClaimService {
 
         const guestKey = `guest:${normalizedGuestId}`;
         const userKey = `user:${userId}`;
-        const playerResult = await this.matchRecordModel.updateMany(
+        const claimResult = await this.matchRecordModel.updateMany(
             {
                 $or: [
                     { 'players.ownerKey': guestKey },
                     { 'players.id': guestKey },
+                    { winnerID: guestKey },
+                    { winnerIDs: guestKey },
                 ],
             },
-            {
+            [{
                 $set: {
-                    'players.$[player].id': userKey,
-                    'players.$[player].ownerKey': userKey,
-                    'players.$[player].name': username,
+                    players: {
+                        $map: {
+                            input: '$players', as: 'player',
+                            in: { $cond: [
+                                { $or: [{ $eq: ['$$player.ownerKey', guestKey] }, { $eq: ['$$player.id', guestKey] }] },
+                                { $mergeObjects: ['$$player', { id: userKey, ownerKey: userKey, name: { $literal: username } }] },
+                                '$$player',
+                            ] },
+                        },
+                    },
+                    winnerID: { $cond: [{ $eq: ['$winnerID', guestKey] }, userKey, { $ifNull: ['$winnerID', '$$REMOVE'] }] },
+                    winnerIDs: { $cond: [
+                        { $isArray: '$winnerIDs' },
+                        { $setUnion: [{ $map: {
+                            input: '$winnerIDs', as: 'winner',
+                            in: { $cond: [{ $eq: ['$$winner', guestKey] }, userKey, '$$winner'] },
+                        } }, []] },
+                        '$$REMOVE',
+                    ] },
                 },
-            },
-            {
-                arrayFilters: [{
-                    $or: [
-                        { 'player.ownerKey': guestKey },
-                        { 'player.id': guestKey },
-                    ],
-                }],
-            },
-        );
-        const winnerResult = await this.matchRecordModel.updateMany(
-            { winnerID: guestKey },
-            { $set: { winnerID: userKey } },
+            }],
         );
 
         const summary: GuestIdentityClaimResult = {
             guestKey,
             userKey,
-            matchedRecords: (playerResult.matchedCount ?? 0) + (winnerResult.matchedCount ?? 0),
-            modifiedRecords: (playerResult.modifiedCount ?? 0) + (winnerResult.modifiedCount ?? 0),
+            matchedRecords: claimResult.matchedCount ?? 0,
+            modifiedRecords: claimResult.modifiedCount ?? 0,
         };
         if (summary.modifiedRecords > 0) {
             this.logger.log(`归并游客排行榜身份 ${guestKey} -> ${userKey}: ${summary.modifiedRecords} 条`);

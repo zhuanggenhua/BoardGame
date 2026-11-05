@@ -491,7 +491,7 @@ export function resolveSemanticAffectProtectionBlock(
     const extraEvents: SmashUpEvent[] = [];
     const blockedAttachCleanup = buildBlockedAttachedActionDiscardEvent(record, event);
     if (blockedAttachCleanup) {
-        extraEvents.push(buildProtectedTargetFeedback(effectiveSourcePlayerId, event.timestamp ?? Date.now()));
+        extraEvents.push(buildProtectedTargetFeedback(effectiveSourcePlayerId, event.timestamp ?? 0));
     }
     if (blockInfo.consumableSource) {
         extraEvents.push(buildProtectionSelfDestructEvent(

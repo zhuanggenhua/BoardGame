@@ -1,6 +1,8 @@
-import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
-import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from '../choiceEffects';
+import { hasCurrentChoiceAnchor } from '../choiceEffects';
+import { registerChoiceEffectHandler } from '../choiceEffectRegistry';
 import { getPlayerAbilityEffects } from '../abilityLookup';
 import { RESOURCE_IDS } from '../resources';
 import { buildDrawEvents } from '../deckEvents';

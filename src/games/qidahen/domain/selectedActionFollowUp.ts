@@ -1,7 +1,7 @@
 import { buildDriveTigerDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';
 import { buildPendingTargetAction } from './pendingTargetActionBuilder';
 import { getQidahenExplicitRegionSelectionSemantics } from './regionFocusSemantics';
-import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
+import { getQidahenBoundaryTypeMeta } from '../data/mapGraph';
 import {
     buildGrantPardonSelectionFromRegionSemantics,
     buildKhanEdictSelectionFromRegionSemantics,

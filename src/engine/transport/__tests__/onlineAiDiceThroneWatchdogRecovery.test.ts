@@ -1,3 +1,5 @@
+import { createInitialSystemState } from '../../pipeline';
+import type { MatchState } from '../../types';
 import {
     describe,
     expect,
@@ -54,6 +56,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
             initialState: {
                 G: {
                     core: {
+                        startingPlayerId: '0',
+                        turnNumber: 4,
+                        tokenDefinitions: [],
+                        readyPlayers: { '0': true, '1': true, '2': true, '3': true },
                         activePlayerId: '2',
                         currentPlayerIndex: 2,
                         turnOrder: ['0', '1', '2', '3'],
@@ -169,7 +175,7 @@ describe('online AI watchdog DiceThrone recovery', () => {
                         rollDiceCount: 3,
                         dice: [],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'defensiveRoll',
                         turnNumber: 0,
                         eventStream: { entries: [], maxEntries: 200, nextId: 1 },
@@ -292,10 +298,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                             dice: [{ index: 0, value: 4, originalValue: 4, rerolled: false }],
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'defensiveRoll',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -414,9 +420,9 @@ describe('online AI watchdog DiceThrone recovery', () => {
                         ],
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 2 },
+                        eventStream: { entries: [], nextId: 2 },
                     },
                 };
                 return true;
@@ -433,9 +439,9 @@ describe('online AI watchdog DiceThrone recovery', () => {
                             : {}),
                         rollConfirmed: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 3 },
+                        eventStream: { entries: [], nextId: 3 },
                     },
                 };
                 return true;
@@ -516,10 +522,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                             dice: [{ index: 0, value: 4, originalValue: 4, rerolled: false }],
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'defensiveRoll',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: createSimpleChoice(
                                 'dt-response-choice-1',
@@ -818,10 +824,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                     },
                 },
             },
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 phase: 'defensiveRoll',
                 turnNumber: 4,
-                eventStream: { nextId: 1 },
+                eventStream: { entries: [], nextId: 1 },
                 interaction: { current: undefined, queue: [], isBlocked: false },
                 responseWindow: { current: undefined },
             },
@@ -878,10 +884,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                     display: { replayOnly: false },
                 },
             },
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 phase: 'defensiveRoll',
                 turnNumber: 4,
-                eventStream: { nextId: 1 },
+                eventStream: { entries: [], nextId: 1 },
                 interaction: { current: undefined, queue: [], isBlocked: false },
                 responseWindow: { current: undefined },
             },
@@ -904,7 +910,7 @@ describe('online AI watchdog DiceThrone recovery', () => {
     });
     it('dicethrone: shared interaction 被阻塞且 AI 私有 Token 交互残留时，应优先确认 displayOnly 飞行骰', () => {
         const sharedState = {
-            core: {
+            core: { playerIds: ['0', '1'],
                 activePlayerId: '0',
                 currentPlayerIndex: 0,
                 turnOrder: ['0', '1', '2', '3'],
@@ -936,7 +942,7 @@ describe('online AI watchdog DiceThrone recovery', () => {
                     display: { replayOnly: false },
                 },
             },
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 phase: 'defensiveRoll',
                 interaction: { current: undefined, queue: [], isBlocked: true },
                 responseWindow: { current: undefined },
@@ -1046,10 +1052,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                             displayOnly: true,
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main1',
                         turnNumber: 9,
-                        eventStream: { nextId: 18 },
+                        eventStream: { entries: [], nextId: 18 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1109,9 +1115,9 @@ describe('online AI watchdog DiceThrone recovery', () => {
                     ...activeMatch.state.core,
                     pendingBonusDiceSettlement: undefined,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: 19 },
+                    eventStream: { entries: [], nextId: 19 },
                 },
             };
             return true;
@@ -1161,15 +1167,15 @@ describe('online AI watchdog DiceThrone recovery', () => {
         await storage.createMatch('match-watchdog-dicethrone-human-main2-no-legal-only', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main2',
                         turnNumber: 5,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1252,15 +1258,15 @@ describe('online AI watchdog DiceThrone recovery', () => {
         await storage.createMatch('match-watchdog-generic-human-active-no-legal-only', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'playCards',
                         turnNumber: 5,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1343,15 +1349,15 @@ describe('online AI watchdog DiceThrone recovery', () => {
         await storage.createMatch('match-watchdog-cardia-human-active-play-no-legal-only', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'play',
                         turnNumber: 1,
-                        eventStream: { nextId: 21 },
+                        eventStream: { entries: [], nextId: 21 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1420,7 +1426,7 @@ describe('online AI watchdog DiceThrone recovery', () => {
         await storage.createMatch('match-watchdog-defensive-human-actor', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1434,10 +1440,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                             sourceAbilityId: 'test-attack',
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'defensiveRoll',
                         turnNumber: 3,
-                        eventStream: { nextId: 69 },
+                        eventStream: { entries: [], nextId: 69 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1695,10 +1701,10 @@ describe('online AI watchdog DiceThrone recovery', () => {
                     ...activeMatch.state.core,
                     pendingAttack: null,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
                     phase: 'main2',
-                    eventStream: {
+                    eventStream: { entries: [],
                         ...(activeMatch.state.sys?.eventStream ?? {}),
                         nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                     },

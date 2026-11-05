@@ -18,7 +18,7 @@ import { BETRAYAL_COMMANDS } from '../commands';
 import { resolveBetrayalHauntSpecialActionStatus } from '../hauntSpecialActionReadModel';
 import type { MatchState } from '../../../engine/types';
 import { isHiddenTutorialAutomationStep } from '../../../engine/tutorialStepAutomation';
-import type { BetrayalCore } from '../game';
+import type { BetrayalCore } from '../domain/types';
 import {
     acknowledgePendingCardResolution,
     applyBetrayalCommand,

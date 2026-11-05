@@ -47,12 +47,14 @@ import {
     resolveMatchEmoteSendDecision,
 } from './src/server/matchEmotes';
 import { createLobbyCoordinator } from './src/server/lobbyCoordinator';
-import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
 import { shouldRefreshPublicRoomSummaryAfterCommand } from './src/games/serverLobbySummary';
 import { isGameEmoteAllowed } from './src/games/emotes';
 import { getAiSeatIds } from './src/engine/ai';
+import { readTerminalOutcome, type MatchRecordPlayer } from './src/shared/matchRecord';
 import type { GameEngineConfig } from './src/engine/transport/server';
+import { GameEngineRegistry } from './src/engine/transport/gameEngineRegistry';
+import type { GameEngineLoader } from './src/engine/transport/gameEngineRegistry';
 import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
 import { buildMatchDetailPayload } from './src/server/lobbyMatch';
 import { resolveSocketIoServerTransports } from './src/server/socketTransports';
@@ -285,7 +287,7 @@ const archiveMatchResult = async ({
 }: {
     matchID: string;
     gameName: string;
-    gameover?: { winner?: string | number };
+    gameover?: unknown;
 }) => {
     if (!USE_PERSISTENT_STORAGE) {
         return;
@@ -296,30 +298,29 @@ const archiveMatchResult = async ({
         if (existing) return;
 
         const { metadata, state: storedState } = await storage.fetch(matchID, { metadata: true, state: true });
-        const winnerSeatID = gameover?.winner !== undefined ? String(gameover.winner) : undefined;
-        const resultType = winnerSeatID ? 'win' : 'draw';
+        if (!metadata || !storedState) throw new Error(`match_archive_source_unavailable:${matchID}`);
+        const outcome = readTerminalOutcome(gameover);
+        const winnerSeats = new Set(outcome.winnerSeats);
 
         const setupData = metadata?.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
             ? metadata.setupData as { seatControllers?: Record<string, { type?: unknown } | undefined> }
             : undefined;
         const aiSeatIds = new Set(getAiSeatIds(setupData?.seatControllers));
 
-        const players: Array<{ id: string; name: string; result: string; ownerKey?: string; isAi?: boolean }> = [];
-        let winnerOwnerKey: string | undefined;
+        const players: MatchRecordPlayer[] = [];
         if (metadata?.players) {
             for (const [seatId, pdata] of Object.entries(metadata.players)) {
                 const name = pdata?.name || `Player ${seatId}`;
                 const ownerKey = pdata?.ownerKey;
-                // 用 ownerKey 作为真实 ID，fallback 到 name
-                const playerId = ownerKey || name;
-                const isWinner = seatId === winnerSeatID;
-                if (isWinner) winnerOwnerKey = playerId;
+                const playerId = ownerKey || `match:${matchID}:seat:${seatId}`;
+                const isWinner = winnerSeats.has(seatId);
                 players.push({
                     id: playerId,
+                    seatId,
                     name,
                     ownerKey,
                     isAi: aiSeatIds.has(seatId),
-                    result: isWinner ? 'win' : resultType === 'draw' ? 'draw' : 'loss',
+                    result: isWinner ? 'win' : outcome.draw ? 'draw' : 'loss',
                 });
             }
         }
@@ -328,11 +329,15 @@ const archiveMatchResult = async ({
         const matchState = storedState?.G as { sys?: { actionLog?: { entries?: unknown[] } } } | undefined;
         const actionLog = matchState?.sys?.actionLog?.entries ?? undefined;
 
+        const winnerIDs = players.filter((player) => player.result === 'win').map((player) => player.id);
         await MatchRecord.create({
             matchID,
             gameName,
             players,
-            winnerID: winnerOwnerKey,
+            winnerID: winnerIDs.length === 1 ? winnerIDs[0] : undefined,
+            winnerIDs,
+            draw: outcome.draw,
+            scores: outcome.scores,
             actionLog,
             createdAt: new Date(metadata?.createdAt || Date.now()),
             endedAt: new Date(),
@@ -340,6 +345,7 @@ const archiveMatchResult = async ({
         logger.info(`[Archive] 归档对局 matchID=${matchID}`);
     } catch (err) {
         logger.error('[Archive] 归档失败:', err);
+        throw err;
     }
 };
 
@@ -347,13 +353,13 @@ const archiveMatchResult = async ({
 // 构建游戏引擎配置
 // ============================================================================
 
-const buildServerEngines = async (): Promise<{ engines: GameEngineConfig[]; gameIds: string[] }> => {
-    const engines: GameEngineConfig[] = [];
+const buildServerEngines = (): { engines: GameEngineLoader[]; gameIds: string[] } => {
+    const engines: GameEngineLoader[] = [];
     const manifestGameIds = new Set<string>();
     const gameIds: string[] = [];
 
     for (const entry of ENABLED_GAME_ENTRIES) {
-        const { manifest, engineConfig } = entry;
+        const { manifest, loadEngine } = entry;
         const normalizedId = normalizeGameName(manifest.id);
         if (manifestGameIds.has(normalizedId)) {
             throw new Error(`[GameManifest] 游戏 ID 重复: ${manifest.id}`);
@@ -362,16 +368,7 @@ const buildServerEngines = async (): Promise<{ engines: GameEngineConfig[]; game
         gameIds.push(normalizedId);
 
         // 直接使用 engineConfig（不再从 __adapterConfig 提取）
-        engines.push(engineConfig);
-    }
-
-    if (USE_PERSISTENT_STORAGE) {
-        // 纯内存模式不依赖 Mongo，跳过 UGC 数据库查询，保证无库也能起服务。
-        const { engineConfigs: ugcEngines, gameIds: ugcGameIds } = await buildUgcServerGames({
-            existingGameIds: manifestGameIds,
-        });
-        ugcEngines.forEach((cfg) => engines.push(cfg));
-        ugcGameIds.forEach((id) => gameIds.push(id));
+        engines.push({ gameId: normalizedId, loadEngine });
     }
 
     return { engines, gameIds };
@@ -384,9 +381,10 @@ const buildServerEngines = async (): Promise<{ engines: GameEngineConfig[]; game
 if (USE_PERSISTENT_STORAGE) {
     await connectDB();
 } else {
-    logger.info('[GameServer] 当前以纯内存模式启动，跳过 Mongo / UGC / 排行榜归档');
+    logger.info('[GameServer] 当前以纯内存模式启动，跳过 Mongo / 排行榜归档');
 }
-const { engines: SERVER_ENGINES, gameIds: SERVER_GAME_IDS } = await buildServerEngines();
+const { engines: SERVER_ENGINES, gameIds: SERVER_GAME_IDS } = buildServerEngines();
+const SERVER_ENGINE_REGISTRY = new GameEngineRegistry([], SERVER_ENGINES);
 const SERVER_GAME_MANIFEST_BY_ID = Object.fromEntries(
     GAME_SERVER_MANIFEST.map(({ manifest }) => [manifest.id, manifest]),
 );
@@ -440,7 +438,8 @@ const trainingDataRecorder = createTrainingDataRecorderFromEnv(process.env);
 const gameTransport = new GameTransportServer({
     io,
     storage,
-    games: SERVER_ENGINES,
+    games: [],
+    gameRegistry: SERVER_ENGINE_REGISTRY,
     gameManifests: SERVER_GAME_MANIFEST_BY_ID,
     trainingDataRecorder,
     trainingDataMinCompletedMatchDurationMs: TRAINING_DATA_MIN_COMPLETED_MATCH_DURATION_MS,
@@ -452,13 +451,13 @@ const gameTransport = new GameTransportServer({
         if (!playerMeta?.credentials) return false;
         return playerMeta.credentials === credentials;
     },
-    onGameOver: (matchID, gameName, gameover) => {
+    onGameOver: async (matchID, gameName, gameover) => {
         // 记录游戏结束日志
         const winner = gameover?.winner !== undefined ? String(gameover.winner) : null;
         gameLogger.matchEnded(matchID, gameName, winner, 0); // duration 需要从 metadata 计算
         
         // 归档对局结果
-        void archiveMatchResult({ matchID, gameName, gameover: gameover as { winner?: string | number } });
+        await archiveMatchResult({ matchID, gameName, gameover });
         // 通知大厅更新（房间仍存在，标记为 gameover，大厅列表显示为已结束）
         const game = normalizeGameName(gameName);
         if (game && isSupportedGame(game)) {
@@ -706,6 +705,7 @@ router.get('/games', async (ctx) => {
     ctx.body = { 
         status: 'ok', 
         games: SUPPORTED_GAMES,
+        loadedGames: SERVER_ENGINE_REGISTRY.loadedGameIds,
         timestamp: Date.now()
     };
 });
@@ -767,7 +767,14 @@ router.post('/games/:name/create', async (ctx) => {
     }
 
     const gameEntry = GAME_SERVER_MANIFEST.find((entry) => normalizeGameName(entry.manifest.id) === gameName);
-    const gameEngine = gameEntry?.engineConfig;
+    let gameEngine: GameEngineConfig | undefined;
+    try {
+        gameEngine = await SERVER_ENGINE_REGISTRY.get(gameName);
+    } catch (error) {
+        logger.error('[GameEngine] 加载失败', { gameId: gameName, error });
+        ctx.throw(503, `Game ${gameName} is unavailable`);
+    }
+    if (!gameEngine) ctx.throw(404, `Game ${gameName} not found`);
 
     const body = ctx.request.body as Record<string, unknown> | undefined;
     const numPlayers = Number(body?.numPlayers ?? 2);
@@ -1685,7 +1692,7 @@ async function startServer() {
         logger.info(`🎮 游戏服务器运行在 http://localhost:${GAME_SERVER_PORT}`);
         logger.info('📡 大厅广播服务已启动 (namespace: /lobby-socket)');
         logger.info('🎯 游戏传输层已启动 (namespace: /game)');
-        logger.info(`📦 已注册 ${SERVER_ENGINES.length} 个游戏引擎, ${SERVER_GAME_IDS.length} 个游戏 ID`);
+        logger.info(`📦 已登记 ${SERVER_ENGINES.length} 个按需加载器, ${SERVER_ENGINE_REGISTRY.loadedGameIds.length} 个已加载引擎`);
 
         if (USE_PERSISTENT_STORAGE) {
             // 先对外提供服务，再在后台执行启动清理，避免清理耗时阻塞 ready

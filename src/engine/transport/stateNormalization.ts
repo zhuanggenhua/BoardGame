@@ -2,6 +2,7 @@ import type { MatchState } from '../types';
 import type { GameEngineConfig } from './engineConfig';
 import type { AiSeatController } from '../ai/types';
 import { mergeSeatControllerRecords } from '../ai/seatControllers';
+import { restorePersistedState, stampStateVersion } from '../statePersistence';
 
 function extractStateSeatControllers(
     state: MatchState<unknown> | undefined,
@@ -60,7 +61,12 @@ export function normalizePersistedLocalStateForGame(
     config: GameEngineConfig,
     state: MatchState<unknown>,
 ): MatchState<unknown> {
-    return normalizeStateForConfig(config, state);
+    return normalizeStateForConfig(config, restorePersistedState(config.gameId, config.domain.statePersistence, state));
+}
+
+/** Only fresh setup/reset states are stamped without migration. */
+export function prepareNewStateForConfig(config: GameEngineConfig, state: MatchState<unknown>): MatchState<unknown> {
+    return stampStateVersion(config.gameId, config.domain.statePersistence, normalizeStateForConfig(config, state));
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -75,8 +81,13 @@ function hasSameOrderedPlayerIds(playerIds: string[], expectedPlayerIds: string[
 export function isPersistedLocalStateCompatible(args: {
     state: MatchState<unknown>;
     expectedPlayerIds: string[];
+    allowReorderedPlayerIds?: boolean;
 }): boolean {
     const { state, expectedPlayerIds } = args;
+    const matchesPlayerIds = (ids: string[]) => args.allowReorderedPlayerIds
+        ? ids.length === expectedPlayerIds.length && new Set(ids).size === ids.length
+            && ids.every(id => expectedPlayerIds.includes(id))
+        : hasSameOrderedPlayerIds(ids, expectedPlayerIds);
     if (!state || typeof state !== 'object') {
         return false;
     }
@@ -93,7 +104,7 @@ export function isPersistedLocalStateCompatible(args: {
         if (!isStringArray(corePlayerIds)) {
             return false;
         }
-        if (!hasSameOrderedPlayerIds(corePlayerIds, expectedPlayerIds)) {
+        if (!matchesPlayerIds(corePlayerIds)) {
             return false;
         }
         hasCompatiblePlayerIdentity = true;
@@ -127,7 +138,7 @@ export function isPersistedLocalStateCompatible(args: {
         if (!isStringArray(turnOrder)) {
             return false;
         }
-        if (!hasSameOrderedPlayerIds(turnOrder, expectedPlayerIds)) {
+        if (!matchesPlayerIds(turnOrder)) {
             return false;
         }
     }

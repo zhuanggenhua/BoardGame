@@ -5,6 +5,7 @@
 
 import React from 'react';
 import type { DiceThroneMoveMap } from '../ui/resolveMoves';
+import type { CharacterId } from '../domain/types';
 import { isSetupReadyToStart } from '../domain/rules';
 
 interface AutoSkipSelectionParams {
@@ -12,7 +13,7 @@ interface AutoSkipSelectionParams {
     isSpectator: boolean;
     gameMode: { mode: string } | null | undefined;
     rootPid: string;
-    selectedCharacters: Record<string, string>;
+    selectedCharacters: Record<string, CharacterId>;
     hostPlayerId?: string;
     hostStarted?: boolean;
     readyPlayers?: Record<string, boolean>;

@@ -4,6 +4,7 @@ import type { AiSeatController } from '../ai/types';
 import type { LocalMatchSnapshot } from './localSession';
 import { useLocalGameProviderRuntime } from './useLocalGameProviderRuntime';
 import { GameClientContext } from './reactContext';
+import { LocalSessionNotice } from './LocalSessionNotice';
 
 export {
     BoardBridge,
@@ -29,7 +30,12 @@ export interface LocalGameProviderProps {
     shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
 }
 
-export function LocalGameProvider({
+export function LocalGameProvider(props: LocalGameProviderProps) {
+    const identity = `${props.config.gameId}:${props.persistGameId ?? ''}:${props.seed}:${props.numPlayers}`;
+    return <LocalGameProviderSession key={identity} {...props} />;
+}
+
+function LocalGameProviderSession({
     config,
     numPlayers,
     seed,
@@ -61,7 +67,8 @@ export function LocalGameProvider({
 
     return (
         <GameClientContext.Provider value={value}>
-            {children}
+            <LocalSessionNotice status={value.localSession} onRestart={value.reset} />
+            {value.localSession?.restoreError ? null : children}
         </GameClientContext.Provider>
     );
 }

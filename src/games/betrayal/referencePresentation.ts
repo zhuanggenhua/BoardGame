@@ -2,7 +2,7 @@ import {
   resolveBetrayalExplorerSide,
   type BetrayalExplorerSide,
 } from "./entityRelationModel";
-import type { BetrayalCore } from "./game";
+import type { BetrayalCore } from './domain/types';
 import { resolveBetrayalHauntRevealProtocol } from "./hauntSetupModel";
 
 export type ReferencePageId = "front" | "back" | "traitor" | "monster";

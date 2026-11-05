@@ -191,7 +191,7 @@ type DiceChaseCandidate = {
     chaseScore: number;
 };
 
-type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
+type DiceInteractionData = MultistepChoiceData<unknown> & {
     completedDieIds?: number[];
     completedSteps?: number;
     allowRepeatedDieSelection?: boolean;

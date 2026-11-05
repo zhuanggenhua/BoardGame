@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from './commandFixture';
 import { makeMinionDestroyedEvent } from './helpers';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -8,7 +9,7 @@ import {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { validate } from '../domain/commands';
-import { execute, reduce } from '../domain/reducer';
+import { reduce } from '../domain/reducer';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import {
@@ -358,7 +359,7 @@ describe('Smash Up Munchkin 怪物基础机制', () => {
         } as const;
 
         expect(validate(matchState, command)).toEqual({ valid: true });
-        const events = execute(matchState, command, fixedRandom);
+        const events = settleFixtureCommandEvents(matchState, command, fixedRandom);
 
         expect(events).toContainEqual(expect.objectContaining({
             type: SU_EVENTS.MUNCHKIN_MONSTER_DEFEATED,

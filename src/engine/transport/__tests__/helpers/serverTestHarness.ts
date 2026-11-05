@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../../pipeline';
 import type { GameEngineConfig } from '../../engineConfig';
 import { createInteractionSystem, createSimpleChoice } from '../../../systems/InteractionSystem';
 import { createSimpleChoiceSystem } from '../../../systems/SimpleChoiceSystem';
@@ -310,10 +311,10 @@ export const createInteractiveEngineConfig = (): GameEngineConfig => ({
     ],
 });
 
-export const createStoredState = (): StoredMatchState => ({
+export const createStoredState = (playerIds: string[] = ['0']): StoredMatchState => ({
     G: {
-        core: { currentPlayer: '0' },
-        sys: { phase: 'main', turnNumber: 1 },
+        core: { currentPlayer: '0', playerIds },
+        sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
     },
     _stateID: 0,
     randomSeed: 'seed',
@@ -364,18 +365,7 @@ export const createOnlineAiRecoveryMetadata = (overrides?: {
     seatControllers?: Record<string, TestOnlineAiSeatController>;
 }): MatchMetadata => ({
     gameName: overrides?.gameName ?? 'test-game',
-    players: {
-        '0': {
-            name: '玩家0',
-            credentials: 'cred-0',
-            isConnected: false,
-        },
-        '1': {
-            name: 'AI 1',
-            credentials: 'cred-1',
-            isConnected: false,
-        },
-    },
+    players: Object.fromEntries([...new Set(['0', '1', ...Object.keys(overrides?.seatControllers ?? {})])].map(id => [id, { name: `玩家 ${id}`, credentials: `cred-${id}`, isConnected: false }])),
     createdAt: Date.now(),
     updatedAt: Date.now(),
     setupData: {
@@ -385,17 +375,21 @@ export const createOnlineAiRecoveryMetadata = (overrides?: {
 });
 
 export const createOnlineAiRecoveryState = (overrides?: {
+    playerIds?: string[];
     activePlayerId?: string;
     phase?: string;
     interaction?: unknown;
     responseWindow?: unknown;
     pendingBonusDiceSettlement?: unknown;
-}): StoredMatchState => ({
+}): StoredMatchState => {
+const result = ({
     G: {
         core: {
             activePlayerId: overrides?.activePlayerId ?? '1',
             currentPlayerIndex: overrides?.activePlayerId === '0' ? 0 : 1,
             turnOrder: ['0', '1'],
+            turnNumber: 4,
+            nextUid: 1000,
             players: {
                 '0': {
                     id: '0',
@@ -432,12 +426,13 @@ export const createOnlineAiRecoveryState = (overrides?: {
             },
             bases: [],
             baseDeck: [],
+            baseDiscard: [],
             pendingBonusDiceSettlement: overrides?.pendingBonusDiceSettlement,
         },
-        sys: {
+        sys: { ...createInitialSystemState(['0', '1'], []),
             phase: overrides?.phase ?? 'main2',
             turnNumber: 4,
-            eventStream: { nextId: 1 },
+            eventStream: { nextId: 1, entries: [] },
             interaction: overrides?.interaction ?? {
                 current: undefined,
                 queue: [],
@@ -451,7 +446,14 @@ export const createOnlineAiRecoveryState = (overrides?: {
     _stateID: 0,
     randomSeed: 'seed',
     randomCursor: 0,
-});
+ });
+if (overrides?.playerIds) {
+    const core = result.G.core;
+    core.turnOrder = overrides.playerIds;
+    core.players = Object.fromEntries(overrides.playerIds.map(id => [id, { ...core.players['0'], id }]));
+}
+return result;
+};
 
 export const createPersistedStaleSmashUpReactionChoiceState = (): StoredMatchState => {
     const baseState = startSmashUpReactionSession({
@@ -505,9 +507,10 @@ export const createPersistedStaleSmashUpReactionChoiceState = (): StoredMatchSta
                 ongoingActions: [],
             }],
             baseDeck: [],
+            baseDiscard: [],
             scoringEligibleBaseIndices: [0],
         },
-        sys: {
+        sys: { ...createInitialSystemState(['0', '1'], []),
             phase: 'scoreBases',
             interaction: { current: undefined, queue: [], isBlocked: false },
             responseWindow: {
@@ -537,7 +540,7 @@ export const createPersistedStaleSmashUpReactionChoiceState = (): StoredMatchSta
     return {
         G: {
             ...baseState,
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 ...baseState.sys,
                 interaction: {
                     current: createSimpleChoice(

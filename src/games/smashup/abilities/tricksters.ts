@@ -88,7 +88,7 @@ type TricksterGnomePromptContext = TricksterPromptContext & {
     cardUid: string;
 };
 
-function createTricksterPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createTricksterPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<any>,
     playerId: PlayerId,
     now: number,

@@ -112,4 +112,24 @@ describe('fx frame clock', () => {
     expect(callback).toHaveBeenCalledWith(expect.objectContaining({ now: 132 }));
     expect(getFxFrameSubscriberCount()).toBe(0);
   });
+
+  it('订阅者抛错不影响其他订阅者和后续帧，并报告异常', () => {
+    const pending: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => { pending.push(callback); return pending.length; }));
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const report = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failure = new Error('broken renderer');
+    const healthy = vi.fn();
+    subscribeFxFrame(() => { throw failure; });
+    subscribeFxFrame(healthy);
+    try {
+      expect(() => pending.shift()!(100)).not.toThrow();
+      expect(healthy).toHaveBeenCalledTimes(1);
+      expect(pending).toHaveLength(1);
+      pending.shift()!(116);
+      expect(healthy).toHaveBeenCalledTimes(2);
+      expect(report).toHaveBeenCalledWith(expect.any(String), failure);
+    } finally { report.mockRestore(); }
+  });
+
 });

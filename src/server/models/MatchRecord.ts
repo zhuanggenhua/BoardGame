@@ -1,39 +1,7 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose from 'mongoose';
+import type { HydratedDocument } from 'mongoose';
+import type { PersistedMatchRecord } from '../../shared/matchRecord';
+import { createMatchRecordSchema } from './matchRecordSchema';
 
-export interface IMatchRecord extends Document {
-    matchID: string;
-    gameName: string;
-    players: {
-        id: string;
-        name: string;
-        ownerKey?: string;
-        isAi?: boolean;
-        result?: string; // 'win', 'loss', 'draw'
-    }[];
-    winnerID?: string; // ID of the winner, or null if draw
-    createdAt: Date;
-    endedAt: Date;
-}
-
-const MatchRecordSchema = new Schema<IMatchRecord>(
-    {
-        matchID: { type: String, required: true, unique: true },
-        gameName: { type: String, required: true },
-        players: [
-            {
-                id: { type: String, required: true },
-                name: { type: String },
-                ownerKey: { type: String },
-                isAi: { type: Boolean },
-                result: { type: String }
-            }
-        ],
-        winnerID: { type: String },
-        endedAt: { type: Date, default: Date.now }
-    },
-    {
-        timestamps: true
-    }
-);
-
-export const MatchRecord = mongoose.model<IMatchRecord>('MatchRecord', MatchRecordSchema);
+export type IMatchRecord = HydratedDocument<PersistedMatchRecord>;
+export const MatchRecord = mongoose.model<PersistedMatchRecord>('MatchRecord', createMatchRecordSchema());

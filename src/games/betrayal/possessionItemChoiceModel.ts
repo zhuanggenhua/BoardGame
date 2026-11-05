@@ -1,8 +1,5 @@
 import { isAttackWeaponCard } from './attackRules';
-import type {
-    BetrayalCore,
-    BetrayalInventoryCard,
-} from './game';
+import type { BetrayalCore, BetrayalInventoryCard } from './domain/types';
 import type { UseEffectProfile } from './possessionEffects';
 
 function eventInventoryCardMatchesFilter(

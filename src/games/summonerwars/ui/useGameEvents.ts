@@ -5,7 +5,7 @@
  * 使用视觉事件消费策略管理游标（攻击动画是必播序列，不能用时间戳过滤丢弃）
  */
 
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { MatchState } from '../../../engine/types';
 import type { SummonerWarsCore, PlayerId, CellCoord, UnitCard, StructureCard } from '../domain/types';
 import { SW_EVENTS } from '../domain/types';
@@ -188,6 +188,19 @@ export function useGameEvents({
   const processedAttackEventIdsRef = useRef<Set<number>>(new Set());
   // 防止同一充能事件在重连/回滚场景下重复播放充能旋涡
   const processedChargeEventIdsRef = useRef<Set<number>>(new Set());
+  const pendingMoveFxRef = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const cancelPendingMoveFx = useCallback(() => {
+    for (const timer of pendingMoveFxRef.current) clearTimeout(timer);
+    pendingMoveFxRef.current.clear();
+  }, []);
+  const scheduleMoveFx = useCallback((callback: () => void, delayMs: number) => {
+    const timer = setTimeout(() => {
+      pendingMoveFxRef.current.delete(timer);
+      callback();
+    }, delayMs);
+    pendingMoveFxRef.current.add(timer);
+  }, []);
+  useEffect(() => cancelPendingMoveFx, [cancelPendingMoveFx]);
 
   // ============================================================================
   // 回调函数稳定化（避免 useLayoutEffect 因回调引用变化而重复执行）
@@ -217,6 +230,7 @@ export function useGameEvents({
   const { consumeNew } = useVisualEventStream({
     entries,
     strategy: 'requiredSequence',
+    consumeOnReconcile: true,
   });
   const activeSwInteractionType = (() => {
     const currentInteraction = G.sys.interaction?.current as {
@@ -304,6 +318,7 @@ export function useGameEvents({
     const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
 
     if (didReset || didOptimisticRollback) {
+      cancelPendingMoveFx();
       const queuedDestroyCount = pendingAttackQueueRef.current.reduce((count, attack) => count + attack.pendingDestroys.length, 0);
       swAttackDebugLog('event_stream_reset_or_rollback', {
         didReset,
@@ -326,6 +341,7 @@ export function useGameEvents({
       gateRef.current.reset();
       if (didReset) {
         processedAttackEventIdsRef.current.clear();
+        processedChargeEventIdsRef.current.clear();
       }
     }
 
@@ -500,7 +516,7 @@ export function useGameEvents({
           };
           const fxParams = { damageAmount: p.damage, soundKey };
           if (hasPendingMove) {
-            setTimeout(() => {
+            scheduleMoveFx(() => {
               fxBusRef.current.push(SW_FX.COMBAT_DAMAGE, fxCtx, fxParams);
             }, MOVE_ANIM_DELAY);
           } else {
@@ -527,7 +543,7 @@ export function useGameEvents({
         }
         if (p.delta > 0) {
           if (hasPendingMove) {
-            setTimeout(() => {
+            scheduleMoveFx(() => {
               fxBusRef.current.push(SW_FX.CHARGE_VORTEX, { cell: p.position, intensity: 'normal' });
             }, MOVE_ANIM_DELAY);
           } else {

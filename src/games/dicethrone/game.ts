@@ -1,3 +1,4 @@
+import type { DieModifiedEvent, DieRerolledEvent } from './domain/types';
 /**
  * DiceThrone 游戏定义（新引擎架构）
  * 
@@ -65,7 +66,7 @@ import {
 } from './domain/tokenResponseChoiceContract';
 import { isCardPlayableInResponseWindow } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
-import { ASSETS, DICE_ATLAS } from './ui/assets';
+import { ASSETS, DICE_ATLAS } from './assets';
 import {
     isManualSetupSelectionEnabledForSeat,
     registerGameAiRuntime,
@@ -73,7 +74,7 @@ import {
 } from '../../engine/ai';
 import { diceThroneAiRuntime } from './ai';
 import { resolveDiceThroneLocalPregameControlledPlayerId } from './localPregameControl';
-import { getDiceThroneCardPreviewRef, hasDiceThroneCharacterCard } from './ui/cardPreviewHelper';
+import { getDiceThroneCardPreviewRef, hasDiceThroneCharacterCard } from './cardPreviewModel';
 
 // ============================================================================
 // ActionLog 共享白名单 + 格式化
@@ -2038,17 +2039,6 @@ export default engineConfig;
 
 // 导出 ActionLog 格式化函数供测试
 export { formatDiceThroneActionEntry };
-
-// 注册卡牌预览获取函数
-import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-registerCardPreviewGetter('dicethrone', (cardId, context) => (
-    getDiceThroneCardPreviewRef(cardId, context?.characterId)
-));
-
-// 注册关键图片解析器
-import { registerCriticalImageResolver } from '../../core';
-import { diceThroneCriticalImageResolver } from './criticalImageResolver';
-registerCriticalImageResolver('dicethrone', diceThroneCriticalImageResolver);
 
 // 导出类型（兼容）
 export type { DiceThroneCore } from './domain';

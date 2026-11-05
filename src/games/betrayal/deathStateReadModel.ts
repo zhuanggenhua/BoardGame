@@ -23,12 +23,7 @@ import {
     BETRAYAL_TRAIT_KEYS,
     healExplorerTraitToStart,
 } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalCorpseSummary,
-    BetrayalDeathStateSummary,
-    BetrayalExplorerSummary,
-} from './game';
+import type { BetrayalCore, BetrayalCorpseSummary, BetrayalDeathStateSummary, BetrayalExplorerSummary } from './domain/types';
 
 export interface BetrayalCorpseLootCommandPayload {
     sourcePlayerId?: string;

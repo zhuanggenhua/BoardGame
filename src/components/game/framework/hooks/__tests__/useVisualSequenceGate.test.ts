@@ -111,4 +111,34 @@ describe('useVisualSequenceGate', () => {
     act(() => result.current.endSequence());
     expect(result.current.isVisualBusy).toBe(false);
   });
+
+  it('排空回调开启下一序列时保留 busy 和后续 FIFO 回调', () => {
+    const { result } = renderHook(() => useVisualSequenceGate());
+    const order: number[] = [];
+    act(() => {
+      result.current.beginSequence();
+      result.current.scheduleInteraction(() => { order.push(1); result.current.beginSequence(); });
+      result.current.scheduleInteraction(() => order.push(2));
+      result.current.endSequence();
+    });
+    expect(order).toEqual([1]);
+    expect(result.current.isVisualBusy).toBe(true);
+    act(() => result.current.endSequence());
+    expect(order).toEqual([1, 2]);
+    expect(result.current.isVisualBusy).toBe(false);
+  });
+
+  it('排空期间 reset 会取消尚未执行的旧交互', () => {
+    const { result } = renderHook(() => useVisualSequenceGate());
+    const stale = vi.fn();
+    act(() => {
+      result.current.beginSequence();
+      result.current.scheduleInteraction(() => result.current.reset());
+      result.current.scheduleInteraction(stale);
+      result.current.endSequence();
+    });
+    expect(stale).not.toHaveBeenCalled();
+    expect(result.current.isVisualBusy).toBe(false);
+  });
+
 });

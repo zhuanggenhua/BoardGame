@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import type { BetrayalRoomNode } from './game';
+import type { BetrayalRoomNode } from './domain/types';
 import {
     computeSpriteAspectRatio,
     computeSpriteImgStyle,

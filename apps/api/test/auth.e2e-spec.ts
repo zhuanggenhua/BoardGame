@@ -128,7 +128,7 @@ describe('AuthModule (e2e)', () => {
             .post('/auth/register')
             .send({ username: 'test-user', email, code, password: 'pass1234' })
             .expect(201);
-        const registerCookie = (registerRes.headers['set-cookie'] as string[])
+        const registerCookie = [registerRes.headers['set-cookie']].flat()
             .find(cookie => cookie.startsWith('refresh_token='))!
             .split(';')[0];
 
@@ -142,7 +142,7 @@ describe('AuthModule (e2e)', () => {
 
         expect(loginRes.body.success).toBe(true);
         const token = loginRes.body.data.token as string;
-        const loginCookie = (loginRes.headers['set-cookie'] as string[])
+        const loginCookie = [loginRes.headers['set-cookie']].flat()
             .find(cookie => cookie.startsWith('refresh_token='))!
             .split(';')[0];
         expect(token).toBeDefined();
@@ -183,7 +183,7 @@ describe('AuthModule (e2e)', () => {
             .post('/auth/login')
             .send({ account: email, password: 'pass1234' })
             .expect(200);
-        const otherDeviceCookie = (otherDeviceLogin.headers['set-cookie'] as string[])
+        const otherDeviceCookie = [otherDeviceLogin.headers['set-cookie']].flat()
             .find(cookie => cookie.startsWith('refresh_token='))!
             .split(';')[0];
         const otherDeviceRefresh = await request(app.getHttpServer())
@@ -275,7 +275,7 @@ describe('AuthModule (e2e)', () => {
 
         const setCookieHeader = loginRes.headers['set-cookie'];
         expect(Array.isArray(setCookieHeader)).toBe(true);
-        const refreshSetCookie = (setCookieHeader as string[]).find(cookie => cookie.startsWith('refresh_token='));
+        const refreshSetCookie = [setCookieHeader].flat().find(cookie => cookie.startsWith('refresh_token='));
         expect(refreshSetCookie).toBeDefined();
         expect(refreshSetCookie).toContain('HttpOnly');
 
@@ -296,7 +296,7 @@ describe('AuthModule (e2e)', () => {
 
         const rotatedSetCookie = refreshRes.headers['set-cookie'];
         expect(Array.isArray(rotatedSetCookie)).toBe(true);
-        const rotatedRefreshCookie = (rotatedSetCookie as string[]).find(cookie => cookie.startsWith('refresh_token='));
+        const rotatedRefreshCookie = [rotatedSetCookie].flat().find(cookie => cookie.startsWith('refresh_token='));
         expect(rotatedRefreshCookie).toBeDefined();
         expect(rotatedRefreshCookie!.split(';')[0]).not.toBe(refreshCookie);
 
@@ -307,7 +307,7 @@ describe('AuthModule (e2e)', () => {
 
         expect(reusedOldRefreshRes.body.success).toBe(true);
         expect(reusedOldRefreshRes.body.data.token).toBeDefined();
-        const raceRefreshCookie = (reusedOldRefreshRes.headers['set-cookie'] as string[])
+        const raceRefreshCookie = [reusedOldRefreshRes.headers['set-cookie']].flat()
             .find(cookie => cookie.startsWith('refresh_token='));
         expect(raceRefreshCookie?.split(';')[0]).toBe(rotatedRefreshCookie!.split(';')[0]);
 
@@ -413,7 +413,7 @@ describe('AuthModule (e2e)', () => {
             .expect(201);
 
         const token = registerRes.body.token;
-        const registerCookie = (registerRes.headers['set-cookie'] as string[])
+        const registerCookie = [registerRes.headers['set-cookie']].flat()
             .find(cookie => cookie.startsWith('refresh_token='))!
             .split(';')[0];
 
@@ -461,7 +461,7 @@ describe('AuthModule (e2e)', () => {
                 .post('/auth/login')
                 .send({ account: email, password: 'pass1234' })
                 .expect(200);
-            return (login.headers['set-cookie'] as string[])
+            return [login.headers['set-cookie']].flat()
                 .find(cookie => cookie.startsWith('refresh_token='))!
                 .split(';')[0];
         }));

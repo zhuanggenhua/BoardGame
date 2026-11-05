@@ -1,9 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalTraitKey,
-  BetrayalTraitTrackState,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalTraitKey, BetrayalTraitTrackState } from './domain/types';
 
 export const TRAIT_DAMAGE_ORDER: BetrayalTraitKey[] = [
   "might",

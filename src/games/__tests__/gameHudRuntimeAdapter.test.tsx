@@ -9,6 +9,7 @@ import {
 } from '../gameHudRuntimeAdapter';
 
 vi.mock('../registry', () => ({
+ retainGameImplementation: () => () => {},
     getGameImplementation: (gameId: string) => (
         gameId === 'smashup'
             ? { runtimeAdapter: smashUpGameRuntimeAdapter }

@@ -7,10 +7,7 @@ import { createMummyEndgameResult } from './mummyHauntRules';
 import { clearNextNonCombatTraitRollReplacementsForPlayer } from './possessionActionReadModel';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
 import { resolveMummyTraitorVictoryResult } from './hauntVictoryModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type MummyNameStudiedEvent = Extract<BetrayalEvent, { type: 'MUMMY_NAME_STUDIED' }>;

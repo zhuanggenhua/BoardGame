@@ -864,12 +864,12 @@ export function createCompareRollChoice<T>(
 /**
  * multistep-choice 专用数据 — 多步调整 → 预览 → 确认
  *
- * 中间步骤纯本地执行（localReducer），不经过 pipeline，不发网络请求。
- * 确认时 toCommands() 生成命令列表，依次 dispatch 到引擎。
+ * 中间步骤由客户端 MultistepChoiceBinding.runtime 执行，不经过 pipeline，不发网络请求。
+ * 确认时 runtime.toCommands() 生成命令列表，交给统一批次入口；函数不进入 descriptor。
  *
  * 适用场景：骰子修改（多次 +/- 后确认）、资源分配、多目标选择等。
  */
-export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
+export interface MultistepChoiceData<TResult = unknown> {
     /** 弹窗标题（i18n key） */
     title: string;
     /** 来源技能/卡牌 ID */
@@ -884,44 +884,17 @@ export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
      * - submitBatch：有本批次结果时只提交本批次命令；是否关闭由 shouldResolveOnConfirm 决定。
      */
     confirmationMode?: 'resolve' | 'submitBatch';
-    /**
-     * 本地 reducer：处理中间步骤
-     * 纯客户端执行，不经过 pipeline，不发网络请求。
-     * 返回更新后的累积结果。
-     */
-    localReducer: (current: TResult, step: TStep) => TResult;
-    /**
-     * 结果转命令：确认时将累积结果转换为引擎命令列表
-     * 返回的命令会被依次 dispatch 到引擎。
-     */
-    toCommands: (result: TResult) => Array<{ type: string; payload: unknown }>;
     /** 初始累积结果 */
     initialResult: TResult;
-    /** 验证函数：判断当前步骤是否合法（可选） */
-    validateStep?: (current: TResult, step: TStep) => boolean;
-    /**
-     * 从累积结果中提取"已完成步骤数"（可选）。
-     * 用于 auto-confirm 判定：当返回值 >= maxSteps 时自动确认。
-     * 未提供时退化为按 step() 调用次数计数。
-     * 典型场景：骰子 any 模式下，每次 +/- 都是一次 step()，
-     * 但只有修改了不同骰子才算"完成一步"。
-     */
-    getCompletedSteps?: (result: TResult) => number;
-    /**
-     * submitBatch 模式下，当前确认是否应关闭整段交互。
-     * 例如规则允许同一骰子重复重掷时，选中骰子后确认只提交本批次；
-     * 本地无新选择且服务端已完成至少一步时，再确认才表示结束剩余交互。
-     */
-    shouldResolveOnConfirm?: (result: TResult) => boolean;
     /** 附加元数据（透传给 UI 层，如骰子模式配置） */
     meta?: Record<string, unknown>;
 }
 
-export function createMultistepChoice<TStep, TResult>(
+export function createMultistepChoice<TResult>(
     id: string,
     playerId: PlayerId,
-    data: MultistepChoiceData<TStep, TResult>,
-): InteractionDescriptor<MultistepChoiceData<TStep, TResult>> {
+    data: MultistepChoiceData<TResult>,
+): InteractionDescriptor<MultistepChoiceData<TResult>> {
     return {
         id,
         kind: 'multistep-choice',
@@ -953,12 +926,23 @@ export function createMultistepChoice<TStep, TResult>(
  * - 如果交互有 optionsGenerator，会在成为 current 时立即生成选项
  * - 确保后续交互看到最新的手牌/场上单位状态
  */
+export function getInteractionSequence(state: MatchState<unknown> | undefined): number {
+    if (!state) throw new Error('Interaction allocation requires match state');
+    const value = state.sys.interactionSequence ?? 0;
+    if (!Number.isSafeInteger(value) || value < 0 || value >= Number.MAX_SAFE_INTEGER) {
+        throw new Error('Invalid per-match interaction sequence');
+    }
+    return value;
+}
+
 export function queueInteraction<TCore>(
     state: MatchState<TCore>,
     interaction: InteractionDescriptor,
     options?: { urgent?: boolean; forceQueue?: boolean },
 ): MatchState<TCore> {
     if (!interaction) return state;
+    const nextId = getInteractionSequence(state) + 1;
+    state = { ...state, sys: { ...state.sys, interactionSequence: nextId } };
     interaction = bindInteractionToResolutionFrame(state, interaction);
 
     const { current, queue } = state.sys.interaction;
@@ -1076,11 +1060,11 @@ export function asSliderChoice(
 /**
  * UI 辅助：从 InteractionDescriptor 提取 multistep-choice 扁平数据
  */
-export function asMultistepChoice<TStep = unknown, TResult = unknown>(
+export function asMultistepChoice<TResult = unknown>(
     interaction?: InteractionDescriptor,
-): (MultistepChoiceData<TStep, TResult> & { id: string; playerId: PlayerId }) | undefined {
+): (MultistepChoiceData<TResult> & { id: string; playerId: PlayerId }) | undefined {
     if (!interaction || interaction.kind !== 'multistep-choice') return undefined;
-    const data = interaction.data as MultistepChoiceData<TStep, TResult>;
+    const data = interaction.data as MultistepChoiceData<TResult>;
     return { ...data, id: interaction.id, playerId: interaction.playerId };
 }
 

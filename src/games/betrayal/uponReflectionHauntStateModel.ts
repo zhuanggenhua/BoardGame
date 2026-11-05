@@ -6,10 +6,7 @@ import { removeEventCardForUponReflectionHint } from './eventDeckModel';
 import { createUponReflectionEndgameResult } from './hauntVictoryModel';
 import { clearNextNonCombatTraitRollReplacementsForPlayer } from './possessionActionReadModel';
 import { BETRAYAL_TRAIT_LABEL as TRAIT_LABEL } from './possessionEffects';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type UponReflectionEventHintGivenEvent = Extract<BetrayalEvent, { type: 'UPON_REFLECTION_EVENT_HINT_GIVEN' }>;

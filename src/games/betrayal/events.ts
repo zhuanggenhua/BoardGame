@@ -1,31 +1,9 @@
+import type { BetrayalHauntRevealResolution } from './scenarioConfig';
 import type { GameEvent } from '../../engine/types';
 import type { BetrayalBloodFromStoneSetupPlacement } from './bloodFromStoneSetupReadModel';
 import type { BetrayalCorpseLootedPayload } from './deathStateReadModel';
 import type { BetrayalEventRollReplacementResult } from './eventRollReplacementModel';
-import type {
-    BetrayalDeckKind,
-    BetrayalDiscoverySummary,
-    BetrayalDustRuntimeState,
-    BetrayalDustSicknessSwapResult,
-    BetrayalEndgameResult,
-    BetrayalExplorerSummary,
-    BetrayalHauntAttackTarget,
-    BetrayalHelpingHandsMonsterTurnStartedPayload,
-    BetrayalHelpingHandsRuntimeState,
-    BetrayalInventoryCard,
-    BetrayalMagicCameraRuntimeState,
-    BetrayalMonsterMovementRollResult,
-    BetrayalMonsterStatusKind,
-    BetrayalPendingCardResolutionState,
-    BetrayalPendingEventChoiceState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalRoomDrawResolution,
-    BetrayalRoomNode,
-    BetrayalRoomTileAdjustmentSelection,
-    BetrayalTraitKey,
-    BetrayalTurnEndedPayload,
-    BetrayalUponReflectionRuntimeState,
-} from './game';
+import type { BetrayalDeckKind, BetrayalDiscoverySummary, BetrayalDustRuntimeState, BetrayalDustSicknessSwapResult, BetrayalEndgameResult, BetrayalExplorerSummary, BetrayalHauntAttackTarget, BetrayalHelpingHandsMonsterTurnStartedPayload, BetrayalHelpingHandsRuntimeState, BetrayalInventoryCard, BetrayalMagicCameraRuntimeState, BetrayalMonsterMovementRollResult, BetrayalMonsterStatusKind, BetrayalPendingCardResolutionState, BetrayalPendingEventChoiceState, BetrayalPendingEventRollResolutionState, BetrayalRoomDrawResolution, BetrayalRoomNode, BetrayalRoomTileAdjustmentSelection, BetrayalTraitKey, BetrayalTurnEndedPayload, BetrayalUponReflectionRuntimeState } from './domain/types';
 import type {
     BetrayalHelpingHandsAttackRewardChoice,
 } from './hauntAttackRewardReadModel';
@@ -216,7 +194,15 @@ export type BetrayalEvent =
         };
         hauntRoll?: BetrayalHauntRollResult;
         hauntTriggered?: boolean;
+        hauntTraitorPlayerId?: string | null;
+        hauntCardNumber?: number;
+        hauntTriggerLabel?: string;
         hauntRevealResolution?: BetrayalHauntRevealResolution;
+        hauntTraitorResolution?: BetrayalHauntTraitorResolution;
+        dustSetup?: BetrayalDustRuntimeState;
+        magicCameraSetup?: BetrayalMagicCameraRuntimeState;
+        helpingHandsSetup?: BetrayalHelpingHandsRuntimeState;
+        uponReflectionSetup?: BetrayalUponReflectionRuntimeState;
         roomTileAdjustment?: BetrayalRoomTileAdjustmentSelection;
     }>
     | GameEvent<typeof EVENTS.EVENT_CHOICE_RESOLVED, {

@@ -59,6 +59,8 @@ export function executeLocalDispatch(args: {
     localPregameControlledPlayerId: string | null;
     commandEffectsByToken: Record<string, LocalAiCommandEffect>;
     onCommandRejected?: (commandType: string, error: string) => void;
+    onRejected?: (error: string) => void;
+    deferEffect?: (effect: () => void) => void;
 }): MatchState<unknown> {
     const {
         commandType,
@@ -101,6 +103,7 @@ export function executeLocalDispatch(args: {
     );
 
     if (!result.success) {
+        args.onRejected?.(result.error ?? 'command_failed');
         console.warn('[LocalGame] 命令执行失败:', commandType, result.error);
         if (aiTraceToken) {
             commandEffectsByToken[aiTraceToken] = {
@@ -145,9 +148,9 @@ export function executeLocalDispatch(args: {
             after: snapshotAfter,
         });
         if (aiTraceToken) {
-            commandEffectsByToken[aiTraceToken] = effect;
+            commandEffectsByToken[aiTraceToken] = { ...effect, before: snapshotBefore, after: snapshotAfter };
         }
-        logLocalAiPerfInfo('command-applied', buildLocalAiCommandAppliedPayload({
+        const reportApplied = () => logLocalAiPerfInfo('command-applied', buildLocalAiCommandAppliedPayload({
             gameId: config.gameId,
             seed,
             commandType,
@@ -156,6 +159,8 @@ export function executeLocalDispatch(args: {
             after: snapshotAfter,
             effect,
         }));
+        if (args.deferEffect) args.deferEffect(reportApplied);
+        else reportApplied();
     }
 
     return refreshedState;

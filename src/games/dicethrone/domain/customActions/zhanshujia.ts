@@ -13,7 +13,8 @@ import type {
     TokenGrantedEvent,
 } from '../types';
 import { buildDrawEvents } from '../deckEvents';
-import { createDisplayOnlySettlement, createDTPassiveTriggerHandler, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement, createDTPassiveTriggerHandler } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';

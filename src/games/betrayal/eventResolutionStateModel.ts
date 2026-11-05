@@ -46,13 +46,7 @@ import {
 import { resolveRecommendedAction } from './recommendedActionReadModel';
 import { BETRAYAL_SCENARIO_CONFIGS } from './scenarioConfig';
 import { consumeNextNonCombatTraitReplacementAfterTraitRoll } from './traitRollModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-    BetrayalPendingEventChoiceState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalRecentRollState,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult, BetrayalPendingEventChoiceState, BetrayalPendingEventRollResolutionState, BetrayalRecentRollState } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type EventChoiceResolvedEvent = Extract<BetrayalEvent, { type: 'EVENT_CHOICE_RESOLVED' }>;

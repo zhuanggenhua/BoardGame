@@ -2,6 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { buildLeaderboardEntries, isLeaderboardHumanPlayer } from '../leaderboard';
 
 describe('leaderboard', () => {
+    it.each(['win', 'loss'] as const)('合作全员 %s 按实际结果计数，不因同排名变成平局', (result) => {
+        const entries = buildLeaderboardEntries([{
+            players: [{ id: 'user:a', name: 'A', result }, { id: 'user:b', name: 'B', result }],
+            winnerIDs: result === 'win' ? ['user:a', 'user:b'] : [], draw: false,
+        }]);
+        expect(entries).toHaveLength(2);
+        for (const entry of entries) {
+            expect(entry).toMatchObject({ wins: result === 'win' ? 1 : 0, losses: result === 'loss' ? 1 : 0, draws: 0 });
+        }
+    });
+
+    it('未知席位仍是对手，但不会合并进公共榜单', () => {
+        const entries = buildLeaderboardEntries([{
+            players: [{ id: 'user:a', ownerKey: 'user:a', name: 'A' }, { id: 'match:room-1:seat:1', name: 'Unknown' }],
+            winnerIDs: ['user:a'], draw: false,
+        }]);
+        expect(entries).toHaveLength(1);
+        expect(entries[0]).toMatchObject({ name: 'A', wins: 1, matches: 1 });
+    });
+
     it('AI 对战给真人低权重等级分，但 AI 座位不进入排行榜', () => {
         const entries = buildLeaderboardEntries([
             {

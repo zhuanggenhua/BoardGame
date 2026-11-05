@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import type { DiceBoxStyleProfile } from "../../lib/dice-box-threejs/engine";
-import type { BetrayalRecentRollState } from "./game";
+import type { BetrayalRecentRollState } from './domain/types';
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
 import {

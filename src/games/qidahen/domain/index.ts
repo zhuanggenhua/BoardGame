@@ -1,26 +1,21 @@
-import type { DomainCore, MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import { statePersistence } from './statePersistence';
+
+import type { DomainCore, PlayerId, RandomFn, MatchState } from '../../../engine/types';
+import type { QidahenCore, QidahenCommand, QidahenEvent } from './types';
+import { shouldUseQidahenInMatchScenarioVote, readQidahenScenarioId, shouldResolveQidahenScenarioChoiceGroups, readQidahenScenarioChoiceSelections } from '../roomSetup';
+import { createInitialCoreForInMatchScenarioVote, createInitialCore } from './initialCoreSetup';
 import { validate } from './commands';
-import { buildQidahenCommandEvents } from './commandEventBuilders';
-import { reduceQidahenDirectInputEvent } from './directInputEventReducers';
-import { syncQidahenRuntimeInteractionState } from './runtimeInteractions';
-import {
-    readQidahenScenarioChoiceSelections,
-    readQidahenScenarioId,
-    shouldUseQidahenInMatchScenarioVote,
-    shouldResolveQidahenScenarioChoiceGroups,
-} from '../roomSetup';
-import { reduceQidahenResolvedEvent } from './resolvedEventReducers';
-import { createInitialCore, createInitialCoreForInMatchScenarioVote } from './initialCoreSetup';
 import { syncQidahenSpecialRuleState } from './specialRuleState';
-import { syncQidahenJadeCasketControlAfterRegionChange } from './jadeCasketControl';
-import { applyQidahenVictoryStatus } from './victoryResolution';
-import type { QidahenCommand, QidahenCore, QidahenEvent } from './types';
+import { syncQidahenRuntimeInteractionState } from './runtimeInteractions';
+import { buildQidahenCommandEvents } from './commandEventBuilders';
+import { reduceQidahenEvent } from './reducer';
 import { playerView } from './view';
 
-const now = () => Date.now();
+export { reduceQidahenEvent } from './reducer';
 
 export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent> = {
     gameId: 'qidahen',
+    statePersistence,
 
     setup: (playerIds: PlayerId[], _random: RandomFn, setupData?: unknown): QidahenCore => {
         const rawSetupData = (setupData && typeof setupData === 'object' && !Array.isArray(setupData))
@@ -65,28 +60,12 @@ export const QidahenDomain: DomainCore<QidahenCore, QidahenCommand, QidahenEvent
             _state,
             command,
             _random,
-            now(),
+            command.timestamp ?? 0,
         );
         return commandEvents ?? [];
     },
 
-    reduce: (state, event): QidahenCore => {
-        const reducedCore = reduceQidahenResolvedEvent(state, event)
-            ?? reduceQidahenDirectInputEvent(state, event)
-            ?? state;
-        const syncedCore = syncQidahenJadeCasketControlAfterRegionChange(state, reducedCore);
-        if (syncedCore === reducedCore) {
-            return reducedCore;
-        }
-        const jadeCasketTransferred = syncedCore.activeEventCards !== reducedCore.activeEventCards;
-        if (!jadeCasketTransferred || reducedCore.victoryStatus?.condition !== 'prestige') {
-            return syncedCore;
-        }
-        return applyQidahenVictoryStatus({
-            ...syncedCore,
-            victoryStatus: state.victoryStatus,
-        });
-    },
+    reduce: reduceQidahenEvent,
 
     playerView,
 
@@ -105,6 +84,7 @@ export {
     findQidahenReachableRuntimeRegions,
     getQidahenMovementProfile,
 } from './movement';
+
 export type {
     QidahenActionChoice,
     QidahenBattleRoll,
@@ -128,12 +108,14 @@ export type {
     QidahenWheelDispatchSelection,
     QidahenWheelMoveChoice,
 } from './types';
+
 export {
     getQidahenDiplomacySelectionForCore,
     getQidahenKhanEdictSelectionForCore,
     getQidahenMaShiTradeSelectionForCore,
     getQidahenRecruitSelectionForCore,
 } from './selectionBuilders';
+
 export {
     getQidahenDriveTigerConsentSelectionFromInteraction,
     getQidahenDriveTigerConsentSelectionForCore,
@@ -158,4 +140,5 @@ export {
     getQidahenWheelDispatchSelectionForCore,
     getQidahenWheelDispatchSelectionFromInteraction,
 } from './interactionSelectionAccessors';
+
 export { getQidahenEffectiveVpByFaction, getQidahenPrestigeBonusByFaction } from './victoryResolution';

@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../core';
+import type { CardPreviewRef } from '../../core/cardPreviewTypes';
 
 export const BETRAYAL_CARD_PREVIEW_RENDERER_ID = 'betrayal-card-preview';
 

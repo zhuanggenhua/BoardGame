@@ -10,14 +10,13 @@ import Skeleton from '../../components/common/feedback/Skeleton';
 import CustomSelect, { type Option } from './components/ui/CustomSelect';
 import SearchInput from './components/ui/SearchInput';
 import { getAllGames } from '../../config/games.config';
+import { getMatchPlayerResult, getMatchWinnerIDs, type MatchRecordOutcome, type MatchRecordPlayer } from '../../shared/matchRecord';
 
-interface MatchPlayer {
-    id: string;
-    name: string;
+interface MatchPlayer extends MatchRecordPlayer {
     avatar?: string;
 }
 
-interface Match {
+interface Match extends MatchRecordOutcome {
     id: string;
     matchID: string;
     gameName: string;
@@ -48,7 +47,7 @@ interface ActionLogEntry {
     segments: ActionLogSegment[];
 }
 
-interface MatchDetail {
+interface MatchDetail extends MatchRecordOutcome {
     matchID: string;
     gameName: string;
     players: Array<MatchPlayer & { result?: string; userId?: string | null }>;
@@ -150,10 +149,11 @@ export default function MatchesPage() {
     };
 
     const resolveResultLabel = (match: Match) => {
-        if (!match.winnerID) return t('admin.matchesPage.results.draw');
-        const winner = match.players.find((player) => player.id === match.winnerID);
+        const winnerIDs = getMatchWinnerIDs(match);
+        if (winnerIDs.length === 0) return t(match.draw === false ? 'admin.matchesPage.results.loss' : 'admin.matchesPage.results.draw');
         return t('admin.matchesPage.results.winner', {
-            name: winner?.name || t('admin.matchesPage.player_fallback', { id: match.winnerID }),
+            name: winnerIDs.map((id) => match.players.find((player) => player.id === id)?.name
+                || t('admin.matchesPage.player_fallback', { id })).join('、'),
         });
     };
 
@@ -319,9 +319,9 @@ export default function MatchesPage() {
                 <div className="flex justify-center">
                     <span className={cn(
                         "px-2.5 py-1 text-xs rounded-full font-semibold border flex w-fit items-center gap-1.5",
-                        m.winnerID ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                        getMatchWinnerIDs(m).length > 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-zinc-100 text-zinc-500 border-zinc-200"
                     )}>
-                        <span className={cn("w-1.5 h-1.5 rounded-full", m.winnerID ? "bg-emerald-400" : "bg-zinc-400")} />
+                        <span className={cn("w-1.5 h-1.5 rounded-full", getMatchWinnerIDs(m).length > 0 ? "bg-emerald-400" : "bg-zinc-400")} />
                         {resolveResultLabel(m)}
                     </span>
                 </div>
@@ -489,10 +489,9 @@ function MatchDetailModal({
 }) {
     const { t } = useTranslation('lobby');
     const resolveResult = (playerId: string) => {
-        if (!detail.winnerID) return t('admin.matchesPage.results.draw');
-        return playerId === detail.winnerID
-            ? t('admin.matchesPage.results.win')
-            : t('admin.matchesPage.results.loss');
+        const player = detail.players.find((candidate) => candidate.id === playerId);
+        const result = getMatchPlayerResult(detail, player ?? { id: playerId });
+        return t(`admin.matchesPage.results.${result}`);
     };
 
     return (
@@ -579,7 +578,7 @@ function MatchDetailModal({
                                 {detail.players.map((p, i) => (
                                     <div key={i} className={cn(
                                         "flex items-center gap-3 p-3 rounded-xl border",
-                                        p.id === detail.winnerID
+                                        getMatchPlayerResult(detail, p) === 'win'
                                             ? "bg-emerald-50 border-emerald-200"
                                             : "bg-zinc-50 border-zinc-200"
                                     )}>
@@ -592,7 +591,7 @@ function MatchDetailModal({
                                             </p>
                                             <p className={cn(
                                                 "text-xs font-semibold",
-                                                p.id === detail.winnerID ? "text-emerald-600" : "text-zinc-400"
+                                                getMatchPlayerResult(detail, p) === 'win' ? "text-emerald-600" : "text-zinc-400"
                                             )}>
                                                 {resolveResult(p.id)}
                                             </p>

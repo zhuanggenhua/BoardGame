@@ -14,7 +14,6 @@ export { projectChoiceRequestToDirectSelectionTargets, projectChoiceRequestToCon
 export { createSimpleChoiceSystem, type SimpleChoiceSystemConfig } from './SimpleChoiceSystem';
 export { createCompareRollChoiceSystem, type CompareRollChoiceSystemConfig } from './CompareRollChoiceSystem';
 export { createMultistepChoiceSystem, type MultistepChoiceSystemConfig } from './MultistepChoiceSystem';
-export { useMultistepInteraction, type MultistepInteractionState } from './useMultistepInteraction';
 export { createLogSystem, getCommands, getEvents, getEventsByType, getRecentLogs } from './LogSystem';
 // ⚠️ LogSystem 已废弃，上述导出仅保留向后兼容。生产日志由 Winston 独立记录。
 export { createEventStreamSystem, getEventStreamEntries, computeEventStreamDelta } from './EventStreamSystem';

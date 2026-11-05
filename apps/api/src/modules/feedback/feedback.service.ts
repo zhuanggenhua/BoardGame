@@ -158,7 +158,7 @@ export class FeedbackService {
         const diagnosticPacket = normalizeDiagnosticPacket(dto.diagnosticPacket, 'server');
         if (this.shouldAggregateSystemFeedback(dto, source, gameId)) {
             return this.createOrUpdateAggregatedSystemFeedback(
-                diagnosticPacket ? { ...dto, diagnosticPacket } : dto,
+                diagnosticPacket ? { ...dto, diagnosticPacket: { ...diagnosticPacket } } : dto,
                 source,
                 gameId,
             );
@@ -227,7 +227,7 @@ export class FeedbackService {
                 }]
                 : [];
             const summaryProjectionStage: PipelineStage[] = summaryOnly ? [{ $project: this.buildSummaryProjection() }] : [];
-            const aggregatedItems = await this.feedbackModel.aggregate<Array<FeedbackListRecord & { __isMine?: number }>>([
+            const aggregatedItems = await this.feedbackModel.aggregate<FeedbackListRecord & { __isMine?: number }>([
                 { $match: filter },
                 ...addMineFieldStage,
                 {
@@ -1033,7 +1033,7 @@ export class FeedbackService {
     private async enforceWatchdogFeedbackRetention(now: Date): Promise<void> {
         const cutoff = new Date(now.getTime() - WATCHDOG_RECENT_RETENTION_MS);
         try {
-            const keepRows = await this.feedbackModel.aggregate<Array<{ _id: Types.ObjectId }>>([
+            const keepRows = await this.feedbackModel.aggregate<{ _id: Types.ObjectId }>([
                 {
                     $match: {
                         source: WATCHDOG_AGGREGATION_SOURCE,

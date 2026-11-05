@@ -7,7 +7,7 @@ import { resolveMageWarsLocalSetup } from '../runtimeAdapter';
 import {
     MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
     MAGE_WARS_SAVED_SPELLBOOKS_STORAGE_KEY,
-} from '../domain/savedSpellbooks';
+} from '../localSavedSpellbooks';
 import { getMageWarsDefaultSpellbookEntries } from '../roomSetup';
 
 vi.mock('react-i18next', () => ({

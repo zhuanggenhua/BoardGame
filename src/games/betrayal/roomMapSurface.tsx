@@ -6,15 +6,7 @@ import { ZoomPanViewport } from "../../components/game/framework";
 import type { ZoomPanViewportFitInsets } from "../../components/game/framework/ZoomPanViewport";
 import type { EntityRelation } from "../../engine/primitives";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalMonsterStatusKind,
-  BetrayalMonsterSummary,
-  BetrayalRoomNode,
-  BetrayalRoomPlacementPreview,
-  BetrayalRoomTileAdjustmentOption,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterStatusKind, BetrayalMonsterSummary, BetrayalRoomNode, BetrayalRoomPlacementPreview, BetrayalRoomTileAdjustmentOption } from './domain/types';
 import type { BetrayalAttackLineOfSightSegment } from "./attackLineOfSightPresentation";
 import { BetrayalAttackLineOfSightOverlay } from "./attackLineOfSightSurface";
 import {

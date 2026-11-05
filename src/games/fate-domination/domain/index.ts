@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialFateDominationCore } from './setup';
 import { validate } from './commands';
@@ -9,6 +10,7 @@ import { canSufferFateDefeat, fateEliminationOutcome, normalizeFateRuleState } f
 
 export const FateDominationDomain: DomainCore<FateDominationCore, FateDominationCommand, FateDominationEvent> = {
     gameId: 'fate-domination',
+    statePersistence,
     setup: (playerIds: PlayerId[], random: RandomFn) => createInitialFateDominationCore(playerIds, random),
     normalizeRuntimeState: (state: MatchState<FateDominationCore>) => {
         const core = state.core;

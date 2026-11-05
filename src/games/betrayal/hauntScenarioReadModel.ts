@@ -1,11 +1,5 @@
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalInventoryCard,
-    BetrayalMonsterSummary,
-    BetrayalRoomNode,
-    BetrayalRoomVisualId,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalMonsterSummary, BetrayalRoomNode } from './domain/types';
+import type { BetrayalRoomVisualId } from './game';
 import { inferMonsterDefinitionId } from './monsterReadModel';
 import { resolveInventoryEffectId } from './possessionEffects';
 import { getAllExplorers, getExplorersInTurnOrder } from './explorerReadModel';

@@ -1059,7 +1059,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         const minSteps = pendingInteraction.minSelectCount
                             ?? (isManualConfirmMode ? 1 : selectCount);
 
-                        const multistepData: MultistepChoiceData<DiceModifyStep, DiceModifyResult> & {
+                        const multistepData: MultistepChoiceData<DiceModifyResult> & {
                             allowedDieIds?: number[];
                             completedDieIds?: number[];
                         } = {
@@ -1068,9 +1068,6 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             maxSteps,
                             minSteps,
                             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
-                            localReducer: (current, step) => diceModifyReducer(current, step, config, selectCount),
-                            toCommands: (result) => diceModifyToCommands(result, selectCount),
-                            getCompletedSteps: (result) => result.modCount,
                             allowedDieIds,
                             completedDieIds,
                             meta: {
@@ -1111,7 +1108,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             )
                             : [];
 
-                        const multistepData: MultistepChoiceData<DiceSelectStep, DiceSelectResult> & {
+                        const multistepData: MultistepChoiceData<DiceSelectResult> & {
                             allowedDieIds?: number[];
                             completedDieIds?: number[];
                             completedSteps?: number;
@@ -1122,9 +1119,6 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             maxSteps: isRepeatedReroll ? selectCount : undefined,
                             minSteps: pendingInteraction.minSelectCount ?? 1,
                             initialResult: { selectedDiceIds: [] },
-                            localReducer: (current, step) => diceSelectReducer(current, step, selectCount, allowRepeatedDieSelection),
-                            toCommands: (result) => diceSelectToCommands(result, selectCount),
-                            getCompletedSteps: (result) => result.selectedDiceIds.length,
                             allowedDieIds,
                             completedDieIds,
                             completedSteps: pendingInteraction.completedSteps,

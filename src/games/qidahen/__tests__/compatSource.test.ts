@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
-const readBoardSource = () => readFileSync(resolve(TEST_DIR, '..', 'Board.tsx'), 'utf8');
+// The assertions cover the composed Board implementation, including its explicit owners.
+const BOARD_IMPLEMENTATION_FILES = ['Board.tsx', "ui/boardTypes.ts", "ui/boardLayout.ts", "ui/boardReadModel.ts", "ui/mapGuideGeometry.ts", "ui/mapViewport.ts", "ui/BattleRollSummary.tsx", "ui/CardSurfaces.tsx", "ui/MapToken.tsx", "ui/MapSceneLayer.tsx", "ui/PlayerFloat.tsx", "ui/WheelPanel.tsx", "ui/ChronologyZone.tsx", "ui/KoreaZone.tsx", "ui/ActionButton.tsx", "ui/ActionsZone.tsx", "ui/HandInteractionTray.tsx", "ui/HandZone.tsx", "ui/InMatchSetupOverlay.tsx", "ui/mapMaskHitmap.ts", "ui/useQidahenMapSceneModel.ts", "ui/useQidahenActionsModel.ts", "ui/useQidahenBoardModel.tsx", "ui/useQidahenRuntime.ts", "ui/useQidahenChoiceState.ts", "ui/useQidahenActionCommands.tsx", "ui/useQidahenMapFocus.ts"];
+const readBoardSource = () => BOARD_IMPLEMENTATION_FILES
+    .map(file => readFileSync(resolve(TEST_DIR, '..', file), 'utf8')).join('\n');
 const readBoardShellSource = () => readFileSync(resolve(TEST_DIR, '..', 'QidahenBoardShell.tsx'), 'utf8');
 const readQidahenBasicFlowE2eSource = () => readFileSync(resolve(TEST_DIR, '..', '..', '..', '..', 'e2e', 'qidahen-basic-flow.e2e.ts'), 'utf8');
 const readCommandsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'commands.ts'), 'utf8');
@@ -44,6 +47,7 @@ const readCharacterAbilitySemanticsSource = () => readFileSync(resolve(TEST_DIR,
 const readCharacterPresenceAccessorsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'characterPresenceAccessors.ts'), 'utf8');
 const readCityInteriorTroopTransferSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'cityInteriorTroopTransfer.ts'), 'utf8');
 const readCoreDerivedStateSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'coreDerivedState.ts'), 'utf8');
+const readReducerSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'reducer.ts'), 'utf8');
 const readDomainIndexSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'index.ts'), 'utf8');
 const readFactionActionWindowSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'factionActionWindow.ts'), 'utf8');
 const readFactionLabelSemanticsSource = () => readFileSync(resolve(TEST_DIR, '..', 'domain', 'factionLabelSemantics.ts'), 'utf8');
@@ -546,12 +550,12 @@ describe('Qidahen compatibility source guards', () => {
         expect(source).toContain('const khanEdictSelection = getQidahenKhanEdictSelectionForCore(core, activeInteraction);');
         expect(source).toContain('const recruitSelectionFromCore = getCoreQidahenRecruitSelectionForCore(core);');
         expect(source).toContain('const recruitSelectionFromMirror = getQidahenRecruitSelectionForCore(core, activeInteraction);');
-        expect(source).toContain('const recruitSelection = core.explicitRegionId && recruitSelectionFromCore');
-        expect(source).toContain('? recruitSelectionFromCore');
-        expect(source).toContain(': recruitSelectionFromMirror;');
+        expect(source).toMatch(/const recruitSelection =\s*core\.explicitRegionId && recruitSelectionFromCore/);
+        expect(source).toMatch(/\?\s*recruitSelectionFromCore/);
+        expect(source).toMatch(/:\s*recruitSelectionFromMirror;/);
         expect(source).toContain('const maShiTradeSelectionFromCore = getCoreQidahenMaShiTradeSelectionForCore(core);');
         expect(source).toContain('const maShiTradeSelectionFromMirror = getQidahenMaShiTradeSelectionForCore(core, activeInteraction);');
-        expect(source).toContain('const maShiTradeSelection = core.explicitRegionId && maShiTradeSelectionFromCore');
+        expect(source).toMatch(/const maShiTradeSelection =\s*core\.explicitRegionId && maShiTradeSelectionFromCore/);
         expect(source).not.toContain('const handLimitDiscardSelection = handLimitDiscardSelectionFromInteraction ?? core.handLimitDiscardSelection;');
         expect(source).not.toContain('const recruitSelection = recruitSelectionFromInteraction');
         expect(source).not.toContain('diplomacySelectionFromInteraction,');
@@ -609,7 +613,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(choiceOptionsSource).toContain("import { countCompatTroopsByKind } from './troopCompat';");
         expect(choiceOptionsSource).toContain("} from './regionConfig';");
         expect(battleBuilderSource).toContain("} from './pendingTargetChoiceOptions';");
-        expect(boardSource).toContain("} from './domain/pendingTargetChoiceOptions';");
+        expect(boardSource).toContain("} from '../domain/pendingTargetChoiceOptions';");
         expect(battleBuilderSource).not.toContain("import { countCompatTroopsByKind } from './troopCompat';");
         expect(boardSource).not.toContain("import { getQidahenRuleRegionTags } from './domain/regionConfig';");
         expect(boardSource).not.toContain("const getDefenderCavalryEvasionRetreatChoices = (");
@@ -766,7 +770,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('const syncMapTokensFromRegions = (');
         expect(coreDerivedStateSource).toContain("import { syncQidahenMapTokensFromRegions } from './mapTokens';");
         expect(coreDerivedStateSource).toContain('mapTokens: syncQidahenMapTokensFromRegions(regions, pieces),');
-        expect(mapTokensSource).toContain("import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';");
+        expect(mapTokensSource).toContain("import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';");
         expect(mapTokensSource).toContain("import { getRegularTroopKindForFaction } from './troopStacks';");
         expect(mapTokensSource).toContain("import { inferTroopKindForStack, syncPiecesFromRegions } from './troopCompat';");
         expect(mapTokensSource).toContain('const controlMarkerByFaction: Record<QidahenFactionId, string> = {');
@@ -1168,8 +1172,8 @@ describe('Qidahen compatibility source guards', () => {
         const registryMapSource = readResolvedEventReducerRegistryMapSource();
         const registrySource = readResolvedEventReducerRegistrySource();
 
-        expect(indexSource).toContain("} from './resolvedEventReducers';");
-        expect(indexSource).toContain('const reducedCore = reduceQidahenResolvedEvent(state, event)');
+        expect(readReducerSource()).toContain("} from './resolvedEventReducers';");
+        expect(readReducerSource()).toMatch(/const reducedCore =\s*reduceQidahenResolvedEvent\(state, event\)/);
         expect(indexSource).not.toContain("} from './actionWindowResolvedEventOrchestration';");
         expect(indexSource).not.toContain('resolveQidahenActionWindowResolvedEventForTurnFlow');
         expect(indexSource).not.toContain("} from './actionWindowResolvedEventBridge';");
@@ -1242,7 +1246,7 @@ describe('Qidahen compatibility source guards', () => {
         const registrySource = readResolvedEventReducerRegistrySource();
         const stateSource = readScenarioChoiceStateSource();
 
-        expect(indexSource).toContain("} from './resolvedEventReducers';");
+        expect(readReducerSource()).toContain("} from './resolvedEventReducers';");
         expect(indexSource).not.toContain("} from './scenarioChoiceOrchestration';");
         expect(indexSource).not.toContain('resolveQidahenScenarioChoiceResolvedEventForTurnFlow,');
         expect(indexSource).not.toContain("case 'SCENARIO_CHARACTER_CHOICE_RESOLVED':");
@@ -1357,8 +1361,8 @@ describe('Qidahen compatibility source guards', () => {
         const selectionInputStateSource = readSelectionInputStateSource();
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
-        expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
+        expect(readReducerSource()).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
+        expect(readReducerSource()).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './selectionInputState';");
         expect(indexSource).not.toContain('reduceQidahenSelectionInputEvent,');
         expect(indexSource).not.toContain('type QidahenSelectionInputStateDependencies,');
@@ -1427,8 +1431,8 @@ describe('Qidahen compatibility source guards', () => {
         const regionSelectionReducerSource = readRegionSelectionReducerSource();
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
-        expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
+        expect(readReducerSource()).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
+        expect(readReducerSource()).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './regionSelectionReducer';");
         expect(indexSource).not.toContain('const QIDAHEN_REGION_SELECTED_DEPENDENCIES: QidahenRegionSelectedDependencies = {');
         expect(indexSource).not.toContain('return reduceQidahenRegionSelected(');
@@ -1510,7 +1514,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).toContain("import { validate } from './commands';");
         expect(indexSource).toContain("import { buildQidahenCommandEvents } from './commandEventBuilders';");
         expect(indexSource).not.toContain("import { QIDAHEN_COMMANDS, validate } from './commands';");
-        expect(indexSource).toContain("} from './resolvedEventReducers';");
+        expect(readReducerSource()).toContain("} from './resolvedEventReducers';");
         expect(indexSource).not.toContain("} from './selectedActionOrchestration';");
         expect(indexSource).not.toContain('resolveQidahenSelectedActionExecutedEventForTurnFlow,');
         expect(indexSource).toContain('const commandEvents = buildQidahenCommandEvents(');
@@ -1758,7 +1762,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(grantPardonExecutionSource).toContain("import { buildSeasonSummary } from './seasonSummaryBuilder';");
         expect(grantPardonExecutionSource).toContain('materializeNonSiegedCityActionSourceRegion,');
         expect(grantPardonExecutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior,');
-        expect(grantPardonExecutionSource).toContain('removeTroopsFromNonSiegedCityStateRegion,');
+        expect(grantPardonExecutionSource).toContain('removeSelectedTroopFromRegion,');
         expect(grantPardonExecutionSource).toContain('refreshRuntimeRegionRules,');
         expect(grantPardonExecutionDependenciesSource).toBe('');
         expect(grantPardonExecutionSource).toContain("lastSeasonSummary: dependencies.buildSeasonSummary('赐印招安', timestamp, [");
@@ -1906,7 +1910,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectedActionPreparationSource).not.toContain('const grantPardonResolution = dependencies.resolveGrantPardonExecution(');
         expect(selectedActionPreparationSource).not.toContain('const recruitSelection = actionId === ');
 
-        expect(pendingTargetActionBuilderSource).toContain("import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';");
+        expect(pendingTargetActionBuilderSource).toContain("import { getQidahenBoundaryTypeMeta } from '../data/mapGraph';");
         expect(pendingTargetActionBuilderSource).toContain("} from './regionConfig';");
         expect(pendingTargetActionBuilderSource).toContain("} from './battleState';");
         expect(pendingTargetActionBuilderSource).toContain("} from './actionSourceRegionState';");
@@ -2181,8 +2185,8 @@ describe('Qidahen compatibility source guards', () => {
         const previewActionReducerSource = readPreviewActionReducerSource();
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
-        expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
+        expect(readReducerSource()).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
+        expect(readReducerSource()).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './previewActionReducer';");
         expect(indexSource).not.toContain("} from './previewActionConfirmedEventBridge';");
         expect(indexSource).not.toContain('type QidahenPreviewActionConfirmedDependencies,');
@@ -2229,7 +2233,7 @@ describe('Qidahen compatibility source guards', () => {
         const registrySource = readResolvedEventReducerRegistrySource();
         const dependenciesSource = readSunYuanhuaTechResolvedEventDependenciesSource();
 
-        expect(indexSource).toContain("} from './resolvedEventReducers';");
+        expect(readReducerSource()).toContain("} from './resolvedEventReducers';");
         expect(indexSource).not.toContain("} from './selectedActionOrchestration';");
         expect(indexSource).not.toContain("} from './sunYuanhuaTechResolvedEventBridge';");
         expect(indexSource).not.toContain('resolveQidahenSunYuanhuaTechResolvedEvent,');
@@ -2378,7 +2382,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(indexSource).not.toContain('resolveQidahenPendingActionFromPayload,');
         expect(indexSource).not.toContain("} from './pendingBattleCommittedTroops';");
         expect(indexSource).not.toContain("} from './pendingBattleResolutionBridge';");
-        expect(indexSource).toContain("} from './resolvedEventReducers';");
+        expect(readReducerSource()).toContain("} from './resolvedEventReducers';");
         expect(indexSource).not.toContain("} from './pendingBattleResolvedEventBridge';");
         expect(indexSource).not.toContain("} from './pendingActionResolvedEventOrchestration';");
         expect(indexSource).not.toContain("} from './postBattleDecisionResolvedEventOrchestration';");
@@ -2700,7 +2704,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(commandsSource).not.toContain('const hasUpgradableArmament = (');
         expect(commandsSource).not.toContain('const hasRemainingFactionAction = (');
 
-        expect(boardSource).toContain("import { getCurrentFactionId } from './domain/factionTurnAccessors';");
+        expect(boardSource).toMatch(/import \{ getCurrentFactionId \} from '(?:\.\/|\.\.\/)domain\/factionTurnAccessors';/);
         expect(boardSource).not.toContain('const getCurrentFactionId = (core: QidahenCore): QidahenFactionId => (');
 
         expect(selectedActionStateCommitSource).toContain("} from './factionActionWindow';");
@@ -2997,8 +3001,8 @@ describe('Qidahen compatibility source guards', () => {
         const fortificationMaintenanceSource = readFortificationMaintenanceSource();
 
         expect(indexSource).not.toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducerBridge';");
-        expect(indexSource).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
-        expect(indexSource).toContain('?? reduceQidahenDirectInputEvent(state, event)');
+        expect(readReducerSource()).toContain("import { reduceQidahenDirectInputEvent } from './directInputEventReducers';");
+        expect(readReducerSource()).toContain('?? reduceQidahenDirectInputEvent(state, event)');
         expect(indexSource).not.toContain("} from './wheelMoveExecution';");
         expect(indexSource).not.toContain('resolveQidahenWheelMoveExecuted,');
         expect(indexSource).not.toContain('type QidahenWheelMoveExecutionDependencies,');
@@ -3070,7 +3074,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(wheelImmediateEffectSource).toContain('export const applyQidahenWheelImmediateEffect = (');
         expect(wheelImmediateEffectSource).toContain('const drawCards = Math.max(0, Math.min(config.drawCards, getFactionDrawPileCount(state, factionId)));');
         expect(wheelImmediateEffectSource).toContain("const artilleryTraining = config.id === 'wheel-recruit-train'");
-        expect(wheelImmediateEffectSource).toContain('lastSeasonSummary: buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),');
+        expect(wheelImmediateEffectSource).toMatch(/lastSeasonSummary:\s*\{\s*\.\.\.buildSeasonSummary\(config.summaryTitle, timestamp, summaryLines\)/);
     });
 
     it('回合标签收口应由 turnLabelState owner 承接，directInputEventReducerBridge 不应把 turn label 本体回退进 index', () => {
@@ -3170,7 +3174,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(selectionInputStateSource).toContain('export const reduceQidahenSelectionInputEvent = (');
         expect(selectionInputStateSource).toContain('dependencies: QidahenSelectionInputStateDependencies = {');
         expect(selectionInputStateSource).toContain("case 'HAND_LIMIT_DISCARD_RESOLVED':");
-        expect(selectionInputStateSource).toContain('return resolveQidahenHandLimitDiscard(state, event.timestamp, dependencies);');
+        expect(selectionInputStateSource).toContain('resolveQidahenHandLimitDiscardInteractionChoice(state, event.payload.cardIds, event.timestamp)');
+        expect(selectionInputStateSource).toContain('resolveQidahenHandLimitDiscard(state, event.timestamp, dependencies)');
 
         const characterActionWindowDependenciesSource = readCharacterActionWindowDependenciesSource();
 
@@ -3457,7 +3462,7 @@ describe('Qidahen compatibility source guards', () => {
         const initialCoreSetupSource = readInitialCoreSetupSource();
         const scenarioRuntimeRegionPresetsSource = readScenarioRuntimeRegionPresetsSource();
 
-        expect(indexSource).toContain('createInitialCore,');
+        expect(indexSource).toMatch(/import \{[^}]*createInitialCore[^}]*\} from '\.\/initialCoreSetup';/);
         expect(indexSource).toContain("} from './initialCoreSetup';");
         expect(indexSource).not.toContain('createQidahenCoreForScenario,');
         expect(indexSource).not.toContain('createQidahenCoreForScenarioWithSelections,');
@@ -3509,8 +3514,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(initialCoreSetupSource).not.toContain('actionChoices: getActionChoicesForFaction(openingFactionId),');
         expect(initialCoreSetupSource).not.toContain('payment: buildPaymentState(selectedActionId),');
 
-        expect(initialCoreSeedsSource).toContain("import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';");
-        expect(initialCoreSeedsSource).toContain("import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../ui/mapGraph';");
+        expect(initialCoreSeedsSource).toContain("import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';");
+        expect(initialCoreSeedsSource).toContain("import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../data/mapGraph';");
         expect(initialCoreSeedsSource).toContain('const initialFactionSeedsById: Record<QidahenFactionId, Pick<QidahenFactionState, \'name\' | \'colorClass\' | \'vp\' | \'troops\' | \'grain\' | \'landTax\'>> = {');
         expect(initialCoreSeedsSource).toContain('export const getScenarioPlayerIdsByFaction = (');
         expect(initialCoreSeedsSource).toContain('export const createInitialFactionState = (');
@@ -4238,7 +4243,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(grantPardonExecutionDependenciesSource).toBe('');
         expect(grantPardonExecutionSource).toContain("} from './cityInteriorTroopTransfer';");
         expect(grantPardonExecutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior,');
-        expect(grantPardonExecutionSource).toContain('removeTroopsFromNonSiegedCityStateRegion,');
+        expect(grantPardonExecutionSource).toContain('removeSelectedTroopFromRegion,');
         expect(pendingTargetResolutionSource).toContain("} from './cityInteriorTroopTransfer';");
         expect(pendingTargetResolutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior,');
 
@@ -4250,8 +4255,8 @@ describe('Qidahen compatibility source guards', () => {
         expect(cityInteriorTroopTransferSource).toContain('applyCommittedTroopRemovalToRegion({');
 
         expect(grantPardonExecutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior: (');
-        expect(grantPardonExecutionSource).toContain('removeTroopsFromNonSiegedCityStateRegion: (');
-        expect(grantPardonExecutionSource).toContain('dependencies.removeTroopsFromNonSiegedCityStateRegion(');
+        expect(grantPardonExecutionSource).toContain('removeSelectedTroopFromRegion: (');
+        expect(grantPardonExecutionSource).toContain('dependencies.removeSelectedTroopFromRegion(');
         expect(grantPardonExecutionSource).toContain('dependencies.addTroopsToFriendlyBesiegedCityInterior(');
 
         expect(pendingTargetResolutionSource).toContain('addTroopsToFriendlyBesiegedCityInterior: (');
@@ -4643,16 +4648,18 @@ describe('Qidahen compatibility source guards', () => {
         expect(interactionSystemSource).toContain("} from './interactionResolutionPayload';");
         expect(interactionSystemSource).toContain("} from './pendingBattleInteractionEventHandlers';");
         expect(interactionSystemSource).toContain("} from './turnActionInteractionEventHandlers';");
-        expect(interactionSystemSource).toContain('const resolvedCore = resolveQidahenInteractionEvent(nextState, event, random);');
+        expect(interactionSystemSource).toContain('const emitted = buildQidahenInteractionEvents({ ...state, core: prefix }, event, random);');
+        expect(interactionSystemSource).toContain('if (facts.length) return { events: facts };');
+        expect(interactionSystemSource).not.toContain('core: resolvedCore');
         expect(interactionSystemSource).not.toContain('const QIDAHEN_INTERACTION_RESOLUTION_HANDLERS: readonly QidahenInteractionResolutionHandler[] = [');
         expect(interactionSystemSource).not.toContain('if (resolvedPayload.sourceId === QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID) {');
         expect(interactionSystemSource).not.toContain('if (resolvedPayload.sourceId === QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID) {');
-        expect(interactionSystemSource).toContain('type QidahenInteractionEventResolver = (');
-        expect(interactionSystemSource).toContain('const QIDAHEN_INTERACTION_EVENT_RESOLVERS: readonly QidahenInteractionEventResolver[] = [');
-        expect(interactionSystemSource).toContain('const resolveQidahenInteractionEvent = (');
+        expect(interactionSystemSource).toContain('type QidahenInteractionEventBuilder = (');
+        expect(interactionSystemSource).toContain('const BUILDERS: readonly QidahenInteractionEventBuilder[] = [');
+        expect(interactionSystemSource).toContain('export function buildQidahenInteractionEvents(');
         expect(interactionSystemSource).toContain('payload: readQidahenResolvedPayload(event),');
-        expect(interactionSystemSource).toContain('for (const resolver of QIDAHEN_INTERACTION_EVENT_RESOLVERS) {');
-        expect(interactionSystemSource).toContain('const resolvedCore = resolver(context);');
+        expect(interactionSystemSource).toContain('for (const build of BUILDERS) {');
+        expect(interactionSystemSource).toContain('const facts = build(context);');
 
         expect(interactionResolutionPayloadSource).toContain("isQidahenInteractionSourceId,");
         expect(interactionResolutionPayloadSource).toContain("type QidahenInteractionSourceId,");
@@ -4664,10 +4671,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionInteractionEventHandlersSource).toContain("} from './interactionSources';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './interactionSelectionAccessors';");
         expect(turnActionInteractionEventHandlersSource).toContain("} from './interactionResolutionPayload';");
-        expect(turnActionInteractionEventHandlersSource).toContain("} from './actionWindowDispatch';");
-        expect(turnActionInteractionEventHandlersSource).toContain("} from './actionWindowChoices';");
-        expect(turnActionInteractionEventHandlersSource).toContain("} from './fortificationMaintenance';");
-        expect(turnActionInteractionEventHandlersSource).toContain("} from './handLimitDiscard';");
+        expect(turnActionInteractionEventHandlersSource).not.toContain("} from './actionWindowDispatch';");
+        expect(turnActionInteractionEventHandlersSource).not.toContain("} from './actionWindowChoices';");
+        expect(turnActionInteractionEventHandlersSource).not.toContain("} from './fortificationMaintenance';");
+        expect(turnActionInteractionEventHandlersSource).not.toContain("} from './handLimitDiscard';");
         expect(turnActionInteractionEventHandlersSource).toContain('const asQidahenResolvedSelectionCarrier = (');
         expect(turnActionInteractionEventHandlersSource).toContain('...interactionData,');
         expect(turnActionInteractionEventHandlersSource).toContain('...selectionValueData,');
@@ -4702,12 +4709,12 @@ describe('Qidahen compatibility source guards', () => {
         expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenKhanEdictSelectionFromInteractionData(');
         expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenDriveTigerConsentSelectionFromInteractionData(');
         expect(turnActionInteractionEventHandlersSource).not.toContain('getQidahenFortificationMaintenanceSelectionFromInteractionData(');
-        expect(turnActionInteractionEventHandlersSource).toContain('export const resolveQidahenTurnActionInteractionEvent = (');
+        expect(turnActionInteractionEventHandlersSource).toContain('export const buildQidahenTurnActionInteractionEvents = (');
 
         expect(pendingBattleInteractionEventHandlersSource).toContain("} from './interactionSources';");
         expect(pendingBattleInteractionEventHandlersSource).toContain("} from './interactionSelectionAccessors';");
         expect(pendingBattleInteractionEventHandlersSource).toContain("} from './interactionResolutionPayload';");
-        expect(pendingBattleInteractionEventHandlersSource).toContain("} from './pendingBattleFlow';");
+        expect(pendingBattleInteractionEventHandlersSource).toContain("from './pendingBattleFlow';");
         expect(pendingBattleInteractionEventHandlersSource).not.toContain("} from './pendingBattleFlowDependencies';");
         expect(pendingBattleInteractionEventHandlersSource).toContain('const asQidahenInteractionSelectionCarrier = (interactionData?: unknown) => ({ data: interactionData });');
         expect(pendingBattleInteractionEventHandlersSource).toContain('const resolveQidahenPendingTargetInteractionEvent = (');
@@ -4716,10 +4723,10 @@ describe('Qidahen compatibility source guards', () => {
         expect(pendingBattleInteractionEventHandlersSource).toContain('getQidahenPostBattleSelectionFromInteraction(');
         expect(pendingBattleInteractionEventHandlersSource).not.toContain('getQidahenPendingTargetActionFromInteractionData(');
         expect(pendingBattleInteractionEventHandlersSource).not.toContain('getQidahenPostBattleSelectionFromInteractionData(');
-        expect(pendingBattleInteractionEventHandlersSource).toContain('resolveQidahenPendingTargetInteractionChoice(');
-        expect(pendingBattleInteractionEventHandlersSource).toContain('resolveQidahenPostBattleInteractionChoice(');
+        expect(pendingBattleInteractionEventHandlersSource).toContain("createQidahenInteractionFact(context, 'PENDING_ACTION_RESOLVED', buildQidahenPendingTargetInteractionPayload(");
+        expect(pendingBattleInteractionEventHandlersSource).toContain("createQidahenInteractionFact(context, 'POST_BATTLE_DECISION_RESOLVED',");
         expect(pendingBattleInteractionEventHandlersSource).not.toContain('QIDAHEN_PENDING_BATTLE_FLOW_DEPENDENCIES,');
-        expect(pendingBattleInteractionEventHandlersSource).toContain('export const resolveQidahenPendingBattleInteractionEvent = (');
+        expect(pendingBattleInteractionEventHandlersSource).toContain('export const buildQidahenPendingBattleInteractionEvents = (');
 
         expect(turnActionInteractionBridgeSource).toBe('');
         expect(turnActionChoiceOrchestrationSource).toBe('');
@@ -4760,7 +4767,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(builderSource).not.toContain('value: buildPendingTargetRoutChoiceValue(),');
         expect(builderSource).not.toContain('value: buildPendingTargetAttackerCavalryPlunderChoiceValue(source),');
         expect(builderSource).not.toContain('value: buildPendingTargetDefenderCavalryEvasionChoiceValue(choice.id),');
-        expect(boardSource).toContain("} from './domain/pendingTargetChoiceOptions';");
+        expect(boardSource).toContain("} from '../domain/pendingTargetChoiceOptions';");
         expect(boardSource).not.toContain('骑兵劫掠己方牌堆');
         expect(boardSource).not.toContain('骑兵劫掠守方牌堆');
         expect(boardSource).not.toContain('骑兵避战至{choice.name}');
@@ -4938,7 +4945,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(typesSource).toContain('selectedHandActionCardId: string | null;');
         expect(typesSource).toContain('sourceHandCardId?: string;');
         expect(typesSource).toContain('sourceHandCardId?: string | null;');
-        expect(boardSource).toContain('previewAction(actionId, getQidahenHandCardTutorialTargetId(card), card.id);');
+        expect(boardSource).toContain('previewAction(actionId, card.id);');
         expect(commandEventBuildersSource).toContain('sourceHandCardId: command.payload.sourceHandCardId ?? null,');
         expect(previewActionReducerSource).toContain('selectedHandActionCardId: sourceCard?.id ?? null,');
         expect(previewActionReducerSource).toContain('const nextState: QidahenCore = {');
@@ -4979,7 +4986,7 @@ describe('Qidahen compatibility source guards', () => {
         expect(typesSource).toContain('interface QidahenYearCardSlot {');
         expect(movementSource).not.toContain("import type { QidahenCore, QidahenFactionId, QidahenRegionSummary } from './types';");
         expect(movementSource).toContain("type QidahenRegionSummary = QidahenCore['regions'][number];");
-        expect(boardSource).not.toContain('QidahenYearCardSlot,');
+        expect(boardSource).not.toMatch(/import type \{[^}]*QidahenYearCardSlot[^}]*\} from '[^']*domain\/types';/);
         expect(boardSource).toContain("type QidahenYearCardSlot = QidahenCore['yearCards'][number];");
         expect(troopCompatSource).not.toContain("    QidahenPieceLocation,\n");
         expect(troopCompatSource).toContain("type QidahenPieceLocation = QidahenPiece['location'];");

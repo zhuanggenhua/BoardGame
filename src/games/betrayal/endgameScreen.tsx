@@ -3,7 +3,7 @@ import { BookOpen, ChevronRight, Footprints, House, RotateCcw, Search } from "lu
 import { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
-import type { BetrayalCore, BetrayalTraitKey } from "./game";
+import type { BetrayalCore, BetrayalTraitKey } from './domain/types';
 import { CinematicNarrationPanel } from "./cinematicNarrationSurface";
 import {
   resolveEndgameHauntDossier,

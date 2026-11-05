@@ -1,4 +1,4 @@
-import type { BetrayalTraitKey } from "./game";
+import type { BetrayalTraitKey } from './domain/types';
 
 export const BETRAYAL_TRAIT_MARKER_ASSETS = {
   might: "betrayal/markers/might",

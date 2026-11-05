@@ -42,7 +42,7 @@ const twoDice: Die[] = [
 function createModifyInteraction(
     mode: 'adjust' | 'any' | 'set' | 'copy' = 'adjust',
     selectCount = 1,
-): InteractionDescriptor<MultistepChoiceData<DiceModifyStep, DiceModifyResult>> {
+): InteractionDescriptor<MultistepChoiceData<DiceModifyResult>> {
     const dieModifyConfig = mode === 'adjust'
         ? { mode: 'adjust' as const, adjustRange: { min: -1, max: 1 } }
         : mode === 'set'
@@ -59,8 +59,6 @@ function createModifyInteraction(
             minSteps: 1,
             maxSteps: 1,
             initialResult: { modifications: {}, modCount: 0, totalAdjustment: 0 },
-            localReducer: (current) => current,
-            toCommands: () => [],
             meta: {
                 dtType: 'modifyDie',
                 dieModifyConfig,
@@ -71,7 +69,7 @@ function createModifyInteraction(
     };
 }
 
-function createSelectInteraction(): InteractionDescriptor<MultistepChoiceData<unknown, DiceSelectResult>> {
+function createSelectInteraction(): InteractionDescriptor<MultistepChoiceData<DiceSelectResult>> {
     return {
         id: 'select-dice',
         kind: 'multistep-choice',
@@ -82,8 +80,6 @@ function createSelectInteraction(): InteractionDescriptor<MultistepChoiceData<un
             minSteps: 1,
             maxSteps: 1,
             initialResult: { selectedDiceIds: [] },
-            localReducer: (current) => current,
-            toCommands: () => [],
             meta: {
                 dtType: 'selectDie',
                 selectCount: 1,

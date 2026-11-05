@@ -1,3 +1,5 @@
+import { createInitialSystemState } from '../../pipeline';
+import type { MatchState } from '../../types';
 import {
     describe,
     expect,
@@ -160,9 +162,9 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: eventStreamNextId },
+                        eventStream: { entries: [], nextId: eventStreamNextId },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -201,10 +203,10 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'draw',
-                        eventStream: { nextId: eventStreamNextId },
+                        eventStream: { entries: [], nextId: eventStreamNextId },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -228,10 +230,10 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                     activePlayerId: '1',
                     currentPlayerIndex: 1,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...match.state.sys,
                     phase: 'scoreBases',
-                    eventStream: { nextId: 100 + attempt },
+                    eventStream: { entries: [], nextId: 100 + attempt },
                     interaction: {
                         current: createRepeatedChoice(`repeat-choice-${attempt}`),
                         queue: [],
@@ -532,10 +534,10 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'playCards',
-                        eventStream: {
+                        eventStream: { entries: [],
                             ...(activeMatch.state.sys?.eventStream ?? {}),
                             nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                         },
@@ -917,11 +919,11 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                             activePlayerId: '0',
                             currentPlayerIndex: 0,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...activeMatch.state.sys,
                             phase: 'draw',
                             turnNumber: 5,
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(activeMatch.state.sys?.eventStream ?? {}),
                                 nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -1042,10 +1044,10 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                             activePlayerId: '0',
                             currentPlayerIndex: 0,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...activeMatch.state.sys,
                             turnNumber: 1,
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(activeMatch.state.sys?.eventStream ?? {}),
                                 nextId: 119,
                             },
@@ -1317,10 +1319,10 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                             '1': { statusEffects: {}, tokens: {} },
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main2',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: {
                                 id: 'dt-interaction-empty',
@@ -1419,8 +1421,8 @@ describe('online AI watchdog feedback and response-window recovery', () => {
         await storage.createMatch('match-cancel-recursion-guard', {
             initialState: {
                 G: {
-                    core: { currentPlayer: '0' },
-                    sys: {
+                    core: { playerIds: ['0'], currentPlayer: '0' },
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main',
                         turnNumber: 1,
                         interaction: {
@@ -1866,11 +1868,11 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                             activePlayerId: '0',
                             currentPlayerIndex: 0,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...activeMatch.state.sys,
                             phase: 'playCards',
                             turnNumber: (activeMatch.state.sys?.turnNumber ?? 4) + 1,
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(activeMatch.state.sys?.eventStream ?? {}),
                                 nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -2016,9 +2018,9 @@ describe('online AI watchdog feedback and response-window recovery', () => {
                         ...match.state.core,
                         modifiedOnce: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...match.state.sys,
-                        eventStream: {
+                        eventStream: { entries: [],
                             ...(match.state.sys?.eventStream ?? {}),
                             nextId: (match.state.sys?.eventStream?.nextId ?? 1) + 1,
                         },
@@ -2536,7 +2538,7 @@ describe('online AI watchdog feedback and response-window recovery', () => {
         };
 
         await storage.createMatch('match-watchdog-hidden-interaction-lock', {
-            initialState: createOnlineAiRecoveryState({
+            initialState: createOnlineAiRecoveryState({ playerIds: ['0', '1', '2', '3'],
                 activePlayerId: '0',
                 phase: 'main1',
                 interaction: {

@@ -1,9 +1,7 @@
 import { BETRAYAL_COMMANDS } from "./commands";
 import type { BetrayalCommandMap } from "./commandTypes";
-import type {
-  BetrayalExplorerSummary,
-  PossessionUseEffectProfile,
-} from "./game";
+import type { BetrayalExplorerSummary } from './domain/types';
+import type { PossessionUseEffectProfile } from './possessionEffects';
 import type { BetrayalHauntTargetGuide } from "./hauntTargetGuideReadModel";
 import type { BetrayalMonsterAttackEntry } from "./monsterActionSelectionReadModel";
 import type { PreviewState } from "./previewStateModel";

@@ -26,11 +26,7 @@ import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from './domain';
 import type { Card, FactionId, GamePhase, PlayerId, SummonerWarsCore } from './domain/types';
 import { summonerWarsFlowHooks } from './domain/flowHooks';
 import { createSummonerWarsInteractionSystem } from './domain/systems';
-import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import { registerCriticalImageResolver } from '../../core';
-import { getSummonerWarsCardPreviewRef } from './ui/cardPreviewHelper';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatSummonerWarsActionEntry } from './actionLog';
-import { summonerWarsCriticalImageResolver } from './criticalImageResolver';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { summonerWarsAiRuntime } from './ai';
 import { buildCardRegistry, getCardPoolByFaction } from './config/cardRegistry';
@@ -486,12 +482,6 @@ export const engineConfig = {
 registerGameAiRuntime(summonerWarsAiRuntime);
 
 export default engineConfig;
-
-// 注册卡牌预览获取函数
-registerCardPreviewGetter('summonerwars', getSummonerWarsCardPreviewRef);
-
-// 注册关键图片解析器（骰子/卡牌/地图等预加载）
-registerCriticalImageResolver('summonerwars', summonerWarsCriticalImageResolver);
 
 // 导出类型
 export type { SummonerWarsCore as SummonerWarsState } from './domain';

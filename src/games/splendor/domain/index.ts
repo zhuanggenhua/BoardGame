@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 import type { DomainCore, PlayerId, RandomFn } from '../../../engine/types';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
@@ -16,6 +17,7 @@ function getGameMode(): string | undefined {
 
 export const SplendorDomain: DomainCore<SplendorCore, SplendorCommand, SplendorEvent> = {
     gameId: 'splendor',
+    statePersistence,
 
     setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown): SplendorCore => {
         const mode = getGameMode();

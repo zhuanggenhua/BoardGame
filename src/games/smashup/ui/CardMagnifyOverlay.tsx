@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, getBasePodVariantId, resolveCardName, resolveCardText } from '../data/cards';
-import { getSmashUpRendererPreviewRef } from './cardPreviewHelper';
+import { getSmashUpRendererPreviewRef } from '../cardPreviewModel';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
 
 export const SMASHUP_FORCE_DISMISS_EVENT = 'smashup:force-dismiss-popup';

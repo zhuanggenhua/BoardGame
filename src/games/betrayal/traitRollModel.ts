@@ -1,10 +1,6 @@
 import type { RandomFn } from '../../engine/types';
 import { rollBetrayalDicePips } from './diceRules';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalTraitKey } from './domain/types';
 import { resolveInventoryEffectId } from './possessionEffects';
 
 export interface BetrayalTraitRollResult {

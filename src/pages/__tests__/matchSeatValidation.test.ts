@@ -1,3 +1,5 @@
+import { createInitialSystemState } from '../../engine/pipeline';
+import type { AiSeatController } from '../../engine/ai/types';
 /* @vitest-environment happy-dom */
 import { createElement, useEffect } from 'react';
 import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
@@ -92,6 +94,7 @@ vi.mock('../../games/registry', async (importOriginal) => {
     const { summonerWarsGameRuntimeAdapter } = await import('../../games/summonerwars/runtimeAdapter');
 
     return {
+ retainGameImplementation: () => () => {},
         ...actual,
         getGameImplementation: (gameId: string) => {
             const implementation = actual.getGameImplementation(gameId);
@@ -5435,11 +5438,13 @@ describe('LocalGameProvider AI 重试集成', () => {
 
         const snapshotState = {
             core: {
+                playerIds: ['0', '1'],
                 turnOrder: ['0', '1'],
                 currentPlayerIndex: 1,
                 resumedAiTurns: 0,
             },
             sys: {
+                ...createInitialSystemState(['0', '1'], []),
                 phase: 'playCards',
                 turnNumber: 3,
                 eventStream: {

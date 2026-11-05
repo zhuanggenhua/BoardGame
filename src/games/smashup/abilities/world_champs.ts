@@ -138,7 +138,7 @@ type WorldChampsBewitchedTransferPromptContext = WorldChampsPromptContext & Bewi
 const WORLD_CHAMPS_ARAMIS_TRIGGERED_TURN_META = 'worldChampsAramisTriggeredTurn';
 const WORLD_CHAMPS_DIVA_TRIGGERED_TURN_META = 'worldChampsDivaTriggeredTurn';
 
-function createWorldChampsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createWorldChampsPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,

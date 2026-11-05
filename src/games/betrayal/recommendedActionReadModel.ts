@@ -11,10 +11,7 @@ import {
     resolveDogTradeTargets,
     resolveTradeTargets,
 } from './trade';
-import type {
-    BetrayalCore,
-    BetrayalRecommendedAction,
-} from './game';
+import type { BetrayalCore, BetrayalRecommendedAction } from './domain/types';
 
 export function resolveRecommendedAction(
     core: BetrayalCore,

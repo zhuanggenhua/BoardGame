@@ -9,7 +9,7 @@ import {
 } from '../../../engine/systems/resolutionStack';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { validate, getManualSpecialScoringBaseIndices } from './commands';
-import { execute } from './reducer';
+import { planSmashUpCommand } from './commandPlan';
 import { registerAbilityRuntimePrompt } from './abilityRuntime';
 import {
     buildFieldSourceActionOptions,
@@ -77,6 +77,7 @@ type ReactionPostProcessor = (
         skipImmediateStartTurnMinionTriggers?: boolean;
         recordImmediateStartTurnProcessedMinionUids?: boolean;
         skipReactionQueueResolution?: boolean;
+        actorPlayerId?: PlayerId;
     },
 ) => { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> };
 
@@ -84,6 +85,7 @@ interface ReactionPostProcessingOptions {
     skipImmediateStartTurnMinionTriggers?: boolean;
     recordImmediateStartTurnProcessedMinionUids?: boolean;
     skipReactionQueueResolution?: boolean;
+    actorPlayerId?: PlayerId;
     materializeDomainEvents?: boolean;
 }
 
@@ -1271,6 +1273,7 @@ function executeQueuedTrigger(
         random,
         {
             recordImmediateStartTurnProcessedMinionUids: true,
+            actorPlayerId: runtimePlayerId,
             skipReactionQueueResolution: true,
             materializeDomainEvents: options?.materializeDomainEvents,
         },
@@ -1308,6 +1311,7 @@ function applyReactionPostProcessing(
             skipImmediateStartTurnMinionTriggers: options.skipImmediateStartTurnMinionTriggers,
             recordImmediateStartTurnProcessedMinionUids: options.recordImmediateStartTurnProcessedMinionUids,
             skipReactionQueueResolution: options.skipReactionQueueResolution,
+            actorPlayerId: options.actorPlayerId,
         }
         : undefined;
     const postProcessed = reactionPostProcessor
@@ -1397,8 +1401,10 @@ function executeReactionCommand(
                 : probeState.sys.interaction,
         } as typeof probeState.sys,
     };
-    const rawEvents = execute(executionState, command as any, random);
-    const postProcessed = applyReactionPostProcessing(executionState, rawEvents, random, {
+    const commandPlan = planSmashUpCommand(executionState, command as any, random);
+    const plannedState = commandPlan.sys ? { ...executionState, sys: commandPlan.sys } : executionState;
+    const postProcessed = applyReactionPostProcessing(plannedState, commandPlan.events, random, {
+        actorPlayerId: command.playerId,
         skipReactionQueueResolution: true,
         materializeDomainEvents: options?.materializeDomainEvents,
     });

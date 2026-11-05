@@ -11,7 +11,7 @@ import {
     normalizeMageWarsSavedSpellbooks,
     saveMageWarsSpellbookDraft,
     updateMageWarsSavedSpellbookDraft,
-} from '../domain/savedSpellbooks';
+} from '../localSavedSpellbooks';
 
 describe('Mage Wars saved spellbooks', () => {
     beforeEach(() => {

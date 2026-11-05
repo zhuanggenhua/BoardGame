@@ -95,7 +95,7 @@ type PirateFirstMateChooseBasePromptContext = PiratePromptContext & {
     controllerId?: string;
 };
 
-function createPiratePromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createPiratePromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: AbilityContext['matchState'],
     playerId: string,
     now: number,

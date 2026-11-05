@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type { BetrayalRecentRollState } from "./game";
+import type { BetrayalRecentRollState } from './domain/types';
 import type { RecentRollRerollSelection } from "./houseDiceSurface";
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import { RecentRollPanel, StandardRecentRollOverlay } from "./recentRollSurface";

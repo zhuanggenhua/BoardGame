@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 /**
  * 井字棋领域内核
  */
@@ -13,6 +14,7 @@ import { execute, reduce } from './reducer';
 
 export const TicTacToeDomain: DomainCore<TicTacToeCore, TicTacToeCommand, TicTacToeEvent> = {
     gameId: 'tictactoe',
+    statePersistence,
 
     setup: (playerIds: PlayerId[], _random: RandomFn): TicTacToeCore => ({
         cells: Array(9).fill(null),

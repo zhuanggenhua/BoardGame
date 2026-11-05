@@ -1,10 +1,10 @@
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
-import { registerChoiceEffectHandler } from '../choiceEffects';
+import { registerChoiceEffectHandler } from '../choiceEffectRegistry';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getPlayerHealthCap, getTokenStackLimit } from '../rules';
-import { type DiceThroneCore, type DieFace } from '../types';
+import type { DiceThroneCore, DieFace } from '../types';
 import { markPendingAttackChoiceFollowUpResolvedFromStage } from '../utils';
 import type {
     BonusDieRolledEvent,
@@ -18,7 +18,8 @@ import type {
     TokenLimitChangedEvent,
     TokenUsedEvent,
 } from '../events';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { finalizeTokenResponse } from '../tokenResponse';
 import {

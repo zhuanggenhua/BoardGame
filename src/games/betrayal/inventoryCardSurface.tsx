@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import { useTouchInspectGesture } from "../../hooks/ui/useTouchInspectGesture";
 import { PossessionAtlasFrame } from "./atlasFrameSurface";
-import type { BetrayalInventoryCard } from "./game";
+import type { BetrayalInventoryCard } from './domain/types';
 import {
   BETRAYAL_POSSESSION_CARD_SHELL_ASPECT_RATIO,
   resolvePossessionAtlasVisual,

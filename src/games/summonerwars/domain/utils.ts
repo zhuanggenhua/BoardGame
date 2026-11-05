@@ -9,28 +9,15 @@ import type {
 } from './types';
 
 /**
- * 全局自增计数器，用于生成唯一 instanceId。
- * 每局游戏从 1 开始递增，保证同一局内不重复。
- */
-let instanceCounter = 0;
-
-/**
- * 重置实例 ID 计数器（仅在游戏初始化时调用）
- */
-export function resetInstanceCounter(startFrom = 0): void {
-  instanceCounter = startFrom;
-}
-
-/**
  * 生成单位实例唯一 ID
  * 格式：`${cardId}#${序号}`，如 `frontier_archer#3`
  * 
  * @param cardId 卡牌类型 ID
+ * @param sequence 由调用方的对局状态分配并持久化的序号
  * @returns 唯一的 instanceId
  */
-export function generateInstanceId(cardId: string): string {
-  instanceCounter += 1;
-  return `${cardId}#${instanceCounter}`;
+export function generateInstanceId(cardId: string, sequence: number): string {
+  return `${cardId}#${sequence}`;
 }
 
 /**

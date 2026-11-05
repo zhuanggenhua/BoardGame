@@ -6,7 +6,7 @@ import {
     QIDAHEN_FORMAL_SHARED_PRINTED_REGION_AUDITS,
     QIDAHEN_MASK_REGION_BY_ID,
     QIDAHEN_RUNTIME_REGION_BY_ID,
-} from './ui/mapGraph';
+} from './data/mapGraph';
 
 export type QidahenSharedPrintedRegionMapping = {
     printedRegionId: string;

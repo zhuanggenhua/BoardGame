@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 import {
     describe,
     expect,
@@ -41,15 +42,15 @@ describe('online AI unsatisfiable interaction recovery', () => {
         await storage.createMatch('match-unsat-auto-feedback', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main2',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: interaction,
                             queue: [],
@@ -194,15 +195,15 @@ describe('online AI unsatisfiable interaction recovery', () => {
         await storage.createMatch('match-choice-request-unsat-auto-feedback', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main2',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: interaction,
                             queue: [],
@@ -379,10 +380,10 @@ describe('online AI unsatisfiable interaction recovery', () => {
                             },
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'playCards',
                         turnNumber: 0,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: interaction,
                             queue: [],
@@ -486,10 +487,10 @@ describe('online AI unsatisfiable interaction recovery', () => {
                             '1': { hand: [], deck: [], discard: [] },
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'playCards',
                         turnNumber: 0,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: interaction,
                             queue: [],
@@ -555,10 +556,10 @@ describe('online AI unsatisfiable interaction recovery', () => {
                             '3': { hand: [], deck: [], discard: [] },
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 0,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: {
                                 id: 'dt-defender-choice-empty',

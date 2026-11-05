@@ -1,7 +1,5 @@
-import type {
-    BetrayalCore,
-    BetrayalHauntType,
-} from './game';
+import type { BetrayalCore } from './domain/types';
+import type { BetrayalHauntType } from './hauntTraitorResolutionModel';
 import { findExplorerByPlayerId } from './explorerReadModel';
 import { resolveBloodFromStoneSetupPlacementPlan } from './bloodFromStoneSetupReadModel';
 import {

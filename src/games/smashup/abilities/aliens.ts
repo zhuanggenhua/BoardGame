@@ -1,3 +1,4 @@
+import { getInteractionSequence } from '../../../engine/systems/InteractionSystem';
 /**
  * 大杀四方 - 外星人派系能力
  *
@@ -123,7 +124,6 @@ type AlienBaseChoice = {
     newBaseDefId?: string;
 };
 
-let alienRuntimePromptCounter = 0;
 
 function createAlienInvasionProgramContext(ctx: AbilityContext): AlienInvasionPromptContext {
     const targets = collectAlienMinionTargets(ctx.state);
@@ -572,7 +572,7 @@ const alienSupremeOverlordPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_supreme_overlord',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_supreme_overlord_${alienRuntimePromptCounter++}`,
+        `alien_supreme_overlord_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '你可以将一个随从返回到其拥有者的手上',
         [
@@ -646,7 +646,7 @@ const alienCollectorPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_collector',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_collector_${alienRuntimePromptCounter++}`,
+        `alien_collector_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上',
         [
@@ -838,7 +838,7 @@ const alienInvasionDestinationPromptProgram = createPromptProgram<
             throw new Error('Alien invasion runtime 缺少 selectedTarget');
         }
         return createAbilityRuntimeSimpleChoice(
-            `alien_invasion_base_${alienRuntimePromptCounter++}`,
+            `alien_invasion_base_${getInteractionSequence(context.matchState)}`,
             context.playerId,
             '选择要移动到的基地',
             buildBaseTargetOptions(
@@ -885,7 +885,7 @@ const alienInvasionPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_invasion_choose_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_invasion_${alienRuntimePromptCounter++}`,
+        `alien_invasion_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '选择要移动的随从',
         buildActionMinionTargetOptions(
@@ -934,7 +934,7 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_terraform_play_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_terraform_play_minion_${alienRuntimePromptCounter++}`,
+        `alien_terraform_play_minion_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '适居化：你可以在新基地上额外打出一个随从',
         buildAlienTerraformPlayOptions(context.matchState.core, context.playerId),
@@ -1020,7 +1020,7 @@ const alienTerraformReplacementPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_terraform_choose_replacement',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_terraform_choose_replacement_${alienRuntimePromptCounter++}`,
+        `alien_terraform_choose_replacement_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '地形改造：从基地牌库中选择一张基地进行替换',
         context.matchState.core.baseDeck.map((baseDefId, index) => {
@@ -1090,7 +1090,7 @@ const alienTerraformPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_terraform',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_terraform_${alienRuntimePromptCounter++}`,
+        `alien_terraform_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '选择要替换的基地',
         buildBaseTargetOptions(
@@ -1175,7 +1175,7 @@ const alienDisintegratorPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_disintegrator',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_disintegrator_${alienRuntimePromptCounter++}`,
+        `alien_disintegrator_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         'ui.alien_disintegrator_title',
         buildMinionTargetOptions(
@@ -1264,7 +1264,7 @@ const alienBeamUpPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_beam_up',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_beam_up_${alienRuntimePromptCounter++}`,
+        `alien_beam_up_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '选择要返回手牌的随从',
         buildMinionTargetOptions(
@@ -1345,7 +1345,7 @@ const alienCropCirclesPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_crop_circles',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_crop_circles_${alienRuntimePromptCounter++}`,
+        `alien_crop_circles_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '选择一个基地，将随从返回手牌',
         buildBaseTargetOptions(
@@ -1405,7 +1405,7 @@ const alienProbeDiscardPromptProgram = createPromptProgram<
         }
         const targetPlayer = context.matchState.core.players[context.targetPlayerId];
         const interaction = createAbilityRuntimeSimpleChoice(
-            `alien_probe_${alienRuntimePromptCounter++}`,
+            `alien_probe_${getInteractionSequence(context.matchState)}`,
             context.playerId,
             '选择对手手牌中的一张随从，让其弃掉',
             targetPlayer ? buildAlienProbeHandOptions(targetPlayer.hand, context.targetPlayerId) : [],
@@ -1458,7 +1458,7 @@ const alienProbeChooseTargetPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_probe_choose_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_probe_choose_target_${alienRuntimePromptCounter++}`,
+        `alien_probe_choose_target_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '选择要查看手牌的玩家',
         buildPlayerTargetOptions(
@@ -1543,7 +1543,7 @@ const alienAbductionPromptProgram = createPromptProgram<
 >({
     sourceId: 'alien_abduction',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `alien_abduction_${alienRuntimePromptCounter++}`,
+        `alien_abduction_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '选择要返回手牌的随从',
         buildMinionTargetOptions(

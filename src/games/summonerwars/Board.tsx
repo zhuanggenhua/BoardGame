@@ -10,6 +10,7 @@
  * - 底部中央：提示横幅
  */
 
+import './client';
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../../engine/transport/protocol';

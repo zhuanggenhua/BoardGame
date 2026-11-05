@@ -58,6 +58,7 @@ export function useLocalGameProviderRuntime(args: {
         stateRef,
         randomRef,
         reset,
+        localSession,
     } = useLocalProviderSession({
         config: args.config,
         numPlayers: args.numPlayers,
@@ -98,7 +99,7 @@ export function useLocalGameProviderRuntime(args: {
         randomRef,
         setupPlayerIds,
         onCommandRejectedRef,
-        automationDisabled: args.disableLocalAiAutomation,
+        automationDisabled: args.disableLocalAiAutomation || Boolean(localSession.restoreError),
     });
 
     const value = useLocalProviderViewModel({
@@ -122,5 +123,7 @@ export function useLocalGameProviderRuntime(args: {
         dispatch,
     });
 
-    return value;
+    return { ...value, localSession,
+        dispatch: localSession.restoreError ? () => undefined : value.dispatch,
+    };
 }

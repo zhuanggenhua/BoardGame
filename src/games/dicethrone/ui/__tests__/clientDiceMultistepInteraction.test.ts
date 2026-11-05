@@ -27,20 +27,20 @@ describe('rebuildClientDiceMultistepInteraction', () => {
 
         const rebuilt = rebuildClientDiceMultistepInteraction(interaction);
 
-        expect(rebuilt?.data.maxSteps).toBe(2);
-        expect(rebuilt?.data.minSteps).toBe(2);
-        const first = rebuilt!.data.localReducer(
-            rebuilt!.data.initialResult,
+        expect(rebuilt?.interaction.data.maxSteps).toBe(2);
+        expect(rebuilt?.interaction.data.minSteps).toBe(2);
+        const first = rebuilt!.runtime.localReducer(
+            rebuilt!.interaction.data.initialResult,
             { action: 'select', dieId: 4, dieValue: 6 },
         );
-        expect(rebuilt!.data.getCompletedSteps?.(first)).toBe(1);
-        const second = rebuilt!.data.localReducer(
+        expect(rebuilt!.runtime.getCompletedSteps?.(first)).toBe(1);
+        const second = rebuilt!.runtime.localReducer(
             first,
             { action: 'select', dieId: 1, dieValue: 1 },
         );
-        expect(rebuilt!.data.getCompletedSteps?.(second)).toBe(2);
-        expect(rebuilt!.data.toCommands(second)).toHaveLength(2);
-        expect(rebuilt!.data.toCommands(second)).toEqual(expect.arrayContaining([
+        expect(rebuilt!.runtime.getCompletedSteps?.(second)).toBe(2);
+        expect(rebuilt!.runtime.toCommands(second)).toHaveLength(2);
+        expect(rebuilt!.runtime.toCommands(second)).toEqual(expect.arrayContaining([
             { type: 'MODIFY_DIE', payload: { dieId: 4, newValue: 6 } },
             { type: 'MODIFY_DIE', payload: { dieId: 1, newValue: 6 } },
         ]));
@@ -65,6 +65,6 @@ describe('rebuildClientDiceMultistepInteraction', () => {
             },
         };
 
-        expect(rebuildClientDiceMultistepInteraction(interaction)?.data.maxSteps).toBeUndefined();
+        expect(rebuildClientDiceMultistepInteraction(interaction)?.interaction.data.maxSteps).toBeUndefined();
     });
 });

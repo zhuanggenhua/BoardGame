@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { UI_Z_INDEX } from "../../core";
-import type { BetrayalCore } from "./game";
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalHauntRevealProtocol } from "./hauntSetupModel";
 import type { ScenarioReaderScope } from "./scenarioReader";
 

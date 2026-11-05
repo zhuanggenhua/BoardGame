@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { QIDAHEN_MASK_REGION_BY_ID, qidahenRegionColorKey } from '../ui/mapGraph';
+import { QIDAHEN_MASK_REGION_BY_ID, qidahenRegionColorKey } from '../data/mapGraph';
 import { buildRegionMaskOverlayPixels } from '../ui/regionMaskOverlay';
 
 const parseHexColor = (hex: string): readonly [number, number, number] => {

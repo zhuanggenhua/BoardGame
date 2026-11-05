@@ -1,6 +1,6 @@
 /** 吸血鬼领主卡牌定义。 */
 
-import type { CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core/cardPreviewTypes';
 import type { RandomFn } from '../../../../engine/types';
 import type { AbilityCard } from '../../types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';

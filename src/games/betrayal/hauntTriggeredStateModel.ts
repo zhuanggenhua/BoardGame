@@ -44,10 +44,7 @@ import {
     healExplorerTraitToStart,
     moveExplorerTraitSteps,
 } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type HauntTriggeredEvent = Extract<BetrayalEvent, { type: 'HAUNT_TRIGGERED' }>;

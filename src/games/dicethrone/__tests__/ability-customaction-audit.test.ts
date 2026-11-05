@@ -22,6 +22,11 @@ import {
 } from '../domain/effects';
 import { COMMON_CARDS } from '../domain/commonCards';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
+import { initializeCustomActions } from '../domain/customActions';
+
+// Registry snapshots below are captured while defining the suite.
+initializeCustomActions();
+
 
 const HEROES = Object.keys(CHARACTER_DATA_MAP);
 

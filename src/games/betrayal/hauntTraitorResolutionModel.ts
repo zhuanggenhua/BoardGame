@@ -6,10 +6,7 @@ import {
 import { resolveMagicCameraOwnerPlayerId } from './hauntScenarioReadModel';
 import { isImplementedBetrayalHauntCardNumber, type BetrayalTraitKey } from './scenarioConfig';
 import { rotateToNextLivingPlayer } from './turnOrderReadModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary } from './domain/types';
 
 export type BetrayalHauntType = 'no-traitor' | 'one-traitor' | 'hidden-traitor' | 'free-for-all';
 

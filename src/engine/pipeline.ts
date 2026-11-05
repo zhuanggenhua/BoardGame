@@ -1,33 +1,10 @@
-/**
- * Command/Event 执行管线
- * 
- * 管线职责：
- * 1. 接收 Command
- * 2. 执行 Systems.beforeCommand hooks
- * 3. Core.validate
- * 4. Core.execute -> 产生 Events
- * 5. 逐个 Reduce events -> 更新 state.core
- * 6. 执行 Systems.afterEvents hooks -> 更新 state.sys
- * 7. 处理系统追加的领域事件（非 SYS_）并同步 core
- */
 
-import type {
-    Command,
-    DomainCore,
-    EventCommitEvidence,
-    GameEvent,
-    MatchState,
-    PipelineContext,
-    PlayerId,
-    RandomFn,
-    SystemState,
-    TutorialState,
-    ValidationResult,
-} from './types';
-import { DEFAULT_TUTORIAL_STATE } from './types';
-import { refreshInteractionOptions } from './systems/InteractionSystem';
 import type { EngineSystem, GameSystemsConfig } from './systems/types';
-import { commitEventWithTimingOpportunities, createTimingPoint } from './TimingOpportunity';
+import { type Command, type GameEvent, type DomainCore, type MatchState, type EventCommitEvidence, type PlayerId, type SystemState, DEFAULT_TUTORIAL_STATE, type RandomFn, type PipelineContext, type TutorialState, type ValidationResult } from './types';
+import { commitEventBeforeReduce, commitEventForPlan } from './eventCommit';
+import { refreshInteractionOptions } from './systems/InteractionSystem';
+
+
 
 function sortSystems<TCore>(systems: EngineSystem<TCore>[]): EngineSystem<TCore>[] {
     // 稳定排序：priority 越小越先执行；priority 相同按传入顺序
@@ -286,75 +263,6 @@ interface ReduceResult<TCore> {
     eventCommitEvidence: EventCommitEvidence[];
 }
 
-interface NormalizedEventCommit<TEvent extends GameEvent> {
-    events: TEvent[];
-    evidence: EventCommitEvidence[];
-}
-
-function normalizeEventCommitEvidence(
-    evidence: EventCommitEvidence | EventCommitEvidence[] | undefined,
-): EventCommitEvidence[] {
-    if (!evidence) return [];
-    return Array.isArray(evidence) ? evidence : [evidence];
-}
-
-function normalizeEventCommitResult<TEvent extends GameEvent>(
-    event: TEvent,
-    result: ReturnType<NonNullable<DomainCore<unknown, Command, TEvent>['commitEvent']>>,
-): NormalizedEventCommit<TEvent> {
-    if (result === undefined) return { events: [event], evidence: [] };
-    if (result === null) return { events: [], evidence: [] };
-    if (Array.isArray(result)) return { events: result, evidence: [] };
-    if ('events' in result) {
-        return {
-            events: result.events,
-            evidence: normalizeEventCommitEvidence(result.evidence),
-        };
-    }
-    return { events: [result], evidence: [] };
-}
-
-function commitEventBeforeReduce<TCore, TCommand extends Command, TEvent extends GameEvent>(
-    domain: DomainCore<TCore, TCommand, TEvent>,
-    state: MatchState<TCore>,
-    event: TEvent,
-    command?: TCommand,
-    random?: RandomFn,
-): NormalizedEventCommit<TEvent> {
-    const timing = createTimingPoint<TCommand, TEvent>({
-        gameId: domain.gameId,
-        position: 'eventCommit',
-        factKind: event.type,
-        event,
-        command,
-        parentFrameId: state.sys.resolution?.activeFrameId,
-        timestamp: event.timestamp,
-    });
-    const commitArgs = {
-        state,
-        event,
-        command,
-        timing,
-        random,
-    };
-
-    if (!domain.commitEvent) {
-        const result = commitEventWithTimingOpportunities(
-            domain,
-            commitArgs,
-        );
-        return {
-            events: result.events,
-            evidence: normalizeEventCommitEvidence(result.evidence),
-        };
-    }
-
-    return normalizeEventCommitResult(
-        event,
-        domain.commitEvent(commitArgs),
-    );
-}
-
 function reduceEventsToCore<TCore, TCommand extends Command, TEvent extends GameEvent>(
     domain: DomainCore<TCore, TCommand, TEvent>,
     state: MatchState<TCore>,
@@ -365,6 +273,25 @@ function reduceEventsToCore<TCore, TCommand extends Command, TEvent extends Game
     const appliedEvents: GameEvent[] = [];
     const eventCommitEvidence: EventCommitEvidence[] = [];
     let currentState = state;
+
+    if (domain.prepareEventBatch) {
+        if (domain.postProcessSystemEvents || domain.interceptEvent) {
+            throw new Error(`Domain ${domain.gameId} combines batch settlement with legacy PPSE/intercept`);
+        }
+        if (!random) throw new Error(`Domain ${domain.gameId} batch settlement requires a random source`);
+        const plan = domain.prepareEventBatch({
+            state, events: events as TEvent[], command, random,
+            commit: (prefix, candidate) => commitEventForPlan(domain, prefix, candidate, command, random),
+        });
+        currentState = plan.sys ? { ...state, sys: plan.sys } : state;
+        for (const event of plan.events) {
+            if (!event.type.startsWith('SYS_') || event.type === 'SYS_PHASE_CHANGED') {
+                currentState = { ...currentState, core: domain.reduce(currentState.core, event) };
+            }
+            appliedEvents.push(event);
+        }
+        return { state: currentState, appliedEvents, eventCommitEvidence: plan.evidence ?? [] };
+    }
 
     for (const event of events) {
         const isPureSysEvent =
@@ -873,7 +800,9 @@ export function executePipeline<
 
     // 3. Core.execute -> 产生 Events
     // 使用 effectiveRandom 确保教程随机策略对领域层生效
-    const events = domain.execute(currentState, command, effectiveRandom);
+    const commandPlan = domain.planCommand?.(currentState, command, effectiveRandom);
+    const events = commandPlan?.events ?? domain.execute(currentState, command, effectiveRandom);
+    if (commandPlan?.sys) currentState = { ...currentState, sys: commandPlan.sys };
 
     // 4. 逐个 Reduce events -> 更新 state.core（含事件拦截/替换）
     const reduced = reduceEventsToCore(domain, currentState, events as unknown as GameEvent[], command, effectiveRandom);

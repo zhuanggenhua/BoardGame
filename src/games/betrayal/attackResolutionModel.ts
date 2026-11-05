@@ -17,7 +17,7 @@ import {
     findExplorerByPlayerId,
     getAllExplorers,
 } from './explorerReadModel';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalCommand } from './commandTypes';
 import type { BetrayalEvent } from './events';
 import { resolveHelpingHandsStealableCards } from './hauntAttackRewardReadModel';

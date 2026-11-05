@@ -1,9 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalRoomNode,
-  BetrayalRoomTileAdjustmentSelection,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalRoomNode, BetrayalRoomTileAdjustmentSelection, BetrayalTraitKey } from './domain/types';
 import { resolveMoveTargetRooms } from "./movementReadModel";
 import {
   canUseHolySymbolForDiscovery,

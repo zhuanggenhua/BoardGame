@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 /**
  * GameTransportServer.injectState 方法单元测试
  * 
@@ -94,7 +95,7 @@ describe('GameTransportServer.injectState', () => {
 
             const matchId = 'match-1';
             const state: MatchState<unknown> = {
-                sys: { matchId, turnOrder: [0, 1], currentPlayerIndex: 0 },
+                sys: { ...createInitialSystemState(['0', '1'], []), matchId, turnOrder: ['0', '1'], currentPlayerIndex: 0 },
                 core: { phase: 'play', players: { 0: { hp: 10 }, 1: { hp: 10 } } },
             };
 
@@ -118,7 +119,7 @@ describe('GameTransportServer.injectState', () => {
 
             // 注入新状态
             const newState: MatchState<unknown> = {
-                sys: { matchId, turnOrder: [0, 1], currentPlayerIndex: 1 },
+                sys: { ...createInitialSystemState(['0', '1'], []), matchId, turnOrder: ['0', '1'], currentPlayerIndex: 1 },
                 core: { phase: 'play', players: { 0: { hp: 5 }, 1: { hp: 8 } } },
             };
 
@@ -140,7 +141,7 @@ describe('GameTransportServer.injectState', () => {
             });
 
             const state: MatchState<unknown> = {
-                sys: { matchId: 'nonexistent', turnOrder: [0, 1], currentPlayerIndex: 0 },
+                sys: { ...createInitialSystemState(['0', '1'], []), matchId: 'nonexistent', turnOrder: ['0', '1'], currentPlayerIndex: 0 },
                 core: { phase: 'play', players: {} },
             };
 
@@ -159,7 +160,7 @@ describe('GameTransportServer.injectState', () => {
             });
 
             const state: MatchState<unknown> = {
-                sys: { matchId: 'match-1', turnOrder: [0, 1], currentPlayerIndex: 0 },
+                sys: { ...createInitialSystemState(['0', '1'], []), matchId: 'match-1', turnOrder: ['0', '1'], currentPlayerIndex: 0 },
                 core: { phase: 'play', players: {} },
             };
 
@@ -203,7 +204,7 @@ describe('GameTransportServer.injectState', () => {
 
             const matchId = 'match-1';
             const initialState: MatchState<unknown> = {
-                sys: { matchId, turnOrder: [0, 1], currentPlayerIndex: 0 },
+                sys: { ...createInitialSystemState(['0', '1'], []), matchId, turnOrder: ['0', '1'], currentPlayerIndex: 0 },
                 core: { phase: 'play', players: { 0: { hp: 10 }, 1: { hp: 10 } } },
             };
 
@@ -228,7 +229,7 @@ describe('GameTransportServer.injectState', () => {
             });
 
             const newState: MatchState<unknown> = {
-                sys: { matchId, turnOrder: [0, 1], currentPlayerIndex: 1 },
+                sys: { ...createInitialSystemState(['0', '1'], []), matchId, turnOrder: ['0', '1'], currentPlayerIndex: 1 },
                 core: { phase: 'play', players: { 0: { hp: 5 }, 1: { hp: 8 } } },
             };
 
@@ -260,7 +261,7 @@ describe('GameTransportServer.injectState', () => {
                         });
 
                         const state: MatchState<unknown> = {
-                            sys: { matchId, turnOrder: [0, 1], currentPlayerIndex },
+                            sys: { ...createInitialSystemState(['0', '1'], []), matchId, turnOrder: ['0', '1'], currentPlayerIndex },
                             core: { phase: 'play', players: { 0: { hp }, 1: { hp } } },
                         };
 

@@ -340,12 +340,13 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('fab-action-display-theme')).toBeInTheDocument();
     });
 
-    it('Betrayal setup 阶段将悬浮菜单移到右上角，避开角色确认区', () => {
+    it('接收页面注入的右上角布局与持久化键', () => {
         renderHud(
             <GameHUD
                 mode="online"
                 matchId="match-1"
                 gameId="betrayal"
+                resolveHudLayout={() => ({ position: 'top-right', storageKey: 'game_hud_fab_position:betrayal:v2' })}
                 myPlayerId="0"
                 isPregameSetupPhase={true}
             />,
@@ -356,12 +357,13 @@ describe('GameHUD', () => {
         expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:betrayal:v2');
     });
 
-    it('Mage Wars 游戏内悬浮菜单默认避开底部准备牌区', () => {
+    it('接收页面注入的左上角布局并保留通用操作', () => {
         renderHud(
             <GameHUD
                 mode="tutorial"
                 matchId="match-1"
                 gameId="mage-wars"
+                resolveHudLayout={() => ({ position: 'top-left', storageKey: 'game_hud_fab_position:mage-wars:v4' })}
                 myPlayerId="0"
                 isPregameSetupPhase={false}
             />,

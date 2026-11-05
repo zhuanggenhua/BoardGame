@@ -3,7 +3,7 @@ import {
     type EntityRelation,
     type EntitySideId,
 } from '../../engine/primitives';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 
 export type BetrayalExplorerSide = 'traitor' | 'hero' | `free-for-all:${string}` | null;
 export type BetrayalEntityRelation = EntityRelation;

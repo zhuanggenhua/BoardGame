@@ -65,7 +65,11 @@ export type OnlineAiFeedbackDiagnosticsBuilderConfig = {
 };
 
 export class OnlineAiFeedbackDiagnosticsBuilder {
-    constructor(private readonly config: OnlineAiFeedbackDiagnosticsBuilderConfig) {}
+        private readonly config: OnlineAiFeedbackDiagnosticsBuilderConfig;
+
+    constructor(config: OnlineAiFeedbackDiagnosticsBuilderConfig) {
+        this.config = config;
+}
 
     async buildRecoveryStateSnapshot(
         match: OnlineAiFeedbackDiagnosticsMatch,
@@ -166,6 +170,7 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
         event: GameEvent;
         progressMarkerBefore: string;
         preCommandSeatView: MatchState<unknown>;
+        preCommandSharedState: MatchState<unknown>;
     }): Promise<OnlineAiRecoveryFeedbackPayload | null> {
         const eventType = args.event.type;
         if (
@@ -191,7 +196,7 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
         }
 
         const interaction = extractAiInteractionSnapshot(args.preCommandSeatView);
-        const sharedInteraction = extractAiInteractionSnapshot(args.match.state);
+        const sharedInteraction = extractAiInteractionSnapshot(args.preCommandSharedState);
         const sharedSelectability = buildInteractionSelectabilityDiagnostic(sharedInteraction);
         const seatSelectability = buildInteractionSelectabilityDiagnostic(interaction);
         const shouldSuppressByDefault = shouldSuppressUnsatisfiableInteractionFeedback({
@@ -254,7 +259,7 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
                 stateId: args.match.stateID,
             }),
             stateSnapshot: await this.buildUnsatisfiableInteractionStateSnapshot({
-                match: args.match,
+                match: { ...args.match, state: args.preCommandSharedState },
                 playerId: args.playerId,
                 reason: inferredReason,
                 commandType: args.commandType,

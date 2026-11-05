@@ -4,14 +4,8 @@ import {
     findExplorerByPlayerId,
     getAllExplorers,
 } from './explorerReadModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalMonsterSummary,
-    BetrayalRoomFloor,
-    BetrayalRoomNode,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalRoomNode, BetrayalTraitKey } from './domain/types';
+import type { BetrayalRoomFloor } from './game';
 import type { BetrayalCommandType } from './commandTypes';
 import {
     findMummyMonster,

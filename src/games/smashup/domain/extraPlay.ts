@@ -1,3 +1,4 @@
+import { getInteractionSequence } from '../../../engine/systems/InteractionSystem';
 import type { MatchState } from '../../../engine/types';
 import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
 import { validate, type SmashUpValidateOptions } from './commands';
@@ -48,7 +49,6 @@ type ImmediateActionCardChoice = { cardUid: string; defId: string; source?: Imme
 type ImmediateBaseChoice = { baseIndex: number };
 type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
-let immediateExtraPromptCounter = 0;
 
 function isBaseModifierActionLike(def: ActionCardDef | FusionCardDef): boolean {
     if (def.type === 'fusion') {
@@ -207,7 +207,7 @@ function buildImmediateExtraMinionCardOptions(
                 label: `${def?.name ?? card.defId} (力量 ${power})`,
                 value: { cardUid: card.uid, defId: card.defId, source } satisfies ImmediateMinionCardChoice,
                 displayMode: 'card' as const,
-                _source: source as const,
+                _source: source,
             }];
         });
     const handOptions = buildCardOptions(player.hand, 'hand', 'card');
@@ -372,7 +372,7 @@ function buildImmediateExtraActionCardOptions(
                 label: def.name ?? card.defId,
                 value: { cardUid: card.uid, defId: card.defId, source } satisfies ImmediateActionCardChoice,
                 displayMode: 'card' as const,
-                _source: source as const,
+                _source: source,
             }];
         });
     const options = [
@@ -602,7 +602,7 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
     sourceId: 'smashup_immediate_extra_minion_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
-            `smashup_immediate_extra_minion_base_${immediateExtraPromptCounter++}`,
+            `smashup_immediate_extra_minion_base_${getInteractionSequence(context.matchState)}`,
             context.extra.playerId,
             '选择要打出该额外随从的基地',
             [
@@ -661,7 +661,7 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
     sourceId: 'smashup_immediate_extra_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
-            `smashup_immediate_extra_${immediateExtraPromptCounter++}`,
+            `smashup_immediate_extra_${getInteractionSequence(context.matchState)}`,
             context.extra.playerId,
             '立刻打出一个额外随从，或放弃这次机会',
             buildImmediateExtraMinionCardOptions(context.matchState, context.extra) as any[],
@@ -726,7 +726,7 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
     sourceId: 'smashup_immediate_extra_action_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
-            `smashup_immediate_extra_action_base_${immediateExtraPromptCounter++}`,
+            `smashup_immediate_extra_action_base_${getInteractionSequence(context.matchState)}`,
             context.extra.playerId,
             '选择该额外战术的目标基地',
             [
@@ -786,7 +786,7 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
     sourceId: 'smashup_immediate_extra_action_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
-            `smashup_immediate_extra_action_minion_${immediateExtraPromptCounter++}`,
+            `smashup_immediate_extra_action_minion_${getInteractionSequence(context.matchState)}`,
             context.extra.playerId,
             '选择该额外战术的目标随从',
             [
@@ -846,7 +846,7 @@ const immediateExtraActionPromptProgram = createPromptProgram<
     sourceId: 'smashup_immediate_extra_action',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
-            `smashup_immediate_extra_${immediateExtraPromptCounter++}`,
+            `smashup_immediate_extra_${getInteractionSequence(context.matchState)}`,
             context.extra.playerId,
             '立刻打出一张额外战术，或放弃这次机会',
             buildImmediateExtraActionCardOptions(context.matchState, context.extra) as any[],

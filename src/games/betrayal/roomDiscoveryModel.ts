@@ -1,3 +1,4 @@
+import type { BetrayalRoomVisualId } from './scenarioConfig';
 import {
     cloneBetrayalRoom,
     refreshExplorableRoomSlots,
@@ -23,19 +24,7 @@ import { isAttackWeaponCard } from './attackRules';
 import { cloneExplorerSummary } from './explorerReadModel';
 import { moveExplorerTraitSteps } from './traitTrackModel';
 import { createDrawnCardFromTemplate } from './possessionDeckModel';
-import type {
-    BetrayalBuriedRoomTileSummary,
-    BetrayalCore,
-    BetrayalDeckKind,
-    BetrayalDiscoveryResolutionStep,
-    BetrayalInventoryCard,
-    BetrayalRoomDiscoveryDeckEntry,
-    BetrayalRoomDrawResolution,
-    BetrayalRoomNode,
-    BetrayalRoomPlacementPreview,
-    BetrayalRoomTileAdjustmentOption,
-    BetrayalRoomTileAdjustmentSelection,
-} from './game';
+import type { BetrayalBuriedRoomTileSummary, BetrayalCore, BetrayalDeckKind, BetrayalDiscoveryResolutionStep, BetrayalInventoryCard, BetrayalRoomDiscoveryDeckEntry, BetrayalRoomDrawResolution, BetrayalRoomNode, BetrayalRoomPlacementPreview, BetrayalRoomTileAdjustmentOption, BetrayalRoomTileAdjustmentSelection } from './domain/types';
 
 type RoomTemplate = BetrayalRoomDiscoveryTemplate;
 type BetrayalRoomDiscoveryEffect = NonNullable<BetrayalRoomDiscoveryTemplate['discoveryEffect']>;

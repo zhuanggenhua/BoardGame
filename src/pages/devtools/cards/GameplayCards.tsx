@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { BaseCaptureEffect } from '../../../components/common/animations/BaseCaptureEffect';
 import { BurstParticles } from '../../../components/common/animations/BurstParticles';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import { FxLayer, useFxBus } from '../../../engine/fx';
 import { smashUpFxRegistry, SU_FX } from '../../../games/smashup/ui/fxSetup';
 import '../../../games/smashup/ui/SmashUpCardRenderer';

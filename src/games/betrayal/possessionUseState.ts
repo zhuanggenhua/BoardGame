@@ -1,10 +1,7 @@
 import {
     findExplorerByPlayerId,
 } from './explorerReadModel';
-import type {
-    BetrayalCore,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalTraitKey } from './domain/types';
 import type { BetrayalPossessionUsedPayload } from './possessionUseResolution';
 import {
     applyTraitLoss,

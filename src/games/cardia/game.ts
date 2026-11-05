@@ -22,20 +22,9 @@ import { createCardiaEventSystem } from './domain/systems';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatCardiaActionEntry } from './actionLog';
 
-// 注册卡牌预览函数
-import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import { getCardiaCardPreviewRef } from './ui/cardPreviewHelper';
-registerCardPreviewGetter('cardia', getCardiaCardPreviewRef);
-
 // 注册游戏资源（必须在游戏引擎创建前执行）
-import './assets';
-import { registerCriticalImageResolver } from '../../core';
-import { cardiaCriticalImageResolver } from './criticalImageResolver';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { cardiaAiRuntime } from './ai';
-
-// 注册关键图片解析器
-registerCriticalImageResolver('cardia', cardiaCriticalImageResolver);
 
 // 注册 AI Runtime
 registerGameAiRuntime(cardiaAiRuntime);

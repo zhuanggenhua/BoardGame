@@ -21,7 +21,8 @@ import type {
     PendingInteraction,
     InteractionRequestedEvent,
 } from '../types';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import { resolveDiceOwnerId, resolveTargetOpponentDice } from './common';

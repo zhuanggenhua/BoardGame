@@ -20,8 +20,9 @@ import {
     getMageWarsRegisteredSpellCardIds,
     getMageWarsSpellCardName,
     getMageWarsSpellCardPreviewRef,
-} from '../ui/cardAtlas';
+} from '../cardPreviewModel';
 import '../game';
+import '../client';
 import manifest from '../manifest';
 
 const makeRandom = (): RandomFn => ({

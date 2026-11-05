@@ -25,12 +25,9 @@ import {
     BETRAYAL_UNDO_ALLOWLIST,
     formatBetrayalActionEntry,
 } from '../actionLog';
-import {
-    engineConfig,
-    EXPLORER_CATALOG,
-    type BetrayalCore,
-    type BetrayalTraitKey,
-} from '../game';
+import { engineConfig } from '../game';
+import { EXPLORER_CATALOG } from '../domain/stateFactory';
+import type { BetrayalCore, BetrayalTraitKey } from '../domain/types';
 import { BETRAYAL_COMMANDS } from '../commands';
 import type { BetrayalCommand } from '../commandTypes';
 import { BETRAYAL_DISCOVERY_POOLS } from '../scenarioConfig';

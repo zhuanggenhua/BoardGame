@@ -1,5 +1,5 @@
 import type { RandomFn } from '../../../../engine/types';
-import type { CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core/cardPreviewTypes';
 import { COMMON_CARDS, injectCommonCardPreviewRefs, type CommonCardAtlasIndexMap } from '../../domain/commonCards';
 import { CURSED_PIRATE_DICE_FACE_IDS, DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS } from '../../domain/ids';
 import type { AbilityCard } from '../../types';

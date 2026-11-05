@@ -158,7 +158,7 @@ export interface ActionLogInteractiveParam {
     text: string;
     tooltip?: string;
     /** 可选：悬停时显示对象预览（房间、事件牌或持有物） */
-    previewRef?: import('../core').CardPreviewRef;
+    previewRef?: import('../core/cardPreviewTypes').CardPreviewRef;
 }
 
 export type ActionLogSegment =
@@ -170,7 +170,7 @@ export type ActionLogSegment =
           /** 可选：previewText 为 i18n key 时的 namespace，渲染时延迟翻译 */
           previewTextNs?: string;
           /** 可选：直接内联 previewRef，优先于 cardPreviewRegistry 查找 */
-          previewRef?: import('../core').CardPreviewRef;
+          previewRef?: import('../core/cardPreviewTypes').CardPreviewRef;
       }
     | {
           type: 'i18n';
@@ -602,6 +602,10 @@ export interface RefereeTraceState {
  * 系统状态（G.sys）
  */
 export interface SystemState {
+    /** Monotonic per-match execution identity, persisted with the command state. */
+    interactionSequence?: number;
+    /** Game-owned persisted state version, independent from the engine schema. */
+    domainState?: { gameId: string; version: number };
     /** Schema 版本（用于迁移） */
     schemaVersion: number;
     /** matchID */
@@ -736,6 +740,9 @@ export interface DomainCore<
     /** 游戏 ID */
     gameId: string;
 
+    /** Versioned admission and migration for local and authoritative restores. */
+    statePersistence?: import('./statePersistence').StatePersistenceContract<TState>;
+
     /** 初始化游戏状态（仅返回 core，sys 由系统层 setup） */
     setup(playerIds: PlayerId[], random: RandomFn, setupData?: unknown): TState;
 
@@ -752,6 +759,13 @@ export interface DomainCore<
 
     /** 执行命令，产生事件（允许读取 sys 状态，例如 sys.phase） */
     execute(state: MatchState<TState>, command: TCommand, random: RandomFn): TEvent[];
+
+    /** Explicit command planning for domains whose ability programs update sys. */
+    planCommand?(state: MatchState<TState>, command: TCommand, random: RandomFn): import('./eventBatchPlan').CommandPlan<TEvent>;
+
+    /** Opt-in batch settlement. Returned events are final commit decisions and
+     * are reduced once; this domain must not also bind legacy PPSE/intercept. */
+    prepareEventBatch?(args: import('./eventBatchPlan').PrepareEventBatchArgs<TState, TCommand, TEvent>): import('./eventBatchPlan').PreparedEventBatch<TEvent>;
 
     /** 应用事件，返回新状态（确定性 reducer，仅作用于 core） */
     reduce(state: TState, event: TEvent): TState;

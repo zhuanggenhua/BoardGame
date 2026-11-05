@@ -43,15 +43,7 @@ import {
     healExplorerTraitToStart,
     moveExplorerTraitSteps,
 } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalMonsterSummary,
-    BetrayalPendingDamageAllocationState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalRecentRollState,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalPendingDamageAllocationState, BetrayalPendingEventRollResolutionState, BetrayalRecentRollState, BetrayalTraitKey } from './domain/types';
 
 export type BetrayalEventEffectSnapshot = NonNullable<BetrayalRecentRollState['eventEffectSnapshot']>;
 

@@ -29,7 +29,7 @@ describe('online AI immediate server-side execution', () => {
         await storage.createMatch('match-watchdog-faction-select-legal-action', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1', '2', '3'],
                         activePlayerId: '2',
                         currentPlayerIndex: 2,
                         turnOrder: ['0', '1', '2', '3'],
@@ -45,10 +45,10 @@ describe('online AI immediate server-side execution', () => {
                             completedPlayers: [],
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'factionSelect',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -164,9 +164,9 @@ describe('online AI immediate server-side execution', () => {
                         },
                     },
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: 2 },
+                    eventStream: { entries: [], nextId: 2 },
                 },
             };
 
@@ -619,10 +619,10 @@ describe('online AI immediate server-side execution', () => {
                     activePlayerId: '0',
                     currentPlayerIndex: 0,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
                     phase: 'main1',
-                    eventStream: { nextId: 2 },
+                    eventStream: { entries: [], nextId: 2 },
                 },
             };
             activeMatch.stateID += 1;
@@ -736,9 +736,9 @@ describe('online AI immediate server-side execution', () => {
                     currentPlayerIndex: 1,
                     lastVisibleCommandType: commandType,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 0) + 1 },
+                    eventStream: { entries: [], nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 0) + 1 },
                 },
             };
             activeMatch.stateID += 1;
@@ -815,7 +815,7 @@ describe('online AI immediate server-side execution', () => {
         await storage.createMatch('match-smashup-immediate-ai-faction-select', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -829,10 +829,10 @@ describe('online AI immediate server-side execution', () => {
                             completedPlayers: [],
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'factionSelect',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -940,9 +940,9 @@ describe('online AI immediate server-side execution', () => {
                         },
                     },
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: 2 },
+                    eventStream: { entries: [], nextId: 2 },
                 },
             };
             activeMatch.stateID += 1;
@@ -1044,9 +1044,9 @@ describe('online AI immediate server-side execution', () => {
                     activePlayerId: '0',
                     currentPlayerIndex: 0,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: 2 },
+                    eventStream: { entries: [], nextId: 2 },
                 },
             };
             return true;

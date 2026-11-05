@@ -9,10 +9,7 @@ import {
     getExplorersInTurnOrder,
     resolveExplorerRoom,
 } from './explorerReadModel';
-import type {
-    BetrayalCore,
-    BetrayalTurnEndedPayload,
-} from './game';
+import type { BetrayalCore, BetrayalTurnEndedPayload } from './domain/types';
 import type { BetrayalEvent } from './events';
 import {
     isHelpingHandsHaunt,

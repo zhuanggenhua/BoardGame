@@ -1,3 +1,4 @@
+import { postProcessSystemEvents } from '../../domain/eventSettlement';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
@@ -784,7 +785,7 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             ],
         });
 
-        const processed = SmashUpDomain.postProcessSystemEvents(
+        const processed = postProcessSystemEvents(
             core,
             [{
                 type: SU_EVENTS.ACTION_PLAYED,
@@ -1004,7 +1005,7 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             ],
         });
 
-        const processed = SmashUpDomain.postProcessSystemEvents(
+        const processed = postProcessSystemEvents(
             core,
             [{
                 type: SU_EVENTS.ACTION_PLAYED,
@@ -1955,7 +1956,7 @@ describe('zhongguo 三个后续派系首批能力实现', () => {
             ],
         });
 
-        const processed = SmashUpDomain.postProcessSystemEvents(
+        const processed = postProcessSystemEvents(
             core,
             [{
                 type: SU_EVENTS.POWER_COUNTER_ADDED,

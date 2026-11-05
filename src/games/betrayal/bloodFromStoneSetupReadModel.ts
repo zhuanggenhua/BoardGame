@@ -1,7 +1,4 @@
-import type {
-    BetrayalCore,
-    BetrayalRoomNode,
-} from './game';
+import type { BetrayalCore, BetrayalRoomNode } from './domain/types';
 import {
     isBloodFromStoneHaunt,
     isStoneCherubMonster,

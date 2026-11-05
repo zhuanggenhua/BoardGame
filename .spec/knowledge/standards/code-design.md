@@ -37,6 +37,8 @@ metadata:
 - **组合优先但不教条**：可替换规则、UI 子区域、游戏特化和测试场景优先组合；稳定身份关系和唯一 owner 可以用清晰领域对象承载。具体选择看职责归属，不看类名是否“像设计模式”。
 - **新游戏先分职责再实现**：新 `gameId` 的设计稿、机制拆解和目录骨架必须先写清规则事实、正式状态、命令校验、事件生成、状态落地、派生读模型、UI Surface、测试夹具和素材数据各自的 owner；不得先做一个大 `game.ts` 或大 `Board.tsx`，再把后续拆分当成优化项。
 - **主入口不是职责容器**：`game.ts` 只能做游戏注册、领域入口组装、系统接线和必要类型导出；`Board.tsx` 只能做页面组合、React 状态绑定、handler wiring 和子 UI 挂载。规则结算、命令分支、事件 reducer、数据 registry、读模型、动作列表、调试面板和可见 UI 子区域必须有正式 owner。
+- **共享 HUD 依赖注入**：游戏布局通过 `runtimeAdapter.resolveHudLayout` 和页面组装注入 `GameHUD`；不得在共享 HUD 增加游戏 ID 特判或反向 import 游戏模块。`npm run check:arch` 使用 AST 检查 engine 与共享 HUD 的 import、export、动态 import 和 require 边界，并接入变更质量门禁。
+- **类型检查必须覆盖实际项目**：`npm run typecheck` 与变更质量门禁共用 `scripts/infra/typecheck-projects.mjs`，显式检查 app、Node 配置、游戏服务端和 Nest API；不得使用根 `files: []` 下的一次 `tsc --noEmit` 代表全仓检查。
 
 ## 设计模式使用规则
 

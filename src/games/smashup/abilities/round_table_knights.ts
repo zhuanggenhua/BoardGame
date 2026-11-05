@@ -1028,14 +1028,14 @@ function aQuestingReplacement(state: SmashUpCore, event: SmashUpEvent): SmashUpE
         ...buildValidatedOngoingDetachEvents(state, {
             cardUid: quest.uid,
             reason: 'round_table_knights_a_questing_replacement',
-            now: event.timestamp ?? Date.now(),
+            now: event.timestamp ?? 0,
             expectedLocation: 'minion',
             sourcePlayerId: quest.ownerId,
             sourceDefId: A_QUESTING,
             sourceControllerId: quest.ownerId,
             sourceBaseIndex: payload.fromBaseIndex,
         }),
-        cardToDeckTop({ uid: minion.uid, defId: minion.defId, type: 'minion' } as CardInstance, payload.ownerId, 'round_table_knights_a_questing_replacement', event.timestamp ?? Date.now()),
+        cardToDeckTop({ uid: minion.uid, defId: minion.defId, type: 'minion' } as CardInstance, payload.ownerId, 'round_table_knights_a_questing_replacement', event.timestamp ?? 0),
     ];
 }
 

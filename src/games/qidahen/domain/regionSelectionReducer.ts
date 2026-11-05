@@ -1,5 +1,5 @@
 import { getCurrentFactionId } from './factionTurnAccessors';
-import { type QidahenMovementProfileId } from './movement';
+import type { QidahenMovementProfileId } from './movement';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
 import {
     buildDriveTigerDispatchSelectionFromRegionSemantics,
@@ -36,7 +36,7 @@ import {
 } from './regionFocusSemantics';
 import { updateQidahenTurnLabel } from './turnLabelState';
 import type { QidahenCore } from './types';
-import { getQidahenRuntimeRegionIdsForPrintedRegionId } from '../ui/mapGraph';
+import { getQidahenRuntimeRegionIdsForPrintedRegionId } from '../data/mapGraph';
 
 const getQidahenSelectedRegionMatchIds = (selectedRegionId: string): Set<string> => (
     new Set([

@@ -22,7 +22,8 @@ import type {
     RollLimitChangedEvent,
 } from '../types';
 import { buildDrawEvents } from '../deckEvents';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import type { BonusDieInfo } from '../types';

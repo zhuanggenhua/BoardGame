@@ -199,6 +199,8 @@ export interface FeedbackConfigProposalContext {
 
 @Schema({ timestamps: true })
 export class Feedback {
+    declare createdAt: Date;
+    declare updatedAt: Date;
     @Prop({ type: Types.ObjectId, ref: 'User', required: false })
     userId?: Types.ObjectId;
 

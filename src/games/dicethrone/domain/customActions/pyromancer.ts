@@ -16,8 +16,9 @@ import type {
     BonusDieRolledEvent,
     TokenLimitChangedEvent,
 } from '../types';
-import { registerCustomActionHandler, createBonusDiceWithReroll, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
-import { registerChoiceEffectHandler } from '../choiceEffects';
+import { createBonusDiceWithReroll, createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
+import { registerChoiceEffectHandler } from '../choiceEffectRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { resourceSystem } from '../resourceSystem';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';

@@ -3,11 +3,7 @@ import { ImageOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import { getEntityRelationHighlightTone, type EntityRelation } from "../../engine/primitives";
-import type {
-  BetrayalExplorerSummary,
-  BetrayalMonsterStatusKind,
-  BetrayalMonsterSummary,
-} from "./game";
+import type { BetrayalExplorerSummary, BetrayalMonsterStatusKind, BetrayalMonsterSummary } from './domain/types';
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import { inferMonsterDefinitionId } from "./monsterReadModel";
 

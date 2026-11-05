@@ -9,6 +9,7 @@
  * - Font: Thick, bold, informal.
  */
 
+import './client';
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from 'react';
 import { createPortal } from 'react-dom';
 import type { GameBoardProps } from '../../engine/transport/protocol';
@@ -90,7 +91,7 @@ import { resolveRuntimeLayoutScaleMetrics } from '../../shared/mobileSupport';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { RevealOverlay, resolveRevealSuppressionRules } from './ui/RevealOverlay';
 import { CardPreview } from '../../components/common/media/CardPreview';
-import { getSmashUpRendererPreviewRef } from './ui/cardPreviewHelper';
+import { getSmashUpRendererPreviewRef } from './cardPreviewModel';
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';
 import {
     getSmashUpDirectHandPromptCardState,
@@ -122,7 +123,6 @@ import {
     isSmashUpReactionHandPlayValue,
     matchesSmashUpReactionHandPlayTarget,
 } from './domain/reactionChoiceInteraction';
-import { normalizeSmashUpCoreForUi } from './ui/normalizeRuntimeState';
 import { reportClientAutoFeedbackOnce } from '../../lib/feedback/clientAutoReport';
 import { collectLegalActionPlayTargets, getActionPlayTargetMode } from './domain/playLegality';
 import { buildDiscardStripCards } from './ui/discardStripCards';
@@ -292,9 +292,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const { t, i18n } = useTranslation('game-smashup');
     const { setSelectedFactions, interactionMode } = useSmashUpOverlay();
 
-    const runtimeStateNormalization = useMemo(() => normalizeSmashUpCoreForUi(G?.core), [G?.core]);
-    const core = runtimeStateNormalization.core;
-    const matchState = useMemo(() => (G && core ? { ...G, core } : G), [G, core]);
+    const core = G?.core;
+    const matchState = G;
     const phase = G?.sys?.phase;
     const corePlayers = core?.players ?? EMPTY_PLAYERS;
     const coreBases = core?.bases ?? EMPTY_BASES;
@@ -420,32 +419,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return resolveI18nKeys(opt.label, t);
     }, [t]);
 
-    useEffect(() => {
-        const anomalies = runtimeStateNormalization.anomalies;
-        if (!core || anomalies.length === 0) return;
 
-        const summarized = anomalies.slice(0, 8).map((item) => `${item.path}:${item.actual}`);
-        const extraCount = anomalies.length - summarized.length;
-        const summaryText = extraCount > 0 ? `${summarized.join(', ')} (+${extraCount})` : summarized.join(', ');
-        const signature = `smashup-runtime-state-normalized:${summaryText}`;
-
-        void reportClientAutoFeedbackOnce(signature, {
-            content: `[auto][smashup-runtime-guard] 大杀四方运行时状态被强制规范化：${summaryText}`,
-            autoReportKind: 'smashup-runtime-state-normalized',
-            source: 'client-runtime-guard',
-            gameId: 'smashup',
-            gameName: 'smashup',
-            playerId: playerID ?? rootPid,
-            errorName: 'SmashUpRuntimeStateNormalized',
-            errorMessage: `大杀四方运行时状态存在空数组合同破坏：${summaryText}`,
-            errorSource: 'smashup.runtime_state_guard',
-            stack: JSON.stringify({
-                phase,
-                turnNumber: core.turnNumber,
-                anomalies,
-            }),
-        });
-    }, [core, phase, playerID, rootPid, runtimeStateNormalization.anomalies]);
     
     // 更新选择的派系到 Context（游戏开始后）
     useEffect(() => {

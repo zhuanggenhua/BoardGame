@@ -9,7 +9,7 @@
  */
 
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import { SMASHUP_FACTION_IDS } from './ids';
 // ✅ 重要：这里将 SU_EVENT_TYPES 重命名为 SU_EVENTS 导入
 // 原因：历史代码中所有地方都使用 SU_EVENTS.XXX 访问事件类型常量
@@ -1899,6 +1899,7 @@ export type SmashUpEvent =
     | OngoingAttachedEvent
     | OngoingDetachedEvent
     | TalentUsedEvent
+    | BaseAbilityUsedEvent
     | DiscardAbilityUsedEvent
     | TitanMetadataUpdatedEvent
     | CardRemovedFromDeckEvent
@@ -1949,7 +1950,9 @@ export type SmashUpEvent =
     | CardSuppressedEvent
     | CardsSuppressedUntilTurnEndEvent
     | ReactionPassRequestedEvent
-    | BaseClearedEvent;
+    | BaseClearedEvent
+    | OngoingCardCounterChangedEvent
+    | MunchkinMonsterToDeckBottomEvent;
 
 // ============================================================================
 // 新增事件接口

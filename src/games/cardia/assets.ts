@@ -5,7 +5,7 @@
  * 这里不再声明静态 criticalImages，避免与 resolver 叠加导致教程加载过重。
  */
 
-import { registerGameAssets } from '../../core';
+import { registerGameAssets } from '../../core/AssetLoader';
 
 registerGameAssets('cardia', {
     criticalImages: [],

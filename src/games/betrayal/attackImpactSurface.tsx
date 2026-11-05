@@ -5,7 +5,7 @@ import {
   ShakeContainer,
   useImpactFeedback,
 } from "../../components/common/animations";
-import type { BetrayalTraitKey } from "./game";
+import type { BetrayalTraitKey } from './domain/types';
 import {
   BETRAYAL_ATTACK_IMPACT_COMPLETE_MS,
   BETRAYAL_ATTACK_IMPACT_FLASH_RESET_MS,

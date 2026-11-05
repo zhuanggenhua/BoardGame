@@ -1,5 +1,5 @@
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig, SoundKey } from '../../lib/audio/types';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 
 export const BETRAYAL_MOVE_KEY =
     'foley.analogue_gear_sound_fx_pack_vol.handling.wooden_component_handle_d';

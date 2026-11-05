@@ -1,10 +1,7 @@
 import type { Command } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
 import type { BetrayalCorpseLootCommandPayload } from './deathStateReadModel';
-import type {
-    BetrayalHauntAttackTarget,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalHauntAttackTarget, BetrayalTraitKey } from './domain/types';
 import type { BetrayalHauntSetupQueueEntryId } from './hauntSetupModel';
 import type { BetrayalHelpingHandsTrollHandAttackCommandPayload } from './hauntAttackRewardReadModel';
 import type { BetrayalPossessionUseCommandPayload } from './possessionUseResolution';

@@ -63,10 +63,6 @@ export const LocalMatchRoom = () => {
         () => getGamePageDataAttributes(gameId, gameConfig),
         [gameConfig, gameId],
     );
-    const gameHudRuntimeProps = useMemo(
-        () => buildGameHudRuntimeProps({ gameId, gameConfig }),
-        [gameConfig, gameId],
-    );
 
     useEffect(() => syncGamePageDocumentAttributes(gamePageDataAttributes), [gamePageDataAttributes]);
 
@@ -99,6 +95,10 @@ export const LocalMatchRoom = () => {
         if (!gameId || !isGameImplementationReady) return null;
         return getGameImplementation(gameId)?.runtimeAdapter ?? null;
     }, [gameId, isGameImplementationReady]);
+    const gameHudRuntimeProps = useMemo(
+        () => buildGameHudRuntimeProps({ gameId, gameConfig, resolveHudLayout: runtimeAdapter?.resolveHudLayout }),
+        [gameConfig, gameId, runtimeAdapter],
+    );
     const runtimeLocalSetup = useMemo(
         () => runtimeAdapter?.resolveLocalSetup?.({ searchParams }) ?? null,
         [runtimeAdapter, searchParams],

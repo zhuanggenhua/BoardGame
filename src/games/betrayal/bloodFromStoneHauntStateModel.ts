@@ -11,10 +11,7 @@ import { isBloodFromStoneHaunt } from './hauntScenarioReadModel';
 import { resolveBloodFromStoneHeroVictoryResult } from './hauntVictoryModel';
 import { removeBloodFromStoneStoneCherubs } from './monsterReadModel';
 import { clearNextNonCombatTraitRollReplacementsForPlayer } from './possessionActionReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type BloodFromStonePeekabooResolvedEvent = Extract<BetrayalEvent, { type: 'BLOOD_FROM_STONE_PEEKABOO_RESOLVED' }>;

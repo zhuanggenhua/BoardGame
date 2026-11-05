@@ -189,7 +189,7 @@ function promptOptionsForMinions(
     ) as PromptOption<MinionChoice>[];
 }
 
-function makeSkipOption<T extends object = Record<string, never>>(): PromptOption<T & { skip: true }> {
+function makeSkipOption<T extends object = Record<never, never>>(): PromptOption<T & { skip: true }> {
     return {
         id: 'skip',
         label: '跳过',

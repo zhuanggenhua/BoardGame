@@ -1,6 +1,6 @@
 import type { GameSetupSelections } from '../../shared/gameSetupOptions';
 import { applyQidahenPregameChoiceDefaults } from './roomSetup';
-import { qidahenAtlas05OrdinaryHandPreview } from './ui/cardAtlas';
+import { qidahenAtlas05OrdinaryHandPreview } from './data/cardAtlas';
 import {
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES,
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,

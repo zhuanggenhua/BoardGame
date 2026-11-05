@@ -10,10 +10,7 @@ import {
 } from './hauntVictoryModel';
 import { clearNextNonCombatTraitRollReplacementsForPlayer } from './possessionActionReadModel';
 import { BETRAYAL_TRAIT_LABEL as TRAIT_LABEL } from './possessionEffects';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type DustSearchResolvedEvent = Extract<BetrayalEvent, { type: 'DUST_SEARCH_RESOLVED' }>;

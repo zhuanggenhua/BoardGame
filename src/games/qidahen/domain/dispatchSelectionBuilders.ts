@@ -52,7 +52,7 @@ import {
     computeQidahenEffectiveCommittedTroops,
     getQidahenAttackRuleConfig,
 } from './attackRules';
-import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
+import { getQidahenBoundaryTypeMeta } from '../data/mapGraph';
 import type {
     QidahenCore,
     QidahenFactionId,

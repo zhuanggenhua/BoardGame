@@ -1,3 +1,4 @@
+import { planFixtureCommandEvents } from './commandFixture';
 import { makeMinionDestroyedEvent } from './helpers';
 /**
  * ongoing 能力端到端集成测试
@@ -11,7 +12,7 @@ import { makeMinionDestroyedEvent } from './helpers';
  
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { execute, reduce } from '../domain/reducer';
+import { reduce } from '../domain/reducer';
 import { postProcessSystemEvents } from '../domain';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type {
@@ -93,7 +94,7 @@ const defaultRandom: RandomFn = {
 /** 执行打出行动卡命令，返回事件列表 */
 function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string): SmashUpEvent[] {
     const ms = makeMatchState(state);
-    const events = execute(ms, {
+    const events = planFixtureCommandEvents(ms, {
         type: SU_COMMANDS.PLAY_ACTION, playerId,
         payload: { cardUid },
     } as any, defaultRandom);
@@ -105,7 +106,7 @@ function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string): 
 /** 执行打出随从命令，返回事件列表 */
 function execPlayMinion(state: SmashUpCore, playerId: string, cardUid: string, baseIndex: number): SmashUpEvent[] {
     const ms = makeMatchState(state);
-    const events = execute(ms, {
+    const events = planFixtureCommandEvents(ms, {
         type: SU_COMMANDS.PLAY_MINION, playerId,
         payload: { cardUid, baseIndex },
     } as any, defaultRandom);
@@ -116,7 +117,7 @@ function execPlayMinion(state: SmashUpCore, playerId: string, cardUid: string, b
 
 function runPlayAction(state: SmashUpCore, playerId: string, cardUid: string) {
     const matchState = makeMatchState(state);
-    const events = execute(matchState, {
+    const events = planFixtureCommandEvents(matchState, {
         type: SU_COMMANDS.PLAY_ACTION,
         playerId,
         payload: { cardUid },

@@ -15,7 +15,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { PlayerId } from '../../../engine/types';
 import type { TurnPhase, CharacterId, PendingAttack, DiceThroneCore } from '../domain/types';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import { getUpgradeCardPreviewRef } from '../ui/abilityOverlayHelpers';
 import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
 import { findPlayerAbility } from '../domain/abilityLookup';

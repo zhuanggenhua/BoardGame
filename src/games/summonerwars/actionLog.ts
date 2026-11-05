@@ -21,7 +21,7 @@ import { SW_COMMANDS, SW_EVENTS } from './domain';
 import type { SummonerWarsCore } from './domain/types';
 import { abilityRegistry } from './domain/abilities';
 import { calculateEffectiveStrength } from './domain/abilityResolver';
-import { getSummonerWarsCardPreviewMeta } from './ui/cardPreviewHelper';
+import { getSummonerWarsCardPreviewMeta } from './cardPreviewModel';
 import { getCardIdFromInstanceId } from './domain/utils';
 import { getBaseCardId } from './domain/ids';
 import type { DiceFaceResult } from './config/dice';

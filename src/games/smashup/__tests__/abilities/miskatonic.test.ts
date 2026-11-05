@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from '../commandFixture';
 import { beforeEach, describe, expect, test } from 'vitest';
 import { GameTestRunner } from '../../../../engine/testing';
 import { createInitialSystemState } from '../../../../engine/pipeline';
@@ -10,7 +11,7 @@ import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
 import { SMASHUP_FACTION_IDS } from '../../domain/ids';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { getSmashUpReactionWindowContext } from '../../domain/reactionWindowState';
-import { execute, reduce } from '../../domain/reducer';
+import { reduce } from '../../domain/reducer';
 import { smashUpSystemsForTest } from '../../game';
 import { MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE, SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import type { BaseInPlay, CardInstance, FactionId, MinionOnBase, PlayerState, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../../domain/types';
@@ -1336,7 +1337,7 @@ describe('miskatonic_professor（教授 talent）', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -1372,7 +1373,7 @@ describe('miskatonic_professor（教授 talent）', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },

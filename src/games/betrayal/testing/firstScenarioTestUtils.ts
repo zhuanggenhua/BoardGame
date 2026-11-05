@@ -3,13 +3,10 @@ import type {
   MatchState,
   RandomFn,
 } from "../../../engine/types";
-import {
-  BetrayalDomain,
-  EXPLORER_CATALOG,
-  createBetrayalMonsterFromDefinition,
-  type BetrayalCore,
-  type BetrayalTraitKey,
-} from "../game";
+import { BetrayalDomain } from '../domain/index';
+import { EXPLORER_CATALOG } from '../domain/stateFactory';
+import { createBetrayalMonsterFromDefinition } from '../domain/monsterDefinitions';
+import type { BetrayalCore, BetrayalTraitKey } from '../domain/types';
 import { BETRAYAL_COMMANDS } from "../commands";
 import type {
   BetrayalCommand,

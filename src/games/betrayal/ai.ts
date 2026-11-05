@@ -330,7 +330,7 @@ function buildTraitSelections(
 }
 
 function expandEffectPayloads(
-    core: BetrayalCore,
+    core: Pick<BetrayalAiCore, 'rooms'>,
     effect: UseEffectProfile,
     seeds: EventChoicePayload[],
 ): EventChoicePayload[] {

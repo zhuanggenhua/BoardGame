@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { RandomFn } from '../../../engine/types';
 import type { AbilityDef } from '../domain/combat';
 import {
@@ -17,7 +17,7 @@ import {
   type SelectableCharacterId,
 } from '../domain/types';
 import { getDiceDefinition } from '../domain/diceRegistry';
-import { getDiceThroneCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getDiceThroneCardPreviewRef } from '../cardPreviewModel';
 import '../domain';
 
 export const DICETHRONE_CONFIG_REVIEW_VERSION = 'legacy-ts-config-v1';
@@ -212,7 +212,7 @@ const RULE_EVIDENCE = {
   cards: 'src/games/dicethrone/heroes/*/cards.ts getStartingDeck',
   abilities: 'src/games/dicethrone/heroes/*/abilities.ts *_ABILITIES',
   tokens: 'src/games/dicethrone/heroes/*/tokens.ts *_TOKENS',
-  materials: 'src/games/dicethrone/ui/cardPreviewHelper.ts getDiceThroneCardPreviewRef',
+  materials: 'src/games/dicethrone/cardPreviewModel.ts getDiceThroneCardPreviewRef',
 } as const;
 
 function characterRoot(characterId: SelectableCharacterId): string {

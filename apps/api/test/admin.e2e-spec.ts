@@ -1,3 +1,8 @@
+type StatsServiceInternals = {
+    getOnlineUserIds(): Promise<string[]>;
+    countActiveUsers24h(onlineUserIds: string[]): Promise<number>;
+    getGamePlayStats(): Promise<unknown[]>;
+};
 import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ValidationPipe } from '@nestjs/common';
@@ -61,9 +66,9 @@ describe('AdminService stats aggregation', () => {
             cacheManager as never,
         );
 
-        vi.spyOn(service as never, 'getOnlineUserIds').mockResolvedValue([]);
-        vi.spyOn(service as never, 'countActiveUsers24h').mockResolvedValue(0);
-        vi.spyOn(service as never, 'getGamePlayStats').mockResolvedValue([]);
+        vi.spyOn(service as unknown as StatsServiceInternals, 'getOnlineUserIds').mockResolvedValue([]);
+        vi.spyOn(service as unknown as StatsServiceInternals, 'countActiveUsers24h').mockResolvedValue(0);
+        vi.spyOn(service as unknown as StatsServiceInternals, 'getGamePlayStats').mockResolvedValue([]);
 
         const stats = await service.getStats();
 
@@ -109,9 +114,9 @@ describe('AdminService stats aggregation', () => {
             cacheManager as never,
         );
 
-        vi.spyOn(service as never, 'getOnlineUserIds').mockResolvedValue([]);
-        vi.spyOn(service as never, 'countActiveUsers24h').mockResolvedValue(0);
-        vi.spyOn(service as never, 'getGamePlayStats').mockResolvedValue([]);
+        vi.spyOn(service as unknown as StatsServiceInternals, 'getOnlineUserIds').mockResolvedValue([]);
+        vi.spyOn(service as unknown as StatsServiceInternals, 'countActiveUsers24h').mockResolvedValue(0);
+        vi.spyOn(service as unknown as StatsServiceInternals, 'getGamePlayStats').mockResolvedValue([]);
 
         const stats = await service.getStats();
 

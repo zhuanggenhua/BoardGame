@@ -37,7 +37,7 @@ import {
     cloneUseEffect,
     isWarningEventEffect,
 } from './possessionEffects';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalCommand } from './commandTypes';
 import type { BetrayalEvent } from './events';
 

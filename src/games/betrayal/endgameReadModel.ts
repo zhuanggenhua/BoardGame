@@ -1,9 +1,5 @@
 import { getAllExplorers } from './explorerReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-    BetrayalPhase,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult, BetrayalPhase } from './domain/types';
 import type { BetrayalScenarioOutcome } from './scenarioConfig';
 
 export type BetrayalEndgameTextStatus = 'inactive' | 'representative-only' | 'available' | 'missing-contract';

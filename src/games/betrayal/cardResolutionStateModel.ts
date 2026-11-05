@@ -7,20 +7,7 @@ import { cloneBetrayalRoomEndTurnEffectResult } from './roomEndTurnEffectModel';
 import { cloneMonsterMovementRollResult } from './monsterActionReadModel';
 import { cloneUseEffect } from './possessionEffects';
 import type { BetrayalDustEndTurnResult } from './dustHauntRules';
-import type {
-    BetrayalCore,
-    BetrayalDeckKind,
-    BetrayalDiscoveryResolutionStep,
-    BetrayalDiscoveryResolutionStepKind,
-    BetrayalDiscoverySummary,
-    BetrayalInventoryCard,
-    BetrayalPendingCardResolutionProcessCard,
-    BetrayalPendingCardResolutionState,
-    BetrayalPendingCardResolutionStepKind,
-    BetrayalPendingEventChoiceState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalTurnEndedPayload,
-} from './game';
+import type { BetrayalCore, BetrayalDeckKind, BetrayalDiscoveryResolutionStep, BetrayalDiscoveryResolutionStepKind, BetrayalDiscoverySummary, BetrayalInventoryCard, BetrayalPendingCardResolutionProcessCard, BetrayalPendingCardResolutionState, BetrayalPendingCardResolutionStepKind, BetrayalPendingEventChoiceState, BetrayalPendingEventRollResolutionState, BetrayalTurnEndedPayload } from './domain/types';
 
 export function cloneDiscoverySummary(discovery: BetrayalDiscoverySummary): BetrayalDiscoverySummary {
     return {

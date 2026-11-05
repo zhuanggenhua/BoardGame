@@ -1,6 +1,6 @@
 import {
     qidahenAtlas05OrdinaryHandPreview,
-} from '../ui/cardAtlas';
+} from '../data/cardAtlas';
 import { resolveQidahenAtlas05OrdinaryHandCardIdentity } from './handCardIdentity';
 import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITIES } from './ordinaryHandCardIdentities';
 import type { QidahenCore, QidahenFactionId, QidahenHandCard } from './types';

@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 import { describe, expect, it, vi } from 'vitest';
 import type { MatchState, PlayerId } from '../../types';
 import type { GameEngineConfig } from '../engineConfig';
@@ -53,8 +54,8 @@ function createMetadata(overrides?: Partial<MatchMetadata>): MatchMetadata {
 
 function createStoredState(overrides?: Partial<StoredMatchState>): StoredMatchState {
     const state: MatchState<unknown> = {
-        core: { currentPlayer: '0' },
-        sys: { phase: 'main', turnNumber: 1 },
+        core: { currentPlayer: '0', playerIds: ['0', '1'] },
+        sys: { ...createInitialSystemState(['0', '1'], []), phase: 'main', turnNumber: 1 },
     };
     return {
         G: state,
@@ -166,11 +167,12 @@ describe('MatchRoomRegistry', () => {
         expect(registry.get('match-1')?.metadata.players).toEqual(merged.players);
     });
 
-    it('stored random fallback 与 cursor 归一化保持服务端重启后的确定性', () => {
+    it('旧随机字段缺省兼容，显式非法 cursor 拒绝，不改变随机序列', () => {
         expect(resolveStoredRandomSeed({ G: {}, _stateID: 1 }, 'fallback-match')).toBe('fallback-match');
         expect(resolveStoredRandomSeed({ G: {}, _stateID: 1, randomSeed: 'seed' }, 'fallback-match')).toBe('seed');
-        expect(resolveStoredRandomCursor({ G: {}, _stateID: 1, randomCursor: -1 })).toBe(0);
-        expect(resolveStoredRandomCursor({ G: {}, _stateID: 1, randomCursor: 2.9 })).toBe(2);
+        expect(() => resolveStoredRandomCursor({ G: {}, _stateID: 1, randomCursor: -1 })).toThrow('invalid-random-cursor');
+        expect(resolveStoredRandomCursor({ G: {}, _stateID: 1 })).toBe(0);
+        expect(() => resolveStoredRandomCursor({ G: {}, _stateID: 1, randomCursor: 2.9 })).toThrow('invalid-random-cursor');
 
         const tracked = createTrackedRandom('seed', 2);
         expect(tracked.getCursor()).toBe(2);

@@ -297,5 +297,12 @@
       "end_line1": "End",
       "end_line2": "Action"
     }
+  },
+  "localSession": {
+    "restoreBlocked": "This saved game cannot be restored. It has been kept unchanged. Start a new game to replace it.",
+    "restart": "Start a new game",
+    "saveFailed": "This game could not be saved on this device. Keep this page open to continue playing.",
+    "expired": "The previous saved game expired after 30 days. A new game has started.",
+    "dismiss": "Dismiss"
   }
 }

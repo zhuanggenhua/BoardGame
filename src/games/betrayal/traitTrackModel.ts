@@ -1,10 +1,4 @@
-import type {
-    BetrayalExplorerSummary,
-    BetrayalExplorerTemplate,
-    BetrayalTraitKey,
-    BetrayalTraitTrackMap,
-    BetrayalTraitTrackState,
-} from './game';
+import type { BetrayalExplorerSummary, BetrayalExplorerTemplate, BetrayalTraitKey, BetrayalTraitTrackMap, BetrayalTraitTrackState } from './domain/types';
 
 export const BETRAYAL_TRAIT_KEYS: BetrayalTraitKey[] = ['might', 'speed', 'knowledge', 'sanity'];
 

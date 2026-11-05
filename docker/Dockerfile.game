@@ -35,8 +35,7 @@ WORKDIR /app
 # 生产依赖（不含 devDependencies，体积大幅缩小）
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
-COPY --from=builder /app/temp/prod-bundles/game/server.mjs ./server.mjs
-COPY --from=builder /app/temp/prod-bundles/game/server.mjs.map ./server.mjs.map
+COPY --from=builder /app/temp/prod-bundles/game/ ./
 
 ENV GAME_SERVER_PORT=18000
 ENV NODE_ENV=production

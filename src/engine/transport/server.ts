@@ -31,6 +31,9 @@ import {
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
 import type { GameEngineConfig } from './engineConfig';
+import { GameEngineRegistry } from './gameEngineRegistry';
+import type { GameEngineLoader } from './gameEngineRegistry';
+import { executeAuthoritativeTransaction, type DeferredAuthoritativeEffect } from './authoritativeCommandTransaction';
 export type {
     AnyGameEngineConfig,
     GameEngineConfig,
@@ -57,18 +60,16 @@ import {
     type OnlineAiRecoveryFeedbackPayload,
 } from './transportFeedbackReporter';
 import { OnlineAiCircuitFailureCoordinator } from './onlineAiCircuitFailureCoordinator';
-import {
-    type OnlineAiLegalActionRecoveryResult,
-} from './onlineAiWatchdogSequenceHelpers';
+import type { OnlineAiLegalActionRecoveryResult } from './onlineAiWatchdogSequenceHelpers';
 import {
     buildOnlineAiWatchdogSeatControllers,
     extractTrustedSetupSeatControllers,
     normalizeOnlineAiWatchdogSeatControllerType,
     resolveRawOnlineAiWatchdogSeatControllers,
     resolveSeatControllerTypeForTraining,
-    type GameManifestIndex,
     type OnlineAiSeatControllerType,
 } from './onlineAiSeatControllers';
+import type { GameManifestIndex } from './onlineAiWatchdogSeatControllers';
 import { resolveOnlineAiRecoveryResolved } from './onlineAiRecoveryResolved';
 import { OnlineAiRepeatedRecoveryCoordinator } from './onlineAiRepeatedRecoveryCoordinator';
 import {
@@ -84,9 +85,7 @@ import {
 } from './onlineAiWatchdogTracker';
 import { AuthoritativeCommandExecutor } from './authoritativeCommandExecutor';
 import { AuthoritativeBatchCoordinator } from './authoritativeBatchCoordinator';
-import {
-    type QueuedAuthoritativeCommand,
-} from './authoritativeCommandQueue';
+import type { QueuedAuthoritativeCommand } from './authoritativeCommandQueue';
 import { MatchRoomRuntime } from './matchRoomRuntime';
 import { TrainingDataCapture } from './trainingDataCapture';
 import { OnlineAiLegalActionRecoveryCoordinator } from './onlineAiLegalActionRecoveryCoordinator';
@@ -168,6 +167,8 @@ export interface GameTransportServerConfig {
     storage: MatchStorage;
     /** 注册的游戏引擎 */
     games: GameEngineConfig[];
+    gameLoaders?: readonly GameEngineLoader[];
+    gameRegistry?: GameEngineRegistry;
     /** 离线裁决宽限期（毫秒），默认 30000 */
     offlineGraceMs?: number;
     /** 认证回调（可选） */
@@ -178,7 +179,7 @@ export interface GameTransportServerConfig {
         metadata: MatchMetadata,
     ) => boolean | Promise<boolean>;
     /** 游戏结束回调（可选） */
-    onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void;
+    onGameOver?: (matchID: string, gameName: string, gameover: unknown) => void | Promise<void>;
     /** 命令成功后回调（可选），用于刷新大厅摘要等非游戏状态视图 */
     onCommandSucceeded?: (matchID: string, gameName: string, commandType: string) => void;
     trainingDataRecorder?: TrainingDataRecorder;
@@ -215,7 +216,7 @@ function cloneDiagnosticValue(value: unknown): unknown {
 export class GameTransportServer {
     private readonly io: IOServer;
     private readonly storage: MatchStorage;
-    private readonly gameIndex: Map<string, GameEngineConfig>;
+    private readonly gameIndex: GameEngineRegistry;
     private readonly matchRoomRegistry: MatchRoomRegistry<ExecuteCommandInternalOptions>;
     private readonly socketIndex: Map<string, SocketInfo>;
     private readonly offlineGraceMs: number;
@@ -252,6 +253,7 @@ export class GameTransportServer {
     private readonly authoritativeQueuedCommandStaleRejectionCoordinator: AuthoritativeQueuedCommandStaleRejectionCoordinator<ActiveMatch>;
     private readonly authoritativeCommandSuccessCoordinator: AuthoritativeCommandSuccessCoordinator<ActiveMatch, OnlineAiRecoveryFeedbackPayload>;
     private readonly authoritativeCommandExecutor: AuthoritativeCommandExecutor;
+    private readonly stagedCommandEffects = new WeakMap<ActiveMatch, DeferredAuthoritativeEffect<ActiveMatch>[]>();
     private readonly matchStateInjectionCoordinator: MatchStateInjectionCoordinator<ActiveMatch>;
     private onlineAiRecoveryTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -262,7 +264,7 @@ export class GameTransportServer {
     constructor(config: GameTransportServerConfig) {
         this.io = config.io;
         this.storage = config.storage;
-        this.gameIndex = new Map(config.games.map((g) => [g.gameId, g]));
+        this.gameIndex = config.gameRegistry ?? new GameEngineRegistry(config.games, config.gameLoaders);
         this.matchRoomRegistry = new MatchRoomRegistry({
             storage: this.storage,
             gameIndex: this.gameIndex,
@@ -425,6 +427,7 @@ export class GameTransportServer {
                 },
                 deleteMatch: (matchID) => this.matchRoomRegistry.delete(matchID),
                 clearRecoveryState: (matchID) => {
+                    this.authoritativeCommandSuccessCoordinator?.cancelPendingEffects(matchID);
                     this.onlineAiRecoveryLedger.clearMatch(matchID);
                 },
                 clearCircuitState: (matchID) => {
@@ -535,9 +538,11 @@ export class GameTransportServer {
                     match.lastBroadcastedViews.clear();
                 },
                 persistRollbackState: (match, storedState) => (
-                    this.storage.setState(match.matchID, storedState)
+                    this.stagedCommandEffects.has(match) ? Promise.resolve() : this.storage.setState(match.matchID, storedState)
                 ),
-                broadcastState: (match) => this.stateSynchronizer.broadcast(match),
+                broadcastState: (match) => {
+                    if (!this.stagedCommandEffects.has(match)) this.stateSynchronizer.broadcast(match);
+                },
                 buildAuthoritativeState: (match) => this.stateSynchronizer.buildAuthoritativeState(match),
                 resolveSeatControllerType: (match, playerId) => (
                     this.resolveOnlineAiSeatControllerType(match, playerId)
@@ -569,6 +574,7 @@ export class GameTransportServer {
                         event: args.event,
                         progressMarkerBefore: args.progressMarkerBefore,
                         preCommandSeatView: args.preCommandSeatView,
+                        preCommandSharedState: args.preCommandSharedState,
                     })
                 ),
                 buildPostTrainingState: (match, playerId) => this.stateSynchronizer.stripForTraining(
@@ -578,7 +584,9 @@ export class GameTransportServer {
                 reportOnlineAiRecoveryFeedback: (feedback) => (
                     this.transportFeedbackReporter.reportOnlineAiRecoveryFeedback(feedback)
                 ),
-                broadcastState: (match) => this.stateSynchronizer.broadcast(match),
+                broadcastState: (match) => {
+                    if (!this.stagedCommandEffects.has(match)) this.stateSynchronizer.broadcast(match);
+                },
                 clearOnlineAiCircuitBreaker: (matchID) => this.onlineAiCircuitBreaker.clearMatch(matchID),
                 persistMetadata: (match) => this.storage.setMetadata(match.matchID, match.metadata),
             },
@@ -737,7 +745,9 @@ export class GameTransportServer {
                         feedbackSource: 'online-ai-watchdog',
                     },
                 ),
-                broadcastState: (match) => this.stateSynchronizer.broadcast(match),
+                broadcastState: (match) => {
+                    if (!this.stagedCommandEffects.has(match)) this.stateSynchronizer.broadcast(match);
+                },
                 onEmergencyOverlayFallbackRetry: ({ match, playerId, reason, blockedReason, blockedKey }) => {
                     logger.warn('[GameTransport] online-ai-watchdog retrying legal-action with emergency playerView', {
                         matchID: match.matchID,
@@ -984,22 +994,22 @@ export class GameTransportServer {
                     executor: {
                         applyPlayerView: (playerId) => this.stateSynchronizer.applyPlayerView(match, playerId) as MatchState<unknown>,
                         getSeatControllers: () => this.buildOnlineAiSeatControllers(match),
-                        executeCommandSequence: (playerId, commands, options) => executeOnlineAiCommandSequence({
-                            match,
+                        executeCommandSequence: (playerId, commands, options) => this.executeAtomicAction(match, (working) => executeOnlineAiCommandSequence({
+                            match: working,
                             playerId,
                             commands,
                             options,
                             createTrackedRandom,
-                            persistState: (storedState) => this.storage.setState(match.matchID, storedState),
-                            broadcastState: () => this.stateSynchronizer.broadcast(match),
+                            persistState: async () => undefined,
+                            broadcastState: () => undefined,
                             executeCommand: (command, commandOptions) => this.executeCommandInternal(
-                                match,
+                                working,
                                 playerId,
                                 command.type,
                                 command.payload,
                                 commandOptions,
                             ),
-                        }),
+                        }), (result) => result.success),
                         clearRecoveryState: () => {
                             this.onlineAiRecoveryLedger.clearRecoveryProgress(match.matchID);
                         },
@@ -1131,7 +1141,7 @@ export class GameTransportServer {
         seed: string,
         setupData?: unknown,
     ): Promise<{ state: MatchState<unknown>; randomCursor: number } | null> {
-        const engineConfig = this.gameIndex.get(gameId);
+        const engineConfig = await this.gameIndex.get(gameId);
         if (!engineConfig) return null;
 
         return createMatchSetupState({
@@ -1258,6 +1268,7 @@ export class GameTransportServer {
 
     /** 卸载活跃对局（销毁房间时调用） */
     unloadMatch(matchID: string, options?: { disconnectSockets?: boolean }): boolean {
+        if (!this.matchRoomRegistry.get(matchID)) this.matchRoomRegistry.delete(matchID);
         return this.matchRoomUnloadCoordinator.unloadMatch(matchID, options);
     }
 
@@ -1545,13 +1556,21 @@ export class GameTransportServer {
         seatControllers: Record<string, OnlineAiWatchdogSeatController>,
         delayContext?: OnlineAiActionDelayContext,
     ): Promise<OnlineAiLegalActionRecoveryResult> {
-        return this.onlineAiLegalActionRecoveryCoordinator.tryRecover({
-            match,
+        const result = await this.executeAtomicAction(match, (working) => this.onlineAiLegalActionRecoveryCoordinator.tryRecover({
+            match: working,
             candidate,
             tracker,
             seatControllers,
             delayContext,
-        });
+        }), (recovery) => recovery.applied);
+        if (result.applied && !match.unloaded) {
+            try {
+                this.stateSynchronizer.broadcast(match);
+            } catch (error) {
+                logger.error('[GameTransport] committed recovery notification failed', { matchID: match.matchID, error });
+            }
+        }
+        return result;
     }
 
     private maybeTriggerOnlineAiOverlayResync(args: {
@@ -1627,12 +1646,17 @@ export class GameTransportServer {
         playerID: string | null,
         credentials?: string,
     ): Promise<void> {
-        await this.connectionLifecycleCoordinator.handleSync({
+        try {
+            await this.connectionLifecycleCoordinator.handleSync({
             socket,
             matchID,
             playerID,
             credentials,
-        });
+            });
+        } catch (error) {
+            logger.error('[GameSync] 房间加载失败', { matchID, error });
+            socket.emit('error', matchID, 'game_unavailable');
+        }
     }
 
     private async handleCommand(
@@ -1751,20 +1775,52 @@ export class GameTransportServer {
         commands: Array<{ type: string; payload: unknown }>,
         meta?: BatchDispatchMeta,
     ): Promise<boolean> {
-        return this.authoritativeBatchCoordinator.execute({
+        let success: boolean;
+        try {
+            success = await this.executeAtomicAction(match, (working) => this.authoritativeBatchCoordinator.execute({
+                match: working,
+                playerId: playerID,
+                batchId,
+                commands,
+                tracePrefix: 'execute-batch',
+                meta,
+                emitBatchRejected: (activeMatchID, activeBatchId, reason) => {
+                    socket.emit('batch:rejected', activeMatchID, activeBatchId, reason);
+                },
+                emitBatchConfirmed: () => undefined,
+            }), (result) => result);
+        } catch (error) {
+            logger.error('[GameTransport] batch transaction failed', { matchID: match.matchID, batchId, error });
+            socket.emit('batch:rejected', match.matchID, batchId, 'command_failed');
+            return false;
+        }
+        try {
+            this.stateSynchronizer.broadcast(match);
+            if (success) socket.emit('batch:confirmed', match.matchID, batchId, this.stateSynchronizer.buildAuthoritativeState(match));
+        } catch (error) {
+            logger.error('[GameTransport] committed batch notification failed; client must resync', { matchID: match.matchID, batchId, error });
+        }
+        return success;
+    }
+
+    private executeAtomicAction<TResult>(
+        match: ActiveMatch,
+        execute: (working: ActiveMatch) => Promise<TResult>,
+        succeeded: (result: TResult) => boolean,
+    ): Promise<TResult> {
+        return executeAuthoritativeTransaction({
             match,
-            playerId: playerID,
-            batchId,
-            commands,
-            tracePrefix: 'execute-batch',
-            meta,
-            emitBatchRejected: (activeMatchID, activeBatchId, reason) => {
-                socket.emit('batch:rejected', activeMatchID, activeBatchId, reason);
+            execute: async (working, effects) => {
+                this.stagedCommandEffects.set(working, effects);
+                try {
+                    return await execute(working);
+                } finally {
+                    this.stagedCommandEffects.delete(working);
+                }
             },
-            emitBatchConfirmed: (activeMatchID, activeBatchId, authoritativeState) => {
-                // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
-                socket.emit('batch:confirmed', activeMatchID, activeBatchId, authoritativeState);
-            },
+            succeeded,
+            persistState: (storedState) => this.storage.setState(match.matchID, storedState),
+            onEffectError: (error) => logger.error('[GameTransport] committed batch effect failed', { matchID: match.matchID, error }),
         });
     }
 
@@ -1908,6 +1964,7 @@ export class GameTransportServer {
             progressMarkerBeforeCommand,
             preCommandSeatView: preTrainingState,
             suppressBroadcast: options?.suppressBroadcast,
+            deferredEffects: this.stagedCommandEffects.get(match),
         });
     }
 

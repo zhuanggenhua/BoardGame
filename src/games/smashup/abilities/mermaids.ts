@@ -124,7 +124,7 @@ const MERMAIDS_TEMP_CONTROL_CONTROLLER_META = 'mermaidsTemporaryControlOriginalC
 const MERMAIDS_TEMP_CONTROL_PLAYER_META = 'mermaidsTemporaryControlPlayerId';
 const MERMAIDS_TEMP_CONTROL_TURN_META = 'mermaidsTemporaryControlTurn';
 
-function createMermaidsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createMermaidsPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: AbilityContext['matchState'],
     playerId: PlayerId,
     now: number,

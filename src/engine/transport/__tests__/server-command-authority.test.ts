@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 import {
     describe,
     expect,
@@ -218,8 +219,8 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
         await storage.createMatch('match-manual-setup-server-authority', {
             initialState: {
                 G: {
-                    core: { hostStarted: false, activePlayerId: '1' },
-                    sys: { phase: 'factionSelect', turnNumber: 1 },
+                    core: { playerIds: ['0', '1'], hostStarted: false, activePlayerId: '1' },
+                    sys: { ...createInitialSystemState(['0', '1'], []), phase: 'factionSelect', turnNumber: 1 },
                 },
                 _stateID: 0,
                 randomSeed: 'seed',
@@ -287,7 +288,7 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
         metadata.players['0'].ownerKey = 'user:owner';
         metadata.players['2'] = { name: '访客', credentials: 'cred-2', ownerKey: 'user:guest', isConnected: false };
         await storage.createMatch('match-manual-setup-non-owner', {
-            initialState: createOnlineAiRecoveryState({ phase: 'factionSelect' }),
+            initialState: createOnlineAiRecoveryState({ playerIds: ['0', '1', '2'], phase: 'factionSelect' }),
             metadata,
         });
         const base = createEngineConfigWithId(gameId);
@@ -498,10 +499,10 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
                 activePlayerId: '1',
                 currentPlayerIndex: 1,
             },
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 ...match.state.sys,
                 phase: 'main2',
-                eventStream: { nextId: 1 },
+                eventStream: { entries: [], nextId: 1 },
                 interaction: { current: undefined, queue: [], isBlocked: false },
                 responseWindow: { current: undefined },
             },
@@ -522,10 +523,10 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
                     activePlayerId: '0',
                     currentPlayerIndex: 0,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
                     phase: 'main2',
-                    eventStream: { nextId: 2 },
+                    eventStream: { entries: [], nextId: 2 },
                 },
             };
             return true;
@@ -721,9 +722,9 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
                             { id: 4, value: 5 },
                         ],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 4 },
+                        eventStream: { entries: [], nextId: 4 },
                     },
                 };
                 activeMatch.stateID += 1;
@@ -739,9 +740,9 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
                         ...activeMatch.state.core,
                         rollConfirmed: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 5 },
+                        eventStream: { entries: [], nextId: 5 },
                     },
                 };
                 activeMatch.stateID += 1;
@@ -872,9 +873,9 @@ describe('GameTransportServer（command authority / manual AI control）', () =>
                         ...activeMatch.state.core,
                         pendingBonusDiceSettlement: undefined,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 2 },
+                        eventStream: { entries: [], nextId: 2 },
                     },
                 };
                 activeMatch.stateID += 1;

@@ -165,6 +165,7 @@ vi.mock('../../../config/server', () => ({
 }));
 
 vi.mock('../../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
     loadGameImplementation: (...args: unknown[]) => packageMocks.loadGameImplementation(...args),
     prefetchGameImplementation: (...args: unknown[]) => packageMocks.prefetchGameImplementation(...args),
     ensureGameCriticalImageResolverLoaded: (...args: unknown[]) => packageMocks.ensureGameCriticalImageResolverLoaded(...args),

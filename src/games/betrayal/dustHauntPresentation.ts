@@ -1,9 +1,5 @@
 import type { PreviewState } from "./previewStateModel";
-import type {
-  BetrayalCore,
-  BetrayalDustRuntimeState,
-  BetrayalExplorerSummary,
-} from "./game";
+import type { BetrayalCore, BetrayalDustRuntimeState, BetrayalExplorerSummary } from './domain/types';
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 
 type DustPresentationText = (

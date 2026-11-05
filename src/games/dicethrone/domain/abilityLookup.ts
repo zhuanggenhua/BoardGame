@@ -10,7 +10,7 @@ import type { PlayerId } from '../../../engine/types';
 import type { AbilityDef, AbilityEffect, AbilityTag, AbilityVariantDef } from './combat';
 import type { EffectAction } from './tokenTypes';
 import type { DiceThroneCore } from './types';
-import { getCustomActionMeta } from './effects';
+import { getCustomActionMeta } from './customActionRegistry';
 
 export type PlayerAbilityMatch = { ability: AbilityDef; variant?: AbilityVariantDef };
 

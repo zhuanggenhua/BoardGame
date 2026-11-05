@@ -61,9 +61,9 @@ description: "BoardGame 新游戏创建或资源/data intake 流程。用于新�
 
 ### S1 骨架与 Manifest
 
-Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI 目录骨架、manifest、domain 草稿、规则文件和资源索引；不得创建正式 Board、运行时 HUD 或玩家交互。设计稿批准后，再按 `references/game-skeleton.md` 补齐 Board、thumbnail、tutorial、audio、critical image resolver 和基础测试。主 skill 不维护代码模板。
+Open Design 设计稿和 UI-facing 模型批准前，S1 只允许建立非 UI 目录骨架、`manifest.draft.ts`、domain 草稿、规则文件和资源索引；不得创建正式 Board、运行时 HUD 或玩家交互。草稿不注册、不进入生成清单、不要求大厅发现。设计稿批准并补齐正式 Board 后，再把草稿更名为 `manifest.ts`，按 `references/game-skeleton.md` 补齐 thumbnail、tutorial、audio、critical image resolver 和基础测试。不得用占位 Board 或降低生成器校验换取提前注册。主 skill 不维护代码模板。
 
-最低验收：
+设计门通过并注册后的最低验收：
 
 - `npm run generate:manifests` 通过；
 - 对应 `src/games/<gameId>` 冒烟测试通过；

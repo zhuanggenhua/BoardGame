@@ -1,10 +1,5 @@
-import type {
-  BetrayalCore,
-  BetrayalInventoryCard,
-  BetrayalRoomNode,
-  BetrayalTraitKey,
-  UseEffectProfile,
-} from "./game";
+import type { BetrayalCore, BetrayalInventoryCard, BetrayalRoomNode, BetrayalTraitKey } from './domain/types';
+import type { UseEffectProfile } from './possessionEffects';
 import type { BetrayalAttackWeaponCardStatus } from "./attackRules";
 import { resolveInventoryEffectId } from "./possessionEffects";
 import { isBetrayalOptionalHauntRollRuntimeSupported } from "./scenarioConfig";

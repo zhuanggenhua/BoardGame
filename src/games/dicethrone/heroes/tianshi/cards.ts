@@ -1,6 +1,6 @@
 /** 炽天使卡牌定义。每个专属物理槽只对应一张运行时卡牌。 */
 
-import type { CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core/cardPreviewTypes';
 import type { RandomFn } from '../../../../engine/types';
 import { abilityEffectText } from '../../../../engine/primitives/ability';
 import type { AbilityCard } from '../../types';

@@ -117,8 +117,8 @@ export const TestMatchRoom: React.FC = () => {
         [gameConfig, gameId],
     );
     const gameHudRuntimeProps = useMemo(
-        () => buildGameHudRuntimeProps({ gameId, gameConfig }),
-        [gameConfig, gameId],
+        () => buildGameHudRuntimeProps({ gameId, gameConfig, resolveHudLayout: runtimeAdapter?.resolveHudLayout }),
+        [gameConfig, gameId, runtimeAdapter],
     );
 
     useEffect(() => syncGamePageDocumentAttributes(gamePageDataAttributes), [gamePageDataAttributes]);

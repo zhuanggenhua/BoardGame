@@ -10,8 +10,9 @@ import type {
     TokenConsumedEvent,
     TokenGrantedEvent,
 } from '../types';
-import type { CustomActionContext } from '../effects';
-import { createDisplayOnlySettlement, registerCustomActionHandler } from '../effects';
+import type { CustomActionContext } from '../customActionRegistry';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { buildDrawEvents } from '../deckEvents';
 import { getActiveDice, getAttackMaxDuplicateValueCount, getPlayerDieFace, getTokenStackLimit, getPendingBonusSettlementDice } from '../rules';

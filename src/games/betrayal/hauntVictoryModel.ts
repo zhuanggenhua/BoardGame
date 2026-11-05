@@ -15,10 +15,7 @@ import { canCompleteMummyTraitorVictory, createMummyEndgameResult } from './mumm
 import { hasActiveBloodFromStoneStoneCherubs } from './monsterReadModel';
 import { BETRAYAL_SCENARIO_CONFIGS, getBetrayalScenarioCardCandidate, type BetrayalScenarioOutcome } from './scenarioConfig';
 import { shouldDeferDustTraitorVictoryForRabbitFoot } from './deathStateReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 
 export function resolveCrimsonJackHauntTitle(): string {
     return getBetrayalScenarioCardCandidate('crimson-jack-returns').titleEn;

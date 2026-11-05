@@ -1,3 +1,4 @@
+import { getInteractionSequence } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerAbility, registerAbilityProgram, registerSimpleAbility, resolveTalent } from '../domain/abilityRegistry';
@@ -154,9 +155,8 @@ type HuluwawaOneAtATimeContext = HuluwawaPromptContext & {
     handCandidates: CardInstance[];
 };
 
-let huluwawaPromptCounter = 0;
 
-function createHuluwawaPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createHuluwawaPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,
@@ -954,7 +954,7 @@ const huluwawaDestroyForCounterProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_si_wa',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_si_wa_${huluwawaPromptCounter++}`,
+        `huluwawa_si_wa_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '四娃：你可以摧毁这里一个力量 3 或更小的仆从，为四娃放置 1 个 +1 力量指示物',
         [createSkipOption('跳过', 'ui.skip'), ...buildMinionTargetOptions(context.targets, {
@@ -1010,7 +1010,7 @@ const huluwawaMoveToSourceBaseProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_move_to_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_move_to_source_${huluwawaPromptCounter++}`,
+        `huluwawa_move_to_source_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -1060,7 +1060,7 @@ const huluwawaSearchCardProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_search_card',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_search_card_${huluwawaPromptCounter++}`,
+        `huluwawa_search_card_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         context.options.map((option, index) => ({
@@ -1124,7 +1124,7 @@ const huluwawaWhereDoYouThinkProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_where_do_you_think',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_where_do_you_think_${huluwawaPromptCounter++}`,
+        `huluwawa_where_do_you_think_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '妖精哪里逃：选择摧毁一个力量 3 或更小的仆从，或移动一个仆从',
         [
@@ -1184,7 +1184,7 @@ const huluwawaDestroyAnyProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_destroy_any',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_destroy_any_${huluwawaPromptCounter++}`,
+        `huluwawa_destroy_any_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -1224,7 +1224,7 @@ const huluwawaMoveAnyPickProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_move_any_pick',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_move_any_pick_${huluwawaPromptCounter++}`,
+        `huluwawa_move_any_pick_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -1270,7 +1270,7 @@ const huluwawaMoveAnyBaseProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_move_any_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_move_any_base_${huluwawaPromptCounter++}`,
+        `huluwawa_move_any_base_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildBaseTargetOptions(context.bases, context.matchState.core),
@@ -1313,7 +1313,7 @@ const huluwawaPangolinProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_pangolin',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_pangolin_${huluwawaPromptCounter++}`,
+        `huluwawa_pangolin_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '穿山甲：选择一个你的仆从移动到这里或从这里移动到别处',
         buildMinionTargetOptions(context.targets, {
@@ -1386,7 +1386,7 @@ const huluwawaErWaPromptProgram = createPromptProgram<
             displayMode: 'card' as const,
         }));
         return createAbilityRuntimeSimpleChoice(
-            `huluwawa_er_wa_${huluwawaPromptCounter++}`,
+            `huluwawa_er_wa_${getInteractionSequence(context.matchState)}`,
             context.playerId,
             '二娃：展示牌库顶三张牌。你可以额外打出其中一张。',
             [createSkipOption('不打出，按原顺序放回牌库顶', 'ui.huluwawa_er_wa_skip_play_option') as PromptOption<CardChoice>, ...topCards],
@@ -1516,7 +1516,7 @@ const huluwawaErWaReorderProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_er_wa_reorder',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_er_wa_reorder_${huluwawaPromptCounter++}`,
+        `huluwawa_er_wa_reorder_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '二娃：选择其余牌放回牌库顶和/或牌库底的顺序',
         buildErwaReorderOptions(context.remainingCards),
@@ -1580,7 +1580,7 @@ const huluwawaExtraMinionBaseProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_extra_minion_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_extra_minion_base_${huluwawaPromptCounter++}`,
+        `huluwawa_extra_minion_base_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildBaseTargetOptions(context.bases, context.matchState.core),
@@ -1617,7 +1617,7 @@ const huluwawaExtraActionBaseProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_extra_action_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_extra_action_base_${huluwawaPromptCounter++}`,
+        `huluwawa_extra_action_base_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildBaseTargetOptions(context.bases, context.matchState.core),
@@ -1654,7 +1654,7 @@ const huluwawaExtraActionMinionProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_extra_action_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_extra_action_minion_${huluwawaPromptCounter++}`,
+        `huluwawa_extra_action_minion_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         context.title,
         buildMinionTargetOptions(context.targets, {
@@ -1697,7 +1697,7 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_purple_gold_gourd',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_purple_gold_gourd_${huluwawaPromptCounter++}`,
+        `huluwawa_purple_gold_gourd_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '紫金宝葫芦：选择移动力量 3 或更小的仆从到这里，或将弃牌堆中的一张行动牌置于牌库底',
         [
@@ -1740,7 +1740,7 @@ const huluwawaPurpleGoldGourdProgram = createPromptProgram<
                 displayMode: 'card' as const,
             }));
             const interaction = createSimpleChoice(
-                `huluwawa_purple_gold_gourd_bottom_${huluwawaPromptCounter++}`,
+                `huluwawa_purple_gold_gourd_bottom_${getInteractionSequence(context.matchState)}`,
                 context.playerId,
                 '紫金宝葫芦：选择一张行动牌置于牌库底',
                 actionOptions,
@@ -1766,7 +1766,7 @@ const huluwawaOneAtATimeTargetProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_one_at_a_time_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_one_at_a_time_target_${huluwawaPromptCounter++}`,
+        `huluwawa_one_at_a_time_target_${getInteractionSequence(context.matchState)}`,
         context.playerId,
         '一个一个来：选择这里的一个仆从返回其拥有者手牌',
         buildMinionTargetOptions(context.targets, {
@@ -1825,7 +1825,7 @@ const huluwawaOneAtATimePlayProgram = createPromptProgram<
 >({
     sourceId: 'huluwawa_one_at_a_time_play',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `huluwawa_one_at_a_time_play_${huluwawaPromptCounter++}`,
+        `huluwawa_one_at_a_time_play_${getInteractionSequence(context.matchState)}`,
         context.returnedToPlayerId,
         '一个一个来：你可以立即打出一张不同名字的仆从到这里',
         [

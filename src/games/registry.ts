@@ -1,4 +1,7 @@
 import { GAME_CLIENT_MANIFEST } from './manifest.client';
+import { ResourceCache } from '../core/ResourceCache';
+import { clearGameAssetsCache } from '../core/AssetLoader';
+import { AudioManager } from '../lib/audio/AudioManager';
 import type { GameImplementation } from '../core/types';
 import type { GameClientRuntimeModule } from './manifest.client.types';
 import { logMobileRuntime, logMobileRuntimeCritical } from '../lib/mobile/mobileRuntimeDebug';
@@ -15,7 +18,38 @@ import type { GameTutorialSource, TutorialCollection, TutorialManifest } from '.
 export type { GameImplementation } from '../core/types';
 
 /** 游戏运行时缓存：加载一次后缓存，避免重复 import */
-const runtimeCache = new Map<string, GameClientRuntimeModule>();
+const resourceSessions = new Map<string, number>();
+const runtimeEpochs = new Map<string, number>();
+const runtimeCache = new ResourceCache<string, GameClientRuntimeModule>(3, Infinity, () => 0,
+    gameId => resourceSessions.has(gameId));
+
+/** Leases cover mounted consumers, including loads still in flight. */
+export function retainGameImplementation(gameId: string): () => void {
+    if (!loaderMap.has(gameId)) return () => {};
+    resourceSessions.set(gameId, (resourceSessions.get(gameId) ?? 0) + 1);
+    let released = false;
+    return () => {
+        if (released) return;
+        released = true;
+        const remaining = (resourceSessions.get(gameId) ?? 1) - 1;
+        if (remaining > 0) {
+            resourceSessions.set(gameId, remaining);
+            return;
+        }
+        resourceSessions.delete(gameId);
+        // React StrictMode replays cleanup/setup in the same commit. A new
+        // lease cancels this disposal before cached readiness can be invalidated.
+        queueMicrotask(() => {
+            if (resourceSessions.has(gameId)) return;
+            runtimeEpochs.set(gameId, (runtimeEpochs.get(gameId) ?? 0) + 1);
+            loadingPromises.delete(gameId);
+            tutorialLoadingPromises.delete(gameId);
+            runtimeCache.delete(gameId);
+            clearGameAssetsCache(gameId);
+            if (resourceSessions.size === 0) AudioManager.unloadAll();
+        });
+    };
+}
 /** 正在加载中的 runtime Promise，防止并发重复加载 */
 const loadingPromises = new Map<string, Promise<GameClientRuntimeModule>>();
 /** 教程模块加载中的 Promise，避免重复 import */
@@ -298,8 +332,10 @@ const ensureGameImplementationLoadTask = (gameId: string): Promise<GameClientRun
         return null;
     }
 
+    const epoch = runtimeEpochs.get(gameId) ?? 0;
     const promise = loader()
         .then((runtime) => {
+            if (epoch !== (runtimeEpochs.get(gameId) ?? 0)) return runtime;
             runtimeCache.set(gameId, runtime);
             emitGameImplementationReady(gameId);
             return runtime;

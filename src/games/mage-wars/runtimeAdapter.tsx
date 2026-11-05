@@ -15,6 +15,7 @@ import {
     resolveMageWarsSpellbookEntriesForSeat,
 } from './roomSetup';
 import { MageWarsMageSelectionGate } from './ui/MageSelectionGate';
+import { MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY, resolveMageWarsGameHudFabInitialOffset } from './layout';
 
 function buildSetupDataFromSearchParams(searchParams: URLSearchParams): Record<string, unknown> {
     const setupData: Record<string, unknown> = {};
@@ -87,6 +88,12 @@ export function resolveMageWarsCreateRoomSetup({
 }
 
 export const mageWarsGameRuntimeAdapter: GameRuntimeAdapter = {
+    resolveHudLayout: ({ viewportHeight }) => ({
+        position: 'top-left',
+        storageKey: MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY,
+        legacyOffsetStorageKey: 'game_hud_fab_offset:mage-wars',
+        initialOffset: resolveMageWarsGameHudFabInitialOffset(viewportHeight),
+    }),
     resolveLocalSetup: resolveMageWarsLocalSetup,
     LocalSetupGate: MageWarsMageSelectionGate,
     resolveCreateRoomSetup: resolveMageWarsCreateRoomSetup,

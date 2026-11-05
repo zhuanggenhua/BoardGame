@@ -1,7 +1,7 @@
 import React from 'react';
 import { CardPreview, registerCardPreviewRenderer, type CardPreviewRenderer } from '../../components/common/media/CardPreview';
 import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import type { CardPreviewRef } from '../../core';
+import type { CardPreviewRef } from '../../core/cardPreviewTypes';
 import { CARD_DEFS_BY_ID } from './domain/rules';
 import {
     getDevelopmentCardAtlasImagePath,

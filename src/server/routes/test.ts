@@ -7,7 +7,7 @@
 import Router from '@koa/router';
 import type { GameTransportServer } from '../../engine/transport/server';
 import type { MatchStorage, StoredMatchState } from '../../engine/transport/storage';
-import type { MatchState } from '../../core/types';
+import type { MatchState } from '../../engine/types';
 import { validateMatchState, deepMerge, type StateValidatorRegistry } from '../../engine/transport/stateValidator';
 import { resolveSharedTestApiToken } from '../testApiToken';
 

@@ -1,4 +1,4 @@
-import type { BetrayalCore } from "./game";
+import type { BetrayalCore } from './domain/types';
 import {
   buildScenarioReaderPages,
   findScenarioOpeningNarrationSection,

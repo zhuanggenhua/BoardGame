@@ -52,7 +52,7 @@ type CardChoice = { cardUid?: string; defId?: string; skip?: boolean };
 type ModeChoice = { mode?: 'draw' | 'action'; skip?: boolean };
 
 type RuntimeResult = { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> };
-type PromptContext<T extends Record<string, unknown> = Record<string, never>> = {
+type PromptContext<T extends Record<string, unknown> = Record<never, never>> = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
@@ -1076,7 +1076,7 @@ export function registerAllStarsInteractionHandlers(): void {
         };
     });
 
-    registerInteractionHandler('all_stars_granny', (state, playerId, value, data) => {
+    registerInteractionHandler('all_stars_granny', (state, playerId, value, data, _random, timestamp) => {
         const selected = value as { mode?: 'top' | 'bottom' } | undefined;
         const cardUid = (data as { continuationContext?: { cardUid?: string } } | undefined)?.continuationContext?.cardUid;
         const player = state.core.players[playerId];
@@ -1087,7 +1087,7 @@ export function registerAllStarsInteractionHandlers(): void {
             events: [{
                 type: SU_EVENTS.DECK_REORDERED,
                 payload: { playerId, deckUids: [...rest, cardUid] },
-                timestamp: Date.now(),
+                timestamp,
             } as DeckReorderedEvent],
         };
     });

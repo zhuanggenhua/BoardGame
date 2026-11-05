@@ -7,6 +7,7 @@ import type { Socket } from 'net';
 import os from 'node:os';
 import path from 'node:path';
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -27,7 +28,7 @@ import {
 } from './spa-fallback';
 
 type TestMongoServerHandle = {
-    stop(): Promise<void>;
+    stop(): Promise<boolean | void>;
     getUri(): string;
 };
 
@@ -217,7 +218,7 @@ async function bootstrap() {
         || process.env.GAME_SERVER_URL
         || 'http://127.0.0.1:18000';
 
-    expressApp.use((req, res, next) => {
+    expressApp.use((req: Request, res: Response, next: NextFunction) => {
         const requestOrigin = req.headers.origin;
         if (isAllowedRequestOrigin(requestOrigin)) {
             if (requestOrigin) {

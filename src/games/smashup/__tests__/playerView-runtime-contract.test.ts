@@ -3,14 +3,14 @@ import { applyPlayerViewToState } from '../../../engine/ai/playerView';
 import type { GameEngineConfig } from '../../../engine/transport/engineConfig';
 import type { MatchState } from '../../../engine/types';
 import { SmashUpDomain } from '../domain';
-import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
+import { migrateSmashUpLegacyMatchState } from '../domain/legacyRuntimeState';
 
 const smashUpEngineConfig: GameEngineConfig = {
     gameId: 'smashup',
     domain: {
         gameId: 'smashup',
         setup: () => ({ turnOrder: ['0', '1'] }),
-        normalizeRuntimeState: (state) => normalizeSmashUpMatchStateForUi(state),
+        normalizeRuntimeState: (state) => migrateSmashUpLegacyMatchState(state),
         validate: () => ({ valid: true }),
         execute: () => [],
         reduce: (state) => state,

@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 import {
     describe,
     expect,
@@ -65,7 +66,7 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'discard',
                     },
@@ -80,7 +81,7 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'main1',
                         turnNumber: 5,
@@ -176,7 +177,7 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'main1',
                         turnNumber: 5,
@@ -254,7 +255,7 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'main1',
                         turnNumber: 5,
@@ -600,7 +601,7 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'main1',
                         turnNumber: 5,
@@ -844,14 +845,14 @@ describe('online AI watchdog active-turn recovery', () => {
         await storage.createMatch('match-watchdog-splendor-pregame-noop', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         hostStarted: false,
                         currentPlayer: '1',
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main1',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -910,13 +911,13 @@ describe('online AI watchdog active-turn recovery', () => {
         await storage.createMatch('match-watchdog-splendor-unknown-phase-noop', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         currentPlayer: '1',
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: '',
                         turnNumber: 0,
-                        eventStream: { nextId: 94 },
+                        eventStream: { entries: [], nextId: 94 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1149,9 +1150,9 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 2 },
+                        eventStream: { entries: [], nextId: 2 },
                     },
                 };
             }
@@ -1509,7 +1510,7 @@ describe('online AI watchdog active-turn recovery', () => {
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
                         phase: 'main1',
                         interaction: {
@@ -1517,7 +1518,7 @@ describe('online AI watchdog active-turn recovery', () => {
                             queue: [],
                             isBlocked: false,
                         },
-                        eventStream: {
+                        eventStream: { entries: [],
                             ...(activeMatch.state.sys?.eventStream ?? {}),
                             nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                         },
@@ -1617,7 +1618,7 @@ describe('online AI watchdog active-turn recovery', () => {
             }
             activeMatch.state = {
                 ...activeMatch.state,
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
                     phase: 'main1',
                     turnNumber: (activeMatch.state.sys?.turnNumber ?? 0) + 1,

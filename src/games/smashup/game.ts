@@ -24,10 +24,6 @@ import { createSmashUpEventSystem } from './domain/systems';
 import { createSmashUpTimingOpportunitySystemConfig } from './domain/timingOpportunities';
 import { SMASHUP_CHEAT_COMMANDS, smashUpCheatModifier } from './cheatModifier';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatSmashUpActionEntry } from './actionLog';
-import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import { getSmashUpCardPreviewRef } from './ui/cardPreviewHelper';
-import { registerCriticalImageResolver } from '../../core';
-import { smashUpCriticalImageResolver } from './criticalImageResolver';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { smashUpAiRuntime } from './ai';
 import { resolveSmashUpLocalPregameControlledPlayerId } from './localPregameControl';
@@ -35,8 +31,7 @@ import { formatSmashUpEventTelemetry } from './eventTelemetry';
 import {
     createSmashUpLocalTestInitialStateFactory,
     createSmashUpLocalTestSetupCommandsFactory,
-} from './localTestBootstrap';
-import './ui/SmashUpCardRenderer'; // 注册卡牌渲染器
+} from './localTestBootstrap'; // 注册卡牌渲染器
 
 // 注册所有派系能力
 initAllAbilities();
@@ -118,9 +113,3 @@ export { systems as smashUpSystemsForTest };
 
 // 导出 Domain 和 FlowHooks 供测试使用
 export { SmashUpDomain, smashUpFlowHooks };
-
-// ============================================================================
-// 卡牌预览注册（放文件末尾，避免 Vite SSR 函数提升陷阱）
-// ============================================================================
-registerCardPreviewGetter('smashup', getSmashUpCardPreviewRef, { maxDim: 220 });
-registerCriticalImageResolver('smashup', smashUpCriticalImageResolver);

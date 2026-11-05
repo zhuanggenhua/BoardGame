@@ -44,7 +44,7 @@ import {
     getMageWarsMagePreviewRef,
     getMageWarsSpellCardAspectRatio,
     getMageWarsSpellCardPreviewRef,
-} from './cardAtlas';
+} from '../cardPreviewModel';
 import {
     MAGE_WARS_ATTACK_FX_TUNING,
     MAGE_WARS_DIRECT_DAMAGE_FX_TUNING,

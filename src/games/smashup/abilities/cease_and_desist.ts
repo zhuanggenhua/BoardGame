@@ -59,9 +59,9 @@ type ActionChoice = { cardUid: string; defId: string; ownerId?: PlayerId; baseIn
 type ReturnReplacementChoice = { replace?: boolean; targetBaseIndex?: number; skip?: boolean };
 type PlayerChoice = { playerId?: PlayerId; skip?: boolean };
 type GiveControlAfterGiveMode = 'draw2_extra_minion' | 'draw1_extra_action' | 'extra_minion' | 'none';
-type BaseAbilityPromptContext<T extends Record<string, unknown> = Record<string, never>> = PromptContext<T & { sourceId: string }>;
+type BaseAbilityPromptContext<T extends Record<string, unknown> = Record<never, never>> = PromptContext<T & { sourceId: string }>;
 
-type PromptContext<T extends Record<string, unknown> = Record<string, never>> = {
+type PromptContext<T extends Record<string, unknown> = Record<never, never>> = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
@@ -94,7 +94,7 @@ type DrawAfterCommittedEventsContext = PromptContext<{
     random: RandomFn;
 }>;
 type RecycleTheTrashChoice = { cardUid: string; defId: string };
-type RecycleTheTrashContext = PromptContext<Record<string, never>>;
+type RecycleTheTrashContext = PromptContext;
 type ShipsCaptainChoice = { cardUid: string; defId: string };
 type ShipsCaptainContext = PromptContext<{ baseIndex?: number }>;
 type StarReturnSourceId = 'star_roamers_port_me_up' | 'star_roamers_teleport_overflow';
@@ -105,7 +105,7 @@ type StarReturnMinionContext = SourceMinionPromptContext<{
     extraMinionAfterReturn?: boolean;
     restrictToBaseIndex?: number;
 }>;
-type SourceMinionPromptContext<T extends Record<string, unknown> = Record<string, never>> = PromptContext<T & {
+type SourceMinionPromptContext<T extends Record<string, unknown> = Record<never, never>> = PromptContext<T & {
     sourceId: string;
     candidates: ReturnType<typeof getAllMinionCandidates>;
 }>;

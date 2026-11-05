@@ -1,3 +1,5 @@
+import { createInitialSystemState } from '../../pipeline';
+import type { MatchState } from '../../types';
 import {
     describe,
     expect,
@@ -623,9 +625,9 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
                             activePlayerId: '0',
                             currentPlayerIndex: 0,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...activeMatch.state.sys,
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(activeMatch.state.sys?.eventStream ?? {}),
                                 nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -792,14 +794,14 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
 
             const match = await serverInternal.loadMatch('match-watchdog-ai-owner-compare-roll-fresh-seat-view-over-cache');
             match.lastBroadcastedViews.set('1', {
-                core: {
+                core: { playerIds: ['0', '1'],
                     activePlayerId: '1',
                     currentPlayerIndex: 1,
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     phase: 'defensiveRoll',
                     turnNumber: 9,
-                    eventStream: { nextId: 999 },
+                    eventStream: { entries: [], nextId: 999 },
                     interaction: {
                         current: {
                             id: 'compare-roll-stale-cache',
@@ -824,9 +826,9 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
                             activePlayerId: '0',
                             currentPlayerIndex: 0,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...activeMatch.state.sys,
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(activeMatch.state.sys?.eventStream ?? {}),
                                 nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -1007,15 +1009,15 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
         await storage.createMatch('match-watchdog-visible-interaction-turn-end-mandatory-order-fallback', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1', '2', '3'],
                         activePlayerId: '3',
                         currentPlayerIndex: 3,
                         turnOrder: ['0', '1', '2', '3'],
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'endTurn',
                         turnNumber: 9,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: createSimpleChoice(
                                 'smashup_reaction_turn-end:3:2:0_3_0',
@@ -1104,9 +1106,9 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
                             activePlayerId: '3',
                             currentPlayerIndex: 3,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...match.state.sys,
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(match.state.sys?.eventStream ?? {}),
                                 nextId: (match.state.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -1130,10 +1132,10 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
                             activePlayerId: '0',
                             currentPlayerIndex: 0,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...match.state.sys,
                             phase: 'startTurn',
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(match.state.sys?.eventStream ?? {}),
                                 nextId: (match.state.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -1255,10 +1257,10 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
                             activePlayerId: snapshotPreserved ? '0' : '1',
                             currentPlayerIndex: snapshotPreserved ? 0 : 1,
                         },
-                        sys: {
+                        sys: { ...createInitialSystemState(['0', '1'], []),
                             ...newState.sys,
                             phase: snapshotPreserved ? 'draw' : 'scoreBases',
-                            eventStream: {
+                            eventStream: { entries: [],
                                 ...(newState.sys?.eventStream ?? {}),
                                 nextId: (newState.sys?.eventStream?.nextId ?? 1) + 1,
                             },
@@ -1297,10 +1299,10 @@ describe('online AI watchdog overlay resync and strict visible recovery', () => 
                             },
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'scoreBases',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: makeSnapshotSensitiveInteraction(),
                             queue: [],

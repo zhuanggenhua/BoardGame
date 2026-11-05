@@ -1,3 +1,5 @@
+import { StateRestoreError } from '../statePersistence';
+import { isPersistedLocalStateCompatible, normalizePersistedLocalStateForGame } from './stateNormalization';
 import type { MatchState, PlayerId, RandomFn } from '../types';
 import { setUndoAiSeatIds } from '../systems/UndoSystem';
 import { getAiSeatIds } from '../ai';
@@ -31,7 +33,7 @@ export type MatchRoomRegistryActiveMatch<CommandOptions = unknown> = {
 
 export type MatchRoomRegistryConfig = {
     storage: MatchStorage;
-    gameIndex: Map<string, GameEngineConfig>;
+    gameIndex: { get(gameId: string): GameEngineConfig | undefined | Promise<GameEngineConfig | undefined> };
 };
 
 export const resolveStoredRandomSeed = (
@@ -39,21 +41,27 @@ export const resolveStoredRandomSeed = (
     matchID: string,
 ): string => {
     const storedSeed = (state as { randomSeed?: unknown }).randomSeed;
-    return typeof storedSeed === 'string' && storedSeed.length > 0 ? storedSeed : matchID;
+    if (typeof storedSeed === 'string' && storedSeed.length > 0) return storedSeed;
+    const versioned = (state.G as MatchState<unknown> | undefined)?.sys?.domainState !== undefined;
+    if (storedSeed === undefined && !versioned) return matchID;
+    throw new StateRestoreError('invalid-random-seed');
 };
 
 export const resolveStoredRandomCursor = (state: StoredMatchState): number => {
     const storedCursor = (state as { randomCursor?: unknown }).randomCursor;
-    if (typeof storedCursor !== 'number' || !Number.isFinite(storedCursor) || storedCursor < 0) {
-        return 0;
+    const versioned = (state.G as MatchState<unknown> | undefined)?.sys?.domainState !== undefined;
+    if (storedCursor === undefined && !versioned) return 0;
+    if (typeof storedCursor !== 'number' || !Number.isSafeInteger(storedCursor) || storedCursor < 0) {
+        throw new StateRestoreError('invalid-random-cursor');
     }
-    return Math.floor(storedCursor);
+    return storedCursor;
 };
 
 export class MatchRoomRegistry<CommandOptions = unknown> {
     private readonly activeMatches = new Map<string, MatchRoomRegistryActiveMatch<CommandOptions>>();
+    private readonly pendingLoads = new Map<string, Promise<MatchRoomRegistryActiveMatch<CommandOptions> | undefined>>();
     private readonly storage: MatchStorage;
-    private readonly gameIndex: Map<string, GameEngineConfig>;
+    private readonly gameIndex: MatchRoomRegistryConfig['gameIndex'];
 
     constructor(config: MatchRoomRegistryConfig) {
         this.storage = config.storage;
@@ -73,6 +81,7 @@ export class MatchRoomRegistry<CommandOptions = unknown> {
     }
 
     delete(matchID: string): boolean {
+        this.pendingLoads.delete(matchID);
         return this.activeMatches.delete(matchID);
     }
 
@@ -100,16 +109,31 @@ export class MatchRoomRegistry<CommandOptions = unknown> {
     }
 
     async load(matchID: string): Promise<MatchRoomRegistryActiveMatch<CommandOptions> | undefined> {
+        const current = this.activeMatches.get(matchID);
+        if (current) return current;
+        const pending = this.pendingLoads.get(matchID);
+        if (pending) return pending;
+        const task = this.loadFromStorage(matchID).then(match => {
+            if (this.pendingLoads.get(matchID) !== task) return undefined;
+            if (match) this.activeMatches.set(matchID, match);
+            return match;
+        }).finally(() => {
+            if (this.pendingLoads.get(matchID) === task) this.pendingLoads.delete(matchID);
+        });
+        this.pendingLoads.set(matchID, task);
+        return task;
+    }
+
+    private async loadFromStorage(matchID: string): Promise<MatchRoomRegistryActiveMatch<CommandOptions> | undefined> {
         const result = await this.storage.fetch(matchID, { state: true, metadata: true });
         if (!result.state || !result.metadata) {
             return undefined;
         }
 
-        const match = this.buildLoadedMatch(matchID, result.state, result.metadata);
+        const match = await this.buildLoadedMatch(matchID, result.state, result.metadata);
         if (!match) {
             return undefined;
         }
-        this.activeMatches.set(matchID, match);
         return match;
     }
 
@@ -117,19 +141,23 @@ export class MatchRoomRegistry<CommandOptions = unknown> {
         return this.activeMatches;
     }
 
-    private buildLoadedMatch(
+    private async buildLoadedMatch(
         matchID: string,
         storedState: StoredMatchState,
         metadata: MatchMetadata,
-    ): MatchRoomRegistryActiveMatch<CommandOptions> | undefined {
+    ): Promise<MatchRoomRegistryActiveMatch<CommandOptions> | undefined> {
         const gameId = metadata.gameName;
-        const engineConfig = this.gameIndex.get(gameId);
+        const engineConfig = await this.gameIndex.get(gameId);
         if (!engineConfig) {
             return undefined;
         }
 
+        const restoredState = normalizePersistedLocalStateForGame(engineConfig, storedState.G as MatchState<unknown>);
+        if (!isPersistedLocalStateCompatible({ state: restoredState, expectedPlayerIds: Object.keys(metadata.players), allowReorderedPlayerIds: true })) {
+            throw new StateRestoreError('player-identity-mismatch');
+        }
         const state = setUndoAiSeatIds(
-            storedState.G as MatchState<unknown>,
+            restoredState,
             getAiSeatIds(extractTrustedSetupSeatControllers(metadata.setupData)),
         );
         const randomSeed = resolveStoredRandomSeed(storedState, matchID);

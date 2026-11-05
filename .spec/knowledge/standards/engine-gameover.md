@@ -18,6 +18,8 @@ metadata:
 - 检测结果写入 `state.sys.gameover`；未结束时保持 undefined。
 - `GameOverResult` 至少能表达单胜者、多胜者、平局和分数。
 - 服务端只读取管线结果；检测到新终局后更新 match metadata、持久化并触发终局回调。
+- 归档 DTO 与结果解释以 `src/shared/matchRecord.ts` 为准，两端 Mongo 模型共用 `src/server/models/matchRecordSchema.ts`。新记录保存完整 `winnerIDs`、显式 `draw`、逐玩家结果及 actionLog；仅单胜者时兼写历史 `winnerID`，消费者保留旧记录 fallback。全员获胜、全员失败不能因相对排名相同被统计成平局。
+- 玩家身份由 ownerKey / 稳定 ID 解析，禁止按昵称关联账号；未知席位使用对局作用域 ID，作为对手参与计算但不合并进公共排行榜。游客转账号时须同时迁移 players、winnerID 和 winnerIDs。
 
 ## 各层读取
 

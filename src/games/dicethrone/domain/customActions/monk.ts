@@ -14,12 +14,8 @@ import type {
     RollLimitChangedEvent,
 } from '../types';
 import { CP_MAX } from '../types';
-import {
-    registerCustomActionHandler,
-    createBonusDiceWithReroll,
-    type BonusDiceRollConfig,
-    type CustomActionContext,
-} from '../effects';
+import { createBonusDiceWithReroll, type BonusDiceRollConfig } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import {
     registerBonusDiceSettlementHandler,
     type BonusDiceSettlementHandlerContext,

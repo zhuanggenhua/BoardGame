@@ -1,12 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalDiscoveryResolutionStep,
-  BetrayalDiscoverySummary,
-  BetrayalInventoryCard,
-  BetrayalPendingCardResolutionProcessCard,
-  BetrayalPendingCardResolutionState,
-  BetrayalRecentRollState,
-} from "./game";
+import type { BetrayalCore, BetrayalDiscoveryResolutionStep, BetrayalDiscoverySummary, BetrayalInventoryCard, BetrayalPendingCardResolutionProcessCard, BetrayalPendingCardResolutionState, BetrayalRecentRollState } from './domain/types';
 import {
   buildRecentRollDisplayKey,
   type EventRollConfirmationPresentation,

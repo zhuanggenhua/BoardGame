@@ -1,3 +1,4 @@
+import { resolveQidahenHandLimitDiscardInteractionChoice } from './handLimitDiscard';
 import {
     hasUpgradableArmament,
     resolveSelectedArmamentIdFromCards,
@@ -232,6 +233,8 @@ export const reduceQidahenSelectionInputEvent = (
                 gaoDiDispatchSelection: toggleQidahenGaoDiDispatchCard(state.gaoDiDispatchSelection, event.payload.cardId),
             });
         case 'HAND_LIMIT_DISCARD_RESOLVED':
-            return resolveQidahenHandLimitDiscard(state, event.timestamp, dependencies);
+            return event.payload.cardIds
+                ? resolveQidahenHandLimitDiscardInteractionChoice(state, event.payload.cardIds, event.timestamp)
+                : resolveQidahenHandLimitDiscard(state, event.timestamp, dependencies);
     }
 };

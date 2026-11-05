@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getSummonerWarsCardPreviewMeta, getSummonerWarsCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getSummonerWarsCardPreviewMeta, getSummonerWarsCardPreviewRef } from '../cardPreviewModel';
 import { SPRITE_INDEX as NECRO_SPRITE_INDEX } from '../config/factions/necromancer';
 import { resolveHandCardMagnifyPresentation, resolveMagicPhaseClickRoute } from '../ui/HandArea';
 

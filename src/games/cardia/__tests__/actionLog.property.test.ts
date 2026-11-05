@@ -15,7 +15,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import { formatCardiaActionEntry, ACTION_ALLOWLIST } from '../actionLog';
-import { getCardiaCardPreviewMeta, getCardiaCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getCardiaCardPreviewMeta, getCardiaCardPreviewRef } from '../cardPreviewModel';
 import { CARDIA_COMMANDS } from '../domain/commands';
 import { CARDIA_EVENTS } from '../domain/events';
 import type { Command, GameEvent, MatchState, ActionLogEntry } from '../../../engine/types';

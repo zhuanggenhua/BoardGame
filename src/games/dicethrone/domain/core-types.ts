@@ -5,7 +5,7 @@
 
 import type { PlayerId } from '../../../engine/types';
 import type { AiSeatController, AiSetupOptionStatus } from '../../../engine/ai/types';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { AbilityDef, AbilityEffect } from './combat';
 import type { ResourcePool } from './resourceSystem';
 import type { DamageOrigin, TokenDef, TokenState } from './tokenTypes';
@@ -118,12 +118,12 @@ export interface CharacterDefinition {
     setupOptionStatus?: AiSetupOptionStatus;
     /** 状态原因；会透传给共享 AI 过滤诊断。 */
     setupOptionStatusReason?: string;
-    badges?: import('../../../core/ui').CharacterBadgeDef[];
+    badges?: import('../../../core/ui/CharacterSelection.types').CharacterBadgeDef[];
     /** 是否存在需要在选角与对局中展示的运行时提示卡。默认 true。 */
     hasTipBoard?: boolean;
 }
 
-const DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE: import('../../../core/ui').CharacterBadgeDef = {
+const DICETHRONE_IMPLEMENTATION_IN_PROGRESS_BADGE: import('../../../core/ui/CharacterSelection.types').CharacterBadgeDef = {
     id: 'implementation_in_progress',
     labelKey: 'common:status_tags.under_construction',
     tone: 'warning',

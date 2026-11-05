@@ -5,16 +5,12 @@ import {
     createGameEngine,
     createTimingOpportunitySystem,
 } from '../../engine';
-import { registerCriticalImageResolver } from '../../core';
 import { MageWarsDomain, MAGE_WARS_COMMANDS } from './domain';
 import type { MageWarsCommand, MageWarsCore, MageWarsEvent } from './domain';
 import { mageWarsFlowHooks } from './domain/flowHooks';
-import { mageWarsCriticalImageResolver } from './criticalImageResolver';
 import { MAGE_WARS_AUDIO_CONFIG } from './audio.config';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { mageWarsAiRuntime } from './ai';
-import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import { getMageWarsCardPreviewRef } from './ui/cardAtlas';
 import { ACTION_ALLOWLIST, UNDO_ALLOWLIST, formatMageWarsActionEntry } from './actionLog';
 import { createMageWarsInteractionSystem } from './domain/systems';
 import { createMageWarsTimingOpportunitySystemConfig } from './domain/timingOpportunities';
@@ -45,9 +41,6 @@ export const engineConfig = createGameEngine<MageWarsCore, MageWarsCommand, Mage
         maxRounds: 10,
     },
 });
-
-registerCriticalImageResolver('mage-wars', mageWarsCriticalImageResolver);
-registerCardPreviewGetter('mage-wars', getMageWarsCardPreviewRef, { maxDim: 220 });
 registerGameAiRuntime(mageWarsAiRuntime);
 
 export default engineConfig;

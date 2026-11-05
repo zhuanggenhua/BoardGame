@@ -85,7 +85,7 @@ type BearNecessitiesValue =
     | { type: 'minion'; uid: string; minionUid: string; defId: string; baseIndex: number; owner: string }
     | { type: 'action'; uid: string; cardUid: string; defId: string; ownerId: string; baseIndex: number };
 
-function createBearCavalryPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createBearCavalryPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<any>,
     playerId: PlayerId,
     now: number,

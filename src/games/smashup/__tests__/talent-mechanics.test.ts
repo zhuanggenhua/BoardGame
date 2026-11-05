@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from './commandFixture';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -5,7 +6,7 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { validate } from '../domain/commands';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { execute, reduce } from '../domain/reducer';
+import { reduce } from '../domain/reducer';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import {
     makeCard,
@@ -45,7 +46,7 @@ describe('天赋基础设施', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -60,7 +61,7 @@ describe('天赋基础设施', () => {
             bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'nonexistent', baseIndex: 0 },
@@ -86,7 +87,7 @@ describe('天赋基础设施', () => {
             },
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -318,7 +319,7 @@ describe('ongoing 行动卡天赋基础设施', () => {
 
         expect(validate(makeMatchState(core), command).valid).toBe(true);
 
-        const events = execute(makeMatchState(core), command, defaultRandom);
+        const events = settleFixtureCommandEvents(makeMatchState(core), command, defaultRandom);
         const nextCore = events.reduce(reduce, core);
         expect(nextCore.greatWolfSpiritDoubleTalentCardUids).toContain('oa1');
         expect(validate(makeMatchState(nextCore), command).valid).toBe(false);
@@ -359,7 +360,7 @@ describe('ongoing 行动卡天赋基础设施', () => {
 
         expect(validate(makeMatchState(core), command).valid).toBe(true);
 
-        const events = execute(makeMatchState(core), command, defaultRandom);
+        const events = settleFixtureCommandEvents(makeMatchState(core), command, defaultRandom);
         const nextCore = events.reduce(reduce, core);
         expect(nextCore.greatWolfSpiritDoubleTalentCardUids).toContain('oa1');
     });
@@ -393,7 +394,7 @@ describe('ongoing 行动卡天赋基础设施', () => {
 
         expect(validate(makeMatchState(core), command).valid).toBe(true);
 
-        const events = execute(makeMatchState(core), command, defaultRandom);
+        const events = settleFixtureCommandEvents(makeMatchState(core), command, defaultRandom);
         const nextCore = events.reduce(reduce, core);
         expect(nextCore.greatWolfSpiritDoubleTalentCardUids).toContain('t-gws');
         expect(validate(makeMatchState(nextCore), command).valid).toBe(false);
@@ -502,7 +503,7 @@ describe('ongoing 行动卡天赋基础设施', () => {
             madnessDeck: ['madness_0'],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
@@ -531,7 +532,7 @@ describe('ongoing 行动卡天赋基础设施', () => {
             madnessDeck: ['madness_0'],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
@@ -584,7 +585,7 @@ describe('随从天赋回归合同', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
@@ -613,7 +614,7 @@ describe('随从天赋回归合同', () => {
             ],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },

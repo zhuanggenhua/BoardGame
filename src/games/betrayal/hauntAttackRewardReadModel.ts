@@ -9,13 +9,7 @@ import {
 } from './hauntScenarioReadModel';
 import { resolveHelpingHandsMonsterTurnStatus } from './monsterActionReadModel';
 import { resolveConnectedRoomIds } from './roomMapModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalInventoryCard,
-    BetrayalMonsterSummary,
-    BetrayalRoomNode,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalMonsterSummary, BetrayalRoomNode } from './domain/types';
 
 export const MUMMY_GIRL_STEAL_CARD_ID = 'mummy-girl-token';
 

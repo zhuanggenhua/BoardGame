@@ -1,10 +1,6 @@
 import type { RandomFn } from '../../engine/types';
 import { rollBetrayalPip } from './diceRules';
-import type {
-    BetrayalCore,
-    BetrayalRecentRollState,
-    BetrayalRoomNode,
-} from './game';
+import type { BetrayalCore, BetrayalRecentRollState, BetrayalRoomNode } from './domain/types';
 import {
     cloneBetrayalRoom,
     refreshExplorableRoomSlots,

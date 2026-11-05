@@ -297,5 +297,12 @@
       "end_line1": "结束",
       "end_line2": "行动"
     }
+  },
+  "localSession": {
+    "restoreBlocked": "此存档无法恢复，原存档已保留。开始新对局后会替换它。",
+    "restart": "开始新对局",
+    "saveFailed": "此对局未能保存到当前设备，请保持页面打开以继续游玩。",
+    "expired": "上次存档已超过 30 天保留期限，已开始新对局。",
+    "dismiss": "知道了"
   }
 }

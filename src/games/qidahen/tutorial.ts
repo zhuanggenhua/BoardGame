@@ -1272,7 +1272,7 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
-            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'place-friendly' } }],
+            advanceOnEvents: [{ type: 'DIPLOMACY_CHOICE_RESOLVED', match: { choiceId: 'place-friendly' } }],
         },
         {
             id: 'tribute-mark',
@@ -1281,7 +1281,7 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
             position: 'left',
             requireAction: true,
             allowedCommands: [INTERACTION_COMMANDS.RESPOND],
-            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'flip-vassal' } }],
+            advanceOnEvents: [{ type: 'DIPLOMACY_CHOICE_RESOLVED', match: { choiceId: 'flip-vassal' } }],
         },
         {
             id: 'remove-mark',
@@ -1290,7 +1290,7 @@ const QIDAHEN_DIPLOMACY_HIRE_TUTORIAL: TutorialManifest = {
             position: 'left',
             requireAction: true,
             allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, INTERACTION_COMMANDS.RESPOND],
-            advanceOnEvents: [{ type: 'SYS_INTERACTION_RESOLVED', match: { optionId: 'remove-marker' } }],
+            advanceOnEvents: [{ type: 'DIPLOMACY_CHOICE_RESOLVED', match: { choiceId: 'remove-marker' } }],
         },
         {
             id: 'finish',
@@ -1368,7 +1368,7 @@ const QIDAHEN_YEAR_AND_CHARACTERS_TUTORIAL: TutorialManifest = {
             allowManualSkip: true,
             allowedCommands: [INTERACTION_COMMANDS.RESPOND, QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
             advanceOnEvents: [
-                { type: 'SYS_INTERACTION_RESOLVED', match: { sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID } },
+                { type: 'FORTIFICATION_MAINTENANCE_RESOLVED' },
                 { type: 'FORTIFICATION_MAINTENANCE_RESOLVED' },
             ],
         },

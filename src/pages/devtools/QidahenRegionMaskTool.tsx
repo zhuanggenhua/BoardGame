@@ -39,11 +39,11 @@ import {
     getQidahenRegionMaskSaveBlockedReason,
     type QidahenRegionMaskWorkspaceLoadState,
 } from '../../games/qidahen/regionMaskSaveGuards';
-import { QIDAHEN_MAP_REGION_SHAPES } from '../../games/qidahen/ui/mapRegions';
+import { QIDAHEN_MAP_REGION_SHAPES } from '../../games/qidahen/data/mapRegions';
 import {
     getQidahenRuntimeRegionIdsForPrintedRegionId,
     QIDAHEN_RUNTIME_REGION_BY_ID,
-} from '../../games/qidahen/ui/mapGraph';
+} from '../../games/qidahen/data/mapGraph';
 import {
     EMPTY_REGION,
     applyBrushToBinaryMask,

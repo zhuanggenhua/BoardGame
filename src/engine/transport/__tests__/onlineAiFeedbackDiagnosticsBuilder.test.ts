@@ -110,6 +110,7 @@ describe('OnlineAiFeedbackDiagnosticsBuilder', () => {
             event,
             progressMarkerBefore: 'marker-before',
             preCommandSeatView: createState(),
+            preCommandSharedState: match.state,
         });
 
         expect(feedback).toMatchObject({
@@ -149,6 +150,7 @@ describe('OnlineAiFeedbackDiagnosticsBuilder', () => {
             },
             progressMarkerBefore: 'marker-before',
             preCommandSeatView: createState(),
+            preCommandSharedState: createState(),
         });
 
         expect(feedback).toBeNull();

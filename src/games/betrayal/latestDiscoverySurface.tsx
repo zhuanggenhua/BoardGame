@@ -8,12 +8,7 @@ import {
 } from "./confirmButtonSurface";
 import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
 import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
-import type {
-  BetrayalDiscoveryResolutionStep,
-  BetrayalDiscoverySummary,
-  BetrayalPendingCardResolutionProcessCard,
-  BetrayalRecentRollState,
-} from "./game";
+import type { BetrayalDiscoveryResolutionStep, BetrayalDiscoverySummary, BetrayalPendingCardResolutionProcessCard, BetrayalRecentRollState } from './domain/types';
 import type { RecentRollRerollSelection } from "./houseDiceSurface";
 import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { RecentRollPanel } from "./recentRollSurface";

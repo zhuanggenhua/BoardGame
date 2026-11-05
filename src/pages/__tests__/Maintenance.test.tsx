@@ -771,6 +771,7 @@ describe('useGameImplementationReady', () => {
             .mockResolvedValueOnce({ engineConfig: {}, board: () => null });
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,
@@ -815,6 +816,7 @@ describe('useGameImplementationReady', () => {
             .mockRejectedValueOnce(new Error('游戏客户端模块加载超时：smashup（45000ms）'));
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,
@@ -851,6 +853,7 @@ describe('useGameImplementationReady', () => {
             .mockResolvedValueOnce({ engineConfig: {}, board: () => null, tutorial: { id: 'smashup-basic', steps: [] } });
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,
@@ -904,6 +907,7 @@ describe('useGameImplementationReady', () => {
         }));
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,
@@ -969,6 +973,7 @@ describe('useGameImplementationReady', () => {
         });
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,
@@ -1013,6 +1018,7 @@ describe('useGameImplementationReady', () => {
         const mockLoadGameImplementation = vi.fn().mockResolvedValueOnce(implementation);
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,
@@ -1056,6 +1062,7 @@ describe('useGameImplementationReady', () => {
         const mockLoadGameImplementation = vi.fn().mockResolvedValueOnce(implementation);
 
         vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
             getGameImplementation: mockGetGameImplementation,
             hasGameTutorialLoader: mockHasGameTutorialLoader,
             loadGameImplementation: mockLoadGameImplementation,

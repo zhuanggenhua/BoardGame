@@ -10,6 +10,7 @@
 
 import type { GameAssets, SpriteAtlasDefinition, CriticalImageResolverResult } from './types';
 import { resolveCriticalImages } from './CriticalImageResolverRegistry';
+import { ResourceCache } from './ResourceCache';
 
 // ============================================================================
 // 资源路径常量
@@ -152,7 +153,7 @@ export function __resetAssetLoaderCachesForTests(options?: { keepPersistentHints
         return;
     }
 
-    persistentImageReadyHints = new Map();
+    persistentImageReadyHints = new ResourceCache<string, number>(4096);
     if (typeof window !== 'undefined') {
         try {
             window.localStorage.removeItem(IMAGE_READY_HINT_STORAGE_KEY);
@@ -190,10 +191,20 @@ if (_win && !_win.__BG_ASSET_CACHE__) {
 }
 
 const gameAssetsRegistry = _win?.__BG_ASSET_CACHE__?.gameAssetsRegistry ?? new Map<string, GameAssets>();
-const preloadedImages = _win?.__BG_ASSET_CACHE__?.preloadedImages ?? new Map<string, HTMLImageElement>();
-const preloadedAudio = _win?.__BG_ASSET_CACHE__?.preloadedAudio ?? new Map<string, HTMLAudioElement>();
-const resolvedImageUrls = _win?.__BG_ASSET_CACHE__?.resolvedImageUrls ?? new Map<string, string>();
-const imageCandidateFailures = _win?.__BG_ASSET_CACHE__?.imageCandidateFailures ?? new Map<string, { failedAt: number; count: number }>();
+const pendingAssetLoads = new Map<string, () => void>();
+const resourceEpochs = new Map<string, number>();
+const preloadedImages = new ResourceCache<string, HTMLImageElement>(512, 128 * 1024 * 1024,
+    image => image.naturalWidth * image.naturalHeight * 4);
+const preloadedAudio = new ResourceCache<string, HTMLAudioElement>(64, 32 * 1024 * 1024,
+    audio => Number.isFinite(audio.duration) ? audio.duration * 44100 * 2 * 4 : 1024 * 1024);
+const resolvedImageUrls = new ResourceCache<string, string>(2048);
+const imageCandidateFailures = new ResourceCache<string, { failedAt: number; count: number }>(1024);
+if (_win?.__BG_ASSET_CACHE__) {
+    const previous = _win.__BG_ASSET_CACHE__;
+    for (const [key, value] of previous.preloadedImages) preloadedImages.set(key, value);
+    for (const [key, value] of previous.preloadedAudio) preloadedAudio.set(key, value);
+    Object.assign(previous, { preloadedImages, preloadedAudio, resolvedImageUrls, imageCandidateFailures });
+}
 
 // ============================================================================
 // 公共 API
@@ -461,6 +472,8 @@ export async function preloadCriticalImages(
     playerID?: string | null,
     onProgress?: (loaded: number, total: number) => void,
 ): Promise<string[]> {
+    const epoch = resourceEpochs.get(gameId) ?? 0;
+    const cancelled = () => epoch !== (resourceEpochs.get(gameId) ?? 0);
     // 取消旧的 warm 预加载队列，释放连接池给 critical 请求
     cancelWarmPreload();
     // 重置就绪信号，阻塞音频预加载直到本轮关键图片完成
@@ -502,16 +515,18 @@ export async function preloadCriticalImages(
         const candidates = getRuntimeImageCandidateUrls(path, effectiveLocale);
         if (candidates.length === 0) return;
         for (const candidate of candidates) {
+            if (cancelled()) return;
             if (isImagePreloaded(candidate)) return;
             const outcome = await preloadOptimizedImage(candidate);
             if (isImagePreloaded(candidate)) return;
-            if (outcome === 'timeout') return;
+            if (outcome === 'timeout' || outcome === 'cancelled') return;
             markImageCandidateFailed(path, effectiveLocale, candidate);
         }
     };
 
     const runWorker = async (): Promise<void> => {
         while (cursor < filtered.length) {
+            if (cancelled()) return;
             const p = filtered[cursor++];
             await preloadCriticalImageCandidates(p);
             loaded++;
@@ -534,7 +549,7 @@ export async function preloadCriticalImages(
     // 确保 warm 图片（如基地图集）先于音频占住连接池。
     // 信号由 CriticalImageGate 在调用 preloadWarmImages 之后手动 signalCriticalImagesReady()。
 
-    return warmPaths;
+    return cancelled() ? [] : warmPaths;
 }
 
 /**
@@ -681,6 +696,14 @@ export function preloadWarmImages(paths: string[], locale?: string, gameId?: str
  * 清除游戏资源缓存
  */
 export function clearGameAssetsCache(gameId: string): void {
+    resourceEpochs.set(gameId, (resourceEpochs.get(gameId) ?? 0) + 1);
+    const owns = (url: string) => url.split(/[/?#]/).includes(gameId);
+    if (_currentWarmGameId === gameId) cancelWarmPreload();
+    if (_pendingWarmGameId === gameId) { _pendingWarmPaths.clear(); _pendingWarmGameId = undefined; }
+    for (const [url, cancel] of pendingAssetLoads) if (owns(url)) cancel();
+    for (const cache of [preloadedImages, preloadedAudio, resolvedImageUrls, imageCandidateFailures, preloadFailCount, inFlightPreloads]) {
+        for (const key of cache.keys()) if (owns(key)) cache.delete(key);
+    }
     const assets = gameAssetsRegistry.get(gameId);
     if (!assets) return;
 
@@ -785,7 +808,7 @@ function loadPersistentImageReadyHints(): Map<string, number> {
     }
 
     const now = Date.now();
-    const hints = new Map<string, number>();
+    const hints = new ResourceCache<string, number>(4096);
 
     if (typeof window !== 'undefined') {
         try {
@@ -1146,66 +1169,53 @@ function removePreloadLink(src: string): void {
 }
 
 async function preloadImageWithResult(src: string, timeoutMs?: number): Promise<ImagePreloadOutcome> {
-    return new Promise((resolve) => {
-        let done = false;
-        // 同时注入 <link rel="preload"> 确保浏览器高优先级加载 + HTTP 缓存复用
+    return new Promise(resolve => {
         injectPreloadLink(src);
-        const img = new Image();
-        // 不设置 crossOrigin — 与 CSS background-image 的 no-cors 模式保持一致
-        const finish = (outcome: ImagePreloadOutcome) => {
-            if (done) return;
-            done = true;
-            // 加载完成后清理 preload link
-            removePreloadLink(src);
-            resolve(outcome);
-        };
-        const settleFromDimensions = () => {
-            if (img.naturalWidth > 0) {
-                cacheLoadedImage(src, img);
-                finish('loaded');
-                return true;
+        const image = new Image();
+        let resolved = false;
+        let cancelled = false;
+        let timedOut = false;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const finish = (outcome: ImagePreloadOutcome, keepLoading = false) => {
+            if (!keepLoading) {
+                if (timer) clearTimeout(timer);
+                image.onload = null;
+                image.onerror = null;
+                pendingAssetLoads.delete(src);
             }
-            return false;
+            removePreloadLink(src);
+            if (!resolved) { resolved = true; resolve(outcome); }
         };
-        const timer = timeoutMs != null
-            ? setTimeout(() => {
-                console.debug(`[AssetLoader] 图片加载超时（${timeoutMs}ms），跳过: ${src}`);
-                if (settleFromDimensions()) {
-                    return;
-                }
-                // 超时 ≠ 失败：浏览器的 Image 请求仍在后台继续。
-                // 注册后台回调，加载完成后自动更新缓存并通知 UI 组件。
-                img.onload = () => {
-                    cacheLoadedImage(src, img);
-                    removePreloadLink(src);
-                    // 通知订阅者：超时的图片已在后台加载完成
-                    _emitImageReady(src);
-                };
-                finish('timeout');
-            }, timeoutMs)
-            : null;
-        img.onload = () => {
-            if (timer) clearTimeout(timer);
-            cacheLoadedImage(src, img);
+        const loaded = () => {
+            if (cancelled || image.naturalWidth <= 0) return false;
+            cacheLoadedImage(src, image);
+            if (timedOut) _emitImageReady(src);
             finish('loaded');
+            return true;
         };
-        img.onerror = () => {
-            if (timer) clearTimeout(timer);
-            console.debug(`[AssetLoader] 图片加载失败（将尝试备选格式）: ${src}`);
-            finish('failed');
-        };
-        img.src = src;
-        if (img.complete && settleFromDimensions()) {
-            if (timer) clearTimeout(timer);
-        }
+        pendingAssetLoads.set(src, () => {
+            cancelled = true;
+            finish('cancelled');
+            image.removeAttribute('src');
+        });
+        image.onload = () => { loaded(); };
+        image.onerror = () => { if (!cancelled) finish('failed'); };
+        if (timeoutMs != null) timer = setTimeout(() => {
+            if (!loaded()) {
+                timedOut = true;
+                finish('timeout', true);
+            }
+        }, timeoutMs);
+        image.src = src;
+        if (image.complete) loaded();
     });
 }
 
 /** 图片加载失败计数（超过阈值后标记为已处理，避免每次阶段切换都重新等待 10s 超时） */
-const preloadFailCount = new Map<string, number>();
+const preloadFailCount = new ResourceCache<string, number>(1024);
 const MAX_PRELOAD_RETRIES = 2;
 
-type ImagePreloadOutcome = 'loaded' | 'failed' | 'timeout';
+type ImagePreloadOutcome = 'loaded' | 'failed' | 'timeout' | 'cancelled';
 
 /** 正在加载中的 Promise 去重表，避免同一 URL 并发多次请求 */
 const inFlightPreloads = new Map<string, Promise<ImagePreloadOutcome>>();
@@ -1245,21 +1255,27 @@ async function preloadOptimizedImage(src: string): Promise<ImagePreloadOutcome> 
         return outcome;
     })();
     inFlightPreloads.set(webp, promise);
-    promise.finally(() => inFlightPreloads.delete(webp));
+    promise.finally(() => { if (inFlightPreloads.get(webp) === promise) inFlightPreloads.delete(webp); });
     return promise;
 }
 
 async function preloadAudioFile(src: string): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
         const audio = new Audio();
-        audio.oncanplaythrough = () => {
-            preloadedAudio.set(src, audio);
+        let done = false;
+        const finish = (loaded: boolean) => {
+            if (done) return;
+            done = true;
+            audio.oncanplaythrough = null;
+            audio.onerror = null;
+            pendingAssetLoads.delete(src);
+            if (loaded) preloadedAudio.set(src, audio);
+            else audio.removeAttribute('src');
             resolve();
         };
-        audio.onerror = () => {
-            console.warn(`[AssetLoader] 音频加载失败: ${src}`);
-            resolve();
-        };
+        pendingAssetLoads.set(src, () => finish(false));
+        audio.oncanplaythrough = () => finish(true);
+        audio.onerror = () => finish(false);
         audio.src = src;
     });
 }

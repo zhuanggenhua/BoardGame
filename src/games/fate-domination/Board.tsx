@@ -1,3 +1,4 @@
+import './client';
 import React, { useMemo, useState } from 'react';
 import { ArrowRight, Eye, Flag, Gem, Hand, History, MapPin, Shield, Sparkles, X, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

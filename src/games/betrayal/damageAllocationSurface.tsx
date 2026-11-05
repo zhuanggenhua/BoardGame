@@ -2,12 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { UI_Z_INDEX } from "../../core";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalPendingDamageAllocationState,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalPendingDamageAllocationState, BetrayalTraitKey } from './domain/types';
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import {
   countSelectedDamageTrait,

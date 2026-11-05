@@ -1,10 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalMonsterSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalMonsterSummary, BetrayalTraitKey } from './domain/types';
 
 function isTraitMap(value: unknown): value is Record<BetrayalTraitKey, number> {
   if (!value || typeof value !== "object") {

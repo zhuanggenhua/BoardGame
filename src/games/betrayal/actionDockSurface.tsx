@@ -16,7 +16,7 @@ import {
 
 import type { ActionBarAction } from "../../core/ui/types";
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
-import type { BetrayalCore } from "./game";
+import type { BetrayalCore } from './domain/types';
 
 const ACTION_ICON_BY_ID: Partial<Record<ActionBarAction["id"], LucideIcon>> = {
   move: Footprints,

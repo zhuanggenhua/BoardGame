@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { GameEngineConfig } from '../../../engine/transport/engineConfig';
 import type { GameBoardProps } from '../../../engine/transport/protocol';
 import { BoardBridge, LocalGameProvider, useGameClient } from '../../../engine/transport/react';
-import { normalizeSmashUpMatchStateForUi } from '../ui/normalizeRuntimeState';
+import { statePersistence } from '../domain/statePersistence';
+import { createInitialSystemState } from '../../../engine/pipeline';
 
 const smashupCompatConfig = {
     gameId: 'smashup',
@@ -23,7 +24,7 @@ const smashupCompatConfig = {
         validate: () => ({ valid: true }),
         execute: () => [],
         reduce: (core: unknown) => core,
-        normalizeRuntimeState: (state: any) => normalizeSmashUpMatchStateForUi(state),
+        statePersistence,
     },
     systems: [],
 } as unknown as GameEngineConfig;
@@ -104,7 +105,7 @@ const smashupDirtyDispatchConfig = {
                 ],
             };
         },
-        normalizeRuntimeState: (state: any) => normalizeSmashUpMatchStateForUi(state),
+        statePersistence,
     },
     systems: [],
 } as unknown as GameEngineConfig;
@@ -167,11 +168,12 @@ describe('SmashUp LocalGameProvider runtime normalization', () => {
                     })),
                 },
                 sys: {
+                    ...createInitialSystemState(['0', '1'], []),
                     phase: 'playCards',
                     turnNumber: 1,
                     turnOrder: ['0', '1'],
                     currentPlayerIndex: 0,
-                    eventStream: { nextId: 1 },
+                    eventStream: { entries: [], maxEntries: 200, nextId: 1 },
                     interaction: { current: undefined, queue: [], isBlocked: false },
                     responseWindow: { current: undefined },
                 },
@@ -198,7 +200,7 @@ describe('SmashUp LocalGameProvider runtime normalization', () => {
         });
     });
 
-    it('运行中的本地 dispatch 若产出脏 runtime state，会在渲染前先归一化', async () => {
+    it('本地 Provider 不使用 UI 或恢复迁移掩盖 reducer 写入的运行时错误', async () => {
         const DirtyWriterBoard = () => {
             const { state, dispatch } = useGameClient();
 
@@ -221,10 +223,10 @@ describe('SmashUp LocalGameProvider runtime normalization', () => {
 
         await waitFor(() => {
             const text = screen.getByTestId('smashup-runtime-state').textContent ?? '';
-            expect(text).toContain('"pendingMinionPlayEffects":[]');
-            expect(text).not.toContain('"usedDiscardPlayAbilities":null');
-            expect(text).toContain('"buriedCards":[]');
-            expect(text).toContain('"madnessDeck":["special_madness","special_madness"]');
+            expect(text).toContain('"pendingMinionPlayEffects":null');
+            expect(text).toContain('"usedDiscardPlayAbilities":null');
+            expect(text).toContain('"buriedCards":null');
+            expect(JSON.parse(text).madnessDeck.map((card: { defId: string }) => card.defId)).toEqual(['special_madness', 'special_madness']);
         });
     });
 });

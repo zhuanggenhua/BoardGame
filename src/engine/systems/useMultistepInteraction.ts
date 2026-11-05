@@ -1,3 +1,4 @@
+import type { MultistepChoiceBinding } from './multistepChoiceRuntime';
 /**
  * useMultistepInteraction — 多步交互 React Hook
  *
@@ -11,7 +12,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { TRANSPORT_BATCH_COMMAND, type TransportBatchCommand } from '../batchDispatchCommand';
-import { INTERACTION_COMMANDS, type InteractionDescriptor, type MultistepChoiceData } from './InteractionSystem';
+import { INTERACTION_COMMANDS } from './InteractionSystem';
 
 export interface MultistepInteractionState<TResult> {
     /** 当前累积结果 */
@@ -29,10 +30,12 @@ export interface MultistepInteractionState<TResult> {
 }
 
 export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
-    interaction: InteractionDescriptor<MultistepChoiceData<TStep, TResult>> | undefined,
+    binding: MultistepChoiceBinding<TStep, TResult> | undefined,
     dispatch: (type: string, payload?: unknown) => void,
 ): MultistepInteractionState<TResult> {
-    const data = interaction?.data as MultistepChoiceData<TStep, TResult> | undefined;
+    const interaction = binding?.interaction;
+    const data = interaction?.data;
+    const runtime = binding?.runtime;
     const interactionId = interaction?.id;
 
     const [result, setResult] = useState<TResult | null>(data?.initialResult ?? null);
@@ -40,10 +43,10 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
 
     const getCompletedStepCount = useCallback((currentResult: TResult | null, fallbackStepCount: number): number => {
         if (currentResult === null) return 0;
-        return data?.getCompletedSteps
-            ? data.getCompletedSteps(currentResult)
+        return runtime?.getCompletedSteps
+            ? runtime!.getCompletedSteps(currentResult)
             : fallbackStepCount;
-    }, [data]);
+    }, [data, runtime]);
 
     // 用 ref 追踪最新的 result/stepCount，避免 confirm 闭包捕获旧值
     const resultRef = useRef(result);
@@ -89,13 +92,13 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         const typedPayload = payload as TStep;
 
         // 可选验证
-        if (data.validateStep && resultRef.current !== null) {
-            if (!data.validateStep(resultRef.current, typedPayload)) return;
+        if (runtime!.validateStep && resultRef.current !== null) {
+            if (!runtime!.validateStep(resultRef.current, typedPayload)) return;
         }
 
         // 先计算新 result，再同步传给 setStepCount 的自动 confirm 逻辑
         const newResult = resultRef.current !== null
-            ? data.localReducer(resultRef.current, typedPayload)
+            ? runtime!.localReducer(resultRef.current, typedPayload)
             : null;
 
         // 同一事件循环内可能连续触发多个 step（快速点击、触摸连点或测试批处理）。
@@ -113,13 +116,13 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
                 }
                 // 优先使用 getCompletedSteps 从结果中提取语义步骤数（如已修改的不同骰子数），
                 // 未提供时退化为按 step() 调用次数计数
-                const completedSteps = data.getCompletedSteps
-                    ? data.getCompletedSteps(newResult)
+                const completedSteps = runtime!.getCompletedSteps
+                    ? runtime!.getCompletedSteps(newResult)
                     : next;
                 if (completedSteps >= data.maxSteps) {
                     if (confirmedRef.current) return next; // 已经 confirm 过，跳过
                     confirmedRef.current = true;
-                    const commands = data.toCommands(newResult);
+                    const commands = runtime!.toCommands(newResult);
                     // 捕获当前 interactionId，防止闭包中引用变化
                     const confirmId = interactionId;
                     // 用 queueMicrotask 确保在当前 React 渲染批次完成后再 dispatch
@@ -136,7 +139,7 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
             }
             return next;
         });
-    }, [data, dispatchCommands, interactionId]);
+    }, [data, runtime, dispatchCommands, interactionId]);
 
     const confirm = useCallback(() => {
         if (!data || resultRef.current === null) return;
@@ -147,9 +150,9 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
 
         confirmedRef.current = true;
         const shouldResolve = data.confirmationMode === 'submitBatch'
-            ? data.shouldResolveOnConfirm?.(resultRef.current) === true
+            ? runtime!.shouldResolveOnConfirm?.(resultRef.current) === true
             : true;
-        const commands = data.toCommands(resultRef.current);
+        const commands = runtime!.toCommands(resultRef.current);
         // 捕获当前 interactionId，防止闭包中引用变化
         const confirmId = interactionId;
         if (shouldResolve) {
@@ -172,7 +175,7 @@ export function useMultistepInteraction<TStep = unknown, TResult = unknown>(
         setResult(nextResult);
         setStepCount(0);
         confirmedRef.current = false;
-    }, [data, dispatchCommands, getCompletedStepCount, interactionId]);
+    }, [data, runtime, dispatchCommands, getCompletedStepCount, interactionId]);
 
     const cancel = useCallback(() => {
         if (!interaction) return;

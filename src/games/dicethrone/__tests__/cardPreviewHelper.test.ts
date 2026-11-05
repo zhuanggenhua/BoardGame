@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { CardPreviewRef } from '../../../core';
 import { CHARACTER_DATA_MAP } from '../domain/characters';
-import { getDiceThroneCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getDiceThroneCardPreviewRef } from '../cardPreviewModel';
 
 const deterministicRandom = {
     random: () => 0.5,

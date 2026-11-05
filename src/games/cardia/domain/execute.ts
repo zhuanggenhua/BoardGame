@@ -87,7 +87,7 @@ function executePlayCard(
     if (!card) return [];
     
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
+    const timestamp = command.timestamp ?? 0;
     
     // 1. 发射卡牌打出事件
     events.push({
@@ -199,7 +199,8 @@ function executePlayCard(
             opponentId,
             opponent.currentCard,
             slotIndex,
-            _random
+            _random,
+            timestamp
         );
         events.push(...encounterEvents);
     }
@@ -217,10 +218,10 @@ function resolveEncounter(
     player2Id: PlayerId,
     player2Card: any,
     slotIndex: number,
-    random: RandomFn
+    random: RandomFn,
+    timestamp: number
 ): CardiaEvent[] {
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
     
     // 1. 计算最终影响力（基础影响力 + 修正标记）
     const player1Modifiers = core.modifierTokens.filter(t => t.cardId === player1Card.uid);
@@ -268,7 +269,7 @@ function resolveEncounter(
         // 5.1 基础印戒
         events.push({
             type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED.type,
-            timestamp: Date.now(),
+            timestamp: timestamp,
             payload: {
                 cardId: winnerCard.uid,
                 playerId: winner,
@@ -284,7 +285,7 @@ function resolveEncounter(
                 // 给当前遭遇获胜的牌额外印戒
                 events.push({
                     type: CARDIA_EVENTS.EXTRA_SIGNET_PLACED.type,
-                    timestamp: Date.now(),
+                    timestamp: timestamp,
                     payload: {
                         cardId: winnerCard.uid,
                         playerId: winner,
@@ -294,7 +295,7 @@ function resolveEncounter(
                 // 顾问是一次性效果，触发后移除
                 events.push({
                     type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED.type,
-                    timestamp: Date.now(),
+                    timestamp: timestamp,
                     payload: {
                         abilityId: ability.abilityId,
                         cardId: ability.cardId,
@@ -314,7 +315,7 @@ function resolveEncounter(
             // 触发游戏胜利
             events.push({
                 type: CARDIA_EVENTS.GAME_WON.type,
-                timestamp: Date.now(),
+                timestamp: timestamp,
                 payload: {
                     winnerId: winner,
                     reason: 'mechanicalSpirit',
@@ -324,7 +325,7 @@ function resolveEncounter(
             // 移除一次性持续标记
             events.push({
                 type: CARDIA_EVENTS.ONGOING_ABILITY_REMOVED.type,
-                timestamp: Date.now(),
+                timestamp: timestamp,
                 payload: {
                     abilityId: mechanicalSpiritAbility.abilityId,
                     cardId: mechanicalSpiritAbility.cardId,
@@ -339,7 +340,7 @@ function resolveEncounter(
     // 即使审判官通过 winTies 赢得平局，也不进入能力阶段（因为原本是平局）
     if (originalWinner === 'tie') {
         // 原本是平局时，跳过能力阶段，直接执行回合结束逻辑
-        const endTurnEvents = executeAutoEndTurn(core, player1Id, random);
+        const endTurnEvents = executeAutoEndTurn(core, player1Id, random, timestamp);
         events.push(...endTurnEvents);
     }
     // 原本有胜负时，FlowSystem 会自动检测 currentEncounter.loserId 并推进到 ability 阶段
@@ -363,7 +364,7 @@ function executeActivateAbility(
     const { abilityId, sourceCardUid } = command.payload;
     
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
+    const timestamp = command.timestamp ?? 0;
     
     // 1. 发射能力激活事件
     const player = core.players[playerId];
@@ -466,7 +467,7 @@ function executeSkipAbility(
     random: RandomFn
 ): CardiaEvent[] {
     const { playerId } = command.payload;
-    const timestamp = Date.now();
+    const timestamp = command.timestamp ?? 0;
     
     console.log('[Cardia] executeSkipAbility called', {
         playerId,
@@ -551,10 +552,10 @@ function executeConfirmChoice(
 function executeAutoEndTurn(
     core: CardiaCore,
     playerId: PlayerId,
-    _random: RandomFn
+    _random: RandomFn,
+    timestamp: number
 ): CardiaEvent[] {
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
     
     // 1. 抽牌（两个玩家各抽 1 张）
     for (const pid of Object.keys(core.players)) {
@@ -597,7 +598,7 @@ function executeEndTurn(
     random: RandomFn
 ): CardiaEvent[] {
     // 直接调用自动回合结束逻辑
-    return executeAutoEndTurn(core, command.playerId, random);
+    return executeAutoEndTurn(core, command.playerId, random, command.timestamp ?? 0);
 }
 
 /**
@@ -613,10 +614,10 @@ function executeEndTurn(
  */
 export function recalculateEncounterState(
     core: CardiaCore,
-    affectedCardUid: string
+    affectedCardUid: string,
+    timestamp: number = 0
 ): CardiaEvent[] {
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
 
     // 1. 找到受影响的遭遇（包含被修正卡牌的遭遇）
     const encounterIndex = core.encounterHistory.findIndex(encounter =>
@@ -762,7 +763,7 @@ function executeAddModifier(
     command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.ADD_MODIFIER }>
 ): CardiaEvent[] {
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
+    const timestamp = command.timestamp ?? 0;
     const { playerId } = command;
     const { cardUid, modifierValue } = command.payload;
     
@@ -778,7 +779,7 @@ function executeAddModifier(
     });
     
     // 2. 触发状态回溯（基于当前状态中的 modifierTokens 重新计算）
-    const recalculationEvents = recalculateEncounterState(core, cardUid);
+    const recalculationEvents = recalculateEncounterState(core, cardUid, timestamp);
     events.push(...recalculationEvents);
     
     return events;
@@ -792,7 +793,7 @@ function executeRemoveModifier(
     command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.REMOVE_MODIFIER }>
 ): CardiaEvent[] {
     const events: CardiaEvent[] = [];
-    const timestamp = Date.now();
+    const timestamp = command.timestamp ?? 0;
     const { playerId } = command;
     const { cardUid, modifierId } = command.payload;
     

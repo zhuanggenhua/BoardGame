@@ -20,7 +20,7 @@ import {
     canUseSkeletonKeyForMove,
     resolveSkeletonKeyCardId,
 } from './possessionActionReadModel';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalCommand } from './commandTypes';
 import type { BetrayalEvent } from './events';
 

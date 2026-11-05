@@ -539,7 +539,7 @@ export function discoverTimingOpportunities<
     TEvent extends GameEvent = GameEvent,
     TValue = unknown,
 >(
-    domain: DomainCore<TCore, TCommand, TEvent>,
+    domain: Pick<DomainCore<TCore, TCommand, TEvent>, 'discoverTimingOpportunities'>,
     args: TimingOpportunityDiscoveryArgs<TCore, TCommand, TEvent>,
     options: DiscoverTimingOpportunitiesOptions = {},
 ): DiscoverTimingOpportunitiesResult<TValue> {
@@ -696,7 +696,7 @@ export function commitEventWithTimingOpportunities<
     TEvent extends GameEvent = GameEvent,
     TValue = unknown,
 >(
-    domain: DomainCore<TCore, TCommand, TEvent>,
+    domain: Pick<DomainCore<TCore, TCommand, TEvent>, 'discoverTimingOpportunities'>,
     args: EventCommitArgs<TCore, TCommand, TEvent>,
     options: CommitEventWithTimingOpportunitiesOptions<TCore, TCommand, TEvent, TValue> = {},
 ): CommitEventWithTimingOpportunitiesResult<TEvent, TValue> {

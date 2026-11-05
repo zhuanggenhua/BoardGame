@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 import {
     describe,
     expect,
@@ -109,8 +110,8 @@ describe('GameTransportServer（command side effects / training capture）', () 
         await storage.createMatch('match-tutorial-ai-command-inject', {
             initialState: {
                 G: {
-                    core: { currentPlayer: '0' },
-                    sys: {
+                    core: { playerIds: ['0', '1'], currentPlayer: '0' },
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main',
                         turnNumber: 1,
                         tutorial: { active: true },
@@ -189,8 +190,8 @@ describe('GameTransportServer（command side effects / training capture）', () 
         await storage.createMatch('match-online-ignore-internal-player-id', {
             initialState: {
                 G: {
-                    core: { currentPlayer: '0' },
-                    sys: {
+                    core: { playerIds: ['0', '1'], currentPlayer: '0' },
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main',
                         turnNumber: 1,
                         tutorial: { active: false },
@@ -260,8 +261,8 @@ describe('GameTransportServer（command side effects / training capture）', () 
         await storage.createMatch('match-online-ignore-tutorial-player-id', {
             initialState: {
                 G: {
-                    core: { currentPlayer: '0' },
-                    sys: {
+                    core: { playerIds: ['0', '1'], currentPlayer: '0' },
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'main',
                         turnNumber: 1,
                         tutorial: { active: true },
@@ -448,7 +449,7 @@ describe('GameTransportServer（command side effects / training capture）', () 
         const recorder = new MockTrainingDataRecorder();
 
         await storage.createMatch('match-train-human-only', {
-            initialState: createStoredState(),
+            initialState: createStoredState(['0', '1']),
             metadata: {
                 ...createMetadata('cred-ai'),
                 createdAt: Date.now() - 1000,
@@ -499,7 +500,7 @@ describe('GameTransportServer（command side effects / training capture）', () 
         const recorder = new MockTrainingDataRecorder();
 
         await storage.createMatch('match-train-all-seats', {
-            initialState: createStoredState(),
+            initialState: createStoredState(['0', '1']),
             metadata: {
                 ...createMetadata('cred-ai-all'),
                 createdAt: Date.now() - 1000,

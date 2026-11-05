@@ -3,7 +3,7 @@ import {
     computeSpriteImgStyle,
     type SpriteAtlasConfig,
 } from '../../engine/primitives/spriteAtlas';
-import type { BetrayalInventoryCard } from './game';
+import type { BetrayalInventoryCard } from './domain/types';
 
 export type BetrayalPossessionAtlasVisual = {
     image: string;

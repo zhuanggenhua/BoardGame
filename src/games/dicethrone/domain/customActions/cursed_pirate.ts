@@ -16,9 +16,10 @@ import type {
     PreventDamageEvent,
     StatusRemovedEvent,
 } from '../types';
-import { registerChoiceEffectHandler } from '../choiceEffects';
+import { registerChoiceEffectHandler } from '../choiceEffectRegistry';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
-import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { CURSED_PIRATE_DICE_FACE_IDS, STATUS_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';

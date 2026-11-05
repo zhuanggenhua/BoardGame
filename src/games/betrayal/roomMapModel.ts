@@ -1,13 +1,5 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalMonsterSummary,
-  BetrayalRoomEdge,
-  BetrayalRoomNode,
-  BetrayalRoomTileAdjustmentOption,
-  BetrayalRoomTileAdjustmentSelection,
-  BetrayalRoomVisualId,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalRoomNode, BetrayalRoomTileAdjustmentOption, BetrayalRoomTileAdjustmentSelection } from './domain/types';
+import type { BetrayalRoomEdge, BetrayalRoomVisualId } from './game';
 
 export const ROOM_TILE_SIZE = 184;
 const ROOM_TILE_STEP_X = 184;

@@ -26,7 +26,8 @@ import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
-import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
+import { hasCurrentChoiceAnchor, resolveChoiceEffect } from './choiceEffects';
+import { registerChoiceEffectHandler } from './choiceEffectRegistry';
 import {
     assertValidBonusDiceContinuation,
     isDiceThroneAiSeat,

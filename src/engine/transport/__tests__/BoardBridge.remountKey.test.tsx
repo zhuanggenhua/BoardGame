@@ -1,6 +1,7 @@
+import { createInitialSystemState } from '../../pipeline';
 /* @vitest-environment happy-dom */
 import React, { useEffect } from 'react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { GameEngineConfig } from '../engineConfig';
 import type { GameBoardProps } from '../protocol';
@@ -172,6 +173,7 @@ describe('BoardBridge remountKey', () => {
                     currentPlayer: '0',
                 },
                 sys: {
+                    ...createInitialSystemState(['0', '1'], []),
                     turnOrder: ['0', '1'],
                     currentPlayerIndex: 0,
                     tutorial: {
@@ -211,7 +213,7 @@ describe('BoardBridge remountKey', () => {
         });
     });
 
-    it('LocalGameProvider 的恢复策略返回 false 时，应忽略已保存快照并重新开局', () => {
+    it('LocalGameProvider 的恢复策略返回 false 时保留快照并阻断，显式重开后才替换', () => {
         const seed = 'tutorial-progress-seed-filtered';
         window.localStorage.setItem(`local_match_snapshot_v1:tutorial-route-id:${seed}`, JSON.stringify({
             version: 1,
@@ -230,6 +232,7 @@ describe('BoardBridge remountKey', () => {
                     currentPlayer: 'stale',
                 },
                 sys: {
+                    ...createInitialSystemState(['0', '1'], []),
                     turnOrder: ['0', '1'],
                     currentPlayerIndex: 0,
                     tutorial: {
@@ -248,8 +251,10 @@ describe('BoardBridge remountKey', () => {
         }));
 
         const Board = () => {
-            const { state } = useGameClient();
-            return <pre data-testid="current-player">{String((state as any)?.core?.currentPlayer)}</pre>;
+            const { state, localSession, reset } = useGameClient();
+            return <><pre data-testid="current-player">{String((state as any)?.core?.currentPlayer)}</pre>
+                <span data-testid="restore-error">{localSession?.restoreError}</span>
+                <button onClick={reset}>reset-fixture-session</button></>;
         };
 
         render(
@@ -265,7 +270,11 @@ describe('BoardBridge remountKey', () => {
             </LocalGameProvider>,
         );
 
+        expect(screen.getByTestId('restore-error').textContent).toBe('setup-mismatch');
+        expect(window.localStorage.getItem(`local_match_snapshot_v1:tutorial-route-id:${seed}`)).toContain('"currentPlayer":"stale"');
+        fireEvent.click(screen.getByText('reset-fixture-session'));
         return waitFor(() => {
+            expect(screen.getByTestId('restore-error').textContent).toBe('');
             expect(screen.getByTestId('current-player').textContent).toBe('0');
             const rawSnapshot = window.localStorage.getItem(`local_match_snapshot_v1:tutorial-route-id:${seed}`);
             expect(rawSnapshot).not.toBeNull();
@@ -273,7 +282,7 @@ describe('BoardBridge remountKey', () => {
         });
     });
 
-    it('LocalGameProvider 恢复到与当前 2 人对局不兼容的旧快照时，应丢弃多余玩家并重建当前局面', () => {
+    it('LocalGameProvider 恢复到与当前 2 人对局不兼容的旧快照时保留原数据并阻断恢复', () => {
         const key = 'local_match_snapshot_v1:board-bridge-test:board-bridge-invalid-player-snapshot';
         window.localStorage.setItem(key, JSON.stringify({
             version: 1,
@@ -293,6 +302,7 @@ describe('BoardBridge remountKey', () => {
                     currentPlayer: '2',
                 },
                 sys: {
+                    ...createInitialSystemState(['0', '1'], []),
                     matchId: 'local:board-bridge-test:board-bridge-invalid-player-snapshot',
                     turnOrder: ['0', '1', '2'],
                     currentPlayerIndex: 2,
@@ -300,9 +310,10 @@ describe('BoardBridge remountKey', () => {
             },
         }));
 
-        const Board = ({ G }: GameBoardProps<unknown>) => (
-            <pre data-testid="state-player-ids">{JSON.stringify(Object.keys(((G as any)?.core?.players ?? {})))}</pre>
-        );
+        const Board = () => {
+            const { localSession } = useGameClient();
+            return <pre data-testid="restore-error">{localSession?.restoreError}</pre>;
+        };
 
         render(
             <LocalGameProvider
@@ -316,7 +327,8 @@ describe('BoardBridge remountKey', () => {
         );
 
         return waitFor(() => {
-            expect(screen.getByTestId('state-player-ids').textContent).toBe('["0","1"]');
+            expect(screen.getByTestId('restore-error').textContent).toBe('player-identity-mismatch');
+            expect(window.localStorage.getItem(key)).toContain('"currentPlayer":"2"');
         });
     });
 

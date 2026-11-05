@@ -1,6 +1,6 @@
 import type { PlayerId } from '../../../engine/types';
-import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../ui/mapGraph';
+import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from '../data/mapGraph';
 import {
     getQidahenFortificationConfigs,
     getQidahenInitialController,

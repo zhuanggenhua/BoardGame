@@ -102,10 +102,13 @@ fs.mkdirSync(path.dirname(absOutfile), { recursive: true });
 const startedAt = Date.now();
 console.log(`[build-node-bundle] ${label} building ${entry} -> ${outfile}`);
 
-await buildWithFallback({
+const splitting = args.splitting === 'true';
+const outputDirectory = path.dirname(absOutfile);
+const result = await buildWithFallback({
     absWorkingDir: repoRoot,
     entryPoints: [entry],
-    outfile,
+    ...(splitting ? { outdir: outputDirectory, entryNames: path.parse(outfile).name,
+        chunkNames: 'chunks/[name]-[hash]', outExtension: { '.js': '.mjs' }, splitting: true } : { outfile }),
     bundle: true,
     platform: 'node',
     format: 'esm',
@@ -113,6 +116,21 @@ await buildWithFallback({
     sourcemap: true,
     logLevel: 'info',
     tsconfig,
+    metafile: true,
 });
+
+// Remove only files listed by this tool's previous build, never arbitrary output contents.
+const inventoryPath = path.join(outputDirectory, 'bundle-files.json');
+const outputs = Object.keys(result.metafile.outputs).map(file => path.relative(outputDirectory, path.resolve(repoRoot, file)));
+const withinOutput = file => {
+    const relative = path.relative(outputDirectory, path.resolve(outputDirectory, file));
+    return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
+};
+if (fs.existsSync(inventoryPath)) {
+    for (const file of JSON.parse(fs.readFileSync(inventoryPath, 'utf8'))) {
+        if (!outputs.includes(file) && withinOutput(file) && fs.existsSync(path.resolve(outputDirectory, file))) fs.unlinkSync(path.resolve(outputDirectory, file));
+    }
+}
+fs.writeFileSync(inventoryPath, JSON.stringify(outputs, null, 2) + '\n');
 
 console.log(`[build-node-bundle] ${label} done in ${Date.now() - startedAt}ms`);

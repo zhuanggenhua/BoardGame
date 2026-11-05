@@ -1,10 +1,6 @@
 import type { RandomFn } from '../../engine/types';
 import { rollBetrayalPip } from './diceRules';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalRoomNode,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalRoomNode } from './domain/types';
 import type { BetrayalRoomDiscoveryTemplate } from './scenarioConfig';
 import { rollTraitCheckWithDice } from './traitRollModel';
 import {

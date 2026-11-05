@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getCardiaCardPreviewMeta, getCardiaCardPreviewRef } from '../ui/cardPreviewHelper';
+import { getCardiaCardPreviewMeta, getCardiaCardPreviewRef } from '../cardPreviewModel';
 
 describe('cardPreviewHelper', () => {
     describe('getCardiaCardPreviewMeta', () => {

@@ -1,3 +1,4 @@
+import { settleFixtureCommandEvents } from '../commandFixture';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
@@ -6,7 +7,7 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { validate } from '../../domain/commands';
-import { execute } from '../../domain/reducer';
+
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import {
     makeMinion,
@@ -667,7 +668,7 @@ describe('Frankenstein abilities', () => {
             }],
         });
 
-        const events = execute(makeMatchState(core), {
+        const events = settleFixtureCommandEvents(makeMatchState(core), {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'monster1', baseIndex: 0 },

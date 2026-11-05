@@ -12,7 +12,8 @@ import type {
     InteractionRequestedEvent,
 } from '../types';
 import type { PlayerId } from '../../../../engine/types';
-import { registerCustomActionHandler, resolveEffectsToEvents, type CustomActionContext } from '../effects';
+import { resolveEffectsToEvents } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
 import {

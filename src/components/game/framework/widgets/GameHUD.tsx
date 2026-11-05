@@ -23,7 +23,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
 import { HudPortal } from '../../../../core';
-import { FabMenu, type FabAction, type FabMenuPosition } from '../../../system/FabMenu';
+import { FabMenu, type FabAction } from '../../../system/FabMenu';
 import { UNDO_COMMANDS } from '../../../../engine';
 import type { ManualForceEndAiPhaseResult } from '../../../../engine/transport/protocol';
 import { AudioControlSection } from './AudioControlSection';
@@ -50,12 +50,8 @@ import { useMatchChat } from './useMatchChat';
 import { SeatEmoteOverlay } from './SeatEmoteOverlay';
 import type { GameOrientationPreference } from '../../../../shared/gameManifest.types';
 import { toggleDocumentFullscreen } from '../../../../lib/webFullscreen';
-import {
-    MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY,
-    resolveMageWarsGameHudFabInitialOffset,
-} from '../../../../games/mage-wars/layout';
 import { useRuntimeViewport } from '../../../../hooks/ui/useRuntimeViewport';
-import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../../../shared/mobileSupport';
+import type { GameHudLayoutResolver } from './gameHudLayout';
 import {
     applySystemDisplayThemeToDocument,
     persistSystemDisplayThemePreference,
@@ -111,6 +107,7 @@ interface GameHUDProps {
     renderRuntimeSettings?: (t: TFunction) => ReactNode;
     availableEmotes?: readonly EmoteDefinition[];
     resolveEmote?: (emoteId: string) => EmoteDefinition | undefined;
+    resolveHudLayout?: GameHudLayoutResolver;
     /**
      * 主 HUD 的坐标归属。固定牌桌必须放在壳内，避免和 board-shell
      * 产生第二套真实视口定位；独立页面默认继续使用 portal。
@@ -119,9 +116,6 @@ interface GameHUDProps {
 }
 
 const EMPTY_EMOTES: readonly EmoteDefinition[] = [];
-
-const MAGE_WARS_GAME_HUD_FAB_POSITION: FabMenuPosition = 'top-left';
-const MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY = 'game_hud_fab_offset:mage-wars';
 
 export const GameHUD = ({
     mode,
@@ -154,6 +148,7 @@ export const GameHUD = ({
     renderRuntimeSettings,
     availableEmotes = EMPTY_EMOTES,
     resolveEmote,
+    resolveHudLayout,
     hudPlacement = 'portal',
 }: GameHUDProps) => {
     const navigate = useNavigate();
@@ -196,31 +191,9 @@ export const GameHUD = ({
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
     const isSetupPhase = isPregameSetupPhase
         ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
-    const isBetrayalGame = _gameId === 'betrayal';
-    const isTicTacToePortraitMobile = _gameId === 'tictactoe'
-        && viewportWidth > 0
-        && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH
-        && viewportHeight > viewportWidth;
-    const isBetrayalCharacterSelect = isBetrayalGame &&
-        ((undoState?.G as { core?: { phase?: unknown } } | null | undefined)?.core?.phase === 'characterSelect');
-    // Betrayal 选角阶段的确认区占用右下角，悬浮菜单必须让位；进入牌桌后恢复右下角基线。
-    const fabMenuPosition: FabMenuPosition = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_POSITION
-        : isTicTacToePortraitMobile
-            ? 'top-right'
-        : isBetrayalGame
-            ? (isSetupPhase || isBetrayalCharacterSelect ? 'top-right' : 'bottom-right')
-            : 'bottom-right';
-    const fabMenuStorageKey = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_STORAGE_KEY
-        : isTicTacToePortraitMobile
-            ? 'game_hud_fab_position:tictactoe:portrait:v1'
-        : isBetrayalGame
-            ? 'game_hud_fab_position:betrayal:v2'
-            : undefined;
-    const fabMenuLegacyOffsetStorageKey = _gameId === 'mage-wars'
-        ? MAGE_WARS_GAME_HUD_FAB_LEGACY_OFFSET_STORAGE_KEY
-        : undefined;
+    const fabLayout = resolveHudLayout?.({
+        viewportWidth, viewportHeight, isSetupPhase, state: undoState?.G,
+    });
 
     const [localChatEmotes, setLocalChatEmotes] = useState<MatchEmoteEvent[]>([]);
     const [seatEmoteEvents, setSeatEmoteEvents] = useState<MatchEmoteEvent[]>([]);
@@ -996,16 +969,11 @@ export const GameHUD = ({
             <FabMenu
                 isDark={true}
                 items={items}
-                position={fabMenuPosition}
-                initialOffset={_gameId === 'mage-wars'
-                    ? resolveMageWarsGameHudFabInitialOffset(viewportHeight)
-                    : isTicTacToePortraitMobile
-                        // 放在标题与棋盘之间的空档，避免闭合态悬浮球压住棋盘格。
-                        ? { top: Math.max(0, Math.min(64, viewportHeight * 0.075)) }
-                    : undefined}
+                position={fabLayout?.position ?? 'bottom-right'}
+                initialOffset={fabLayout?.initialOffset}
                 zIndex={GAME_HUD_FAB_Z_INDEX}
-                storageKey={fabMenuStorageKey}
-                legacyOffsetStorageKey={fabMenuLegacyOffsetStorageKey}
+                storageKey={fabLayout?.storageKey}
+                legacyOffsetStorageKey={fabLayout?.legacyOffsetStorageKey}
                 hudPlacement={hudPlacement}
             />
 

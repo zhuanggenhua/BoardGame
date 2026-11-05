@@ -119,7 +119,7 @@ type StagecoachSourcePromptContext = CowboysPromptContext;
 type StagecoachCardsPromptContext = CowboysPromptContext & StagecoachSourceContinuation;
 type StagecoachDestinationPromptContext = CowboysPromptContext & StagecoachDestinationContinuation;
 
-function createCowboysPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createCowboysPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,

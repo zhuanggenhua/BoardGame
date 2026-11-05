@@ -40,6 +40,7 @@ export function useVisualSequenceGate(): UseVisualSequenceGateReturn {
   const sequenceDepthRef = useRef(0);
   // 交互回调 FIFO 队列
   const pendingInteractionsRef = useRef<Array<() => void>>([]);
+  const isDrainingRef = useRef(false);
 
   const beginSequence = useCallback(() => {
     sequenceDepthRef.current += 1;
@@ -50,21 +51,23 @@ export function useVisualSequenceGate(): UseVisualSequenceGateReturn {
 
   const endSequence = useCallback(() => {
     sequenceDepthRef.current = Math.max(0, sequenceDepthRef.current - 1);
-    if (sequenceDepthRef.current === 0) {
-      // 排空交互队列
-      const queue = pendingInteractionsRef.current;
-      if (queue.length > 0) {
-        pendingInteractionsRef.current = [];
-        for (const fn of queue) {
-          fn();
+    if (sequenceDepthRef.current === 0 && !isDrainingRef.current) {
+      isDrainingRef.current = true;
+      try {
+        // Re-read the live queue and depth after each callback: a callback may
+        // begin another sequence, enqueue more work, or reset the old sequence.
+        while (sequenceDepthRef.current === 0 && pendingInteractionsRef.current.length > 0) {
+          pendingInteractionsRef.current.shift()!();
         }
+      } finally {
+        isDrainingRef.current = false;
+        setIsVisualBusy(sequenceDepthRef.current > 0);
       }
-      setIsVisualBusy(false);
     }
   }, []);
 
   const scheduleInteraction = useCallback((fn: () => void) => {
-    if (sequenceDepthRef.current > 0) {
+    if (sequenceDepthRef.current > 0 || isDrainingRef.current) {
       pendingInteractionsRef.current.push(fn);
     } else {
       fn();

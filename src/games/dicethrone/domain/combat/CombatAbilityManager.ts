@@ -13,7 +13,7 @@ import type {
   GameContext,
   EffectResolutionConfig,
 } from './types';
-import { getCustomActionMeta } from '../effects';
+import { getCustomActionMeta } from '../customActionRegistry';
 import type {
   AbilityContext,
   EffectCondition,

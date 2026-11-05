@@ -1,4 +1,4 @@
-import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from './mapGraph';
+import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from '../data/mapGraph';
 
 type OverlayRgba = readonly [number, number, number, number];
 

@@ -4,7 +4,7 @@ import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';
 import { syncQidahenMapTokensFromRegions } from '../domain/mapTokens';import { QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID } from '../domain/ordinaryHandCardIdentities';
 
-import { syncPiecesFromRegions } from '../domain/troopCompat';import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';
+import { syncPiecesFromRegions } from '../domain/troopCompat';import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';
 import type { QidahenCore } from '../domain/types';
 import { random, apply, factionHandCards } from './helpers/paymentSelectionHarness';
 

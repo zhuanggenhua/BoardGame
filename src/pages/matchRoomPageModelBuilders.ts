@@ -42,6 +42,7 @@ export type MatchRoomTutorialHudModel = {
     renderRuntimeSettings?: ReturnType<typeof buildGameHudRuntimeProps>['renderRuntimeSettings'];
     availableEmotes: ReturnType<typeof buildGameHudRuntimeProps>['availableEmotes'];
     resolveEmote: ReturnType<typeof buildGameHudRuntimeProps>['resolveEmote'];
+    resolveHudLayout?: ReturnType<typeof buildGameHudRuntimeProps>['resolveHudLayout'];
     hudPlacement: 'in-shell' | 'portal';
 };
 
@@ -93,6 +94,7 @@ export function buildTutorialHudModel(args: {
         ...buildGameHudRuntimeProps({
             gameId,
             gameConfig: pageIdentity.gameConfig,
+            resolveHudLayout: pageRuntime.stages.tutorial.resolveHudLayout,
         }),
         hudPlacement: resolveGameHudPlacement(pageIdentity.gameConfig),
     };

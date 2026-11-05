@@ -1,8 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalTraitKey } from './domain/types';
 import { TRAIT_DAMAGE_ORDER } from "./traitPresentation";
 
 export const BETRAYAL_ATTACK_IMPACT_FLASH_RESET_MS = 2200;

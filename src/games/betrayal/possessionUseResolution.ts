@@ -7,9 +7,7 @@ import {
     createBookPendingEventRollReplacement,
     type BetrayalEventRollReplacementResult,
 } from './eventRollReplacementModel';
-import type {
-    BetrayalCore,
-} from './game';
+import type { BetrayalCore } from './domain/types';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
     resolveUseEffect,

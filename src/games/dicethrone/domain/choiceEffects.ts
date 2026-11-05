@@ -1,36 +1,10 @@
-/**
- * DiceThrone Choice Effect 处理器注册表
- */
 
-import type { DiceThroneCore } from './types';
-import { TOKEN_IDS } from './ids';
+import { type DiceThroneCore } from './types';
+import { type ChoiceEffectContext, getChoiceEffectHandler, registerChoiceEffectHandler } from './choiceEffectRegistry';
 import { updatePendingAttackSettlementStage } from './utils';
+import { TOKEN_IDS } from './ids';
 
-/**
- * Choice Effect 处理器上下文
- */
-export interface ChoiceEffectContext {
-    state: DiceThroneCore;
-    playerId: string;
-    customId: string;
-    sourceAbilityId?: string;
-    /** CHOICE_RESOLVED 事件中的 value（选项携带的数值） */
-    value?: number;
-    /** 本次选择来自真实 InteractionSystem 当前交互快照。 */
-    interactionBacked?: boolean;
-}
-
-/**
- * Choice Effect 处理器函数类型
- * 返回修改后的 state（或 undefined 表示不处理）
- */
-export type ChoiceEffectHandler = (context: ChoiceEffectContext) => Partial<DiceThroneCore> | undefined;
-
-/**
- * Choice Effect 处理器注册表
- * 新增选择效果只需注册处理器，无需修改 reducer
- */
-const choiceEffectHandlers: Map<string, ChoiceEffectHandler> = new Map();
+export { type ChoiceEffectContext, type ChoiceEffectHandler, registerChoiceEffectHandler, getChoiceEffectHandler } from './choiceEffectRegistry';
 
 function markOffensiveRollEndTokenUsed(state: DiceThroneCore, tokenId: string): {
     offensiveRollEndTokenIdsUsed: string[];
@@ -48,21 +22,6 @@ export function hasCurrentChoiceAnchor(state: DiceThroneCore, sourceAbilityId?: 
     return typeof sourceAbilityId === 'string'
         && sourceAbilityId.length > 0
         && state.currentChoiceSourceAbilityId === sourceAbilityId;
-}
-
-/**
- * 注册 Choice Effect 处理器
- */
-export function registerChoiceEffectHandler(customId: string, handler: ChoiceEffectHandler): void {
-    // HMR 会重新执行模块导致重复注册，静默覆盖即可
-    choiceEffectHandlers.set(customId, handler);
-}
-
-/**
- * 获取 Choice Effect 处理器
- */
-export function getChoiceEffectHandler(customId: string): ChoiceEffectHandler | undefined {
-    return choiceEffectHandlers.get(customId);
 }
 
 export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceThroneCore> | undefined {

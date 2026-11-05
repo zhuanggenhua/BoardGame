@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core/cardPreviewTypes';
 import type { RandomFn } from '../../../../engine/types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';
 import {

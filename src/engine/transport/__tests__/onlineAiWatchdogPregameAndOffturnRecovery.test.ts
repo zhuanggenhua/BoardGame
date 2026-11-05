@@ -23,7 +23,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const feedbackReporter = vi.fn(async () => undefined);
-        const playerIds = ['0', '1'];
+        const playerIds = ['0', '1', '2'];
         const random = createQueuedRandom([1]);
         const setupCore = betrayalEngineConfig.domain.setup(playerIds, random);
         const setupState = {
@@ -66,6 +66,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                 gameName: 'betrayal',
                 seatControllers: {
                     '0': { type: 'human' },
+                    '2': { type: 'human' },
                     '1': { type: 'local-ai', policyId: 'baseline' },
                 },
             }),
@@ -206,7 +207,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-summonerwars-pregame-legal-action', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
@@ -221,10 +222,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                             '1': false,
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'summon',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -342,9 +343,9 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         '1': 'paladin',
                     },
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: 2 },
+                    eventStream: { entries: [], nextId: 2 },
                 },
             };
 
@@ -381,7 +382,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-summonerwars-observed-recovery', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
@@ -396,10 +397,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                             '1': false,
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'summon',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -449,9 +450,9 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         '1': 'yongheng',
                     },
                 },
-                sys: {
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     ...activeMatch.state.sys,
-                    eventStream: { nextId: 3 },
+                    eventStream: { entries: [], nextId: 3 },
                 },
             };
             return {
@@ -597,7 +598,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-offturn-defensive-legal-action', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
@@ -605,10 +606,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'defensiveRoll',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -675,9 +676,9 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollCount: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 2 },
+                        eventStream: { entries: [], nextId: 2 },
                     },
                 };
                 return true;
@@ -690,9 +691,9 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         ...activeMatch.state.core,
                         rollConfirmed: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 3 },
+                        eventStream: { entries: [], nextId: 3 },
                     },
                 };
                 return true;
@@ -810,7 +811,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-offturn-targeting-legal-action', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '0',
                         currentPlayerIndex: 0,
                         turnOrder: ['0', '1'],
@@ -818,10 +819,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 4,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -887,9 +888,9 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollCount: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 2 },
+                        eventStream: { entries: [], nextId: 2 },
                     },
                 };
                 return true;
@@ -902,9 +903,9 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         ...activeMatch.state.core,
                         rollConfirmed: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         ...activeMatch.state.sys,
-                        eventStream: { nextId: 3 },
+                        eventStream: { entries: [], nextId: 3 },
                     },
                 };
                 return true;
@@ -982,7 +983,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-active-targeting-legal-only-no-fallback', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -990,10 +991,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 7,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1100,16 +1101,16 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-manual-faction-selection-suppressed', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
                         hostStarted: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'factionSelect',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1201,7 +1202,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-manual-setup-character-selection-suppressed', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1211,10 +1212,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                             '1': 'unselected',
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'setup',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1312,16 +1313,16 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-manual-custom-setup-selection-suppressed', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
                         hostStarted: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'draft',
                         turnNumber: 1,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1394,7 +1395,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-summonerwars-pregame-waiting-host', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1409,10 +1410,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                             '1': true,
                         },
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'summon',
                         turnNumber: 0,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1500,7 +1501,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-active-targeting-command-failed', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1508,10 +1509,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 7,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1614,7 +1615,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-active-targeting-missing-private-overlay', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1622,10 +1623,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 7,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1755,7 +1756,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-active-targeting-stale-private-overlay', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1763,10 +1764,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: false,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 7,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],
@@ -1896,7 +1897,7 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
         await storage.createMatch('match-watchdog-active-targeting-missing-visible-state', {
             initialState: {
                 G: {
-                    core: {
+                    core: { playerIds: ['0', '1'],
                         activePlayerId: '1',
                         currentPlayerIndex: 1,
                         turnOrder: ['0', '1'],
@@ -1904,10 +1905,10 @@ describe('online AI watchdog pregame and off-turn recovery', () => {
                         rollLimit: 1,
                         rollConfirmed: true,
                     },
-                    sys: {
+                    sys: { ...createInitialSystemState(['0', '1'], []),
                         phase: 'targetingRoll',
                         turnNumber: 7,
-                        eventStream: { nextId: 1 },
+                        eventStream: { entries: [], nextId: 1 },
                         interaction: {
                             current: undefined,
                             queue: [],

@@ -3,7 +3,7 @@ import {
     computeSpriteImgStyle,
     type SpriteAtlasConfig,
 } from '../../engine/primitives/spriteAtlas';
-import type { BetrayalDeckKind, BetrayalDiscoverySummary, BetrayalInventoryCard } from './game';
+import type { BetrayalDeckKind, BetrayalDiscoverySummary, BetrayalInventoryCard } from './domain/types';
 import {
     buildPossessionAtlasImageStyle,
     resolvePossessionAtlasVisual,

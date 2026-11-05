@@ -2,7 +2,7 @@ import React from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import type { BetrayalRoomNode } from "./game";
+import type { BetrayalRoomNode } from './domain/types';
 import { FLOOR_TONE } from "./roomMapModel";
 
 type BetrayalRoomFloor = BetrayalRoomNode["floor"];

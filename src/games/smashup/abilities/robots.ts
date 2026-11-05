@@ -1,3 +1,4 @@
+import { getInteractionSequence } from '../../../engine/systems/InteractionSystem';
 /**
  * 大杀四方 - 机器人派系能力
  *
@@ -333,12 +334,7 @@ const robotMicrobotReclaimerProgram = createSequenceProgram<RobotMicrobotReclaim
 );
 
 // 盘旋机器人交互计数器（用于生成稳定的交互 ID）
-let robotHoverbotCounter = 0;
 
-/** 重置盘旋机器人计数器（仅用于测试） */
-export function resetRobotHoverbotCounter(): void {
-    robotHoverbotCounter = 0;
-}
 
 function createRobotHoverbotContext(ctx: AbilityContext): RobotHoverbotContext {
     const peek = peekDeckTop(ctx.state, ctx.random, ctx.playerId, 'all', 'robot_hoverbot', ctx.now);
@@ -407,7 +403,7 @@ const robotHoverbotPromptProgram = createPromptProgram<RobotHoverbotContext, Sma
         const power = context.topPower ?? 0;
         return attachOptionsGenerator(
             createAbilityRuntimeSimpleChoice(
-                `robot_hoverbot_${robotHoverbotCounter++}`,
+                `robot_hoverbot_${getInteractionSequence(context.matchState)}`,
                 context.playerId,
                 `牌库顶是 cards.${topCard.defId}.name（力量 ${power}），是否作为额外随从打出？`,
                 [

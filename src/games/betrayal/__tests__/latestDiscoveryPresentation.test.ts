@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BetrayalCore, BetrayalDiscoverySummary } from '../game';
+import type { BetrayalCore, BetrayalDiscoverySummary } from '../domain/types';
 import { resolveEventRollConfirmationPresentation } from '../recentRollPresentation';
 import {
   buildLatestDiscoveryDisplayEntry,

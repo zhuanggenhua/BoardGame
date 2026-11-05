@@ -1,116 +1,69 @@
-import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
-import { createInitialSystemState } from '../pipeline';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MatchState } from '../types';
-import type { EngineSystem } from '../systems/types';
-import { setUndoAiSeatIds } from '../systems/UndoSystem';
+import { StateRestoreError } from '../statePersistence';
 import type { GameEngineConfig } from './engineConfig';
-import {
-    createInitialLocalProviderState,
-    createLocalProviderRandom,
-    type LocalProviderRandom,
-} from './localProviderBootstrap';
-import {
-    clearLocalMatchSnapshot,
-    type LocalMatchSnapshot,
-    persistLocalMatchSnapshot,
-    readLocalMatchSnapshot,
-} from './localSession';
-import { normalizeStateForConfig } from './stateNormalization';
+import { createInitialLocalProviderState, createLocalProviderRandom, type LocalProviderRandom } from './localProviderBootstrap';
+import { clearLocalMatchSnapshot, persistLocalMatchSnapshot, readLocalMatchSnapshotResult,
+    type LocalMatchSnapshot, type LocalSnapshotSaveResult } from './localSession';
+import { isPersistedLocalStateCompatible, normalizePersistedLocalStateForGame } from './stateNormalization';
+
+export interface LocalSessionStatus {
+    restoreError: string | null;
+    saveResult: LocalSnapshotSaveResult | null;
+    expired: boolean;
+}
 
 export function useLocalProviderSession(args: {
-    config: GameEngineConfig;
-    numPlayers: number;
-    seed: string;
-    setupData: unknown;
-    setupPlayerIds: string[];
-    aiSeatIds: string[];
-    persistSession: boolean;
-    persistGameId?: string;
-    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
+    config: GameEngineConfig; numPlayers: number; seed: string; setupData: unknown;
+    setupPlayerIds: string[]; aiSeatIds: string[]; persistSession: boolean;
+    persistGameId?: string; shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
 }) {
-    const {
-        config,
-        numPlayers,
-        seed,
-        setupData,
-        setupPlayerIds,
-        aiSeatIds,
-        persistSession,
-        persistGameId,
-        shouldRestorePersistedSession,
-    } = args;
+    const { config, numPlayers, seed, setupData, setupPlayerIds, aiSeatIds, persistSession,
+        persistGameId, shouldRestorePersistedSession } = args;
     const storageGameId = persistGameId ?? config.gameId;
-
-    const persistedSnapshotResult = useMemo(() => {
-        if (!persistSession) return null;
-        const snapshot = readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers });
-        if (!snapshot) return null;
-        if (shouldRestorePersistedSession && !shouldRestorePersistedSession(snapshot)) {
-            return { snapshot: null, rejectedSeed: seed };
+    const admitted = useMemo(() => {
+        if (!persistSession) return { snapshot: null, error: null, expired: false };
+        const read = readLocalMatchSnapshotResult({ gameId: storageGameId, seed, numPlayers });
+        if (read.status !== 'ready') return { snapshot: null,
+            error: read.status === 'invalid' ? 'invalid-snapshot'
+                : read.status === 'unavailable' ? 'restore-read-unavailable' : null, expired: read.status === 'expired' };
+        try {
+            if (shouldRestorePersistedSession && !shouldRestorePersistedSession(read.snapshot)) throw new StateRestoreError('setup-mismatch');
+            if (!isPersistedLocalStateCompatible({ state: read.snapshot.state, expectedPlayerIds: setupPlayerIds })) throw new StateRestoreError('player-identity-mismatch');
+            const state = normalizePersistedLocalStateForGame(config, read.snapshot.state);
+            return { snapshot: { ...read.snapshot, state }, error: null, expired: false };
+        } catch (error) {
+            return { snapshot: null, error: error instanceof StateRestoreError ? error.reason : 'migration-failed', expired: false };
         }
-        return { snapshot, rejectedSeed: null };
-    }, [numPlayers, persistSession, seed, shouldRestorePersistedSession, storageGameId]);
-    const persistedSnapshot = persistedSnapshotResult?.snapshot ?? null;
-    const rejectedPersistedSnapshotSeed = persistedSnapshotResult?.rejectedSeed ?? null;
-
-    const [initialRandom] = useState<LocalProviderRandom>(() =>
-        createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0),
-    );
-    const randomRef = useRef<LocalProviderRandom>(initialRandom);
-
-    const [state, setState] = useState<MatchState<unknown>>(() =>
-        createInitialLocalProviderState({
-            config,
-            persistedState: persistedSnapshot?.state,
-            aiSeatIds,
-            initialRandom,
-            setupData,
-            setupPlayerIds,
-        }),
-    );
+    }, [config, numPlayers, persistSession, seed, setupPlayerIds, shouldRestorePersistedSession, storageGameId]);
+    const [restoreError, setRestoreError] = useState<string | null>(admitted.error);
+    const [saveResult, setSaveResult] = useState<LocalSnapshotSaveResult | null>(null);
+    const [initialRandom] = useState<LocalProviderRandom>(() => createLocalProviderRandom(seed, admitted.snapshot?.randomCursor ?? 0));
+    const randomRef = useRef(initialRandom);
+    const [state, setState] = useState<MatchState<unknown>>(() => createInitialLocalProviderState({
+        config, persistedState: admitted.snapshot?.state, aiSeatIds, initialRandom, setupData, setupPlayerIds,
+    }));
     const stateRef = useRef(state);
 
     useEffect(() => {
-        if (!persistSession) return;
-        if (rejectedPersistedSnapshotSeed) {
-            clearLocalMatchSnapshot(storageGameId, rejectedPersistedSnapshotSeed);
-        }
-        persistLocalMatchSnapshot({
-            gameId: storageGameId,
-            seed,
-            numPlayers,
-            state,
-            randomCursor: randomRef.current.getCursor(),
-        });
-    }, [numPlayers, persistSession, rejectedPersistedSnapshotSeed, seed, state, storageGameId]);
+        // Preserve an incompatible saved game byte-for-byte until explicit reset.
+        if (!persistSession || restoreError) return;
+        setSaveResult(persistLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers,
+            state, randomCursor: randomRef.current.getCursor() }));
+    }, [numPlayers, persistSession, restoreError, seed, state, storageGameId]);
 
     const reset = useCallback(() => {
-        randomRef.current = createLocalProviderRandom(seed);
-        const random = randomRef.current;
-        const core = config.domain.setup(setupPlayerIds, random, setupData);
-        const sys = createInitialSystemState(
-            setupPlayerIds,
-            config.systems as EngineSystem[],
-        );
-        const nextState = setUndoAiSeatIds(
-            normalizeStateForConfig(config, { sys, core }),
-            aiSeatIds,
-        );
-        stateRef.current = nextState;
-        setState(nextState);
-    }, [aiSeatIds, config, seed, setupData, setupPlayerIds]);
+        if (persistSession) clearLocalMatchSnapshot(storageGameId, seed);
+        const random = createLocalProviderRandom(seed);
+        randomRef.current = random;
+        const next = createInitialLocalProviderState({ config, persistedState: null, aiSeatIds,
+            initialRandom: random, setupData, setupPlayerIds });
+        stateRef.current = next;
+        setRestoreError(null);
+        setSaveResult(null);
+        setState(next);
+    }, [aiSeatIds, config, persistSession, seed, setupData, setupPlayerIds, storageGameId]);
 
-    return {
-        state,
-        setState,
-        stateRef,
-        randomRef,
-        reset,
-    };
+    const localSession: LocalSessionStatus = { restoreError, saveResult, expired: admitted.expired };
+    return { state, setState, stateRef, randomRef, reset, localSession };
 }

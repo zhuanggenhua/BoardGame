@@ -78,7 +78,7 @@ export function validate(
  */
 function validatePlayCard(
     core: CardiaCore,
-    command: Extract<CardiaCommand, { type: 'PLAY_CARD' }>
+    command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.PLAY_CARD }>
 ): ValidationResult {
     const { playerId } = command;
     const { cardUid } = command.payload;
@@ -208,7 +208,7 @@ function validateActivateAbility(
  */
 function validateSkipAbility(
     state: MatchState<CardiaCore>,
-    command: Extract<CardiaCommand, { type: 'SKIP_ABILITY' }>
+    command: Extract<CardiaCommand, { type: typeof CARDIA_COMMANDS.SKIP_ABILITY }>
 ): ValidationResult {
     const { core, sys } = state;
     const { playerId } = command;

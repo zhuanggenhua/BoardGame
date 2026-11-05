@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 import type { DomainCore, PlayerId, RandomFn, GameOverResult } from '../../../engine/types';
 import type { CardiaCore, CardiaCommand, CardiaEvent, PlayerState, PlayedCard } from './types';
 import { ABILITY_IDS } from './ids';
@@ -22,6 +23,7 @@ export * from './locationRegistry';
  */
 export const CardiaDomain: DomainCore<CardiaCore, CardiaCommand, CardiaEvent> = {
     gameId: 'cardia',
+    statePersistence,
     
     /**
      * 初始化游戏状态

@@ -1,5 +1,5 @@
-import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
-import type { QidahenPassageBoundaryType } from '../ui/mapGraph';
+import { getQidahenBoundaryTypeMeta } from '../data/mapGraph';
+import type { QidahenPassageBoundaryType } from '../data/mapGraph';
 import {
     isQidahenCityRuntimeRegion,
     resolveQidahenPrimaryRuntimeRegionId,

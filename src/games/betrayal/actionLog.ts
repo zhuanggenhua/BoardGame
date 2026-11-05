@@ -7,7 +7,7 @@ import type {
     MatchState,
 } from '../../engine/types';
 import { BETRAYAL_COMMANDS } from './commands';
-import type { BetrayalCore, BetrayalTraitKey } from './game';
+import type { BetrayalCore, BetrayalTraitKey } from './domain/types';
 import {
     getBetrayalEventPreviewRef,
     getBetrayalPossessionPreviewRef,

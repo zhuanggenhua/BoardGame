@@ -1,7 +1,7 @@
 import { useInRouterContext } from "react-router-dom";
 import { GameDebugPanel } from "../../components/game/framework/widgets/GameDebugPanel";
 import type { GameBoardProps } from "../../engine/transport/protocol";
-import type { BetrayalCore } from "./game";
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalCommandMap } from "./commandTypes";
 import { BETRAYAL_MANIFEST } from "./manifest";
 

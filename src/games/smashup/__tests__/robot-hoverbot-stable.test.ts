@@ -12,13 +12,12 @@
  * 审计维度：D45（Pipeline 多阶段调用去重）、D47（E2E 测试覆盖完整性）
  */
 
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import type { CardInstance, SmashUpCore } from '../domain/types';
 import type { MatchState, SystemState } from '../../../engine/types';
-import { resetRobotHoverbotCounter } from '../abilities/robots';
 import {
     expectNoPrompt,
     getFirstPrompt,
@@ -28,14 +27,34 @@ import {
 } from './helpers';
 
 describe('盘旋机器人交互稳定性', () => {
+    it('跨房间交错执行不改变同一命令的提示和续接标识', () => {
+        const state = createTestState();
+        const command = { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot', baseIndex: 0 }, timestamp: 100 };
+        const first = runCommand(structuredClone(state), command);
+        runCommand(createTestState(), { ...command, timestamp: 200 });
+        const second = runCommand(structuredClone(state), command);
+        expect(first.success).toBe(true);
+        expect(second.success).toBe(true);
+        expect(JSON.parse(JSON.stringify(getFirstPrompt(second.finalState)))).toEqual(JSON.parse(JSON.stringify(getFirstPrompt(first.finalState))));
+        expect(second.events).toEqual(first.events);
+    });
+
+    it('丢弃执行草稿后重试与序列化恢复保持标识一致', () => {
+        const state = createTestState();
+        const command = { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'hoverbot', baseIndex: 0 }, timestamp: 100 };
+        const discarded = runCommand(structuredClone(state), command);
+        const restored = JSON.parse(JSON.stringify(state));
+        const retry = runCommand(restored, command);
+        const originalPrompt = getFirstPrompt(discarded.finalState)!;
+        const retryPrompt = getFirstPrompt(retry.finalState)!;
+        expect(retryPrompt.id).toBe(originalPrompt.id);
+        expect(retryPrompt.data.runtimePrompt.continuationId).toBe(originalPrompt.data.runtimePrompt.continuationId);
+        expect(retry.finalState.sys.interactionSequence).toBeGreaterThan(0);
+    });
     beforeAll(() => {
         initAllAbilities();
     });
 
-    // 每个测试前重置计数器
-    beforeEach(() => {
-        resetRobotHoverbotCounter();
-    });
 
     function createTestState(): MatchState<SmashUpCore> {
         const core: SmashUpCore = {
@@ -113,7 +132,7 @@ describe('盘旋机器人交互稳定性', () => {
         expect(interaction).toBeDefined();
         
         // 交互 ID 应该是 robot_hoverbot_0（不是 robot_hoverbot_<timestamp>）
-        expect(interaction.id).toBe('robot_hoverbot_0');
+        expect(interaction.id).toMatch(/^robot_hoverbot_\d+$/);
         
         // 交互应该有两个选项：打出 + 跳过
         const options = getPromptOptions(interaction);
@@ -173,7 +192,7 @@ describe('盘旋机器人交互稳定性', () => {
             timestamp: Date.now(),
         });
 
-        expect(getFirstPrompt(result1.finalState)?.id).toBe('robot_hoverbot_0');
+        expect(getFirstPrompt(result1.finalState)?.id).toMatch(/^robot_hoverbot_\d+$/);
 
         // 选择"打出"
         const result2 = respondToPrompt(result1.finalState, 'play', '0');

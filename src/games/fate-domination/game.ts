@@ -1,10 +1,8 @@
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
 import { createBaseSystems, createGameEngine, createResolutionFrameSystem, createTimingOpportunitySystem } from '../../engine';
-import { registerCriticalImageResolver } from '../../core';
 import { FateDominationDomain } from './domain';
 import type { FateDominationCommand, FateDominationCore, FateDominationEvent } from './domain';
 import { FATE_DOMINATION_AUDIO_CONFIG } from './audio.config';
-import { fateDominationCriticalImageResolver } from './criticalImageResolver';
 
 const ACTION_ALLOWLIST = [
     'SELECT_MASTER',
@@ -60,8 +58,6 @@ export const engineConfig = createGameEngine<FateDominationCore, FateDominationC
     maxPlayers: 7,
     commandTypes: [...ACTION_ALLOWLIST],
 });
-
-registerCriticalImageResolver('fate-domination', fateDominationCriticalImageResolver);
 
 export default engineConfig;
 export { FATE_DOMINATION_AUDIO_CONFIG as audioConfig };

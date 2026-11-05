@@ -15,18 +15,7 @@ import { resolveInventoryEffectId } from './possessionEffects';
 import { resolveCurrentRoomDiscoveryDeck } from './roomDiscoveryModel';
 import { roomDistanceByLayout } from './roomMapModel';
 import { BETRAYAL_TRAIT_KEYS } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalDustRuntimeState,
-    BetrayalExplorerSummary,
-    BetrayalHelpingHandsRuntimeState,
-    BetrayalInventoryCard,
-    BetrayalMagicCameraRuntimeState,
-    BetrayalMonsterSummary,
-    BetrayalMummyRuntimeState,
-    BetrayalRoomNode,
-    BetrayalUponReflectionRuntimeState,
-} from './game';
+import type { BetrayalCore, BetrayalDustRuntimeState, BetrayalExplorerSummary, BetrayalHelpingHandsRuntimeState, BetrayalInventoryCard, BetrayalMagicCameraRuntimeState, BetrayalMonsterSummary, BetrayalMummyRuntimeState, BetrayalRoomNode, BetrayalUponReflectionRuntimeState } from './domain/types';
 
 const HELPING_HANDS_STRANGE_AMULET_CARD: BetrayalInventoryCard = {
     id: HELPING_HANDS_STRANGE_AMULET_EFFECT_ID,

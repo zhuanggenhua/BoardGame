@@ -1,4 +1,4 @@
-import type { BetrayalMonsterSummary, BetrayalTraitKey } from "./game";
+import type { BetrayalMonsterSummary, BetrayalTraitKey } from './domain/types';
 import { TRAIT_LABEL_LOCAL } from "./traitTrackSurface";
 
 export const MONSTER_DETAIL_TRAIT_ORDER: readonly BetrayalTraitKey[] = [

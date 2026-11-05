@@ -318,7 +318,7 @@ export function createGameOverSystem(): EngineSystem<CardiaCore> {
         name: 'Cardia 游戏结束处理',
         priority: 100, // 高优先级，确保最后执行
 
-        afterEvents: ({ state, events }): HookResult<CardiaCore> | void => {
+        afterEvents: ({ state, events, random, command }): HookResult<CardiaCore> | void => {
             for (const event of events) {
                 if (event.type === CARDIA_EVENTS.GAME_WON.type) {
                     const payload = event.payload as { winnerId: string; reason: string };
@@ -363,17 +363,14 @@ export function createGameOverSystem(): EngineSystem<CardiaCore> {
  * - 监听 ABILITY_INTERACTION_REQUESTED 事件 → 将能力交互加入队列
  */
 export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
-    // 使用 Date.now() 而不是 toISOString()，避免在模块加载时就执行
-    const loadTime = Date.now();
-    
-    console.info('[CardiaEventSystem] System created', { loadTime });
+
     
     return {
         id: 'cardia-event-system',
         name: 'Cardia 事件处理',
         priority: 50, // 在 InteractionSystem(20) 之后执行
 
-        afterEvents: ({ state, events }): HookResult<CardiaCore> | void => {
+        afterEvents: ({ state, events, random, command }): HookResult<CardiaCore> | void => {
             // 强制显示调试信息
             if (events.some(e => e.type === INTERACTION_EVENTS.RESOLVED)) {
                 console.error('[CardiaEventSystem] ========== RESOLVED EVENT DETECTED ==========');
@@ -494,19 +491,7 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                             console.error('[CardiaEventSystem] Handler exists, about to call it');
                             let result: any;
                             try {
-                                const random: RandomFn = {
-                                    random: () => Math.random(),
-                                    d: (max: number) => Math.floor(Math.random() * max) + 1,
-                                    range: (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min,
-                                    shuffle: <T>(array: T[]) => {
-                                        const result = [...array];
-                                        for (let i = result.length - 1; i > 0; i--) {
-                                            const j = Math.floor(Math.random() * (i + 1));
-                                            [result[i], result[j]] = [result[j], result[i]];
-                                        }
-                                        return result;
-                                    },
-                                };
+
                                 console.error('[CardiaEventSystem] About to call handler function');
                                 const normalizedValue = normalizeCardiaResolvedValue(
                                     payload.value,
@@ -666,7 +651,8 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                     // 调用状态回溯函数
                     const recalcEvents = recalculateEncounterState(
                         newState.core,
-                        modEvent.cardId
+                        modEvent.cardId,
+                        command.timestamp ?? 0
                     );
                     
                     console.log('[CardiaEventSystem] Recalculation generated events:', {
@@ -714,7 +700,7 @@ export function createCardiaEventSystem(): EngineSystem<CardiaCore> {
                     // 创建第二次交互
                     console.log('[CardiaEventSystem] Creating inventor second interaction');
                     const secondInteraction = createCardSelectionInteraction(
-                        `${ABILITY_IDS.INVENTOR}_second_${Date.now()}`,
+                        `${ABILITY_IDS.INVENTOR}_second_${command.timestamp ?? 0}`,
                         ABILITY_IDS.INVENTOR,
                         newState.core.inventorPending.playerId,
                         '选择第二张卡牌',

@@ -1,3 +1,4 @@
+import { postProcessSystemEvents } from '../domain/eventSettlement';
 /**
  * 响应窗口跳过与重入循环测试
  */
@@ -202,7 +203,7 @@ describe('响应窗口跳过逻辑', () => {
             payload: { playerId: '0', reason: 'player_pass' },
         } as any;
 
-        const rawProcessed = SmashUpDomain.postProcessSystemEvents!(
+        const rawProcessed = postProcessSystemEvents(
             state.core,
             [requestEvent],
             random,

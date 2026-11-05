@@ -20,13 +20,7 @@ import {
   type BetrayalScenarioOutcome,
 } from "./scenarioConfig";
 import { resolveTraitDamageAssignableSteps } from "./traitTrackModel";
-import type {
-  BetrayalCore,
-  BetrayalEndgameResult,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalEndgameResult, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalTraitKey } from './domain/types';
 
 const MUMMY_WEDDING_OMEN_CARD_IDS = new Set(["holy-symbol", "ring"]);
 

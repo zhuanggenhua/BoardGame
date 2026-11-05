@@ -4,7 +4,7 @@ import {
     type CardPreviewRenderer,
 } from '../../components/common/media/CardPreview';
 import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import type { CardPreviewRef } from '../../core';
+import type { CardPreviewRef } from '../../core/cardPreviewTypes';
 import {
     buildDiscoveryAtlasImageStyle,
     EVENT_FRONT_ATLAS,

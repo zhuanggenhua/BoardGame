@@ -1,3 +1,4 @@
+import type { MultistepChoiceRuntime, MultistepChoiceBinding } from '../multistepChoiceRuntime';
 /**
  * useMultistepInteraction hook 单元测试
  * 重点验证 any/adjust 模式下禁用 auto-confirm，用户必须手动确认
@@ -6,7 +7,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { TRANSPORT_BATCH_COMMAND } from '../../batchDispatchCommand';
 import { useMultistepInteraction } from '../useMultistepInteraction';
-import type { InteractionDescriptor, MultistepChoiceData } from '../InteractionSystem';
+import type { InteractionDescriptor, MultistepChoiceData as MultistepDescriptorData } from '../InteractionSystem';
+type MultistepChoiceData<TStep, TResult> = MultistepDescriptorData<TResult> & MultistepChoiceRuntime<TStep, TResult>;
+function bindTestInteraction<TStep, TResult>(interaction: InteractionDescriptor<MultistepChoiceData<TStep, TResult>> | undefined): MultistepChoiceBinding<TStep, TResult> | undefined {
+    return interaction ? { interaction, runtime: interaction.data } : undefined;
+}
+
 
 // 模拟骰子修改场景的类型
 interface DiceModifyResult {
@@ -80,7 +86,7 @@ describe('useMultistepInteraction', () => {
             const interaction = createAnyModeInteraction();
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             // 对同一颗骰子反复调整
@@ -101,7 +107,7 @@ describe('useMultistepInteraction', () => {
             const interaction = createAnyModeInteraction();
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             act(() => { result.current.step({ action: 'setAny', dieId: 0, newValue: 6 }); });
@@ -118,7 +124,7 @@ describe('useMultistepInteraction', () => {
             const interaction = createAnyModeInteraction();
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             act(() => {
@@ -137,7 +143,7 @@ describe('useMultistepInteraction', () => {
             const interaction = createAnyModeInteraction();
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             act(() => { result.current.step({ action: 'setAny', dieId: 0, newValue: 5 }); });
@@ -161,7 +167,7 @@ describe('useMultistepInteraction', () => {
             const interaction = createAnyModeInteraction(1);
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             // 未做任何修改
@@ -179,7 +185,7 @@ describe('useMultistepInteraction', () => {
             const interaction = createSetModeInteraction(1);
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             act(() => { result.current.step({ action: 'setAny', dieId: 0, newValue: 6 }); });
@@ -225,7 +231,7 @@ describe('useMultistepInteraction', () => {
             };
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             // 对同一骰子 step 两次 → modCount=1，不触发
@@ -276,7 +282,7 @@ describe('useMultistepInteraction', () => {
             };
 
             const { result } = renderHook(() =>
-                useMultistepInteraction(interaction, dispatch),
+                useMultistepInteraction(bindTestInteraction(interaction), dispatch),
             );
 
             act(() => { result.current.step({ action: 'setAny', dieId: 0, newValue: 3 }); });

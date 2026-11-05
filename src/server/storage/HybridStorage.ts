@@ -167,13 +167,14 @@ class InMemoryStorage {
         const current = new Promise<void>((resolve) => {
             release = resolve;
         });
-        this.metadataMutationChains.set(matchID, previous.then(() => current, () => current));
+        const tail = previous.then(() => current, () => current);
+        this.metadataMutationChains.set(matchID, tail);
         await previous.catch(() => undefined);
         try {
             return mutator();
         } finally {
             release();
-            if (this.metadataMutationChains.get(matchID) === current) {
+            if (this.metadataMutationChains.get(matchID) === tail) {
                 this.metadataMutationChains.delete(matchID);
             }
         }

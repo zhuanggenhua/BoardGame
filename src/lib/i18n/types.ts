@@ -1,6 +1,6 @@
 import { I18N_NAMESPACES } from './namespaces';
 
-export const I18N_RUNTIME_MODE = typeof import.meta !== 'undefined' ? import.meta.env?.MODE : undefined;
+export const I18N_RUNTIME_MODE = (import.meta as ImportMeta & { readonly env?: { readonly MODE?: string } }).env?.MODE;
 
 const isAndroidRuntimeBuild = I18N_RUNTIME_MODE === 'android';
 

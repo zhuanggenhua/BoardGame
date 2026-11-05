@@ -29,6 +29,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
     getGameImplementation: vi.fn(() => ({
         engineConfig: {
             gameId: 'fantasyrealms',

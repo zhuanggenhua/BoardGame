@@ -1,3 +1,4 @@
+import './client';
 import React from 'react';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import { UI_Z_INDEX } from '../../core';
@@ -5,7 +6,8 @@ import { UI_Z_INDEX } from '../../core';
 import { HAND_LIMIT, type DtResponseWindowType, type InteractionDescriptor, type PendingBonusDiceSettlement, type TurnPhase } from './domain/types';
 import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
-import type { DiceThroneCore, Die } from './domain';
+import type { DiceThroneCore } from './domain';
+import type { Die } from './domain/types';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
 import { getTokenUseOptions } from './domain/tokenTypes';
 import {
@@ -543,14 +545,14 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const { localState: localInteraction, handlers: interactionHandlers } = useInteractionState(pendingInteraction);
 
     // 骰子多步交互（multistep-choice，替代旧的 dt:card-interaction 骰子类型）
-    // 注意：MultistepChoiceData 里的函数（localReducer/toCommands）经过 JSON 序列化后会丢失，
-    // 必须在客户端根据 meta 重新注入，不能依赖从服务端传来的 data 字段。
-    const diceMultistepInteraction = React.useMemo(
+    // 正式状态只含描述数据；客户端根据 meta 绑定 reducer 与命令构造。
+    const diceMultistepBinding = React.useMemo(
         () => rebuildClientDiceMultistepInteraction(sysInteraction),
         [sysInteraction],
     );
+    const diceMultistepInteraction = diceMultistepBinding?.interaction;
     const diceMultistepState = useMultistepInteraction<DiceModifyStep | DiceSelectStep, DiceModifyResult | DiceSelectResult>(
-        diceMultistepInteraction,
+        diceMultistepBinding,
         dispatch,
     );
     // 追踪取消交互时返回的卡牌ID

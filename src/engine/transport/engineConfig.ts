@@ -51,7 +51,9 @@ export interface GameEngineConfig<
     /** 命令类型列表 */
     commandTypes?: string[];
     /** 游戏事件遥测格式化；传输层只负责写日志，不识别具体游戏事件语义 */
-    eventTelemetry?: GameEventTelemetryFormatter<TEvent>;
+    /** Called only with this engine's committed events. Method variance permits
+     * heterogeneous registry entries while each game retains its event type. */
+    eventTelemetry?(event: TEvent): GameEventTelemetryRecord | null | undefined;
     /** 玩家数量范围 */
     minPlayers?: number;
     maxPlayers?: number;

@@ -6,15 +6,7 @@ import {
     getAllExplorers,
     resolveExplorerRoom,
 } from './explorerReadModel';
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalMonsterMovementRollResult,
-    BetrayalMonsterStatusKind,
-    BetrayalMonsterSummary,
-    BetrayalRoomNode,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterMovementRollResult, BetrayalMonsterStatusKind, BetrayalMonsterSummary, BetrayalRoomNode, BetrayalTraitKey } from './domain/types';
 import {
     findFeverishMonster,
     findHelpingHandsTrollHand,

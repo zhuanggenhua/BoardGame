@@ -4,13 +4,7 @@ import {
     type BetrayalMonsterDefinitionId,
     type BetrayalMonsterDefinitionTraitKey,
 } from './domain/monsterDefinitions';
-import type {
-    BetrayalCore,
-    BetrayalMonsterStatusKind,
-    BetrayalMonsterStatusSummary,
-    BetrayalMonsterSummary,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalCore, BetrayalMonsterStatusKind, BetrayalMonsterStatusSummary, BetrayalMonsterSummary, BetrayalTraitKey } from './domain/types';
 
 const MAGIC_CAMERA_PHANTOM_PHOTOGRAPHER_TRAITS = {
     might: 4,

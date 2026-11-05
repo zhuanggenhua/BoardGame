@@ -1,7 +1,4 @@
-import {
-    type BetrayalCore,
-    type BetrayalRoomMarkerToken,
-} from './game';
+import type { BetrayalCore, BetrayalRoomMarkerToken } from './domain/types';
 import { resolveBetrayalDeathStateSummary } from './deathStateReadModel';
 import { findExplorerByPlayerId } from './explorerReadModel';
 import { findMummyMonster } from './hauntScenarioReadModel';

@@ -25,8 +25,8 @@ export function createInitialDeck(
     const cardDefs = getCardsByDeckVariant(variant);
     
     // 创建卡牌实例
-    const cards: CardInstance[] = cardDefs.map(def => 
-        createCardInstanceFromDef(def, playerId)
+    const cards: CardInstance[] = cardDefs.map((def, index) =>
+        createCardInstanceFromDef(def, playerId, `${playerId}:${variant}:${index}`)
     );
     
     // 洗牌
@@ -38,10 +38,11 @@ export function createInitialDeck(
  */
 export function createCardInstanceFromDef(
     def: CardDef,
-    ownerId: PlayerId
+    ownerId: PlayerId,
+    instanceId: string
 ): CardInstance {
     return {
-        uid: `${def.id}_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
+        uid: `${def.id}_${instanceId}`,
         defId: def.id,
         ownerId,
         baseInfluence: def.influence,

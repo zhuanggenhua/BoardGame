@@ -12,10 +12,7 @@ import {
     roomDistanceByLayout,
 } from './roomMapModel';
 import { canUseSkeletonKeyForMove } from './possessionActionReadModel';
-import type {
-    BetrayalCore,
-    BetrayalRoomNode,
-} from './game';
+import type { BetrayalCore, BetrayalRoomNode } from './domain/types';
 
 export function resolveMoveTargetRooms(core: BetrayalCore): BetrayalRoomNode[] {
     const activeRoom = core.rooms.find((room) => room.id === core.activeRoomId);

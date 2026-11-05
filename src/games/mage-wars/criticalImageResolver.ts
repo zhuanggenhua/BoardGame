@@ -4,7 +4,7 @@ import type { MageWarsCore } from './domain/types';
 import {
     MAGE_WARS_MAGES_ATLAS_IMAGE_PATH,
     MAGE_WARS_SPELL_ATLAS_IMAGE_PATHS,
-} from './ui/cardAtlas';
+} from './cardPreviewModel';
 
 const MAGE_WARS_COMMON_CRITICAL_IMAGES = [
     'mage-wars/board/standard-arena',

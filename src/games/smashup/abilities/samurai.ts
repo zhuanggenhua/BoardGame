@@ -57,7 +57,7 @@ type SamuraiCombatPromptContext = SamuraiCombatRootContext & { baseIndex: number
 type SamuraiCodeOfBushidoContext = SamuraiPromptContext & { remaining: number };
 type SamuraiHonorAncestorsContext = SamuraiPromptContext & HonorAncestorsContinuation;
 
-function createSamuraiPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createSamuraiPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,

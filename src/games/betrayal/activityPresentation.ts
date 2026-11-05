@@ -1,4 +1,4 @@
-import type { BetrayalCore, BetrayalTraitKey } from "./game";
+import type { BetrayalCore, BetrayalTraitKey } from './domain/types';
 import {
   BETRAYAL_TRAIT_LABEL,
   effectIsTraitOnly,

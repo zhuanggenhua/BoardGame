@@ -1,7 +1,7 @@
 import type { RandomFn } from '../../engine/types';
 import { rollBetrayalDicePips } from './diceRules';
 import { findExplorerByPlayerId } from './explorerReadModel';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalCommandMap } from './commandTypes';
 import type { BetrayalEvent } from './events';
 import {

@@ -7,7 +7,7 @@ import type {
 } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { BETRAYAL_COMMANDS } from './commands';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import {
     createExchangeReadyTutorialCore,
     createHeroAttackTraitorReadyTutorialCore,

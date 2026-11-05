@@ -1,3 +1,4 @@
+import { prepareNewStateForConfig } from './stateNormalization';
 import { getAiSeatIds } from '../ai';
 import { createInitialSystemState, executeAutomaticSystemFlow } from '../pipeline';
 import type { EngineSystem } from '../systems/types';
@@ -46,7 +47,7 @@ export function createMatchSetupState(args: MatchSetupStateArgs): MatchSetupStat
         args.matchID,
     );
     let state = setUndoAiSeatIds(
-        { sys, core },
+        prepareNewStateForConfig(args.engineConfig, { sys, core }),
         getAiSeatIds(setupSeatControllers),
     );
     if (args.engineConfig.postSetupAutoFlow) {

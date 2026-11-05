@@ -16,7 +16,7 @@ import { FLOW_COMMANDS } from '../../engine';
 import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { SU_COMMANDS, SU_EVENTS } from './domain';
 import type { SmashUpCore, MinionPowerBreakdown } from './domain/types';
-import { getSmashUpCardPreviewMeta } from './ui/cardPreviewHelper';
+import { getSmashUpCardPreviewMeta } from './cardPreviewModel';
 import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
 
 // ============================================================================

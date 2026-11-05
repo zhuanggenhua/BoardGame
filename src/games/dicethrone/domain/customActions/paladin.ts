@@ -12,7 +12,7 @@ import type {
     InteractionRequestedEvent,
 } from '../types';
 import { CP_MAX } from '../types';
-import { registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 
 // ============================================================================

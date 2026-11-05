@@ -36,15 +36,7 @@ import type { BetrayalHauntRevealResolution } from './scenarioConfig';
 import { materializeEventEffect, resolveEventBranch } from './eventRollModel';
 import { rollEventTraitCheckWithDice } from './traitRollModel';
 import { applyTraitLoss } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalDustRuntimeState,
-    BetrayalHelpingHandsRuntimeState,
-    BetrayalMagicCameraRuntimeState,
-    BetrayalPendingEventChoiceState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalUponReflectionRuntimeState,
-} from './game';
+import type { BetrayalCore, BetrayalDustRuntimeState, BetrayalHelpingHandsRuntimeState, BetrayalMagicCameraRuntimeState, BetrayalPendingEventChoiceState, BetrayalPendingEventRollResolutionState, BetrayalUponReflectionRuntimeState } from './domain/types';
 
 export interface BetrayalEventRollReplacementResult {
     dice: number[];

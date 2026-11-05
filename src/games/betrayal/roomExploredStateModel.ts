@@ -26,10 +26,7 @@ import {
 } from './eventEffectResolutionModel';
 import { buryEventCardToBottom } from './eventDeckModel';
 import { applyDustEventEffectDeathIfNeeded } from './deathStateReadModel';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 import { buildHauntRollThresholds } from './hauntProgress';
 import {

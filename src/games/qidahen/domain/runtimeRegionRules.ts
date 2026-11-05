@@ -1,4 +1,4 @@
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, getQidahenBoundaryTypeMeta, type QidahenPassageBoundaryType } from '../ui/mapGraph';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, getQidahenBoundaryTypeMeta, type QidahenPassageBoundaryType } from '../data/mapGraph';
 import {
     getQidahenLogicalRuleRegionConfigs,
     resolveQidahenRuleRegionConfig,

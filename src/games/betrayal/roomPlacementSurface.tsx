@@ -2,11 +2,8 @@ import React from "react";
 import { House, RotateCcw, RotateCw, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import type {
-  BetrayalRoomEdge,
-  BetrayalRoomPlacementPreview,
-  BetrayalRoomTileAdjustmentOption,
-} from "./game";
+import type { BetrayalRoomEdge } from './game';
+import type { BetrayalRoomPlacementPreview, BetrayalRoomTileAdjustmentOption } from './domain/types';
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import {
   ROOM_ORIENTATION_DEGREES,

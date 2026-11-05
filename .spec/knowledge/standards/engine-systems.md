@@ -98,6 +98,15 @@ metadata:
 - 阶段推进是规则动作。UI、命令验证、AI legal-actions、自动推进和 watchdog 必须消费同一份阶段推进授权真相。
 - 存在 response window、interaction、私有 prompt、deferred / finalize 或其它阻塞时，阶段按钮默认不可见或不可用；只有权限矩阵明确允许才开放。
 
+## 命令与事件批次规划
+
+- 普通游戏保留 execute → reduce；需要规划 sys 的命令实现 planCommand，显式返回 events / sys，禁止变异传入 state.sys。
+- 需要统一替代、防止、暂停和事实触发的游戏实现 prepareEventBatch。该 owner 对每个候选完成接纳决定后再推进私有前缀；被取消 / 暂停的候选不能影响后续判断，新增派生事实继续进入同一结算队列。
+- prepareEventBatch 可通过引擎提供的 commit 回调使用正式 EventCommit 决定；返回的事件由引擎正式 reduce 一次。私有规划 core 不回写权威状态；不能同时绑定旧 postProcessSystemEvents / interceptEvent，避免第二轮拦截或触发。
+- 同一输入事件跨家族扫描时，各家族从相同批次起点重建自己的前缀，保留离场前信息；仅合并显式 sys 结果。运行时事件进度不进入 MatchState 或 deferred frame DTO。
+- 交互响应生成领域事件，普通命令和选择响应共用 reducer；禁止用 afterEvents 直接覆盖 core 代替事实。
+- MultistepChoiceData 只表达可传输数据；合法性、确认、取消等函数放客户端 MultistepChoiceBinding，由 hook 注入。
+
 ## UIHints
 
 - UIHints 是派生查询，不进入 core。

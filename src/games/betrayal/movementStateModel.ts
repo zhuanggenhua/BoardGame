@@ -5,7 +5,7 @@ import {
 import { createBloodFromStoneNewLineOfSightDamageAllocation } from './damageResolutionModel';
 import { collectMummyGirlByExplorerIfPresent } from './mummyHauntRules';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
-import type { BetrayalCore } from './game';
+import type { BetrayalCore } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type ExplorerMovedEvent = Extract<BetrayalEvent, { type: 'EXPLORER_MOVED' }>;

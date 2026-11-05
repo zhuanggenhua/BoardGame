@@ -2,7 +2,7 @@ import { BETRAYAL_INITIAL_DECK_COUNTS } from './deckModel';
 import { normalizeBetrayalDiceCount, rollBetrayalDicePips } from './diceRules';
 import type { RandomFn } from '../../engine/types';
 import { getAllExplorers } from './explorerReadModel';
-import type { BetrayalCore, BetrayalDeckKind } from './game';
+import type { BetrayalCore, BetrayalDeckKind } from './domain/types';
 import type { UseEffectProfile } from './possessionEffects';
 
 export interface BetrayalHauntRiskStatus {

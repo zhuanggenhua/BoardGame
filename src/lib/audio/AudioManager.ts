@@ -3,6 +3,7 @@
  * 提供全局音效播放、静音、音量控制
  */
 import { Howl, Howler } from 'howler';
+import { ResourceCache } from '../../core/ResourceCache';
 import type { SoundDefinition, SoundKey, GameAudioConfig, BgmDefinition } from './types';
 import type { AudioRegistryEntry } from './commonRegistry';
 import { notifyAudioRuntimeToast } from './audioRuntimeNotifications';
@@ -194,9 +195,19 @@ const notifyAudioPlaybackFailure = (
 const SFX_FRESH_PLAY_WINDOW_MS = 1000;
 
 class AudioManagerClass {
-    private sounds: Map<SoundKey, Howl> = new Map();
+    private resourceEpoch = 0;
+    private readonly disposedHowls = new WeakSet<Howl>();
+    private sounds: ResourceCache<SoundKey, Howl> = new ResourceCache(128, 64 * 1024 * 1024,
+        howl => { const duration = howl.duration(); return (Number.isFinite(duration) ? Math.max(1, duration) : 1) * 44100 * 2 * 4; },
+        key => this.registeringSoundKey === key || (this.sounds.peek(key)?.playing() ?? false)
+            || this.sounds.peek(key)?.state() === 'loading', howl => { this.disposeHowl(howl); });
+    private registeringSoundKey: SoundKey | null = null;
     private soundDefinitions: Map<SoundKey, SoundDefinition> = new Map();
-    private bgms: Map<string, Howl> = new Map();
+    private bgms: ResourceCache<string, Howl> = new ResourceCache(3, Infinity, () => 0,
+        key => this.registeringBgmKey === key || this._currentBgm === key || (this.bgms.peek(key)?.playing() ?? false),
+        (howl, key) => { this.clearBgmLoopState(key); this.disposeHowl(howl); });
+    private readonly fadeOutTimers = new Set<ReturnType<typeof setTimeout>>();
+    private registeringBgmKey: string | null = null;
     private bgmDefinitions: Map<string, BgmDefinition> = new Map();
     private registryEntries: Map<string, AudioRegistryEntry> = new Map();
     private registryBasePath: string = '';
@@ -249,7 +260,7 @@ class AudioManagerClass {
                 sprite: definition.sprite,
                 preload: true,
                 onReplace: (nextHowl) => {
-                    this.sounds.set(key, nextHowl);
+                    this.cacheIncomingSound(key, nextHowl);
                     options?.onReplace?.(nextHowl);
                 },
                 onload: finalizeLoaded,
@@ -262,7 +273,7 @@ class AudioManagerClass {
                 finalizeError(new Error(`failed to create preload howl for ${key}`));
                 return;
             }
-            this.sounds.set(key, howl);
+            this.cacheIncomingSound(key, howl);
 
             const state = howl.state();
             if (state === 'loaded') {
@@ -277,14 +288,29 @@ class AudioManagerClass {
             onloaderror?: (id: number, error: unknown) => void;
             onReplace?: (howl: Howl) => void;
             onFallbackReady?: (howl: Howl) => void;
+            ownsPlayback?: () => boolean;
         }
     ): Howl | null {
         const candidates = buildAudioFallbackCandidates(src);
+        const epoch = this.resourceEpoch;
 
         const createUrlHowlAt = (candidateSrc: string, index: number, isFallback: boolean): Howl => {
             const howl = new Howl({
                 ...options,
                 src: [candidateSrc],
+                onload: id => {
+                    if (epoch !== this.resourceEpoch || this.disposedHowls.has(howl)) return;
+                    options.onload?.(id);
+                    queueMicrotask(() => {
+                        if (epoch !== this.resourceEpoch || this.disposedHowls.has(howl)) return;
+                        for (const [key, cached] of this.sounds) if (cached === howl) { this.sounds.set(key, cached); break; }
+                    });
+                },
+                onend: id => {
+                    if (epoch !== this.resourceEpoch || this.disposedHowls.has(howl)) return;
+                    options.onend?.(id);
+                    queueMicrotask(() => { this.sounds.trim(); this.bgms.trim(); });
+                },
                 onloaderror: (id, error) => {
                     void tryFallback(index + 1, id, error, howl);
                 },
@@ -302,6 +328,7 @@ class AudioManagerClass {
             error: unknown,
             previousHowl: Howl,
         ): void => {
+            if (epoch !== this.resourceEpoch || this.disposedHowls.has(previousHowl) || options.ownsPlayback?.() === false) return;
             if (index >= candidates.length) {
                 options.onloaderror?.(id, error);
                 return;
@@ -310,20 +337,21 @@ class AudioManagerClass {
             const candidate = candidates[index];
             if (candidate.kind === 'url') {
                 const nextHowl = createUrlHowlAt(candidate.value, index, true);
-                previousHowl.unload();
+                if (!options.onReplace) this.disposeHowl(previousHowl);
                 void nextHowl;
                 return;
             }
 
             void this.resolveNativeAudioBlobUrl(candidate.value)
                 .then((blobUrl) => {
+                    if (epoch !== this.resourceEpoch || this.disposedHowls.has(previousHowl) || options.ownsPlayback?.() === false) return;
                     if (!blobUrl) {
                         tryFallback(index + 1, id, error, previousHowl);
                         return;
                     }
 
                     const nextHowl = createUrlHowlAt(blobUrl, index, true);
-                    previousHowl.unload();
+                    if (!options.onReplace) this.disposeHowl(previousHowl);
                     void nextHowl;
                 })
                 .catch(() => {
@@ -337,6 +365,17 @@ class AudioManagerClass {
             return null;
         }
         return createUrlHowlAt(firstCandidate.value, 0, false);
+    }
+
+    private disposeHowl(howl: Howl): void {
+        this.disposedHowls.add(howl);
+        howl.unload();
+    }
+
+    private cacheIncomingSound(key: SoundKey, howl: Howl): void {
+        this.registeringSoundKey = key;
+        try { this.sounds.set(key, howl); }
+        finally { this.registeringSoundKey = null; }
     }
 
     private async resolveNativeAudioBlobUrl(src: string): Promise<string | null> {
@@ -356,11 +395,16 @@ class AudioManagerClass {
             return pending;
         }
 
+        const epoch = this.resourceEpoch;
         const promise = (async () => {
             const { readInstalledGamePackageAssetBlobUrl } = await import('../../features/mobile-packages/nativeGamePackagePlugin');
             const result = await readInstalledGamePackageAssetBlobUrl(location.gameId, location.relativePath);
             const blobUrl = result?.blobUrl?.trim();
             if (!blobUrl) {
+                return null;
+            }
+            if (epoch !== this.resourceEpoch) {
+                URL.revokeObjectURL(blobUrl);
                 return null;
             }
             this.nativeBlobUrlCache.set(cacheKey, blobUrl);
@@ -371,7 +415,7 @@ class AudioManagerClass {
         try {
             return await promise;
         } finally {
-            this.nativeBlobUrlPromises.delete(cacheKey);
+            if (this.nativeBlobUrlPromises.get(cacheKey) === promise) this.nativeBlobUrlPromises.delete(cacheKey);
         }
     }
 
@@ -583,10 +627,9 @@ class AudioManagerClass {
         console.error(`[Audio] bgm_loop_aborted key=${key} reason=rapid_end src=${formatSrcForLog(definition?.src ?? [])}`);
         this.clearBgmLoopState(key);
         howl.stop();
-        howl.unload();
-        if (this.bgms.get(key) === howl) {
+        if (this.bgms.peek(key) === howl) {
             this.bgms.delete(key);
-        }
+        } else this.disposeHowl(howl);
         if (this._currentBgm === key) {
             this._currentBgm = null;
             this.notifyBgmChange();
@@ -682,7 +725,6 @@ class AudioManagerClass {
     register(key: SoundKey, definition: SoundDefinition): void {
         this.soundDefinitions.set(key, definition);
         if (this.sounds.has(key)) {
-            this.sounds.get(key)?.unload();
             this.sounds.delete(key);
         }
         this.failedKeys.delete(key);
@@ -716,7 +758,6 @@ class AudioManagerClass {
 
                 this.bgmDefinitions.set(bgmDef.key, { ...bgmDef, src });
                 if (this.bgms.has(bgmDef.key)) {
-                    this.bgms.get(bgmDef.key)?.unload();
                     this.bgms.delete(bgmDef.key);
                 }
             }
@@ -756,10 +797,11 @@ class AudioManagerClass {
                 sprite: definition.sprite,
                 preload: true,
                 onReplace: (nextHowl) => {
-                    this.sounds.set(key, nextHowl);
+                    this.cacheIncomingSound(key, nextHowl);
                 },
                 onFallbackReady: (nextHowl) => {
                     const retryPlay = () => {
+                        if (this.sounds.peek(key) !== nextHowl || this.disposedHowls.has(nextHowl)) return;
                         if (Date.now() - requestedAt > SFX_FRESH_PLAY_WINDOW_MS) {
                             return;
                         }
@@ -794,9 +836,10 @@ class AudioManagerClass {
                 return null;
             }
             howl = createdHowl;
-            this.sounds.set(key, createdHowl);
+            this.cacheIncomingSound(key, createdHowl);
             if (createdHowl.state() === 'loading') {
                 const playFreshlyLoadedSound = () => {
+                    if (this.sounds.peek(key) !== createdHowl || this.disposedHowls.has(createdHowl)) return;
                     if (Date.now() - requestedAt > SFX_FRESH_PLAY_WINDOW_MS) {
                         return;
                     }
@@ -858,6 +901,7 @@ class AudioManagerClass {
                 this._bgmReadyResolve = resolve;
             });
             const createdHowl = this.createHowlWithFallback(mergedDef.src, {
+                ownsPlayback: () => this._currentBgm === key,
                 volume: (mergedDef.volume ?? 1.0) * this._bgmVolume,
                 // 对 html5 BGM 关闭 Howler 内建 loop，改为异步手动重播，
                 // 避免异常媒体状态下出现 _ended -> play 的同步递归。
@@ -869,6 +913,7 @@ class AudioManagerClass {
                 },
                 onFallbackReady: (nextHowl) => {
                     const retryPlay = () => {
+                        if (this._currentBgm !== key || this.bgms.peek(key) !== nextHowl || this.disposedHowls.has(nextHowl)) return;
                         nextHowl.volume(0);
                         this.markBgmPlayStarted(key);
                         const nextPlayId = nextHowl.play();
@@ -917,7 +962,14 @@ class AudioManagerClass {
                 return;
             }
             howl = createdHowl;
-            this.bgms.set(key, createdHowl);
+            // Existing tracks can all be pinned while fading out. Protect the
+            // incoming track until play() establishes its playing pin.
+            this.registeringBgmKey = key;
+            try {
+                this.bgms.set(key, createdHowl);
+            } finally {
+                this.registeringBgmKey = null;
+            }
         }
 
         // BGM 使用 html5: true，走浏览器原生 <audio>，不依赖 WebAudio context。
@@ -933,12 +985,14 @@ class AudioManagerClass {
             this.clearBgmLoopState(this._currentBgm);
             this.bgms.get(this._currentBgm)?.fade(this._bgmVolume, 0, 1000);
             const prevBgm = this._currentBgm;
-            setTimeout(() => {
+            const timer = setTimeout(() => {
+                this.fadeOutTimers.delete(timer);
+                if (this._currentBgm === prevBgm) return;
                 const prevHowl = this.bgms.get(prevBgm);
                 prevHowl?.stop();
-                prevHowl?.unload();
                 this.bgms.delete(prevBgm);
             }, 1000);
+            this.fadeOutTimers.add(timer);
         }
 
         this.clearBgmLoopRestart(key);
@@ -1073,6 +1127,7 @@ class AudioManagerClass {
      * 3. 每批最多 PRELOAD_BATCH_SIZE 个，通过 requestIdleCallback 空闲调度
      */
     preloadKeys(keys: SoundKey[]): void {
+        const epoch = this.resourceEpoch;
         if (this.isAudioDisabled()) return;
         // 过滤出需要加载的 key
         const pending = keys.filter(key =>
@@ -1085,6 +1140,7 @@ class AudioManagerClass {
         let bgmWaited = false;
 
         const loadBatch = () => {
+            if (epoch !== this.resourceEpoch) return;
             if (!isCriticalImagesReady()) {
                 scheduleAfterImages(() => loadBatch());
                 return;
@@ -1121,12 +1177,14 @@ class AudioManagerClass {
         /** 等关键图片 + BGM 就绪后在空闲时执行回调 */
         const scheduleAfterImages = (fn: () => void) => {
             waitForCriticalImages().then(() => {
+                if (epoch !== this.resourceEpoch) return;
                 // 首次：等 BGM 开始播放后再加载音效（最多等 3s）
                 const afterBgm = bgmWaited
                     ? Promise.resolve()
                     : this.waitForBgmReady();
                 bgmWaited = true;
                 afterBgm.then(() => {
+                    if (epoch !== this.resourceEpoch) return;
                     if (typeof requestIdleCallback === 'function') {
                         requestIdleCallback(() => fn(), { timeout: 3000 });
                     } else {
@@ -1239,13 +1297,15 @@ class AudioManagerClass {
 
 
     unloadAll(): void {
+        this.resourceEpoch += 1;
         for (const key of this.bgms.keys()) {
             this.clearBgmLoopState(key);
         }
-        for (const howl of this.sounds.values()) howl.unload();
-        for (const howl of this.bgms.values()) howl.unload();
+        for (const timer of this.fadeOutTimers) clearTimeout(timer);
+        this.fadeOutTimers.clear();
         this.sounds.clear();
         this.bgms.clear();
+        this.failedKeys.clear();
         for (const blobUrl of this.nativeBlobUrlCache.values()) {
             try {
                 URL.revokeObjectURL(blobUrl);

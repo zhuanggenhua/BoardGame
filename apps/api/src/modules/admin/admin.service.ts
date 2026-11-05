@@ -19,6 +19,7 @@ import type { RoomFilterDto } from './dtos/room-filter.dto';
 import { MatchRecord, type MatchRecordDocument, type MatchRecordPlayer } from './schemas/match-record.schema';
 import { ROOM_MATCH_MODEL_NAME, type RoomMatchDocument } from './schemas/room-match.schema';
 import logger from '../../../../../server/logger';
+import type { MatchRecordOutcome, PersistedMatchRecord } from '../../../../../src/shared/matchRecord';
 
 const ADMIN_STATS_CACHE_KEY = 'admin:stats';
 const ADMIN_STATS_TREND_CACHE_PREFIX = 'admin:stats:trend:';
@@ -93,15 +94,7 @@ type LeanUser = {
     lastOnline?: Date | null;
 };
 
-type LeanMatchRecord = {
-    matchID: string;
-    gameName: string;
-    players: MatchRecordPlayer[];
-    winnerID?: string;
-    actionLog?: unknown[];
-    createdAt: Date;
-    endedAt: Date;
-};
+type LeanMatchRecord = PersistedMatchRecord;
 
 type UserListItem = {
     id: string;
@@ -187,7 +180,7 @@ type ActivityTierData = {
     totalUsers: number;
 };
 
-type MatchListItem = {
+type MatchListItem = MatchRecordOutcome & {
     matchID: string;
     gameName: string;
     players: MatchRecordPlayer[];
@@ -196,7 +189,7 @@ type MatchListItem = {
     endedAt: Date;
 };
 
-type MatchDetail = {
+type MatchDetail = MatchRecordOutcome & {
     matchID: string;
     gameName: string;
     players: Array<MatchRecordPlayer & { userId?: string | null }>;
@@ -900,6 +893,8 @@ export class AdminService implements OnModuleInit {
             gameName: record.gameName,
             players: record.players,
             winnerID: record.winnerID,
+            winnerIDs: record.winnerIDs,
+            draw: record.draw,
             createdAt: record.createdAt,
             endedAt: record.endedAt,
         }));
@@ -917,17 +912,6 @@ export class AdminService implements OnModuleInit {
         const match = await this.matchRecordModel.findOne({ matchID }).lean<LeanMatchRecord | null>();
         if (!match) return null;
 
-        const usernames = match.players
-            .map(player => player.name)
-            .filter((name): name is string => Boolean(name));
-        const users = usernames.length
-            ? await this.userModel
-                .find({ username: { $in: usernames } })
-                .select('username')
-                .lean<Array<{ _id: Types.ObjectId; username: string }>>()
-            : [];
-        const userMap = new Map(users.map(user => [user.username, user._id.toString()]));
-
         const durationMs = match.endedAt && match.createdAt
             ? Math.max(0, match.endedAt.getTime() - match.createdAt.getTime())
             : 0;
@@ -937,9 +921,11 @@ export class AdminService implements OnModuleInit {
             gameName: match.gameName,
             players: match.players.map(player => ({
                 ...player,
-                userId: player.name ? userMap.get(player.name) ?? null : null,
+                userId: resolveOwnerUserId(player.ownerKey ?? player.id),
             })),
             winnerID: match.winnerID,
+            winnerIDs: match.winnerIDs,
+            draw: match.draw,
             actionLog: match.actionLog,
             createdAt: match.createdAt,
             endedAt: match.endedAt,

@@ -1,11 +1,5 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalRoomNode,
-  BetrayalTraitKey,
-  PossessionUseEffectProfile,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalRoomNode, BetrayalTraitKey } from './domain/types';
+import type { PossessionUseEffectProfile } from './possessionEffects';
 import { resolveMoveTargetRooms } from "./movementReadModel";
 import {
   canUseBookForPendingEventRoll,

@@ -4,8 +4,9 @@
 
 import { defineEvents } from '../../../lib/audio/defineEvents';
 import type { GameEvent, PlayerId } from '../../../engine/types';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { DtResponseWindowType } from './core-types';
+import type { DamageOrigin } from './tokenTypes';
 import type {
     DieFace,
     DiceThroneRollContext,
@@ -18,7 +19,6 @@ import type {
     BonusDieInfo,
     PendingSeatSwapRequest,
     TurnPhase,
-    DamageOrigin,
 } from './core-types';
 import type { AbilityDef } from './combat';
 

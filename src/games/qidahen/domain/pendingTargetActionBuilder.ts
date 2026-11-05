@@ -1,4 +1,4 @@
-import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
+import { getQidahenBoundaryTypeMeta } from '../data/mapGraph';
 import {
     isQidahenCityRuntimeRegion,
     isQidahenKoreaRuntimeRegionId,

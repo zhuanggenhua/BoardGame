@@ -8,6 +8,7 @@ import { acquireTaskGuard } from './heavy-task-guard.mjs';
 import { runAssetPipelineGuard } from './asset-pipeline-guard.mjs';
 import { runDicethroneDiceAtlasGuard } from './dicethrone-dice-atlas-guard.mjs';
 import { runAtlasContractGuard } from './atlas-contract-guard.mjs';
+import { isTypecheckInfrastructureFile } from './typecheck-inputs.mjs';
 
 const repoRoot = process.cwd();
 const modeInput = (process.argv[2] || process.env.QUALITY_GATE_MODE || 'local').trim().toLowerCase();
@@ -259,7 +260,6 @@ const TEXT_LIKE_EXTENSIONS = new Set([
 const CACHE_DIR = path.join(repoRoot, 'temp', 'quality-gate-cache');
 const PRE_PUSH_CACHE_FILE = path.join(CACHE_DIR, 'pre-push.json');
 const COMMAND_CACHE_FILE = path.join(CACHE_DIR, 'command-results.json');
-const QUALITY_GATE_TYPECHECK_BUILD_INFO = path.join('temp', 'quality-gate-cache', 'typecheck.tsbuildinfo');
 const TEST_STRUCTURE_FILES_LIST = path.join(CACHE_DIR, 'test-structure-files.txt');
 const STABLE_VITEST_NODE_OPTIONS = '--max-old-space-size=8192';
 const STABLE_ESLINT_NODE_OPTIONS = '--max-old-space-size=8192';
@@ -864,6 +864,7 @@ function createTypecheckPredicate(baseRef, headSha) {
   const packageJsonRelevant = packageJsonAffectsTypecheck(baseRef, headSha);
   return (file) => {
     if (file === 'package.json') return packageJsonRelevant;
+    if (isTypecheckInfrastructureFile(file) || /(^|\/)tsconfig[^/]*\.json$/.test(file)) return true;
     if (file.startsWith('tsconfig') || file === 'vite.config.ts' || file === 'eslint.config.js') return true;
     return isTsFamilyFile(file) && !isDocOnly(file);
   };
@@ -1222,10 +1223,31 @@ function collectCommands(files, baseRef, affectsTypecheck) {
 
   if (hasAny(files, affectsTypecheck)) {
     commands.push({
+      label: 'Typecheck guard behavior',
+      reason: '类型门禁、基线和项目覆盖必须通过独立行为验证',
+      command: process.execPath,
+      args: ['--test', 'scripts/infra/__tests__/typecheck-diagnostics.test.mjs', 'scripts/infra/__tests__/typecheck-runner.test.mjs'],
+    });
+    commands.push({
       label: 'Typecheck',
       reason: '存在 TypeScript 或配置改动',
-      command: 'npx',
-      args: ['tsc', '--noEmit', '--incremental', '--tsBuildInfoFile', QUALITY_GATE_TYPECHECK_BUILD_INFO],
+      command: process.execPath,
+      args: ['scripts/infra/typecheck-projects.mjs', `--baseline-ref=${baseRef}`],
+    });
+  }
+
+  if (files.some((file) => /^(src\/|scripts\/infra\/(?:check-architecture|architecture-determinism)\.cjs$|scripts\/infra\/__tests__\/architecture-determinism\.test\.cjs$|tsconfig.*\.json$)/.test(file))) {
+    commands.push({
+      label: 'Architecture guard behavior',
+      reason: '确定性门禁必须识别进程级计数器且允许局部游标',
+      command: process.execPath,
+      args: ['--test', 'scripts/infra/__tests__/architecture-determinism.test.cjs'],
+    });
+    commands.push({
+      label: 'Architecture boundaries',
+      reason: '共享引擎和 HUD 不得反向依赖游戏实现',
+      command: process.execPath,
+      args: ['scripts/infra/check-architecture.cjs'],
     });
   }
 

@@ -1,8 +1,4 @@
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalInventoryCard,
-} from './game';
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard } from './domain/types';
 import { cloneInventoryCard } from './possessionDeckModel';
 import { resolveInventoryEffectId } from './possessionEffects';
 import { roomDistanceByLayout } from './roomMapModel';

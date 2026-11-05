@@ -3,7 +3,7 @@ import {
     getQidahenRuntimeRegionIdsForPrintedRegionId,
     QIDAHEN_REGION_ID_BY_MASK_COLOR,
     qidahenRegionColorKey,
-} from './mapGraph';
+} from '../data/mapGraph';
 
 export interface QidahenRuntimeRegionAnchor {
     runtimeRegionId: string;

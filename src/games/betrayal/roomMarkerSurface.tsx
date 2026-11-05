@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
-import type { BetrayalRoomNode } from "./game";
+import type { BetrayalRoomNode } from './domain/types';
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 
 const ROOM_MARKER_ASSETS = {

@@ -1,13 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { HudPortal, UI_Z_INDEX } from "../../core";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalRoomNode,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalRoomNode, BetrayalTraitKey } from './domain/types';
 import type { BetrayalAttackWeaponCardStatus } from "./attackRules";
 import {
   ExplorerTraitOutcomePreview,

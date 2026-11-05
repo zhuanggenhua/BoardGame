@@ -14,8 +14,8 @@ import {
     QIDAHEN_RUNTIME_REGION_DEFINITIONS,
     type QidahenRegionGraph,
     type QidahenRegionGraphNode,
-} from '../../games/qidahen/ui/mapGraph';
-import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../games/qidahen/ui/mapRegions';
+} from '../../games/qidahen/data/mapGraph';
+import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../../games/qidahen/data/mapRegions';
 import {
     buildQidahenSharedPrintedRuntimePreviews,
     type QidahenSharedPrintedRuntimePreview,

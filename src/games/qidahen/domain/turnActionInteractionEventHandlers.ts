@@ -1,56 +1,14 @@
-import type { QidahenCore } from './types';
-import {
-    QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
-    QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
-    QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
-    QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
-    QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
-    QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
-    QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
-    QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
-    QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
-    QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
-    QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
-    QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
-} from './interactionSources';
-import {
-    getQidahenDiplomacySelectionFromInteraction,
-    getQidahenDriveTigerConsentSelectionFromInteraction,
-    getQidahenEventCharacterTargetSelectionFromInteraction,
-    getQidahenEventOpponentHandChoiceSelectionFromInteraction,
-    getQidahenFortificationMaintenanceSelectionFromInteraction,
-    getQidahenGrantPardonSelectionFromInteraction,
-    getQidahenInternalDispatchSelectionFromInteraction,
-    getQidahenKhanEdictSelectionFromInteraction,
-    getQidahenMaShiTradeSelectionFromInteraction,
-    getQidahenOpenGateSurrenderSelectionFromInteraction,
-    getQidahenRecruitSelectionFromInteraction,
-    getQidahenWheelDispatchSelectionFromInteraction,
-} from './interactionSelectionAccessors';
-import {
-    getQidahenResolvedChoiceId,
-    type QidahenInteractionResolutionContext,
-} from './interactionResolutionPayload';
-import {
-    resolveQidahenInternalDispatchInteractionChoice,
-    resolveQidahenWheelDispatchInteractionChoice,
-} from './actionWindowDispatch';
-import {
-    resolveQidahenDiplomacyInteractionChoice,
-    resolveQidahenDriveTigerConsentInteractionChoice,
-    resolveQidahenGrantPardonInteractionChoice,
-    resolveQidahenKhanEdictInteractionChoice,
-    resolveQidahenMaShiTradeInteractionChoice,
-    resolveQidahenRecruitInteractionChoice,
-} from './actionWindowChoices';
-import { resolveQidahenFortificationMaintenanceInteractionChoice } from './fortificationMaintenance';
-import { resolveQidahenHandLimitDiscardInteractionChoice } from './handLimitDiscard';
-import {
-    resolveQidahenEventCharacterTargetChoice,
-    resolveQidahenEventOpponentHandChoice,
-} from './eventCharacterTargetSelection';
-import { resolveQidahenOpenGateSurrenderInteraction } from './openGateSurrenderSelection';
+import { createQidahenInteractionFact } from './interactionFact';
+import type { QidahenEvent } from './types';
+import { QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID, QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID, QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID, QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID, QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID, QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID, QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID, QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID, QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID, QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID, QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID, QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID, QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID } from './interactionSources';
+import { getQidahenDiplomacySelectionFromInteraction, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenEventCharacterTargetSelectionFromInteraction, getQidahenEventOpponentHandChoiceSelectionFromInteraction, getQidahenFortificationMaintenanceSelectionFromInteraction, getQidahenGrantPardonSelectionFromInteraction, getQidahenInternalDispatchSelectionFromInteraction, getQidahenKhanEdictSelectionFromInteraction, getQidahenMaShiTradeSelectionFromInteraction, getQidahenOpenGateSurrenderSelectionFromInteraction, getQidahenRecruitSelectionFromInteraction, getQidahenWheelDispatchSelectionFromInteraction } from './interactionSelectionAccessors';
+import { getQidahenResolvedChoiceId, type QidahenInteractionResolutionContext } from './interactionResolutionPayload';
+
+
+
+
+
+
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
     Boolean(value)
@@ -93,7 +51,7 @@ const getResolvedCommittedTroops = (
 
 const resolveQidahenHandLimitDiscardInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     if (payload.sourceId !== QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID) {
         return undefined;
@@ -101,16 +59,12 @@ const resolveQidahenHandLimitDiscardInteractionEvent = (
     if (payload.optionIds.length === 0) {
         return null;
     }
-    return resolveQidahenHandLimitDiscardInteractionChoice(
-        state.core,
-        payload.optionIds,
-        event.timestamp ?? 0,
-    );
+    return [createQidahenInteractionFact(context, 'HAND_LIMIT_DISCARD_RESOLVED', { playerId: state.core.currentPlayer, cardIds: payload.optionIds })];
 };
 
 const resolveQidahenRecruitInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const recruitSelection = getQidahenRecruitSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -129,17 +83,12 @@ const resolveQidahenRecruitInteractionEvent = (
     if (!choice) {
         return null;
     }
-    return resolveQidahenRecruitInteractionChoice(
-        state.core,
-        choice.id,
-        event.timestamp ?? 0,
-        recruitSelection,
-    );
+    return [createQidahenInteractionFact(context, 'RECRUIT_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, choiceId: choice.id, selection: recruitSelection })];
 };
 
 const resolveQidahenGrantPardonInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const grantPardonSelection = getQidahenGrantPardonSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -155,17 +104,12 @@ const resolveQidahenGrantPardonInteractionEvent = (
         return null;
     }
     const choice = grantPardonSelection?.choices.find((candidate) => candidate.id === choiceId) ?? null;
-    return resolveQidahenGrantPardonInteractionChoice(
-        state.core,
-        choice?.id ?? choiceId,
-        event.timestamp ?? 0,
-        grantPardonSelection,
-    );
+    return [createQidahenInteractionFact(context, 'GRANT_PARDON_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, choiceId: choice?.id ?? choiceId, selection: grantPardonSelection })];
 };
 
 const resolveQidahenDiplomacyInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const diplomacySelection = getQidahenDiplomacySelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -184,17 +128,12 @@ const resolveQidahenDiplomacyInteractionEvent = (
     if (!choice) {
         return null;
     }
-    return resolveQidahenDiplomacyInteractionChoice(
-        state.core,
-        choice.id,
-        event.timestamp ?? 0,
-        diplomacySelection,
-    );
+    return [createQidahenInteractionFact(context, 'DIPLOMACY_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, choiceId: choice.id, selection: diplomacySelection })];
 };
 
 const resolveQidahenWheelDispatchInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const wheelDispatchSelection = getQidahenWheelDispatchSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -209,18 +148,12 @@ const resolveQidahenWheelDispatchInteractionEvent = (
     if (!choiceId) {
         return null;
     }
-    return resolveQidahenWheelDispatchInteractionChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        wheelDispatchSelection,
-        getResolvedCommittedTroops(payload),
-    );
+    return [createQidahenInteractionFact(context, 'WHEEL_DISPATCH_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, choiceId, selection: wheelDispatchSelection, committedTroops: getResolvedCommittedTroops(payload) })];
 };
 
 const resolveQidahenInternalDispatchInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const internalDispatchSelection = getQidahenInternalDispatchSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -235,17 +168,12 @@ const resolveQidahenInternalDispatchInteractionEvent = (
     if (!choiceId) {
         return null;
     }
-    return resolveQidahenInternalDispatchInteractionChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        internalDispatchSelection,
-    );
+    return [createQidahenInteractionFact(context, 'INTERNAL_DISPATCH_RESOLVED', { playerId: state.core.currentPlayer, choiceId, selection: internalDispatchSelection })];
 };
 
 const resolveQidahenMaShiTradeInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const maShiTradeSelection = getQidahenMaShiTradeSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -272,17 +200,12 @@ const resolveQidahenMaShiTradeInteractionEvent = (
     if (troopCount == null) {
         return null;
     }
-    return resolveQidahenMaShiTradeInteractionChoice(
-        state.core,
-        troopCount,
-        event.timestamp ?? 0,
-        maShiTradeSelection,
-    );
+    return [createQidahenInteractionFact(context, 'MA_SHI_TRADE_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, troopCount, selection: maShiTradeSelection })];
 };
 
 const resolveQidahenKhanEdictInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const khanEdictSelection = getQidahenKhanEdictSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -297,17 +220,12 @@ const resolveQidahenKhanEdictInteractionEvent = (
     if (choiceId !== 'recruit-train' && choiceId !== 'hire-dispatch') {
         return null;
     }
-    return resolveQidahenKhanEdictInteractionChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        khanEdictSelection,
-    );
+    return [createQidahenInteractionFact(context, 'KHAN_EDICT_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, choiceId, selection: khanEdictSelection })];
 };
 
 const resolveQidahenDriveTigerConsentInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const driveTigerConsentSelection = getQidahenDriveTigerConsentSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -322,17 +240,12 @@ const resolveQidahenDriveTigerConsentInteractionEvent = (
     if (choiceId !== 'accept' && choiceId !== 'decline') {
         return null;
     }
-    return resolveQidahenDriveTigerConsentInteractionChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        driveTigerConsentSelection,
-    );
+    return [createQidahenInteractionFact(context, 'DRIVE_TIGER_CONSENT_RESOLVED', { playerId: state.core.currentPlayer, choiceId, selection: driveTigerConsentSelection })];
 };
 
 const resolveQidahenFortificationMaintenanceInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     if (payload.sourceId !== QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID) {
         return undefined;
@@ -354,18 +267,12 @@ const resolveQidahenFortificationMaintenanceInteractionEvent = (
             ? candidate
             : undefined;
     })();
-    return resolveQidahenFortificationMaintenanceInteractionChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        attritionPriority,
-        fortificationMaintenanceSelection,
-    );
+    return [createQidahenInteractionFact(context, 'FORTIFICATION_MAINTENANCE_RESOLVED', { playerId: state.core.currentPlayer, choiceId, attritionPriority, selection: fortificationMaintenanceSelection })];
 };
 
 const resolveQidahenEventCharacterTargetInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const selection = getQidahenEventCharacterTargetSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -380,17 +287,12 @@ const resolveQidahenEventCharacterTargetInteractionEvent = (
     if (!choiceId) {
         return null;
     }
-    return resolveQidahenEventCharacterTargetChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        selection,
-    );
+    return [createQidahenInteractionFact(context, 'EVENT_CHARACTER_TARGET_RESOLVED', { playerId: state.core.currentPlayer, choiceId, selection })];
 };
 
 const resolveQidahenEventOpponentHandChoiceInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const selection = getQidahenEventOpponentHandChoiceSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -405,17 +307,12 @@ const resolveQidahenEventOpponentHandChoiceInteractionEvent = (
     if (!choiceId) {
         return null;
     }
-    return resolveQidahenEventOpponentHandChoice(
-        state.core,
-        choiceId,
-        event.timestamp ?? 0,
-        selection,
-    );
+    return [createQidahenInteractionFact(context, 'EVENT_OPPONENT_HAND_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, choiceId, selection })];
 };
 
 const resolveQidahenOpenGateSurrenderInteractionEvent = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => {
+): QidahenEvent[] | null | undefined => {
     const { state, payload, event } = context;
     const selection = getQidahenOpenGateSurrenderSelectionFromInteraction(
         asQidahenResolvedSelectionCarrier(payload),
@@ -432,17 +329,12 @@ const resolveQidahenOpenGateSurrenderInteractionEvent = (
         : choiceId
             ? [choiceId]
             : [];
-    return resolveQidahenOpenGateSurrenderInteraction(
-        state.core,
-        optionIds,
-        event.timestamp ?? 0,
-        selection,
-    );
+    return [createQidahenInteractionFact(context, 'OPEN_GATE_SURRENDER_CHOICE_RESOLVED', { playerId: state.core.currentPlayer, optionIds, selection })];
 };
 
-export const resolveQidahenTurnActionInteractionEvent = (
+export const buildQidahenTurnActionInteractionEvents = (
     context: QidahenInteractionResolutionContext,
-): QidahenCore | null | undefined => resolveQidahenHandLimitDiscardInteractionEvent(context)
+): QidahenEvent[] | null | undefined => resolveQidahenHandLimitDiscardInteractionEvent(context)
     ?? resolveQidahenRecruitInteractionEvent(context)
     ?? resolveQidahenGrantPardonInteractionEvent(context)
     ?? resolveQidahenDiplomacyInteractionEvent(context)

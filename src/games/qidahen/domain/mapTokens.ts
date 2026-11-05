@@ -1,4 +1,4 @@
-import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../ui/mapRegions';
+import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from '../data/mapRegions';
 import { getRegularTroopKindForFaction } from './troopStacks';
 import { inferTroopKindForStack, syncPiecesFromRegions } from './troopCompat';
 import type {

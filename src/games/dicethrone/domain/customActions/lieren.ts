@@ -1,6 +1,6 @@
 /** 女猎手专属行动处理器。妮拉生命与妮拉之系由领域事件统一承接。 */
 
-import { registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { LIEREN_DICE_FACE_IDS as FACE } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { getActiveDice, getFaceCounts, isNyraCompanionActive } from '../rules';

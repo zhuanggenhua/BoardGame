@@ -5,11 +5,8 @@ import { HudPortal, UI_Z_INDEX } from "../../core";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import { playSound } from "../../lib/audio/useGameAudio";
-import {
-  EXPLORER_CATALOG,
-  type BetrayalCore,
-  type BetrayalTraitKey,
-} from "./game";
+import { EXPLORER_CATALOG } from './domain/stateFactory';
+import type { BetrayalCore, BetrayalTraitKey } from './domain/types';
 import { BETRAYAL_SCENARIO_PAGE_TURN_KEY } from "./audio.config";
 import { BETRAYAL_TITLE_BANNER_ASSET } from "./uiAssets";
 import {

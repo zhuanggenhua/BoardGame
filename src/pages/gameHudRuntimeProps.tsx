@@ -8,6 +8,8 @@ import { GameHudRuntimeSettingsSection } from '../games/gameHudRuntimeAdapter';
 import { resolveGameMobileSupport } from '../shared/mobileSupport';
 import type { GameManifestEntry } from '../shared/gameManifest.types';
 import type { EmoteDefinition } from '../shared/emotes';
+import { resolveGameHudLayout } from '../games/gameHudLayout';
+import type { GameHudLayoutResolver } from '../components/game/framework/widgets/gameHudLayout';
 
 type GameHudRuntimeGameConfig = Pick<
     GameManifestEntry,
@@ -36,11 +38,13 @@ export function resolveGameHudPlacement(
 export function buildGameHudRuntimeProps(args: {
     gameId?: string | null;
     gameConfig?: GameHudRuntimeGameConfig;
+    resolveHudLayout?: GameHudLayoutResolver;
 }): {
     preferredFullscreenOrientation?: GameManifestEntry['preferredOrientation'];
     renderRuntimeSettings?: (t: TFunction) => ReactNode;
     availableEmotes: readonly EmoteDefinition[];
     resolveEmote: (emoteId: string) => EmoteDefinition | undefined;
+    resolveHudLayout?: GameHudLayoutResolver;
 } {
     return {
         preferredFullscreenOrientation: args.gameConfig
@@ -51,5 +55,6 @@ export function buildGameHudRuntimeProps(args: {
         ),
         availableEmotes: getAvailableGameEmotes(args.gameId),
         resolveEmote: getGameEmoteById,
+        resolveHudLayout: resolveGameHudLayout(args.gameId, args.resolveHudLayout),
     };
 }

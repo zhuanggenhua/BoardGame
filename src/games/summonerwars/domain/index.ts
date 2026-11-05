@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 /**
  * 召唤师战争 - 领域核心
  * 
@@ -60,6 +61,7 @@ function createPlayerState(playerId: PlayerId, isFirst: boolean): PlayerState {
 
 export const SummonerWarsDomain: DomainCore<SummonerWarsCore> = {
   gameId: 'summonerwars',
+    statePersistence,
 
   /**
    * 初始化游戏状态

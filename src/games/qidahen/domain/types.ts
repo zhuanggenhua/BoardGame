@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../../core/types';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import type { Command, GameEvent, PlayerId } from '../../../engine/types';
 
 export type QidahenFactionId = 'ming' | 'mongol' | 'jin';
@@ -1386,6 +1386,7 @@ export interface SunYuanhuaTechCardSelectedEvent extends GameEvent<'SUN_YUANHUA_
 export interface HandLimitDiscardResolvedEvent extends GameEvent<'HAND_LIMIT_DISCARD_RESOLVED'> {
     payload: {
         playerId: PlayerId;
+        cardIds?: string[];
     };
 }
 
@@ -1622,7 +1623,25 @@ interface FactionSelectedEvent extends GameEvent<'FACTION_SELECTED'> {
     };
 }
 
+
+export interface WheelDispatchChoiceResolvedEvent extends GameEvent<'WHEEL_DISPATCH_CHOICE_RESOLVED'> {
+    payload: { playerId: PlayerId; choiceId: string; selection?: QidahenWheelDispatchSelection | null; committedTroops?: number };
+}
+export interface OpenGateSurrenderChoiceResolvedEvent extends GameEvent<'OPEN_GATE_SURRENDER_CHOICE_RESOLVED'> {
+    payload: { playerId: PlayerId; optionIds: string[]; selection?: QidahenOpenGateSurrenderSelection | null };
+}
+export interface FeignedRetreatSkippedEvent extends GameEvent<'FEIGNED_RETREAT_SKIPPED'> {
+    payload: { playerId: PlayerId; selection: QidahenFeignedRetreatSelection };
+}
+export interface RaidAndAmbushChoiceResolvedEvent extends GameEvent<'RAID_AND_AMBUSH_CHOICE_RESOLVED'> {
+    payload: { playerId: PlayerId; choiceId: string; selection?: QidahenRaidAndAmbushSelection | null };
+}
+
 export type QidahenEvent =
+    | WheelDispatchChoiceResolvedEvent
+    | OpenGateSurrenderChoiceResolvedEvent
+    | FeignedRetreatSkippedEvent
+    | RaidAndAmbushChoiceResolvedEvent
     | ScenarioVoteCastEvent
     | FactionSelectedEvent
     | RegionSelectedEvent

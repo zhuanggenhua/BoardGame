@@ -3,12 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import type { EntityRelation } from "../../engine/primitives";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
-import type {
-  BetrayalExplorerSummary,
-  BetrayalMonsterStatusKind,
-  BetrayalMonsterSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalExplorerSummary, BetrayalMonsterStatusKind, BetrayalMonsterSummary, BetrayalTraitKey } from './domain/types';
 import type { BetrayalAttackImpactState } from "./attackImpactPresentation";
 import { BetrayalAttackImpactSurface } from "./attackImpactSurface";
 import type { BetrayalTraitDelta } from "./activityPresentation";

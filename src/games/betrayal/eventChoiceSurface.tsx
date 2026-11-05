@@ -2,14 +2,8 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { UI_Z_INDEX } from "../../core";
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalRecentRollState,
-  BetrayalTraitKey,
-  UseEffectProfile,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalRecentRollState, BetrayalTraitKey } from './domain/types';
+import type { UseEffectProfile } from './possessionEffects';
 import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
 import type { BetrayalPossessionAtlasVisual } from "./possessionAtlas";
 import { DiscoveryAtlasFrame } from "./atlasFrameSurface";

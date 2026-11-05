@@ -15,7 +15,7 @@ import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { CARDIA_COMMANDS } from './domain/commands';
 import { CARDIA_EVENTS } from './domain/events';
 import type { CardiaCore } from './domain/types';
-import { getCardiaCardPreviewMeta } from './ui/cardPreviewHelper';
+import { getCardiaCardPreviewMeta } from './cardPreviewModel';
 
 // ============================================================================
 // 白名单定义

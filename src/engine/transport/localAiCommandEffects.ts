@@ -5,6 +5,8 @@ export type LocalAiCommandEffect = {
     markerProgressed: boolean;
     rejected?: boolean;
     failureReason?: string;
+    before?: LocalAiCommandStateSnapshot;
+    after?: LocalAiCommandStateSnapshot;
 };
 
 export type LocalAiCommandStateSnapshot = {

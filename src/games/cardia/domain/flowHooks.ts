@@ -67,9 +67,9 @@ export const cardiaFlowHooks: FlowHooks<CardiaCore> = {
     /**
      * 阶段进入时的钩子（可选）
      */
-    onPhaseEnter: ({ to, state }) => {
+    onPhaseEnter: ({ to, state, command }) => {
         const events: CardiaEvent[] = [];
-        const timestamp = Date.now();
+        const timestamp = command.timestamp ?? 0;
         
         // 回合开始时：触发持续效果
         if (to === 'play') {

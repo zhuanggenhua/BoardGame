@@ -1,8 +1,4 @@
-import type {
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalTraitKey } from './domain/types';
 import type { BetrayalCommandMap } from "./commandTypes";
 import { BETRAYAL_COMMANDS } from "./commands";
 import {

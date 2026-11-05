@@ -44,6 +44,7 @@ vi.mock('../../components/game/framework', () => ({
 }));
 
 vi.mock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
     getGameImplementation: () => ({
         board: MockBoardComponent,
         boardRenderer: mockBoardRenderer,

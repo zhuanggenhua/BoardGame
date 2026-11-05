@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ActionLogInteractiveParam, ActionLogSegment } from '../../../../engine/types';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { BreakdownTooltip } from '../../../common/overlays/BreakdownTooltip';
-import type { CardPreviewRef } from '../../../../core';
+import type { CardPreviewRef } from '../../../../core/cardPreviewTypes';
 import { buildSpriteBackgroundImage } from '../../../../core/SpriteAssetResolver';
 import type { CardPreviewLookupContext } from '../../registry/cardPreviewRegistry';
 

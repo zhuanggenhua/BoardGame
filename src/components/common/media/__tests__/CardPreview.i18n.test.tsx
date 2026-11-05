@@ -10,7 +10,8 @@ import { __resetAssetLoaderCachesForTests } from '../../../../core/AssetLoader';
 import { OptimizedImage } from '../OptimizedImage';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../../lib/i18n';
-import { QIDAHEN_CARD_ATLAS_IDS } from '../../../../games/qidahen/ui/cardAtlas';
+import { QIDAHEN_CARD_ATLAS_IDS } from '../../../../games/qidahen/data/cardAtlas';
+import '../../../../games/qidahen/client';
 
 const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
     imageW: 100,

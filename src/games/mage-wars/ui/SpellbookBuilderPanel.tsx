@@ -16,7 +16,7 @@ import {
     saveMageWarsSpellbookDraft,
     updateMageWarsSavedSpellbookDraft,
     type MageWarsSavedSpellbook,
-} from '../domain/savedSpellbooks';
+} from '../localSavedSpellbooks';
 import {
     calculateMageWarsSpellbookBuildSummary,
     getMageWarsSpellbookCandidateCards,
@@ -30,7 +30,7 @@ import {
     getMageWarsMagePreviewRef,
     getMageWarsSpellCardAspectRatio,
     getMageWarsSpellCardPreviewRef,
-} from './cardAtlas';
+} from '../cardPreviewModel';
 
 type SpellbookBuilderPanelProps = {
     mageId: MageId;

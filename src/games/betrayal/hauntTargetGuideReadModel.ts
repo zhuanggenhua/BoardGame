@@ -1,5 +1,5 @@
 import type { PreviewState } from "./previewStateModel";
-import type { BetrayalExplorerSummary } from "./game";
+import type { BetrayalExplorerSummary } from './domain/types';
 import type { BetrayalBloodFromStonePeekabooOption } from "./hauntSpecialActionReadModel";
 
 type HauntGuideText = (key: string, options?: Record<string, unknown>) => string;

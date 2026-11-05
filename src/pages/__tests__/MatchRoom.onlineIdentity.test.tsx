@@ -66,6 +66,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
     getGameImplementation: () => ({
         board: () => null,
         ai: {},

@@ -1,3 +1,5 @@
+import { statePersistence } from './statePersistence';
+import { initializeCustomActions } from './customActions';
 /**
  * DiceThrone 领域内核
  */
@@ -44,6 +46,7 @@ import { vampireLordDiceDefinition } from '../heroes/vampire_lord/diceConfig';
 import { zhizhuxiaDiceDefinition } from '../heroes/zhizhuxia/diceConfig';
 
 // 注册 DiceThrone 游戏特定条件（骰子组合、顺子等）
+initializeCustomActions();
 registerDiceThroneConditions();
 
 // 注册 角色 骰子与资源定义
@@ -77,6 +80,7 @@ paladinResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def)
 
 export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, DiceThroneEvent> = {
     gameId: 'dicethrone',
+    statePersistence,
 
     setup: (playerIds: PlayerId[], _random: RandomFn, setupData?: unknown): DiceThroneCore => {
         const players: Record<PlayerId, HeroState> = {};

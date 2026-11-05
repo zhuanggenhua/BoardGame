@@ -46,15 +46,10 @@ import {
   resolveExplorableRoomSlots,
   resolveRoomPlacementPreview,
 } from '../roomDiscoveryModel';
-import {
-  BetrayalDomain,
-  EXPLORER_CATALOG,
-  createBetrayalCharacterSelectCore,
-  createBetrayalFoundationCore,
-  type BetrayalCore,
-  type BetrayalTraitKey,
-  type UseEffectProfile,
-} from '../game';
+import { BetrayalDomain } from '../domain/index';
+import { EXPLORER_CATALOG, createBetrayalCharacterSelectCore, createBetrayalFoundationCore } from '../domain/stateFactory';
+import type { BetrayalCore, BetrayalTraitKey } from '../domain/types';
+import type { UseEffectProfile } from '../possessionEffects';
 import { BETRAYAL_COMMANDS } from '../commands';
 import type { BetrayalCommandMap } from '../commandTypes';
 import { resolveHelpingHandsTrollHandMoveOptions } from '../hauntAttackRewardReadModel';

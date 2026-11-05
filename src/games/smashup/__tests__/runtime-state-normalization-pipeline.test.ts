@@ -1,3 +1,4 @@
+import { restorePersistedState } from '../../../engine/statePersistence';
 import { describe, expect, it } from 'vitest';
 import { executePipeline } from '../../../engine/pipeline';
 import { SmashUpDomain } from '../domain';
@@ -5,9 +6,10 @@ import { SU_COMMANDS } from '../domain/types';
 import { makeMatchState, makeState, makePlayer } from './helpers';
 import { smashUpTestSystems, defaultTestRandom } from './testRunner';
 
-describe('SmashUp runtime state normalization in pipeline', () => {
-    it('命令进入 pipeline 前会先归一化旧 madnessDeck/null 运行时状态', () => {
+describe('SmashUp persisted state admission before pipeline', () => {
+    it('旧快照在恢复入口迁移一次，命令消费已接收的状态', () => {
         const initialState = makeMatchState(makeState({
+            baseDiscard: [],
             players: {
                 '0': makePlayer('0', {
                     factions: ['minions_of_cthulhu', 'innsmouth'],
@@ -28,12 +30,13 @@ describe('SmashUp runtime state normalization in pipeline', () => {
             ] as any,
         }));
 
+        const restoredState = restorePersistedState('smashup', SmashUpDomain.statePersistence, initialState);
         const result = executePipeline(
             {
                 domain: SmashUpDomain,
                 systems: smashUpTestSystems,
             },
-            initialState,
+            restoredState,
             {
                 type: SU_COMMANDS.PLAY_ACTION,
                 playerId: '0',

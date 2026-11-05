@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useReducer } from 'react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CardPreview, registerCardPreviewRenderer } from '../../../components/common/media/CardPreview';
-import type { CardPreviewRef } from '../../../core';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import smashUpEnglishMap from '../data/englishAtlasMap.json';
 import {
     getCardDef,

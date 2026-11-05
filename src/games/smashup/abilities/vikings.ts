@@ -93,7 +93,7 @@ type VikingRevealEligiblePromptContext = VikingPromptContext & {
     reason: 'vikings_shield_maiden' | 'base_drakkar';
 };
 
-function createVikingPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+function createVikingPromptContext<TExtra extends Record<string, unknown> = Record<never, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,

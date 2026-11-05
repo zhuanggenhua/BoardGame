@@ -1,3 +1,4 @@
+import { createInitialSystemState } from '../../pipeline';
 import {
     describe,
     expect,
@@ -215,8 +216,8 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         const initialState: StoredMatchState = {
             G: {
-                core: { currentPlayer: '0' },
-                sys: {
+                core: { currentPlayer: '0', playerIds: ['0'] },
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     phase: 'main',
                     turnNumber: 1,
                     interaction: {
@@ -284,8 +285,8 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         const initialState: StoredMatchState = {
             G: {
-                core: { currentPlayer: '0' },
-                sys: {
+                core: { currentPlayer: '0', playerIds: ['0'] },
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     phase: 'main',
                     turnNumber: 1,
                     interaction: {
@@ -350,8 +351,8 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         const initialState: StoredMatchState = {
             G: {
-                core: { currentPlayer: '0' },
-                sys: {
+                core: { currentPlayer: '0', playerIds: ['0'] },
+                sys: { ...createInitialSystemState(['0', '1'], []),
                     phase: 'main',
                     turnNumber: 1,
                     interaction: {
@@ -464,7 +465,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         await storage.createMatch('match-ui-event', {
-            initialState: createStoredState(),
+            initialState: createStoredState(['0', '1']),
             metadata: {
                 gameName: 'test-game',
                 players: {
@@ -817,7 +818,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         match.state = {
             ...match.state,
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 ...match.state.sys,
                 interaction: {
                     current: createSimpleChoice(
@@ -953,7 +954,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         match.state = {
             ...match.state,
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 ...match.state.sys,
                 interaction: {
                     current: createSimpleChoice(
@@ -1129,7 +1130,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         match.state = {
             ...match.state,
-            sys: {
+            sys: { ...createInitialSystemState(['0', '1'], []),
                 ...match.state.sys,
                 interaction: {
                     current: undefined,

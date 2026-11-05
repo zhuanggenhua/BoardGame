@@ -1,10 +1,4 @@
-import type {
-  BetrayalCore,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalRecentRollState,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalRecentRollState, BetrayalTraitKey } from './domain/types';
 import type { RandomFn } from "../../engine/types";
 import { rollBetrayalDicePips } from "./diceRules";
 import {

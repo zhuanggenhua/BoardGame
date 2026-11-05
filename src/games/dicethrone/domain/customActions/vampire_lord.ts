@@ -14,9 +14,10 @@ import type {
     TokenGrantedEvent,
 } from '../types';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
-import { registerChoiceEffectHandler } from '../choiceEffects';
+import { registerChoiceEffectHandler } from '../choiceEffectRegistry';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
-import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { createDisplayOnlySettlement } from '../effects';
+import { registerCustomActionHandler, type CustomActionContext } from '../customActionRegistry';
 import { STATUS_IDS, TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';

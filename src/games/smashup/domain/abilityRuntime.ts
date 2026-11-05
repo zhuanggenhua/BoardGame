@@ -123,7 +123,6 @@ export type AbilityRuntimePromptHandler = (
 ) => AbilityRuntimePromptResult;
 
 const promptRegistry = new Map<string, AbilityRuntimePromptHandler>();
-let promptContinuationCounter = 0;
 
 const abilityProgramRegistry = new Map<string, AbilityProgram<any, any, any>>();
 const abilityProgramIds = new WeakMap<object, string>();
@@ -810,11 +809,6 @@ function prioritizeContinuationPromptState<TState>(
     };
 }
 
-function createAbilityRuntimePromptContinuationId(sourceId: string): string {
-    const continuationId = `smashup-runtime:${sourceId}:${promptContinuationCounter++}`;
-    return continuationId;
-}
-
 function ensureRuntimePromptSourceId(
     interaction: InteractionDescriptor,
     sourceId: string,
@@ -831,7 +825,7 @@ function ensureRuntimePromptSourceId(
             runtimePrompt: {
                 owner: 'smashup-ability-runtime',
                 sourceId,
-                continuationId: existingMarker?.continuationId ?? createAbilityRuntimePromptContinuationId(sourceId),
+                continuationId: existingMarker?.continuationId ?? `smashup-runtime:${sourceId}:${interaction.id}`,
                 continuation,
             } satisfies AbilityRuntimePromptMarker,
         },

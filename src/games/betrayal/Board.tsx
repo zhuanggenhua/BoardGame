@@ -1,3 +1,4 @@
+import './client';
 import React from "react";
 import { Hourglass } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -18,23 +19,10 @@ import { SPECTATOR_PLAYER_ID } from "../../engine/playerView";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import type { GameBoardProps } from "../../engine/transport/protocol";
-import type {
-  BetrayalCore,
-  BetrayalDeckKind,
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-  BetrayalRecentRollState,
-  BetrayalRoomNode,
-  BetrayalRoomPlacementPreview,
-  BetrayalRoomTileAdjustmentOption,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalDeckKind, BetrayalExplorerSummary, BetrayalInventoryCard, BetrayalRecentRollState, BetrayalRoomNode, BetrayalRoomPlacementPreview, BetrayalRoomTileAdjustmentOption, BetrayalTraitKey } from './domain/types';
 import type { BetrayalCommandMap } from "./commandTypes";
-import {
-  BetrayalDomain,
-  EXPLORER_CATALOG,
-  createBetrayalCharacterSelectCore,
-} from "./game";
+import { BetrayalDomain } from './domain/index';
+import { EXPLORER_CATALOG, createBetrayalCharacterSelectCore } from './domain/stateFactory';
 import { BETRAYAL_COMMANDS } from "./commands";
 import { resolveBetrayalMoveTargetReadModel } from "./movementReadModel";
 import {
@@ -88,7 +76,7 @@ import {
   resolvePossessionAtlasVisual,
   type BetrayalPossessionAtlasVisual,
 } from "./possessionAtlas";
-import { type BetrayalScenarioCardId } from "./scenarioConfig";
+import type { BetrayalScenarioCardId } from "./scenarioConfig";
 import {
   SCENARIO_BOOK_TURN_DURATION_MS,
   resolveScenarioReaderOpenPlan,

@@ -1,7 +1,4 @@
-import type {
-    BetrayalCore,
-    BetrayalInventoryCard,
-} from './game';
+import type { BetrayalCore, BetrayalInventoryCard } from './domain/types';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     type BetrayalDeckKind,

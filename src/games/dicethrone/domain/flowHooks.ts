@@ -6,7 +6,7 @@
  * sys.phase 是阶段的单一权威来源，所有阶段副作用通过 FlowHooks 实现
  */
 
-import type { GameEvent, RandomFn } from '../../../engine/types';
+import type { GameEvent, RandomFn, PlayerId } from '../../../engine/types';
 import type { FlowHooks, PhaseExitResult } from '../../../engine';
 import type {
     DiceThroneCore,
@@ -24,7 +24,6 @@ import type {
     DamageShieldGrantedEvent,
     BonusDieRolledEvent,
     PendingBonusDiceSettlement,
-    PlayerId,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -68,7 +67,8 @@ import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
 import { getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
-import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
+import { hasCurrentChoiceAnchor } from './choiceEffects';
+import { registerChoiceEffectHandler } from './choiceEffectRegistry';
 import {
     hasSpentTreantTreeSpiritThisTurn,
     hasUsableOwnUpkeepPassiveAction,

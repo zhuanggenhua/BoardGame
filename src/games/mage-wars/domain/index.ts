@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 import type { DomainCore, PlayerId, RandomFn } from '../../../engine/types';
 import {
     MAGE_WARS_GAME_ID,
@@ -91,6 +92,7 @@ function createMageWarsPlayerView(core: MageWarsCore, playerId: PlayerId): Parti
 
 export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsEvent> = {
     gameId: MAGE_WARS_GAME_ID,
+    statePersistence,
 
     setup: (playerIds: PlayerId[], _random: RandomFn, setupData?: unknown): MageWarsCore => {
         const normalizedPlayerIds = normalizePlayerIds(playerIds);

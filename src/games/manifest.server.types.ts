@@ -4,5 +4,5 @@ import type { AnyGameEngineConfig } from '../engine/transport/engineConfig';
 export interface GameServerManifestEntry {
     manifest: GameManifestEntry;
     /** 引擎配置 */
-    engineConfig: AnyGameEngineConfig;
+    loadEngine: () => Promise<AnyGameEngineConfig>;
 }

@@ -13,12 +13,9 @@ import type {
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
 import { resolveLocalAiActionWithRecovery } from '../../../engine/transport/localAiResolution';
 import { BETRAYAL_AI_ACTION_KINDS } from '../ai';
-import {
-    BetrayalDomain,
-    betrayalAiRuntime,
-    engineConfig,
-    type BetrayalCore,
-} from '../game';
+import { BetrayalDomain } from '../domain/index';
+import { betrayalAiRuntime, engineConfig } from '../game';
+import type { BetrayalCore } from '../domain/types';
 import { BETRAYAL_COMMANDS } from '../commands';
 import type { BetrayalCommand } from '../commandTypes';
 import { BETRAYAL_MANIFEST } from '../manifest';

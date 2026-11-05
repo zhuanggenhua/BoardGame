@@ -1,6 +1,6 @@
 import type { SpriteAtlasSource } from '../../../engine/primitives/spriteAtlas';
 import { generateUniformAtlasConfig } from '../../../engine/primitives/spriteAtlas';
-import { getPreloadedImageElement } from '../../../core';
+import { getPreloadedImageElement } from '../../../core/AssetLoader';
 
 export type CardAtlasSource = SpriteAtlasSource;
 

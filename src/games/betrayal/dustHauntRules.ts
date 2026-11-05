@@ -3,13 +3,7 @@ import { rollBetrayalDicePips } from "./diceRules";
 import { getAllExplorers } from "./explorerReadModel";
 import { cloneDustRuntimeState } from "./hauntRuntimeSetupModel";
 import { isDustHaunt } from "./hauntScenarioReadModel";
-import type {
-  BetrayalCore,
-  BetrayalDustRuntimeState,
-  BetrayalDustSicknessSwapResult,
-  BetrayalExplorerSummary,
-  BetrayalTraitKey,
-} from "./game";
+import type { BetrayalCore, BetrayalDustRuntimeState, BetrayalDustSicknessSwapResult, BetrayalExplorerSummary, BetrayalTraitKey } from './domain/types';
 
 export const DUST_SEARCH_TRAIT_CHOICES: readonly BetrayalTraitKey[] = [
   "knowledge",

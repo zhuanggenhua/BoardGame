@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { resolveDisplayedDiscoveryDetail } from "../latestDiscoverySurface";
-import type {
-  BetrayalDiscoveryResolutionStep,
-  BetrayalDiscoverySummary,
-} from "../game";
+import type { BetrayalDiscoveryResolutionStep, BetrayalDiscoverySummary } from '../domain/types';
 
 const discovery = (detail: string): BetrayalDiscoverySummary => ({
   kind: "omen",

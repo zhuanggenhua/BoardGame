@@ -1,13 +1,6 @@
 import type { RandomFn } from '../../engine/types';
 import { rollBetrayalDicePips } from './diceRules';
-import type {
-    BetrayalAllTraitCheckResult,
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalPendingEventChoiceState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalTraitKey,
-} from './game';
+import type { BetrayalAllTraitCheckResult, BetrayalCore, BetrayalExplorerSummary, BetrayalPendingEventChoiceState, BetrayalPendingEventRollResolutionState, BetrayalTraitKey } from './domain/types';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
     cloneUseEffect,

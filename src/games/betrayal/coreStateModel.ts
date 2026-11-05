@@ -1,11 +1,4 @@
-import type {
-    BetrayalActivityEntry,
-    BetrayalCore,
-    BetrayalExplorerSummary,
-    BetrayalMonsterSummary,
-    BetrayalPendingCardResolutionState,
-    BetrayalScenarioRuntimeStatus,
-} from './game';
+import type { BetrayalActivityEntry, BetrayalCore, BetrayalExplorerSummary, BetrayalMonsterSummary, BetrayalPendingCardResolutionState, BetrayalScenarioRuntimeStatus } from './domain/types';
 import { cloneExplorerSummary } from './explorerReadModel';
 import {
     cloneDustRuntimeState,

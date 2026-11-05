@@ -1,3 +1,4 @@
+import type { CharacterId } from './types';
 /**
  * DiceThrone 共享规则
  * 供 UI 与 domain 层共用的纯函数
@@ -7,8 +8,8 @@ import type { PlayerId } from '../../../engine/types';
 import type { DtResponseWindowType } from './core-types';
 import type { AbilityContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
-import type { RollDieConditionalEffect, RollDieDefaultEffect } from './effects';
-import { getCustomActionMeta, isCustomActionCategory } from './effects';
+import type { RollDieConditionalEffect, RollDieDefaultEffect } from './tokenTypes';
+import { getCustomActionMeta, isCustomActionCategory } from './customActionRegistry';
 import { logger } from '../../../lib/logger';
 import type {
     DiceThroneCore,

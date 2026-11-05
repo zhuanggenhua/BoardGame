@@ -1,3 +1,4 @@
+import { statePersistence } from './statePersistence';
 import type { DomainCore, GameOverResult, PlayerId, RandomFn } from '../../../engine/types';
 import {
     cloneTableCards,
@@ -24,7 +25,7 @@ import type {
     FantasyRealmsTurnStage,
 } from './types';
 
-const now = () => Date.now();
+
 
 const DEFAULT_SCORE_BREAKDOWN = evaluateFantasyRealmsScore([], []).scoreBreakdown;
 
@@ -218,6 +219,7 @@ function applyGameEnd(core: FantasyRealmsCore): GameOverResult | undefined {
 
 export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCommand, FantasyRealmsEvent> = {
     gameId: 'fantasyrealms',
+    statePersistence,
 
     setup: (playerIds: PlayerId[], random: RandomFn, setupData?: unknown): FantasyRealmsCore => createInitialCore(playerIds, random, setupData),
 
@@ -225,7 +227,7 @@ export const FantasyRealmsDomain: DomainCore<FantasyRealmsCore, FantasyRealmsCom
     playerView,
 
     execute: (state, command) => {
-        const timestamp = command.timestamp ?? now();
+        const timestamp = command.timestamp ?? 0;
         switch (command.type) {
             case FANTASY_REALMS_COMMANDS.SET_FOCUS_CARD:
                 return [{

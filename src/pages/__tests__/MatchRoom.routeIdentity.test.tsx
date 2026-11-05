@@ -54,6 +54,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
     });
 
     vi.doMock('../../games/registry', () => ({
+ retainGameImplementation: () => () => {},
         getGameImplementation: () => ({
             board: () => createElement('div', { 'data-testid': 'board-stub' }, 'board'),
             engineConfig: {

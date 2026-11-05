@@ -1,4 +1,4 @@
-import type { CardPreviewRef } from '../../../core/types';
+import type { CardPreviewRef } from '../../../core/cardPreviewTypes';
 import {
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_IDENTITY_BY_INDEX,
     QIDAHEN_ATLAS05_ORDINARY_HAND_CARD_RULES_SUMMARY_BY_DEF_ID,
@@ -9,7 +9,7 @@ import {
     qidahenJinHandPreview,
     qidahenMingHandPreview,
     qidahenMongolHandPreview,
-} from './cardAtlas';
+} from '../data/cardAtlas';
 
 const scenarioPreviewIndexById: Record<QidahenScenarioId, number> = {
     'dingmao-rebellion-1627': 0,

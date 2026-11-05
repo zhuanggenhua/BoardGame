@@ -1,4 +1,4 @@
-import type { BetrayalCore, BetrayalDeckKind } from "./game";
+import type { BetrayalCore, BetrayalDeckKind } from './domain/types';
 
 type BetrayalTranslation = (
   key: string,

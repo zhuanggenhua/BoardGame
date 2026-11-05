@@ -1,10 +1,4 @@
-import type {
-    BetrayalCore,
-    BetrayalDeckKind,
-    BetrayalPendingCardResolutionState,
-    BetrayalPendingEventRollResolutionState,
-    BetrayalRecentRollState,
-} from './game';
+import type { BetrayalCore, BetrayalDeckKind, BetrayalPendingCardResolutionState, BetrayalPendingEventRollResolutionState, BetrayalRecentRollState } from './domain/types';
 import type { AiSeatController } from '../../engine/ai/types';
 
 type PlayerRoster = Pick<BetrayalCore, 'playerIds'> & {

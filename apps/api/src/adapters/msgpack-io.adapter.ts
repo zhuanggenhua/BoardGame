@@ -12,7 +12,7 @@ import { resolveSocketIoServerTransports } from '../../../../src/server/socketTr
 
 export class MsgpackIoAdapter extends IoAdapter {
     createIOServer(port: number, options?: ServerOptions) {
-        const opts: ServerOptions = {
+        const opts: Partial<ServerOptions> = {
             ...options,
             parser: msgpackParser,
             transports: resolveSocketIoServerTransports(process.env),

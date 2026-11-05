@@ -1,9 +1,6 @@
 import { appendActivity } from './coreStateModel';
 import { BETRAYAL_SCENARIO_CONFIGS } from './scenarioConfig';
-import type {
-    BetrayalCore,
-    BetrayalEndgameResult,
-} from './game';
+import type { BetrayalCore, BetrayalEndgameResult } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type ScenarioCompletedEvent = Extract<BetrayalEvent, { type: 'SCENARIO_COMPLETED' }>;

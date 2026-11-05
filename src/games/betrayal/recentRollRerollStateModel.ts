@@ -50,14 +50,7 @@ import {
     applyGeneralDamage,
     setExplorerTraitsFromValues,
 } from './traitTrackModel';
-import type {
-    BetrayalCore,
-    BetrayalDiscoverySummary,
-    BetrayalEndgameResult,
-    BetrayalExplorerSummary,
-    BetrayalPendingDamageAllocationState,
-    BetrayalRecentRollState,
-} from './game';
+import type { BetrayalCore, BetrayalDiscoverySummary, BetrayalEndgameResult, BetrayalExplorerSummary, BetrayalPendingDamageAllocationState, BetrayalRecentRollState } from './domain/types';
 import type { BetrayalEvent } from './events';
 
 type RabbitFootUsedEvent = Extract<BetrayalEvent, { type: 'RABBIT_FOOT_USED' }>;

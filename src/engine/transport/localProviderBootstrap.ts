@@ -1,3 +1,4 @@
+import { StateRestoreError } from '../statePersistence';
 import type { MatchState, RandomFn } from '../types';
 import type { EngineSystem } from '../systems/types';
 import type { GameEngineConfig } from './engineConfig';
@@ -10,7 +11,7 @@ import { setUndoAiSeatIds } from '../systems/UndoSystem';
 import {
     isPersistedLocalStateCompatible,
     normalizePersistedLocalStateForGame,
-    normalizeStateForConfig,
+    prepareNewStateForConfig,
 } from './stateNormalization';
 
 type LocalProviderRandom = RandomFn & {
@@ -111,14 +112,11 @@ export function createInitialLocalProviderState(args: {
         setupData,
         setupPlayerIds,
     } = args;
-    if (persistedState && isPersistedLocalStateCompatible({
-        state: persistedState,
-        expectedPlayerIds: setupPlayerIds,
-    })) {
-        return setUndoAiSeatIds(
-            normalizePersistedLocalStateForGame(config, persistedState),
-            aiSeatIds,
-        );
+    if (persistedState) {
+        if (!isPersistedLocalStateCompatible({ state: persistedState, expectedPlayerIds: setupPlayerIds })) {
+            throw new StateRestoreError('player-identity-mismatch');
+        }
+        return setUndoAiSeatIds(normalizePersistedLocalStateForGame(config, persistedState), aiSeatIds);
     }
 
     const testConfig = readLocalProviderTestConfig();
@@ -132,7 +130,7 @@ export function createInitialLocalProviderState(args: {
         });
         if (testInitialState) {
             return setUndoAiSeatIds(
-                normalizeStateForConfig(config, testInitialState),
+                prepareNewStateForConfig(config, testInitialState),
                 aiSeatIds,
             );
         }
@@ -144,7 +142,7 @@ export function createInitialLocalProviderState(args: {
         config.systems as EngineSystem[],
     );
     return setUndoAiSeatIds(
-        normalizeStateForConfig(config, { sys, core }),
+        prepareNewStateForConfig(config, { sys, core }),
         aiSeatIds,
     );
 }

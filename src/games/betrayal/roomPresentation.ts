@@ -1,4 +1,5 @@
-import type { BetrayalRoomEdge, BetrayalRoomNode } from "./game";
+import type { BetrayalRoomEdge } from './game';
+import type { BetrayalRoomNode } from './domain/types';
 
 type BetrayalTranslation = (
   key: string,

@@ -3,7 +3,6 @@ import { createBaseSystems, createGameEngine } from '../../engine';
 import { SplendorDomain } from './domain';
 import type { SplendorCommand, SplendorCore, SplendorEvent, TokenColor } from './domain';
 import { CARD_DEFS_BY_ID, NOBLE_DEFS_BY_ID, getPaymentTokens } from './domain/rules';
-import './cardPreview';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { splendorAiRuntime } from './ai';
 

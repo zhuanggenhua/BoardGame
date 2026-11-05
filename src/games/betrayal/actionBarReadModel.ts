@@ -1,5 +1,5 @@
 import type { ActionBarAction } from "../../core/ui/types";
-import type { BetrayalCore } from "./game";
+import type { BetrayalCore } from './domain/types';
 import type { PreviewState } from "./previewStateModel";
 
 type ActionText = (key: string, options?: Record<string, unknown>) => string;

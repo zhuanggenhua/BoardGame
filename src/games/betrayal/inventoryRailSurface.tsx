@@ -1,10 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import type {
-  BetrayalExplorerSummary,
-  BetrayalInventoryCard,
-} from "./game";
+import type { BetrayalExplorerSummary, BetrayalInventoryCard } from './domain/types';
 import {
   BETRAYAL_COMPACT_INVENTORY_CARD_WIDTH,
   BetrayalInventoryCardSurface,
