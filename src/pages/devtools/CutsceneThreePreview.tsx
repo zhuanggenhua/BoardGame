@@ -54,7 +54,7 @@ const CutsceneThreePreview = () => {
     const abort = new AbortController();
     void fetch(`${FGO_CHARACTER_ASSETS}catalog.json`, { signal: abort.signal })
       .then(response => {
-        if (!response.ok) throw new Error(`角色目录: HTTP ${response.status}`);
+        if (!response.ok) throw new Error(`${t('devtools.fgoGallery.catalog')}: HTTP ${response.status}`);
         return response.json() as Promise<FgoCharacterCatalog>;
       }).then(catalog => {
         if (abort.signal.aborted) return;
@@ -69,7 +69,7 @@ const CutsceneThreePreview = () => {
         if (!abort.signal.aborted) { setError(cause instanceof Error ? cause.message : String(cause)); setLoading(false); }
       });
     return () => abort.abort();
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const effectHost = effectStageRef.current;
