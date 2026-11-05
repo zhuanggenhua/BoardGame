@@ -72,7 +72,7 @@ type TimelineEvent = {
   fadeColour?: { r: number; g: number; b: number; a: number };
   fadeCurve?: Key[] | { m_Curve?: Key[] };
 };
-type EffectsData = { actorTransform: ActorTransformData; battleCamera: CameraData; timeline: TimelineEvent[] };
+type EffectsData = { duration?: number; actorTransform: ActorTransformData; battleCamera: CameraData; timeline: TimelineEvent[] };
 export type OpeningStatus = { time: number; playing: boolean; animation: string; camera: Vec3 };
 export type OpeningRuntime = {
   play: () => void;

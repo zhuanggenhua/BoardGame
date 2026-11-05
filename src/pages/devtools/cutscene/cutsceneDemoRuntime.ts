@@ -577,7 +577,7 @@ type CutInState = {
 };
 
 type RuntimeParticle = {
-  view: Sprite | Mesh;
+  view: Sprite | (Mesh<MeshGeometry, Shader> & { texture: Texture });
   vx: number;
   vy: number;
   velocityX: number;
@@ -785,6 +785,11 @@ type CutsceneDebugWindow = Window & {
         }>;
       }>;
     }>;
+    rawAssetStats?: {
+      layerVisible: boolean;
+      beam: { visible: boolean; alpha: number; x: number; y: number; width: number; height: number };
+      finalRay: { visible: boolean; alpha: number; x: number; y: number; width: number; height: number };
+    };
   };
 };
 
@@ -2711,7 +2716,7 @@ class RealParticleEmitter {
       ? placementRotation + startRotationZ
       : baseRotation;
 
-    let view: Sprite | Mesh;
+    let view: RuntimeParticle['view'];
     let baseScaleX: number;
     let baseScaleY: number;
     let quadTexture: Texture | undefined;
@@ -2781,7 +2786,7 @@ class RealParticleEmitter {
             fgoNobleShaderVariant(this.data.renderer),
           )
           : getEffectMeshShader(texture),
-      });
+      }) as RuntimeParticle['view'];
       const scale = meshParticleScale(
         this.root.name,
         meshData,
@@ -2807,7 +2812,7 @@ class RealParticleEmitter {
           fgoNobleOneValue(this.data.renderer),
           fgoNobleShaderVariant(this.data.renderer),
         ),
-      });
+      }) as RuntimeParticle['view'];
       const size = spriteParticleSize(rawSize[0], placement);
       const scale = size / Math.max(1, Math.max(frame.width, frame.height));
       const localScale = this.currentLocalTransform.scale;
@@ -4042,7 +4047,7 @@ class PixiCutsceneRuntime implements CutsceneRuntimeHandle {
   private applyColorChangeEvent(event: EffectTimelineEvent) {
     const meshName = event.otherHierarchyPath?.split('/').pop();
     const color = event.fadeColour ?? WHITE_COLOR;
-    const curve = event.fadeCurve ?? [
+    const curve = (Array.isArray(event.fadeCurve) ? event.fadeCurve : event.fadeCurve?.m_Curve) ?? [
       { time: 0, value: 0 },
       { time: Math.max(0.001, event.duration), value: 0 },
     ];
