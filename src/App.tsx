@@ -81,6 +81,8 @@ const TutorialMatchRoom = React.lazy(() => import('./pages/TutorialMatchRoomWith
 
 const DevToolsSlicer = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/AssetSlicer')) : null;
 const DevToolsFxPreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/EffectPreview')) : null;
+const DevToolsCutscenePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/CutscenePreview')) : null;
+const DevToolsCutsceneThreePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/CutsceneThreePreview')) : null;
 const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/AudioBrowser')) : null;
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
 const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
@@ -274,6 +276,12 @@ const AppContent = () => {
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsFxPreview && (
                       <Route path="/dev/fx" element={<React.Suspense fallback={null}><DevToolsFxPreview /></React.Suspense>} />
+                    )}
+                    {ENABLE_INTERNAL_DEVTOOLS && DevToolsCutscenePreview && (
+                      <Route path="/dev/cutscene" element={<React.Suspense fallback={null}><DevToolsCutscenePreview /></React.Suspense>} />
+                    )}
+                    {ENABLE_INTERNAL_DEVTOOLS && DevToolsCutsceneThreePreview && (
+                      <Route path="/dev/cutscene-three" element={<React.Suspense fallback={null}><DevToolsCutsceneThreePreview /></React.Suspense>} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsAudioBrowser && (
                       <Route path="/dev/audio" element={<React.Suspense fallback={null}><DevToolsAudioBrowser /></React.Suspense>} />

@@ -1,0 +1,162 @@
+{
+  "sourceBundle": "NoblePhantasm@100101",
+  "sourceAtlas": "np_100100_1553234872022942572.png",
+  "background": "Bg@10500/10500_bg_tex001_544726610441809008.png",
+  "derivedAssets": [
+    {
+      "name": "portrait_main_keyed",
+      "file": "portrait_main_keyed.png",
+      "source": "CharaFigure@1001001/1001001_4015147709867740555.png",
+      "operation": "crop top illustration area and edge-key black background"
+    },
+    {
+      "name": "portrait_face_keyed",
+      "file": "portrait_face_keyed.png",
+      "source": "CharaFigure@1001001/1001001_4015147709867740555.png",
+      "sourceMask": "CharaFigure@1001001/1001001fa_6073425181614902641.png",
+      "operation": "use exact face tile 1001001f and its exported alpha mask"
+    }
+  ],
+  "frames": [
+    {
+      "name": "head_front",
+      "file": "head_front.png",
+      "rect": {
+        "x": 12,
+        "y": 11,
+        "w": 465,
+        "h": 555
+      }
+    },
+    {
+      "name": "head_back",
+      "file": "head_back.png",
+      "rect": {
+        "x": 939,
+        "y": 26,
+        "w": 428,
+        "h": 500
+      }
+    },
+    {
+      "name": "body",
+      "file": "body.png",
+      "rect": {
+        "x": 95,
+        "y": 1356,
+        "w": 251,
+        "h": 211
+      }
+    },
+    {
+      "name": "cape_large",
+      "file": "cape_large.png",
+      "rect": {
+        "x": 1503,
+        "y": 14,
+        "w": 443,
+        "h": 613
+      }
+    },
+    {
+      "name": "cape_sweep",
+      "file": "cape_sweep.png",
+      "rect": {
+        "x": 690,
+        "y": 1166,
+        "w": 436,
+        "h": 435
+      }
+    },
+    {
+      "name": "dress_front",
+      "file": "dress_front.png",
+      "rect": {
+        "x": 1017,
+        "y": 645,
+        "w": 475,
+        "h": 438
+      }
+    },
+    {
+      "name": "dress_white",
+      "file": "dress_white.png",
+      "rect": {
+        "x": 329,
+        "y": 1462,
+        "w": 349,
+        "h": 450
+      }
+    },
+    {
+      "name": "fur_arc",
+      "file": "fur_arc.png",
+      "rect": {
+        "x": 1425,
+        "y": 750,
+        "w": 411,
+        "h": 382
+      }
+    },
+    {
+      "name": "hair_sweep",
+      "file": "hair_sweep.png",
+      "rect": {
+        "x": 568,
+        "y": 554,
+        "w": 474,
+        "h": 309
+      }
+    },
+    {
+      "name": "hair_tail",
+      "file": "hair_tail.png",
+      "rect": {
+        "x": 5,
+        "y": 728,
+        "w": 166,
+        "h": 456
+      }
+    },
+    {
+      "name": "sword",
+      "file": "sword.png",
+      "rect": {
+        "x": 1716,
+        "y": 1091,
+        "w": 113,
+        "h": 718
+      }
+    },
+    {
+      "name": "crown",
+      "file": "crown.png",
+      "rect": {
+        "x": 495,
+        "y": 20,
+        "w": 340,
+        "h": 216
+      }
+    },
+    {
+      "name": "armor_arm",
+      "file": "armor_arm.png",
+      "rect": {
+        "x": 607,
+        "y": 740,
+        "w": 535,
+        "h": 450
+      }
+    },
+    {
+      "name": "slash_cloth",
+      "file": "slash_cloth.png",
+      "rect": {
+        "x": 1158,
+        "y": 1286,
+        "w": 416,
+        "h": 233
+      }
+    }
+  ]
+}

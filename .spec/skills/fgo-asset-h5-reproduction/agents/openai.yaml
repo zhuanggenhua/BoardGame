@@ -1,0 +1,4 @@
+interface:
+  display_name: "FGO 解包与 H5 复现"
+  short_description: "盘点并解包 FGO 本地素材，还原角色、武器、宝具特效与 H5 播放验证流程"
+  default_prompt: "使用 $fgo-asset-h5-reproduction 盘点现有 FGO 素材，按原始数据完成解包、导出和 H5 播放，并说明完整演出与动作片段的可用范围。"

@@ -45,7 +45,7 @@ const IDLE_OTA_ACTIVITY_STATE: AndroidLiveUpdateActivityState = {
     active: false,
     phase: 'idle',
 };
-const shouldHideOnRoute = (pathname: string) => isConfigReviewPath(pathname);
+const shouldHideOnRoute = (pathname: string) => isConfigReviewPath(pathname) || pathname === '/dev/cutscene-three';
 
 interface GlobalHUDProps {
     feedbackGameOptions?: readonly GameManifestEntry[];

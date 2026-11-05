@@ -1,0 +1,2778 @@
+{
+  "characters": [
+    {
+      "id": "100100",
+      "asset": "100100/model.json",
+      "thumbnail": "100100/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1.6999998092651367
+        },
+        {
+          "name": "attack_a02",
+          "duration": 2.2333335876464844
+        },
+        {
+          "name": "attack_a03",
+          "duration": 1.7333316802978516
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.8999996185302734
+        },
+        {
+          "name": "attack_b02",
+          "duration": 2.2333335876464844
+        },
+        {
+          "name": "attack_b03",
+          "duration": 1.833333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 2.4666671752929688
+        },
+        {
+          "name": "attack_ex02",
+          "duration": 1.8333320617675781
+        },
+        {
+          "name": "attack_ex03",
+          "duration": 4.633331298828125
+        },
+        {
+          "name": "attack_ex04",
+          "duration": 1.8333358764648438
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.9333343505859375
+        },
+        {
+          "name": "attack_q02",
+          "duration": 1.7666664123535156
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 0.5333328247070312
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 1.966665267944336
+        },
+        {
+          "name": "spell02",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "spell03",
+          "duration": 2.299999237060547
+        },
+        {
+          "name": "step_back",
+          "duration": 0.76666659116745
+        },
+        {
+          "name": "step_back02",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front02",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 1.2999992370605469
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 3.299999237060547
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 4.0666656494140625
+        },
+        {
+          "name": "treasureArms4_a",
+          "duration": 0.9666671752929688
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "wait02",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": true,
+      "name": "アルトリア・ペンドラゴン",
+      "sourceName": "アルトリア・ペンドラゴン",
+      "category": "从者"
+    },
+    {
+      "id": "101400",
+      "asset": "101400/model.json",
+      "thumbnail": "101400/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1.2333333492279053
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.2333335876464844
+        },
+        {
+          "name": "attack_gen",
+          "duration": 1.0666667222976685
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.6666669845581055
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333337783813477
+        },
+        {
+          "name": "spell",
+          "duration": 2.1000008583068848
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "step_back",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "step_front",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 2.5
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "フェルグス・マック・ロイ",
+      "sourceName": "フェルグス・マック・ロイ",
+      "category": "从者"
+    },
+    {
+      "id": "201310",
+      "asset": "201310/model.json",
+      "thumbnail": "201310/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.133333206176758
+        },
+        {
+          "name": "attack_a02",
+          "duration": 0.33333396911621094
+        },
+        {
+          "name": "attack_a03",
+          "duration": 2.299999237060547
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.0333328247070312
+        },
+        {
+          "name": "attack_b02",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "attack_b03",
+          "duration": 1.2999992370605469
+        },
+        {
+          "name": "attack_ex",
+          "duration": 2.9666671752929688
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.9666633605957031
+        },
+        {
+          "name": "attack_q02",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 3.066666603088379
+        },
+        {
+          "name": "spell02",
+          "duration": 2.566666603088379
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_back02",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front02",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 1.3333330154418945
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 1.2333335876464844
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 1.2333335876464844
+        },
+        {
+          "name": "treasureArms4_a",
+          "duration": 1.3000011444091797
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "wait02",
+          "duration": 5.166666030883789
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "201310",
+      "sourceName": "201310",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "202200",
+      "asset": "202200/model.json",
+      "thumbnail": "202200/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.633334159851074
+        },
+        {
+          "name": "attack_a02",
+          "duration": 3.533334732055664
+        },
+        {
+          "name": "attack_b",
+          "duration": 4.733334541320801
+        },
+        {
+          "name": "attack_b (2)",
+          "duration": 4.733334541320801
+        },
+        {
+          "name": "attack_b02",
+          "duration": 4.233335494995117
+        },
+        {
+          "name": "attack_ex",
+          "duration": 5.666667938232422
+        },
+        {
+          "name": "attack_q",
+          "duration": 4.700000762939453
+        },
+        {
+          "name": "attack_q02",
+          "duration": 3.6333351135253906
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333879709244
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333507180214
+        },
+        {
+          "name": "spell",
+          "duration": 3.8333358764648438
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666709899902344
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666667699813843
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666667699813843
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 0.8666672706604004
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "アルテラ・ザ・サン〔タ〕",
+      "sourceName": "アルテラ・ザ・サン〔タ〕",
+      "category": "从者"
+    },
+    {
+      "id": "204600",
+      "asset": "204600/model.json",
+      "thumbnail": "204600/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 3.2666664123535156
+        },
+        {
+          "name": "attack_a02",
+          "duration": 2.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.9333324432373047
+        },
+        {
+          "name": "attack_b02",
+          "duration": 3.166666030883789
+        },
+        {
+          "name": "attack_b03",
+          "duration": 0.9666671752929688
+        },
+        {
+          "name": "attack_b04",
+          "duration": 2.666666030883789
+        },
+        {
+          "name": "attack_ex",
+          "duration": 3.866668701171875
+        },
+        {
+          "name": "attack_q",
+          "duration": 3.1999988555908203
+        },
+        {
+          "name": "attack_q02",
+          "duration": 2.333333969116211
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333328247070312
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.666667938232422
+        },
+        {
+          "name": "spell02",
+          "duration": 2.3333358764648438
+        },
+        {
+          "name": "spell03",
+          "duration": 2.666667938232422
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 0.9666662216186523
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 1.9666662216186523
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "源為朝",
+      "sourceName": "源為朝",
+      "category": "从者"
+    },
+    {
+      "id": "2801130",
+      "asset": "2801130/model.json",
+      "thumbnail": "2801130/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 3.299999237060547
+        },
+        {
+          "name": "attack_a02",
+          "duration": 3.333333969116211
+        },
+        {
+          "name": "attack_b",
+          "duration": 4.833333969116211
+        },
+        {
+          "name": "attack_b02",
+          "duration": 4.266666412353516
+        },
+        {
+          "name": "attack_b03",
+          "duration": 3.3666648864746094
+        },
+        {
+          "name": "attack_ex",
+          "duration": 3.5
+        },
+        {
+          "name": "attack_q",
+          "duration": 3.2666664123535156
+        },
+        {
+          "name": "attack_q02",
+          "duration": 3.666667938232422
+        },
+        {
+          "name": "attack_q03",
+          "duration": 3.1333351135253906
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333328247070312
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.633331298828125
+        },
+        {
+          "name": "spell02",
+          "duration": 2.333332061767578
+        },
+        {
+          "name": "spell03",
+          "duration": 2.6333351135253906
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 1.6999998092651367
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 1.9666662216186523
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "2801130",
+      "sourceName": "2801130",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "300100",
+      "asset": "300100/model.json",
+      "thumbnail": "300100/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1.7000001668930054
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "attack_b02",
+          "duration": 2.133333683013916
+        },
+        {
+          "name": "attack_ex",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "attack_gen",
+          "duration": 1.5666675567626953
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.4000015258789062
+        },
+        {
+          "name": "attack_q02",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "attack_q03",
+          "duration": 1.9333381652832031
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333337783813477
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333879709244
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333507180214
+        },
+        {
+          "name": "spell",
+          "duration": 2.200000762939453
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "step_back",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "step_front",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 0.9333343505859375
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 0.46666717529296875
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 1.333333969116211
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "クー・フーリン",
+      "sourceName": "クー・フーリン",
+      "category": "从者"
+    },
+    {
+      "id": "301000",
+      "asset": "301000/model.json",
+      "thumbnail": "301000/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1.133333444595337
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.4333338737487793
+        },
+        {
+          "name": "attack_gen",
+          "duration": 1.8333332538604736
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.566667079925537
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333328247070312
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 1.8666672706604004
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666690826416016
+        },
+        {
+          "name": "step_back",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "step_front",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "wait",
+          "duration": 5.166667938232422
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "ロムルス",
+      "sourceName": "ロムルス",
+      "category": "从者"
+    },
+    {
+      "id": "303800",
+      "asset": "303800/model.json",
+      "thumbnail": "303800/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.700000286102295
+        },
+        {
+          "name": "attack_a02",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.5666675567626953
+        },
+        {
+          "name": "attack_b02",
+          "duration": 1.933333396911621
+        },
+        {
+          "name": "attack_b03",
+          "duration": 2.200000762939453
+        },
+        {
+          "name": "attack_ex",
+          "duration": 5.100002288818359
+        },
+        {
+          "name": "attack_q",
+          "duration": 2.0333328247070312
+        },
+        {
+          "name": "attack_q02",
+          "duration": 3.2333335876464844
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 3.666667938232422
+        },
+        {
+          "name": "spell02",
+          "duration": 2.8000030517578125
+        },
+        {
+          "name": "spell03",
+          "duration": 3.666667938232422
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666667103767395
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 0.8333358764648438
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 0.366668701171875
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 3.400005340576172
+        },
+        {
+          "name": "treasureArms4_a",
+          "duration": 1.3333358764648438
+        },
+        {
+          "name": "treasureArms5_a",
+          "duration": 0.9666709899902344
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "長尾景虎",
+      "sourceName": "長尾景虎",
+      "category": "从者"
+    },
+    {
+      "id": "305800",
+      "asset": "305800/model.json",
+      "thumbnail": "305800/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 0.5333328247070312
+        },
+        {
+          "name": "attack_a02",
+          "duration": 1.3999996185302734
+        },
+        {
+          "name": "attack_a03",
+          "duration": 2.7333335876464844
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.533334732055664
+        },
+        {
+          "name": "attack_b02",
+          "duration": 1.1999988555908203
+        },
+        {
+          "name": "attack_b03",
+          "duration": 2.633333206176758
+        },
+        {
+          "name": "attack_b04",
+          "duration": 2.666666030883789
+        },
+        {
+          "name": "attack_ex",
+          "duration": 2
+        },
+        {
+          "name": "attack_q",
+          "duration": 2.666666030883789
+        },
+        {
+          "name": "attack_q02",
+          "duration": 2.5666656494140625
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.466663360595703
+        },
+        {
+          "name": "spell02",
+          "duration": 2.4666671752929688
+        },
+        {
+          "name": "spell03",
+          "duration": 2
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 2.1999998092651367
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 0.6999998092651367
+        },
+        {
+          "name": "treasureArms4_a",
+          "duration": 0.6666669845581055
+        },
+        {
+          "name": "treasureArms5_a",
+          "duration": 1.066666603088379
+        },
+        {
+          "name": "treasureArms6_a",
+          "duration": 1.6000003814697266
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "アショカ王",
+      "sourceName": "アショカ王",
+      "category": "从者"
+    },
+    {
+      "id": "400100",
+      "asset": "400100/model.json",
+      "thumbnail": "400100/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.833333969116211
+        },
+        {
+          "name": "attack_a02",
+          "duration": 2.166667938232422
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.833333969116211
+        },
+        {
+          "name": "attack_b02",
+          "duration": 1.5000019073486328
+        },
+        {
+          "name": "attack_ex",
+          "duration": 2.7666702270507812
+        },
+        {
+          "name": "attack_q",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "attack_q02",
+          "duration": 1.8666667938232422
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333879709244
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333507180214
+        },
+        {
+          "name": "spell",
+          "duration": 2
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666667103767395
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 1.3333358764648438
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 5.1666717529296875
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 2
+        },
+        {
+          "name": "wait",
+          "duration": 5.166667938232422
+        },
+        {
+          "name": "wait_02",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "メドゥーサ",
+      "sourceName": "メドゥーサ",
+      "category": "从者"
+    },
+    {
+      "id": "505900",
+      "asset": "505900/model.json",
+      "thumbnail": "505900/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.166666030883789
+        },
+        {
+          "name": "attack_a02",
+          "duration": 3.9999961853027344
+        },
+        {
+          "name": "attack_a03",
+          "duration": 3.5
+        },
+        {
+          "name": "attack_a04",
+          "duration": 3.299999237060547
+        },
+        {
+          "name": "attack_b",
+          "duration": 3.366666793823242
+        },
+        {
+          "name": "attack_b02",
+          "duration": 4.433332443237305
+        },
+        {
+          "name": "attack_b03",
+          "duration": 1.7000007629394531
+        },
+        {
+          "name": "attack_b04",
+          "duration": 1.2999992370605469
+        },
+        {
+          "name": "attack_ex",
+          "duration": 1.2666702270507812
+        },
+        {
+          "name": "attack_ex02",
+          "duration": 7.133331298828125
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.6000022888183594
+        },
+        {
+          "name": "attack_q02",
+          "duration": 3.3333282470703125
+        },
+        {
+          "name": "attack_q03",
+          "duration": 4
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.3666648864746094
+        },
+        {
+          "name": "spell02",
+          "duration": 3.1666641235351562
+        },
+        {
+          "name": "spell03",
+          "duration": 4.366664886474609
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 4.366666793823242
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 2.1999998092651367
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 1.5
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "花咲翁",
+      "sourceName": "花咲翁",
+      "category": "从者"
+    },
+    {
+      "id": "605200",
+      "asset": "605200/model.json",
+      "thumbnail": "605200/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.9999990463256836
+        },
+        {
+          "name": "attack_a02",
+          "duration": 2.7333335876464844
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.5666656494140625
+        },
+        {
+          "name": "attack_b03",
+          "duration": 2.200000762939453
+        },
+        {
+          "name": "attack_b04",
+          "duration": 2.5666675567626953
+        },
+        {
+          "name": "attack_ex",
+          "duration": 4.5666656494140625
+        },
+        {
+          "name": "attack_q",
+          "duration": 3.166666030883789
+        },
+        {
+          "name": "attack_q02",
+          "duration": 3.366666793823242
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.833332061767578
+        },
+        {
+          "name": "spell02",
+          "duration": 2.799999237060547
+        },
+        {
+          "name": "step_back",
+          "duration": 0.76666659116745
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 2.9333338737487793
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 4
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "蛇女房",
+      "sourceName": "蛇女房",
+      "category": "从者"
+    },
+    {
+      "id": "700300",
+      "asset": "700300/model.json",
+      "thumbnail": "700300/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "attack_a02",
+          "duration": 1.7666683197021484
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.200002670288086
+        },
+        {
+          "name": "attack_b02",
+          "duration": 2.166667938232422
+        },
+        {
+          "name": "attack_b03",
+          "duration": 2.0666675567626953
+        },
+        {
+          "name": "attack_ex",
+          "duration": 3.500001907348633
+        },
+        {
+          "name": "attack_ex02",
+          "duration": 2.6333351135253906
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.5
+        },
+        {
+          "name": "attack_q02",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.6333351135253906
+        },
+        {
+          "name": "spell02",
+          "duration": 2.6333351135253906
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666667103767395
+        },
+        {
+          "name": "step_back02",
+          "duration": 0.7666702270507812
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "step_front02",
+          "duration": 0.7666702270507812
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 3.000000476837158
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 2.633334159851074
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 2.3000011444091797
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        },
+        {
+          "name": "wait02",
+          "duration": 5.166664123535156
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "呂布奉先",
+      "sourceName": "呂布奉先",
+      "category": "从者"
+    },
+    {
+      "id": "701600",
+      "asset": "701600/model.json",
+      "thumbnail": "701600/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 2.533334255218506
+        },
+        {
+          "name": "attack_a02",
+          "duration": 1.7333335876464844
+        },
+        {
+          "name": "attack_b",
+          "duration": 2.166667938232422
+        },
+        {
+          "name": "attack_b02",
+          "duration": 1.8000011444091797
+        },
+        {
+          "name": "attack_b03",
+          "duration": 4.066667556762695
+        },
+        {
+          "name": "attack_ex",
+          "duration": 6.000001907348633
+        },
+        {
+          "name": "attack_gen",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "attack_gen02",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "attack_q",
+          "duration": 2.0666675567626953
+        },
+        {
+          "name": "attack_q02",
+          "duration": 2.0666675567626953
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333611488342
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "sleep_wait01",
+          "duration": 2.666667938232422
+        },
+        {
+          "name": "spell",
+          "duration": 2.1666698455810547
+        },
+        {
+          "name": "spell02",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "spell03",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666667103767395
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 1.2999992370605469
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 1.0000038146972656
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 0.16666793823242188
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "タマモキャット",
+      "sourceName": "タマモキャット",
+      "category": "从者"
+    },
+    {
+      "id": "800100",
+      "asset": "800100/model.json",
+      "thumbnail": "800100/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1.5666667222976685
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.7666668891906738
+        },
+        {
+          "name": "attack_gen",
+          "duration": 1.6666665077209473
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333337783813477
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "spell_loop",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 1
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 6.799999237060547
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 1
+        },
+        {
+          "name": "treasureArms4_a",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "treasureArms5_a",
+          "duration": 1.6333332061767578
+        },
+        {
+          "name": "treasureArms6_a",
+          "duration": 3.366666793823242
+        },
+        {
+          "name": "treasureArms7_a",
+          "duration": 1.966665267944336
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "マシュ・キリエライト",
+      "sourceName": "マシュ・キリエライト",
+      "category": "从者"
+    },
+    {
+      "id": "9930100",
+      "asset": "9930100/model.json",
+      "thumbnail": "9930100/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.4000000953674316
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333335399627686
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666671276092529
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "骸骨兵",
+      "sourceName": "骸骨兵",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9932300",
+      "asset": "9932300/model.json",
+      "thumbnail": "9932300/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 1.8333333730697632
+        },
+        {
+          "name": "attack_b",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "attack_q",
+          "duration": 1.8000006675720215
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333337783813477
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "step_front",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "wait",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "noblePhantasm": false,
+      "name": "ゴーレム",
+      "sourceName": "ゴーレム",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9942530",
+      "asset": "9942530/model.json",
+      "thumbnail": "9942530/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 3.4666671752929688
+        },
+        {
+          "name": "attack_a02",
+          "duration": 3.4333343505859375
+        },
+        {
+          "name": "attack_b",
+          "duration": 3.1000022888183594
+        },
+        {
+          "name": "attack_b02",
+          "duration": 4.0666656494140625
+        },
+        {
+          "name": "attack_ex",
+          "duration": 5.766666412353516
+        },
+        {
+          "name": "attack_q",
+          "duration": 4.0666656494140625
+        },
+        {
+          "name": "attack_q02",
+          "duration": 3.666667938232422
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.6666641235351562
+        },
+        {
+          "name": "spell02",
+          "duration": 2.666667938232422
+        },
+        {
+          "name": "step_back",
+          "duration": 0.76666659116745
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.933333873748779
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 0.9666671752929688
+        },
+        {
+          "name": "treasureArms3_a",
+          "duration": 2.9333343505859375
+        },
+        {
+          "name": "treasureArms4_a",
+          "duration": 4.100000381469727
+        },
+        {
+          "name": "treasureArms5_a",
+          "duration": 1.5666675567626953
+        },
+        {
+          "name": "treasureArms6_a",
+          "duration": 1.6333332061767578
+        },
+        {
+          "name": "treasureArms7_a",
+          "duration": 2.4333343505859375
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "宇津見エリセ",
+      "sourceName": "宇津見エリセ",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947060",
+      "asset": "9947060/model.json",
+      "thumbnail": "9947060/preview.png",
+      "animations": [
+        {
+          "name": "spell",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "パツシィ",
+      "sourceName": "パツシィ",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947070",
+      "asset": "9947070/model.json",
+      "thumbnail": "9947070/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.466666221618652
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.8000001907348633
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 2.5
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "カドック＆アナスタシア",
+      "sourceName": "カドック＆アナスタシア",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947080",
+      "asset": "9947080/model.json",
+      "thumbnail": "9947080/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 3.4666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "オフェリア",
+      "sourceName": "オフェリア",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947090",
+      "asset": "9947090/model.json",
+      "thumbnail": "9947090/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 0.6333332061767578
+        },
+        {
+          "name": "attack_a02",
+          "duration": 3.200000762939453
+        },
+        {
+          "name": "attack_a03",
+          "duration": 3.799999237060547
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 5.166666030883789
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 1.8999996185302734
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "wait02",
+          "duration": 5.1666669845581055
+        },
+        {
+          "name": "wait03",
+          "duration": 5.166666030883789
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "虞美人＆項羽",
+      "sourceName": "虞美人＆項羽",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947100",
+      "asset": "9947100/model.json",
+      "thumbnail": "9947100/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.799999713897705
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "ペペロンチーノ",
+      "sourceName": "ペペロンチーノ",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947110",
+      "asset": "9947110/model.json",
+      "thumbnail": "9947110/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 5.133333683013916
+        },
+        {
+          "name": "step_back",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "wait02",
+          "duration": 5.166666030883789
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "アーシャ＆アジャイ",
+      "sourceName": "アーシャ＆アジャイ",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947120",
+      "asset": "9947120/model.json",
+      "thumbnail": "9947120/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.299999713897705
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "アデーレ＆マカリオス",
+      "sourceName": "アデーレ＆マカリオス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947130",
+      "asset": "9947130/model.json",
+      "thumbnail": "9947130/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.633333683013916
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "キリシュタリア",
+      "sourceName": "キリシュタリア",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947140",
+      "asset": "9947140/model.json",
+      "thumbnail": "9947140/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.633333444595337
+        },
+        {
+          "name": "step_back",
+          "duration": 0.3333333432674408
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "wait",
+          "duration": 0.3333333432674408
+        }
+      ],
+      "evolutions": [
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "オベロン",
+      "sourceName": "オベロン",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947150",
+      "asset": "9947150/model.json",
+      "thumbnail": "9947150/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 1.299999713897705
+        },
+        {
+          "name": "step_back",
+          "duration": 0.8000001907348633
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "wait02",
+          "duration": 5.1666669845581055
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "ベリル",
+      "sourceName": "ベリル",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947160",
+      "asset": "9947160/model.json",
+      "thumbnail": "9947160/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 1.9666666984558105
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "ゴブリン三兄弟",
+      "sourceName": "ゴブリン三兄弟",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947180",
+      "asset": "9947180/model.json",
+      "thumbnail": "9947180/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 2.133333683013916
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front",
+          "duration": 1.566666603088379
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "テペウ",
+      "sourceName": "テペウ",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947440",
+      "asset": "9947440/model.json",
+      "thumbnail": "9947440/preview.png",
+      "animations": [
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "spell",
+          "duration": 4.733333110809326
+        },
+        {
+          "name": "step_back",
+          "duration": 0.766667366027832
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "wait",
+          "duration": 0.9666664600372314
+        },
+        {
+          "name": "wait02",
+          "duration": 0.9666671752929688
+        }
+      ],
+      "evolutions": [
+        2
+      ],
+      "noblePhantasm": false,
+      "name": "アルトリア・キャスター",
+      "sourceName": "アルトリア・キャスター",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947450",
+      "asset": "9947450/model.json",
+      "thumbnail": "9947450/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 5.333333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 6.533332824707031
+        },
+        {
+          "name": "attack_q",
+          "duration": 8.933334350585938
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 2.133331298828125
+        },
+        {
+          "name": "damage_03",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "damage_04",
+          "duration": 3.3999977111816406
+        },
+        {
+          "name": "damage_05",
+          "duration": 2.26666259765625
+        },
+        {
+          "name": "spell",
+          "duration": 4.533332824707031
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.166667938232422
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 10.366668701171875
+        },
+        {
+          "name": "wait",
+          "duration": 10.366666793823242
+        },
+        {
+          "name": "wait04",
+          "duration": 15.600006103515625
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "マリス・カルデアス",
+      "sourceName": "マリス・カルデアス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947460",
+      "asset": "9947460/model.json",
+      "thumbnail": "9947460/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 5.333333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 4.866664886474609
+        },
+        {
+          "name": "attack_q",
+          "duration": 8.933334350585938
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "damage_03",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "damage_04",
+          "duration": 3.3999977111816406
+        },
+        {
+          "name": "damage_05",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "spell",
+          "duration": 4.533332824707031
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.166664123535156
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 10.36666488647461
+        },
+        {
+          "name": "wait",
+          "duration": 10.366666793823242
+        },
+        {
+          "name": "wait04",
+          "duration": 15.599998474121094
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "マリス・カルデアス",
+      "sourceName": "マリス・カルデアス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947470",
+      "asset": "9947470/model.json",
+      "thumbnail": "9947470/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 5.333333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 6.9333343505859375
+        },
+        {
+          "name": "attack_q",
+          "duration": 8.933334350585938
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "damage_03",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "damage_04",
+          "duration": 3.3999977111816406
+        },
+        {
+          "name": "damage_05",
+          "duration": 2.2666702270507812
+        },
+        {
+          "name": "spell",
+          "duration": 4.533332824707031
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.166667938232422
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 10.36666488647461
+        },
+        {
+          "name": "wait",
+          "duration": 10.366666793823242
+        },
+        {
+          "name": "wait04",
+          "duration": 15.599998474121094
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "マリス・カルデアス",
+      "sourceName": "マリス・カルデアス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947480",
+      "asset": "9947480/model.json",
+      "thumbnail": "9947480/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 5.333333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 4.466667175292969
+        },
+        {
+          "name": "attack_q",
+          "duration": 8.933334350585938
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 2.133331298828125
+        },
+        {
+          "name": "damage_03",
+          "duration": 2.2666702270507812
+        },
+        {
+          "name": "damage_04",
+          "duration": 3.4000015258789062
+        },
+        {
+          "name": "damage_05",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "spell",
+          "duration": 4.533332824707031
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.166667938232422
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 10.366668701171875
+        },
+        {
+          "name": "wait",
+          "duration": 10.366666793823242
+        },
+        {
+          "name": "wait04",
+          "duration": 15.599998474121094
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "マリス・カルデアス",
+      "sourceName": "マリス・カルデアス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947490",
+      "asset": "9947490/model.json",
+      "thumbnail": "9947490/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 5.333333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 6.299999237060547
+        },
+        {
+          "name": "attack_q",
+          "duration": 8.933334350585938
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 2.133331298828125
+        },
+        {
+          "name": "damage_03",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "damage_04",
+          "duration": 3.4000015258789062
+        },
+        {
+          "name": "damage_05",
+          "duration": 2.2666702270507812
+        },
+        {
+          "name": "spell",
+          "duration": 4.533332824707031
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.166667938232422
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 10.366668701171875
+        },
+        {
+          "name": "wait",
+          "duration": 10.366666793823242
+        },
+        {
+          "name": "wait04",
+          "duration": 15.599998474121094
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "マリス・カルデアス",
+      "sourceName": "マリス・カルデアス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947500",
+      "asset": "9947500/model.json",
+      "thumbnail": "9947500/preview.png",
+      "animations": [
+        {
+          "name": "attack_a",
+          "duration": 4.5
+        },
+        {
+          "name": "attack_b",
+          "duration": 5.333333969116211
+        },
+        {
+          "name": "attack_ex",
+          "duration": 4.9333343505859375
+        },
+        {
+          "name": "attack_q",
+          "duration": 8.933334350585938
+        },
+        {
+          "name": "damage_01",
+          "duration": 0.5333333015441895
+        },
+        {
+          "name": "damage_02",
+          "duration": 2.1333351135253906
+        },
+        {
+          "name": "damage_03",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "damage_04",
+          "duration": 3.3999977111816406
+        },
+        {
+          "name": "damage_05",
+          "duration": 2.2666664123535156
+        },
+        {
+          "name": "spell",
+          "duration": 4.533332824707031
+        },
+        {
+          "name": "treasureArms1_a",
+          "duration": 5.166667938232422
+        },
+        {
+          "name": "treasureArms2_a",
+          "duration": 10.36666488647461
+        },
+        {
+          "name": "wait",
+          "duration": 10.366666793823242
+        },
+        {
+          "name": "wait04",
+          "duration": 15.599998474121094
+        }
+      ],
+      "evolutions": [
+        1
+      ],
+      "noblePhantasm": false,
+      "name": "マリス・カルデアス",
+      "sourceName": "マリス・カルデアス",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947520",
+      "asset": "9947520/model.json",
+      "thumbnail": "9947520/preview.png",
+      "animations": [
+        {
+          "name": "attack_ex_level_3",
+          "duration": 3.333332061767578
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "step_back_level_3",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "step_front_level_3",
+          "duration": 0.7666666507720947
+        },
+        {
+          "name": "wait_level_3",
+          "duration": 5.166666507720947
+        }
+      ],
+      "evolutions": [
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "ククルカン",
+      "sourceName": "ククルカン",
+      "category": "剧情与敌方"
+    },
+    {
+      "id": "9947540",
+      "asset": "9947540/model.json",
+      "thumbnail": "9947540/preview.png",
+      "animations": [
+        {
+          "name": "attack_b",
+          "duration": 1.9666671752929688
+        },
+        {
+          "name": "attack_b02",
+          "duration": 1.9666662216186523
+        },
+        {
+          "name": "eye_close",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "eye_open",
+          "duration": 0.03333333134651184
+        },
+        {
+          "name": "step_back",
+          "duration": 0.7666664123535156
+        },
+        {
+          "name": "step_front",
+          "duration": 0.7666668891906738
+        },
+        {
+          "name": "wait",
+          "duration": 5.166666507720947
+        },
+        {
+          "name": "wait02",
+          "duration": 1.3333334922790527
+        },
+        {
+          "name": "wait03",
+          "duration": 1.3333330154418945
+        }
+      ],
+      "evolutions": [
+        1,
+        2,
+        3
+      ],
+      "noblePhantasm": false,
+      "name": "アルジュナ〔オルタ〕",
+      "sourceName": "アルジュナ〔オルタ〕",
+      "category": "剧情与敌方"
+    }
+  ],
+  "failures": []
+}

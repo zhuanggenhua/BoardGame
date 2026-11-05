@@ -51,6 +51,7 @@ const STABLE_OPTIMIZE_DEPS = [
   'set-cookie-parser',
   'debug',
   'howler',
+  'pixi.js',
   'normalize-wheel',
   'socket.io-msgpack-parser',
 ] as const

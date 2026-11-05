@@ -72,6 +72,12 @@ metadata:
 
 > 暂无正式功能文档。
 
+## 专项 skills（按任务加载）
+
+| Skill | 使用场景 |
+| --- | --- |
+| [`fgo-asset-h5-reproduction`](../skills/fgo-asset-h5-reproduction/SKILL.md) | 处理 FGO 本地 APK、d713 缓存解包、角色与宝具素材导出、H5 动画复现及画面对照时使用。 |
+
 ## lessons（经验教训 · 复发问题暂存区）
 
 | 文档 | 一句话 |
