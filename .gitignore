@@ -149,9 +149,6 @@ e2e/screenshots/
 
 # e2e/src 是指向 src 的 Junction 镜像；禁止把新测试通过镜像路径入库
 e2e/src/**
-!e2e/src/
-!e2e/src/pages/
-!e2e/src/pages/matchMissingConfirmation.ts
 
 # 用户上传文件
 uploads/
