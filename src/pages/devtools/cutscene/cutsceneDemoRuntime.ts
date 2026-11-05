@@ -1787,60 +1787,6 @@ const makeEffectMeshGeometry = (
   return geometry;
 };
 
-const makeParticleQuadGeometry = (
-  texture: Texture,
-  uv: ParticleSystemData['particle']['uv'],
-  frameIndex: number,
-  cache: Map<string, MeshGeometry>,
-  uvOffset: [number, number] = [0, 0],
-) => {
-  const tilesX = Math.max(1, uv.enabled ? uv.tilesX : 1);
-  const tilesY = Math.max(1, uv.enabled ? uv.tilesY : 1);
-  const frameWidth = Math.max(1, Math.floor(texture.width / tilesX));
-  const frameHeight = Math.max(1, Math.floor(texture.height / tilesY));
-  const uvOffsetKey = `${uvOffset[0].toFixed(4)},${uvOffset[1].toFixed(4)}`;
-  const cacheKey = `quad:${texture.uid}:${uv.enabled ? `${tilesX}x${tilesY}:${uv.rowMode}:${uv.animationType}:${uv.rowIndex}:${frameIndex}` : 'full'}:${uvOffsetKey}`;
-  const cached = cache.get(cacheKey);
-  if (cached) return cached;
-
-  const tile = resolveUvTile(uv, frameIndex);
-  const u0 = (tile.tileX + uvOffset[0]) / tile.tilesX;
-  const v0 = 1 - (tile.tileY + 1 + uvOffset[1]) / tile.tilesY;
-  const u1 = (tile.tileX + 1 + uvOffset[0]) / tile.tilesX;
-  const v1 = 1 - (tile.tileY + uvOffset[1]) / tile.tilesY;
-  const halfWidth = frameWidth / 2;
-  const halfHeight = frameHeight / 2;
-  const geometry = new MeshGeometry({
-    positions: new Float32Array([
-      -halfWidth, -halfHeight,
-      halfWidth, -halfHeight,
-      halfWidth, halfHeight,
-      -halfWidth, halfHeight,
-    ]),
-    uvs: new Float32Array([
-      u0, v0,
-      u1, v0,
-      u1, v1,
-      u0, v1,
-    ]),
-    indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
-    shrinkBuffersToFit: true,
-  });
-  geometry.addAttribute('aColor', {
-    buffer: new Float32Array([
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-      1, 1, 1, 1,
-    ]),
-    format: 'float32x4',
-    stride: 4 * 4,
-    offset: 0,
-  });
-  cache.set(cacheKey, geometry);
-  return geometry;
-};
-
 const makeFrameQuadGeometry = (
   frame: Texture,
   cache: Map<string, MeshGeometry>,
