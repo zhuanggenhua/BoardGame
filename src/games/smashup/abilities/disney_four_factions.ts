@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -8,29 +9,34 @@ import {
     buildBaseTargetOptions,
     buildMinionTargetOptions,
     buildStandardDrawEvents,
+    buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     buildValidatedReturnEvents,
     getMinionPower,
     grantContextualExtraAction,
     grantContextualExtraMinion,
+    inspectDeck,
     queueMinionPlayEffect,
     recoverCardsFromDiscard,
     removePowerCounter,
+    revealHand,
     revealAndPickFromDeck,
     revealDeckTop,
+    shuffleHandIntoDeck,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
+    type AbilityRuntimePromptResumeResult,
     createAbilityRuntimeSimpleChoice,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
-import { registerExtended as registerExtendedBase } from '../domain/baseAbilities';
+import { registerBaseAbility, registerExtended as registerExtendedBase } from '../domain/baseAbilities';
 import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
 import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import {
-    registerBaseVpModifier,
-    registerInterceptor,
     registerProtection,
     registerRestriction,
     registerTrigger,
@@ -44,7 +50,10 @@ import type {
     CardInstance,
     CardsDrawnEvent,
     CardsDiscardedEvent,
+    CardsMilledEvent,
+    CardToDeckTopEvent,
     DeckReorderedEvent,
+    DeckReshuffledEvent,
     MinionMetadataUpdatedEvent,
     MinionOnBase,
     MinionPlayedEvent,
@@ -83,7 +92,7 @@ type CardChoice = {
     cardUid: string;
     defId: string;
     ownerId?: PlayerId;
-    zone?: 'deck' | 'discard';
+    zone?: 'hand' | 'deck' | 'discard';
 };
 
 type ModeChoice = {
@@ -114,8 +123,19 @@ type DisneyPromptContext = {
         | 'destroyOngoing'
         | 'protectMinionAffect'
         | 'playDeckMinion'
+        | 'searchPlayMinion'
         | 'recoverDiscard'
         | 'recoverCards'
+        | 'playFrozenMinion'
+        | 'playDiscardMinion'
+        | 'destroyOwnThenPlayDiscardMinion'
+        | 'discardThenRecoverMinion'
+        | 'deckTopChooseDiscard'
+        | 'deckTopPickOne'
+        | 'deckTopChooseTop'
+        | 'deckTopOrder'
+        | 'deckTopAction'
+        | 'hansReveal'
         | 'scarDestroy'
         | 'yokaiReceiver'
         | 'shanYuDestroy';
@@ -125,7 +145,9 @@ type DisneyPromptContext = {
     modes?: Array<ModeChoice & { label: string }>;
     amount?: number;
     maxChoices?: number;
+    multiMin?: number;
     optional?: boolean;
+    baseIndex?: number;
     targetBaseIndex?: number;
     targetMinion?: MinionChoice;
     destinationBaseIndex?: number;
@@ -137,6 +159,13 @@ type DisneyPromptContext = {
     requireOwnTarget?: boolean;
     drawAfterMove?: number;
     extraActionAfter?: boolean;
+    deckTopCards?: Array<CardChoice & { label: string }>;
+    pendingCards?: Array<CardChoice & { label: string }>;
+    discardOthersImmediately?: boolean;
+    excludeCardUid?: string;
+    targetPlayerIds?: PlayerId[];
+    sourcePlayerId?: PlayerId;
+    hansRevealed?: Array<{ playerId: PlayerId; card?: CardChoice }>;
     reason: string;
 };
 
@@ -248,10 +277,10 @@ function buildMinionMetadataEvent(
     };
 }
 
-function buildDiscardCardEvent(playerId: PlayerId, cardUid: string, reason: string, now: number): CardsDiscardedEvent {
+function buildDiscardCardEvent(playerId: PlayerId, cardUid: string, now: number): CardsDiscardedEvent {
     return {
         type: SU_EVENTS.CARDS_DISCARDED,
-        payload: { playerId, cardUids: [cardUid], reason },
+        payload: { playerId, cardUids: [cardUid] },
         timestamp: now,
     };
 }
@@ -310,6 +339,86 @@ function collectDiscardCards(
         }));
 }
 
+function collectHandCards(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    predicate: (card: CardInstance) => boolean,
+): Array<CardChoice & { label: string }> {
+    return (state.players[playerId]?.hand ?? [])
+        .filter(predicate)
+        .map(card => ({
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            zone: 'hand' as const,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+        }));
+}
+
+function topDeckChoices(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    count: number,
+    reason: string,
+    now: number,
+): { cards: Array<CardChoice & { label: string }>; events: SmashUpEvent[] } {
+    const player = state.players[playerId];
+    if (!player || player.deck.length === 0) return { cards: [], events: [] };
+    const cards = player.deck.slice(0, count).map(card => ({
+        cardUid: card.uid,
+        defId: card.defId,
+        ownerId: card.owner,
+        zone: 'deck' as const,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+    }));
+    return {
+        cards,
+        events: [
+            inspectDeck(playerId, playerId, cards.length, reason, now),
+            revealDeckTop(
+                playerId,
+                'all',
+                cards.map(card => ({ uid: card.cardUid, defId: card.defId })),
+                cards.length,
+                reason,
+                now,
+                playerId,
+            ),
+        ],
+    };
+}
+
+function cardToDeckTopEvent(
+    card: CardChoice,
+    playerId: PlayerId,
+    reason: string,
+    now: number,
+): CardToDeckTopEvent {
+    return {
+        type: SU_EVENTS.CARD_TO_DECK_TOP,
+        payload: {
+            cardUid: card.cardUid,
+            defId: card.defId,
+            ownerId: card.ownerId ?? playerId,
+            reason,
+            sourcePlayerId: playerId,
+            sourceDefId: reason,
+            sourceControllerId: playerId,
+        },
+        timestamp: now,
+    };
+}
+
+function cardChoicesFromInstances(cards: CardInstance[], zone: 'hand' | 'deck' | 'discard'): Array<CardChoice & { label: string }> {
+    return cards.map(card => ({
+        cardUid: card.uid,
+        defId: card.defId,
+        ownerId: card.owner,
+        zone,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+    }));
+}
+
 function collectDeckCards(
     state: SmashUpCore,
     playerId: PlayerId,
@@ -324,6 +433,18 @@ function collectDeckCards(
             zone: 'deck' as const,
             label: getCardDef(card.defId)?.name ?? card.defId,
         }));
+}
+
+function collectSearchableMinions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+): Array<CardChoice & { label: string }> {
+    return [
+        ...collectDeckCards(state, playerId, card => getMinionDef(card.defId) !== undefined)
+            .map(card => ({ ...card, label: `${card.label}（牌库）` })),
+        ...collectDiscardCards(state, playerId, card => getMinionDef(card.defId) !== undefined)
+            .map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
+    ];
 }
 
 function recoverDeckCardsToHandEvents(
@@ -441,9 +562,37 @@ function resolvePromptChoice(
     rawValue: unknown,
     random: RandomFn,
     timestamp: number,
-): { events: SmashUpEvent[]; context?: DisneyPromptContext; nextProgram?: typeof disneyPromptProgram } {
+): AbilityRuntimePromptResumeResult<DisneyPromptContext, SmashUpCore, SmashUpEvent> {
     const value = rawValue as (MinionChoice | BaseChoice | CardChoice | ModeChoice | { skip?: true }) | Array<MinionChoice | CardChoice>;
-    if (!value || (typeof value === 'object' && !Array.isArray(value) && 'skip' in value && value.skip)) {
+    const skipped = typeof value === 'object' && !Array.isArray(value) && value && 'skip' in value && value.skip;
+    if (skipped && context.kind === 'deckTopChooseDiscard') {
+        const remaining = context.deckTopCards ?? context.cards ?? [];
+        if (remaining.length <= 1) {
+            return { events: remaining.map(card => cardToDeckTopEvent(card, context.playerId, context.reason, timestamp)) };
+        }
+        return {
+            events: [],
+            continuation: createAbilityRuntimeContinuation({
+                ...context,
+                kind: 'deckTopOrder',
+                title: '雪宝：选择剩余牌库顶牌的顺序',
+                cards: remaining,
+                deckTopCards: remaining,
+                pendingCards: [],
+            }, disneyPromptProgram),
+        };
+    }
+    if (skipped && context.kind === 'deckTopChooseTop') {
+        const pending = context.pendingCards ?? context.cards ?? [];
+        return {
+            events: pending.length > 0 ? [{
+                type: SU_EVENTS.CARDS_MILLED,
+                payload: { playerId: context.playerId, cardUids: pending.map(card => card.cardUid), reason: context.reason },
+                timestamp,
+            } as CardsMilledEvent] : [],
+        };
+    }
+    if (!value || (skipped && context.kind !== 'hansReveal')) {
         return { events: [] };
     }
 
@@ -475,6 +624,287 @@ function resolvePromptChoice(
                     sourceBaseIndex: context.targetBaseIndex,
                 })],
             };
+        }
+        case 'destroyOwnThenPlayDiscardMinion': {
+            const choice = value as MinionChoice;
+            const live = getLiveMinion(state.core, choice);
+            if (!live || live.minion.controller !== context.playerId) return { events: [] };
+            const destroyEvents = buildValidatedDestroyEvents(state, {
+                minionUid: live.minion.uid,
+                minionDefId: live.minion.defId,
+                fromBaseIndex: live.baseIndex,
+                destroyerId: context.playerId,
+                reason: context.reason,
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.reason,
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: live.baseIndex,
+                sourceKind: 'action',
+            });
+            if (destroyEvents.length === 0) return { events: [] };
+            return {
+                events: destroyEvents,
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'playDiscardMinion',
+                    title: '真爱的行为：选择弃牌堆中的另一个角色作为额外角色打出',
+                    cards: collectDiscardCards(
+                        state.core,
+                        context.playerId,
+                        card => getMinionDef(card.defId) !== undefined && card.uid !== live.minion.uid,
+                    ),
+                    excludeCardUid: live.minion.uid,
+                }, disneyPromptProgram),
+            };
+        }
+        case 'discardThenRecoverMinion': {
+            const choice = (Array.isArray(value) ? value[0] : value) as CardChoice;
+            const liveHand = state.core.players[context.playerId]?.hand.find(card => card.uid === choice.cardUid);
+            if (!liveHand) return { events: [] };
+            const discardMinions = collectDiscardCards(state.core, context.playerId, card => getMinionDef(card.defId) !== undefined);
+            const selectedAsMinion = getMinionDef(liveHand.defId)
+                ? [{
+                    cardUid: liveHand.uid,
+                    defId: liveHand.defId,
+                    ownerId: liveHand.owner,
+                    zone: 'discard' as const,
+                    label: `${getCardDef(liveHand.defId)?.name ?? liveHand.defId}（刚弃置）`,
+                }]
+                : [];
+            const discardEvent = buildDiscardCardEvent(context.playerId, liveHand.uid, timestamp);
+            const recoverableCards = [...discardMinions, ...selectedAsMinion];
+            if (recoverableCards.length === 0) return { events: [discardEvent] };
+            return {
+                events: [discardEvent],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'recoverDiscard',
+                    title: '夏天大盛宴：选择弃牌堆中的一个角色置入手牌',
+                    cards: recoverableCards,
+                    maxChoices: 1,
+                }, disneyPromptProgram),
+            };
+        }
+        case 'playFrozenMinion': {
+            const choice = value as CardChoice;
+            const allowed = new Set((context.cards ?? []).map(card => card.cardUid));
+            const card = state.core.players[context.playerId]?.[choice.zone === 'discard' ? 'discard' : 'hand']
+                .find(candidate => candidate.uid === choice.cardUid);
+            if (!card || !allowed.has(card.uid) || getMinionDef(card.defId) === undefined) return { events: [] };
+            return {
+                events: [grantContextualExtraMinion(
+                    { playerId: context.playerId, now: timestamp, matchState: state },
+                    context.reason,
+                    undefined,
+                    {
+                        specificCardUid: card.uid,
+                        allowFromDiscard: choice.zone === 'discard',
+                        playTiming: 'immediate',
+                    },
+                )],
+            };
+        }
+        case 'playDiscardMinion': {
+            const choice = value as CardChoice;
+            const player = state.core.players[context.playerId];
+            const allowed = new Set((context.cards ?? []).map(card => card.cardUid));
+            const card = player?.discard.find(candidate => candidate.uid === choice.cardUid);
+            if (
+                !card
+                || !allowed.has(card.uid)
+                || getMinionDef(card.defId) === undefined
+                || card.uid === context.excludeCardUid
+            ) return { events: [] };
+            return {
+                events: [grantContextualExtraMinion(
+                    { playerId: context.playerId, now: timestamp, matchState: state },
+                    context.reason,
+                    undefined,
+                    { specificCardUid: card.uid, allowFromDiscard: true, playTiming: 'immediate' },
+                )],
+            };
+        }
+        case 'deckTopChooseDiscard': {
+            const selected = (Array.isArray(value) ? value : [value]) as CardChoice[];
+            const topCards = context.deckTopCards ?? context.cards ?? [];
+            const selectedIds = new Set(selected.map(card => card.cardUid));
+            const discarded = topCards.filter(card => selectedIds.has(card.cardUid));
+            const remaining = topCards.filter(card => !selectedIds.has(card.cardUid));
+            const events: SmashUpEvent[] = discarded.length > 0
+                ? [{
+                    type: SU_EVENTS.CARDS_MILLED,
+                    payload: { playerId: context.playerId, cardUids: discarded.map(card => card.cardUid), reason: context.reason },
+                    timestamp,
+                } as CardsMilledEvent]
+                : [];
+            if (remaining.length <= 1) {
+                return {
+                    events: [...events, ...remaining.map(card => cardToDeckTopEvent(card, context.playerId, context.reason, timestamp))],
+                };
+            }
+            return {
+                events,
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'deckTopOrder',
+                    title: '雪宝：选择剩余牌库顶牌的顺序',
+                    cards: remaining,
+                    deckTopCards: remaining,
+                    pendingCards: [],
+                }, disneyPromptProgram),
+            };
+        }
+        case 'deckTopPickOne': {
+            const selected = value as CardChoice;
+            const topCards = context.deckTopCards ?? context.cards ?? [];
+            const picked = topCards.find(card => card.cardUid === selected.cardUid);
+            if (!picked) return { events: [] };
+            const remaining = topCards.filter(card => card.cardUid !== picked.cardUid);
+            const events: SmashUpEvent[] = [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: context.playerId, count: 1, cardUids: [picked.cardUid] },
+                timestamp,
+            } as CardsDrawnEvent];
+            if (context.discardOthersImmediately) {
+                return {
+                    events: remaining.length > 0
+                        ? [...events, {
+                            type: SU_EVENTS.CARDS_MILLED,
+                            payload: { playerId: context.playerId, cardUids: remaining.map(card => card.cardUid), reason: context.reason },
+                            timestamp,
+                        } as CardsMilledEvent]
+                        : events,
+                };
+            }
+            return {
+                events,
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'deckTopChooseTop',
+                    title: '放手吧：选择哪些剩余牌放回牌库顶（其余进入弃牌堆）',
+                    cards: remaining,
+                    deckTopCards: remaining,
+                    pendingCards: remaining,
+                    maxChoices: remaining.length,
+                    multiMin: 0,
+                }, disneyPromptProgram),
+            };
+        }
+        case 'deckTopChooseTop': {
+            const pending = context.pendingCards ?? context.cards ?? [];
+            const selectedIds = new Set((Array.isArray(value) ? value : [value])
+                .map(entry => (entry as CardChoice)?.cardUid)
+                .filter((uid): uid is string => typeof uid === 'string'));
+            const toTop = pending.filter(card => selectedIds.has(card.cardUid));
+            const toDiscard = pending.filter(card => !selectedIds.has(card.cardUid));
+            const discardEvents: SmashUpEvent[] = toDiscard.length > 0
+                ? [{
+                    type: SU_EVENTS.CARDS_MILLED,
+                    payload: { playerId: context.playerId, cardUids: toDiscard.map(card => card.cardUid), reason: context.reason },
+                    timestamp,
+                } as CardsMilledEvent]
+                : [];
+            if (toTop.length <= 1) {
+                return {
+                    events: [...discardEvents, ...toTop.map(card => cardToDeckTopEvent(card, context.playerId, context.reason, timestamp))],
+                };
+            }
+            return {
+                events: discardEvents,
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'deckTopOrder',
+                    title: '放手吧：选择放回牌库顶的顺序',
+                    cards: toTop,
+                    deckTopCards: toTop,
+                    pendingCards: [],
+                }, disneyPromptProgram),
+            };
+        }
+        case 'deckTopOrder': {
+            const cards = context.cards ?? [];
+            const orderedIds = typeof (value as ModeChoice)?.mode === 'string'
+                ? (value as ModeChoice).mode.replace(/^deck_top_order:/, '').split(',').filter(Boolean)
+                : cards.map(card => card.cardUid);
+            const ordered = orderedIds
+                .map(uid => cards.find(card => card.cardUid === uid))
+                .filter((card): card is CardChoice & { label: string } => Boolean(card));
+            const topOrder = ordered.length === cards.length ? ordered : cards;
+            return {
+                events: [
+                    ...((context.pendingCards ?? []).length > 0 ? [{
+                        type: SU_EVENTS.CARDS_MILLED,
+                        payload: { playerId: context.playerId, cardUids: (context.pendingCards ?? []).map(card => card.cardUid), reason: context.reason },
+                        timestamp,
+                    } as CardsMilledEvent] : []),
+                    ...topOrder.slice().reverse().map(card => cardToDeckTopEvent(card, context.playerId, context.reason, timestamp)),
+                ],
+            };
+        }
+        case 'deckTopAction': {
+            const card = (context.cards ?? [])[0];
+            if (!card) return { events: [] };
+            if ((value as ModeChoice).mode === 'deck_top_discard') {
+                return {
+                    events: [{
+                        type: SU_EVENTS.CARDS_MILLED,
+                        payload: { playerId: context.playerId, cardUids: [card.cardUid], reason: context.reason },
+                        timestamp,
+                    } as CardsMilledEvent],
+                };
+            }
+            return { events: [] };
+        }
+        case 'hansReveal': {
+            const index = context.hansRevealed?.length ?? 0;
+            const targetPlayerId = context.targetPlayerIds?.[index];
+            if (!targetPlayerId) return { events: [] };
+            const selected = !Array.isArray(value) && typeof value === 'object' && value && 'skip' in value
+                ? undefined
+                : value as CardChoice;
+            const liveCard = selected
+                ? state.core.players[targetPlayerId]?.hand.find(card => card.uid === selected.cardUid && getMinionDef(card.defId) !== undefined)
+                : undefined;
+            if (selected && !liveCard) return { events: [] };
+            const revealed = [...(context.hansRevealed ?? []), liveCard ? {
+                playerId: targetPlayerId,
+                card: { cardUid: liveCard.uid, defId: liveCard.defId, ownerId: liveCard.owner, zone: 'hand' as const, label: getCardDef(liveCard.defId)?.name ?? liveCard.defId },
+            } : { playerId: targetPlayerId }];
+            const revealEvent = revealHand(
+                targetPlayerId,
+                'all',
+                liveCard ? [{ uid: liveCard.uid, defId: liveCard.defId }] : [],
+                context.reason,
+                timestamp,
+                context.sourcePlayerId ?? context.playerId,
+            );
+            if (revealed.length < (context.targetPlayerIds?.length ?? 0)) {
+                const nextPlayerId = context.targetPlayerIds?.[revealed.length];
+                return {
+                    events: [revealEvent],
+                    continuation: createAbilityRuntimeContinuation({
+                        ...context,
+                        playerId: nextPlayerId ?? context.playerId,
+                        title: `汉斯：${nextPlayerId} 展示手牌中的一个角色，或展示没有角色`,
+                        cards: nextPlayerId ? collectHandCards(state.core, nextPlayerId, card => getMinionDef(card.defId) !== undefined) : [],
+                        hansRevealed: revealed,
+                    }, disneyPromptProgram),
+                };
+            }
+            const shuffleEvents = revealed
+                .flatMap(entry => {
+                    const player = state.core.players[entry.playerId];
+                    const revealedCard = entry.card;
+                    if (!player || !revealedCard) return [];
+                    return [shuffleHandIntoDeck(
+                        entry.playerId,
+                        random.shuffle([...player.deck.map(card => card.uid), revealedCard.cardUid]),
+                        context.reason,
+                        timestamp,
+                    )];
+                });
+            return { events: [revealEvent, ...shuffleEvents] };
         }
         case 'scarDestroy': {
             const choice = value as MinionChoice;
@@ -567,13 +997,12 @@ function resolvePromptChoice(
             });
             return {
                 events: destroyEvents,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     kind: 'playDeckMinion',
                     title: '牛羚踩踏：选择从牌库额外打出的角色',
                     targetBaseIndex: live.baseIndex,
-                },
-                nextProgram: disneyPromptProgram,
+                }, disneyPromptProgram),
             };
         }
         case 'moveMinionTarget': {
@@ -592,7 +1021,7 @@ function resolvePromptChoice(
             }
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     kind: 'moveMinionDestination',
                     title: '选择目标基地',
@@ -602,8 +1031,7 @@ function resolvePromptChoice(
                         baseIndex: live.baseIndex,
                     },
                     bases,
-                },
-                nextProgram: disneyPromptProgram,
+                }, disneyPromptProgram),
             };
         }
         case 'moveMinionDestination': {
@@ -644,14 +1072,13 @@ function resolvePromptChoice(
             if (targets.length === 0) return { events: [] };
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     kind: 'moveCountersTarget',
                     title: '选择接收力量标记的角色',
                     sourceMinion: { ...source, counters },
                     minions: targets,
-                },
-                nextProgram: disneyPromptProgram,
+                }, disneyPromptProgram),
             };
         }
         case 'moveCountersTarget': {
@@ -748,7 +1175,7 @@ function resolvePromptChoice(
                     sourceBaseIndex: baseIndex,
                     sourceKind: 'action',
                 }));
-            return { events: [buildDiscardCardEvent(context.playerId, cardChoice.cardUid, context.reason, timestamp), ...destroyEvents] };
+            return { events: [buildDiscardCardEvent(context.playerId, cardChoice.cardUid, timestamp), ...destroyEvents] };
         }
         case 'recoverDiscard':
         case 'recoverCards':
@@ -783,6 +1210,69 @@ function resolvePromptChoice(
             const baseIndex = context.targetBaseIndex ?? 0;
             return { events: found ? playDeckMinionEvents(state.core, context.playerId, found, baseIndex, context.reason, timestamp) : [] };
         }
+        case 'searchPlayMinion': {
+            const choice = value as CardChoice;
+            if (!choice?.cardUid || (choice.zone !== 'deck' && choice.zone !== 'discard')) return { events: [] };
+            const player = state.core.players[context.playerId];
+            if (!player) return { events: [] };
+            const sourceCards = choice.zone === 'deck' ? player.deck : player.discard;
+            const card = sourceCards.find(candidate => candidate.uid === choice.cardUid && candidate.defId === choice.defId);
+            const power = card ? getMinionDef(card.defId)?.power : undefined;
+            if (!card || power === undefined) return { events: [] };
+
+            if (power <= 3) {
+                const deckPreparation = choice.zone === 'deck'
+                    ? {
+                        type: SU_EVENTS.DECK_REORDERED,
+                        payload: {
+                            playerId: context.playerId,
+                            deckUids: [
+                                card.uid,
+                                ...random.shuffle(player.deck.filter(candidate => candidate.uid !== card.uid)).map(candidate => candidate.uid),
+                            ],
+                            reason: context.reason,
+                        },
+                        timestamp,
+                    } as DeckReorderedEvent
+                    : undefined;
+                return {
+                    events: [
+                        ...(deckPreparation ? [deckPreparation] : []),
+                        grantContextualExtraMinion(
+                            { playerId: context.playerId, now: timestamp, matchState: state },
+                            context.reason,
+                            undefined,
+                            {
+                                specificCardUid: card.uid,
+                                allowFromDiscard: choice.zone === 'discard',
+                                playTiming: 'immediate',
+                                powerMax: 3,
+                            },
+                        ),
+                    ],
+                };
+            }
+
+            return choice.zone === 'deck'
+                ? {
+                    events: [
+                        {
+                            type: SU_EVENTS.CARDS_MILLED,
+                            payload: { playerId: context.playerId, cardUids: [card.uid], reason: context.reason },
+                            timestamp,
+                        } as CardsMilledEvent,
+                        {
+                            type: SU_EVENTS.DECK_RESHUFFLED,
+                            payload: {
+                                playerId: context.playerId,
+                                deckUids: random.shuffle(player.deck.filter(candidate => candidate.uid !== card.uid)).map(candidate => candidate.uid),
+                            },
+                            timestamp,
+                        } as DeckReshuffledEvent,
+                    ],
+                }
+                : { events: [] };
+        }
         case 'mode':
             return resolveMode(context, state, value as ModeChoice, random, timestamp);
         default:
@@ -790,7 +1280,7 @@ function resolvePromptChoice(
     }
 }
 
-const disneyPromptProgram = createPromptProgram<DisneyPromptContext, SmashUpCore, SmashUpEvent>({
+const disneyPromptProgram: AbilityProgram<DisneyPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<DisneyPromptContext>({
     sourceId: DISNEY_PROMPT_SOURCE,
     buildInteraction: (context) => {
         const state = context.matchState.core;
@@ -801,10 +1291,25 @@ const disneyPromptProgram = createPromptProgram<DisneyPromptContext, SmashUpCore
             if (
                 context.kind === 'discardThenDestroyLowPower'
                 || context.kind === 'playDeckMinion'
+                || context.kind === 'searchPlayMinion'
                 || context.kind === 'recoverDiscard'
                 || context.kind === 'recoverCards'
+                || context.kind === 'playFrozenMinion'
+                || context.kind === 'playDiscardMinion'
+                || context.kind === 'discardThenRecoverMinion'
+                || context.kind === 'deckTopChooseDiscard'
+                || context.kind === 'deckTopPickOne'
+                || context.kind === 'deckTopChooseTop'
+                || context.kind === 'hansReveal'
             ) {
-                return (context.cards ?? []).map((card, index) => ({
+                const cards = (context.cards ?? []).filter(card => {
+                    if (context.kind !== 'playDiscardMinion') return true;
+                    const liveCard = state.players[context.playerId]?.discard.find(candidate => candidate.uid === card.cardUid);
+                    return liveCard !== undefined
+                        && getMinionDef(liveCard.defId) !== undefined
+                        && liveCard.uid !== context.excludeCardUid;
+                });
+                return cards.map((card, index) => ({
                     id: `card-${index}`,
                     label: card.label,
                     value: { cardUid: card.cardUid, defId: card.defId, ownerId: card.ownerId, zone: card.zone },
@@ -814,6 +1319,32 @@ const disneyPromptProgram = createPromptProgram<DisneyPromptContext, SmashUpCore
             }
             if (context.kind === 'mode') {
                 return (context.modes ?? []).map(mode => ({
+                    id: mode.mode,
+                    label: mode.label,
+                    value: { mode: mode.mode },
+                    displayMode: 'button' as const,
+                }));
+            }
+            if (context.kind === 'deckTopAction') {
+                return [
+                    { mode: 'deck_top_discard', label: '弃掉这张牌' },
+                    { mode: 'deck_top_keep', label: '放回牌库顶' },
+                ].map(mode => ({
+                    id: mode.mode,
+                    label: mode.label,
+                    value: { mode: mode.mode },
+                    displayMode: 'button' as const,
+                }));
+            }
+            if (context.kind === 'deckTopOrder') {
+                const cards = context.cards ?? [];
+                const modes = cards.length === 2
+                    ? [
+                        { mode: `deck_top_order:${cards[0].cardUid},${cards[1].cardUid}`, label: `${cards[0].label} 在前` },
+                        { mode: `deck_top_order:${cards[1].cardUid},${cards[0].cardUid}`, label: `${cards[1].label} 在前` },
+                    ]
+                    : [{ mode: `deck_top_order:${cards.map(card => card.cardUid).join(',')}`, label: '按当前顺序放回' }];
+                return modes.map(mode => ({
                     id: mode.mode,
                     label: mode.label,
                     value: { mode: mode.mode },
@@ -842,19 +1373,37 @@ const disneyPromptProgram = createPromptProgram<DisneyPromptContext, SmashUpCore
             {
                 sourceId: DISNEY_PROMPT_SOURCE,
                 targetType: context.kind.startsWith('base') || context.kind === 'moveMinionDestination' ? 'base'
-                    : context.kind === 'mode' ? 'button'
+                    : context.kind === 'mode' || context.kind === 'deckTopAction' || context.kind === 'deckTopOrder' ? 'button'
                         : context.kind === 'discardThenDestroyLowPower' ? 'hand'
                             : context.kind === 'recoverDiscard' ? 'discard'
-                                : context.kind === 'playDeckMinion' || context.kind === 'recoverCards' ? 'generic'
+                                : context.kind === 'playDeckMinion'
+                                    || context.kind === 'searchPlayMinion'
+                                    || context.kind === 'recoverCards'
+                                    || context.kind === 'playFrozenMinion'
+                                    || context.kind === 'playDiscardMinion'
+                                    || context.kind === 'discardThenRecoverMinion'
+                                    || context.kind === 'deckTopChooseDiscard'
+                                    || context.kind === 'deckTopPickOne'
+                                    || context.kind === 'deckTopChooseTop'
+                                    || context.kind === 'hansReveal' ? 'generic'
                                     : context.kind === 'destroyOngoing' ? 'ongoing'
                                         : 'minion',
-                ...(context.kind === 'playDeckMinion' || context.kind === 'recoverCards'
+                ...(context.kind === 'playDeckMinion'
+                    || context.kind === 'searchPlayMinion'
+                    || context.kind === 'recoverCards'
+                    || context.kind === 'playFrozenMinion'
+                    || context.kind === 'playDiscardMinion'
+                    || context.kind === 'discardThenRecoverMinion'
+                    || context.kind === 'deckTopChooseDiscard'
+                    || context.kind === 'deckTopPickOne'
+                    || context.kind === 'deckTopChooseTop'
+                    || context.kind === 'hansReveal'
                     ? { genericIntent: 'card-pool' as const }
                     : {}),
                 ...(context.kind === 'recoverDiscard' ? { autoRefresh: 'discard' as const } : {}),
                 responseValidationMode: 'live',
                 autoResolveIfSingle: false,
-                ...(context.maxChoices !== undefined ? { multi: { min: context.optional ? 0 : 1, max: context.maxChoices } } : {}),
+                ...(context.maxChoices !== undefined ? { multi: { min: context.multiMin ?? (context.optional ? 0 : 1), max: context.maxChoices } } : {}),
             },
         );
     },
@@ -873,27 +1422,123 @@ function resolveMode(
     value: ModeChoice,
     random: RandomFn,
     timestamp: number,
-): { events: SmashUpEvent[]; context?: DisneyPromptContext; nextProgram?: typeof disneyPromptProgram } {
+): AbilityRuntimePromptResumeResult<DisneyPromptContext, SmashUpCore, SmashUpEvent> {
     switch (value.mode) {
+        case 'sven_move_here': {
+            const sourceBaseIndex = context.baseIndex ?? context.targetBaseIndex;
+            if (sourceBaseIndex === undefined) return { events: [] };
+            const targets = collectMinions(state.core, (minion, baseIndex) =>
+                minion.controller === context.playerId && baseIndex !== sourceBaseIndex,
+            );
+            const destination = [{ baseIndex: sourceBaseIndex, label: currentBaseName(state.core, sourceBaseIndex) }];
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'moveMinionTarget',
+                    title: '斯文：选择要移动到这里的己方角色',
+                    minions: targets,
+                    bases: destination,
+                    requireOwnTarget: true,
+                    sourceDefId: 'frozen_sven',
+                    sourceKind: 'nonAction',
+                }, disneyPromptProgram),
+            };
+        }
+        case 'sven_search_kristoff':
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'recoverCards',
+                    title: '斯文：选择要置入手牌的克里斯托弗',
+                    cards: frozenSearchCards(state.core, context.playerId, ['frozen_kristoff']),
+                    maxChoices: 1,
+                }, disneyPromptProgram),
+            };
+        case 'kristoff_extra_minion':
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'playFrozenMinion',
+                    title: '克里斯托弗：选择要额外打出的角色',
+                    cards: [
+                        ...collectHandCards(state.core, context.playerId, card => (getMinionDef(card.defId)?.power ?? 99) <= 5),
+                        ...collectDiscardCards(state.core, context.playerId, card => (getMinionDef(card.defId)?.power ?? 99) <= 5)
+                            .map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
+                    ],
+                }, disneyPromptProgram),
+            };
+        case 'kristoff_recover_marshmallow':
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'recoverDiscard',
+                    title: '克里斯托弗：选择要置入手牌的棉花糖',
+                    cards: collectDiscardCards(state.core, context.playerId, card => matchesDefId(card.defId, 'frozen_marshmallow')),
+                    maxChoices: 1,
+                }, disneyPromptProgram),
+            };
+        case 'elsa_extra_minion':
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'playFrozenMinion',
+                    title: '艾莎：选择要额外打出的雪宝或迷你雪人',
+                    cards: [
+                        ...collectHandCards(state.core, context.playerId, card => matchesDefId(card.defId, 'frozen_olaf') || matchesDefId(card.defId, 'frozen_snowgie')),
+                        ...collectDiscardCards(state.core, context.playerId, card => matchesDefId(card.defId, 'frozen_olaf') || matchesDefId(card.defId, 'frozen_snowgie'))
+                            .map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
+                    ],
+                }, disneyPromptProgram),
+            };
+        case 'elsa_recover_marshmallow':
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation({
+                    ...context,
+                    kind: 'recoverDiscard',
+                    title: '艾莎：选择要置入手牌的棉花糖',
+                    cards: collectDiscardCards(state.core, context.playerId, card => matchesDefId(card.defId, 'frozen_marshmallow')),
+                    maxChoices: 1,
+                }, disneyPromptProgram),
+            };
+        case 'deck_top_keep_original':
+        case 'deck_top_reverse': {
+            const cards = context.deckTopCards ?? context.cards ?? [];
+            const ordered = value.mode === 'deck_top_reverse' ? [...cards].reverse() : cards;
+            return {
+                events: ordered.slice().reverse().map(card => cardToDeckTopEvent(card, context.playerId, context.reason, timestamp)),
+            };
+        }
+        case 'deck_top_discard': {
+            const card = (context.cards ?? [])[0];
+            return card ? { events: [{
+                type: SU_EVENTS.CARDS_MILLED,
+                payload: { playerId: context.playerId, cardUids: [card.cardUid], reason: context.reason },
+                timestamp,
+            } as CardsMilledEvent] } : { events: [] };
+        }
         case 'add_counter_here': {
             const baseIndex = context.targetBaseIndex ?? 0;
             const targets = collectOwnMinions(state.core, context.playerId).filter(target => target.baseIndex === baseIndex);
             return {
                 events: [],
-                context: { ...context, kind: 'addCounters', title: '选择放置 +1 力量标记的角色', minions: targets, amount: 1 },
-                nextProgram: disneyPromptProgram,
+                continuation: createAbilityRuntimeContinuation({ ...context, kind: 'addCounters', title: '选择放置 +1 力量标记的角色', minions: targets, amount: 1 }, disneyPromptProgram),
             };
         }
         case 'move_counters':
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     kind: 'moveCountersSource',
                     title: '选择移出力量标记的角色',
                     minions: collectOwnMinions(state.core, context.playerId).filter(target => (target.counters ?? 0) > 0),
-                },
-                nextProgram: disneyPromptProgram,
+                }, disneyPromptProgram),
             };
         case 'extra_action':
             return { events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.reason)] };
@@ -903,14 +1548,13 @@ function resolveMode(
             if (cards.length === 0) return { events: [] };
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     kind: 'destroyOngoing',
                     title: '选择要摧毁的行动或装备',
                     cards,
                     targetBaseIndex: baseIndex,
-                },
-                nextProgram: disneyPromptProgram,
+                }, disneyPromptProgram),
             };
         }
         case 'add_temp_power_here_2': {
@@ -921,14 +1565,13 @@ function resolveMode(
             );
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     kind: 'addTempPower',
                     title: '选择这里另一个角色',
                     minions: targets,
                     amount: 2,
-                },
-                nextProgram: disneyPromptProgram,
+                }, disneyPromptProgram),
             };
         }
         case 'draw_card':
@@ -1374,115 +2017,173 @@ function yokaiAfterScoring(ctx: AbilityContext): AbilityResult {
 }
 
 function snowgie(ctx: AbilityContext): AbilityResult {
-    return promptMinion(ctx, {
-        sourceId: 'frozen_snowgie',
-        title: '迷你雪人：选择这里一个角色',
-        kind: 'addTempPower',
-        minions: collectMinions(ctx.state, (_minion, baseIndex) => baseIndex === ctx.baseIndex),
-        amount: 1,
-        reason: 'frozen_snowgie',
-    });
+    return addCountersToTargets(
+        collectMinions(ctx.state, (minion, baseIndex) =>
+            baseIndex === ctx.baseIndex
+            && minion.controller === ctx.playerId
+            && getMinionPower(ctx.state, minion, baseIndex) >= 5,
+        ),
+        ctx,
+        1,
+        'frozen_snowgie',
+        '迷你雪人：选择这里力量 5 或更高的角色',
+    );
 }
 
 function olaf(ctx: AbilityContext): AbilityResult {
-    const targets = collectMinions(ctx.state, (minion, baseIndex) =>
-        baseIndex === ctx.baseIndex && minion.controller === ctx.playerId,
-    );
-    const destinations = collectOtherBases(ctx.state, ctx.baseIndex);
-    if (targets.length === 0 || destinations.length === 0) {
-        return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
-    }
-    return promptMinion(ctx, {
+    const top = topDeckChoices(ctx.state, ctx.playerId, 2, 'frozen_olaf', ctx.now);
+    if (top.cards.length === 0) return { events: [] };
+    const prompt = runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
         sourceId: 'frozen_olaf',
-        title: '雪宝：选择要移动的角色',
-        kind: 'moveMinionTarget',
-        minions: targets,
-        bases: destinations,
-        requireOwnTarget: true,
-        sourceDefId: ctx.defId,
-        sourceKind: 'nonAction',
-        drawAfterMove: 1,
+        title: '雪宝：选择要弃置的牌库顶牌（可不选）',
+        kind: 'deckTopChooseDiscard',
+        cards: top.cards,
+        deckTopCards: top.cards,
+        maxChoices: top.cards.length,
+        optional: true,
         reason: 'frozen_olaf',
     });
+    return { ...prompt, events: [...top.events, ...prompt.events] };
 }
 
 function sven(ctx: AbilityContext): AbilityResult {
-    return recoverDiscardByPower(ctx, 4, 'frozen_sven', '斯文：选择弃牌堆中力量 4 或更低的角色回手', true);
+    const moveTargets = collectMinions(ctx.state, (minion, baseIndex) =>
+        minion.controller === ctx.playerId && baseIndex !== ctx.baseIndex,
+    );
+    const kristoffCards = [
+        ...collectDeckCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_kristoff')),
+        ...collectDiscardCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_kristoff')),
+    ];
+    const modes: Array<ModeChoice & { label: string }> = [];
+    if (moveTargets.length > 0) modes.push({ mode: 'sven_move_here', label: '将你的一个角色移动到这里' });
+    if (kristoffCards.length > 0) modes.push({ mode: 'sven_search_kristoff', label: '搜索克里斯托弗并置入手牌' });
+    if (modes.length === 0) return { events: [] };
+    return runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'frozen_sven',
+        title: '斯文：选择天赋效果',
+        kind: 'mode',
+        baseIndex: ctx.baseIndex,
+        modes,
+        reason: 'frozen_sven',
+    });
+}
+
+function frozenSearchCards(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    defIds: string[],
+): Array<CardChoice & { label: string }> {
+    const predicate = (card: CardInstance) => defIds.some(defId => matchesDefId(card.defId, defId));
+    return [
+        ...collectDeckCards(state, playerId, predicate).map(card => ({ ...card, label: `${card.label}（牌库）` })),
+        ...collectDiscardCards(state, playerId, predicate).map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
+    ];
+}
+
+function searchFrozenToHand(ctx: AbilityContext, sourceId: string, title: string, defIds: string[]): AbilityResult {
+    const cards = frozenSearchCards(ctx.state, ctx.playerId, defIds);
+    if (cards.length === 0 || !ctx.matchState) return { events: [] };
+    return runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId,
+        title,
+        kind: 'recoverCards',
+        cards,
+        maxChoices: 1,
+        reason: sourceId,
+    });
+}
+
+function annaOnPlay(ctx: AbilityContext): AbilityResult {
+    return searchFrozenToHand(ctx, 'frozen_anna', '安娜：搜索艾莎或克里斯托弗并置入手牌', ['frozen_elsa', 'frozen_kristoff']);
+}
+
+function kristoffTalent(ctx: AbilityContext): AbilityResult {
+    const extraMinions = [
+        ...collectHandCards(ctx.state, ctx.playerId, card => (getMinionDef(card.defId)?.power ?? 99) <= 5),
+        ...collectDiscardCards(ctx.state, ctx.playerId, card => (getMinionDef(card.defId)?.power ?? 99) <= 5)
+            .map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
+    ];
+    const marshmallow = collectDiscardCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_marshmallow'));
+    const modes: Array<ModeChoice & { label: string }> = [];
+    if (extraMinions.length > 0) modes.push({ mode: 'kristoff_extra_minion', label: '额外打出一张力量 5 或更低的角色' });
+    if (marshmallow.length > 0) modes.push({ mode: 'kristoff_recover_marshmallow', label: '从弃牌堆取回棉花糖' });
+    if (modes.length === 0) return { events: [] };
+    return runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'frozen_kristoff',
+        title: '克里斯托弗：选择天赋效果',
+        kind: 'mode',
+        modes,
+        reason: 'frozen_kristoff',
+    });
 }
 
 function elsaTalent(ctx: AbilityContext): AbilityResult {
-    if (ctx.matchState && ctx.targetBaseIndex === undefined) {
-        return runPrompt({
-            matchState: ctx.matchState,
-            playerId: ctx.playerId,
-            now: ctx.now,
-            sourceId: 'frozen_elsa',
-            title: '艾莎：选择基地',
-            kind: 'baseTempPowerOtherPlayers',
-            bases: ctx.state.bases.map((_base, baseIndex) => ({ baseIndex, label: currentBaseName(ctx.state, baseIndex) })),
-            amount: -1,
-            sourceCardUid: ctx.cardUid,
-            sourceBaseIndex: ctx.baseIndex,
-            reason: 'frozen_elsa',
-        });
-    }
-    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-    const base = ctx.state.bases[baseIndex];
-    if (!base) return { events: [] };
-    return {
-        events: base.minions
-            .filter(minion => minion.controller !== ctx.playerId)
-            .map(minion => addTempPower(minion.uid, baseIndex, -1, 'frozen_elsa', ctx.now, {
-                sourcePlayerId: ctx.playerId,
-                sourceCardUid: ctx.cardUid,
-                sourceDefId: ctx.defId,
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: ctx.baseIndex,
-            })),
-    };
+    const extraMinions = [
+        ...collectHandCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_olaf') || matchesDefId(card.defId, 'frozen_snowgie')),
+        ...collectDiscardCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_olaf') || matchesDefId(card.defId, 'frozen_snowgie'))
+            .map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
+    ];
+    const marshmallow = collectDiscardCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_marshmallow'));
+    const modes: Array<ModeChoice & { label: string }> = [];
+    if (extraMinions.length > 0) modes.push({ mode: 'elsa_extra_minion', label: '额外打出雪宝或迷你雪人' });
+    if (marshmallow.length > 0) modes.push({ mode: 'elsa_recover_marshmallow', label: '从弃牌堆取回棉花糖' });
+    if (modes.length === 0) return { events: [] };
+    return runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'frozen_elsa',
+        title: '艾莎：选择天赋效果',
+        kind: 'mode',
+        modes,
+        reason: 'frozen_elsa',
+    });
 }
 
 function actOfTrueLove(ctx: AbilityContext): AbilityResult {
-    const protect = promptMinion(ctx, {
+    return promptMinion(ctx, {
         sourceId: 'frozen_act_of_true_love',
-        title: '真爱的行为：选择你的一个角色',
-        kind: 'protectMinionAffect',
+        title: '真爱的行为：选择要摧毁的己方角色',
+        kind: 'destroyOwnThenPlayDiscardMinion',
         minions: collectOwnMinions(ctx.state, ctx.playerId),
         reason: 'frozen_act_of_true_love',
     });
-    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now), matchState: protect.matchState };
 }
 
 function bigSummerBlowout(ctx: AbilityContext): AbilityResult {
+    const handCards = cardChoicesFromInstances(ctx.state.players[ctx.playerId]?.hand ?? [], 'hand');
+    if (handCards.length === 0) return { events: [] };
     return runPrompt({
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
         sourceId: 'frozen_big_summer_blowout',
-        title: '夏天大盛宴：选择基地',
-        kind: 'baseDrawOwnMinions',
-        bases: ctx.state.bases.map((_base, baseIndex) => ({ baseIndex, label: currentBaseName(ctx.state, baseIndex) })),
+        title: '夏天大盛宴：选择一张手牌弃置',
+        kind: 'discardThenRecoverMinion',
+        cards: handCards,
+        maxChoices: 1,
         reason: 'frozen_big_summer_blowout',
     });
 }
 
 function buildSnowman(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    if (!player) return { events: [] };
-    const discardSnowgies = collectDiscardCards(ctx.state, ctx.playerId, card => matchesDefId(card.defId, 'frozen_snowgie'));
-    const deckSnowgies = player.deck
-        .filter(card => matchesDefId(card.defId, 'frozen_snowgie'))
-        .map(card => ({
-            cardUid: card.uid,
-            defId: card.defId,
-            ownerId: card.owner,
-            zone: 'deck' as const,
-            label: `${getCardDef(card.defId)?.name ?? card.defId}（牌库）`,
-        }));
-    const cards = [
-        ...discardSnowgies.map(card => ({ ...card, label: `${card.label}（弃牌堆）` })),
-        ...deckSnowgies,
-    ];
+    const cards = collectDiscardCards(ctx.state, ctx.playerId, card =>
+        matchesDefId(card.defId, 'frozen_marshmallow')
+        || matchesDefId(card.defId, 'frozen_olaf')
+        || matchesDefId(card.defId, 'frozen_snowgie'),
+    ).map(card => ({ ...card, label: `${card.label}（弃牌堆）` }));
     if (cards.length === 0) return { events: [] };
     if (ctx.matchState) {
         return runPrompt({
@@ -1490,11 +2191,9 @@ function buildSnowman(ctx: AbilityContext): AbilityResult {
             playerId: ctx.playerId,
             now: ctx.now,
             sourceId: 'frozen_do_you_want_to_build_a_snowman',
-            title: '你想堆雪人吗：选择至多两张迷你雪人回手',
-            kind: 'recoverCards',
+            title: '你想和我堆个雪人吗：选择要额外打出的角色',
+            kind: 'playDiscardMinion',
             cards,
-            maxChoices: 2,
-            optional: true,
             reason: 'frozen_do_you_want_to_build_a_snowman',
         });
     }
@@ -1502,39 +2201,65 @@ function buildSnowman(ctx: AbilityContext): AbilityResult {
 }
 
 function hans(ctx: AbilityContext): AbilityResult {
-    const baseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-    return promptMinion(ctx, {
+    const targetPlayerIds = (ctx.state.seatOrder?.length
+        ? ctx.state.seatOrder
+        : Object.keys(ctx.state.players)) as PlayerId[];
+    if (targetPlayerIds.length === 0) return { events: [] };
+    const firstPlayerId = targetPlayerIds[0];
+    return runPrompt({
+        matchState: ctx.matchState,
+        playerId: firstPlayerId,
+        now: ctx.now,
         sourceId: 'frozen_hans_westergaard',
-        title: '汉斯：选择力量 3 或更低的角色',
-        kind: 'destroyMinion',
-        minions: collectMinions(ctx.state, (minion, index) => index === baseIndex && getMinionPower(ctx.state, minion, index) <= 3),
-        targetBaseIndex: baseIndex,
+        title: `汉斯：${firstPlayerId} 展示手牌中的一个角色，或展示没有角色`,
+        kind: 'hansReveal',
+        targetPlayerIds,
+        sourcePlayerId: ctx.playerId,
+        cards: collectHandCards(ctx.state, firstPlayerId, card => getMinionDef(card.defId) !== undefined),
+        hansRevealed: [],
+        optional: true,
         reason: 'frozen_hans_westergaard',
     });
 }
 
 function letItGo(ctx: AbilityContext): AbilityResult {
-    const targets = collectOwnMinions(ctx.state, ctx.playerId);
-    if (!ctx.matchState) return { events: [] };
-    return promptMinion(ctx, {
+    const top = topDeckChoices(ctx.state, ctx.playerId, 3, 'frozen_let_it_go', ctx.now);
+    if (top.cards.length === 0) return { events: [] };
+    const prompt = runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
         sourceId: 'frozen_let_it_go',
-        title: '放手吧：选择返回手牌的角色',
-        kind: 'returnMinion',
-        minions: targets,
+        title: '放手吧：从牌库顶三张中选择一张抽取',
+        kind: 'deckTopPickOne',
+        cards: top.cards,
+        deckTopCards: top.cards,
+        optional: true,
         reason: 'frozen_let_it_go',
-        extraActionAfter: true,
     });
+    return { ...prompt, events: [...top.events, ...prompt.events] };
 }
 
 function reindeers(ctx: AbilityContext): AbilityResult {
-    return promptMinion(ctx, {
+    const cards = collectSearchableMinions(ctx.state, ctx.playerId);
+    if (cards.length === 0 || !ctx.matchState) return { events: [] };
+    const result = runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
         sourceId: 'frozen_reindeers_are_better_than_people',
-        title: '驯鹿的心地比人好：选择你的一个角色',
-        kind: 'addTempPower',
-        minions: collectOwnMinions(ctx.state, ctx.playerId),
-        amount: hasDefInPlay(ctx.state, 'frozen_sven') ? 4 : 2,
+        title: '驯鹿的心地比人好：选择要搜索的角色',
+        kind: 'searchPlayMinion',
+        cards,
         reason: 'frozen_reindeers_are_better_than_people',
     });
+    return {
+        ...result,
+        events: [
+            inspectDeck(ctx.playerId, ctx.playerId, ctx.state.players[ctx.playerId]?.deck.length ?? 0, 'frozen_reindeers_are_better_than_people', ctx.now),
+            ...result.events,
+        ],
+    };
 }
 
 function rafiki(ctx: AbilityContext): AbilityResult {
@@ -1933,11 +2658,29 @@ function bigHeroProtection(ctx: ProtectionCheckContext): boolean {
 }
 
 function annaProtection(ctx: ProtectionCheckContext): boolean {
-    if (!matchesDefId(ctx.targetMinion.defId, 'frozen_anna')) return false;
+    if (ctx.protectionType !== 'destroy') return false;
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-    return ctx.state.bases[ctx.targetBaseIndex]?.minions.some(minion =>
-        minion.controller === ctx.targetMinion.controller && matchesDefId(minion.defId, 'frozen_kristoff'),
+    const base = ctx.state.bases[ctx.targetBaseIndex];
+    if (!base) return false;
+    return base.minions.some(minion =>
+        minion.uid !== ctx.targetMinion.uid
+        && minion.controller === ctx.targetMinion.controller
+        && matchesDefId(minion.defId, 'frozen_anna'),
+    );
+}
+
+function lockTheGatesProtection(ctx: ProtectionCheckContext): boolean {
+    if (ctx.protectionType !== 'destroy' || ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
+    return ctx.state.bases[ctx.targetBaseIndex]?.ongoingActions.some(action =>
+        matchesDefId(action.defId, 'frozen_lock_the_gates')
+        && getActionController(action) === ctx.targetMinion.controller,
     ) ?? false;
+}
+
+function icePalaceProtection(ctx: ProtectionCheckContext): boolean {
+    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
+    if (ctx.protectionType !== 'destroy' && ctx.protectionType !== 'move') return false;
+    return ctx.state.bases[ctx.targetBaseIndex]?.defId === 'base_ice_palace';
 }
 
 function chienPoProtection(ctx: ProtectionCheckContext): boolean {
@@ -1953,32 +2696,73 @@ function forbiddenCityProtection(ctx: ProtectionCheckContext): boolean {
     return ctx.state.bases[ctx.targetBaseIndex]?.defId === 'base_forbidden_city';
 }
 
-function frozenPortMoveRestriction(ctx: ProtectionCheckContext): boolean {
-    if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
-    return ctx.state.bases[ctx.targetBaseIndex]?.ongoingActions.some(action => action.defId === 'frozen_frozen_port') ?? false;
-}
-
-function lockTheGatesRestriction(ctx: RestrictionCheckContext): boolean {
+function frozenPortRestriction(ctx: RestrictionCheckContext): boolean {
     const basePower = ctx.extra?.basePower as number | undefined;
     if (ctx.restrictionType !== 'play_minion') return false;
-    if (basePower === undefined || basePower > 3) return false;
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return false;
-    return base.ongoingActions.some(action =>
-        action.defId === 'frozen_lock_the_gates'
-        && getActionController(action) !== ctx.playerId,
-    );
+    if (basePower === undefined) return false;
+    if (!ctx.state.bases.some((_candidate, index) => index !== ctx.baseIndex)) return false;
+    const port = base.ongoingActions.find(action => matchesDefId(action.defId, 'frozen_frozen_port'));
+    if (!port || getActionController(port) === ctx.playerId) return false;
+    const played = Object.values(ctx.state.players[ctx.playerId]?.minionsPlayedPerBase ?? {})
+        .reduce((total, count) => total + (Number(count) || 0), 0);
+    return played === 0;
 }
 
-function frozenPortInterceptor(state: SmashUpCore, event: SmashUpEvent): SmashUpEvent | null | undefined {
-    if (event.type !== SU_EVENTS.MINION_MOVED) return undefined;
-    const payload = event.payload as { fromBaseIndex: number; toBaseIndex: number; sourcePlayerId?: PlayerId; minionUid: string };
-    const moving = state.bases[payload.fromBaseIndex]?.minions.find(minion => minion.uid === payload.minionUid);
-    const actor = payload.sourcePlayerId;
-    if (!actor || !moving || actor === moving.controller) return undefined;
-    const frozenSource = state.bases[payload.fromBaseIndex]?.ongoingActions.some(action => action.defId === 'frozen_frozen_port') ?? false;
-    const frozenDestination = state.bases[payload.toBaseIndex]?.ongoingActions.some(action => action.defId === 'frozen_frozen_port') ?? false;
-    return frozenSource || frozenDestination ? null : undefined;
+function arendelleAfterMinionPlayed(ctx: TriggerContext): AbilityResult {
+    const baseIndex = ctx.baseIndex;
+    const playerId = ctx.triggerMinion?.controller ?? ctx.playerId;
+    if (baseIndex === undefined || !ctx.matchState || !ctx.triggerMinion) return { events: [] };
+    if (ctx.state.bases[baseIndex]?.defId !== 'base_arendelle') return { events: [] };
+    const top = topDeckChoices(ctx.state, playerId, 2, 'base_arendelle', ctx.now);
+    if (top.cards.length === 0) return { events: [] };
+    const prompt = runPrompt({
+        matchState: ctx.matchState,
+        playerId,
+        now: ctx.now,
+        sourceId: 'base_arendelle',
+        title: '阿伦黛尔：选择要抽取的牌库顶牌',
+        kind: 'deckTopPickOne',
+        cards: top.cards,
+        deckTopCards: top.cards,
+        discardOthersImmediately: true,
+        optional: true,
+        reason: 'base_arendelle',
+    });
+    return { ...prompt, events: [...top.events, ...prompt.events] };
+}
+
+function lockTheGatesTalent(ctx: AbilityContext): AbilityResult {
+    const top = topDeckChoices(ctx.state, ctx.playerId, 1, 'frozen_lock_the_gates', ctx.now);
+    if (top.cards.length === 0) return { events: [] };
+    const prompt = runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'frozen_lock_the_gates',
+        title: '锁上大门：弃掉牌库顶牌或放回牌库顶',
+        kind: 'deckTopAction',
+        cards: top.cards,
+        reason: 'frozen_lock_the_gates',
+    });
+    return { ...prompt, events: [...top.events, ...prompt.events] };
+}
+
+function frozenPortTalent(ctx: AbilityContext): AbilityResult {
+    const top = topDeckChoices(ctx.state, ctx.playerId, 1, 'frozen_frozen_port', ctx.now);
+    if (top.cards.length === 0) return { events: [] };
+    const prompt = runPrompt({
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'frozen_frozen_port',
+        title: '冻结的港口：弃掉牌库顶牌或放回牌库顶',
+        kind: 'deckTopAction',
+        cards: top.cards,
+        reason: 'frozen_frozen_port',
+    });
+    return { ...prompt, events: [...top.events, ...prompt.events] };
 }
 
 export function registerDisneyFourFactionsAbilities(): void {
@@ -2002,14 +2786,18 @@ export function registerDisneyFourFactionsAbilities(): void {
     registerSimpleAbility('big_hero_6_yokai', 'special', yokaiAfterScoring);
 
     registerSimpleAbility('frozen_snowgie', 'onPlay', snowgie);
-    registerSimpleAbility('frozen_olaf', 'onPlay', olaf);
-    registerSimpleAbility('frozen_sven', 'onPlay', sven);
+    registerSimpleAbility('frozen_olaf', 'talent', olaf);
+    registerSimpleAbility('frozen_sven', 'talent', sven);
+    registerSimpleAbility('frozen_anna', 'onPlay', annaOnPlay);
+    registerSimpleAbility('frozen_kristoff', 'talent', kristoffTalent);
     registerSimpleAbility('frozen_elsa', 'talent', elsaTalent);
     registerSimpleAbility('frozen_act_of_true_love', 'onPlay', actOfTrueLove);
     registerSimpleAbility('frozen_big_summer_blowout', 'onPlay', bigSummerBlowout);
     registerSimpleAbility('frozen_do_you_want_to_build_a_snowman', 'onPlay', buildSnowman);
+    registerSimpleAbility('frozen_frozen_port', 'talent', frozenPortTalent);
     registerSimpleAbility('frozen_hans_westergaard', 'onPlay', hans);
     registerSimpleAbility('frozen_let_it_go', 'onPlay', letItGo);
+    registerSimpleAbility('frozen_lock_the_gates', 'talent', lockTheGatesTalent);
     registerSimpleAbility('frozen_reindeers_are_better_than_people', 'onPlay', reindeers);
 
     registerSimpleAbility('lion_king_rafiki', 'onPlay', rafiki);
@@ -2080,12 +2868,13 @@ export function registerDisneyFourFactionsAbilities(): void {
     registerSimpleAbility('mulan_shan_yu', 'special', shanYu);
 
     registerProtection('big_hero_6_baymax', 'affect', bigHeroProtection);
-    registerProtection('frozen_anna', 'affect', annaProtection);
+    registerProtection('frozen_anna', 'destroy', annaProtection);
+    registerProtection('frozen_lock_the_gates', 'destroy', lockTheGatesProtection);
+    registerProtection('base_ice_palace', 'destroy', icePalaceProtection);
+    registerProtection('base_ice_palace', 'move', icePalaceProtection);
     registerProtection('mulan_chien_po', 'affect', chienPoProtection);
     registerProtection('base_forbidden_city', 'affect', forbiddenCityProtection);
-    registerProtection('frozen_frozen_port', 'move', frozenPortMoveRestriction);
-    registerRestriction('frozen_lock_the_gates', 'play_minion', lockTheGatesRestriction);
-    registerInterceptor('frozen_frozen_port', frozenPortInterceptor);
+    registerRestriction('frozen_frozen_port', 'play_minion', frozenPortRestriction);
 
     registerTrigger('lion_king_circle_of_life', 'onMinionDiscardedFromBase', (ctx) => {
         if (ctx.sourceCardUid === undefined) return [];
@@ -2147,13 +2936,15 @@ export function registerDisneyFourFactionsAbilities(): void {
         canTrigger: ctx => ctx.reason !== 'base_training_camp_used',
     });
 
-    registerBaseVpModifier('base_arendelle', (state, baseIndex, playerId) => {
-        const base = state.bases[baseIndex];
-        if (!base) return 0;
-        const counts = new Map<PlayerId, number>();
-        for (const minion of base.minions) counts.set(minion.controller, (counts.get(minion.controller) ?? 0) + 1);
-        const max = Math.max(0, ...counts.values());
-        return max > 0 && counts.get(playerId) === max ? 1 : 0;
+    registerTrigger('base_arendelle', 'onMinionPlayed', arendelleAfterMinionPlayed, {
+        optional: true,
+        mandatory: false,
+        sourceScope: 'triggerBase',
+        playerContext: 'eventPlayer',
+        canTrigger: ctx => ctx.baseIndex !== undefined
+            && ctx.state.bases[ctx.baseIndex]?.defId === 'base_arendelle'
+            && ctx.triggerMinion !== undefined
+            && (ctx.state.players[ctx.triggerMinion.controller]?.deck.length ?? 0) > 0,
     });
 
     registerCustomPowerModifiers([
@@ -2161,11 +2952,11 @@ export function registerDisneyFourFactionsAbilities(): void {
             sourceDefId: 'frozen_marshmallow',
             variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => {
-                const hasEnemyMarshmallow = ctx.base.minions.some(minion =>
-                    helpers.matchesRuntimeDefId(minion.defId, 'frozen_marshmallow')
-                    && minion.controller !== ctx.minion.controller,
+                const hasElsa = ctx.base.minions.some(minion =>
+                    helpers.matchesRuntimeDefId(minion.defId, 'frozen_elsa')
+                    && minion.controller === ctx.minion.controller,
                 );
-                return hasEnemyMarshmallow ? -1 : 0;
+                return hasElsa && helpers.matchesRuntimeDefId(ctx.minion.defId, 'frozen_marshmallow') ? 2 : 0;
             },
         },
         {
@@ -2173,7 +2964,10 @@ export function registerDisneyFourFactionsAbilities(): void {
             variantPolicy: 'baseOnly',
             compute: (ctx, helpers) => {
                 if (!helpers.matchesRuntimeDefId(ctx.minion.defId, 'frozen_kristoff')) return 0;
-                return ctx.base.minions.some(minion => minion.controller === ctx.minion.controller && helpers.matchesRuntimeDefId(minion.defId, 'frozen_anna')) ? 2 : 0;
+                return ctx.base.minions.some(minion =>
+                    minion.controller === ctx.minion.controller
+                    && (helpers.matchesRuntimeDefId(minion.defId, 'frozen_anna') || helpers.matchesRuntimeDefId(minion.defId, 'frozen_elsa')),
+                ) ? 2 : 0;
             },
         },
         {
@@ -2190,15 +2984,6 @@ export function registerDisneyFourFactionsAbilities(): void {
             sourceDefId: 'base_krei_tech',
             runtimeIdentity: 'synthetic',
             compute: (ctx) => ctx.base.defId === 'base_krei_tech' && (ctx.minion.powerCounters ?? 0) > 0 ? 1 : 0,
-        },
-        {
-            sourceDefId: 'base_ice_palace',
-            runtimeIdentity: 'synthetic',
-            compute: (ctx) => {
-                if (ctx.base.defId !== 'base_ice_palace') return 0;
-                const owner = ctx.base.minions.find(minion => minion.controller !== ctx.minion.controller)?.controller;
-                return owner ? -1 : 0;
-            },
         },
     ]);
 

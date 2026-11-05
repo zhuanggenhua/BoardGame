@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-18T22:37:46+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "真实打出攻击修正牌后，攻击骰盘上方的攻击修正徽章 hover 能显示对应提示内容",
+      "status": "PASS",
+      "evidence": [
+        "当前工作树的 card-wild-west 真实入口 E2E 通过：真实拖拽打出“荒野西部！”后定位 active-modifier-badge，hover 后 info-tooltip 可见。",
+        "截图中实际可见的是攻击骰盘上方的“修正”徽章，以及“已激活的攻击修正牌”和“荒野西部！”提示内容，不是行动日志卡图浮层。"
+      ]
+    },
+    {
+      "requirement": "攻击修正提示框在当前视口内，不被右侧骰盘或窗口边界裁切",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E 断言提示框为 fixed 定位，left/top 不小于 0，right/bottom 不超过当前视口。",
+        "截图中提示框位于攻击修正徽章左侧，完整落在 1920x1080 视口内。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-die-reroll.e2e\\card-wild-west-应触发装填奖励骰，不改攻击骰盘\\枪手-攻击修正徽章hover-提示在窗口内.jpg"
+  ]
+}

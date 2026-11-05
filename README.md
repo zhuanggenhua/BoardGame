@@ -179,7 +179,7 @@ npm run dev:lite
 
 数据录入使用的截图工具推荐pixpin
 
-可以开新分支提pr，我会用ai审核
+可以开新分支提 PR，我会用 AI 审核。外部协作者不需要自己判断是否 fork，也不需要理解 upstream、origin 这些 Git 术语；把需求和改动交给 AI，按下面的固定流程处理即可。
 
 <details>
 <summary>模型选择建议</summary>
@@ -303,7 +303,14 @@ npx cross-env PW_BROWSER_CHANNEL=chrome npm run test:e2e
 git clone https://github.com/zhuanggenhua/BoardGame.git
 ```
 
-准备提交代码贡献时，外部协作者默认走 fork 后 Pull Request：
+准备提交代码贡献时，协作者统一交给 AI 按固定流程处理：
+
+1. AI 先确认当前账号是否能向 `zhuanggenhua/BoardGame` 推送分支。
+2. 有主仓写权限时，AI 直接在主仓创建特性分支、提交改动并创建 Pull Request。
+3. 没有主仓写权限时，AI 自动使用当前账号的可写代码副本（GitHub 称为 fork），把改动推到那里，再向主仓 `main` 创建 Pull Request。
+4. 用户不需要选择“要不要 fork”，也不需要手动配置 `upstream`、`origin` 或处理远端权限；AI 只在真正需要确认改动范围、目标分支或是否提交时询问。
+
+AI 执行上述流程时，底层步骤如下。普通协作者不需要手动执行这些命令：
 
 1. 在 GitHub 上 fork `zhuanggenhua/BoardGame` 到自己的账号。
 2. Clone 自己的 fork，并添加主仓为 `upstream`：

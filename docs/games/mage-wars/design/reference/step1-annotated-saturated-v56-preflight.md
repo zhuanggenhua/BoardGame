@@ -32,7 +32,7 @@
 | 场上生物 / 魔物 | `spell-2803-flaming-hellion.png`、`spell-2909-knight-of-westlock.png`、`spell-2801-firebrand-imp.png`、`spell-2224-conjuration.png` | `visible-subject` | 保持唯一 `data-zone-id`，不得被放大牌区遮挡 |
 | 法术书候选 | `spell-1901-nullify.png`、`spell-1806-block.png`、`spell-3701-lash-of-hellfire.png` | `visible-subject` | 1 张焦点可读卡 + 2 张邻近候选；分页承载其余候选，卡外不写卡名和费用 |
 | 已计划法术 | `spell-1700-fireball.png`、`spell-1804-mage-bane.png` | `visible-subject` | 当前来源卡大幅放大；卡外只保留 `施法来源` 和 `2 / 2` |
-| 攻击骰 / 效果骰 | `attack-die-face-*.png`、`effect-die-d12-face.png` | `visible-subject` | 保留在目标附近结算层 |
+| 攻击骰 / 效果骰 | `attack-die-face-*.png`；效果骰使用 Workshop 内置 `Die_12` 的程序化蓝色结果层 | `visible-subject` / `source-locked-programmatic` | 保留在目标附近结算层；效果骰不进入图片资源链 |
 | 伤害 / 燃烧 / 守卫 / 行动 token | `damage-token-front.png`、`burn-token.png`、`guard-token.png`、`action-marker-red-front.png`、`quickcast-marker-front.png` | `visible-subject` | 保留贴附关系，不省略 |
 | 生命 / 法力 / 聚魔条 | 规则第 4 页与 `approved-programmatic-runtime-ui` | `approved-programmatic-runtime-ui` | 继续用清晰条形 UI，不复现法师状态板 |
 

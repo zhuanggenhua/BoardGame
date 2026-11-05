@@ -95,8 +95,7 @@
   "mobileOrientation": {
     "closeHint": "Dismiss hint",
     "banner": {
-      "rotateToLandscape": "Rotate to landscape for a better experience",
-      "rotateToPortrait": "Switch to portrait for a better experience",
+      "unlockPortrait": "Please turn off portrait orientation lock",
       "tabletOnly": "This game currently works best on tablet or PC",
       "notSupported": "This game is not ready for phone screens yet; please use a PC"
     },
@@ -204,6 +203,11 @@
       "title": "Summoner Wars",
       "description": "Summoner Wars is a fast-paced, tactical 2-player game. Players take on the role of Summoners, leading their faction to conquer the war-torn world of Itharia through the power of mysterious Summoning Stones.",
       "players": "2 Players"
+    },
+    "fate-domination": {
+      "title": "Fate / Domination",
+      "description": "A Holy Grail War tabletop prototype set in Fuyuki City.",
+      "players": "3-7 Players"
     }
   },
   "qidahenBoard": {

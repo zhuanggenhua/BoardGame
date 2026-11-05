@@ -116,12 +116,31 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
 
     it('Treant 末尾专属卡不应继续使用越界图集索引', () => {
         const shatteringFist2 = TREANT_CARDS.find(card => card.id === 'upgrade-shattering-fist-2');
-        const planting = TREANT_CARDS.find(card => card.id === 'treant-card-planting');
+        const wildGrowth2 = TREANT_CARDS.find(card => card.id === 'upgrade-wild-growth-2');
 
         expect(shatteringFist2?.sourceAtlasIndex).toBe(30);
         expect(shatteringFist2?.previewRef).toMatchObject({ type: 'atlas', index: 30 });
-        expect(planting?.sourceAtlasIndex).toBe(31);
-        expect(planting?.previewRef).toMatchObject({ type: 'atlas', index: 31 });
+        expect(wildGrowth2?.sourceAtlasIndex).toBe(31);
+        expect(wildGrowth2?.previewRef).toMatchObject({ type: 'atlas', index: 31 });
+    });
+
+    it('野蛮生长 II 的图集 31 必须作为升级卡替换 wild-growth，并包含卡面种植分支', () => {
+        const wildGrowthUpgrade = TREANT_CARDS.find(card => card.id === 'upgrade-wild-growth-2');
+
+        expect(wildGrowthUpgrade).toMatchObject({
+            type: 'upgrade',
+            cpCost: 2,
+            sourceAtlasIndex: 31,
+            previewRef: { type: 'atlas', index: 31 },
+        });
+        expect(wildGrowthUpgrade?.effects[0]?.action).toMatchObject({
+            type: 'replaceAbility',
+            targetAbilityId: 'wild-growth',
+            newAbilityLevel: 2,
+        });
+        expect((wildGrowthUpgrade?.effects[0]?.action as any)?.newAbilityDef?.variants?.map((variant: { id: string }) => variant.id))
+            .toEqual(['wild-growth-2-main', 'wild-growth-2-planting']);
+        expect(TREANT_CARDS.some(card => card.id === 'treant-card-planting')).toBe(false);
     });
 
     it('Treant 升级卡应按卡图替换到正确的目标能力与等级', () => {
@@ -131,7 +150,8 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             { id: 'upgrade-shattering-fist-3', targetAbilityId: 'shattering-fist', newAbilityLevel: 3 },
             { id: 'upgrade-nature-touch-2', targetAbilityId: 'nature-touch', newAbilityLevel: 2 },
             { id: 'upgrade-vengeful-vines-2', targetAbilityId: 'vengeful-vines', newAbilityLevel: 2 },
-            { id: 'upgrade-wild-growth-2', targetAbilityId: 'wild-roar', newAbilityLevel: 2 },
+            { id: 'upgrade-wild-roar-2', targetAbilityId: 'wild-roar', newAbilityLevel: 2 },
+            { id: 'upgrade-wild-growth-2', targetAbilityId: 'wild-growth', newAbilityLevel: 2 },
             { id: 'upgrade-shattering-fist-2', targetAbilityId: 'shattering-fist', newAbilityLevel: 2 },
         ] as const;
 
@@ -166,7 +186,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         ]);
         expect(WILD_GROWTH_2.variants?.map(variant => variant.id)).toEqual([
             'wild-growth-2-main',
-            'wild-growth-2-dazzle',
+            'wild-growth-2-planting',
         ]);
         expect(WILD_ROAR_2.variants?.map(variant => variant.id)).toEqual([
             'wild-roar-2-main',
@@ -816,7 +836,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
     });
 
     it('Treant 3 树灵养成卡应通过 treant-card-cultivate-3-resolve 正向路由并落地', () => {
-        const cards = ['treant-card-cultivate', 'treant-card-planting'] as const;
+        const cards = ['treant-card-cultivate'] as const;
 
         for (const cardId of cards) {
             const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
@@ -967,16 +987,16 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(39);
     });
 
-    it('Wild Growth II 主路线应在奖励骰只有 1 个树灵时自动完成 1 次养成', () => {
+    it('Wild Growth II 主分支应造成 4 点伤害，并可移除树灵加伤、弃生命源泉使攻击不可防御', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         const treant = state.core.players['0'];
         const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-growth');
         treant.abilities[abilityIndex] = WILD_GROWTH_2;
         treant.abilityLevels['wild-growth'] = 2;
-        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING] = 1;
         state.core.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
         state.core.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
-        state.core.players['0'].tokens[TOKEN_IDS.LIFE_SAP] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.LIFE_SAP] = 1;
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
         state.core.pendingAttack = {
             attackerId: '0',
@@ -986,25 +1006,37 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             damage: 0,
         };
 
-        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1, 4, 6, 2, 5]), 100);
-        expect(preDefenseEvents.some(event => event.type === 'CHOICE_REQUESTED')).toBe(false);
+        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1]), 100);
+        const choiceEvent = preDefenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        expect(choiceEvent).toBeDefined();
+        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
+            option.labelKey === 'choices.treantWildGrowth.seedling1_life',
+        );
+        expect(selectedOption).toBeDefined();
+
         let next = applyEvents(state.core, preDefenseEvents);
-        expect(next.pendingBonusDiceSettlement).toBeDefined();
-        const settlementEvents = settleBonusDice(next);
-        expect(settlementEvents.some(event => event.type === 'CHOICE_REQUESTED')).toBe(false);
-        next = applyEvents(next, settlementEvents);
-        expect(next.pendingAttack?.bonusDamage ?? 0).toBe(2);
-        expect(next.pendingAttack?.isDefendable).toBe(true);
-        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(0);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
+        next = reduce(next, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                sourceAbilityId: 'wild-growth-2-main',
+                customId: selectedOption.customId,
+                value: selectedOption.value,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 101,
+        } as DiceThroneEvent);
+
+        expect(next.pendingAttack?.bonusDamage).toBe(4);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(0);
+        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(0);
 
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         const damageEvent = attackEvents.find(event => event.type === 'DAMAGE_DEALT');
-        expect((damageEvent as any).payload.amount).toBe(6);
+        expect((damageEvent as any).payload.amount).toBe(8);
         next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(42);
     });
 
     it('Wild Growth 基础版应在 2 树枝 + 3 树叶骰面下以 2 基伤结算，并允许移除 1 树灵加伤', () => {
@@ -1051,7 +1083,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
     });
 
-    it('Wild Growth II 主路线在奖励骰投出 2 个树灵时应请求对应次数的养成选择', () => {
+    it('Wild Growth II 的种植分支应养成 3 树灵并按非攻击路线收口', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         const treant = state.core.players['0'];
         const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-growth');
@@ -1065,30 +1097,29 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         state.core.pendingAttack = {
             attackerId: '0',
             defenderId: '1',
-            sourceAbilityId: 'wild-growth-2-main',
+            sourceAbilityId: 'wild-growth-2-planting',
+            defenseAbilityId: 'blink',
             isDefendable: true,
             damage: 0,
         };
 
-        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1, 4, 6, 6, 2]), 100);
-        let next = applyEvents(state.core, preDefenseEvents);
-        const settlementEvents = settleBonusDice(next);
-        const choiceEvent = settlementEvents.find(event => event.type === 'CHOICE_REQUESTED');
+        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1]), 100);
+        const choiceEvent = preDefenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
         expect(choiceEvent).toBeDefined();
         expect((choiceEvent as any).payload.options.every((option: { customId: string }) =>
-            option.customId === 'treant-wild-growth-2-cultivate-2-resolve',
+            option.customId === 'treant-wild-growth-2-planting-cultivate-resolve',
         )).toBe(true);
         const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
-            option.labelKey === 'choices.treantCultivate.s2_a0_d0'
+            option.labelKey === 'choices.treantCultivate.s3_a0_d0'
         );
         expect(selectedOption).toBeDefined();
 
-        next = applyEvents(next, settlementEvents);
+        let next = applyEvents(state.core, preDefenseEvents);
         next = reduce(next, {
             type: 'CHOICE_RESOLVED',
             payload: {
                 playerId: '0',
-                sourceAbilityId: 'wild-growth-2-main',
+                sourceAbilityId: 'wild-growth-2-planting',
                 customId: selectedOption.customId,
                 value: selectedOption.value,
             },
@@ -1096,80 +1127,27 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
             timestamp: 101,
         } as DiceThroneEvent);
 
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
+        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(3);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(0);
         expect(next.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
-        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
-        expect(next.pendingAttack?.bonusDamage).toBe(2);
-        expect(next.pendingAttack?.isDefendable).toBe(true);
+        expect(next.pendingAttack?.isDefendable).toBe(false);
+        expect(next.pendingDamage).toBeUndefined();
 
         const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
-        const damageEvent = attackEvents.find(event => event.type === 'DAMAGE_DEALT');
-        expect((damageEvent as any).payload.amount).toBe(6);
-        next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
-    });
-
-    it('Wild Growth II 的 displayOnly 奖励骰应在养成选择后通过真实 SKIP 链清空，不把展示态残留为最终权威状态', () => {
-        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
-        const treant = state.core.players['0'];
-        const abilityIndex = treant.abilities.findIndex(ability => ability.id === 'wild-growth');
-        treant.abilities[abilityIndex] = WILD_GROWTH_2;
-        treant.abilityLevels['wild-growth'] = 2;
-        treant.tokens[TOKEN_IDS.TREANT_SEEDLING] = 0;
-        treant.tokens[TOKEN_IDS.TREANT_SAPLING] = 0;
-        treant.tokens[TOKEN_IDS.TREANT_DIVINE] = 0;
-        treant.tokens[TOKEN_IDS.LIFE_SAP] = 0;
-        state.core.players['1'].resources[RESOURCE_IDS.HP] = 50;
-        state.core.pendingAttack = {
+        expect(attackEvents.some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
+        expect(attackEvents.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        expect(attackEvents.find(event => event.type === 'ATTACK_RESOLVED')?.payload).toMatchObject({
             attackerId: '0',
             defenderId: '1',
-            sourceAbilityId: 'wild-growth-2-main',
-            isDefendable: true,
-            damage: 0,
-        };
-
-        const preDefenseEvents = resolveOffensivePreDefenseEffects(state.core, createQueuedRandom([1, 4, 6, 6, 2]), 100);
-        let next = applyEvents(state.core, preDefenseEvents);
-        expect(next.pendingBonusDiceSettlement).toMatchObject({
-            sourceAbilityId: 'wild-growth-2-main',
-            displayOnly: true,
+            sourceAbilityId: 'wild-growth-2-planting',
+            defenseAbilityId: 'blink',
+            totalDamage: 0,
         });
-        const settlementEvents = settleBonusDice(next);
-        const selectedOption = settlementEvents
-            .find(event => event.type === 'CHOICE_REQUESTED');
-        const cultivateTwoSeedlings = (selectedOption as any).payload.options.find((option: { labelKey?: string }) =>
-            option.labelKey === 'choices.treantCultivate.s2_a0_d0'
-        );
-        expect(cultivateTwoSeedlings).toBeDefined();
-
-        next = applyEvents(next, settlementEvents);
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: {
-                playerId: '0',
-                sourceAbilityId: 'wild-growth-2-main',
-                customId: cultivateTwoSeedlings.customId,
-                value: cultivateTwoSeedlings.value,
-            },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 101,
-        } as DiceThroneEvent);
-
-        const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
         next = applyEvents(next, attackEvents);
-
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
-        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
+        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
         expect(next.pendingAttack).toBeNull();
         expect(next.pendingDamage).toBeUndefined();
         expect(next.pendingBonusDiceSettlement).toBeUndefined();
-        expect(next.pendingAttack).toBeNull();
-        expect(next.pendingDamage).toBeUndefined();
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
-        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
     });
 
     it('Wild Growth II 应拒绝伪造的移除 3 树灵选择', () => {
@@ -2548,7 +2526,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.pendingAttack?.bonusDamage).toBe(0);
     });
 
-    it('Treant 专属主阶段卡应按图片语义选择玩家、移除树灵和正式养成', () => {
+    it('Treant Harvest 主阶段卡应按图片语义选择玩家、移除树灵和正式养成', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         const treant = state.core.players['0'];
         const opponent = state.core.players['1'];
@@ -2608,29 +2586,6 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
         expect(next.players['1'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
 
-        const planting = TREANT_CARDS.find(card => card.id === 'treant-card-planting');
-        expect(planting).toBeDefined();
-        events = resolveEffectsToEvents(
-            planting?.effects ?? [],
-            'immediate',
-            { attackerId: '0', defenderId: '1', sourceAbilityId: 'treant-card-planting', state: next, damageDealt: 0, timestamp: 300 },
-            { random: createQueuedRandom([1]) },
-        );
-        choiceEvent = events.find(event => event.type === 'CHOICE_REQUESTED');
-        selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
-            option.labelKey === 'choices.treantCultivate.s1_a1_d0'
-        );
-        expect(selectedOption).toBeDefined();
-        next = applyEvents(next, events);
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: { playerId: '0', sourceAbilityId: 'treant-card-planting', customId: selectedOption.customId, value: selectedOption.value },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 301,
-        } as DiceThroneEvent);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.TREANT_DIVINE]).toBe(0);
     });
 
     it('Treant 通用养成动作卡应拒绝伪造的不可能养成结果', () => {

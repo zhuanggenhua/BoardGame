@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { postProcessSystemEvents } from '../../domain';
 import { fireTriggers, hasRegisteredTrigger, isMinionProtected } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -575,21 +576,38 @@ describe('动作英雄代表性玩法行为', () => {
             FIXED_RANDOM,
         );
         const limitEvent = chosen.events.find(event => event.type === SU_EVENTS.LIMIT_MODIFIED) as any;
+        const extraPrompt = getSimpleChoicePrompt(chosen.finalState, 'smashup_immediate_extra_action');
 
         expect(getPromptOptions(prompt).map((option: any) => option.id)).toEqual(['skip', 'stored-action-0']);
         expect(limitEvent?.payload).toEqual(expect.objectContaining({
             limitType: 'action',
+            playTiming: 'immediate',
             restrictToCardUid: 'stored-action',
             restrictToCardDefId: 'action_heroes_collateral_damage',
         }));
-        expect(chosen.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(chosen.finalState.core.players['0'].actionLimit).toBe(1);
+        expect(getPromptOptions(extraPrompt).map((option: any) => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined))).toEqual([
+            'stored-action',
+            'skip',
+        ]);
 
-        const played = runCommand(chosen.finalState, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '0',
-            payload: { cardUid: 'stored-action', fromStored: true, targetBaseIndex: 0 },
-        } as any, FIXED_RANDOM);
+        const selectedStored = respondToPromptOption(
+            chosen.finalState,
+            (option: any) => option.value?.cardUid === 'stored-action',
+            'play stored action immediately',
+            '0',
+            FIXED_RANDOM,
+        );
+        const basePrompt = getSimpleChoicePrompt(selectedStored.finalState, 'smashup_immediate_extra_action_base');
+        const played = respondToPromptOption(
+            selectedStored.finalState,
+            (option: any) => option.value?.baseIndex === 0,
+            'choose base for stored action',
+            '0',
+            FIXED_RANDOM,
+        );
 
+        expect(getPromptOptions(basePrompt).some((option: any) => option.value?.baseIndex === 0)).toBe(true);
         expect(played.success).toBe(true);
         expect(played.finalState.core.players['0'].storedCards).toBeUndefined();
         expect(played.finalState.core.players['0'].discard.map(card => card.uid)).toContain('stored-action');
@@ -1778,6 +1796,65 @@ describe('异形变体代表性牌库玩法行为', () => {
         expect(attached.finalState.core.bases[0].minions.find(minion => minion.uid === 'too-strong')?.attachedActions).toEqual([]);
     });
 
+    it('反馈回归：卵场检索抱头虫时不能选择当前力量超过 3 的宿主', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('egg-field', 'extramorphs_egg_field', 'action', '0')],
+                    deck: [makeCard('head-grabber', 'extramorphs_head_grabber', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle', [
+                makeMinion('valid-host', 'pirate_first_mate', '1', 2),
+                makeMinion('boosted-host', 'goblins_gobbo', '1', 2, { powerCounters: 3 }),
+            ])],
+        });
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'egg-field', targetBaseIndex: 0 },
+        } as any, FIXED_RANDOM);
+
+        const headGrabberSelected = respondToPromptOption(
+            played.finalState,
+            option => option.value?.cardUid === 'head-grabber',
+            'head grabber to play',
+            '0',
+            FIXED_RANDOM,
+        );
+        const targetPrompt = getSimpleChoicePrompt(headGrabberSelected.finalState, 'extramorphs_egg_field_target');
+        const targetUids = getPromptOptions(targetPrompt).map(option => option.value?.minionUid);
+
+        expect(targetUids).toContain('valid-host');
+        expect(targetUids).not.toContain('boosted-host');
+    });
+
+    it('反馈回归：抱头虫直接打出时不能附着到当前力量超过 3 的佣兵', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('head-grabber', 'extramorphs_head_grabber', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle', [
+                makeMinion('boosted-host', 'goblins_gobbo', '1', 2, { powerCounters: 3 }),
+            ])],
+        });
+
+        const played = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'head-grabber', targetBaseIndex: 0, targetMinionUid: 'boosted-host' },
+        } as any, FIXED_RANDOM);
+
+        expect(played.success).toBe(false);
+        expect(played.error).toContain('当前力量');
+        expect(core.bases[0].minions[0].attachedActions).toEqual([]);
+    });
+
     it('破胸者同回合刚打出时不能使用天赋', () => {
         const core = makeState({
             players: {
@@ -2957,6 +3034,170 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
         expect(getEffectivePower(after, host, 0)).toBe(6);
     });
 
+    it('未授权核加速器摧毁恶魔犬时，真实后处理仍打开暂存随从的额外出牌提示', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    storedCards: [{
+                        ...makeCard('stored-minion', 'teens_prep', 'minion', '0'),
+                        storedByPlayerId: '0',
+                        storedUnderUid: 'dogs',
+                        storedUnderDefId: 'wraithrustlers_demon_dogs',
+                    }] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_the_jungle',
+                minions: [makeMinion('host', 'wraithrustlers_roy', '0', 3, {
+                    attachedActions: [{ uid: 'accelerator', defId: 'wraithrustlers_unlicensed_nuclear_accelerator', ownerId: '0' }],
+                })],
+                ongoingActions: [{
+                    uid: 'dogs',
+                    defId: 'wraithrustlers_demon_dogs',
+                    ownerId: '0',
+                }],
+            })],
+        });
+
+        const talent = invokeRegisteredAbilityContract(
+            'wraithrustlers_unlicensed_nuclear_accelerator',
+            'talent',
+            makeAbilityContext(core, 'wraithrustlers_unlicensed_nuclear_accelerator', 'accelerator'),
+        );
+        const actionPrompt = getSimpleChoicePrompt(
+            talent.matchState!,
+            'wraithrustlers_unlicensed_nuclear_accelerator_destroy_action',
+        );
+        const destroyed = respondToPromptOption(
+            talent.matchState!,
+            option => option.value?.cardUid === 'dogs',
+            '未授权核加速器摧毁恶魔犬',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(destroyed.success, destroyed.error).toBe(true);
+        expect(actionPrompt.autoResolveIfSingle).toBe(false);
+        expect(destroyed.finalState.core.bases[0].ongoingActions).toEqual([]);
+
+        const extraPrompt = getSimpleChoicePrompt(
+            destroyed.finalState,
+            'smashup_immediate_extra_minion',
+        );
+        expect(getPromptOptions(extraPrompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined)))
+            .toEqual(['stored-minion', 'skip']);
+    });
+
+    it('已归约的恶魔犬摧毁事件仍能恢复暂存随从的额外出牌机会', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    storedCards: [{
+                        ...makeCard('stored-minion', 'teens_prep', 'minion', '0'),
+                        storedByPlayerId: '0',
+                        storedUnderUid: 'dogs',
+                        storedUnderDefId: 'wraithrustlers_demon_dogs',
+                    }] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_the_jungle',
+                ongoingActions: [{
+                    uid: 'dogs',
+                    defId: 'wraithrustlers_demon_dogs',
+                    ownerId: '0',
+                }],
+            })],
+        });
+        const detached = {
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: {
+                cardUid: 'dogs',
+                defId: 'wraithrustlers_demon_dogs',
+                ownerId: '0',
+                reason: 'wraithrustlers_unlicensed_nuclear_accelerator',
+                isDestruction: true,
+                targetBaseIndex: 0,
+                targetKind: 'ongoing',
+                sourcePlayerId: '0',
+                sourceCardUid: 'accelerator',
+                sourceDefId: 'wraithrustlers_unlicensed_nuclear_accelerator',
+                sourceControllerId: '0',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 11,
+        } as any;
+        const reducedCore = applyEvents(core, [detached]);
+        const processed = postProcessSystemEvents(
+            reducedCore,
+            [detached],
+            FIXED_RANDOM,
+            makeMatchState(reducedCore),
+            { inputEventsAlreadyReduced: true },
+        );
+
+        expect(processed.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                specificCardUid: 'stored-minion',
+                restrictToBase: 0,
+                playTiming: 'immediate',
+            }),
+        }));
+    });
+
+    it('芬克曼转移古苏美尔神时，不应把转移误判成摧毁', () => {
+        const storedDog = {
+            ...makeCard('stored-dog', 'wraithrustlers_demon_dogs', 'minion', '0'),
+            storedByPlayerId: '0',
+            storedUnderUid: 'god',
+            storedUnderDefId: 'wraithrustlers_ancient_sumerian_god',
+        };
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { storedCards: [storedDog] as any }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'base_the_jungle',
+                    minions: [makeMinion('funkman', 'wraithrustlers_funkman', '0', 5)],
+                    ongoingActions: [{
+                        uid: 'god',
+                        defId: 'wraithrustlers_ancient_sumerian_god',
+                        ownerId: '0',
+                    }],
+                }),
+                makeBase('base_tar_pits'),
+            ],
+        });
+
+        const special = invokeRegisteredAbilityContract(
+            'wraithrustlers_funkman',
+            'special',
+            makeAbilityContext(core, 'wraithrustlers_funkman', 'funkman', 0, { targetBaseIndex: 0 }),
+        );
+        const moved = respondToPromptOption(
+            special.matchState!,
+            option => option.value?.cardUid === 'god' && option.value?.targetBaseIndex === 1,
+            '转移古苏美尔神',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(moved.finalState.core.bases[0].ongoingActions).toEqual([]);
+        expect(moved.finalState.core.bases[1].ongoingActions.map(action => action.uid)).toEqual(['god']);
+        expect(moved.finalState.core.players['0'].storedCards).toEqual([
+            expect.objectContaining({ uid: 'stored-dog', storedUnderUid: 'god' }),
+        ]);
+        expect(moved.events).not.toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.STORED_CARD_RELEASED,
+            payload: expect.objectContaining({ cardUid: 'stored-dog' }),
+        }));
+    });
+
     it('恶魔狗存放弱随从必须由玩家从手牌或弃牌堆选择；被摧毁后释放为限定额外随从', () => {
         const core = makeState({
             players: {
@@ -3058,6 +3299,16 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
 
     it('灵质一号天赋必须由玩家选择目标基地、己方随从和是否摧毁新基地行动', () => {
         const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('draw-1', 'wraithrustlers_resurgence', 'action', '1'),
+                        makeCard('draw-2', 'wraithrustlers_slimy', 'action', '1'),
+                        makeCard('draw-3', 'wraithrustlers_demon_dogs', 'action', '1'),
+                    ],
+                }),
+            },
             bases: [
                 makeBase({
                     defId: 'base_the_jungle',
@@ -3249,10 +3500,16 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
 
         const onDestroy = invokeRegisteredAbilityContract('wraithrustlers_ancient_sumerian_god', 'onDestroy',
             makeAbilityContext(storedState, 'wraithrustlers_ancient_sumerian_god', 'god'));
-        const releasedState = applyEvents(storedState, onDestroy.events);
+        const afterDestroy = applyEvents(storedState, onDestroy.events);
 
-        expect(releasedState.players['0'].storedCards).toBeUndefined();
-        expect(onDestroy.events).toContainEqual(expect.objectContaining({
+        expect(afterDestroy.players['0'].storedCards).toEqual([
+            expect.objectContaining({
+                uid: 'slimy',
+                storedUnderUid: 'god',
+                storedUnderDefId: 'wraithrustlers_ancient_sumerian_god',
+            }),
+        ]);
+        expect(onDestroy.events).not.toContainEqual(expect.objectContaining({
             type: SU_EVENTS.STORED_CARD_RELEASED,
             payload: expect.objectContaining({ cardUid: 'slimy' }),
         }));
@@ -3265,6 +3522,64 @@ describe('怨灵捕手代表性 Wraith 行动玩法行为', () => {
                 restrictToBase: 0,
             }),
         }));
+    });
+
+    it('古苏美尔神被真实 onCardDestroyed 触发时，额外行动提示仍能看到暂存行动牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    storedCards: [{
+                        ...makeCard('slimy', 'wraithrustlers_slimy', 'action', '0'),
+                        storedByPlayerId: '0',
+                        storedUnderUid: 'god',
+                        storedUnderDefId: 'wraithrustlers_ancient_sumerian_god',
+                    }] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_the_jungle', [
+                makeMinion('god', 'wraithrustlers_ancient_sumerian_god', '0', 4),
+            ])],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'playCards';
+
+        const destroyed = fireTriggers(core, 'onCardDestroyed', {
+            state: core,
+            matchState,
+            playerId: '0',
+            baseIndex: 0,
+            sourceBaseIndex: 0,
+            sourceCardUid: 'god',
+            sourceControllerId: '0',
+            triggerCardUid: 'god',
+            triggerCardDefId: 'wraithrustlers_ancient_sumerian_god',
+            triggerCardOwnerId: '0',
+            triggerCardKind: 'minion',
+            random: FIXED_RANDOM,
+            now: 11,
+        });
+
+        const processed = postProcessSystemEvents(
+            core,
+            destroyed.events,
+            FIXED_RANDOM,
+            destroyed.matchState,
+        );
+
+        expect(processed.matchState).toBeDefined();
+        const extraPrompt = getSimpleChoicePrompt(processed.matchState!, 'smashup_immediate_extra_action');
+        expect(getPromptOptions(extraPrompt)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                value: expect.objectContaining({
+                    cardUid: 'slimy',
+                    source: 'stored',
+                }),
+            }),
+        ]));
+        expect(processed.matchState!.core.players['0'].storedCards).toEqual([
+            expect.objectContaining({ uid: 'slimy' }),
+        ]);
     });
 
     it('艾伦看到怨灵被摧毁时，出牌阶段暂存额外行动，非出牌阶段才立即处理', () => {

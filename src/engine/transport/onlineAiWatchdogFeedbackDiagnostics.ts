@@ -28,6 +28,7 @@ export type InteractionSelectabilityDiagnostic = {
     recoverableOptionIds: string[];
     selectionState:
         | 'no-options'
+        | 'options-not-projected'
         | 'all-options-disabled'
         | 'recoverable-option-available'
         | 'manual-selection-required';
@@ -45,9 +46,14 @@ export type OnlineAiRecoveryPendingDamageDiagnostic = {
 export type OnlineAiRecoveryActionLogTailEntry = {
     text?: string;
     type?: unknown;
+    id?: string;
+    timestamp?: number;
+    actorId?: string;
+    kind?: string;
 };
 
 export type OnlineAiRecoveryEventTailEntry = {
+    id?: number;
     type?: string;
     timestamp?: unknown;
     payload?: unknown;
@@ -165,6 +171,19 @@ export function buildInteractionSelectabilityDiagnostic(
         return null;
     }
 
+    if (snapshot.optionsSource === 'missing') {
+        return {
+            totalOptions: 0,
+            enabledOptions: 0,
+            disabledOptions: 0,
+            minSelectionCount: 1,
+            enabledOptionIds: [],
+            disabledOptionIds: [],
+            recoverableOptionIds: [],
+            selectionState: 'options-not-projected',
+        };
+    }
+
     const options = Array.isArray(snapshot.options) ? snapshot.options : [];
     const enabledOptions = options.filter((option) => option.disabled !== true);
     const disabledOptions = options.filter((option) => option.disabled === true);
@@ -211,6 +230,9 @@ export function resolveUnsatisfiableReasonFromSelectability(
 ): string | null {
     const diagnostic = buildInteractionSelectabilityDiagnostic(snapshot);
     if (!diagnostic) {
+        return null;
+    }
+    if (diagnostic.selectionState === 'options-not-projected') {
         return null;
     }
     if (diagnostic.totalOptions === 0) {
@@ -372,7 +394,7 @@ export function extractOnlineAiRecoveryActionLogTail(
     state: MatchState<unknown>,
 ): OnlineAiRecoveryActionLogTailEntry[] {
     const entries = (state.sys?.actionLog as {
-        entries?: Array<{ text?: unknown; event?: { type?: unknown } }>;
+        entries?: Array<{ id?: unknown; timestamp?: unknown; actorId?: unknown; kind?: unknown; text?: unknown; event?: { type?: unknown } }>;
     } | undefined)?.entries;
     if (!Array.isArray(entries) || entries.length === 0) {
         return [];
@@ -380,6 +402,10 @@ export function extractOnlineAiRecoveryActionLogTail(
     return entries.slice(-5).map((entry) => ({
         text: typeof entry?.text === 'string' ? entry.text : undefined,
         type: entry?.event?.type,
+        ...(typeof entry?.id === 'string' ? { id: entry.id } : {}),
+        ...(typeof entry?.timestamp === 'number' ? { timestamp: entry.timestamp } : {}),
+        ...(typeof entry?.actorId === 'string' ? { actorId: entry.actorId } : {}),
+        ...(typeof entry?.kind === 'string' ? { kind: entry.kind } : {}),
     }));
 }
 
@@ -387,14 +413,15 @@ export function extractOnlineAiRecoveryEventTail(
     state: MatchState<unknown>,
 ): OnlineAiRecoveryEventTailEntry[] {
     const entries = (state.sys?.eventStream as {
-        entries?: Array<{ type?: unknown; timestamp?: unknown; payload?: unknown }>;
+        entries?: Array<{ id?: unknown; type?: unknown; timestamp?: unknown; payload?: unknown; event?: { type?: unknown; timestamp?: unknown } }>;
     } | undefined)?.entries;
     if (!Array.isArray(entries) || entries.length === 0) {
         return [];
     }
     return entries.slice(-5).map((entry) => ({
-        type: typeof entry?.type === 'string' ? entry.type : undefined,
-        timestamp: entry?.timestamp,
+        ...(typeof entry?.id === 'number' ? { id: entry.id } : {}),
+        type: typeof entry?.event?.type === 'string' ? entry.event.type : typeof entry?.type === 'string' ? entry.type : undefined,
+        timestamp: entry?.event?.timestamp ?? entry?.timestamp,
         ...(entry?.payload !== undefined ? { payload: cloneOnlineAiDiagnosticValue(entry.payload) } : {}),
     }));
 }
@@ -493,17 +520,21 @@ export function buildOnlineAiFeedbackDiagnosticsContext(args: {
     const seatSelectability = buildInteractionSelectabilityDiagnostic(seatInteraction);
     const sharedInteractionState = (args.sharedState.sys?.interaction as { current?: unknown } | undefined)?.current;
     const seatInteractionState = (args.seatState.sys?.interaction as { current?: unknown } | undefined)?.current;
-    const sharedUnsatisfiableReason = resolveUnsatisfiableReasonFromSelectability(sharedInteraction)
-        ?? resolveUnsatisfiableReasonFromInteraction(
-            args.sharedState,
-            sharedInteractionState as HiddenInteractionDescriptor | undefined,
-        );
+    const sharedUnsatisfiableReason = sharedInteraction?.optionsSource === 'missing'
+        ? null
+        : resolveUnsatisfiableReasonFromSelectability(sharedInteraction)
+            ?? resolveUnsatisfiableReasonFromInteraction(
+                args.sharedState,
+                sharedInteractionState as HiddenInteractionDescriptor | undefined,
+            );
     const seatUnsatisfiableReason = args.seatUnsatisfiableReasonOverride
-        ?? resolveUnsatisfiableReasonFromSelectability(seatInteraction)
-        ?? resolveUnsatisfiableReasonFromInteraction(
-            args.seatState,
-            seatInteractionState as HiddenInteractionDescriptor | undefined,
-        );
+        ?? (seatInteraction?.optionsSource === 'missing'
+            ? null
+            : resolveUnsatisfiableReasonFromSelectability(seatInteraction)
+                ?? resolveUnsatisfiableReasonFromInteraction(
+                    args.seatState,
+                    seatInteractionState as HiddenInteractionDescriptor | undefined,
+                ));
 
     return {
         sharedInteraction,

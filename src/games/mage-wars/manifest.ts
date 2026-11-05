@@ -13,6 +13,7 @@ const entry: GameManifestEntry = {
     titleKey: 'games.mage-wars.title',
     descriptionKey: 'games.mage-wars.description',
     category: 'wargame',
+    thumbnailPath: 'mage-wars/thumbnails/cover',
     playersKey: 'games.mage-wars.players',
     icon: 'MW',
     cursorTheme: 'mage-wars-arcane',
@@ -39,6 +40,7 @@ const entry: GameManifestEntry = {
     mobileLayoutPreset: 'board-shell',
     mobileBoardShellLayout: {
         designWidth: 1920,
+        designHeight: 1080,
     },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {

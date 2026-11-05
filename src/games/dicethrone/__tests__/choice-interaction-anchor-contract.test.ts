@@ -575,6 +575,113 @@ describe('DiceThrone choice handler anchor contract', () => {
         expect(next.players['0'].tokens[TOKEN_IDS.SYNTH]).toBe(1);
     });
 
+    it('后伤害 simple-choice 完成后应由通用攻击阶段机收口，不需要单技能标记', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shared-post-damage-choice',
+            settlementStage: 'postDamagePending',
+            isDefendable: true,
+            damage: 8,
+            damageResolved: true,
+            resolvedDamage: 8,
+        };
+
+        const forged = reduce(state.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                value: 0,
+                customId: 'shared-post-damage-option',
+                sourceAbilityId: 'shared-post-damage-choice',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 121,
+        } as DiceThroneEvent);
+
+        expect(forged.pendingAttack?.settlementStage).toBe('postDamagePending');
+        expect(forged.pendingAttack?.postDamageFollowUpResolved).not.toBe(true);
+
+        setChoiceAnchor(state.core, 'shared-post-damage-choice');
+        const anchored = reduce(state.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                value: 0,
+                customId: 'shared-post-damage-option',
+                sourceAbilityId: 'shared-post-damage-choice',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 122,
+        } as DiceThroneEvent);
+
+        expect(anchored.pendingAttack).toMatchObject({
+            sourceAbilityId: 'shared-post-damage-choice',
+            settlementStage: 'readyToResolve',
+            postDamageFollowUpResolved: true,
+        });
+        expect(anchored.currentChoiceSourceAbilityId).toBeUndefined();
+
+        const preDamageState = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        preDamageState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shared-post-damage-choice',
+            settlementStage: 'preDamage',
+            isDefendable: true,
+            damage: 8,
+            damageResolved: false,
+            resolvedDamage: 0,
+        };
+        setChoiceAnchor(preDamageState.core, 'shared-post-damage-choice');
+        const preDamage = reduce(preDamageState.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                value: 0,
+                customId: 'shared-post-damage-option',
+                sourceAbilityId: 'shared-post-damage-choice',
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 122.5,
+        } as DiceThroneEvent);
+
+        expect(preDamage.pendingAttack?.settlementStage).toBe('preDamage');
+        expect(preDamage.pendingAttack?.postDamageFollowUpResolved).not.toBe(true);
+
+        const interactionBackedState = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        interactionBackedState.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shared-post-damage-choice',
+            settlementStage: 'postDamagePending',
+            isDefendable: true,
+            damage: 8,
+            damageResolved: true,
+            resolvedDamage: 8,
+        };
+
+        const interactionBacked = reduce(interactionBackedState.core, {
+            type: 'CHOICE_RESOLVED',
+            payload: {
+                playerId: '0',
+                value: 0,
+                customId: 'shared-post-damage-option',
+                sourceAbilityId: 'shared-post-damage-choice',
+                interactionBacked: true,
+            },
+            sourceCommandType: 'RESOLVE_CHOICE',
+            timestamp: 123,
+        } as DiceThroneEvent);
+
+        expect(interactionBacked.pendingAttack).toMatchObject({
+            sourceAbilityId: 'shared-post-damage-choice',
+            settlementStage: 'readyToResolve',
+            postDamageFollowUpResolved: true,
+        });
+    });
+
     it('ninja undefendable followup 应拒绝 source 正确但没有当前 choice 锚点的 SYS_INTERACTION_RESOLVED', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.pendingAttack = {

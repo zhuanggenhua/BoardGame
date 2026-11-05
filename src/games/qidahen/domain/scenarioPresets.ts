@@ -6,7 +6,7 @@ const QIDAHEN_SCENARIO_PRESETS: Record<QidahenScenarioId, QidahenScenarioPreset>
         label: '剧本一：萨尔浒战后（1619）',
         yearIndex: 0,
         ruleSource: 'confirmed',
-        factionOrder: ['ming', 'mongol', 'jin'],
+        factionOrder: ['mongol', 'jin', 'ming'],
         factions: {
             ming: {
                 factionId: 'ming',
@@ -50,7 +50,7 @@ const QIDAHEN_SCENARIO_PRESETS: Record<QidahenScenarioId, QidahenScenarioPreset>
         label: '剧本二：山海关之议（1622）',
         yearIndex: 3,
         ruleSource: 'confirmed',
-        factionOrder: ['ming', 'mongol', 'jin'],
+        factionOrder: ['mongol', 'jin', 'ming'],
         factions: {
             ming: {
                 factionId: 'ming',

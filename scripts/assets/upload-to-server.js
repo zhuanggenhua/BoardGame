@@ -14,13 +14,21 @@
 
 import { createHash } from 'crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
-import { extname, join, relative, sep } from 'path';
+import { extname, join, relative, resolve, sep } from 'path';
 import mime from 'mime-types';
+import dotenv from 'dotenv';
 import {
   fetchAssetPublishInventory,
+  isAssetUploadTokenConfigured,
   publishPrimaryAssetBatch,
   resolveAssetUploadUrl,
 } from './publish-primary-assets.mjs';
+
+dotenv.config({
+  path: [resolve(process.cwd(), '.env.local'), resolve(process.cwd(), '.env')],
+  override: false,
+  quiet: true,
+});
 
 const COMPRESSED_EXTS = new Set(['.ogg', '.webp']);
 const COMPRESSED_DIR_NAME = 'compressed';
@@ -353,7 +361,7 @@ async function main() {
   if (remoteInventory) {
     console.log(`已获取服务器对象清单：${remoteInventory.size} 个 official 对象`);
   } else {
-    console.log('当前使用 SSH 发布，跳过远端差异查询；将发布扫描到的全部对象');
+    console.log('本地显式路径检查跳过服务器清单查询，没有向上传入口发送请求');
   }
   if (forceUpload) {
     console.log('强制模式：计划发布所有本地文件');
@@ -407,6 +415,12 @@ async function main() {
   }
 
   if (!checkOnly && uploadPlan.length > 0) {
+    if (!isAssetUploadTokenConfigured()) {
+      console.warn(
+        '未检测到素材发布 token（ASSET_SERVER_UPLOAD_TOKEN、BG_ASSET_PUBLISH_TOKEN 或 BG_DEPLOY_RUNNER_TOKEN）。'
+        + '仅真实上传时会尝试匿名请求；是否接受由服务器端配置决定。',
+      );
+    }
     const uploadBatches = chunkArray(uploadPlan.map((entry) => ({
       key: entry.key,
       body: entry.body,

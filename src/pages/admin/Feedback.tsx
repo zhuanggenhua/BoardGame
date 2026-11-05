@@ -35,6 +35,7 @@ import {
 import { ADMIN_API_URL } from '../../config/server';
 import type {
     FeedbackClientContext,
+    FeedbackDiagnosticPacket,
     FeedbackElementSummary,
     FeedbackErrorContext,
 } from '../../lib/feedback/feedbackPayload';
@@ -67,9 +68,12 @@ interface FeedbackItem {
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
+    diagnosticPacket?: FeedbackDiagnosticPacket;
+    diagnosticReplayability?: FeedbackDiagnosticPacket['replayability'];
     hasEmbeddedImage?: boolean;
     hasActionLog?: boolean;
     hasStateSnapshot?: boolean;
+    hasDiagnosticPacket?: boolean;
     hasClientContext?: boolean;
     hasErrorContext?: boolean;
     clientContext?: FeedbackClientContext;
@@ -227,6 +231,22 @@ const resolveSourceLabel = (t: TFunction<'admin'>, source: string): string => {
     return option ? t(option.labelKey) : t('feedback.source.unknown');
 };
 
+const resolveReplayabilityLabel = (
+    t: TFunction<'admin'>,
+    replayability?: FeedbackDiagnosticPacket['replayability'] | null,
+): string => {
+    switch (replayability) {
+        case 'full':
+            return t('feedback.replayability.full');
+        case 'partial':
+            return t('feedback.replayability.partial');
+        case 'unreplayable':
+            return t('feedback.replayability.unreplayable');
+        default:
+            return t('feedback.replayability.unknown');
+    }
+};
+
 const resolveFeedbackPreviewText = (item: FeedbackItem, t: TFunction<'admin'>): string => {
     const preview = item.contentPreview?.trim();
     if (preview) return preview;
@@ -380,6 +400,7 @@ export default function AdminFeedbackPage() {
     const [severityFilter, setSeverityFilter] = useState<string>('all');
     const [reporterTypeFilter, setReporterTypeFilter] = useState<string>('user');
     const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const [replayabilityFilter, setReplayabilityFilter] = useState<string>('all');
     const [sortFilter, setSortFilter] = useState<string>('newest');
     const [preferMineFilter, setPreferMineFilter] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -419,6 +440,7 @@ export default function AdminFeedbackPage() {
             if (severityFilter !== 'all') params.set('severity', severityFilter);
             if (reporterTypeFilter !== 'all') params.set('reporterType', reporterTypeFilter);
             if (sourceFilter !== 'all') params.set('source', sourceFilter);
+            if (replayabilityFilter !== 'all') params.set('replayability', replayabilityFilter);
             if (sortFilter) params.set('sort', sortFilter);
             if (preferMineFilter) params.set('preferMine', 'true');
             params.set('summaryOnly', 'true');
@@ -444,7 +466,7 @@ export default function AdminFeedbackPage() {
                 setIsPolling(false);
             }
         }
-    }, [error, page, preferMineFilter, reporterTypeFilter, severityFilter, sortFilter, sourceFilter, statusFilter, t, token, typeFilter]);
+    }, [error, page, preferMineFilter, replayabilityFilter, reporterTypeFilter, severityFilter, sortFilter, sourceFilter, statusFilter, t, token, typeFilter]);
 
     useEffect(() => {
         fetchFeedbacks();
@@ -452,7 +474,7 @@ export default function AdminFeedbackPage() {
 
     useEffect(() => {
         setPage(1);
-    }, [statusFilter, typeFilter, severityFilter, reporterTypeFilter, sourceFilter, sortFilter, preferMineFilter]);
+    }, [statusFilter, typeFilter, severityFilter, reporterTypeFilter, sourceFilter, replayabilityFilter, sortFilter, preferMineFilter]);
 
     useEffect(() => {
         if (reporterTypeFilter !== 'system' && sourceFilter !== 'all') {
@@ -856,6 +878,26 @@ export default function AdminFeedbackPage() {
 
                     <div className="flex flex-wrap items-center gap-1">
                         <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                            {t('feedback.filters.replayability')}
+                        </span>
+                        {[
+                            { value: 'all', label: t('feedback.replayability.all') },
+                            { value: 'full', label: t('feedback.replayability.full') },
+                            { value: 'partial', label: t('feedback.replayability.partial') },
+                            { value: 'unreplayable', label: t('feedback.replayability.unreplayable') },
+                        ].map((option) => (
+                            <FilterTab
+                                key={option.value}
+                                active={replayabilityFilter === option.value}
+                                onClick={() => changeFilter(setReplayabilityFilter, option.value)}
+                            >
+                                {option.label}
+                            </FilterTab>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1">
+                        <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
                             {t('feedback.filters.sort')}
                         </span>
                         {sortOptions.map((option) => (
@@ -1091,6 +1133,20 @@ function FeedbackRow({
                             {hasImage && <span title={t('feedback.content.screenshotAlt')}><ImageIcon size={10} /></span>}
                             {hasActionLog && <span title={t('feedback.actionLog.title')}><ScrollText size={10} /></span>}
                             {hasSnapshot && <span title={t('feedback.stateSnapshot.title')}>JSON</span>}
+                            {item.diagnosticReplayability && (
+                                <span className={cn(
+                                    'rounded px-1',
+                                    item.diagnosticReplayability === 'full'
+                                        ? 'bg-emerald-50 text-emerald-700'
+                                        : item.diagnosticReplayability === 'partial'
+                                            ? 'bg-amber-50 text-amber-700'
+                                        : 'bg-red-50 text-red-700',
+                                )}>
+                                    {t('feedback.replayability.current', {
+                                        value: resolveReplayabilityLabel(t, item.diagnosticReplayability),
+                                    })}
+                                </span>
+                            )}
                         </div>
                         {active && item.clientContext?.route && (
                             <div className="mt-1 text-[10px] leading-4 text-zinc-500">
@@ -1549,6 +1605,28 @@ function FeedbackDetailPanel({
                             {item.clientContext?.activeElement && (
                                 <p>{t('feedback.detail.activeElement')}: {summarizeFeedbackElement(item.clientContext.activeElement)}</p>
                             )}
+                        </div>
+                    </section>
+                )}
+
+                {item.diagnosticPacket && (
+                    <section className="rounded-lg border border-indigo-100 bg-indigo-50 p-2.5">
+                        <p className="mb-2 text-[10px] font-medium uppercase tracking-wide text-indigo-500">
+                            {t('feedback.diagnosticPacket.title')}
+                        </p>
+                        <div className="space-y-1 text-xs text-indigo-800">
+                            <p>{t('feedback.diagnosticPacket.replayability')}: {resolveReplayabilityLabel(t, item.diagnosticPacket.replayability)}</p>
+                            <p>{t('feedback.diagnosticPacket.captureId')}: {item.diagnosticPacket.captureId}</p>
+                            <p>{t('feedback.diagnosticPacket.chainId')}: {item.diagnosticPacket.chainId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>{t('feedback.diagnosticPacket.matchId')}: {item.diagnosticPacket.correlation?.matchId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>{t('feedback.diagnosticPacket.roomId')}: {item.diagnosticPacket.correlation?.roomId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>{t('feedback.diagnosticPacket.requestId')}: {item.diagnosticPacket.correlation?.requestId || t('feedback.diagnosticPacket.notProvided')}</p>
+                            <p>
+                                {t('feedback.diagnosticPacket.missingFields')}:
+                                {item.diagnosticPacket.missingFields?.length
+                                    ? item.diagnosticPacket.missingFields.join('、')
+                                    : t('feedback.diagnosticPacket.none')}
+                            </p>
                         </div>
                     </section>
                 )}

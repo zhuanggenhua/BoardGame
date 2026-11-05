@@ -2,7 +2,7 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.server.tsbuildinfo",
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "types": ["node"],
@@ -13,6 +13,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "jsx": "react-jsx",
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
@@ -21,14 +22,16 @@
   },
   "include": [
     "server.ts",
+    "src/vite-env.d.ts",
     "src/server/**/*",
     "src/shared/**/*",
     "src/lib/i18n/**/*",
     "src/lib/utils.ts",
     "src/games/**/game.ts",
     "src/games/**/manifest.ts",
-    "src/games/manifest.server*.ts"
-, "src/engine/primitives/__tests__/mulligan.test.ts"  ],
+    "src/games/manifest.server*.ts",
+    "src/engine/primitives/__tests__/mulligan.test.ts"
+  ],
   "exclude": [
     "**/__tests__/**",
     "**/*.test.*",

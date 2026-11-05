@@ -46,6 +46,38 @@ export function isManualSetupSelectionEnabledForSeat(
         );
 }
 
+/**
+ * 合并建房配置与运行时状态里的座位控制者。
+ * 运行时状态可能只保存 type，建房配置里的手动开局标记、策略和延迟
+ * 仍属于当前会话配置，不能因为状态覆盖而丢失。状态明确改为 human 时，
+ * 清掉只对 AI 有意义的附加字段。
+ */
+export function mergeSeatControllerRecords(
+    base: Record<string, { type?: unknown } | undefined>,
+    override: Record<string, { type?: unknown } | undefined>,
+): Record<string, { type?: unknown }> {
+    const result: Record<string, { type?: unknown }> = {};
+    const playerIds = new Set([...Object.keys(base), ...Object.keys(override)]);
+
+    for (const playerId of playerIds) {
+        const baseController = base[playerId];
+        const overrideController = override[playerId];
+        if (!baseController && !overrideController) {
+            continue;
+        }
+
+        const merged = {
+            ...(baseController ?? {}),
+            ...(overrideController ?? {}),
+        };
+        result[playerId] = merged.type === 'human'
+            ? { type: 'human' }
+            : merged;
+    }
+
+    return result;
+}
+
 export function withManualSetupSelectionAliases<T extends { type?: unknown }>(
     controller: T,
 ): T & {

@@ -423,6 +423,39 @@ export function executePlayEvent(
         break;
       }
 
+      // ============ 仲裁事件卡 ============
+
+      case CARD_IDS.ZHONGCAI_OBEDIENCE: {
+        // 服从：将召唤师3格内的友方士兵放置到召唤师相邻空格；不消耗移动行动。
+        const obedienceSummoner = getSummoner(core, playerId);
+        const targetPosition = targets?.[0];
+        const newPosition = payload.newPosition as CellCoord | undefined;
+        const targetUnit = targetPosition ? getUnitAt(core, targetPosition) : undefined;
+        if (!obedienceSummoner || !targetPosition || !newPosition || !targetUnit) break;
+        if (targetUnit.owner !== playerId || targetUnit.card.unitClass !== 'common') break;
+        if (manhattanDistance(obedienceSummoner.position, targetPosition) > 3) break;
+        if (manhattanDistance(obedienceSummoner.position, newPosition) !== 1) break;
+        if (!isValidCoord(newPosition) || !isCellEmpty(core, newPosition)) break;
+        events.push({
+          type: SW_EVENTS.UNIT_MOVED,
+          payload: {
+            from: targetPosition,
+            to: newPosition,
+            unitId: targetUnit.instanceId,
+            reason: 'zhongcai_obedience',
+            path: [targetPosition, newPosition],
+          },
+          timestamp,
+        });
+        break;
+      }
+
+      case CARD_IDS.ZHONGCAI_HOLY_DECREE:
+      case CARD_IDS.ZHONGCAI_LOYALTY_DECREE:
+      case CARD_IDS.ZHONGCAI_FREEDOM_DECREE:
+        // 持续效果由 activeEvents 的共享 resolver / validator 消费。
+        break;
+
       // ============ 极地矮人事件卡 ============
 
       case CARD_IDS.FROST_ICE_RAM: {

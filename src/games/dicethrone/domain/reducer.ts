@@ -8,7 +8,9 @@ import type {
     DiceThroneCore,
     DiceThroneEvent,
     HeroState,
+    BonusDieInfo,
 } from './types';
+import { SKIRMISH_INITIAL_HEALTH } from './types';
 import type { RandomFn } from '../../../engine/types';
 import {
     buildTeamIdByPlayerIdFromSeatingOrder,
@@ -16,16 +18,26 @@ import {
     getDieFaceByDefinition,
     getPendingBonusSettlementDice,
     getPlayerDieFace,
+    requirePlayerDieFace,
     getTokenStackLimit,
     isAttackSnapshotDieId,
+    isSkirmishMode,
 } from './rules';
 import { buildAfterRollConfirmedSignature } from './responseWindowGuards';
 import { RESOURCE_IDS } from './resources';
-import { TOKEN_IDS } from './ids';
+import { TOKEN_IDS, VAMPIRE_LORD_DICE_FACE_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
+import { reduceDoctorStrangeEvent } from './doctorStrange/reducer';
+import { DOCTOR_STRANGE_TOKEN } from '../heroes/doctor_strange/constants';
 import { buildHeroAbilitiesForFace, initHeroState, createCharacterDice } from './characters';
 import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
-import { isDiceThroneAiSeat, removeCard, updatePendingAttackSettlementStage } from './utils';
+import {
+    assertValidBonusDiceContinuation,
+    isDiceThroneAiSeat,
+    markPendingAttackPostDamageFollowUpResolved,
+    removeCard,
+    updatePendingAttackSettlementStage,
+} from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
@@ -361,13 +373,16 @@ const handleBonusDiceSettled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
 ) => {
     const settlement = state.pendingBonusDiceSettlement;
     const continuation = settlement?.continuation;
+    assertValidBonusDiceContinuation(continuation, settlement?.sourceAbilityId);
     const pendingAttack = continuation?.kind === 'attack' && state.pendingAttack
-        ? updatePendingAttackSettlementStage(
-            continuation.markBonusDiceResolved
-                ? { ...state.pendingAttack, bonusDiceResolved: true }
-                : state.pendingAttack,
-            continuation.settlementStage,
-        )
+        ? continuation.settlementStage === 'preserve'
+            ? state.pendingAttack
+            : updatePendingAttackSettlementStage(
+                continuation.markBonusDiceResolved
+                    ? { ...state.pendingAttack, bonusDiceResolved: true }
+                    : state.pendingAttack,
+                continuation.settlementStage,
+            ) ?? null
         : continuation?.kind === 'complete' && state.pendingAttack && settlement?.rollDieResolution
             ? { ...state.pendingAttack, bonusDiceResolved: true }
             : state.pendingAttack;
@@ -552,12 +567,9 @@ const handleStatusApplied: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
     // 厚皮 II 在防御结算时需要据此移除一个“本次投掷阶段已施加”的状态；
     // 被 preventStatus 护盾拦截的状态在上面的分支直接结束，不会进入记录。
     const pendingAttack = state.pendingAttack;
-    const isIncomingStatusForCurrentAttack = Boolean(
-        pendingAttack
+    const nextPendingAttack = pendingAttack
         && pendingAttack.defenderId === targetId
         && cappedNewTotal > (target.statusEffects[statusId] ?? 0)
-    );
-    const nextPendingAttack = isIncomingStatusForCurrentAttack
         ? {
             ...pendingAttack,
             statusEffectsAppliedThisAttack: {
@@ -575,6 +587,8 @@ const handleStatusApplied: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
             [targetId]: {
                 ...target,
                 statusEffects: { ...target.statusEffects, [statusId]: cappedNewTotal },
+                ...(statusId === DOCTOR_STRANGE_TOKEN.CRIMSON_BANDS && cappedNewTotal > (target.statusEffects[statusId] ?? 0)
+                    ? { crimsonBandsReceivedTurn: state.turnNumber } : {}),
             },
         },
         pendingAttack: nextPendingAttack,
@@ -830,8 +844,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         const shouldSkipGenericTokenDelta = tokenId
             && customId?.startsWith('use-')
             && (
-                tokenActiveUseTiming === 'onOffensiveRollEnd'
-                || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+                tokenActiveUseTiming?.includes('onOffensiveRollEnd') === true
             );
         const shouldSkipGenericStatusDelta = statusId === 'cursed_coin'
             && (
@@ -875,8 +888,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         : undefined;
     const isOffensiveRollEndChoice = tokenId
         && (
-            tokenActiveUseTiming === 'onOffensiveRollEnd'
-            || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
+            tokenActiveUseTiming?.includes('onOffensiveRollEnd') === true
         );
     const shouldAutoResolveOffensiveRollEndChoice = isOffensiveRollEndChoice
         && customId !== 'use-loaded'
@@ -897,6 +909,17 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
                 ...resultState.pendingAttack,
                 offensiveRollEndTokenResolved: true,
             },
+        };
+    }
+
+    const nextPendingAttack = markPendingAttackPostDamageFollowUpResolved(
+        resultState.pendingAttack,
+        hasAuthorizedChoice ? sourceAbilityId : undefined,
+    );
+    if (nextPendingAttack !== resultState.pendingAttack) {
+        resultState = {
+            ...resultState,
+            pendingAttack: nextPendingAttack ?? null,
         };
     }
 
@@ -947,14 +970,16 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
     for (const playerId of Object.keys(state.players)) {
         const player = state.players[playerId];
         const hasPendingBonusDamage = player?.pendingBonusDamage !== undefined;
+        const hasPendingBonusDamageSources = (player?.pendingBonusDamageSources?.length ?? 0) > 0;
         const hasArtificerBotState = !!player?.artificerBotState;
-        if (!hasPendingBonusDamage && !hasArtificerBotState) continue;
+        if (!hasPendingBonusDamage && !hasPendingBonusDamageSources && !hasArtificerBotState) continue;
         if (players === state.players) {
             players = { ...state.players };
         }
         players[playerId] = {
             ...player,
             pendingBonusDamage: undefined,
+            pendingBonusDamageSources: undefined,
             artificerBotState: player?.artificerBotState
                 ? Object.fromEntries(
                     Object.entries(player.artificerBotState).map(([tokenId, botState]) => [
@@ -979,6 +1004,7 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         taijiGainedThisTurn: undefined, // 清除太极本回合获得量追踪
         treantSpiritSpentThisTurn: undefined,
         passiveActionUsedThisTurn: undefined,
+        mjolnirThrowsThisTurn: undefined,
         vampireLordBloodPowerEndTurnPending: undefined,
         offensiveRollAttemptsThisTurn: undefined,
         offensiveRollAttackMadeThisTurn: undefined,
@@ -1077,6 +1103,16 @@ const resolveBonusDieEffectKeyForValue = (
     if (effectKey.startsWith('bonusDie.effect.blinded.')) {
         return value <= 2 ? 'bonusDie.effect.blinded.miss' : 'bonusDie.effect.blinded.hit';
     }
+    if (effectKey.startsWith('bonusDie.effect.vampireLordBloodSurge')) {
+        return face === VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP
+            ? 'bonusDie.effect.vampireLordBloodSurgeBloodDrop'
+            : 'bonusDie.effect.vampireLordBloodSurgeOther';
+    }
+    if (effectKey.startsWith('bonusDie.effect.vampireLordTotalDemise')) {
+        return face === VAMPIRE_LORD_DICE_FACE_IDS.CLAW
+            ? 'bonusDie.effect.vampireLordTotalDemiseDie'
+            : 'bonusDie.effect.vampireLordTotalDemiseOther';
+    }
 
     for (const prefix of [
         'bonusDie.effect.treantWildGrowth2.',
@@ -1115,6 +1151,13 @@ const rebuildBonusDieEffectParams = (
             break;
         case 'bonusDie.effect.gunslingerLoadedDie':
             params.bonusDamage = halfUp(value);
+            break;
+        case 'bonusDie.effect.vampireLordBloodFromAboveDie':
+            params.amount = halfUp(value);
+            break;
+        case 'bonusDie.effect.vampireLordTotalDemiseDie':
+        case 'bonusDie.effect.vampireLordTotalDemiseOther':
+            params.bonusDamage = face === VAMPIRE_LORD_DICE_FACE_IDS.CLAW ? 1 : 0;
             break;
         case 'bonusDie.effect.artificerPerfectlyCalibrated':
             params.synth = halfUp(value);
@@ -1195,6 +1238,10 @@ const rebuildBonusSettlementSummary = (
             const spiritCount = countBonusFaces(dice, 'spirit');
             return { summaryEffectParams: { branchCount, leafCount, spiritCount } };
         }
+        case 'bonusDie.effect.vampireLordTotalDemiseResult': {
+            const clawCount = countBonusFaces(dice, VAMPIRE_LORD_DICE_FACE_IDS.CLAW);
+            return { summaryEffectParams: { clawCount, bonusDamage: clawCount } };
+        }
         default:
             return {};
     }
@@ -1209,11 +1256,11 @@ const updatePendingBonusSettlementDie = (
     const settlement = state.pendingBonusDiceSettlement;
     if (!settlement) return settlement;
 
-    const dice = getPendingBonusSettlementDice(settlement).map(die => {
+    const dice: BonusDieInfo[] = getPendingBonusSettlementDice(settlement).map((die): BonusDieInfo => {
         if (die.index !== dieId) return die;
-        const rawFace = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true
-            ? String(newValue)
-            : (getPlayerDieFace(state, settlement.attackerId, newValue) ?? String(newValue));
+        const rawFace: BonusDieInfo['face'] = die.effectKey?.startsWith('bonusDie.effect.powderKeg.') === true
+            ? `${newValue}` as `${number}`
+            : requirePlayerDieFace(state, settlement.attackerId, newValue);
         const face = rawFace;
         const effectKey = resolveBonusDieEffectKeyForValue(die.effectKey, face, newValue);
         return {
@@ -1232,6 +1279,23 @@ const updatePendingBonusSettlementDie = (
         dice,
         ...rebuildBonusSettlementSummary(settlement, dice),
     };
+};
+
+const shouldPreserveConfirmedRollAfterMesmerizeReroll = (
+    state: DiceThroneCore,
+    event: Extract<DiceThroneEvent, { type: 'DIE_MODIFIED' | 'DIE_REROLLED' }>,
+): boolean => {
+    if (!state.rollConfirmed || !state.currentRollContext) return false;
+    if (event.payload.sourceCardId !== TOKEN_IDS.MESMERIZE) return false;
+
+    const { dieId, ownerId, playerId, target } = event.payload;
+    if (target !== undefined && target !== 'activeDie') return false;
+
+    const contextDie = state.currentRollContext.dice.find(die => die.id === dieId);
+    if (!contextDie) return false;
+
+    const dieOwnerId = ownerId ?? contextDie.ownerId ?? state.currentRollContext.ownerPlayerId;
+    return typeof dieOwnerId === 'string' && dieOwnerId !== playerId;
 };
 
 /**
@@ -1314,7 +1378,13 @@ const handleDieModified: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_MODI
         })
         : state.dice;
 
-    const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
+    const rollConfirmed = (
+        state.rollConfirmed
+        && didDieValueChange
+        && !shouldPreserveConfirmedRollAfterMesmerizeReroll(state, event)
+    )
+        ? false
+        : state.rollConfirmed;
 
     const contextDice = state.currentRollContext && (target === undefined || target === 'activeDie')
         ? state.currentRollContext.dice.map(die => {
@@ -1401,7 +1471,13 @@ const handleDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'DIE_RERO
         return { ...d, value: newValue, symbol: face, symbols: face ? [face] : [] };
     });
 
-    const rollConfirmed = (state.rollConfirmed && didDieValueChange) ? false : state.rollConfirmed;
+    const rollConfirmed = (
+        state.rollConfirmed
+        && didDieValueChange
+        && !shouldPreserveConfirmedRollAfterMesmerizeReroll(state, event)
+    )
+        ? false
+        : state.rollConfirmed;
 
     const contextDice = state.currentRollContext && (target === undefined || target === 'activeDie')
         ? state.currentRollContext.dice.map(die => {
@@ -1572,16 +1648,20 @@ const handleBonusDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
     // 更新 pendingBonusDiceSettlement
     let pendingBonusDiceSettlement = state.pendingBonusDiceSettlement;
     if (state.pendingBonusDiceSettlement) {
-        const updatedSettlement = updatePendingBonusSettlementDie(state, dieIndex, newValue, {
-            ...effectParams,
-            value: newValue,
-            index: dieIndex,
-        });
-        const newDice = getPendingBonusSettlementDice(updatedSettlement).map(d =>
-            d.index === dieIndex ? { ...d, face: newFace } : d);
+        let updatedState = state;
+        for (const result of event.payload.dice ?? [{ dieIndex, newValue, newFace }]) {
+            const updated = updatePendingBonusSettlementDie(updatedState, result.dieIndex, result.newValue, {
+                ...effectParams, value: result.newValue, index: result.dieIndex,
+            });
+            if (!updated) continue;
+            updatedState = { ...updatedState, pendingBonusDiceSettlement: {
+                ...updated, dice: getPendingBonusSettlementDice(updated).map(d =>
+                    d.index === result.dieIndex ? { ...d, face: result.newFace } : d),
+            } };
+        }
+        const updatedSettlement = updatedState.pendingBonusDiceSettlement!;
         pendingBonusDiceSettlement = {
             ...updatedSettlement,
-            dice: newDice,
             rerollCount: state.pendingBonusDiceSettlement.rerollCount + 1,
             lastRerolledDieIndex: dieIndex,
         };
@@ -1683,7 +1763,13 @@ const handleHeroInitialized: EventHandler<Extract<DiceThroneEvent, { type: 'HERO
         range: (min) => min,
         shuffle: <T>(arr: T[]) => arr,
     };
-    const heroState = initHeroState(playerId, characterId, dummyRandom, initialDeckCardIds);
+    const heroState = initHeroState(
+        playerId,
+        characterId,
+        dummyRandom,
+        initialDeckCardIds,
+        isSkirmishMode(state) ? SKIRMISH_INITIAL_HEALTH : undefined,
+    );
 
     const shouldCreateDice = state.dice.length === 0 || playerId === state.activePlayerId;
     return {
@@ -1729,6 +1815,8 @@ export const reduce = (
     state: DiceThroneCore,
     event: DiceThroneEvent
 ): DiceThroneCore => {
+    const spellState = reduceDoctorStrangeEvent(state, event);
+    if (spellState !== undefined) return spellState;
     switch (event.type) {
         case 'DICE_ROLLED':
             return handleDiceRolled(state, event);
@@ -1792,7 +1880,7 @@ export const reduce = (
         case 'ATTACK_RESOLVED':
             return handleAttackResolved(state, event);
         case 'ATTACK_MADE_UNDEFENDABLE':
-            return handleAttackMadeUndefendable(state, event);
+            return handleAttackMadeUndefendable(state);
         case 'CHOICE_REQUESTED':
             return handleChoiceRequested(state, event);
         case 'CHOICE_RESOLVED':
@@ -1845,6 +1933,13 @@ export const reduce = (
             return handleExtraAttackTriggered(state, event);
         case 'CHARACTER_SELECTED':
             return handleCharacterSelected(state, event);
+        // 同伴步骤的续链由领域事件系统消费，不复制为core中的等待状态。
+        case 'THOR_MJOLNIR_STEP_COMPLETED':
+        case 'THOR_MJOLNIR_RESOLVED':
+            return state;
+        case 'THOR_MJOLNIR_THROWN':
+            return { ...state, mjolnirThrowsThisTurn: { ...state.mjolnirThrowsThisTurn,
+                [event.payload.playerId]: (state.mjolnirThrowsThisTurn?.[event.payload.playerId] ?? 0) + 1 } };
         case 'HERO_INITIALIZED':
             return handleHeroInitialized(state, event);
         case 'PLAYER_BOARD_FACE_CHANGED':
@@ -1903,14 +1998,15 @@ export const reduce = (
 
                 if (to === 'targetingRoll') {
                     const playerDice = createPlayerDice(state, activePlayerId);
+                    const isSkirmish = isSkirmishMode(state);
                     return clearCurrentRollContextUnlessSettledReplay({
                         ...state,
                         activePlayerId,
                         rollCount: 0,
                         rollLimit: 1,
-                        rollDiceCount: 1,
+                        rollDiceCount: isSkirmish ? 0 : 1,
                         rollConfirmed: false,
-                        dice: resetDiceArray(playerDice ?? state.dice, 1),
+                        dice: resetDiceArray(playerDice ?? state.dice, isSkirmish ? 0 : 1),
                     });
                 }
 
@@ -1918,12 +2014,16 @@ export const reduce = (
                     // 清理攻击相关状态
                     let players = state.players;
                     const activePlayer = state.players[activePlayerId];
-                    if (activePlayer?.pendingBonusDamage !== undefined) {
+                    if (
+                        activePlayer?.pendingBonusDamage !== undefined
+                        || (activePlayer?.pendingBonusDamageSources?.length ?? 0) > 0
+                    ) {
                         players = {
                             ...state.players,
                             [activePlayerId]: {
                                 ...activePlayer,
                                 pendingBonusDamage: undefined,
+                                pendingBonusDamageSources: undefined,
                             },
                         };
                     }

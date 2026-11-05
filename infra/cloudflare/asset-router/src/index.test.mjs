@@ -1,12 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createAssetRouter } from './index.mjs';
+import { createAssetRouter, decodeChunkedBody } from './index.mjs';
 
 const createEnv = (overrides = {}) => ({
     ORIGIN_BASE_URL: 'https://origin.example.test',
     ORIGIN_TIMEOUT_MS: '1500',
     ORIGIN_TOKEN: 'test-token',
     ...overrides,
+});
+
+test('分块响应解码时保留多块内容并忽略扩展字段', () => {
+    const encoded = new TextEncoder().encode('4\r\nWiki\r\n5;ext=x\r\npedia\r\n0\r\n\r\n');
+    assert.equal(new TextDecoder().decode(decodeChunkedBody(encoded)), 'Wikipedia');
 });
 
 test('大型发布路径必须请求服务器源', async () => {
@@ -80,6 +85,43 @@ test('源站成功时保留响应并标识 server', async () => {
     assert.equal(response.headers.get('Access-Control-Allow-Origin'), '*');
     assert.equal(response.headers.has('CDN-Cache-Control'), false);
     assert.equal(await response.text(), 'origin-body');
+});
+
+test('普通资源、圣骑士素材和 OTA 清单都读取主服务器源', async () => {
+    const requestedOrigins = [];
+    const router = createAssetRouter({
+        fetchImpl: async (request) => {
+            requestedOrigins.push(request.url);
+            return new Response('primary-asset', { status: 200 });
+        },
+    });
+
+    const env = createEnv({
+        ORIGIN_BASE_URL: 'http://203.0.113.10',
+        ORIGIN_ROUTE: 'primary-cloud-server',
+        ORIGIN_TRANSPORT: 'fetch',
+    });
+    const paths = [
+        '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/player-board.webp?v=updated',
+        '/official/i18n/zh-CN/dicethrone/images/paladin/compressed/token.webp',
+        '/official/app-updates/android/stable/latest.json',
+        '/official/common/image.webp',
+    ];
+    const responses = [];
+    for (const path of paths) {
+        responses.push(await router(
+            new Request(`https://assets.example.test${path}`),
+            env,
+        ));
+    }
+
+    assert.deepEqual(requestedOrigins, paths.map((path) => `http://203.0.113.10${path}`));
+    assert.ok(responses.every((response) => response.status === 200));
+    assert.ok(responses.every((response) => response.headers.get('X-Asset-Origin-Route') === 'primary-cloud-server'));
+    assert.deepEqual(
+        await Promise.all(responses.map((response) => response.text())),
+        paths.map(() => 'primary-asset'),
+    );
 });
 
 test('配置直连 canary 时请求公网专用回源端口', async () => {
@@ -186,13 +228,13 @@ test('源站 5xx 时回退到 IP 主源', async () => {
     });
 
     const response = await router(
-        new Request('https://assets.example.test/official/app-updates/android/stable/latest.json'),
+        new Request('https://assets.example.test/official/app-updates/android/staging/latest.json'),
         createEnv({ ORIGIN_FALLBACK_BASE_URL: 'http://203.0.113.10' }),
     );
 
     assert.deepEqual(requestedOriginUrls, [
-        'https://origin.example.test/official/app-updates/android/stable/latest.json',
-        'http://203.0.113.10/official/app-updates/android/stable/latest.json',
+        'https://origin.example.test/official/app-updates/android/staging/latest.json',
+        'http://203.0.113.10/official/app-updates/android/staging/latest.json',
     ]);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('X-Asset-Source'), 'server');

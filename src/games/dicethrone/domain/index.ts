@@ -5,6 +5,7 @@
 import type { DomainCore, GameOverResult, MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { commitEventWithTimingOpportunities } from '../../../engine/TimingOpportunity';
 import { registerDiceDefinition } from './diceRegistry';
+import { doctorStrangeDiceDefinition } from '../heroes/doctor_strange/diceConfig';
 import { resourceSystem } from './resourceSystem';
 import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, CharacterId, TurnPhase, InteractionDescriptor, DtResponseWindowType, SeatControllerKind, PendingDefenderChoice } from './types';
 import { INITIAL_HEALTH } from './types';
@@ -16,7 +17,7 @@ import { playerView } from './view';
 import { discoverDiceThroneTimingOpportunities } from './timingOpportunities';
 import { commitDiceThroneDamagePreventionEvent } from './damagePreventionCommit';
 import { isDiceThroneTokenResponseCommandAllowedByContract } from './tokenResponseChoiceContract';
-import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isTeamMode } from './rules';
+import { buildTeamIdByPlayerIdFromSeatingOrder, getActiveDice, getPendingBonusSettlementDice, getTeamId, isSkirmishMode, isTeamMode } from './rules';
 import { registerDiceThroneConditions } from '../conditions';
 import { ALL_TOKEN_DEFINITIONS } from './characters';
 import { monkDiceDefinition } from '../heroes/monk/diceConfig';
@@ -41,12 +42,15 @@ import { artificerDiceDefinition } from '../heroes/artificer/diceConfig';
 import { tianshiDiceDefinition } from '../heroes/tianshi/diceConfig';
 import { lierenDiceDefinition } from '../heroes/lieren/diceConfig';
 import { vampireLordDiceDefinition } from '../heroes/vampire_lord/diceConfig';
+import { zhizhuxiaDiceDefinition } from '../heroes/zhizhuxia/diceConfig';
+import { thorDiceDefinition } from '../heroes/thor/diceConfig';
 
 // 注册 DiceThrone 游戏特定条件（骰子组合、顺子等）
 registerDiceThroneConditions();
 
 // 注册 角色 骰子与资源定义
 registerDiceDefinition(monkDiceDefinition);
+registerDiceDefinition(doctorStrangeDiceDefinition);
 registerDiceDefinition(barbarianDiceDefinition);
 registerDiceDefinition(pyromancerDiceDefinition);
 registerDiceDefinition(moonElfDiceDefinition);
@@ -62,6 +66,8 @@ registerDiceDefinition(artificerDiceDefinition);
 registerDiceDefinition(tianshiDiceDefinition);
 registerDiceDefinition(lierenDiceDefinition);
 registerDiceDefinition(vampireLordDiceDefinition);
+registerDiceDefinition(zhizhuxiaDiceDefinition);
+registerDiceDefinition(thorDiceDefinition);
 monkResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 barbarianResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
 pyromancerResourceDefinitions.forEach(def => resourceSystem.registerDefinition(def));
@@ -203,12 +209,16 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
             }
         }
 
-        // dt:card-interaction：data 直接是 PendingInteraction（状态选择类）
+        // dt:card-interaction：data 保留原始 PendingInteraction；校验使用当前 live interaction ID。
         // multistep-choice：骰子类交互，从 meta 构造兼容的 InteractionDescriptor
         let pendingInteraction: InteractionDescriptor | undefined;
         let pendingDefenderChoice: PendingDefenderChoice | undefined;
         if (interaction?.kind === 'dt:card-interaction') {
-            pendingInteraction = interaction.data as InteractionDescriptor;
+            pendingInteraction = {
+                ...(interaction.data as InteractionDescriptor),
+                id: interaction.id,
+                playerId: interaction.playerId,
+            };
         } else if (interaction?.kind === 'dt:defender-choice') {
             pendingDefenderChoice = interaction.data as PendingDefenderChoice;
         } else if (interaction?.kind === 'multistep-choice') {
@@ -330,6 +340,19 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         }
 
         const playerIds = Object.keys(state.players);
+        if (isSkirmishMode(state)) {
+            const livingPlayerIds = playerIds.filter(
+                (playerId) => (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) > 0,
+            );
+            if (livingPlayerIds.length === 1) {
+                return { winner: livingPlayerIds[0] };
+            }
+            if (livingPlayerIds.length === 0) {
+                return { draw: true };
+            }
+            return undefined;
+        }
+
         const defeated = playerIds.filter(id => (state.players[id]?.resources[RESOURCE_IDS.HP] ?? 0) <= 0);
 
         if (defeated.length === 0) return undefined;
@@ -348,7 +371,7 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
 };
 
 function normalizeLegacyDiceThroneMatchState(state: MatchState<DiceThroneCore>): MatchState<DiceThroneCore> {
-    const normalizedCore = normalizeLegacyDiceThroneCoreState(state.core);
+    const normalizedCore = normalizeLegacyDiceThroneCoreState(state.core, state.sys.eventStream?.entries);
     if (normalizedCore === state.core) {
         return state;
     }
@@ -358,14 +381,104 @@ function normalizeLegacyDiceThroneMatchState(state: MatchState<DiceThroneCore>):
     };
 }
 
-function normalizeLegacyDiceThroneCoreState(core: DiceThroneCore): DiceThroneCore {
-    const settlement = core.pendingBonusDiceSettlement;
+type LegacyCompanionEvent = {
+    type?: unknown;
+    payload?: {
+        playerId?: unknown;
+        companionId?: unknown;
+        delta?: unknown;
+        active?: unknown;
+    };
+};
+
+function inferLegacyNyraActive(
+    playerId: string,
+    companion: NonNullable<HeroState['companion']>,
+    eventStreamEntries: readonly { id: number; event: unknown }[] | undefined,
+): boolean {
+    // 这里只处理旧存档迁移；正式运行时不再从血量推断激活态。
+    // 没有完整事件流时无法可靠知道妮拉是否曾倒下，只能保留旧版语义。
+    if (!eventStreamEntries || eventStreamEntries.length === 0 || eventStreamEntries[0]?.id !== 1) {
+        return companion.hp > 0;
+    }
+
+    let hp = companion.maxHp;
+    let active = hp > 0;
+
+    for (const entry of eventStreamEntries) {
+        const event = entry.event as LegacyCompanionEvent;
+        if (event.type !== 'COMPANION_HEALTH_CHANGED') continue;
+        const payload = event.payload;
+        if (payload?.playerId !== playerId || payload.companionId !== 'nyra') continue;
+        if (typeof payload.delta !== 'number' || !Number.isFinite(payload.delta)) continue;
+
+        hp = Math.max(0, Math.min(companion.maxHp, hp + payload.delta));
+        if (hp <= 0) {
+            active = false;
+        } else if (typeof payload.active === 'boolean') {
+            active = payload.active;
+        }
+    }
+
+    return hp === companion.hp ? active : companion.hp > 0;
+}
+
+function normalizeLegacyDiceThroneCoreState(
+    core: DiceThroneCore,
+    eventStreamEntries?: readonly { id: number; event: unknown }[],
+): DiceThroneCore {
+    let normalizedCore = core;
+    let normalizedPlayers = core.players;
+
+    for (const [playerId, player] of Object.entries(core.players)) {
+        const companion = player.companion;
+        if (
+            player.characterId !== 'lieren'
+            || companion?.id !== 'nyra'
+            || typeof companion.active === 'boolean'
+        ) {
+            continue;
+        }
+
+        if (normalizedPlayers === core.players) {
+            normalizedPlayers = { ...core.players };
+        }
+        normalizedPlayers[playerId] = {
+            ...player,
+            companion: {
+                ...companion,
+                active: inferLegacyNyraActive(playerId, companion, eventStreamEntries),
+            },
+        };
+    }
+
+    if (normalizedPlayers !== core.players) {
+        normalizedCore = {
+            ...normalizedCore,
+            players: normalizedPlayers,
+        };
+    }
+
+    // 旧持久化状态可能把“尚未选防守方”写成 null；运行时合同使用 undefined。
+    // 若不在统一入口归一，三人局会误判为已有目标，ADVANCE_PHASE 无法打开选人交互。
+    const pendingAttack = normalizedCore.pendingAttack;
+    if (pendingAttack && (pendingAttack as { defenderId?: string | null }).defenderId === null) {
+        normalizedCore = {
+            ...normalizedCore,
+            pendingAttack: {
+                ...pendingAttack,
+                defenderId: undefined,
+            },
+        };
+    }
+
+    const settlement = normalizedCore.pendingBonusDiceSettlement;
     if (!settlement || Array.isArray(settlement.dice)) {
-        return core;
+        return normalizedCore;
     }
 
     return {
-        ...core,
+        ...normalizedCore,
         pendingBonusDiceSettlement: {
             ...settlement,
             dice: getPendingBonusSettlementDice(settlement),

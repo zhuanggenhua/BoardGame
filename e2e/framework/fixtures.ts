@@ -23,6 +23,7 @@ import { GameTestContext } from './GameTestContext';
 import { loadWorkerPorts } from '../../scripts/infra/port-allocator.js';
 import { E2E_SINGLE_WORKER_PORTS } from '../../scripts/infra/e2e-port-config.js';
 import { assertNoFatalFrontendErrors, attachPageDiagnostics } from '../helpers/common';
+import { startSourceSession } from './sourceIdentity';
 
 /**
  * Worker 端口信息
@@ -88,6 +89,7 @@ export const test = base.extend<FrameworkFixtures>({
     }, { option: true }],
 
     context: async ({ context, workerPorts }, use) => {
+        const releaseSourceSession = await startSourceSession(context, `http://127.0.0.1:${workerPorts.frontend}`);
         await context.addInitScript(() => {
             (window as any).__E2E_TEST_MODE__ = true;
         });
@@ -111,7 +113,11 @@ export const test = base.extend<FrameworkFixtures>({
             (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ = true;
         });
 
-        await use(context);
+        try {
+            await use(context);
+        } finally {
+            await releaseSourceSession();
+        }
     },
 
     fatalFrontendErrors: [async ({ context, page }, use) => {

@@ -12,6 +12,7 @@ export const isStaleChunkError = (value: unknown): boolean => {
     return normalized.includes(STALE_LAZY_MODULE_MARKER)
         || normalized.includes('failed to fetch dynamically imported module')
         || normalized.includes('error loading dynamically imported module')
+        || normalized.includes('outdated optimize dep')
         || normalized.includes('importing a module script failed')
         || normalized.includes('expected a javascript module script')
         || normalized.includes('is not a valid javascript mime type')

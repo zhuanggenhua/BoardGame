@@ -1,0 +1,2622 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "changeType": "refactor",
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "date": "2026-10-31",
+  "acceptanceMode": "behavioral-chain",
+  "capturePolicy": "distinct-ui-state",
+  "evidenceIndex": ".e2e-image-index.json",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "visualReview": "子代理逐张私读本轮全部整屏截图与真实录屏；主线程仅聚合文字、路径和散列。图面验交互、布局、可读性，规则数值由实际领域测试和端到端断言负责。"
+  },
+  "media": [
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-00-辽东边境与当前目标.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-01-轮盘免费前进一步.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-02-征召弃牌支付.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-03-共享放大镜检视征召手牌.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-04-全部合法征兵地区与辽北引导.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-05-辽北完整地区与建军选项.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-06-军屯地区选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-09-年中补牌后的手牌上限处理.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-10-军备升级卡牌.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-11-先选出兵来源.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-12-地图兵牌选择出兵.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-14-出兵来源到叶赫部目标.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-15-战术牌使用前.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-16-选中鸳鸯阵并确认.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-17-炮兵白骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-18-炮兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-19-骑兵红骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-20-骑兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-21-步兵绿骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-22-步兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-23-炮骑步连续真实掷骰录屏.webm",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-25-外交友好标记选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-26-外交结果与落点继续.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-27-雇佣部队目标.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-28-新年朝贡与结算顺序.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-29-山海关维护选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-30-叶赫部队维持费用.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-31-三张费用牌分别选中.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-32-手牌末端与翻看入口.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-33-平壤雇佣军耗损选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-34-选中平壤耗损部队.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-35-纪年争夺支付.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-36-新年顺位与纪年.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-37-年度人物判定.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-38-共享放大镜检视人物.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-39-次年炮兵训练选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-00-辽东边境与当前目标.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-01-征召弃牌支付.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-02-共享放大镜检视征召手牌.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-03-年中补牌后的手牌上限处理.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-04-地图兵牌选择出兵.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-05-已选部队与确认出兵.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-06-选中鸳鸯阵并确认.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-07-炮兵白骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-08-炮兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-09-骑兵红骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-10-骑兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-11-步兵绿骰真实投掷.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-12-步兵停稳与结果.jpg",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-13-炮骑步连续真实掷骰录屏.webm",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-14-战后占领选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-15-外交友好标记选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-16-外交结果与落点继续.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-17-雇佣部队目标.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-18-山海关维护选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-19-三张费用牌分别选中.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-20-手牌末端与翻看入口.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-21-选中平壤耗损部队.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-22-年度人物判定.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-24-次年炮兵训练选择.png",
+    "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-25-完整年度教程结束并继续对局.png"
+  ],
+  "requirements": [
+    {
+      "requirement": "连续正常对局与核心行动",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-00-辽东边境与当前目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-01-轮盘免费前进一步.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-02-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-03-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-04-全部合法征兵地区与辽北引导.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-05-辽北完整地区与建军选项.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-06-军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-09-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-10-军备升级卡牌.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-11-先选出兵来源.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-12-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-14-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-15-战术牌使用前.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-16-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-17-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-18-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-19-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-20-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-21-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-22-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-23-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-25-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-26-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-27-雇佣部队目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-28-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-29-山海关维护选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-30-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-31-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-32-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-33-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-34-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-35-纪年争夺支付.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-36-新年顺位与纪年.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-37-年度人物判定.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-38-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-39-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-00-辽东边境与当前目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-01-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-02-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-03-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-04-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-05-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-06-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-07-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-08-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-09-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-10-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-11-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-12-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-13-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-14-战后占领选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-15-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-16-外交结果与落点继续.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-17-雇佣部队目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-18-山海关维护选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-19-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-20-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-21-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-22-年度人物判定.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-24-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-25-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json"
+      ]
+    },
+    {
+      "requirement": "出兵来源部队目标与战术",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-11-先选出兵来源.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-12-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-14-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-15-战术牌使用前.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-16-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-04-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-05-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-06-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-14-战后占领选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json"
+      ]
+    },
+    {
+      "requirement": "真实掷骰与分段结果",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-17-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-18-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-19-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-20-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-21-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-22-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-23-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-07-炮兵白骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-08-炮兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-09-骑兵红骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-10-骑兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-11-步兵绿骰真实投掷.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-12-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-13-炮骑步连续真实掷骰录屏.webm",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-14-战后占领选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json"
+      ]
+    },
+    {
+      "requirement": "年中和新年结算",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-09-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-28-新年朝贡与结算顺序.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-29-山海关维护选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-30-叶赫部队维持费用.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-31-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-33-平壤雇佣军耗损选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-34-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-35-纪年争夺支付.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-36-新年顺位与纪年.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-37-年度人物判定.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-38-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-03-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-18-山海关维护选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-19-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-21-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-22-年度人物判定.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-25-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json"
+      ]
+    },
+    {
+      "requirement": "地图候选手牌与检视",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-02-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-03-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-04-全部合法征兵地区与辽北引导.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-05-辽北完整地区与建军选项.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-06-军屯地区选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-07-开垦地区选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-09-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-11-先选出兵来源.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-12-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-14-出兵来源到叶赫部目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-16-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-25-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-27-雇佣部队目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-31-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-32-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-34-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-38-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-39-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-01-征召弃牌支付.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-02-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-03-年中补牌后的手牌上限处理.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-04-地图兵牌选择出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-05-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-06-选中鸳鸯阵并确认.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-15-外交友好标记选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-17-雇佣部队目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-19-三张费用牌分别选中.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-20-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-21-选中平壤耗损部队.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-24-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json"
+      ]
+    },
+    {
+      "requirement": "进度生命周期与次年继续",
+      "status": "PASS",
+      "evidence": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-00-辽东边境与当前目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-39-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-00-辽东边境与当前目标.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-24-次年炮兵训练选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-25-完整年度教程结束并继续对局.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json"
+      ],
+      "supplementalEvidence": [
+        "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/lifecycle/lifecycle-verification.json"
+      ]
+    }
+  ],
+  "behaviorChains": [
+    {
+      "chainId": "qidahen-annual-desktop",
+      "sourceRun": "annual-r128-current-20261030",
+      "sourceRevision": "sha256:b2e82d074e0f2eb106f670a5abd76e79ca0dd00e7c3988fb4b0ac70894f5a5f4",
+      "evidence": "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/desktop.json",
+      "requiredSteps": [
+        "frontier-goal",
+        "opening-move",
+        "prepare-hand",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "farm-action",
+        "farm-alternative-checkpoint",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "opening-finish",
+        "midyear",
+        "hand-limit",
+        "battle-move",
+        "upgrade-first",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish",
+        "opponent-round",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand",
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "other-upkeep",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong",
+        "upkeep-liaodong",
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "year-ready",
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ]
+    },
+    {
+      "chainId": "qidahen-annual-mobile",
+      "sourceRun": "annual-r128-current-20261030",
+      "sourceRevision": "sha256:b2e82d074e0f2eb106f670a5abd76e79ca0dd00e7c3988fb4b0ac70894f5a5f4",
+      "evidence": "evidence/qidahen/tutorial-20261030-annual-r128-final/traces/mobile.json",
+      "requiredSteps": [
+        "frontier-goal",
+        "opening-move",
+        "prepare-hand",
+        "recruit-action",
+        "recruit-payment",
+        "recruit-confirm",
+        "recruit-source",
+        "recruit-troops",
+        "farm-action",
+        "farm-alternative-checkpoint",
+        "farm-target",
+        "reclaim-action",
+        "reclaim-target",
+        "opening-finish",
+        "midyear",
+        "hand-limit",
+        "battle-move",
+        "upgrade-first",
+        "upgrade-card",
+        "upgrade-payment",
+        "upgrade-confirm",
+        "dispatch-action",
+        "dispatch-payment",
+        "dispatch-source",
+        "dispatch-troops",
+        "dispatch-target",
+        "defender-response",
+        "tactic-card",
+        "battle-roll",
+        "occupy",
+        "battle-finish",
+        "opponent-round",
+        "diplomacy-move",
+        "diplomacy-action",
+        "diplomacy-target",
+        "diplomacy-finish",
+        "hire-action",
+        "hire-payment",
+        "hire-target",
+        "diplomacy-round-finish",
+        "save-hand",
+        "new-year",
+        "maintain-shanhai",
+        "maintenance-first-card",
+        "maintenance-second-card",
+        "abandon-jinzhou",
+        "abandon-ningyuan",
+        "abandon-inner-wall",
+        "abandon-outer-wall",
+        "upkeep-yehe",
+        "upkeep-xianxing",
+        "other-upkeep",
+        "upkeep-liaobei",
+        "upkeep-pyongyang",
+        "upkeep-hanseong",
+        "upkeep-liaodong",
+        "claim-year",
+        "chronology-first-card",
+        "chronology-second-card",
+        "chronology-third-card",
+        "new-order",
+        "year-character",
+        "year-ready",
+        "training-move",
+        "training-action",
+        "training-payment",
+        "training-payment-confirm",
+        "training-kind",
+        "training-target",
+        "training-finish",
+        "training-slot-finish",
+        "training-round-finish",
+        "finish"
+      ]
+    }
+  ],
+  "visualReview": {
+    "mode": "all-media",
+    "claimScope": "interaction-ui",
+    "status": "PASS",
+    "reviewer": {
+      "kind": "subagent",
+      "id": "/root/r128_desktop_head + /root/r128_desktop_tail + /root/r128_battle_review + /root/r128_mobile_final"
+    },
+    "reviewFile": "../.visual-review.json",
+    "baselineReviewFile": "../.baseline-review.json"
+  },
+  "behavioralVerification": {
+    "owner": "vitest",
+    "status": "PASS",
+    "commands": [
+      "node scripts/infra/vitest-cli-safe.mjs run src/games/qidahen/__tests__/tutorialNaturalOpening.test.ts src/games/qidahen/__tests__/annualTutorialFlow.test.ts src/games/qidahen/__tests__/turnResolution.test.ts src/games/qidahen/__tests__/tutorialFlow.test.ts src/pages/__tests__/matchRoomTutorialStageRuntime.test.tsx src/pages/__tests__/useMatchRoomTutorialLifecycle.test.tsx src/games/qidahen/__tests__/seasonChoiceBranches.test.ts src/games/qidahen/__tests__/movementRules.test.ts src/games/qidahen/__tests__/tutorialTurnInput.test.tsx src/games/qidahen/__tests__/qidahen-newyear-resolution.test.ts src/games/qidahen/__tests__/Board.test.ts src/engine/systems/__tests__/TutorialSystem.test.ts src/games/qidahen/__tests__/mapGraph.test.ts src/games/qidahen/__tests__/qidahen-midyear-resolution.test.ts src/games/qidahen/__tests__/ordinaryCardPiles.test.ts src/games/qidahen/__tests__/mapSelectionCandidates.test.ts src/games/qidahen/__tests__/wheelDispatchDraft.test.ts src/games/qidahen/__tests__/koreaCardPiles.test.ts src/games/qidahen/__tests__/chronologyDeck.test.ts src/games/qidahen/__tests__/mapRegionFocus.test.ts src/games/qidahen/__tests__/battleDefense.test.ts src/games/qidahen/__tests__/battleRollPlacement.test.tsx src/games/qidahen/__tests__/battleRollProjection.test.tsx src/lib/__tests__/diceBoxPolyhedralFaces.test.ts src/lib/__tests__/diceBoxThreeEngine.test.ts src/lib/__tests__/DiceBoxPhysicsSource.test.tsx src/lib/__tests__/DiceBoxPhysicsSource.lifecycle.test.tsx src/games/betrayal/__tests__/houseDicePresentation.test.ts src/games/qidahen/__tests__/mapTokenIdentity.test.ts --configLoader native"
+    ],
+    "evidence": [
+      "test-results/qidahen-annual-r128-unit.log"
+    ]
+  },
+  "boundaries": [
+    "桌面R128与手机R128各为完整独立教程链，逐链检验当前实际生产依赖，无跨跑次拼接同一链步骤；本地未提交、推送或发布",
+    "当前课程外的城战水路、全部人物分支未按完整自然对局逐条验收，详见作者总账",
+    "全项目类型检查仍有DiceThrone两处错误，国际化检查有其它模块七条告警；未声明全项目全绿",
+    "旧commands与runtime-interaction-contracts夹具仍需按退休年度owner迁移，不在本轮420项通过集中；不声称全游戏测试套件全绿",
+    "先前手机卡片命中等待失败原图未见可见覆盖，尚无唯一时序归因；当前真实通过仅证明本次流程"
+  ],
+  "lifecycleVerification": {
+    "status": "PASS",
+    "evidence": "C:/Users/zhuagenbao/AppData/Local/Temp/BoardGame-qidahen-annual-20261030/annual-r128-current-20261030/lifecycle/lifecycle-verification.json",
+    "sourceRun": "annual-r128-current-20261030",
+    "recordCount": 4
+  },
+  "outOfScopeMedia": [
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\00-frontier-goal.png",
+      "sha256": "533509ae73a6e1bf7e80726ff516d90e19dd74f7fe1e788d618a9e6cc397ebbd",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\01-opening-move.png",
+      "sha256": "d854e1c30e335c438cd4e9ce8698e85763ee0872c75aefe5b174e920b38d5ed0",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\02-recruit-payment.png",
+      "sha256": "a2a95ada20bb2e92256fdd45ed7c94c80cc56edc61690e5bfe39800dc4e75f22",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\03-recruit-payment-inspect.png",
+      "sha256": "3c95a31fc4662fad282493e1de6b5bed5de3dc4aa807ff679ec9b69e1a7e6993",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\04-recruit-source.png",
+      "sha256": "ac61e97d314837921402acafbb2dd9de9a68464ca37a1b2de7562f4869b632d9",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\05-recruit-troops.png",
+      "sha256": "19fc5967a4b14d79da693fcea45c54a5484a5c30d442cc4806773b468e1c996d",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\06-farm-target.png",
+      "sha256": "ddde7c5cce0cd5a26974b379c29cdd35fdff21b718a1f1ff0a4ccd2e6494ff3e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\07-reclaim-target.png",
+      "sha256": "7aa04cfdfaa00111edef0b2a936c7c2e31039ace9f4acca3501bf7b2688fab5b",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\08-midyear.png",
+      "sha256": "86b7bd9f01a7311be5e23233462997fdca527acfe66eddc48585d2f76b757133",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\09-hand-limit.png",
+      "sha256": "006e4cddfe00f29e9eaffdd921cfeffee0ca114ed56f8cb731162038a558c422",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\10-upgrade-card.png",
+      "sha256": "682aaf32c45af4b3a5c4a61772c3cafc13808eca141da9682e36fa125d13f773",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\11-dispatch-source.png",
+      "sha256": "6aa1ccef55cc9fe6dff17c6f4d6a24141da2170684e761c414181afc68e0e1c4",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\12-dispatch-troops.png",
+      "sha256": "55c99ce496d85412fd9a468896914c8b9e8b8c34a1a0ad8cd98fec2dee965333",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\13-dispatch-troops-selected.png",
+      "sha256": "dc4c7861afdf1fa50c7de9a410f8da10cd6b7e098392a37d9d5386da1b0769ec",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\14-dispatch-target.png",
+      "sha256": "6f0f0a0b7860563147817650ec3e03eae44423f62904f6a1f2ded9008e70125c",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\15-tactic-card.png",
+      "sha256": "fe77fda47febb5c7bea4081737403531cd41ac6e241927c262148bcf41115c3b",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\16-tactic-card-selected.png",
+      "sha256": "9cff72a26801a61eab7f31de558e700a9199f9c41708407009959d92419ad0f1",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\24-occupy.png",
+      "sha256": "882d89f896505a082dc3c56dd4ac3ef0ec1bf779ca874e74728bbc8d56fafb58",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\25-diplomacy-target.png",
+      "sha256": "04e55ce010800ffcb6e8e0bb7cf2001ed2645fae35f3dddca5a9656656870533",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\26-diplomacy-finish.png",
+      "sha256": "d2061e0d2f7ca051c02063431e74cf5fdc13d8eea4673dfa950d95621bf1f722",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\27-hire-target.png",
+      "sha256": "b6f7570e4396cc42e4059ac26245180d5100c4629c3e6e84ffd1066c83ccc550",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\28-new-year.png",
+      "sha256": "b96e49ff3209cb1e2d239337b46d46c454825980fc3612a4c499502c607b3558",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\29-maintain-shanhai.png",
+      "sha256": "6c7ab0936bf847eba79507cfbd322384ac85f90c9772cceb38ca516fc8c4a71f",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\30-upkeep-yehe.png",
+      "sha256": "6c6f561ca2e9f31324d18b298bb8f508a0a2011a7c8b0d24bd25ad1da0f8e9ef",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\31-upkeep-yehe-selected.png",
+      "sha256": "4376f1b2506b18eb510c3cac9690db3c92f6a25908154a306510884442c67a50",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\32-hand-scroll-end.png",
+      "sha256": "09df4c6ce862247d8c434d547b552ee67e127189ebed0cd53315dbefd90fc151",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\33-upkeep-pyongyang.png",
+      "sha256": "5b61f087a37ca66f51a846de53076caf2099aa4440d24e801963b63ab28b4210",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\34-upkeep-pyongyang-selected.png",
+      "sha256": "dd75631ae907673f1f02be4891180838cfd82ebc00c95bf56b9f2c487a02c2a2",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\35-claim-year.png",
+      "sha256": "48bfb03fd90e59d17ea5276d277fbc342d130a93374372ef644cf94c4e6ae445",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\36-new-order.png",
+      "sha256": "9bf7d86d941a2301a7fd294c182f18e4f232f70a6503ca44cbe78dab444b4d7e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\37-year-character.png",
+      "sha256": "8d3d22d1fbc36252d1f309262defbe2e581143c28b86d943fc7a4caeab8a0b6e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\38-year-character-inspect.png",
+      "sha256": "273b6df44512d6d4233668df2087027ba2e808a05d0f780b8a90e59f72a6743e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\39-training-target.png",
+      "sha256": "3ef3312756f80909a36675a9b68bdd535f96b43ef878f78127933c88318d2325",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\40-finish.png",
+      "sha256": "88159526081302a9d2d3825a06e51bf121920208fa6d45d4541ed9a87ef735a7",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-artillery-damage.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-artillery-rolling.jpg",
+      "sha256": "f8238733843315883aaf069cf14e6c222f92a26bbb56de0a35810875361bc5a3",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-cavalry-damage.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-cavalry-rolling.jpg",
+      "sha256": "9f5c0e7cf8d05aa68db6ad2d2dcd46fd4b6f89f4cbceca14467ee11c4a2e2c9c",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00000.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00001.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00002.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00003.jpg",
+      "sha256": "11f4e5e2285de8332849963b4fe1737ee24468da124915928f120f8ec0f956db",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00004.jpg",
+      "sha256": "77b450b899d6789542039d2432fb214ddd377806eff73ef929e4cc66cb4cf945",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00005.jpg",
+      "sha256": "0717b22d68055934d211ea95cf8c0c3afc3255380d582f86bd3c8316f3aa1461",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00006.jpg",
+      "sha256": "0717b22d68055934d211ea95cf8c0c3afc3255380d582f86bd3c8316f3aa1461",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00007.jpg",
+      "sha256": "0717b22d68055934d211ea95cf8c0c3afc3255380d582f86bd3c8316f3aa1461",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00008.jpg",
+      "sha256": "e12e103ac97e0154c00ccae23dbaa7b322c994d5a573f3b85d0e03e938fc78ef",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00009.jpg",
+      "sha256": "5adcf8fb090b51c22a107c6495adc98b41eaf07d8d100b5dc9e40243184cfef9",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00010.jpg",
+      "sha256": "0ec6f6300f6c79de82cc2af08dc11c563fd6194c1180c7d0a26f3eb2aeb08bd3",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00011.jpg",
+      "sha256": "be8c3d66c4442e5df736800d85b0adeb16fcf21d9996a470b381a08cb83903e5",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00012.jpg",
+      "sha256": "671ef21ee8b9cbfe522bd477fa2f6dcf4533ea8a147337fbc21ffb4d1dda5f7e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00013.jpg",
+      "sha256": "d2578217986857973d092d9ec87588d5c9d4bd3e48010630c5db17777b1c95ec",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00014.jpg",
+      "sha256": "b567b398d9b4764668cb9e39e699121b7895e0862bbfe774beecf1a75d0ef3c1",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00015.jpg",
+      "sha256": "53b5a8b907cbc5d45e4a5093b5851e93d887abd5ee9a7b77da81f51d7cbacf25",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00016.jpg",
+      "sha256": "a1da746d410322bbe47e83e01e0dfa72fc63f3a942aec11973d3fb4b36fabe4e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00017.jpg",
+      "sha256": "a50f748d63859ac1e499bb2df2daf309b9c82e2c3ab7b7d0a7f484d6ad4034b7",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00018.jpg",
+      "sha256": "845ebd3a7321db39427e7ebbe133c8c5a7d8825452b49ddbf2e5f7f6a81b031f",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00019.jpg",
+      "sha256": "f8238733843315883aaf069cf14e6c222f92a26bbb56de0a35810875361bc5a3",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00020.jpg",
+      "sha256": "2ecb3536972335fa8e4bc6fc160cffb87bfd42ec90dca301f4f343e95ac44a28",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00021.jpg",
+      "sha256": "f59bc62fc1168be348ed4d672d83da4f6628d4a973291546025285ea93bc1408",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00022.jpg",
+      "sha256": "c46ed718167e8afc55bc43f26560e824c1b988e58216ad3492602c7af0c08975",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00023.jpg",
+      "sha256": "68c5035d5128c8e87c1b1e357072c6343f8c7636cc06b8be7c112695c8767570",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00024.jpg",
+      "sha256": "a0c7cea64a8bcfcc62e101dd23f107296b819f0602b7a206ac777483fa119e3e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00025.jpg",
+      "sha256": "3b5ebcba783fedd997197e86df65a43797acbdfa02f4931d3474a92b75cce8c5",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00026.jpg",
+      "sha256": "220268798f80d375092ebccf88e2c544e5300264781970942896073717827cf5",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00027.jpg",
+      "sha256": "8a8826db50dc19c0e153ea9a41a6829951415290238ec16acf7bd3a96147c307",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00028.jpg",
+      "sha256": "c1cf6a876892dbac1aefed1fe84d7c1f169fbf2f3999b5c0f0ae8e23fd9b7472",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00029.jpg",
+      "sha256": "5124c20f10bfd1d080839b0a2fdcf2dcf7bbc0564b99efd2e5926853895284b1",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00030.jpg",
+      "sha256": "46bd79695b5187da79010da52e4ddb29d749410ba8cf784fb281bf4b8e399784",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00031.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00032.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00033.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00034.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00035.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00036.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00037.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00038.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00039.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00040.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00041.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00042.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00043.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00044.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00045.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00046.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00047.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00048.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00049.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00050.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00051.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00052.jpg",
+      "sha256": "9e6ab9d9480379ec58d45579e1c19dce6edab8c18e379ea9fd79f74ba6a33d4a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00053.jpg",
+      "sha256": "147fd221d9672be47c28949ffa03455a46ff5b88333489b1e12a8251bfe63a05",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00054.jpg",
+      "sha256": "30f994407974b8ebaeb119e5aab941b274505cc3d01fb215a7d525f0680a1c28",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00055.jpg",
+      "sha256": "a7936a7ecc58408224838aff79aa5a9bc119cf3992b6b6a4b0668393e0ee51ed",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00056.jpg",
+      "sha256": "8d2061b9130d7bfacbd8c052b80f65ce22c7d256640a7d4c3ab34e360c86a0cd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00057.jpg",
+      "sha256": "735c39a67072c2353c018faa9fe2d48c563953b3a9fcb11d71b712d9103530a8",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00058.jpg",
+      "sha256": "7a8db2ab364aa4f3e10b9a6d3c785866feb0bd9d491e8941379f509a950075d4",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00059.jpg",
+      "sha256": "0a9ed7c14b6784fbe344101ef889df0b937a8989e89937f08297e397157259c9",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00060.jpg",
+      "sha256": "f010636921219ce4450e30836ca2f4404c28d113e961012b1e5a4dc1801b4dc4",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00061.jpg",
+      "sha256": "78c1e5b61da820aba4f2cbb7907ee18240c0ad7f565a06e8af78f16618ab7bc9",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00062.jpg",
+      "sha256": "2861974c55aa96a63389e7a64db33f9611e8d42b0bf26a82612fc9a2b990f79e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00063.jpg",
+      "sha256": "bdbd6dd2f3fe6c8cc8baedb656c197e32566d7effc23fe4de82b35444e9a9844",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00064.jpg",
+      "sha256": "9f5c0e7cf8d05aa68db6ad2d2dcd46fd4b6f89f4cbceca14467ee11c4a2e2c9c",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00065.jpg",
+      "sha256": "0ea8ad624718d5c32f9e3f6d508046ba7652526de1384c10ca5cdeba4650c3f2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00066.jpg",
+      "sha256": "f47caeca7d188dc16feffd57307b639b6ae96cfe3e6ae4c725898e4678b863f4",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00067.jpg",
+      "sha256": "67ae7469f7d92d64dc299d7cb2da07a1099dfbdb39810eca6bb6e40a48065d1d",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00068.jpg",
+      "sha256": "00b0594716df16ca2f79a295faca6928cae12ce11f5eaf1f616ce3a4384b892a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00069.jpg",
+      "sha256": "cc6444d4f2a59ea9c489e194f88ae687a10fe656bee2f6956d6b707cdb40cfeb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00070.jpg",
+      "sha256": "066c5c1c2a5d7220df7b89a20fe0a39fbf086b40658e7b148583c19f37d77e55",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00071.jpg",
+      "sha256": "d100c0efaa01f007ad11c4a876e5970641e9ffa683602645759c87016e99c361",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00072.jpg",
+      "sha256": "402047dc95f45e2577fd45e760583fc67f7a6a6823f4ecdf50992d8b9787e374",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00073.jpg",
+      "sha256": "c5951f5431f89e9817f5f170742ea64eee83d6755ffb0b630e3125e7f8c2bccd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00074.jpg",
+      "sha256": "008dc8cd52a3e2e56b269bce59d9f418e99ff7e1f626857849f77a1ce51d7e0e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00075.jpg",
+      "sha256": "6ca92898161bd0afa260b5d9765949a21921ae07953a9f7cc859c6ad8cfce215",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00076.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00077.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00078.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00079.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00080.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00081.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00082.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00083.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00084.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00085.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00086.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00087.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00088.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00089.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00090.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00091.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00092.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00093.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00094.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00095.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00096.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00097.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00098.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00099.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00100.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00101.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00102.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00103.jpg",
+      "sha256": "7deb62444008f7d63c648dd0b273ef1bb24274cc7c96bcdcca31946ee62758fb",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00104.jpg",
+      "sha256": "18cdb2508b9400a6dce91549089c4bd7e9c03fe02151ca39e76c6bfe1f35d1a0",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00105.jpg",
+      "sha256": "067d6ae83b63b4c5cff16d3be4c6a33e9cfb49c423cf7ae8b10b24a9fba2db5a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00106.jpg",
+      "sha256": "43d8608ed55814bab4a0005ca9f7632664a463fd1976d7e858a4686eb8c53eab",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00107.jpg",
+      "sha256": "abd60ef10a93ba5003ceea1c3bf76c98577415ccc379f2199cd2593a2091035d",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00108.jpg",
+      "sha256": "7725bf2379effd9131178efea4468d50c294f838e57618d40183b98b02d5cf97",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00109.jpg",
+      "sha256": "24c83184eddf711644f448f1c5c86d4e8f846dd3208cd6ebc3f232e57256fd25",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00110.jpg",
+      "sha256": "a83f09dbc8f0fd62bbd392c9995b2598a6885e671c959d49d2e9481cce809dc1",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00111.jpg",
+      "sha256": "b6d0b78050af9237e7845117cd98cabf16634d45b5e8462b251c4010eabdfed7",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00112.jpg",
+      "sha256": "fac0033d117da555313991dff414ae18967f91002e4480f1dd0b3f3e2bfc872b",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00113.jpg",
+      "sha256": "4570a492a0d8a37c6195e49b516ff6384264e8632a56ed3af7a6523fb764600c",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00114.jpg",
+      "sha256": "6ba1d5ce514b300ab402b0d424867e16c946d630b0c4af5f95c0f4483cdf682d",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00115.jpg",
+      "sha256": "59cb6c3fb24ef3c8fd193e748138b8e334201cfa06572dd79153684fd425e433",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00116.jpg",
+      "sha256": "e812a1956e94c686d84f7587cf19f1f50a81507febc8b4d6253992ba515b1747",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00117.jpg",
+      "sha256": "8c1ecf9f781a9a8c3ade9b5a875b675a5a83a0b939b86faa1027b1362403f199",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00118.jpg",
+      "sha256": "28ac538eb2fa4e3019fd13e29e87114b92fcc26c958d6f543a7d28895de7a4f2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00119.jpg",
+      "sha256": "2b442847ed4153befbf3c4db7b3c58017f39e009f9d5473fe4386c7563c4cb29",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00120.jpg",
+      "sha256": "cc69604fa8ce3208682b7fba2ece2f5bd5f1a734a97cbd107001228f72bc0929",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00121.jpg",
+      "sha256": "a88538753decb5d0afc7d9f81a31e6cf6fa203fba59b9a9874edd053d6611dc1",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00122.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00123.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00124.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00125.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00126.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00127.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00128.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00129.jpg",
+      "sha256": "23a613f5a28cb65a2b3df695eebfe4e8936b8aa66923f9804698c99657a54fe2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00130.jpg",
+      "sha256": "5e83d727e33cfc1ae3fd80d9b854000e782c8b06b774fff25617cd21629e1ddc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00131.jpg",
+      "sha256": "e446550de71f6eafa8699f64282b1d2f6333dab0d9fc39d664b9e8e82222d10e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00132.jpg",
+      "sha256": "ea61e981b98b97a4af7a05bda5587a70e3c04c288f2998eb6bdd3eefc95f511c",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00133.jpg",
+      "sha256": "fbc48fcea4849aebba2f099e33f350327c1e6f4649560ef0e6b0ebe54ff8118e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00134.jpg",
+      "sha256": "fbc48fcea4849aebba2f099e33f350327c1e6f4649560ef0e6b0ebe54ff8118e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-frames\\00135.jpg",
+      "sha256": "fbc48fcea4849aebba2f099e33f350327c1e6f4649560ef0e6b0ebe54ff8118e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-infantry-damage.jpg",
+      "sha256": "f29cc32fdaa858ac250b09a24423b58e938645977fab6f8bd4781e26cc31cabc",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-infantry-rolling.jpg",
+      "sha256": "fac0033d117da555313991dff414ae18967f91002e4480f1dd0b3f3e2bfc872b",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\desktop\\battle-real-time.webm",
+      "sha256": "284c2f9d3bdc5d0653b714cb3c663c508028dbaf7b1c6372627e6c750561c6e0",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\00-frontier-goal.png",
+      "sha256": "4bf9bf4b418110ce35577e1f4ddcfeab2ac505fd3e5c476add9fd84f1a707ab6",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\01-recruit-payment.png",
+      "sha256": "702695740a09adfb58739f56bea00934992bab7440df7fb4ad5eff8297869dee",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\02-recruit-payment-inspect.png",
+      "sha256": "886067b08d79f29765c382bb7a554523d75d7c5f93240c6007a581928e4efedf",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\03-hand-limit.png",
+      "sha256": "5386a02d0b144d3278adbd079944a0d39842cb019fc7165d9f1f82c32be8b0a0",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\04-dispatch-troops.png",
+      "sha256": "c4ffd44343da236380c848b9bcaf93e475644a519c35f74237cefabc18684a84",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\05-dispatch-troops-selected.png",
+      "sha256": "92bc14947257e7cb38029bd73b2fed20395147eff457b4cc1ecd8233a69bc3f9",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\06-tactic-card-selected.png",
+      "sha256": "3185e5ec94d949346da7a12d67f0d38676eb111c2deb52b509161423415ca02e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\14-occupy.png",
+      "sha256": "7d78c57f9a571caa7bf32b48b2b6da84b157721c75b9e34d9a276fb3d7dc9307",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\15-diplomacy-target.png",
+      "sha256": "58e0af599dbe780fc70b97bef43fc6f2899e5cbb6674b383327aaa17c2645f56",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\16-diplomacy-finish.png",
+      "sha256": "22021d3d6d4d19c2c52afa87c42c6d718520ad5a5002235140757b58bdbc184b",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\17-hire-target.png",
+      "sha256": "c34301e321dd943ee8febbc3fe06399c994e201f195efe1c60533e1bf17a5593",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\18-maintain-shanhai.png",
+      "sha256": "f26e2d976c16e4d053ec37661c4b538b85adddea818441b26903c517b8bda52e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\19-upkeep-yehe-selected.png",
+      "sha256": "edecb11d7ed7157d0a6f69d9aa973348cf416b90b8e7a20e7336f9ca2ecc0f4e",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\20-hand-scroll-end.png",
+      "sha256": "38c5229af28a229d6f43ee59904b4a71b65c2445118885fa31fa28810dc54e83",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\21-upkeep-pyongyang-selected.png",
+      "sha256": "8485f3ea0a24a4c2f7eb552a727e01b779fc97b6989dcbb5fcd5c14665e88df5",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\22-year-character.png",
+      "sha256": "66561aaecf0e15573a79dcc2f5dfc2a3b572296d3ada9d1344ea8797668a560a",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\23-year-character-inspect.png",
+      "sha256": "60ec55227b51b7f5db297058fd28de892fa4cba086b202e82f46d8cad64e9417",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\24-training-target.png",
+      "sha256": "cb805cf2cb6b530cf05e9c5a799085aac2ffa6c152163e45607fbef3f4d59209",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\25-finish.png",
+      "sha256": "786a34213cadd9f01c097f30a38f624f72e111685bc798c4c431f3fcd228fc38",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-artillery-damage.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-artillery-rolling.jpg",
+      "sha256": "56bfef277871e1aa851e937d8fc4351d5b4901d397632a7b2e4560898ff04b94",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-cavalry-damage.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-cavalry-rolling.jpg",
+      "sha256": "9b3e71f3f6f1301a63b545dc0589cc2abcf16a691ccad4ad7450d5b205afeeb6",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00000.jpg",
+      "sha256": "47dcc8075f64b1dcb8573956efe1835be2a1bf31db46ba9296f2f7a47a29a25e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00001.jpg",
+      "sha256": "47dcc8075f64b1dcb8573956efe1835be2a1bf31db46ba9296f2f7a47a29a25e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00002.jpg",
+      "sha256": "47dcc8075f64b1dcb8573956efe1835be2a1bf31db46ba9296f2f7a47a29a25e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00003.jpg",
+      "sha256": "a8231ecfc4cd86a2fb8ad11a3f6608f2a3a31a134032e6ec5cb531faa8219852",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00004.jpg",
+      "sha256": "a8231ecfc4cd86a2fb8ad11a3f6608f2a3a31a134032e6ec5cb531faa8219852",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00005.jpg",
+      "sha256": "27d5bd40297a8eae53cc223800e1392a098625cf61de174fc4dc5d52ade529a0",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00006.jpg",
+      "sha256": "97130c529d3927de9b9d76939f32787cf1233d59ec96b28ed9e402bb3e662774",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00007.jpg",
+      "sha256": "59f18941797269a63528eb80d4551dacfcc5727c9817106caa589d08c57175c2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00008.jpg",
+      "sha256": "d891ba66be9883a99283474d257a39ef2aa0b33a44441bce6b336eaaa5e34d9a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00009.jpg",
+      "sha256": "0831c6eb190172befe3790f43610775add2450ea92931ef932299db283f4c572",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00010.jpg",
+      "sha256": "0fb6c67eb731513c50adcd0d6d382ea00e89eaaa406a04a7f50db3d4d31780a3",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00011.jpg",
+      "sha256": "f435c55ba411c5005f24ce9fe4abe97023760bf5f781e630eb1d3177015d43a9",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00012.jpg",
+      "sha256": "ca696f89db2291d77dc53159eea710598264862edcd8853fcc8cc06c42793295",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00013.jpg",
+      "sha256": "8bd1532a779d73cac4d368fc53b31be60654fa9aba9d8ed61400d62e928d437b",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00014.jpg",
+      "sha256": "967a9a3f24a823b0ce13756c94c06149e17ac30a3383b87ea8c3aca2539120e9",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00015.jpg",
+      "sha256": "1a2d291b93163a929454cf19b9f668462889d03e2b7b0824fb58ce6482ad65a6",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00016.jpg",
+      "sha256": "d49dce2f703542ed4c110dd86af57f15d0519ce477321d37f4cab0889af27bde",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00017.jpg",
+      "sha256": "32973c6bf8c20f8cb38f2975a2a8d3471fddec4ea190fca02812b8d15d3dfdc2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00018.jpg",
+      "sha256": "56bfef277871e1aa851e937d8fc4351d5b4901d397632a7b2e4560898ff04b94",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00019.jpg",
+      "sha256": "cb6ef54e098f724ec194cbba1bc3025c42a877173817cec106da47f1c2845110",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00020.jpg",
+      "sha256": "4717cf73a641745b46fcfc09f144b3a4860c5e3bac7202c2598e10129c162ef1",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00021.jpg",
+      "sha256": "ca4cded3383bdbde65dd42af75307d95f1e4db4c737ad7d52d23b24434f781dd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00022.jpg",
+      "sha256": "712e0c145765cb18af1c989e6c25c4c157c877b4b89552dc0345c801f1a61814",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00023.jpg",
+      "sha256": "845dc6733f708ed7a4390ec71513f7a41425cd082f40f40b5f764446a7c32d11",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00024.jpg",
+      "sha256": "3dcf49e7dd1d2a17998a66468f3980ae2e3f92a02e104f76308f3cd0359301a2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00025.jpg",
+      "sha256": "7f82e1b246c17f7f2ad1b6e138cde8d76f12ce28514ef951af4ee9d6475de928",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00026.jpg",
+      "sha256": "3b247e131d41d2f33d24eddfbf1d314ed49279d85c7529f9ae5a9cd220a91362",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00027.jpg",
+      "sha256": "7d81af28c261452bc0862eec06ace2d337c64eeb95c3a73dbeeba96e10aca015",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00028.jpg",
+      "sha256": "05beeb50283b8a38ed3a43077e5f3d4c9f7caeedfc64ac81006e47247ed2317c",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00029.jpg",
+      "sha256": "45630e20ccfcbdb9217c36a344d771ec7d75429021bdb82a3f556176cdeb49ad",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00030.jpg",
+      "sha256": "664261226e22d23ff35f5ead8260ff4e35071441ce6f4041ae37db06e5d9d828",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00031.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00032.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00033.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00034.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00035.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00036.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00037.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00038.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00039.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00040.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00041.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00042.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00043.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00044.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00045.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00046.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00047.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00048.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00049.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00050.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00051.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00052.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00053.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00054.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00055.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00056.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00057.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00058.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00059.jpg",
+      "sha256": "4942bc23399ea7067ea668911025207ae94ed7435e9b210e56b2c870d5554045",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00060.jpg",
+      "sha256": "6c057d75853fc76678c71c636a5f4c0d57dfc6ed1bb0f24bebac6410c172c69d",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00061.jpg",
+      "sha256": "b3b5f9099b0ceacf12495c4c5360f97d2c0b5c9fc2d1dd943dd0a71083369a73",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00062.jpg",
+      "sha256": "9b9a176b62063c4a935de78c8664b7c312bf68a3ef8cd44fb910090079b07dea",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00063.jpg",
+      "sha256": "d7f6ad2379c2a34ff3d1f28fc05e234c0fc2554712a615fa63846fd469f12f23",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00064.jpg",
+      "sha256": "239f70a4e996a8a8b9118653c8cfeb2ffe1185fefedb644f4e28f523dce0ba7d",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00065.jpg",
+      "sha256": "02d50b523ad528e6dc3237890b24e9d47d569a7bc913b0370596642c5b52ee8a",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00066.jpg",
+      "sha256": "585969d1676f4c4271d86337bbc6b5115dae1ec9d0c221c351f455ac2586f9b6",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00067.jpg",
+      "sha256": "5b4670b7e91d4f7e5b31cb04a1113881f6df4fe714de78dceebbc0261e82b13f",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00068.jpg",
+      "sha256": "28ac597c5a135c93a015de02298fa230ca8841b70daefaec1d1dced2dcd7bd48",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00069.jpg",
+      "sha256": "b3341ec854bf2785c9e33929daea67a273b0b2723e76835e251d22830b742ef0",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00070.jpg",
+      "sha256": "639ebd5a275bea719507243d637959ebe2d252959a39f6d25a300c238dc8420b",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00071.jpg",
+      "sha256": "51e784b3cc4184178f8f2abaaf4551ea2127ffcb8d0558332dd366193d9d282b",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00072.jpg",
+      "sha256": "6a6b222f57b49e9218b700aa1c8e93bf4aecba37151d4418d404ce4e1991dcae",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00073.jpg",
+      "sha256": "9b3e71f3f6f1301a63b545dc0589cc2abcf16a691ccad4ad7450d5b205afeeb6",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00074.jpg",
+      "sha256": "58c4df5b9fa6799227b57ae06ba05138584a7ae87d806d0d0be1c188e0953dd4",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00075.jpg",
+      "sha256": "daba95b90d5cb007e3d6cae729b7216d68ad1675a58cbe3ffa93998850794944",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00076.jpg",
+      "sha256": "8c783d0ef3ada76ebe071936c2b5da0b4afe482cc630413cc2ac4e68bd1f7a26",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00077.jpg",
+      "sha256": "f99643d51f36539e73538f79616395955d0c9f6084374846acdb44afe6b7305b",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00078.jpg",
+      "sha256": "28b13eff2c0e0228c772c250935f393f7b8853978594d9728d9e29c02db3b964",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00079.jpg",
+      "sha256": "ef856f9947d75fc7c00c418548f4bc392916d42c1d6ce684a96709320efea334",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00080.jpg",
+      "sha256": "1f23d6412fd36c3db31447b13690caa1f2ea9b9907263ff5681ce529712a34fd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00081.jpg",
+      "sha256": "0169d70eca7d67c41b599b576a9b499d790a8e0f6aa0eda59b8f4c16dae40278",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00082.jpg",
+      "sha256": "aacd8aeec6a5944cf37c51339ea16fa62bf497c6338027c57c139e7ec9efdacd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00083.jpg",
+      "sha256": "e1254c8dacab8fbce305f7dc0d7990d231cf6d1e0f5e3b409d7313a95ddf42a2",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00084.jpg",
+      "sha256": "f43f249ba99351aca34c302a66842762cca779dea2f5b95ca1815ed8b5b7ca27",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00085.jpg",
+      "sha256": "d775e5e0eb3f52d3466ae6b94f853a710e27125b4b290812a4b30b2fcf0edb43",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00086.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00087.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00088.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00089.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00090.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00091.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00092.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00093.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00094.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00095.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00096.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00097.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00098.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00099.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00100.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00101.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00102.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00103.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00104.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00105.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00106.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00107.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00108.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00109.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00110.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00111.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00112.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00113.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00114.jpg",
+      "sha256": "ec52ab4dff0ed98e1751c9d5ea2dd86a6256b86a20b7cf1fa4842e408f5495af",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00115.jpg",
+      "sha256": "d6f9c98aecf7f40ab3882676fde057f43d8ba44140844ca964f47645b5f75977",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00116.jpg",
+      "sha256": "e591831b59594767b27f21e5f32f6866c5a97d9e4e0bbeb62e40b200bbbb4735",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00117.jpg",
+      "sha256": "bc3623e125684ac23514c4d16a2da112fd7fbccdbbb0ac28c463a7288941ff9c",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00118.jpg",
+      "sha256": "b52ea3fb019d1d436587033d60acddca17a2c149e26f004c419ac594022cd8c9",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00119.jpg",
+      "sha256": "1b5824045c20a8c3bfd028ee76b972cca60ca3f65fe62e11b76af13e604f70bc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00120.jpg",
+      "sha256": "22090062efa7331fe4532503bc6323c0de161fb15dd47b0acf5ca9f06a69aa21",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00121.jpg",
+      "sha256": "6214ad32611a83e786c3bb880bc938af2bdc6edd6e2cce11c95444f4a158547f",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00122.jpg",
+      "sha256": "822dd2887589c89e17dda7f616755d4c15b6decb8505e598a3c575758e5ecc49",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00123.jpg",
+      "sha256": "eec1748dc3a0ff5584db3f80bd9db4b7496887ba3b374e822f37e30563b33cde",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00124.jpg",
+      "sha256": "d7494e68b5d6deb06272328494661b36e2d2224cb1c2c6139d0d846874a76913",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00125.jpg",
+      "sha256": "8f866e04fec3474d1e3548658d8bce7e5c479707d0bfb9bf6198357c1212c883",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00126.jpg",
+      "sha256": "1d182d74c636d151685ff4986e515c220d68684ddd3a1102a473e2f0d8292970",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00127.jpg",
+      "sha256": "42c5cf367be919ca844fde5c259be639367d3ac944beda755aef1dbcca3f0131",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00128.jpg",
+      "sha256": "53180f187fb80d169b9db418c4609a3f737c4dee528afb3d39f4110e578125dd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00129.jpg",
+      "sha256": "c0c595f359c1e53af4520fb768e14181b946df9626431f8f7c1530e37e8f7bec",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00130.jpg",
+      "sha256": "3a94a35e5aabc0de0f99e82c00b2c0cdea1a0d9916188816b916a3418d9795da",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00131.jpg",
+      "sha256": "a40a5352453cd20a54043bebf7338c0b12936ee9d363765c0bb052feeb0b3a53",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00132.jpg",
+      "sha256": "50b93d19a342b125e99d46df860b69203dccf6a9038fd3e3bf342bd6fb261acd",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00133.jpg",
+      "sha256": "cd38139f7b4790e8d3e52e4176e2334c90d110c259e006409005b220d7b9d5df",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00134.jpg",
+      "sha256": "91c4acecbd596b0c9b7933e7b22026f187365e74d9c035caf2ebf1f59c97eb71",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00135.jpg",
+      "sha256": "63a75520d00d3757138b28370bb3c628f475d0e9f6b9ea2cd696358c1ce812b8",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00136.jpg",
+      "sha256": "36bdffc31568279721b66dfd156b43b0f86e9c9fb78579d5e87080008bc486cc",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00137.jpg",
+      "sha256": "a0d697c1dc13de47ecd06efc1d4532fbeefece7291452017d3de14803e2136b8",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00138.jpg",
+      "sha256": "5a431ab748971dd4b2af325660d1ab28defd451b8cd8a831e3b30e1e845bdb86",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00139.jpg",
+      "sha256": "ff7cfbef610bf49dafdf29b823d0efa957edb1532adc3e245f1f1c01e957eb89",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00140.jpg",
+      "sha256": "fc8ffdfbd9ff01c7926550c8b4205d2b341434b84e46a08b7177147246136bef",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00141.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00142.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00143.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00144.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00145.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00146.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00147.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00148.jpg",
+      "sha256": "f0e6a8004f1d0031f6fc410ec0e4f372302ef309e81b58ab22f707568312439e",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00149.jpg",
+      "sha256": "49457b52925fe103633ff775237b0e1d14f6fc3cd9c314bcf5724eb2edeeb921",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00150.jpg",
+      "sha256": "3a177d3607b8f27e80f660ec0337823b9412fd117287d016a5429ac59a76fa16",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-frames\\00151.jpg",
+      "sha256": "3a177d3607b8f27e80f660ec0337823b9412fd117287d016a5429ac59a76fa16",
+      "contract": "internal-full-video-frame-audit",
+      "reason": "同源真实录屏的完整逐帧采样材料，已随全录屏由子代理审核；用户查看完整原录屏及关键整屏，不逐帧重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-infantry-damage.jpg",
+      "sha256": "a30f570aaf7faf76154eff7f068165a0c7c5bb3909b0df0e0cf2e05700c8d367",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-infantry-rolling.jpg",
+      "sha256": "53180f187fb80d169b9db418c4609a3f737c4dee528afb3d39f4110e578125dd",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    },
+    {
+      "path": "C:\\Users\\zhuagenbao\\AppData\\Local\\Temp\\BoardGame-qidahen-annual-20261030\\annual-r128-current-20261030\\mobile\\battle-real-time.webm",
+      "sha256": "1903cfa789077a3167224b52044398d02f584e98ee3ee45c88cd27fbb3abe198",
+      "contract": "source-original-byte-copy",
+      "reason": "同一已通过行为链的原始整屏或录屏，最终展示其字节一致归档副本；原路径仅保留来源，不重复展示。"
+    }
+  ]
+}

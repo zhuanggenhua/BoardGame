@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '../../contexts/ToastContext';
 import { AndroidForceUpdateGate } from './AndroidForceUpdateGate';
@@ -25,6 +25,7 @@ export const AndroidLiveUpdateManager = () => {
     const isNativeAndroid = isNativeAndroidRuntime();
     const isNativeMobile = isNativeAndroid || isNativeMobileRuntime();
     const [forceUpdateState, setForceUpdateState] = useState<AndroidForceUpdateState>(HIDDEN_FORCE_UPDATE_STATE);
+    const dismissedRef = useRef(false);
 
     useEffect(() => {
         if (!isNativeMobile) {
@@ -34,6 +35,12 @@ export const AndroidLiveUpdateManager = () => {
         let disposed = false;
 
         void registerAndroidLiveUpdateListeners();
+        const publishState = (state: AndroidForceUpdateState) => {
+            if (disposed || dismissedRef.current) {
+                return;
+            }
+            setForceUpdateState(state);
+        };
 
         const handleResult = (
             result: Awaited<ReturnType<typeof startAndroidLiveUpdateBackgroundCheck>>,
@@ -46,7 +53,7 @@ export const AndroidLiveUpdateManager = () => {
             }
 
             if (result.status === 'up-to-date' && options?.interactive) {
-                setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
+                publishState(HIDDEN_FORCE_UPDATE_STATE);
                 if (shouldShowAndroidOtaToastOncePerDay('up-to-date')) {
                     toast.success(t('nativeUpdate.toast.upToDate'), t('nativeUpdate.eyebrow'), {
                         dedupeKey: 'android-ota-up-to-date',
@@ -61,7 +68,7 @@ export const AndroidLiveUpdateManager = () => {
                 || result.status === 'disabled'
                 || result.status === 'not-native'
             ) {
-                setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
+                publishState(HIDDEN_FORCE_UPDATE_STATE);
                 return;
             }
 
@@ -82,8 +89,7 @@ export const AndroidLiveUpdateManager = () => {
             hasAutoStartedAndroidLiveUpdateCheck = true;
             void startAndroidLiveUpdateBackgroundCheck({
                 onForceStateChange: (state) => {
-                    if (disposed) return;
-                    setForceUpdateState(state);
+                    publishState(state);
                 },
                 applyMode: 'background',
             }).then((result) => {
@@ -92,13 +98,13 @@ export const AndroidLiveUpdateManager = () => {
         }
 
         const unsubscribeRequest = subscribeAndroidLiveUpdateRequests((request) => {
+            dismissedRef.current = false;
             void startAndroidLiveUpdateBackgroundCheck({
                 force: true,
                 applyMode: request.applyMode ?? 'immediate',
                 initialImmediatePhase: request.initialImmediatePhase,
                 onForceStateChange: (state) => {
-                    if (disposed) return;
-                    setForceUpdateState(state);
+                    publishState(state);
                 },
             }).then((result) => {
                 handleResult(result, { interactive: request.interactive });
@@ -118,7 +124,12 @@ export const AndroidLiveUpdateManager = () => {
     return (
         <AndroidForceUpdateGate
             state={forceUpdateState}
+            onDismiss={() => {
+                dismissedRef.current = true;
+                setForceUpdateState(HIDDEN_FORCE_UPDATE_STATE);
+            }}
             onRetry={() => {
+                dismissedRef.current = false;
                 void startAndroidLiveUpdateBackgroundCheck({
                     force: true,
                     applyMode: 'immediate',

@@ -481,6 +481,177 @@
         }
       }
     },
+    "hero/zhongcai/cards": {
+      "variants": {
+        "png": {
+          "sha256": "1c7e0823eb8f11933f63efd1fd3e6412ba23e5567930c053a836eee3e95acfa5",
+          "bytes": 19036885,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "31dbbb60ffe3683f8a27e6b154c3a7867e42c324952238d08f4478d7ecaa1bca",
+          "bytes": 1940074,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/zhongcai/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "8d543dab68f815b6790e236d31a51fec7d3a8c7e50884f033b3a6300d9497a15",
+          "bytes": 211090,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/zhongcai/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "5b6120a654950543de2a802ff51d736269f445dc5f89e02d692a6e1f191025fc",
+          "bytes": 215528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "hero/zhongcai/hero": {
+      "variants": {
+        "png": {
+          "sha256": "7a0892f529fe1504e51dc8251c84abf143af119140af6d7a699565d15833c781",
+          "bytes": 1296592,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc20396145019864960224B7B1DEE5FE09B964A709D3043A7A068D44246E6": {
+      "variants": {
+        "png": {
+          "sha256": "4d1219cd30f93e2e891a93b6006f4803eab91462e67b0cfb523641bf467abd35",
+          "bytes": 1297161,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986496154D5014FB1571755562F956F358881CC07AC95C28A": {
+      "variants": {
+        "png": {
+          "sha256": "f12ed0a5b5d487282712cafc32ac9636853cc9bc1eb5637bb210162efb0416a8",
+          "bytes": 1408773,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc203961450198649623729BFE5A975FE69CEC48727324687C8219F0D01B0": {
+      "variants": {
+        "png": {
+          "sha256": "553f088740cf8b585f70489d0e3775b2946fa273f881ad2296ce0f71132760d3",
+          "bytes": 1227448,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc20396145019864963316093FE2FA67886B1819FA5C228576EBEF0898B15": {
+      "variants": {
+        "png": {
+          "sha256": "8189ad1761b1dbf7933bfd2dffb06a39dcd4ba338497d9c72ec170df86438f07",
+          "bytes": 1214573,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc20396145019864964222DAFF3E6FB3D2B3B0EE3CF7E1FE9F9717C0CB9EF": {
+      "variants": {
+        "png": {
+          "sha256": "e86e4a4807e81c042613140520796c4514f67c13aee118297ffc6cd5b320f04c",
+          "bytes": 1175470,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986496531BB7A2CC39702FE92FDEF18129F7BD73CEAC9F3AE": {
+      "variants": {
+        "png": {
+          "sha256": "668f8b86f054522d548e591e6420e5a674b67d738ee7974cc3e65d2b9d1be7c8",
+          "bytes": 1182313,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986496631AFC55696DA10BC4C75E6EC4885E4A1104FD93C18": {
+      "variants": {
+        "png": {
+          "sha256": "769919e4d9ad91fd67715eb0c254760b7112d093b3ec4ed906f6c83b9bb4b200",
+          "bytes": 1246979,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc203961450198649672810FE361DA17F412CA69ED6132A6410AFDC18FDFA": {
+      "variants": {
+        "png": {
+          "sha256": "9b0e75d6efdbb0ace367b132c2a627731cd1a7a2d412fecb34d90b406765caee",
+          "bytes": 1220907,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986496816A5E4E4A773E2DF1C6F919CEB8B7A182FCF7BCEA8": {
+      "variants": {
+        "png": {
+          "sha256": "835c9b77365641ac991dc96ab1ff7e7ab60f368cd71645e319b97618ebe1bb48",
+          "bytes": 1245754,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986496900CFB26F8815A883A4C370DEAF7A09699064036CC9": {
+      "variants": {
+        "png": {
+          "sha256": "8d2eb341ac86b3d25b206cb5bae13a346b5dc43f6b9b441a5bcd68b26dc44601",
+          "bytes": 1165789,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986496982A02E32FF8C274A2F0310A564A94E219FDC015EF9": {
+      "variants": {
+        "png": {
+          "sha256": "7a0892f529fe1504e51dc8251c84abf143af119140af6d7a699565d15833c781",
+          "bytes": 1296592,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc203961450198649707752E701003DF2C98654882306FEC31180EA26BC04": {
+      "variants": {
+        "png": {
+          "sha256": "374eab76c006f89b72e8e1ec893a0cbdf4c3e7c19884dc0876dc728d581c76be",
+          "bytes": 1260590,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/httpcloud3steamusercontentcomugc2039614501986497170AB7B217F91691DDEC89CDB9057D9401DC9E50BD4": {
+      "variants": {
+        "png": {
+          "sha256": "fe4097fc6b63d25c2c51c736289bf4c3ff796ae88fec953c5eadab19859ab1d3",
+          "bytes": 1243625,
+          "mime": "image/png"
+        }
+      }
+    },
+    "hero/zhongcai/tip": {
+      "variants": {
+        "png": {
+          "sha256": "f12ed0a5b5d487282712cafc32ac9636853cc9bc1eb5637bb210162efb0416a8",
+          "bytes": 1408773,
+          "mime": "image/png"
+        }
+      }
+    },
     "thumbnails/compressed/cover": {
       "variants": {
         "webp": {

@@ -97,6 +97,11 @@ export interface AdvancePhaseCommand extends Command<'ADVANCE_PHASE'> {
     payload: Record<string, never>;
 }
 
+/** 花费即视感结束当前进攻投掷子阶段，由FlowSystem进入新的进攻投掷。 */
+export interface UseDejaVuCommand extends Command<'USE_DEJA_VU'> {
+    payload: Record<string, never>;
+}
+
 /** 选择角色命令 */
 export interface SelectCharacterCommand extends Command<'SELECT_CHARACTER'> {
     payload: {
@@ -180,6 +185,8 @@ export interface RemoveStatusCommand extends Command<'REMOVE_STATUS'> {
         targetPlayerId: PlayerId;
         /** 状态 ID（可选，不提供则移除所有） */
         statusId?: string;
+        /** 当前 dt:card-interaction ID；玩家 UI 交互应携带，旧入口可省略。 */
+        interactionId?: string;
     };
 }
 
@@ -192,6 +199,8 @@ export interface TransferStatusCommand extends Command<'TRANSFER_STATUS'> {
         toPlayerId: PlayerId;
         /** 状态 ID */
         statusId: string;
+        /** 当前 dt:card-interaction ID；玩家 UI 交互应携带，旧入口可省略。 */
+        interactionId?: string;
     };
 }
 
@@ -209,6 +218,8 @@ export interface ResolveInteractionCommand extends Command<'RESOLVE_INTERACTION'
     payload: {
         selectedPlayerIds?: PlayerId[];
         selectedCardIds?: string[];
+        /** 当前 dt:card-interaction ID；玩家 UI 交互应携带，旧入口可省略。 */
+        interactionId?: string;
     };
 }
 
@@ -261,6 +272,8 @@ export interface RerollBonusDieCommand extends Command<'REROLL_BONUS_DIE'> {
     payload: {
         /** 要重掷的骰子索引（0-based） */
         dieIndex: number;
+        /** 整组重掷时的完整选择，dieIndex 为其中第一颗。 */
+        dieIndices?: number[];
     };
 }
 
@@ -288,11 +301,14 @@ export interface GrantTokensCommand extends Command<'GRANT_TOKENS'> {
         targetPlayerId: PlayerId;
         /** 要授予的 Token 列表 */
         tokens: Array<{ tokenId: string; amount: number }>;
+        /** 当前 dt:card-interaction ID；玩家 UI 交互应携带，旧入口可省略。 */
+        interactionId?: string;
     };
 }
 
 /** 所有 DiceThrone 命令 */
 export type DiceThroneCommand =
+    | UseDejaVuCommand
     | RollDiceCommand
     | ToggleDieLockCommand
     | ConfirmRollCommand

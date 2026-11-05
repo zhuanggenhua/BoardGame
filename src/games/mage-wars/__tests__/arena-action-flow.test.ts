@@ -1284,6 +1284,7 @@ describe('mage-wars arena action flow', () => {
                         ...summoned.state.core.players['0'],
                         mana: 10,
                         actionReady: true,
+                        quickcastReady: true,
                         preparedSpellCardIds: [conjurationSpellId],
                     },
                 },
@@ -1546,12 +1547,12 @@ describe('mage-wars arena action flow', () => {
                 attackerObjectId: wildcat.id,
                 targetObjectId: target.id,
                 diceResults: [3, 3, 3, 3],
-                rawEffectDieResult: 3,
-                effectDieResult: 3,
                 chargeDiceModifier: 2,
                 baseDamage: 12,
             },
         });
+        expect(attackEvent?.payload).not.toHaveProperty('rawEffectDieResult');
+        expect(attackEvent?.payload).not.toHaveProperty('effectDieResult');
         expect(damageEvent).toMatchObject({
             payload: {
                 targetId: target.id,

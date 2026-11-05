@@ -25,3 +25,4 @@
 | --- | --- | --- |
 | 0001 | [AI 规范与 OpenSpec 分离](0001-ai-spec-structure-migration.md) | 生效 |
 | 0002 | [时点-机会-结算升级为平台级规则内核](0002-timing-opportunity-resolution-core.md) | 生效 |
+| 0003 | [吸收外部卡牌脚本工作流为 BoardGame 效果 Authoring 适配层](0003-card-effect-authoring-workflow.md) | 生效 |

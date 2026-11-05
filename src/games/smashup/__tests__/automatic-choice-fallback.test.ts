@@ -99,16 +99,21 @@ describe('Smash Up 无交互态不替玩家自动选择目标', () => {
             now: 12,
         }).events).toEqual([]);
 
-        expect(invokeRegisteredAbilityContract('frozen_let_it_go', 'onPlay', {
+        const letItGo = invokeRegisteredAbilityContract('frozen_let_it_go', 'onPlay', {
             state: core,
-            matchState: undefined,
+            matchState: makeMatchState(core),
             playerId: '0',
             cardUid: 'let-it-go',
             defId: 'frozen_let_it_go',
             baseIndex: 0,
             random: FIXED_RANDOM,
             now: 13,
-        }).events).toEqual([]);
+        });
+        expect(letItGo.events).toEqual([
+            expect.objectContaining({ type: SU_EVENTS.DECK_INSPECTED }),
+            expect.objectContaining({ type: SU_EVENTS.REVEAL_DECK_TOP }),
+        ]);
+        expect(letItGo.matchState).toBeDefined();
 
         expect(invokeRegisteredAbilityContract('sinister_six_vulture', 'onPlay', {
             state: core,

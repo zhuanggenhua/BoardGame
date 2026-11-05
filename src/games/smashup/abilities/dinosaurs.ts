@@ -4,7 +4,8 @@
  * 主题：高力量、消灭低力量随从、力量增强
  */
 
-import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
+import {
+ registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addTempPower,
@@ -27,6 +28,8 @@ import type { MatchState, PlayerId } from '../../../engine/types';
 import { matchesDefId } from '../domain/utils';
 import { queueFortTitanosaurusOngoingChoice } from './titans';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createBranchProgram,
     createEffectProgram,
@@ -452,7 +455,7 @@ function buildDinoDestroyEvents(
     state: MatchState<SmashUpCore> | SmashUpCore,
     target: { uid: string; defId: string; baseIndex: number },
     reason: string,
-    destroyerId: PlayerId | undefined,
+    destroyerId: PlayerId,
     now: number,
 ): SmashUpEvent[] {
     return buildValidatedDestroyEvents(state, {
@@ -468,11 +471,7 @@ function buildDinoDestroyEvents(
     });
 }
 
-const dinoLaserTriceratopsPromptProgram = createPromptProgram<
-    DinoLaserTriceratopsContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const dinoLaserTriceratopsPromptProgram = createPromptProgram<DinoLaserTriceratopsContext>({
     sourceId: 'dino_laser_triceratops',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `dino_laser_triceratops_${context.now}`,
@@ -654,11 +653,7 @@ function dinoHowl(ctx: AbilityContext): AbilityResult {
     return nextMatchState ? { events, matchState: nextMatchState } : { events };
 }
 
-const dinoNaturalSelectionTargetPromptProgram = createPromptProgram<
-    DinoNaturalSelectionTargetContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const dinoNaturalSelectionTargetPromptProgram = createPromptProgram<DinoNaturalSelectionTargetContext>({
     sourceId: 'dino_natural_selection_choose_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `dino_natural_selection_target_${context.now}`,
@@ -751,18 +746,17 @@ const dinoNaturalSelectionProgram = createBranchProgram<
             }
             return {
                 events: [],
-                context: nextContext,
-                nextProgram: dinoNaturalSelectionTargetPromptProgram,
+                continuation: createAbilityRuntimeContinuation(nextContext, dinoNaturalSelectionTargetPromptProgram),
             };
         },
     }),
 });
 
-const dinoSurvivalTiebreakPromptProgram = createPromptProgram<
+const dinoSurvivalTiebreakPromptProgram: AbilityProgram<
     DinoSurvivalTiebreakContext,
     SmashUpCore,
     SmashUpEvent
->({
+> = createPromptProgram<DinoSurvivalTiebreakContext>({
     sourceId: 'dino_survival_tiebreak',
     buildInteraction: (context) => {
         const [currentBase] = context.remainingBases;
@@ -815,13 +809,12 @@ const dinoSurvivalTiebreakPromptProgram = createPromptProgram<
         }
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 remainingBases,
-            },
-            nextProgram: dinoSurvivalTiebreakPromptProgram,
+            }, dinoSurvivalTiebreakPromptProgram),
         };
     },
 });
@@ -892,11 +885,7 @@ function resolveDinoRampageBaseSelection(
     return executeAbilityProgram(dinoRampageMinionPromptProgram, minionContext);
 }
 
-const dinoRampageMinionPromptProgram = createPromptProgram<
-    DinoRampageMinionContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const dinoRampageMinionPromptProgram = createPromptProgram<DinoRampageMinionContext>({
     sourceId: 'dino_rampage_choose_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `dino_rampage_choose_minion_${context.now}`,
@@ -930,11 +919,7 @@ const dinoRampageMinionPromptProgram = createPromptProgram<
     },
 });
 
-const dinoRampageBasePromptProgram = createPromptProgram<
-    DinoRampageBaseContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const dinoRampageBasePromptProgram = createPromptProgram<DinoRampageBaseContext>({
     sourceId: 'dino_rampage',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `dino_rampage_${context.now}`,

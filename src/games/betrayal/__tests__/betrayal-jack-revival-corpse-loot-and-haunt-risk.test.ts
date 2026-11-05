@@ -673,7 +673,7 @@ it('普通预兆触发作祟后仍保留翻牌确认队列，确认前不能继�
             deckKind: 'omen',
             cardName: 'A Splash of Crimson',
             stepKind: 'drawn-card',
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: ['0', '1', '2'],
             acknowledgedPlayerIds: [],
             index: 1,
             total: 1,

@@ -304,6 +304,9 @@ export function revertEventEffect(
     if (effect.mode === 'placeExplorerInAdjacentRoom') {
         return;
     }
+    if (effect.mode !== 'generalDamage') {
+        return;
+    }
     for (const trait of [...effect.traits].reverse()) {
         moveExplorerTraitSteps(core.currentExplorer, trait, Math.max(0, effect.amount));
     }

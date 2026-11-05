@@ -5,8 +5,11 @@ import type {
     BetrayalPendingEventRollResolutionState,
     BetrayalRecentRollState,
 } from './game';
+import type { AiSeatController } from '../../engine/ai/types';
 
-type PlayerRoster = Pick<BetrayalCore, 'playerIds'>;
+type PlayerRoster = Pick<BetrayalCore, 'playerIds'> & {
+    seatControllers?: Record<string, AiSeatController>;
+};
 
 type RecentRollDecisionCore = PlayerRoster & Pick<
     BetrayalCore,
@@ -17,6 +20,10 @@ type RoomExploredCardResolutionEvent = {
     payload: {
         playerId: string;
         deckKind: BetrayalDeckKind | null;
+        drawnCard?: {
+            id: string;
+            kind: BetrayalDeckKind;
+        };
         roomDiscoveryCards?: readonly unknown[];
         buriedRoomDiscoveryCards?: readonly unknown[];
     };
@@ -46,18 +53,33 @@ export function isPendingCardResolutionFullyAcknowledged(
     return requiredPlayerIds.every((playerId) => acknowledgedPlayerIds.includes(playerId));
 }
 
+export function resolveHumanAcknowledgementPlayerIds(core: PlayerRoster, fallbackPlayerId?: string): string[] {
+    const humanPlayerIds = core.playerIds.filter((playerId) => {
+        const controller = core.seatControllers?.[playerId];
+        return !controller || controller.type === 'human';
+    });
+    return humanPlayerIds.length > 0
+        ? humanPlayerIds
+        : fallbackPlayerId
+            ? [fallbackPlayerId]
+            : [...core.playerIds];
+}
+
 export function resolvePendingEventRollResolutionRequiredPlayerIds(
     core: PlayerRoster,
     resolution: BetrayalPendingEventRollResolutionState,
 ): string[] {
+    if (resolution.requiresPlayerAdvance) {
+        return [resolution.playerId];
+    }
     if (resolution.requiresAcknowledgement === false) {
         return [resolution.playerId];
     }
     const configuredPlayerIds = resolution.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
     if (configuredPlayerIds.length > 0) {
-        return configuredPlayerIds;
+        return Array.from(new Set(configuredPlayerIds));
     }
-    return [resolution.playerId];
+    return resolveHumanAcknowledgementPlayerIds(core, resolution.playerId);
 }
 
 export function resolvePendingEventRollResolutionAcknowledgedPlayerIds(
@@ -73,7 +95,7 @@ export function isPendingEventRollResolutionFullyAcknowledged(
     resolution: BetrayalPendingEventRollResolutionState,
     acknowledgedPlayerIds = resolvePendingEventRollResolutionAcknowledgedPlayerIds(resolution),
 ): boolean {
-    if (resolution.requiresAcknowledgement === false) {
+    if (resolution.requiresAcknowledgement === false && !resolution.requiresPlayerAdvance) {
         return true;
     }
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution);
@@ -91,10 +113,41 @@ export function eventRollResolutionNeedsAcknowledgement(
         | 'magicCameraSetup'
         | 'helpingHandsSetup'
         | 'uponReflectionSetup'
+        | 'hauntRoll'
+        | 'effect'
     >,
 ): boolean {
     if (resolution.requiresAcknowledgement !== undefined) {
         return resolution.requiresAcknowledgement;
+    }
+    return resolveEventRollResolutionRequiresAcknowledgement(resolution);
+}
+
+export function isIntermediateAllTraitCheckEventRollResolution(
+    resolution: Pick<BetrayalPendingEventRollResolutionState, 'nextPendingEventChoice'>,
+): boolean {
+    const nextPendingEventChoice = resolution.nextPendingEventChoice;
+    return Boolean(
+        (nextPendingEventChoice?.allTraitCheckProgress?.results.length ?? 0) > 0,
+    );
+}
+
+export function resolveEventRollResolutionRequiresAcknowledgement(
+    resolution: Pick<
+        BetrayalPendingEventRollResolutionState,
+        | 'nextPendingEventChoice'
+        | 'hauntRevealResolution'
+        | 'hauntTraitorResolution'
+        | 'dustSetup'
+        | 'magicCameraSetup'
+        | 'helpingHandsSetup'
+        | 'uponReflectionSetup'
+        | 'hauntRoll'
+        | 'effect'
+    >,
+): boolean {
+    if (isIntermediateAllTraitCheckEventRollResolution(resolution)) {
+        return false;
     }
     return Boolean(
         resolution.nextPendingEventChoice
@@ -103,7 +156,9 @@ export function eventRollResolutionNeedsAcknowledgement(
         || resolution.dustSetup
         || resolution.magicCameraSetup
         || resolution.helpingHandsSetup
-        || resolution.uponReflectionSetup,
+        || resolution.uponReflectionSetup
+        || resolution.hauntRoll
+        || resolution.effect?.mode === 'rolledDamage',
     );
 }
 
@@ -118,6 +173,8 @@ export function eventRollResolutionNeedsSharedAcknowledgement(
         | 'magicCameraSetup'
         | 'helpingHandsSetup'
         | 'uponReflectionSetup'
+        | 'effect'
+        | 'hauntRoll'
     >,
 ): boolean {
     if (!eventRollResolutionNeedsAcknowledgement(resolution)) {
@@ -140,7 +197,19 @@ export function resolveRecentRollRequiredPlayerIds(
 ): string[] {
     const configuredPlayerIds = recentRoll.requiredPlayerIds?.filter((playerId) => playerId.length > 0) ?? [];
     if (configuredPlayerIds.length > 0) {
-        return configuredPlayerIds;
+        return Array.from(new Set(configuredPlayerIds));
+    }
+    const publicJudgementKinds: BetrayalRecentRollState['kind'][] = [
+        'eventTraitCheck',
+        'eventDiceRoll',
+        'eventRolledDamage',
+        'hauntRoll',
+    ];
+    if (publicJudgementKinds.includes(recentRoll.kind)) {
+        return resolveHumanAcknowledgementPlayerIds(core, recentRoll.playerId);
+    }
+    if (configuredPlayerIds.length > 0) {
+        return Array.from(new Set(configuredPlayerIds));
     }
     return [recentRoll.playerId];
 }
@@ -195,7 +264,10 @@ export function resolveAcknowledgeableRecentRoll(
         return null;
     }
     const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
+        'eventTraitCheck',
+        'eventDiceRoll',
         'eventRolledDamage',
+        'hauntRoll',
         'mysticElevator',
         'attackRoll',
         'hauntActionTraitCheck',
@@ -227,10 +299,7 @@ export function resolveRoomExploredCardResolutionRequiredPlayerIds(
         event.payload.roomDiscoveryCards?.length
         || event.payload.buriedRoomDiscoveryCards?.length,
     );
-    if (
-        !hasRoomDiscoveryProcessCards
-        && (event.payload.deckKind === 'item' || event.payload.deckKind === 'omen')
-    ) {
+    if (!hasRoomDiscoveryProcessCards && event.payload.deckKind === 'item') {
         return [event.payload.playerId];
     }
     return core.playerIds.length > 0 ? [...core.playerIds] : [event.payload.playerId];

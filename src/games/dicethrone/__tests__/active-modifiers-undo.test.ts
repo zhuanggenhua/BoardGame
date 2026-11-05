@@ -191,7 +191,7 @@ describe('攻击修正指示器撤回测试', () => {
         expect(modifiers).toHaveLength(0);
     });
 
-    it('右侧栏应把伤害加成徽章与攻击修正徽章渲染到同一个上浮层栈', () => {
+    it('右侧栏应把攻击修正徽章保留在骰盘上方', () => {
         const activeModifiers: ActiveModifier[] = [{
             cardId: 'card-red-hot',
             nameKey: 'cards.card-red-hot.name',
@@ -235,12 +235,9 @@ describe('攻击修正指示器撤回测试', () => {
 
         expect(html).toContain('data-testid="active-modifier-badge"');
         expect(html).toContain('data-bonus-damage="2"');
-        expect(html).toContain('bottom-full');
-        expect(html).toContain('relative w-[5.8vw]');
+        expect(html).toContain('--mobile-board-shell-inline-unit');
         expect(html).toContain('pointer-events-none absolute inset-x-0 bottom-full');
         expect(html).not.toContain('data-testid="attack-modifier-bonus-badge"');
-        expect(html).not.toContain('-top-[2.2vw]');
-        expect(html).not.toContain('-top-[3.8vw]');
     });
 
     it('右侧栏应显示当前总伤害，并保留原始与当前伤害数值', () => {
@@ -282,16 +279,67 @@ describe('攻击修正指示器撤回测试', () => {
         expect(html).toContain('data-testid="current-total-damage-badge"');
         expect(html).toContain('data-current-damage="7"');
         expect(html).toContain('data-original-damage="5"');
-        expect(html).toContain('damageSummary.label');
         expect(html).toContain('damageSummary.changed:original=5,current=7');
         expect(html).toContain('data-testid="current-total-damage-badge-anchor"');
-        expect(html).toContain('data-placement="dice-tray-left-top-outside"');
-        expect(html).toContain('absolute right-[calc(100%+0.35vw)] top-0');
-        expect(html).not.toContain('bottom-full');
-        expect(html).not.toContain('right-full');
-        expect(html).not.toContain('-translate-x-[0.35vw]');
-        expect(html).not.toContain('-translate-y-[0.35vw]');
-        expect(html).not.toContain('absolute inset-x-0 bottom-full');
+        expect(html).toContain('data-placement="dice-tray-right-top-outside"');
+        expect(html).toContain('left:calc(100% + calc(var(--mobile-board-shell-inline-unit, 1vw) * 0.35))');
+        expect(html).toContain('data-testid="current-total-damage-label"');
+        expect(html).toContain('data-testid="current-total-damage-change"');
+        expect(html).toContain('aria-label="5→7"');
+        expect(html).toContain('width:max-content');
+        expect(html).toContain('min-width:0');
+    });
+
+    it('奖励骰显示在右侧栏时，应可见标明真实掷骰者而不是沿用右侧座位归属', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [
+                    {
+                        id: 0,
+                        value: 1,
+                        symbol: 'claw',
+                        symbols: ['claw'],
+                        isKept: false,
+                        definitionId: 'vampire_lord-dice',
+                        ownerId: '0',
+                    },
+                ],
+                rollCount: 1,
+                rollLimit: 1,
+                rollConfirmed: false,
+                currentPhase: 'defensiveRoll',
+                canInteractDice: true,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                setRerollingDiceIds: vi.fn(),
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                isBonusDiceSettlement: true,
+                rootPlayerId: '1',
+                teamIdByPlayerId: { '0': 'A', '1': 'B' },
+            })
+        );
+
+        expect(html).toContain('data-player-seat-anchor="1"');
+        expect(html).toContain('data-testid="bonus-dice-owner-label"');
+        expect(html).toContain('data-bonus-dice-owner-id="0"');
+        expect(html).toContain('data-bonus-dice-definition-id="vampire_lord-dice"');
+        expect(html).toContain('dice.bonusRollOwner:owner=characters.vampire_lord');
+        expect(html).toContain('data-owner-id="0"');
+        expect(html).toContain('data-definition-id="vampire_lord-dice"');
     });
 
     it('右侧栏阶段推进按钮不可用时仍应保留显示，只禁用点击', () => {
@@ -511,6 +559,62 @@ describe('攻击修正指示器撤回测试', () => {
 
         expect(html).toContain('interaction.hint_select_opponent:current=0,max=1');
         expect(html).toContain('data-player-seat-anchor="0"');
+    });
+
+    it('改骰提示框应按内容撑高，不应被固定高度或裁剪样式截断', () => {
+        const html = renderToStaticMarkup(
+            React.createElement(RightSidebar, {
+                dice: [],
+                rollCount: 1,
+                rollLimit: 2,
+                rollConfirmed: true,
+                currentPhase: 'offensiveRoll',
+                canInteractDice: true,
+                isRolling: false,
+                setIsRolling: vi.fn(),
+                rerollingDiceIds: [],
+                onToggleLock: vi.fn(),
+                onRoll: vi.fn(),
+                onConfirm: vi.fn(),
+                showAdvancePhaseButton: false,
+                advanceLabel: 'advance',
+                isAdvanceButtonEnabled: false,
+                onAdvance: vi.fn(),
+                discardPileRef: createRef<HTMLDivElement>(),
+                discardCards: [],
+                canUndoDiscard: false,
+                onUndoDiscard: vi.fn(),
+                discardHighlighted: false,
+                sellButtonVisible: false,
+                dispatch: vi.fn(),
+                rootPlayerId: '0',
+                teamIdByPlayerId: { '0': 'A', '1': 'B' },
+                interaction: {
+                    id: 'long-hint',
+                    kind: 'multistep-choice',
+                    playerId: '0',
+                    title: 'long-hint',
+                    description: null,
+                    options: [],
+                    data: {
+                        title: 'long-hint',
+                        completedDieIds: [],
+                        meta: {
+                            dtType: 'modifyDie',
+                            dieModifyConfig: { mode: 'any' },
+                            selectCount: 1,
+                            diceOwnerId: '0',
+                            targetOpponentDice: false,
+                        },
+                    },
+                } as any,
+            }),
+        );
+
+        const hintTag = html.match(/<div[^>]*data-testid="dice-interaction-hint"[^>]*>/)?.[0] ?? '';
+        expect(hintTag).toContain('width:max-content');
+        expect(hintTag).not.toContain('max-height');
+        expect(hintTag).not.toContain('overflow-hidden');
     });
 });
 

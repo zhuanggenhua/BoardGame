@@ -1,8 +1,10 @@
 import { expect } from 'vitest';
-import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenFortificationMaintenanceSelectionFromInteraction, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore, QidahenDomain } from '../../domain';
+import { getQidahenDiplomacySelectionForCore, getQidahenDriveTigerConsentSelectionForCore, getQidahenDriveTigerConsentSelectionFromInteraction, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore, QidahenDomain } from '../../domain';
 
 import { QIDAHEN_COMMANDS } from '../../domain/commands';
 import { getQidahenCurrentWheelDispatchSelectionForCore, getQidahenInternalDispatchSelectionForCore } from '../../domain/dispatchSelectionBuilders';
+import { getCurrentFactionId } from '../../domain/factionTurnAccessors';
+import { isQidahenWheelDispatchPaymentPending } from '../../domain/wheelDispatchPayment';
 import { getQidahenGrantPardonSelectionForCore } from '../../domain/selectionBuilders';
 import { syncQidahenRuntimeInteractionState } from '../../domain/runtimeInteractions';import type { QidahenCommand, QidahenCore, QidahenEvent, QidahenFactionId } from '../../domain/types';
 
@@ -12,7 +14,12 @@ import { createRespondToPromptCommand, getCurrentInteractionSummary } from '../.
 import { engineConfig } from '../../game';
 
 // 只承载七大恨领域测试的合法状态构造、命令执行和提示响应夹具。
-export const random = () => 0.5;
+export const random: RandomFn = {
+    random: () => 0.5,
+    d: () => 4,
+    range: min => min,
+    shuffle: items => [...items],
+};
 
 export type QidahenDiplomacySelectionSnapshot = ReturnType<typeof getQidahenDiplomacySelectionForCore>;
 
@@ -75,7 +82,7 @@ export function stateOf(core: QidahenCore): MatchState<QidahenCore> {
     });
 }
 
-export function apply(core: QidahenCore, command: QidahenCommand, randomFn: RandomFn = testRandom): QidahenCore {
+export function applyUnchecked(core: QidahenCore, command: QidahenCommand, randomFn: RandomFn = testRandom): QidahenCore {
     const validation = QidahenDomain.validate(stateOf(core), command);
     expect(validation.valid).toBe(true);
     return QidahenDomain.execute(stateOf(core), command, randomFn).reduce(
@@ -84,8 +91,39 @@ export function apply(core: QidahenCore, command: QidahenCommand, randomFn: Rand
     );
 }
 
-export function getFortificationMaintenanceSelection(core: QidahenCore) {
-    return getQidahenFortificationMaintenanceSelectionFromInteraction(stateOf(core).sys.interaction?.current);
+export function payWheelDispatchDiscard(
+    core: QidahenCore,
+    playerId = core.currentPlayer,
+    randomFn: RandomFn = testRandom,
+): QidahenCore {
+    if (!isQidahenWheelDispatchPaymentPending(core)) {
+        return core;
+    }
+    const currentFactionId = getCurrentFactionId(core);
+    const paymentCard = factionHandCards(core, currentFactionId).find((card) => (
+        card.status !== 'disabled'
+        && !core.selectedPaymentCardIds.includes(card.id)
+    ));
+    expect(paymentCard).toBeTruthy();
+    const selected = core.selectedPaymentCardIds.length >= 1
+        ? core
+        : applyUnchecked(core, {
+            type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            playerId,
+            payload: { cardId: paymentCard!.id },
+        }, randomFn);
+    return applyUnchecked(selected, {
+        type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+        playerId,
+        payload: {},
+    }, randomFn);
+}
+
+export function apply(core: QidahenCore, command: QidahenCommand, randomFn: RandomFn = testRandom): QidahenCore {
+    const paidCore = command.type === QIDAHEN_COMMANDS.SELECT_REGION && isQidahenWheelDispatchPaymentPending(core)
+        ? payWheelDispatchDiscard(core, command.playerId, randomFn)
+        : core;
+    return applyUnchecked(paidCore, command, randomFn);
 }
 
 export function getDriveTigerConsentSelection(core: QidahenCore) {
@@ -104,9 +142,71 @@ export function getMaShiTradeSelection(core: QidahenCore) {
     return getQidahenMaShiTradeSelectionForCore(core);
 }
 
-export function payGrantPardonAndChooseTarget(
+export function chooseGrantPardonDestinationAndTroop(
     core: QidahenCore,
-    choiceId: string,
+    targetRegionId: string,
+    preferredSourceRegionId?: string,
+): QidahenCore {
+    const executorPlayerId = core.currentPlayer;
+    const choosingDestination = core;
+    expect(choosingDestination.turnPhase).toBe('grant-pardon-choice');
+    expect(getGrantPardonSelection(choosingDestination)?.choices.some((choice) => (
+        choice.targetRegionId === targetRegionId
+    ))).toBe(true);
+    const destinationSelected = apply(choosingDestination, {
+        type: QIDAHEN_COMMANDS.SELECT_REGION,
+        playerId: executorPlayerId,
+        payload: { regionId: targetRegionId },
+    });
+    expect(getGrantPardonSelection(destinationSelected)?.targetRegionId).toBe(targetRegionId);
+
+    let troopSelection = getGrantPardonSelection(destinationSelected);
+    if (troopSelection?.opponentFactionId == null) {
+        const intendedChoice = troopSelection?.choices.find((choice) => (
+            preferredSourceRegionId == null || choice.sourceRegionId === preferredSourceRegionId
+        ));
+        expect(intendedChoice).toBeDefined();
+        const opponentFactionId = intendedChoice!.sourceFactionId;
+        const opponentSelected = apply(destinationSelected, {
+            type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
+            playerId: executorPlayerId,
+            payload: { choiceId: `opponent:${opponentFactionId}` },
+        });
+        troopSelection = getGrantPardonSelection(opponentSelected);
+        expect(troopSelection?.opponentFactionId).toBe(opponentFactionId);
+        return selectGrantPardonTroop(opponentSelected, troopSelection, preferredSourceRegionId);
+    }
+
+    return selectGrantPardonTroop(destinationSelected, troopSelection, preferredSourceRegionId);
+}
+
+const selectGrantPardonTroop = (
+    core: QidahenCore,
+    selection: ReturnType<typeof getGrantPardonSelection>,
+    preferredSourceRegionId?: string,
+): QidahenCore => {
+    expect(selection?.opponentFactionId).toBeDefined();
+    const choice = selection!.choices.find((candidate) => (
+        candidate.targetRegionId === selection!.targetRegionId
+        && (preferredSourceRegionId == null || candidate.sourceRegionId === preferredSourceRegionId)
+    ));
+    expect(choice).toBeDefined();
+    expect(choice!.sourceTokenId).toBeDefined();
+    const sourcePlayerId = core.factions[choice!.sourceFactionId].playerId;
+    return apply(core, {
+        type: QIDAHEN_COMMANDS.SELECT_REGION,
+        playerId: sourcePlayerId,
+        payload: {
+            regionId: choice!.sourceRegionId,
+            tokenId: choice!.sourceTokenId,
+        },
+    });
+};
+
+export function payGrantPardonAndResolveTroop(
+    core: QidahenCore,
+    targetRegionId: string,
+    preferredSourceRegionId?: string,
 ): QidahenCore {
     expect(core.turnPhase).toBe('action-window');
     expect(core.grantPardonSelection).toBeNull();
@@ -135,12 +235,7 @@ export function payGrantPardonAndChooseTarget(
         payload: {},
     });
     expect(choosingTarget.turnPhase).toBe('grant-pardon-choice');
-    expect(getGrantPardonSelection(choosingTarget)?.choices.map((choice) => choice.id)).toContain(choiceId);
-    return apply(choosingTarget, {
-        type: QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE,
-        playerId: '0',
-        payload: { choiceId },
-    });
+    return chooseGrantPardonDestinationAndTroop(choosingTarget, targetRegionId, preferredSourceRegionId);
 }
 
 export function getKhanEdictSelection(core: QidahenCore) {
@@ -159,18 +254,70 @@ export function getWheelDispatchSelection(core: QidahenCore) {
     return getQidahenCurrentWheelDispatchSelectionForCore(core);
 }
 
+function payWheelDispatchDiscardPipeline(
+    state: MatchState<QidahenCore>,
+    playerId: string,
+    playerIds: string[],
+): MatchState<QidahenCore> {
+    if (!isQidahenWheelDispatchPaymentPending(state.core)) {
+        return state;
+    }
+    const currentFactionId = getCurrentFactionId(state.core);
+    const paymentCard = factionHandCards(state.core, currentFactionId).find((card) => (
+        card.status !== 'disabled'
+        && !state.core.selectedPaymentCardIds.includes(card.id)
+    ));
+    expect(paymentCard).toBeTruthy();
+    const selected = state.core.selectedPaymentCardIds.length >= 1
+        ? state
+        : executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems as any },
+            state,
+            {
+                type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+                playerId,
+                payload: { cardId: paymentCard!.id },
+            } as any,
+            testRandom,
+            playerIds,
+        ).state;
+    return executePipeline(
+        { domain: engineConfig.domain, systems: engineConfig.systems as any },
+        selected,
+        {
+            type: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+            playerId,
+            payload: {},
+        } as any,
+        testRandom,
+        playerIds,
+    ).state;
+}
+
 export function applyPipeline(
     state: MatchState<QidahenCore>,
     command: { type: string; playerId: string; payload: Record<string, unknown> },
     playerIds: string[] = ['0', '1', '2'],
 ) {
-    return executePipeline(
+    const paidState = command.type !== QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD
+        && command.type !== QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT
+        && isQidahenWheelDispatchPaymentPending(state.core)
+        ? payWheelDispatchDiscardPipeline(state, command.playerId, playerIds)
+        : state;
+    const result = executePipeline(
         { domain: engineConfig.domain, systems: engineConfig.systems as any },
-        state,
+        paidState,
         command as any,
         testRandom,
         playerIds,
     );
+    if (command.type === QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE && isQidahenWheelDispatchPaymentPending(result.state.core)) {
+        return {
+            ...result,
+            state: payWheelDispatchDiscardPipeline(result.state, command.playerId, playerIds),
+        };
+    }
+    return result;
 }
 
 export function getPromptSummary(state: MatchState<QidahenCore>) {
@@ -299,6 +446,37 @@ export function setRegionCavalry(
                         label: `${factionLabel}骑兵`,
                         faction,
                         troopKind: 'cavalry',
+                        count,
+                        level,
+                    },
+                ],
+            }
+            : region
+    ));
+    return core;
+}
+
+export function setRegionInfantry(
+    core: QidahenCore,
+    regionId: string,
+    faction: 'ming' | 'mongol' | 'jin',
+    count: number,
+    level = 1,
+): QidahenCore {
+    const factionLabel = faction === 'ming' ? '大明' : faction === 'mongol' ? '蒙古' : '后金';
+    core.regions = core.regions.map((region) => (
+        region.id === regionId
+            ? {
+                ...region,
+                controller: faction,
+                controlLabel: factionLabel,
+                troops: count,
+                specialTroops: [
+                    {
+                        id: `${faction}-${regionId}-infantry-lv${level}`,
+                        label: `${factionLabel}步兵`,
+                        faction,
+                        troopKind: 'infantry',
                         count,
                         level,
                     },

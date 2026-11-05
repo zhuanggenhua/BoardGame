@@ -32,6 +32,7 @@ const TYPE_FILTERS: Array<'all' | SummonerWarsConfigReviewType> = [
 const CONFIG_REVIEW_ENUM_VALUES: Partial<Record<SummonerWarsConfigReviewFieldKey, readonly string[]>> = {
   cardType: ['unit', 'event', 'structure'],
   unitClass: ['summoner', 'champion', 'common'],
+  unitTags: ['undead', 'carrier', 'citadel'],
   attackType: ['melee', 'ranged'],
   playPhase: ['factionSelect', 'summon', 'move', 'build', 'attack', 'magic', 'draw', 'any'],
   eventType: ['legendary', 'common'],
@@ -132,10 +133,13 @@ function formatCellDisplayValue(
       return translateConfigValue(translate, `factions.${String(value)}`, String(value));
     case 'cardType':
     case 'unitClass':
+    case 'unitTags':
     case 'attackType':
     case 'playPhase':
     case 'eventType':
-      return translateConfigValue(translate, `configReview.values.${fieldKey}.${String(value)}`, String(value));
+      return Array.isArray(value)
+        ? formatDisplayList(value, (item) => translateConfigValue(translate, `configReview.values.${fieldKey}.${String(item)}`, String(item)))
+        : translateConfigValue(translate, `configReview.values.${fieldKey}.${String(value)}`, String(value));
     case 'isActive':
     case 'isGate':
     case 'isStartingGate':

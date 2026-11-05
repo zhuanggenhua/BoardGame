@@ -1,8 +1,7 @@
 import { lazy, Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CategoryPills, type Category } from '../components/layout/CategoryPills';
-import { GameList } from '../components/lobby/GameList';
+import type { Category } from '../components/layout/CategoryPills';
 import { getGamesByCategory, getGameById, subscribeGameRegistry } from '../config/games.config';
 import { resolveToolRoute } from '../config/toolRoutes';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +30,8 @@ import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as re
 import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LanguageSwitcher } from '../components/common/i18n/LanguageSwitcher';
 import { UserMenu } from '../components/social/UserMenu';
+import { AuthorSupportButton } from '../components/system/AuthorSupport';
+import { OperationGuideButton } from '../components/system/OperationGuidePanel';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
 import { useUrlModal } from '../hooks/routing/useUrlModal';
@@ -44,16 +45,27 @@ import { useGlobalCursor } from '../core/cursor/useGlobalCursor';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
+import { PlatformHomeSurface } from '../components/home/PlatformHomeSurface';
+import { PlatformFavoriteButton } from '../components/home/PlatformFavoriteButton';
+import { ExternalGameDetails } from '../components/home/ExternalGameDetails';
+import { isExternalGameId } from '../shared/externalGames';
+import { ClassicHomeSurface } from '../components/home/ClassicHomeSurface';
+import { useMobileViewport } from '../hooks/ui/useMobileViewport';
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
+import { PlatformGameDetailsFallback } from '../components/home/PlatformGameDetailsFallback';
 import { sortGamesForLobbyDirectory } from '../components/home-v2/lobbyDirectorySorting';
 import { HomeModalErrorBoundary } from './HomeModalErrorBoundary';
 import { requireLazyModuleExport } from '../lib/lazyModuleExport';
 import { isNativeMobileRuntime } from '../lib/mobile/mobileRuntime';
+import type { HomeEntryStyle } from '../lib/homeV2Routing';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_WARMUP_DELAY_MS = 120;
-const loadGameDetailsModalModule = () => import('../components/lobby/GameDetailsModal');
+type GameDetailsModalModule = typeof import('../components/lobby/GameDetailsModal');
+type GameDetailsModalComponent = GameDetailsModalModule['GameDetailsModal'];
+
+const loadGameDetailsModalModule = (): Promise<GameDetailsModalModule> => import('../components/lobby/GameDetailsModal');
 const LazyGameDetailsModal = lazy(() => loadGameDetailsModalModule().then((module) => ({
     default: requireLazyModuleExport(module, 'GameDetailsModal', '../components/lobby/GameDetailsModal'),
 })));
@@ -205,10 +217,16 @@ const HomeGameDetailsModalFallback = ({
     </>
 );
 
-export const Home = () => {
+interface HomeProps {
+    homeStyle?: HomeEntryStyle;
+}
+
+export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
     useGlobalCursor();
     const [activeCategory, setActiveCategory] = useState<Category>('All');
-    const [, setSearchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const isMobileHome = useMobileViewport();
+    const libraryReturnScroll = useRef(0);
     const navigate = useNavigate();
     const [registryVersion, setRegistryVersion] = useState(0);
     const [gameModalReopenNonce, setGameModalReopenNonce] = useState(0);
@@ -325,34 +343,52 @@ export const Home = () => {
     const missingMatchConfirmRetryTimerRef = useRef<number | null>(null);
     const initialUrlModalCheckDoneRef = useRef(false);
     const gameModalNavigateAwayBridgeRef = useRef<() => void>(() => {});
+    const loadedGameDetailsModalRef = useRef<GameDetailsModalComponent | null>(null);
+
+    const ensureGameDetailsModalLoaded = useCallback(async () => {
+        const module = await loadGameDetailsModalModule();
+        loadedGameDetailsModalRef.current = module.GameDetailsModal;
+        return module;
+    }, []);
 
     const gameUrlModal = useUrlModal({
         paramKey: 'game',
         reopenNonce: gameModalReopenNonce,
         getModalConfig: useCallback((gameId: string) => {
             const game = getGameById(gameId);
-            if (!game) return null;
+            if (!game && !isExternalGameId(gameId)) return null;
             return {
-                render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => (
-                    <HomeModalErrorBoundary
-                        resetKey={game.id}
-                    >
-                        <Suspense fallback={<HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
-                            <LazyGameDetailsModal
+                animateExit: homeStyle === 'modern',
+                render: ({ close, closeOnBackdrop }: { close: () => void; closeOnBackdrop: boolean }) => {
+                    if (!game) {
+                        return (
+                            <HomeModalErrorBoundary resetKey={gameId}>
+                                <ExternalGameDetails gameId={gameId} onClose={close} closeOnBackdrop={closeOnBackdrop} />
+                            </HomeModalErrorBoundary>
+                        );
+                    }
+                    const GameDetailsModalComponent = loadedGameDetailsModalRef.current ?? LazyGameDetailsModal;
+                    return (
+                        <HomeModalErrorBoundary resetKey={game.id}>
+                            <Suspense fallback={homeStyle === 'modern' ? <PlatformGameDetailsFallback onClose={close} closeOnBackdrop={closeOnBackdrop} /> : <HomeGameDetailsModalFallback onClose={close} closeOnBackdrop={closeOnBackdrop} />}>
+                                <GameDetailsModalComponent
                                 isOpen
                                 onClose={close}
                                 gameId={game.id}
                                 titleKey={game.titleKey}
                                 descriptionKey={game.descriptionKey}
                                 thumbnail={game.thumbnail}
+                                favoriteControl={<PlatformFavoriteButton gameId={game.id} title={game.titleKey} />}
                                 closeOnBackdrop={closeOnBackdrop}
+                                disableEnterAnimation={homeStyle !== 'modern'}
                                 onNavigate={() => gameModalNavigateAwayBridgeRef.current()}
-                            />
-                        </Suspense>
-                    </HomeModalErrorBoundary>
-                ),
+                                />
+                            </Suspense>
+                        </HomeModalErrorBoundary>
+                    );
+                },
             };
-        }, []),
+        }, [homeStyle]),
     });
     const activeGameModalId = gameUrlModal.paramValue;
 
@@ -367,8 +403,8 @@ export const Home = () => {
             return undefined;
         }
 
-        return scheduleHomeGameDetailsModalWarmup(loadGameDetailsModalModule);
-    }, []);
+        return scheduleHomeGameDetailsModalWarmup(ensureGameDetailsModalLoaded);
+    }, [ensureGameDetailsModalLoaded]);
 
     useEffect(() => {
         const unsubscribe = subscribeGameRegistry(() => {
@@ -405,7 +441,19 @@ export const Home = () => {
         navigate(toolRoute, { replace: true });
     }, [activeGameModalId, gameUrlModal.navigateAwayRef, navigate]);
 
-    const handleGameClick = (id: string) => {
+    const handleGameClick = async (id: string) => {
+        if (isExternalGameId(id)) {
+            if (activeGameModalId === id) {
+                setGameModalReopenNonce((nonce) => nonce + 1);
+                return;
+            }
+            setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.set('game', id);
+                return next;
+            });
+            return;
+        }
         const game = getGameById(id);
         if (game?.type === 'tool') {
             const toolRoute = resolveToolRoute(id);
@@ -415,7 +463,10 @@ export const Home = () => {
             }
             return;
         }
-        void loadGameDetailsModalModule().catch((error) => {
+
+        // 先完成懒加载，再写入 URL；否则 Suspense 会先挂骨架，再卸载骨架换正式弹窗，
+        // 冷点击时就会表现成首页弹窗闪一下。
+        await ensureGameDetailsModalLoaded().catch((error) => {
             console.warn('[Home] 预热 GameDetailsModal 失败，忽略并等待显式打开时重试', error);
         });
         if (activeGameModalId === id) {
@@ -435,10 +486,10 @@ export const Home = () => {
         if (game?.type === 'tool') {
             return;
         }
-        void loadGameDetailsModalModule().catch((error) => {
+        void ensureGameDetailsModalLoaded().catch((error) => {
             console.warn('[Home] 预热 GameDetailsModal 失败，忽略并等待显式打开时重试', error);
         });
-    }, []);
+    }, [ensureGameDetailsModalLoaded]);
 
     const handleLogout = () => {
         logout();
@@ -458,6 +509,7 @@ export const Home = () => {
             },
             render: ({ close, closeOnBackdrop }) => (
                 <AuthModal
+                    visualStyle="platform"
                     isOpen
                     onClose={() => {
                         close();
@@ -990,8 +1042,10 @@ export const Home = () => {
                 {myMatchRole?.credentials && (
                     <button
                         onClick={handleDestroyOrLeave}
+                        data-testid="home-active-match-leave"
+                        data-action-tone={myMatchRole.playerID === '0' ? 'danger' : 'warning'}
                         className={clsx(
-                            "min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
+                            "min-h-11 min-w-[4.5rem] rounded px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer border sm:min-w-0 sm:px-3 sm:py-1.5 sm:text-[10px] sm:tracking-wider",
                             myMatchRole.playerID === '0'
                                 ? "bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20"
                                 : "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20"
@@ -1002,7 +1056,7 @@ export const Home = () => {
                 )}
                 <button
                     onClick={handleReconnect}
-                    className="min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
+                    className="min-h-11 min-w-[5.75rem] rounded border border-parchment-light-text bg-parchment-light-text px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-sm transition-colors cursor-pointer hover:bg-[#a08060] sm:min-w-0 sm:px-6 sm:py-1.5 sm:text-xs sm:tracking-wider"
                 >
                     {t('lobby:actions.reconnectEnter')}
                 </button>
@@ -1010,83 +1064,87 @@ export const Home = () => {
         </div>
     ) : null;
 
-    return (
-        <div
-            className="bg-parchment-base-bg text-parchment-base-text font-serif overflow-y-scroll flex flex-col items-center pb-[env(safe-area-inset-bottom)]"
-            style={{ minHeight: 'var(--runtime-viewport-height, 100vh)' }}
-        >
-            <SEO
-                title={activeCategory === 'All' ? undefined : seoT(`common:category.${activeCategory}`)}
-                description={seoT('lobby:home.subtitle')}
-                canonical="https://easyboardgame.top/"
+    const libraryGameId = searchParams.get('libraryGame');
+    const libraryGame = libraryGameId ? getGameById(libraryGameId) : undefined;
+    const externalLibraryGameId = libraryGameId && isExternalGameId(libraryGameId) ? libraryGameId : undefined;
+    useEffect(() => {
+        if (!isMobileHome || !libraryGameId || searchParams.get('section') !== 'library') return;
+        setSearchParams(current => {
+            const next = new URLSearchParams(current); next.set('game', libraryGameId); next.delete('libraryGame'); return next;
+        }, { replace: true });
+    }, [isMobileHome, libraryGameId, searchParams, setSearchParams]);
+    const closeLibraryDetails = () => {
+        setSearchParams(current => {
+            const next = new URLSearchParams(current); next.delete('libraryGame'); return next;
+        }, { replace: true });
+        requestAnimationFrame(() => window.scrollTo({ top: libraryReturnScroll.current, behavior: 'auto' }));
+    };
+    const openLibraryGame = (id: string) => {
+        if (getGameById(id)?.type === 'tool') { void handleGameClick(id); return; }
+        if (!libraryGameId) libraryReturnScroll.current = window.scrollY;
+        setSearchParams(current => {
+            const next = new URLSearchParams(current);
+            next.set('section', 'library');
+            if (isMobileHome) { next.set('game', id); next.delete('libraryGame'); }
+            else { next.set('libraryGame', id); next.delete('game'); }
+            return next;
+        });
+    };
+    const classicUtility = <>
+        <AuthorSupportButton />
+        <OperationGuideButton surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" />
+        {user ? <UserMenu onLogout={handleLogout} /> : <div className="flex items-center gap-6">
+            <button type="button" onClick={() => openAuth('login')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
+                {t('auth:menu.login')}<span className="underline-center" />
+            </button>
+            <div className="w-[1px] h-3 bg-parchment-light-text/30" />
+            <button type="button" onClick={() => openAuth('register')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
+                {t('auth:menu.register')}<span className="underline-center" />
+            </button>
+        </div>}
+        <LanguageSwitcher />
+    </>;
+
+    return <>
+        <SEO title={activeCategory === 'All' ? undefined : seoT(`common:category.${activeCategory}`)} description={seoT('lobby:home.subtitle')} canonical="https://easyboardgame.top/" />
+        {homeStyle === 'classic' ? (
+            <ClassicHomeSurface
+                activeCategory={activeCategory}
+                activeMatch={activeMatchCard}
+                brand={<><HomeGridLogo /><h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[0.1em] text-parchment-base-text leading-none pt-1">{t('lobby:home.title')}</h1></>}
+                games={filteredGames}
+                mostPopularGameId={mostPopularGameId}
+                onCategoryChange={setActiveCategory}
+                onGameClick={handleGameClick}
+                onGameIntent={handleGameIntent}
+                subtitle={t('lobby:home.subtitle')}
+                utility={classicUtility}
             />
-            <header className="w-full relative px-6 md:px-12 pt-[calc(env(safe-area-inset-top)+1.25rem)] md:pt-8 pb-0">
-                {/* 居中大标题 - 极简布局，Logo作为标题点缀 */}
-                <div className="flex flex-col items-center justify-center mb-1 md:mb-4">
-                    {/* 标题行：Logo + H1 */}
-                    <div className="flex items-center justify-center gap-3 md:gap-4 mb-2">
-                        <HomeGridLogo />
-                        <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-bold tracking-[0.1em] text-parchment-base-text leading-none pt-1">
-                            {t('lobby:home.title')}
-                        </h1>
-                    </div>
-
-                    {/* 副标题 */}
-                    <p className="text-[10px] md:text-sm text-parchment-light-text tracking-[0.2em] font-bold uppercase opacity-80">
-                        {t('lobby:home.subtitle')}
-                    </p>
-                </div>
-
-                {/* 顶级操作区域 - 移动端放在标题下方，桌面端锁定右上角 */}
-                <div className="flex items-center justify-center gap-4 mb-0 md:absolute md:top-8 md:right-12 md:mb-0 md:gap-4 md:justify-end">
-                    {user ? (
-                        <UserMenu onLogout={handleLogout} />
-                    ) : (
-                        <div className="flex items-center gap-6">
-                            <button onClick={() => openAuth('login')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
-                                {t('auth:menu.login')}
-                                <span className="underline-center" />
-                            </button>
-                            <div className="w-[1px] h-3 bg-parchment-light-text/30" />
-                            <button onClick={() => openAuth('register')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
-                                {t('auth:menu.register')}
-                                <span className="underline-center" />
-                            </button>
-                        </div>
-                    )}
-                    <LanguageSwitcher />
-                </div>
-            </header>
-
-            {/* 主内容区域 - 商业级容器限制 */}
-            <main className="w-full max-w-7xl flex flex-col items-center pt-0 px-4 sm:px-6 md:px-8">
-                {/* 分类筛选 */}
-                <nav className="mb-4 md:mb-6 w-full">
-                    <CategoryPills activeCategory={activeCategory} onSelect={setActiveCategory} />
-                </nav>
-
-                {/* 游戏列表 */}
-                <section className="w-full pb-20">
-                    <GameList
-                        games={filteredGames}
-                        onGameClick={handleGameClick}
-                        onGameIntent={handleGameIntent}
-                        mostPopularGameId={mostPopularGameId}
-                    />
-                </section>
-            </main>
-
-            {/* 活跃对局指示器 */}
-            <HomeVersionFooter />
-
-            {activeMatch && (
-                <div
-                    data-testid="home-active-match-banner"
-                    className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-40 flex justify-center px-3 sm:px-4 md:px-6 animate-in slide-in-from-bottom-4 fade-in duration-300"
-                >
-                    {activeMatchCard}
-                </div>
-            )}
-        </div>
-    );
+        ) : (
+            <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
+                brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
+                utility={<>
+                    <span><AuthorSupportButton /></span>
+                    <span><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /></span>
+                    <span><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></span>
+                </>}
+                mobileUtility={close => <><AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
+                onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
+                onOpenLibraryGame={openLibraryGame}
+                libraryDetails={!isMobileHome && searchParams.get('section') === 'library' && libraryGame ? <HomeModalErrorBoundary resetKey={libraryGame.id}>
+                    <Suspense fallback={<p role="status">{t('platform.loading')}</p>}>
+                        <LazyGameDetailsModal key={libraryGame.id} isOpen presentation="inline" onClose={closeLibraryDetails}
+                            gameId={libraryGame.id} titleKey={libraryGame.titleKey} descriptionKey={libraryGame.descriptionKey} thumbnail={libraryGame.thumbnail}
+                            favoriteControl={<PlatformFavoriteButton gameId={libraryGame.id} title={libraryGame.titleKey} />} />
+                    </Suspense>
+                </HomeModalErrorBoundary> : !isMobileHome && searchParams.get('section') === 'library' && externalLibraryGameId ? <HomeModalErrorBoundary resetKey={externalLibraryGameId}>
+                    <ExternalGameDetails gameId={externalLibraryGameId} presentation="inline" onClose={closeLibraryDetails} />
+                </HomeModalErrorBoundary> : undefined}
+                onLogin={() => openAuth('login')} onRegister={() => openAuth('register')} onLogout={handleLogout}
+                activeMatch={activeMatchCard}
+            />
+        )}
+        <HomeVersionFooter theme={homeStyle === 'modern' ? 'platform' : 'classic'} positionClassName={homeStyle === 'modern' ? 'platform-home-version' : undefined} />
+    </>;
 };

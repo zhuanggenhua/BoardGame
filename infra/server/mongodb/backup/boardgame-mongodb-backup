@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+backup_dir=/var/backups/boardgame/mongodb
+container=boardgame-mongodb
+database=boardgame
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+final="$backup_dir/boardgame-${stamp}.archive.gz"
+
+install -d -o root -g root -m 0700 "$backup_dir"
+tmp=$(mktemp "$backup_dir/.boardgame-${stamp}.XXXXXX.archive.gz")
+trap 'rm -f "$tmp"' EXIT
+
+docker exec "$container" mongodump --db="$database" --archive --gzip > "$tmp"
+gzip -t "$tmp"
+test -s "$tmp"
+chmod 0600 "$tmp"
+mv -- "$tmp" "$final"
+sha256sum "$final" > "$final.sha256"
+chmod 0600 "$final.sha256"
+find "$backup_dir" -maxdepth 1 -type f \
+  \( -name 'boardgame-*.archive.gz' -o -name 'boardgame-*.archive.gz.sha256' \) \
+  -mmin +20160 -delete
+
+printf 'backup=%s bytes=%s sha256=%s\n' \
+  "$final" "$(stat -c %s "$final")" "$(sha256sum "$final" | cut -d' ' -f1)"

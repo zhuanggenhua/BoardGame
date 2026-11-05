@@ -150,6 +150,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),       // defensiveRoll exit → resolveAttack → main2
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -193,6 +194,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -320,11 +322,10 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-1' }),
-                    cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -375,6 +376,7 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('RESPONSE_PASS', '0'),
                 ],
                 expect: {
                     turnPhase: 'main2',
@@ -411,11 +413,11 @@ describe('圣骑士 GTR 技能覆盖', () => {
                     cmd('CONFIRM_ROLL', '0'),
                     cmd('SELECT_ABILITY', '0', { abilityId: 'righteous-prayer' }),
                     cmd('ADVANCE_PHASE', '0'),
-                    cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-1' }),
-                    cmd('ADVANCE_PHASE', '0'),
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
+                    cmd('RESPONSE_PASS', '0'),       // 教皇税的确认骰后响应窗口让过
                     cmd('ADVANCE_PHASE', '1'),
+                    cmd('RESPONSE_PASS', '0'),       // 攻击结算后的响应窗口让过 → main2
                 ],
                 expect: {
                     turnPhase: 'main2',

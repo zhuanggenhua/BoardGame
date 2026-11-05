@@ -8,6 +8,7 @@ import { GameClientContext } from '../../engine/transport/reactContext';
 import { useGameClient } from '../../engine/transport/react';
 import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { OnlineManualSetupSelectionBridge } from '../onlineManualSetupSelectionBridge';
+import qidahenEngineConfig from '../../games/qidahen/game';
 
 const buildSetupState = (): MatchState<unknown> => ({
     core: {
@@ -40,6 +41,7 @@ const Probe = () => {
     const core = (state?.core ?? {}) as {
         selectedFactions?: Record<string, string>;
         selectedCharacters?: Record<string, string>;
+        factionSelection?: { selections?: Record<string, string> } | null;
     };
 
     return (
@@ -49,6 +51,7 @@ const Probe = () => {
             <div data-testid="ai-faction">{core.selectedFactions?.['1'] ?? 'missing'}</div>
             <div data-testid="ai2-faction">{core.selectedFactions?.['2'] ?? 'missing'}</div>
             <div data-testid="ai-character">{core.selectedCharacters?.['1'] ?? 'missing'}</div>
+            <div data-testid="qidahen-faction">{core.factionSelection?.selections?.['1'] ?? 'unselected'}</div>
             <button
                 type="button"
                 data-testid="select-faction"
@@ -83,6 +86,13 @@ const Probe = () => {
                 onClick={() => dispatch('PLAYER_READY', {})}
             >
                 ready dt
+            </button>
+            <button
+                type="button"
+                data-testid="select-qidahen-faction"
+                onClick={() => dispatch('SELECT_FACTION', { factionId: 'mongol' })}
+            >
+                select qidahen faction
             </button>
         </div>
     );
@@ -139,8 +149,8 @@ describe('OnlineManualSetupSelectionBridge', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
-        expect(screen.getByTestId('player-id').textContent).toBe('0');
-        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+        expect(screen.getByTestId('player-id').textContent).toBe('1');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('hidden');
         expect(screen.getByTestId('ai-faction').textContent).toBe('unselected');
 
         fireEvent.click(screen.getByTestId('select-faction'));
@@ -162,8 +172,8 @@ describe('OnlineManualSetupSelectionBridge', () => {
         const requestManualSetupSelection = vi.fn(() => true);
         renderBridge({ requestManualSetupSelection });
 
-        expect(screen.getByTestId('player-id').textContent).toBe('0');
-        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+        expect(screen.getByTestId('player-id').textContent).toBe('1');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('hidden');
 
         fireEvent.click(screen.getByTestId('select-character'));
 
@@ -223,6 +233,16 @@ describe('OnlineManualSetupSelectionBridge', () => {
         confirmedCore.readyPlayers['1'] = true;
         confirmedCore.readyPlayers['2'] = false;
 
+        const confirmedAllAiState = buildSetupState();
+        const confirmedAllCore = confirmedAllAiState.core as {
+            selectedFactions: Record<string, string>;
+            readyPlayers: Record<string, boolean>;
+        };
+        confirmedAllCore.selectedFactions['1'] = 'trickster';
+        confirmedAllCore.selectedFactions['2'] = 'necromancer';
+        confirmedAllCore.readyPlayers['1'] = true;
+        confirmedAllCore.readyPlayers['2'] = true;
+
         const requestManualSetupSelection = vi.fn(() => true);
         const { rerenderWithState } = renderBridge({
             state: initialState,
@@ -246,8 +266,8 @@ describe('OnlineManualSetupSelectionBridge', () => {
         }, expect.any(Function));
 
         rerenderWithState(confirmedFirstAiState);
-        expect(screen.getByTestId('player-id').textContent).toBe('0');
-        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
+        expect(screen.getByTestId('player-id').textContent).toBe('2');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('hidden');
 
         fireEvent.click(screen.getByTestId('select-second-faction'));
         expect(screen.getByTestId('ai2-faction').textContent).toBe('necromancer');
@@ -261,6 +281,10 @@ describe('OnlineManualSetupSelectionBridge', () => {
             selectionId: 'necromancer',
         }, expect.any(Function));
         expect(requestManualSetupSelection).toHaveBeenCalledTimes(2);
+
+        rerenderWithState(confirmedAllAiState);
+        expect(screen.getByTestId('player-id').textContent).toBe('0');
+        expect(screen.getByTestId('host-start-control').textContent).toBe('visible');
     });
 
     it('SmashUp 已有确认按钮的 select-faction 仍由确认动作立即提交', () => {
@@ -287,5 +311,34 @@ describe('OnlineManualSetupSelectionBridge', () => {
             actionKind: 'select-faction',
             selectionId: 'trickster',
         });
+    });
+
+    it('七大恨自定义 faction-selection 由真人代 AI 时应直接提交，不等待 PLAYER_READY', () => {
+        const requestManualSetupSelection = vi.fn(() => true);
+        renderBridge({
+            state: {
+                core: {
+                    factionSelection: {
+                        availableFactionIds: ['ming', 'mongol', 'jin'],
+                        selections: { '0': 'ming' },
+                    },
+                    pendingScenarioCharacterChoices: [],
+                    pendingScenarioArmamentChoices: [],
+                },
+                sys: { phase: 'factionSelect' },
+            } as MatchState<unknown>,
+            requestManualSetupSelection,
+            engineConfig: qidahenEngineConfig,
+        });
+
+        fireEvent.click(screen.getByTestId('select-qidahen-faction'));
+
+        expect(requestManualSetupSelection).toHaveBeenCalledTimes(1);
+        expect(requestManualSetupSelection.mock.calls[0]?.[0]).toEqual({
+            targetPlayerId: '1',
+            actionKind: 'faction-selection',
+            selectionId: 'mongol',
+        });
+        expect(screen.getByTestId('qidahen-faction').textContent).toBe('mongol');
     });
 });

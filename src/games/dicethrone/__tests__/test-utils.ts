@@ -28,6 +28,7 @@ import { createInitialSystemState, executePipeline } from '../../../engine/pipel
 import { MONK_CARDS } from '../heroes/monk/cards';
 import { findHeroCard } from '../heroes';
 import { initHeroState } from '../domain/characters';
+import { COMMON_CARDS } from '../domain/commonCards';
 
 // ============================================================================
 // 固定随机数（保证回放确定性）
@@ -308,7 +309,9 @@ export const getCompareRollChoicePrompt = (
 
 export const buildSetupCommands = (playerIds: PlayerId[]): CommandInput[] => {
     const hostPlayerId = playerIds[0];
-    const allCharacterIds = DICETHRONE_CHARACTER_CATALOG.map((item) => item.id);
+    const allCharacterIds = DICETHRONE_CHARACTER_CATALOG
+        .filter((item) => item.setupOptionStatus === undefined)
+        .map((item) => item.id);
     const usedCharacterIds = new Set<string>();
 
     const pickCharacterIdForSeat = (seatIndex: number): string => {
@@ -376,7 +379,11 @@ export function createInitializedState(playerIds: PlayerId[], random: RandomFn):
 }
 
 export const getCardById = (cardId: string): AbilityCard => {
-    const card = findHeroCard(cardId) ?? MONK_CARDS.find(c => c.id === cardId);
+    // Generic fixtures should use the canonical shared definition. Hero iteration
+    // order is not a safe source for a common card because a hero may override it.
+    const card = COMMON_CARDS.find(candidate => candidate.id === cardId)
+        ?? findHeroCard(cardId)
+        ?? MONK_CARDS.find(c => c.id === cardId);
     if (!card) throw new Error(`找不到卡牌: ${cardId}`);
     return JSON.parse(JSON.stringify(card)) as AbilityCard;
 };
@@ -427,7 +434,7 @@ export const createHeroMatchup = (
                 return desiredHero;
             }
             return (DICETHRONE_CHARACTER_CATALOG.find((character) => (
-                character.setupOptionStatus !== 'hidden'
+                character.setupOptionStatus === undefined
                 && character.id !== occupiedHero
                 && character.id !== desiredHero
             ))?.id ?? 'monk') as string;

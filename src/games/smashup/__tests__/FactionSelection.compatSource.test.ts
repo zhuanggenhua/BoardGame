@@ -15,4 +15,22 @@ describe('SmashUp compatibility source guards', () => {
         expect(factionSelection).toContain('style={useCompactDetailSidebarHeight ? { maxHeight: detailSidebarMaxHeight } : undefined}');
         expect(factionSelection).not.toContain('max-h-[42dvh]');
     });
+
+    it('派系详情中的检视图标应抵消 board-shell 缩放', () => {
+        const factionSelection = readUiSource('ui/FactionSelection.tsx');
+
+        expect(factionSelection).toContain('<BookOpen className="board-shell-fixed-icon" size={14} />');
+        expect(factionSelection).toContain('<ZoomIn className="board-shell-fixed-icon" size={14} />');
+        expect(factionSelection).toContain('<ZoomIn className="board-shell-fixed-icon" size={16} />');
+    });
+
+    it('派系选中态应复用卡框边框，不得在卡面内部追加第二层描边', () => {
+        const factionSelection = readUiSource('ui/FactionSelection.tsx');
+
+        expect(factionSelection).toContain("'border-green-500 scale-105 -translate-y-2'");
+        expect(factionSelection).toContain("borderColor: '#22c55e'");
+        expect(factionSelection).toContain("borderWidth: '4px'");
+        expect(factionSelection).not.toContain('data-testid="faction-selection-border"');
+        expect(factionSelection).not.toContain('outlineColor:');
+    });
 });

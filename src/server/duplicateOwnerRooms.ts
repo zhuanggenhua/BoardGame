@@ -27,6 +27,11 @@ export type CreateMatchWithOwnerConflictRetryResult =
     | { action: 'created' }
     | { action: 'conflict'; conflict: ActiveMatchExistsConflict };
 
+export const resolveForceReplaceOwnerRoom = (
+    ownerType: 'user' | 'guest',
+    requestedForceReplace: boolean,
+): boolean => ownerType === 'guest' || requestedForceReplace;
+
 const hasConnectedPlayers = (metadata?: MatchMetadata | null): boolean => {
     if (!metadata?.players) return false;
     return Object.values(metadata.players).some((player) => Boolean(player?.isConnected));

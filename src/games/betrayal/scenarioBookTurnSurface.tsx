@@ -12,14 +12,12 @@ export function ScenarioBookTurnSheet({
   fromPages,
   toPages,
   title,
-  isPhoneLandscapeLayout = false,
   onTurnComplete,
 }: {
   direction: "back" | "forward" | null;
   fromPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
   toPages: [ScenarioReaderPage | null, ScenarioReaderPage | null];
   title: string;
-  isPhoneLandscapeLayout?: boolean;
   onTurnComplete?: () => void;
 }) {
   const { t } = useTranslation("game-betrayal");
@@ -32,7 +30,7 @@ export function ScenarioBookTurnSheet({
     face: "front" | "back",
   ) => (
     <div
-      className={`relative h-full w-full overflow-hidden border border-[#c7a06b] bg-[radial-gradient(circle_at_48%_18%,rgba(255,243,204,0.96),rgba(229,200,151,0.98)_58%,rgba(205,164,102,0.98)_100%)] p-3 text-[#3b2211] shadow-[inset_0_0_0_1px_rgba(255,246,215,0.36),inset_0_0_42px_rgba(95,54,19,0.18)] sm:p-4 lg:p-6 ${face === "back" ? "[backface-visibility:hidden]" : ""}`}
+      className={`relative h-full w-full overflow-hidden border border-[#c7a06b] bg-[radial-gradient(circle_at_48%_18%,rgba(255,243,204,0.96),rgba(229,200,151,0.98)_58%,rgba(205,164,102,0.98)_100%)] p-6 text-[#3b2211] shadow-[inset_0_0_0_1px_rgba(255,246,215,0.36),inset_0_0_42px_rgba(95,54,19,0.18)] ${face === "back" ? "[backface-visibility:hidden]" : ""}`}
       style={{ backfaceVisibility: "hidden" }}
     >
       <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(0deg,rgba(92,55,24,0.08)_0_1px,transparent_1px_8px),radial-gradient(circle_at_18%_22%,rgba(88,49,18,0.12),transparent_18%),radial-gradient(circle_at_80%_70%,rgba(96,55,21,0.10),transparent_22%)]" />
@@ -41,7 +39,9 @@ export function ScenarioBookTurnSheet({
         <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7d5129]">
           {page ? `剧本 ${String(page.pageNumber).padStart(2, "0")}` : title}
         </div>
-        <h3 className="mt-2 text-[21px] font-black tracking-[0.04em] text-[#3b2211] lg:text-[27px]">
+        <h3
+          className="mt-2 text-[27px] font-black tracking-[0.04em] text-[#3b2211]"
+        >
           {page?.type === "cover"
             ? title
             : section
@@ -54,13 +54,17 @@ export function ScenarioBookTurnSheet({
               <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#7d5129]">
                 {t(section.labelKey)}
               </div>
-              <p className="mt-2 max-h-[190px] overflow-hidden whitespace-pre-line text-[14px] leading-6 text-[#4e321c] lg:text-[16px] lg:leading-7">
+          <p
+            className="mt-2 max-h-[190px] overflow-hidden whitespace-pre-line text-[16px] leading-7 text-[#4e321c]"
+          >
                 {t(section.bodyKey)}
               </p>
             </div>
           </>
         ) : (
-          <p className="mt-4 text-[15px] font-semibold leading-7 text-[#57361f] lg:text-[17px] lg:leading-8">
+          <p
+            className="mt-4 font-semibold text-[17px] leading-8 text-[#57361f]"
+          >
             {title}
           </p>
         )}
@@ -81,17 +85,6 @@ export function ScenarioBookTurnSheet({
       {renderPageFace(rightPage, rightPage?.sections?.[0] ?? null, "front")}
     </div>
   );
-
-  const viewportWidth =
-    typeof window === "undefined" ? 1000 : Math.max(320, window.innerWidth);
-  const viewportHeight =
-    typeof window === "undefined" ? 680 : Math.max(260, window.innerHeight);
-  const stageWidth = isPhoneLandscapeLayout
-    ? Math.max(320, Math.min(viewportWidth * 0.94, 900))
-    : Math.max(640, Math.min(viewportWidth * 0.9, 1080));
-  const stageHeight = isPhoneLandscapeLayout
-    ? Math.max(260, Math.min(viewportHeight - 88, 420))
-    : Math.max(420, Math.min(viewportHeight * 0.78, 720));
 
   return (
     <div
@@ -117,8 +110,8 @@ export function ScenarioBookTurnSheet({
             ...(isForward ? toPages : fromPages),
           )
         }
-        overviewStageSize={{ width: stageWidth, height: stageHeight }}
-        detailStageSize={{ width: stageWidth, height: stageHeight }}
+        overviewStageSize={{ width: 1080, height: 720 }}
+        detailStageSize={{ width: 1080, height: 720 }}
         leftPageRect={{ left: "0%", top: "0%", width: "50%", height: "100%" }}
         rightPageRect={{ left: "50%", top: "0%", width: "50%", height: "100%" }}
         onFlipToDetailComplete={onTurnComplete}

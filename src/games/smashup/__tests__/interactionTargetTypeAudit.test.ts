@@ -1772,9 +1772,30 @@ describe('SmashUp Interaction targetType 审计', () => {
         })).toBe('direct');
 
         expect(resolveSmashUpHandPromptUiMode({
-            currentPrompt: { playerId: '0', multi: { min: 0, max: 2 } },
+            currentPrompt: {
+                playerId: '0',
+                multi: { min: 0, max: 2 },
+                options: [
+                    { id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } },
+                    { id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } },
+                ],
+            },
             playerID: '0',
             targetType: 'hand',
+            hand: [{ uid: 'hand-a' }, { uid: 'hand-b' }],
+        })).toBe('direct');
+
+        expect(resolveSmashUpHandPromptUiMode({
+            currentPrompt: {
+                playerId: '0',
+                multi: { min: 0, max: 2 },
+                options: [
+                    { id: 'deck-a', label: '牌库牌', value: { cardUid: 'deck-a' } },
+                ],
+            },
+            playerID: '0',
+            targetType: 'hand',
+            hand: [{ uid: 'actual-hand-card' }],
         })).toBe('overlay');
 
         expect(resolveSmashUpHandPromptUiMode({

@@ -273,19 +273,15 @@ export const WILD_GROWTH_2: AbilityDef = {
             id: 'wild-growth-2-main',
             trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.LEAF]: 3 } },
             effects: [
-                customEffect('treant-wild-growth-2-main', 'opponent', abilityEffectText('wild-growth-2', 'roll5BranchLeafSpirit')),
+                customEffect('treant-wild-growth-choice', 'self', abilityEffectText('wild-growth-2', 'removeUpTo2SpiritsForDamageAndSpendLifeSap')),
                 damage(4, abilityEffectText('wild-growth-2', 'damage4')),
             ],
             priority: 1,
         },
         {
-            id: 'wild-growth-2-dazzle',
-            trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.SPIRIT]: 2 } },
-            tags: ['unblockable'],
-            effects: [
-                grantToken('opponent', TOKEN_IDS.THORN, 1, abilityEffectText('wild-growth-2-dazzle', 'inflictThorn')),
-                damage(4, abilityEffectText('wild-growth-2-dazzle', 'damage4Unblockable'), { unblockable: true }),
-            ],
+            id: 'wild-growth-2-planting',
+            trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 1, [FACE.LEAF]: 2 } },
+            effects: [customEffect('treant-wild-growth-2-planting', 'self', abilityEffectText('wild-growth-2', 'cultivate3'))],
             priority: 0,
         },
     ],

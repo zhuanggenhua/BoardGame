@@ -1,0 +1,75 @@
+{
+  "title": "山屋惊魂自然作祟链截图 - 2026-09-16 队友自动桥接修正版",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\01-当前玩家结束回合前.jpg",
+      "label": "当前玩家结束回合前",
+      "transition": "起点：进入本轮真实浏览器端到端截图链。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\02-队友自动行动后回到当前玩家.jpg",
+      "label": "队友自动行动后回到当前玩家",
+      "transition": "从上一张继续到：队友自动行动后回到当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\03-再次结束当前回合.jpg",
+      "label": "再次结束当前回合",
+      "transition": "从上一张继续到：再次结束当前回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\04-队友一翻出面具并等待确认.jpg",
+      "label": "队友一翻出面具并等待确认",
+      "transition": "从上一张继续到：队友一翻出面具并等待确认。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\05-当前玩家看到英雄开场过场.jpg",
+      "label": "当前玩家看到英雄开场过场",
+      "transition": "从上一张继续到：当前玩家看到英雄开场过场。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\06-开场过场继续进入英雄剧本书.jpg",
+      "label": "开场过场继续进入英雄剧本书",
+      "transition": "从上一张继续到：开场过场继续进入英雄剧本书。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\07-英雄剧本书目标页与图书馆原因.jpg",
+      "label": "英雄剧本书目标页与图书馆原因",
+      "transition": "从上一张继续到：英雄剧本书目标页与图书馆原因。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\08-读完剧本书目标准备关闭.jpg",
+      "label": "读完剧本书目标准备关闭",
+      "transition": "从上一张继续到：读完剧本书目标准备关闭。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\09-读完目标回到上层平台英雄.jpg",
+      "label": "读完目标回到上层平台英雄",
+      "transition": "从上一张继续到：读完目标回到上层平台英雄。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\10-读完目标后准备打开移动目标.jpg",
+      "label": "读完目标后准备打开移动目标",
+      "transition": "从上一张继续到：读完目标后准备打开移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\11-图书馆成为可点击移动目标.jpg",
+      "label": "图书馆成为可点击移动目标",
+      "transition": "从上一张继续到：图书馆成为可点击移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\12-轮到英雄寻找木乃伊真名.jpg",
+      "label": "轮到英雄寻找木乃伊真名",
+      "transition": "从上一张继续到：轮到英雄寻找木乃伊真名。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\13-寻找真名知识检定成功.jpg",
+      "label": "寻找真名知识检定成功",
+      "transition": "从上一张继续到：寻找真名知识检定成功。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\14-确认后回到牌桌可结束回合.jpg",
+      "label": "确认后回到牌桌可结束回合",
+      "transition": "从上一张继续到：确认后回到牌桌可结束回合。"
+    }
+  ]
+}

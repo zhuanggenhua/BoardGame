@@ -1,3 +1,4 @@
+// e2e-harness-boundary: representative-state
 /**
  * DiceThrone 状态交互共享 UI 契约 E2E
  *
@@ -146,6 +147,33 @@ test.describe('DiceThrone - Status Interaction Complete', () => {
 
         await page.getByTestId('dt-status-effect-1-crit').click();
         await expect(confirmButton).toBeEnabled();
+    });
+
+    test('selectTargetStatus: 神圣降临不可作为手牌转移候选', async ({ page, game }) => {
+        await openInteractionHarness(page, game);
+
+        await applyHarnessState(page, (state) => {
+            state.core.players['1'].statusEffects = {};
+            state.core.players['1'].tokens = { divine_arrival: 1, bounty: 1 };
+            state.sys.interaction = {
+                ...(state.sys.interaction ?? {}),
+                current: wrapCardInteraction({
+                    id: 'test-transfer-non-transferable-token',
+                    type: 'selectTargetStatus',
+                    sourceCardId: 'card-transfer-status',
+                    playerId: '0',
+                    titleKey: 'interaction.selectStatusToTransfer',
+                    selectCount: 1,
+                    targetPlayerIds: ['1'],
+                    selected: [],
+                    transferConfig: {},
+                }),
+            };
+            return state;
+        });
+
+        await expect(page.getByTestId('dt-status-effect-1-bounty')).toBeVisible();
+        await expect(page.getByTestId('dt-status-effect-1-divine_arrival')).toHaveCount(0);
     });
 
     test('selectPlayer: requiresTargetWithStatus 会禁用空目标并显示无状态提示', async ({ page, game }) => {

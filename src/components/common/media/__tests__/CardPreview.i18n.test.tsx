@@ -2,15 +2,18 @@ import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useState } from 'react';
-import { CardPreview, getCardAtlasCandidateUrls, registerCardAtlasSource, registerCardPreviewRenderer } from '../CardPreview';
+import { CardPreview, getCardAtlasCandidateUrls, getCardPreviewAspectRatio, registerCardAtlasSource, registerCardPreviewRenderer } from '../CardPreview';
 import type { SpriteAtlasConfig } from '../../../../engine/primitives/spriteAtlas';
 import { getCardAtlasSource, getLazyRegistration, registerLazyCardAtlasSource } from '../cardAtlasRegistry';
 import { clearGameAssetBaseOverrides, markImageLoaded, setAssetsBaseUrl, setGameAssetBaseOverride } from '../../../../core';
+import * as Core from '../../../../core';
+import { registerCriticalImageResolver } from '../../../../core/CriticalImageResolverRegistry';
 import { __resetAssetLoaderCachesForTests } from '../../../../core/AssetLoader';
 import { OptimizedImage } from '../OptimizedImage';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../../lib/i18n';
 import { QIDAHEN_CARD_ATLAS_IDS } from '../../../../games/qidahen/ui/cardAtlas';
+import { CriticalImageGate } from '../../../game/framework/CriticalImageGate';
 
 const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
     imageW: 100,
@@ -23,8 +26,21 @@ const TEST_UNIFORM_ATLAS: SpriteAtlasConfig = {
     rowHeights: [200],
 };
 
+it('卡牌放大读取实际帧比例而不是整张图集比例', () => {
+    registerCardAtlasSource('test:inspect-frame-ratios', {
+        image: 'test/frame-ratios',
+        config: { imageW: 1000, imageH: 2000, frames: [
+            { x: 0, y: 0, width: 600, height: 1000 },
+            { x: 600, y: 0, width: 400, height: 1000 },
+        ] },
+    });
+    expect(getCardPreviewAspectRatio({ type: 'atlas', atlasId: 'test:inspect-frame-ratios', index: 0 })).toBe(0.6);
+    expect(getCardPreviewAspectRatio({ type: 'atlas', atlasId: 'test:inspect-frame-ratios', index: 1 })).toBe(0.4);
+});
+
 describe('CardPreview i18n atlas path', () => {
     beforeEach(() => {
+        vi.unstubAllEnvs();
         setAssetsBaseUrl('/assets');
         clearGameAssetBaseOverrides();
     });
@@ -71,6 +87,17 @@ describe('CardPreview i18n atlas path', () => {
         );
 
         expect(receivedLocale).toBe('zh-CN');
+    });
+
+    it('renderer 可提供素材宽高比，供外层 tooltip 先按真实比例布局', () => {
+        const rendererId = 'test:card-preview:renderer-aspect-ratio';
+        registerCardPreviewRenderer(
+            rendererId,
+            () => <span>ok</span>,
+            { getAspectRatio: () => 1.25 },
+        );
+
+        expect(getCardPreviewAspectRatio({ type: 'renderer', rendererId })).toBe(1.25);
     });
 
     it('同一个 CardPreview 在 atlas 与使用 Hooks 的 renderer 之间切换时，不应触发 Hooks 顺序错误', () => {
@@ -143,7 +170,8 @@ describe('CardPreview i18n atlas path', () => {
         expect(candidates).toContain('/assets/i18n/zh-CN/smashup/taitan/compressed/taitan1.webp');
     });
 
-    it('远程资源模式下 atlas 候选 URL 应先尝试远端，再回退本地 /assets', () => {
+    it('显式 dev 远程资源模式下 atlas 候选 URL 应先尝试远端，再回退本地 /assets', () => {
+        vi.stubEnv('VITE_DEV_REMOTE_ASSETS', 'true');
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
 
         const candidates = getCardAtlasCandidateUrls('smashup/taitan/taitan1', 'zh-CN');
@@ -223,7 +251,9 @@ describe('CardPreview i18n atlas path', () => {
                 expect(img?.getAttribute('data-debug-local-fetch')).toBe('direct-native');
             });
 
-            expect(fetchSpy).not.toHaveBeenCalled();
+            // 只核对当前图片；后台语言包请求不属于图片的 fetch/blob 路径。
+            const imageFetches = fetchSpy.mock.calls.filter(([input]) => String(input).includes('tts_atlas_8789f47742'));
+            expect(imageFetches).toHaveLength(0);
         } finally {
             Object.defineProperty(globalThis, 'fetch', {
                 configurable: true,
@@ -462,6 +492,103 @@ describe('CardPreview i18n atlas path', () => {
                 expect(atlasNode?.className).not.toContain('atlas-shimmer');
             });
         } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('Gate 超时放行后，已挂载的 AtlasCard 在图片异步入缓存时应去掉 shimmer', async () => {
+        const gameId = 'test-card-preview-gate-timeout-notification';
+        const atlasId = 'test:card-preview:gate-timeout-notification';
+        const atlasImage = 'smashup/cards/gate-timeout-notification';
+        registerCardAtlasSource(atlasId, {
+            image: atlasImage,
+            config: TEST_UNIFORM_ATLAS,
+        });
+        registerCriticalImageResolver(gameId, () => ({
+            critical: [atlasImage],
+            warm: [],
+            phaseKey: 'gate-timeout',
+        }));
+
+        let releaseGate: ((warmPaths: string[]) => void) | undefined;
+        const preloadSpy = vi.spyOn(Core, 'preloadCriticalImages').mockImplementation(
+            () => new Promise<string[]>((resolve) => {
+                releaseGate = resolve;
+            }),
+        );
+
+        class PendingImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            complete = false;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            currentSrc = '';
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+            }
+        }
+
+        vi.stubGlobal('Image', PendingImage as unknown as typeof Image);
+        let unmount: (() => void) | undefined;
+
+        try {
+            const view = render(
+                <I18nextProvider i18n={i18n}>
+                    <CriticalImageGate
+                        enabled
+                        gameId={gameId}
+                        gameState={{ phase: 'gate-timeout' }}
+                        locale="zh-CN"
+                        loadingDescription="关键图片等待"
+                    >
+                        <CardPreview previewRef={{ type: 'atlas', atlasId, index: 0 }} locale="zh-CN" />
+                    </CriticalImageGate>
+                </I18nextProvider>,
+            );
+            unmount = view.unmount;
+
+            await waitFor(() => expect(preloadSpy).toHaveBeenCalledTimes(1));
+            expect(view.container.querySelector('[data-card-atlas-frame="true"]')).toBeNull();
+
+            // Simulate the critical-image timeout completing before the atlas itself finishes.
+            await act(async () => {
+                releaseGate?.([]);
+            });
+
+            const atlasFrame = await waitFor(() => {
+                const frame = view.container.querySelector('[data-card-atlas-frame="true"]') as HTMLElement | null;
+                expect(frame).not.toBeNull();
+                return frame as HTMLElement;
+            });
+            expect(atlasFrame.className).toContain('atlas-shimmer');
+
+            const primaryUrl = getCardAtlasCandidateUrls(atlasImage, 'zh-CN')[0];
+            const loadedImage = {
+                naturalWidth: 300,
+                naturalHeight: 600,
+                src: primaryUrl,
+                currentSrc: primaryUrl,
+            } as HTMLImageElement;
+
+            act(() => {
+                markImageLoaded(atlasImage, 'zh-CN', loadedImage, primaryUrl);
+            });
+
+            await waitFor(() => {
+                expect(atlasFrame.className).not.toContain('atlas-shimmer');
+                expect(view.container.querySelector('img[data-card-atlas-img="true"]')?.getAttribute('src')).toBe(primaryUrl);
+            });
+        } finally {
+            unmount?.();
+            preloadSpy.mockRestore();
             vi.unstubAllGlobals();
         }
     });

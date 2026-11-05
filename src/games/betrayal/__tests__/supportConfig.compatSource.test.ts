@@ -10,14 +10,16 @@ const readGameSource = (fileName: string) => readFileSync(resolve(GAME_DIR, file
 
 describe('山屋惊魂调试配置源码守卫', () => {
     it('局内棋盘必须挂载共享调试面板并透传 AI 与人数配置', () => {
-        const source = readGameSource('Board.tsx');
+        const boardSource = readGameSource('Board.tsx');
+        const debugPanelSource = readGameSource('debugPanelSurface.tsx');
 
-        expect(source).toContain('GameDebugPanel');
-        expect(source).toContain('function BetrayalDebugPanel');
-        expect(source).toContain('<GameDebugPanel');
-        expect(source).toContain('aiSupport={BETRAYAL_MANIFEST.ai}');
-        expect(source).toContain('playerOptions={BETRAYAL_MANIFEST.playerOptions}');
-        expect(source).toContain('<BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />');
+        expect(boardSource).toContain('import { BetrayalDebugPanel } from "./debugPanelSurface";');
+        expect(boardSource).toContain('<BetrayalDebugPanel G={G} dispatch={dispatch} playerID={playerID} />');
+        expect(debugPanelSource).toContain('GameDebugPanel');
+        expect(debugPanelSource).toContain('export function BetrayalDebugPanel');
+        expect(debugPanelSource).toContain('<GameDebugPanel');
+        expect(debugPanelSource).toContain('aiSupport={BETRAYAL_MANIFEST.ai}');
+        expect(debugPanelSource).toContain('playerOptions={BETRAYAL_MANIFEST.playerOptions}');
     });
 
     it('领域引擎必须接入共享作弊系统作为开发态调试入口', () => {

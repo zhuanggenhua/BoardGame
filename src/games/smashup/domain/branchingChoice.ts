@@ -13,7 +13,12 @@ import {
     updateResolutionFrame,
     upsertResolutionFrame,
 } from '../../../engine/systems/resolutionStack';
-import { createEffectProgram, createPromptProgram, executeAbilityProgram } from './abilityRuntime';
+import {
+    createAbilityRuntimeContinuation,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from './abilityRuntime';
 import type { SmashUpCore, SmashUpEvent, SmashUpReactionResourceFootprint, SmashUpReactionResourceRef } from './types';
 
 type PromptDisplayMode = 'card' | 'button';
@@ -371,14 +376,13 @@ const emitBranchingChoiceEventsThenFollowUpProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         playerId: context.playerId,
         timestamp: context.timestamp,
         pendingPlan: context.pendingPlan,
         branchingFrameId: context.branchingFrameId,
-    } satisfies BranchingChoiceFollowUpAfterEventsContext,
-    nextProgram: queueBranchingChoiceFollowUpAfterEventsProgram,
+    } satisfies BranchingChoiceFollowUpAfterEventsContext, queueBranchingChoiceFollowUpAfterEventsProgram),
 }));
 
 function executeSelectedBranch(args: {
@@ -498,7 +502,7 @@ function resolveBranchingChoiceSelection(args: {
     });
 }
 
-const branchingChoicePromptProgram = createPromptProgram<BranchingChoicePromptContext, SmashUpCore, SmashUpEvent>({
+const branchingChoicePromptProgram = createPromptProgram<BranchingChoicePromptContext>({
     sourceId: BRANCHING_CHOICE_RUNTIME_SOURCE,
     buildInteraction: (context) => createSimpleChoice(
         `${context.sourceId}_${context.now}`,

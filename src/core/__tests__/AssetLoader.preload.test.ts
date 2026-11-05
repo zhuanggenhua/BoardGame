@@ -12,6 +12,7 @@ import {
     isImagePreloaded,
     markImageCandidateFailed,
     markImageLoaded,
+    onImageReady,
     registerGameAssets,
     preloadCriticalImages,
     setAssetHashesForTesting,
@@ -76,6 +77,57 @@ describe('preloadCriticalImages', () => {
         expect(warm).toContain('dynamic/warm.png');
         // 验证去重
         expect(new Set(warm).size).toBe(warm.length);
+    });
+
+    it('动态解析器接管静态 critical 时，只阻塞当前阶段图片', async () => {
+        const requestedUrls: string[] = [];
+        vi.stubGlobal('Image', class {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 300;
+            naturalHeight = 600;
+            private _src = '';
+
+            get src() { return this._src; }
+            set src(value: string) {
+                this._src = value;
+                requestedUrls.push(value);
+                setTimeout(() => this.onload?.(), 0);
+            }
+        });
+
+        registerGameAssets('test-replace-critical', {
+            criticalImages: ['static/full-table.png'],
+            warmImages: ['static/warm.png'],
+        });
+        registerCriticalImageResolver('test-replace-critical', () => ({
+            critical: ['dynamic/current-step.png'],
+            warm: ['dynamic/warm.png'],
+            replaceStaticCritical: true,
+        }));
+
+        const warm = await preloadCriticalImages('test-replace-critical', {}, 'zh-CN');
+
+        expect(warm).toEqual(['static/warm.png', 'dynamic/warm.png']);
+        expect(requestedUrls.some((url) => url.includes('dynamic') && url.includes('current-step'))).toBe(true);
+        expect(requestedUrls.some((url) => url.includes('static/full-table'))).toBe(false);
+    });
+
+    it('动态解析器接管静态 critical 时，缓存检查不要求静态全量图片', () => {
+        registerGameAssets('test-replace-critical-cache', {
+            criticalImages: ['static/full-table.png'],
+        });
+        registerCriticalImageResolver('test-replace-critical-cache', () => ({
+            critical: ['dynamic/current-step.png'],
+            warm: [],
+            replaceStaticCritical: true,
+        }));
+
+        const loadedImage = new Image() as HTMLImageElement;
+        loadedImage.src = '/assets/i18n/zh-CN/dynamic/compressed/current-step.webp';
+        markImageLoaded('dynamic/current-step.png', 'zh-CN', loadedImage);
+
+        expect(areAllCriticalImagesCached('test-replace-critical-cache', {}, 'zh-CN')).toBe(true);
     });
 
     it('解析器抛出异常时回退到静态列表', async () => {
@@ -399,5 +451,50 @@ describe('preloadCriticalImages', () => {
         });
 
         expect(areAllCriticalImagesCached('test-sync-disk-hit', undefined, 'en')).toBe(true);
+    });
+
+    it('CriticalImageGate 的同步缓存探测不在渲染期间通知 AtlasCard 订阅者', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setAssetHashesForTesting({
+            'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
+        });
+
+        vi.stubGlobal('Image', class {
+            complete = true;
+            naturalWidth = 300;
+            naturalHeight = 600;
+            private _src = '';
+            get src() { return this._src; }
+            get currentSrc() { return this._src; }
+            set src(value: string) { this._src = value; }
+        });
+        registerGameAssets('test-sync-disk-hit-no-notify', {
+            criticalImages: ['smashup/cards/cards1'],
+        });
+        const onImageReadySubscriber = vi.fn();
+        const unsubscribe = onImageReady(onImageReadySubscriber);
+
+        expect(areAllCriticalImagesCached('test-sync-disk-hit-no-notify', undefined, 'en')).toBe(true);
+        expect(isImagePreloaded('smashup/cards/cards1', 'en')).toBe(true);
+        expect(onImageReadySubscriber).not.toHaveBeenCalled();
+
+        unsubscribe();
+    });
+
+    it('markImageLoaded 的普通成功路径仍通知已订阅的 onImageReady 监听器', () => {
+        const source = 'smashup/cards/async-ready-notification';
+        const loadedImage = new Image() as HTMLImageElement;
+        loadedImage.src = '/assets/i18n/zh-CN/smashup/cards/compressed/async-ready-notification.webp';
+        const onImageReadySubscriber = vi.fn();
+        const unsubscribe = onImageReady(onImageReadySubscriber);
+
+        try {
+            markImageLoaded(source, 'zh-CN', loadedImage, loadedImage.src);
+
+            expect(onImageReadySubscriber).toHaveBeenCalledWith(source);
+            expect(getPreloadedImageElement(source, 'zh-CN')).toBe(loadedImage);
+        } finally {
+            unsubscribe();
+        }
     });
 });

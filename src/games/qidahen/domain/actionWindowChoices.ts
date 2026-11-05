@@ -11,7 +11,7 @@ import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import {
     addFactionHandCards,
-    buildDrawnHandCards,
+    appendDrawnHandCards,
     drawFromFactionPile,
     getFactionDrawPileCount,
 } from './handCardState';
@@ -38,7 +38,7 @@ import {
 } from './troopCompat';
 import { buildArtilleryTroopStack, buildRegularTroopStack } from './troopStacks';
 import { advanceQidahenTurnIfReady } from './turnAdvance';
-import { getQidahenWheelImmediateEffectConfig } from './wheelRules';
+import { beginQidahenWheelRecruitTrain } from './wheelRecruitTrain';
 import { applyQidahenVictoryStatus } from './victoryResolution';
 import type {
     QidahenCore,
@@ -80,25 +80,12 @@ interface QidahenActionWindowChoiceDependencies {
         state: QidahenCore,
         factionId: QidahenFactionId,
     ) => number;
-    drawFromFactionPile: (
-        factions: QidahenCore['factions'],
-        sourceFactionId: QidahenFactionId,
-        requestedCards: number,
-        discardGain?: number,
-    ) => {
-        factions: QidahenCore['factions'];
-        drawnCards: number;
-    };
+    drawFromFactionPile: typeof drawFromFactionPile;
     addFactionHandCards: (
         factions: QidahenCore['factions'],
         factionId: QidahenFactionId,
         handGain: number,
     ) => QidahenCore['factions'];
-    buildDrawnHandCards: (
-        state: QidahenCore,
-        factionId: QidahenFactionId,
-        drawCards: number,
-    ) => QidahenCore['handCards'];
     materializeNonSiegedCityActionSourceRegion: (
         region: QidahenCore['regions'][number],
     ) => QidahenCore['regions'][number];
@@ -144,7 +131,6 @@ export const resolveQidahenRecruitInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -262,7 +248,6 @@ export const resolveQidahenGrantPardonInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -276,8 +261,70 @@ export const resolveQidahenGrantPardonInteractionChoice = (
         state,
         getQidahenGrantPardonSelectionForCore,
     );
+    if (!selection) {
+        return state;
+    }
+    if (choiceId.startsWith('region:') && selection.targetRegionId == null) {
+        const targetRegionId = choiceId.slice('region:'.length);
+        const targetChoices = selection.choices.filter((choice) => choice.targetRegionId === targetRegionId);
+        if (targetChoices.length === 0) {
+            return state;
+        }
+        const sourceFactionIds = Array.from(new Set(targetChoices.map((choice) => choice.sourceFactionId)));
+        const opponentFactionId = sourceFactionIds.length === 1 ? sourceFactionIds[0] : null;
+        const choices = opponentFactionId == null
+            ? targetChoices
+            : targetChoices.filter((choice) => choice.sourceFactionId === opponentFactionId);
+        const targetRegionName = targetChoices[0].targetRegionName;
+        return dependencies.updateTurnLabel({
+            ...state,
+            selectedRegionId: targetRegionId,
+            explicitRegionId: targetRegionId,
+            regionFocusState: buildQidahenRegionFocusState(targetRegionId, {
+                currentTargetRegionId: targetRegionId,
+                displayAnchorRegionId: targetRegionId,
+            }),
+            grantPardonSelection: {
+                ...selection,
+                title: opponentFactionId == null
+                    ? `${targetRegionName}：指定部队所属对手`
+                    : `${targetRegionName}：由${choices[0].sourceFactionName}玩家选择部队`,
+                summary: opponentFactionId == null
+                    ? `${targetRegionName}相邻部队属于多名对手，请指定其中一名；之后由该玩家选择部队。`
+                    : `已选${targetRegionName}。请${choices[0].sourceFactionName}玩家点击要转移的部队。`,
+                targetRegionId,
+                opponentFactionId,
+                sourceRegionId: null,
+                sourceTokenId: null,
+                sourceLocation: null,
+                sourceRegionName: null,
+                displayAnchorRegionId: targetRegionId,
+                displayAnchorRegionName: targetRegionName,
+                selectedChoiceId: null,
+                choices,
+            },
+            turnPhase: 'grant-pardon-choice',
+        });
+    }
+    if (choiceId.startsWith('opponent:') && selection.targetRegionId != null && selection.opponentFactionId == null) {
+        const opponentFactionId = choiceId.slice('opponent:'.length) as QidahenFactionId;
+        const choices = selection.choices.filter((choice) => choice.sourceFactionId === opponentFactionId);
+        if (choices.length === 0) {
+            return state;
+        }
+        return dependencies.updateTurnLabel({
+            ...state,
+            grantPardonSelection: {
+                ...selection,
+                title: `${selection.displayAnchorRegionName ?? selection.targetRegionId}：由${choices[0].sourceFactionName}玩家选择部队`,
+                summary: `已选${selection.displayAnchorRegionName ?? selection.targetRegionId}。请${choices[0].sourceFactionName}玩家点击要转移的部队。`,
+                opponentFactionId,
+                choices,
+            },
+        });
+    }
     const choice = selection?.choices.find((item) => item.id === choiceId) ?? null;
-    if (!selection || !choice) {
+    if (selection.opponentFactionId == null || !choice || choice.sourceFactionId !== selection.opponentFactionId) {
         return state;
     }
     const executorFactionId = selection.executorFactionId ?? 'ming';
@@ -356,7 +403,6 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -413,7 +459,7 @@ export const resolveQidahenDriveTigerConsentInteractionChoice = (
         diplomacyProgress: null,
         wheelDispatchProgress: null,
         drawPileCount: acceptedSelection.attackerFactionId === 'ming' ? state.drawPileCount - drawResult.drawnCards : state.drawPileCount,
-        handCards: dependencies.buildDrawnHandCards(state, acceptedSelection.attackerFactionId, drawResult.drawnCards),
+        handCards: appendDrawnHandCards(state.handCards, drawResult.cards, acceptedSelection.attackerFactionId),
         factions: nextFactions,
         lastSeasonSummary: dependencies.buildSeasonSummary('驱虎吞狼', timestamp, [
             `${state.factions[selection.targetFactionId].name} 同意接受${state.factions[selection.commanderFactionId].name}指挥，并获得 ${drawResult.drawnCards} 张手牌。`,
@@ -444,7 +490,6 @@ export const resolveQidahenMaShiTradeInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -489,7 +534,7 @@ export const resolveQidahenMaShiTradeInteractionChoice = (
         diplomacyProgress: null,
         regions: nextRegions,
         drawPileCount: currentFactionId === 'ming' ? state.drawPileCount - drawResult.drawnCards : state.drawPileCount,
-        handCards: dependencies.buildDrawnHandCards(state, currentFactionId, drawResult.drawnCards),
+        handCards: appendDrawnHandCards(state.handCards, drawResult.cards, currentFactionId),
         factions: {
             ...drawResult.factions,
             ming: {
@@ -532,7 +577,6 @@ export const resolveQidahenKhanEdictInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,
@@ -603,66 +647,15 @@ export const resolveQidahenKhanEdictInteractionChoice = (
         });
     }
 
-    const recruitTargetRegionId = selection.recruitTargetRegionId;
-    if (!recruitTargetRegionId) {
-        return dependencies.updateTurnLabel({
-            ...state,
-            recruitSelection: null,
-            maShiTradeSelection: null,
-            khanEdictSelection: null,
-            diplomacyProgress: null,
-            lastSeasonSummary: dependencies.buildSeasonSummary('大汗令箭', timestamp, [
-                '当前没有可执行征兵训练的蒙古控制区域。',
-            ]),
-        });
-    }
-    const recruitConfig = getQidahenWheelImmediateEffectConfig('wheel-recruit-train');
-    const troopDelta = recruitConfig?.troopDelta ?? 2;
-    const nextRuntimeRegions = state.regions
-        .filter((region) => !region.isLogicalRegion)
-        .map((region) => {
-            if (region.id !== recruitTargetRegionId) {
-                return region;
-            }
-            const actionTargetRegion = dependencies.materializeNonSiegedCityActionSourceRegion(region);
-            return addSpecialTroopStackToRegion({
-                ...actionTargetRegion,
-                troops: actionTargetRegion.troops + troopDelta,
-                note: `${actionTargetRegion.name} 经大汗令箭执行征兵训练后建立 ${troopDelta} 个等级 2 蒙古骑兵。`,
-            }, buildRegularTroopStack('mongol', 'khan-edict-recruit-train', troopDelta));
-        });
-    const nextRegions = dependencies.refreshRuntimeRegionRules(nextRuntimeRegions, state.fortifications);
-    const resolvedState = dependencies.applyVictoryStatus({
+    const startedState = beginQidahenWheelRecruitTrain({
         ...state,
-        selectedRegionId: recruitTargetRegionId,
-        explicitRegionId: null,
-        regionFocusState: buildQidahenRegionFocusState(recruitTargetRegionId),
         turnPhase: 'action-window',
         recruitSelection: null,
         maShiTradeSelection: null,
         khanEdictSelection: null,
         diplomacyProgress: null,
-        regions: nextRegions,
-        factions: {
-            ...state.factions,
-            mongol: {
-                ...state.factions.mongol,
-                troops: state.factions.mongol.troops + troopDelta,
-            },
-        },
-        lastSeasonSummary: dependencies.buildSeasonSummary('大汗令箭', timestamp, [
-            `${state.factions[currentFactionId].name} 选择征兵训练，${selection.recruitTargetRegionName ?? '当前控制区'} 建立 ${troopDelta} 个等级 2 蒙古骑兵。`,
-        ]),
-        actionLog: [
-            {
-                id: `log-khan-edict-${timestamp}`,
-                faction: currentFactionId,
-                text: `${state.factions[currentFactionId].name} 选择大汗令箭的征兵训练，${selection.recruitTargetRegionName ?? '当前控制区'} 建立 ${troopDelta} 个等级 2 蒙古骑兵。`,
-            },
-            ...state.actionLog,
-        ].slice(0, 6),
-    });
-    return dependencies.advanceTurnIfReady(syncFactionActionWindow(resolvedState, currentFactionId), timestamp);
+    }, 'khan-edict', timestamp, true);
+    return dependencies.advanceTurnIfReady(syncFactionActionWindow(startedState, currentFactionId), timestamp);
 };
 
 const resolveDiplomacyChoice = (
@@ -897,7 +890,6 @@ export const resolveQidahenDiplomacyInteractionChoice = (
         getFactionDrawPileCount,
         drawFromFactionPile,
         addFactionHandCards,
-        buildDrawnHandCards,
         materializeNonSiegedCityActionSourceRegion,
         refreshRuntimeRegionRules,
         getEffectiveHomelandController,

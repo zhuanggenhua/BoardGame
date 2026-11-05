@@ -1,0 +1,34 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-19T10:28:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": true
+  },
+  "requirements": [
+    {
+      "requirement": "真实进入改骰交互后，右侧改骰提示框按内容显示，不被固定高度或裁剪样式截断",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E：弹一手应能通过真实骰子入口修改已锁定骰子并保留锁定状态，通过后截图显示“选择要调整的骰子”完整落在右侧骰盘左侧。",
+        "截图原图：弹一手-改骰提示框完整.jpg。"
+      ]
+    },
+    {
+      "requirement": "确认改骰后，玩家行动日志写入实际的修改骰子过程",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E 通过后打开行动日志面板，截图可见“修改骰子 #1：3 → 4”。",
+        "截图原图：弹一手-改骰行动日志.jpg。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-die-modification.e2e\\弹一手应能通过真实骰子入口修改已锁定骰子并保留锁定状态\\弹一手-改骰提示框完整.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-die-modification.e2e\\弹一手应能通过真实骰子入口修改已锁定骰子并保留锁定状态\\弹一手-改骰行动日志.jpg"
+  ]
+}

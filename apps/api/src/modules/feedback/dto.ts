@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import { Allow, ArrayMaxSize, IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
+import type { FeedbackReplayability } from './feedback.schema';
 
 export const FEEDBACK_SORT_OPTIONS = ['newest', 'oldest'] as const;
 export type FeedbackSortOption = typeof FEEDBACK_SORT_OPTIONS[number];
@@ -129,6 +130,123 @@ export class FeedbackPageFlagsDto {
     mobileProfile?: string;
 }
 
+export class FeedbackPerformanceFrameDto {
+    @IsNumber()
+    @IsOptional()
+    averageFps?: number;
+
+    @IsNumber()
+    @IsOptional()
+    minFps?: number;
+
+    @IsNumber()
+    @IsOptional()
+    averageFrameTimeMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxFrameTimeMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    bucketCount?: number;
+}
+
+export class FeedbackPerformanceLongTasksDto {
+    @IsNumber()
+    count!: number;
+
+    @IsNumber()
+    totalDurationMs!: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxDurationMs?: number;
+}
+
+export class FeedbackPerformanceRequestDto {
+    @IsString()
+    @MaxLength(300)
+    path!: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    initiatorType?: string;
+
+    @IsNumber()
+    durationMs!: number;
+
+    @IsNumber()
+    @IsOptional()
+    ttfbMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    connectMs?: number;
+}
+
+export class FeedbackPerformanceNetworkDto {
+    @IsNumber()
+    @IsOptional()
+    connectionRttMs?: number;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(32)
+    effectiveType?: string;
+
+    @IsNumber()
+    @IsOptional()
+    downlinkMbps?: number;
+
+    @IsNumber()
+    requestCount!: number;
+
+    @IsNumber()
+    @IsOptional()
+    averageDurationMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    maxDurationMs?: number;
+
+    @IsNumber()
+    @IsOptional()
+    averageTtfbMs?: number;
+
+    @IsArray()
+    @ArrayMaxSize(8)
+    @ValidateNested({ each: true })
+    @Type(() => FeedbackPerformanceRequestDto)
+    @IsOptional()
+    recentRequests?: FeedbackPerformanceRequestDto[];
+}
+
+export class FeedbackPerformanceContextDto {
+    @IsString()
+    @MaxLength(40)
+    capturedAt!: string;
+
+    @IsNumber()
+    windowMs!: number;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceFrameDto)
+    @IsOptional()
+    frame?: FeedbackPerformanceFrameDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceLongTasksDto)
+    @IsOptional()
+    longTasks?: FeedbackPerformanceLongTasksDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceNetworkDto)
+    @IsOptional()
+    network?: FeedbackPerformanceNetworkDto;
+}
+
 export class FeedbackClientContextDto {
     @IsString()
     @IsOptional()
@@ -228,6 +346,11 @@ export class FeedbackClientContextDto {
     @Type(() => FeedbackPageFlagsDto)
     @IsOptional()
     pageFlags?: FeedbackPageFlagsDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackPerformanceContextDto)
+    @IsOptional()
+    performance?: FeedbackPerformanceContextDto;
 }
 
 export class FeedbackErrorContextDto {
@@ -417,6 +540,10 @@ export class CreateFeedbackDto {
     @MaxLength(500000)
     stateSnapshot?: string;
 
+    @Allow()
+    @IsOptional()
+    diagnosticPacket?: Record<string, unknown>;
+
     @ValidateNested()
     @Type(() => FeedbackClientContextDto)
     @IsOptional()
@@ -495,6 +622,15 @@ export class CreateSystemFeedbackDto {
     @MaxLength(500000)
     stateSnapshot?: string;
 
+    @Allow()
+    @IsOptional()
+    diagnosticPacket?: Record<string, unknown>;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(1500000)
+    privateReplay?: string;
+
     @ValidateNested()
     @Type(() => FeedbackClientContextDto)
     @IsOptional()
@@ -504,6 +640,23 @@ export class CreateSystemFeedbackDto {
     @Type(() => FeedbackErrorContextDto)
     @IsOptional()
     errorContext?: FeedbackErrorContextDto;
+}
+
+export class AttachPrivateReplayDto {
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(128)
+    matchId!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(128)
+    playerId!: string;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(1500000)
+    privateReplay!: string;
 }
 
 export class UpdateFeedbackStatusDto {
@@ -548,6 +701,10 @@ export class QueryFeedbackDto {
     @IsString()
     @MaxLength(64)
     source?: string;
+
+    @IsOptional()
+    @IsIn(['full', 'partial', 'unreplayable'])
+    replayability?: FeedbackReplayability;
 
     @IsOptional()
     @IsIn(FEEDBACK_SORT_OPTIONS)

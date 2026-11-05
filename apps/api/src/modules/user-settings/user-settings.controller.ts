@@ -4,6 +4,7 @@ import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { createRequestI18n } from '../../shared/i18n';
 import { UpdateAudioSettingsDto, UpdateSmashUpPreferenceDto } from './dtos/audio-settings.dto';
+import { UpdateFavoriteGameDto } from './dtos/library-settings.dto';
 import { UserSettingsService } from './user-settings.service';
 
 @Controller('auth/user-settings')
@@ -85,6 +86,22 @@ export class UserSettingsController {
                 interactionMode: body.interactionMode,
             },
         });
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('library')
+    async getLibrary(@CurrentUser() currentUser: { userId: string } | null, @Res() res: Response) {
+        if (!currentUser?.userId) return res.status(401).json({ error: 'Unauthorized' });
+        return res.json({ gameIds: await this.userSettingsService.getFavoriteGames(currentUser.userId) });
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @UsePipes(new ValidationPipe({ whitelist: true, transform: true, expectedType: UpdateFavoriteGameDto }))
+    @Put('library')
+    async updateLibrary(@CurrentUser() currentUser: { userId: string } | null, @Body() body: UpdateFavoriteGameDto, @Res() res: Response) {
+        if (!currentUser?.userId) return res.status(401).json({ error: 'Unauthorized' });
+        const gameIds = await this.userSettingsService.setFavoriteGame(currentUser.userId, body.gameId, body.favorite);
+        return res.json({ gameIds });
     }
 
     private formatAudioSettings(settings: {

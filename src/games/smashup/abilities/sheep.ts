@@ -20,12 +20,13 @@ import {
     grantContextualExtraAction,
     revealHand,
 } from '../domain/abilityHelpers';
-import { createEffectProgram, executeAbilityProgram, type AbilityProgram } from '../domain/abilityRuntime';
+import { createAbilityRuntimeContinuation, createEffectProgram, executeAbilityProgram, type AbilityProgram } from '../domain/abilityRuntime';
 import {
     appendResolvedActionAbility,
     getExternalActionEffectiveHandSize,
     type ExternalActionAbilityContinuationContext,
 } from '../domain/externalActionPlay';
+import { buildOngoingDetachedEvent } from '../domain/ongoingDetach';
 import { registerProtection, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { registerOngoingPowerModifier } from '../domain/ongoingModifiers';
 import { collectLegalActionPlayTargets, validateActionPlaySemantics, validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
@@ -105,7 +106,7 @@ const sheepEmitSetupThenPlayTransferredMinionProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.setupEvents,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         playerId: context.playerId,
         cardUid: context.cardUid,
@@ -115,8 +116,7 @@ const sheepEmitSetupThenPlayTransferredMinionProgram = createEffectProgram<
         timestamp: context.timestamp,
         targetBaseIndex: context.targetBaseIndex,
         power: context.power,
-    } satisfies SheepTransferredMinionContinuationContext,
-    nextProgram: sheepPlayTransferredMinionAfterSetupProgram,
+    } satisfies SheepTransferredMinionContinuationContext, sheepPlayTransferredMinionAfterSetupProgram),
 }));
 
 function otherBaseOptions(core: SmashUpCore, fromBaseIndex: number) {

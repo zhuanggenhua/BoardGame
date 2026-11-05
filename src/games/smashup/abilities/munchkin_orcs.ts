@@ -182,9 +182,19 @@ function andStayDownSuppression(state: SmashUpCore): string[] {
         const suppressor = base.metadata?.andStayDownSuppressorPlayerId as PlayerId;
         for (const minion of base.minions) {
             if (minion.controller === suppressor) continue;
-            if (getCardDef(minion.defId)?.abilityTags?.includes('special')) suppressed.add(minion.uid);
+            const minionDef = getCardDef(minion.defId);
+            if (minionDef && (minionDef.type === 'fusion'
+                ? minionDef.minionAbilityTags?.includes('special')
+                : 'abilityTags' in minionDef && minionDef.abilityTags?.includes('special'))) {
+                suppressed.add(minion.uid);
+            }
             for (const attached of minion.attachedActions) {
-                if (getCardDef(attached.defId)?.abilityTags?.includes('special')) suppressed.add(attached.uid);
+                const attachedDef = getCardDef(attached.defId);
+                if (attachedDef && (attachedDef.type === 'fusion'
+                    ? attachedDef.actionAbilityTags?.includes('special')
+                    : 'abilityTags' in attachedDef && attachedDef.abilityTags?.includes('special'))) {
+                    suppressed.add(attached.uid);
+                }
             }
         }
     }

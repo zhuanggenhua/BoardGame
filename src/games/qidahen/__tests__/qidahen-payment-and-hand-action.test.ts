@@ -13,10 +13,10 @@ it('点击手牌会写入支付选择并更新支付提示', () => {
         const next = apply(core, {
             type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
             playerId: '0',
-            payload: { cardId: 'hand-4' },
+            payload: { cardId: 'hand-1' },
         });
 
-        expect(next.selectedPaymentCardIds).toEqual(['hand-4']);
+        expect(next.selectedPaymentCardIds).toEqual(['hand-1']);
         expect(next.payment).toMatchObject({
             required: 3,
             selected: 1,
@@ -370,7 +370,7 @@ it('切换行动会清空已选支付牌并按新花费重算', () => {
         const selected = apply(QidahenDomain.setup(['0', '1', '2'], random), {
             type: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
             playerId: '0',
-            payload: { cardId: 'hand-4' },
+            payload: { cardId: 'hand-1' },
         });
 
         const next = apply(selected, {
@@ -411,7 +411,7 @@ it('达到当前花费上限后不会继续增加支付牌', () => {
 
 it('实体手牌按势力隔离，轮到蒙古时不会消费大明剩牌', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
-        expect(factionHandCards(core, 'ming')).toHaveLength(4);
+        expect(factionHandCards(core, 'ming')).toHaveLength(3);
         expect(factionHandCards(core, 'mongol')).toHaveLength(6);
         expect(factionHandCards(core, 'jin')).toHaveLength(10);
 
@@ -432,7 +432,7 @@ it('实体手牌按势力隔离，轮到蒙古时不会消费大明剩牌', () =
             payload: { actionId: 'ma-shi-trade' },
         });
 
-        expect(factionHandCards(next, 'ming')).toHaveLength(4);
+        expect(factionHandCards(next, 'ming')).toHaveLength(3);
         expect(factionHandCards(next, 'mongol')).toHaveLength(5);
         expect(next.factions.mongol.handCount).toBe(5);
     });

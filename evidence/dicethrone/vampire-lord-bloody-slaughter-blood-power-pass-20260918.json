@@ -1,0 +1,77 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-18T11:12:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "血色杀戮通过玩家板真实入口从五个血滴骰面触发，并进入真实抽牌堆搜牌流程",
+      "status": "PASS",
+      "evidence": [
+        "第 1 张真实入口截图显示五个血滴骰面和可点击的血色杀戮终极技能槽位。",
+        "第 2 张真实入口截图显示终极技能触发后的抽牌堆搜牌窗口。",
+        "真实入口 E2E 用例“血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血”通过。"
+      ]
+    },
+    {
+      "requirement": "血色杀戮结算后，攻击伤害写入共享记录并进入主要阶段 2；鲜血之力第 4 档显示为常驻按钮且只有此时高亮",
+      "status": "PASS",
+      "evidence": [
+        "第 3 张真实入口截图显示主要阶段（2）以及高亮的鲜血之力吸血按钮，未出现旧的吸血弹窗。",
+        "E2E 断言 phase=main2、pendingAttack 已清空、lastResolvedAttackDamage=10、鲜血之力仍为 4。",
+        "同文件的普通攻击真实入口用例也通过，证明按钮版不是只对血色杀戮预置态生效。"
+      ]
+    },
+    {
+      "requirement": "点击常驻按钮后按刚刚那次攻击的净掉血治疗，并消耗 4 个鲜血之力",
+      "status": "PASS",
+      "evidence": [
+        "第 4 张真实入口截图显示吸血鬼领主生命恢复到 50、鲜血之力归零，按钮已收口为不可用状态。",
+        "E2E 断言攻击者生命为 50、鲜血之力为 0、治疗量为 10、HEAL_APPLIED 与 TOKEN_CONSUMED 均产生，且攻击方没有重新进入旧弹窗流程。"
+      ]
+    },
+    {
+      "requirement": "共享伤害记录按回合生命周期管理：独立卡牌/直接伤害不覆盖攻击记录，回合切换时清空，其他能力可复用同一记录",
+      "status": "PASS",
+      "evidence": [
+        "src/games/dicethrone/__tests__/damage-tracking-regression.test.ts 新增断言：攻击尚未收口时 damageScope=direct 的卡牌伤害不会覆盖 pendingAttack.resolvedDamage。",
+        "同一测试文件新增断言：TURN_CHANGED 后 lastResolvedAttackDamage 被清空。",
+        "共享字段位于 DiceThroneCore，由 ATTACK_RESOLVED 写入、TURN_CHANGED 清空，鲜血之力只作为一个消费者读取。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\01-血色杀戮终极触发前-五个血滴可见且大招可点.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\02-血色杀戮真实搜牌窗口-大招后可搜索抽牌堆.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\03-血色杀戮结算后-主要阶段二吸血按钮高亮.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\04-血色杀戮吸血结算后-生命五十血力归零按钮收口.jpg"
+  ],
+  "images": [
+    {
+      "file": "01-血色杀戮终极触发前-五个血滴可见且大招可点.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\01-血色杀戮终极触发前-五个血滴可见且大招可点.jpg",
+      "note": "真实入口起点：五个血滴骰面可见，血色杀戮终极技能可操作"
+    },
+    {
+      "file": "02-血色杀戮真实搜牌窗口-大招后可搜索抽牌堆.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\02-血色杀戮真实搜牌窗口-大招后可搜索抽牌堆.jpg",
+      "note": "从终极技能触发后进入真实搜牌窗口，流程继续到攻击结算"
+    },
+    {
+      "file": "03-血色杀戮结算后-主要阶段二吸血按钮高亮.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\03-血色杀戮结算后-主要阶段二吸血按钮高亮.jpg",
+      "note": "攻击已结算：进入主要阶段二，吸血按钮常驻并高亮，旧弹窗不存在"
+    },
+    {
+      "file": "04-血色杀戮吸血结算后-生命五十血力归零按钮收口.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血\\04-血色杀戮吸血结算后-生命五十血力归零按钮收口.jpg",
+      "note": "点击按钮后：按攻击净掉血治疗，消耗 4 个鲜血之力，按钮收口"
+    }
+  ]
+}

@@ -140,10 +140,14 @@ export function resolveBetrayalRoomNodeTileVisual(
     isDiscovered: boolean,
 ): BetrayalRoomTileVisual {
     const visualId = isDiscovered ? room.visualId : room.backVisualId;
+    // The starting board shares one artwork ID in existing states; the entrance is its right-hand room.
+    if (isDiscovered && visualId === 'startTriple' && room.id === 'entrance-hall') {
+        return BETRAYAL_ROOM_TILE_VISUALS.startEntranceHall;
+    }
     return resolveBetrayalRoomTileVisual(visualId) ?? BETRAYAL_ROOM_TILE_VISUALS.conservatory;
 }
 
-export function buildRoomAtlasImageStyle(visual: BetrayalRoomTileVisual): CSSProperties {
+export function buildRoomAtlasImageStyle(visual: BetrayalRoomTileVisual): CSSProperties & { aspectRatio: number } {
     const spriteStyle = computeSpriteImgStyle(visual.frameIndex, visual.config);
     return {
         width: spriteStyle.imgWidth,

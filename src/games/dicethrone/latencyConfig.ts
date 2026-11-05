@@ -10,6 +10,16 @@
 
 import type { LatencyOptimizationConfig } from '../../engine/transport/latency/types';
 
+const PENDING_COMPANION_COMMANDS = [
+    // 骰盘锁定是确认前的中间选择；允许它跟随前一条乐观命令发送，
+    // 不把每次点骰都误报成“等待上一步操作”。
+    'TOGGLE_DIE_LOCK',
+    'REMOVE_STATUS',
+    'TRANSFER_STATUS',
+    'GRANT_TOKENS',
+    'RESOLVE_INTERACTION',
+] as const;
+
 // ============================================================================
 // 命令确定性覆盖（仅特殊情况）
 // ============================================================================
@@ -29,6 +39,7 @@ import type { LatencyOptimizationConfig } from '../../engine/transport/latency/t
 export const diceThroneLatencyConfig: LatencyOptimizationConfig = {
     optimistic: {
         enabled: true,
+        pendingCompanionCommands: [...PENDING_COMPANION_COMMANDS],
         // commandDeterminism 不声明 → 全部走 Random Probe 自动检测
         // 乐观动画：确定性命令立即播放动画，不等服务端确认
         animationMode: {

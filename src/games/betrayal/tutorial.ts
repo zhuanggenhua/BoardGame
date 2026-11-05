@@ -1,6 +1,7 @@
 import type {
     MatchState,
     TutorialCollection,
+    TutorialHiddenAutomationContract,
     TutorialManifest,
     TutorialStepSnapshot,
 } from '../../engine/types';
@@ -20,10 +21,37 @@ import {
     createStartedFirstScenarioTutorialCore,
 } from './testing/firstScenarioTestUtils';
 
+const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
+    kind: 'setup-precondition',
+    reason,
+});
+
+const compressedRepeat = (
+    equivalentStepIds: string[],
+    reason: string,
+): TutorialHiddenAutomationContract => ({
+    kind: 'compressed-repeat',
+    equivalentStepIds,
+    reason,
+});
+
 const isRabbitFootAlreadyUsed = (core: Partial<BetrayalCore> | undefined): boolean =>
     Boolean(
         core?.usedCardIdsThisTurn?.includes('rope')
         || core?.recentRoll?.consumedRabbitFootCardIds?.includes('rope'),
+    );
+
+const isWaitingForEventRollConfirmation = (core: Partial<BetrayalCore> | undefined): boolean =>
+    Boolean(core?.pendingEventRollResolution);
+
+const stepHandlesPendingEventRoll = (step: TutorialStepSnapshot): boolean =>
+    Boolean(
+        step.allowedCommands?.includes(BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL)
+        || step.allowedCommands?.includes(BETRAYAL_COMMANDS.USE_POSSESSION)
+        || step.allowedCommands?.includes(BETRAYAL_COMMANDS.USE_RABBIT_FOOT)
+        || step.allowedCommands?.includes(BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM)
+        || step.aiActions?.some((action) => action.commandType === BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL)
+        || step.id === 'view-book',
     );
 
 const validateBetrayalBasicSetupStep = (
@@ -31,14 +59,27 @@ const validateBetrayalBasicSetupStep = (
     step: TutorialStepSnapshot,
 ): boolean => {
     const core = state.core as Partial<BetrayalCore> | undefined;
+    if (step.id !== 'setup-runtime' && core?.phase === 'characterSelect') {
+        return false;
+    }
     if (step.id === 'use-rabbit-foot') {
         return !isRabbitFootAlreadyUsed(core);
+    }
+    if (isWaitingForEventRollConfirmation(core)) {
+        return stepHandlesPendingEventRoll(step);
+    }
+    if (step.id === 'finish') {
+        return Boolean(core?.pendingDamageAllocation);
+    }
+    if (step.id === 'return-to-table-after-damage') {
+        return !core?.pendingDamageAllocation;
     }
     return true;
 };
 
 const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
     id: 'basic-setup-and-turn',
+    revision: 3,
     numPlayers: 3,
     allowManualSkip: true,
     stepValidator: validateBetrayalBasicSetupStep,
@@ -53,15 +94,16 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createStartedFirstScenarioTutorialCore().core ?? createStartedFirstScenarioTutorialCore(),
+                        fields: createStartedFirstScenarioTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal Betrayal first-turn tutorial board before the first visible player step.'),
         },
         {
             id: 'objective-and-turn',
             content: 'game-betrayal:tutorial.basicSetup.steps.objectiveAndTurn',
-            highlightTarget: 'betrayal-action-move',
+            highlightTarget: 'betrayal-current-explorer-token',
             position: 'top',
             infoStep: true,
             viewAs: '0',
@@ -133,7 +175,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'open-move-targets',
             content: 'game-betrayal:tutorial.basicSetup.steps.openMoveTargets',
-            highlightTarget: 'betrayal-action-move',
+            highlightTarget: 'betrayal-current-explorer-token',
             position: 'top',
             viewAs: '0',
         },
@@ -151,7 +193,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'explore-upper',
             content: 'game-betrayal:tutorial.basicSetup.steps.exploreUpper',
-            highlightTarget: 'betrayal-action-explore',
+            highlightTarget: 'betrayal-room-ground-north',
             position: 'top',
             requireAction: true,
             allowedCommands: [],
@@ -170,7 +212,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             id: 'confirm-room-placement',
             content: 'game-betrayal:tutorial.basicSetup.steps.confirmRoomPlacement',
             highlightTarget: 'betrayal-room-placement-confirm',
-            position: 'top',
+            position: 'right',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.EXPLORE_ROOM],
             advanceOnEvents: [{ type: 'ROOM_EXPLORED', match: { playerId: '0' } }],
@@ -197,7 +239,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'view-book',
             content: 'game-betrayal:tutorial.basicSetup.steps.viewBook',
-            highlightTarget: 'betrayal-inventory-omen-book-magnify',
+            highlightTarget: 'betrayal-inventory-omen-book',
             position: 'top',
             infoStep: true,
             viewAs: '0',
@@ -211,6 +253,7 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             allowedCommands: [BETRAYAL_COMMANDS.USE_POSSESSION],
             allowedTargets: ['omen-book'],
             advanceOnEvents: [{ type: 'POSSESSION_USED', match: { playerId: '0', cardId: 'omen-book' } }],
+            waitForAnimation: true,
             viewAs: '0',
         },
         {
@@ -225,14 +268,15 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             ],
             allowedTargets: ['rope'],
             advanceOnEvents: [{ type: 'RABBIT_FOOT_USED', match: { playerId: '0', cardId: 'rope' } }],
+            waitForAnimation: true,
             viewAs: '0',
         },
         {
             id: 'rabbit-foot-result',
             content: 'game-betrayal:tutorial.basicSetup.steps.rabbitFootResult',
-            highlightTarget: 'betrayal-latest-discovery',
-            position: 'center',
-            infoStep: true,
+            highlightTarget: 'betrayal-discovery-continue',
+            position: 'top',
+            requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL],
             advanceOnEvents: [{ type: 'EVENT_ROLL_FINALIZED', match: { isFullyAcknowledged: true } }],
             viewAs: '0',
@@ -252,10 +296,11 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
         {
             id: 'return-to-table-after-damage',
             content: 'game-betrayal:tutorial.basicSetup.steps.returnToTableAfterDamage',
-            highlightTarget: 'betrayal-discovery-continue',
-            position: 'top',
+            highlightTarget: 'betrayal-action-endTurn',
+            position: 'left',
             requireAction: true,
-            allowedCommands: [],
+            allowedCommands: [BETRAYAL_COMMANDS.END_TURN],
+            advanceOnEvents: [{ type: 'TURN_ENDED', match: { previousPlayerId: '0', nextPlayerId: '1' } }],
             viewAs: '0',
         },
     ],
@@ -280,6 +325,7 @@ const BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK: TutorialManifest = {
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal omen confirmation example before the first visible player step.'),
         },
         {
             id: 'confirm-omen-card',
@@ -288,6 +334,16 @@ const BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK: TutorialManifest = {
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION],
+            aiActions: [
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '1',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '2',
+                },
+            ],
             advanceOnEvents: [{ type: 'CARD_RESOLUTION_ACKNOWLEDGED', match: { playerId: '0', remainingCount: 0 } }],
             viewAs: '0',
         },
@@ -310,7 +366,10 @@ const BETRAYAL_OMEN_CONFIRMATION_AND_HAUNT_RISK: TutorialManifest = {
     ],
 };
 
-const BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS: TutorialManifest['steps'] = [
+const createBetrayalHeroReaderAndFirstObjectiveSteps = (
+    heroTurnWaitEquivalentStepIds: string[],
+    includeFirstObjective = true,
+): TutorialManifest['steps'] => [
     {
         id: 'haunt-hero-reader',
         content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderOpened',
@@ -331,7 +390,11 @@ const BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS: TutorialManifest['steps'] 
         id: 'haunt-hero-reader-goal',
         content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderGoal',
         highlightTarget: 'betrayal-scenario-book-section-special',
-        position: 'left',
+        avoidOverlapSelectors: [
+            '[data-tutorial-protected-region="scenario-book"]',
+        ],
+        tooltipMaxWidth: 280,
+        position: 'right',
         infoStep: true,
         viewAs: '0',
     },
@@ -339,7 +402,11 @@ const BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS: TutorialManifest['steps'] 
         id: 'haunt-hero-reader-close',
         content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroReaderClose',
         highlightTarget: 'betrayal-scenario-reader-close',
-        position: 'top',
+        avoidOverlapSelectors: [
+            '[data-tutorial-protected-region="scenario-book"]',
+        ],
+        tooltipMaxWidth: 280,
+        position: 'right',
         requireAction: true,
         allowedCommands: [],
         viewAs: '0',
@@ -347,67 +414,73 @@ const BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS: TutorialManifest['steps'] 
     {
         id: 'wait-for-hero-turn-after-haunt',
         content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.waitForHeroTurnAfterHaunt',
-        position: 'top',
-        infoStep: true,
         viewAs: '0',
+        aiDelayMs: 0,
         aiActions: [
             {
                 commandType: BETRAYAL_COMMANDS.END_TURN,
                 playerId: '2',
             },
         ],
-        autoAdvanceAfterAi: false,
+        hiddenAutomation: compressedRepeat(
+            heroTurnWaitEquivalentStepIds,
+            'Teammate 2 repeats the formal turn handoff after the hero reader; player 0 has no input until the turn returns.',
+        ),
     },
-    {
-        id: 'open-library-move-after-goal',
-        content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.openLibraryMoveAfterGoal',
-        highlightTarget: 'betrayal-action-move',
-        position: 'top',
-        requireAction: true,
-        allowedCommands: [],
-        viewAs: '0',
-    },
-    {
-        id: 'move-to-library-after-goal',
-        content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.moveToLibraryAfterGoal',
-        highlightTarget: 'betrayal-room-upper-west',
-        position: 'top',
-        requireAction: true,
-        allowedCommands: [BETRAYAL_COMMANDS.MOVE_TO_ROOM],
-        allowedTargets: ['upper-west'],
-        advanceOnEvents: [{ type: 'EXPLORER_MOVED', match: { playerId: '0', roomId: 'upper-west' } }],
-        viewAs: '0',
-    },
-    {
-        id: 'hero-study-name-roll',
-        content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameRoll',
-        highlightTarget: 'betrayal-action-use',
-        position: 'top',
-        requireAction: true,
-        allowedCommands: [BETRAYAL_COMMANDS.STUDY_MUMMY_NAME],
-        randomPolicy: { mode: 'fixed', values: [3] },
-        advanceOnEvents: [{ type: 'MUMMY_NAME_STUDIED', match: { playerId: '0', success: true } }],
-        viewAs: '0',
-    },
-    {
-        id: 'hero-study-name-result',
-        content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameResult',
-        highlightTarget: 'betrayal-recent-roll-panel',
-        highlightFrame: 'none',
-        position: 'left',
-        requireAction: true,
-        allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL],
-        advanceOnEvents: [{ type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } }],
-        viewAs: '0',
-    },
-    {
-        id: 'hero-study-name-closeout',
-        content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameCloseout',
-        highlightTarget: 'betrayal-action-endTurn',
-        position: 'left',
-        infoStep: true,
-        viewAs: '0',
-    },
+    ...(includeFirstObjective
+        ? [
+            {
+                id: 'open-library-move-after-goal',
+                content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.openLibraryMoveAfterGoal',
+                highlightTarget: 'betrayal-current-explorer-token',
+                position: 'top' as const,
+                requireAction: true,
+                allowedCommands: [],
+                viewAs: '0',
+            },
+            {
+                id: 'move-to-library-after-goal',
+                content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.moveToLibraryAfterGoal',
+                highlightTarget: 'betrayal-room-upper-west',
+                position: 'top' as const,
+                requireAction: true,
+                allowedCommands: [BETRAYAL_COMMANDS.MOVE_TO_ROOM],
+                allowedTargets: ['upper-west'],
+                advanceOnEvents: [{ type: 'EXPLORER_MOVED', match: { playerId: '0', roomId: 'upper-west' } }],
+                viewAs: '0',
+            },
+            {
+                id: 'hero-study-name-roll',
+                content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameRoll',
+                highlightTarget: 'betrayal-action-use',
+                position: 'top' as const,
+                requireAction: true,
+                allowedCommands: [BETRAYAL_COMMANDS.STUDY_MUMMY_NAME],
+                randomPolicy: { mode: 'fixed' as const, values: [3] },
+                advanceOnEvents: [{ type: 'MUMMY_NAME_STUDIED', match: { playerId: '0', success: true } }],
+                viewAs: '0',
+            },
+            {
+                id: 'hero-study-name-result',
+                content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameResult',
+                highlightTarget: 'betrayal-recent-roll-panel',
+                highlightFrame: 'none' as const,
+                position: 'left' as const,
+                requireAction: true,
+                allowedCommands: [BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL],
+                advanceOnEvents: [{ type: 'RECENT_ROLL_ACKNOWLEDGED', match: { isFullyAcknowledged: true } }],
+                viewAs: '0',
+            },
+            {
+                id: 'hero-study-name-closeout',
+                content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.heroStudyNameCloseout',
+                highlightTarget: 'betrayal-action-endTurn',
+                position: 'left' as const,
+                infoStep: true,
+                viewAs: '0',
+            },
+        ]
+        : []),
 ];
 
 const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
@@ -424,10 +497,11 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createNaturalHauntTriggerTutorialCore().core ?? createNaturalHauntTriggerTutorialCore(),
+                        fields: createNaturalHauntTriggerTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal natural haunt trigger board before the first visible player step.'),
         },
         {
             id: 'hand-off-to-teammate-one',
@@ -442,10 +516,8 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'watch-teammate-omen-turns',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.watchTeammateOmenTurns',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
             viewAs: '0',
+            aiDelayMs: 0,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
@@ -457,27 +529,28 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                     playerId: '1',
                 },
                 {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '0',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '2',
+                },
+                {
                     commandType: BETRAYAL_COMMANDS.END_TURN,
                     playerId: '1',
                 },
             ],
-            autoAdvanceAfterAi: false,
-        },
-        {
-            id: 'teammate-omen-results',
-            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.teammateOmenResults',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
-            viewAs: '0',
+            hiddenAutomation: compressedRepeat(
+                ['hand-off-to-teammate-one'],
+                'Teammate 1 repeats formal exploration, card acknowledgement, and turn handoff after the player has learned ending a turn; the next visible step waits for player 0 control.',
+            ),
         },
         {
             id: 'watch-teammate-two-omen-turn',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.watchTeammateTwoOmenTurn',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
             viewAs: '0',
+            aiDelayMs: 0,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.MOVE_TO_ROOM,
@@ -489,27 +562,27 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                     playerId: '2',
                     payload: { roomId: 'frontier-ground-east-east' },
                 },
-            ],
-            autoAdvanceAfterAi: false,
-        },
-        {
-            id: 'teammate-two-omen-results',
-            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.teammateTwoOmenResults',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
-            viewAs: '0',
-            aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
                     playerId: '2',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '0',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '1',
                 },
                 {
                     commandType: BETRAYAL_COMMANDS.END_TURN,
                     playerId: '2',
                 },
             ],
-            autoAdvanceAfterAi: false,
+            hiddenAutomation: compressedRepeat(
+                ['hand-off-to-teammate-one'],
+                'Teammate 2 repeats formal movement, exploration, card acknowledgement, and turn handoff; the tutorial resumes at the next player 0 decision.',
+            ),
         },
         {
             id: 'hand-off-to-teammate-second-cycle',
@@ -524,32 +597,33 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
         {
             id: 'watch-teammate-haunt-trigger',
             content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.watchTeammateHauntTrigger',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
             viewAs: '0',
+            aiDelayMs: 0,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
                     playerId: '1',
                     payload: { roomId: 'frontier-ground-east-south' },
                 },
-            ],
-            autoAdvanceAfterAi: false,
-        },
-        {
-            id: 'teammate-confirm-haunt-trigger',
-            content: 'game-betrayal:tutorial.hauntNaturalTrigger.steps.teammateConfirmHauntTrigger',
-            position: 'center',
-            viewAs: '0',
-            aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
                     playerId: '1',
                 },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '0',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '2',
+                },
             ],
+            hiddenAutomation: compressedRepeat(
+                ['hand-off-to-teammate-second-cycle'],
+                'Teammate 1 repeats formal exploration and acknowledgement after player 0 ended the turn; the next visible step is the hero reader.',
+            ),
         },
-        ...BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS,
+        ...createBetrayalHeroReaderAndFirstObjectiveSteps(['hand-off-to-teammate-one']),
     ],
 };
 
@@ -568,7 +642,7 @@ const BETRAYAL_TRADE_AND_AGREEMENT: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createExchangeReadyTutorialCore().core ?? createExchangeReadyTutorialCore(),
+                        fields: createExchangeReadyTutorialCore(),
                     },
                 },
             ],
@@ -623,7 +697,8 @@ const BETRAYAL_TRADE_AND_AGREEMENT: TutorialManifest = {
             position: 'top',
             infoStep: true,
             viewAs: '0',
-            aiDelayMs: 1800,
+            aiDelayMs: 2500,
+            advanceOnEvents: [{ type: 'POSSESSION_TRADED' }],
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT,
@@ -659,10 +734,11 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyReadyToBanishTutorialCore().core ?? createMummyReadyToBanishTutorialCore(),
+                        fields: createMummyReadyToBanishTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal haunt objective board before the first visible hero objective step.'),
         },
         {
             id: 'help-entry',
@@ -704,29 +780,18 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
 
 const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
     id: 'basic-setup-and-turn',
+    revision: 7,
     numPlayers: 3,
     allowManualSkip: true,
     stepValidator: validateBetrayalBasicSetupStep,
     steps: [
         ...BETRAYAL_BASIC_SETUP_AND_TURN.steps,
         {
-            id: 'end-turn-after-event',
-            content: 'game-betrayal:tutorial.mainPath.steps.endTurnAfterEvent',
-            highlightTarget: 'betrayal-action-endTurn',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: [BETRAYAL_COMMANDS.END_TURN],
-            advanceOnEvents: [{ type: 'TURN_ENDED', match: { previousPlayerId: '0', nextPlayerId: '1' } }],
-            viewAs: '0',
-        },
-        {
             id: 'watch-teammate-one-omen-turn',
             content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateOneOmenTurn',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
             viewAs: '0',
             randomPolicy: { mode: 'fixed', values: [1] },
+            aiDelayMs: 0,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.MOVE_TO_ROOM,
@@ -738,36 +803,34 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
                     playerId: '1',
                     payload: { roomId: 'ground-east' },
                 },
-            ],
-            autoAdvanceAfterAi: false,
-        },
-        {
-            id: 'teammate-one-omen-results',
-            content: 'game-betrayal:tutorial.mainPath.steps.teammateOneOmenResults',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
-            viewAs: '0',
-            aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
                     playerId: '1',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '0',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '2',
                 },
                 {
                     commandType: BETRAYAL_COMMANDS.END_TURN,
                     playerId: '1',
                 },
             ],
-            autoAdvanceAfterAi: false,
+            hiddenAutomation: compressedRepeat(
+                ['return-to-table-after-damage'],
+                'Teammate 1 repeats formal movement, exploration, card acknowledgement, and turn handoff; no new player 0 decision is available until control returns.',
+            ),
         },
         {
             id: 'watch-teammate-two-omen-turn',
             content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateTwoOmenTurn',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
             viewAs: '0',
             randomPolicy: { mode: 'fixed', values: [1] },
+            aiDelayMs: 0,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.MOVE_TO_ROOM,
@@ -779,32 +842,32 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
                     playerId: '2',
                     payload: { roomId: 'frontier-ground-east-east' },
                 },
-            ],
-            autoAdvanceAfterAi: false,
-        },
-        {
-            id: 'teammate-two-omen-results',
-            content: 'game-betrayal:tutorial.mainPath.steps.teammateTwoOmenResults',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
-            viewAs: '0',
-            aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
                     playerId: '2',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '0',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '1',
                 },
                 {
                     commandType: BETRAYAL_COMMANDS.END_TURN,
                     playerId: '2',
                 },
             ],
-            autoAdvanceAfterAi: false,
+            hiddenAutomation: compressedRepeat(
+                ['return-to-table-after-damage'],
+                'Teammate 2 repeats formal movement, exploration, card acknowledgement, and turn handoff; the next visible tutorial step resumes at player 0.',
+            ),
         },
         {
             id: 'move-to-grand-staircase',
             content: 'game-betrayal:tutorial.mainPath.steps.moveToGrandStaircase',
-            highlightTarget: 'betrayal-action-move',
+            highlightTarget: 'betrayal-current-explorer-token',
             position: 'top',
             requireAction: true,
             allowedCommands: [BETRAYAL_COMMANDS.MOVE_TO_ROOM],
@@ -845,33 +908,37 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
         {
             id: 'watch-teammate-haunt-trigger',
             content: 'game-betrayal:tutorial.mainPath.steps.watchTeammateHauntTrigger',
-            highlightTarget: 'betrayal-haunt-risk-status',
-            position: 'top',
-            infoStep: true,
             viewAs: '0',
             randomPolicy: { mode: 'fixed', values: [3] },
+            aiDelayMs: 0,
             aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
                     playerId: '1',
                     payload: { roomId: 'frontier-ground-east-south' },
                 },
-            ],
-            autoAdvanceAfterAi: false,
-        },
-        {
-            id: 'teammate-confirm-haunt-trigger',
-            content: 'game-betrayal:tutorial.mainPath.steps.teammateConfirmHauntTrigger',
-            position: 'center',
-            viewAs: '0',
-            aiActions: [
                 {
                     commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
                     playerId: '1',
                 },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '0',
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION,
+                    playerId: '2',
+                },
             ],
+            hiddenAutomation: compressedRepeat(
+                ['end-turn-from-upper-landing'],
+                'Teammate 1 repeats formal exploration and acknowledgement after player 0 ended the turn; the next visible step is the hero reader.',
+            ),
         },
-        ...BETRAYAL_HERO_READER_AND_FIRST_OBJECTIVE_STEPS,
+        ...createBetrayalHeroReaderAndFirstObjectiveSteps(
+            ['end-turn-from-upper-landing'],
+            false,
+        ),
     ],
 };
 
@@ -890,10 +957,11 @@ const BETRAYAL_HERO_ATTACK_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createHeroAttackTraitorReadyTutorialCore().core ?? createHeroAttackTraitorReadyTutorialCore(),
+                        fields: createHeroAttackTraitorReadyTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal hero attack board before the first visible hero attack step.'),
         },
         {
             id: 'hero-attack-objective',
@@ -941,10 +1009,11 @@ const BETRAYAL_JACK_SPIRIT_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createJackSpiritPostReviveAttackReadyTutorialCore().core ?? createJackSpiritPostReviveAttackReadyTutorialCore(),
+                        fields: createJackSpiritPostReviveAttackReadyTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal Jack spirit board before the first visible spirit action step.'),
         },
         {
             id: 'jack-spirit-objective',
@@ -992,10 +1061,11 @@ const BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyTraitorVictoryReadyTutorialCore().core ?? createMummyTraitorVictoryReadyTutorialCore(),
+                        fields: createMummyTraitorVictoryReadyTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal traitor objective board before the first visible traitor step.'),
         },
         {
             id: 'traitor-objective',
@@ -1062,7 +1132,7 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyMonsterMoveReadyTutorialCore().core ?? createMummyMonsterMoveReadyTutorialCore(),
+                        fields: createMummyMonsterMoveReadyTutorialCore(),
                     },
                 },
             ],
@@ -1128,7 +1198,7 @@ const BETRAYAL_MUMMY_MONSTER_ACTIONS: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyMonsterAttackRewardReadyTutorialCore().core ?? createMummyMonsterAttackRewardReadyTutorialCore(),
+                        fields: createMummyMonsterAttackRewardReadyTutorialCore(),
                     },
                 },
             ],
@@ -1201,10 +1271,11 @@ const BETRAYAL_TRAITOR_VIEW_PATH: TutorialManifest = {
                 {
                     commandType: CHEAT_COMMANDS.MERGE_STATE,
                     payload: {
-                        fields: createMummyMonsterMoveReadyTutorialCore().core ?? createMummyMonsterMoveReadyTutorialCore(),
+                        fields: createMummyMonsterMoveReadyTutorialCore(),
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal traitor monster board before the first visible traitor action step.'),
         },
         BETRAYAL_MUMMY_TRAITOR_VICTORY_CHAIN.steps[1],
         ...BETRAYAL_MUMMY_MONSTER_ACTIONS.steps.slice(1),

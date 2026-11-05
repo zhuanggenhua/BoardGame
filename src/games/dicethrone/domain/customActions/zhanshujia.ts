@@ -18,8 +18,8 @@ import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { STATUS_IDS, TOKEN_IDS, ZHANSHUJIA_DICE_FACE_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
-import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, requirePlayerDieFace, getTokenStackLimit } from '../rules';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 
 function gainCpWithTacticalAdvantage({
     attackerId,
@@ -169,7 +169,7 @@ function triggerWarMongerExtraOffensiveRoll({
     sourceAbilityId,
     state,
     timestamp,
-}: CustomActionContext): DiceThroneEvent[] {
+}: Pick<CustomActionContext, 'attackerId' | 'targetId' | 'sourceAbilityId' | 'state' | 'timestamp'>): DiceThroneEvent[] {
     const resolvedTargetId = state.pendingAttack?.defenderId ?? targetId;
     if (!state.players[attackerId] || !state.players[resolvedTargetId]) return [];
 
@@ -210,7 +210,7 @@ function resolveWarMongerRollByConfig(
     if (!random) return [];
 
     const value = random.d(6);
-    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+    const face = requirePlayerDieFace(state, attackerId, value);
     const effectKey = face === ZHANSHUJIA_DICE_FACE_IDS.SABRE
         ? config.sabreEffectKey
         : face === ZHANSHUJIA_DICE_FACE_IDS.BANNER
@@ -357,7 +357,7 @@ function resolveWarRoomRoll({
     if (!random) return [];
 
     const value = random.d(6);
-    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+    const face = requirePlayerDieFace(state, attackerId, value);
     const amount = Math.ceil(value / 2);
     const effectKey = 'bonusDie.effect.zhanshujiaWarRoom';
     const effectParams = { value, amount };

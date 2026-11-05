@@ -2,10 +2,14 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { GameHints } from '../GameHints';
+import { createHandDiscardInteractionContract } from '../handDiscardInteractionContract';
+import { createDiceInteractionContract } from '../diceInteractionContract';
+import type { DiceModifyResult, DiceSelectResult } from '../../domain/systems';
+import type { MultistepInteractionState } from '../../../../engine/systems/useMultistepInteraction';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
-        t: (key: string) => key,
+        t: (key: string) => key === 'common.cancel' ? '取消' : key,
     }),
 }));
 
@@ -17,14 +21,169 @@ vi.mock('../../../../core', () => ({
 const baseProps = {
     isDiscardMode: false,
     mustDiscardCount: 0,
-    isDiceInteraction: false,
-    isInteractionOwner: false,
+    handDiscardInteraction: undefined,
+    diceInteraction: undefined,
     isWaitingOpponent: false,
     opponentName: '',
-    currentPhase: 'defensiveRoll' as const,
 };
 
+const createHandDiscardInteraction = (onCancel?: () => void) => createHandDiscardInteractionContract({
+    interaction: {
+        id: 'discard-cost-1',
+        playerId: '0',
+        type: 'selectHandCard',
+        titleKey: 'interaction.selectHandCardToDiscard',
+        selectCount: 1,
+        candidateCardIds: ['card-a'],
+        allowCancel: Boolean(onCancel),
+    },
+    handCardIds: ['card-a', 'card-b'],
+    currentPlayerId: '0',
+    canOperate: true,
+    onSelectCard: vi.fn(),
+    onCancel: onCancel ?? vi.fn(),
+});
+
+const createDiceInteraction = (selectionMode: 'reroll' | 'bonusGroupReroll' = 'reroll',
+    options: { selected?: number[]; max?: number; repeat?: boolean } = {}) => createDiceInteractionContract({
+    interaction: {
+        id: `dice-${selectionMode}`,
+        kind: 'multistep-choice',
+        playerId: '0',
+        data: {
+            minSteps: selectionMode === 'bonusGroupReroll' ? 0 : 1,
+            allowedDieIds: [0, 1],
+            meta: {
+                dtType: 'selectDie',
+                selectionMode,
+                selectCount: options.max ?? 1,
+                allowRepeatedDieSelection: options.repeat,
+                diceOwnerId: '0',
+                targetOpponentDice: false,
+            },
+        },
+    },
+    controller: {
+        result: { selectedDiceIds: options.selected ?? [] } as DiceSelectResult,
+        stepCount: 0,
+        canConfirm: false,
+        step: vi.fn(),
+        confirm: vi.fn(),
+        cancel: vi.fn(),
+    } as MultistepInteractionState<DiceModifyResult | DiceSelectResult>,
+    rootPlayerId: '0',
+    isBonusDiceSettlement: selectionMode === 'bonusGroupReroll',
+});
+
+const createFixedValueDiceInteraction = () => createDiceInteractionContract({
+    interaction: {
+        id: 'thor-fixed-value-die',
+        kind: 'multistep-choice',
+        playerId: '0',
+        data: {
+            minSteps: 1,
+            allowedDieIds: [0, 1],
+            meta: {
+                dtType: 'modifyDie',
+                dieModifyConfig: { mode: 'set', allowedValues: [4, 5] as [number, ...number[]] },
+                selectCount: 1,
+                diceOwnerId: '0',
+                targetOpponentDice: false,
+            },
+        },
+    },
+    controller: {
+        result: { modifications: {}, modCount: 0, totalAdjustment: 0 } as DiceModifyResult,
+        stepCount: 0,
+        canConfirm: false,
+        step: vi.fn(),
+        confirm: vi.fn(),
+        cancel: vi.fn(),
+    } as MultistepInteractionState<DiceModifyResult | DiceSelectResult>,
+    rootPlayerId: '0',
+});
+
 describe('GameHints', () => {
+    it('可取消的手牌弃置提示使用本地化取消按钮并调用取消动作', () => {
+        const onCancel = vi.fn();
+        const handDiscardInteraction = createHandDiscardInteraction(onCancel);
+        render(
+            <GameHints
+                {...baseProps}
+                handDiscardInteraction={handDiscardInteraction}
+            />,
+        );
+
+        expect(screen.getByTestId('dicethrone-hand-discard-hint')).toHaveTextContent('interaction.selectHandCardToDiscard');
+        const cancelButton = screen.getByRole('button', { name: '取消' });
+        fireEvent.click(cancelButton);
+        expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+
+    it('普通选骰提示交给原骰盘，GameHints不生成顶部副本', () => {
+        const diceInteraction = createDiceInteraction();
+        render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
+
+        expect(diceInteraction?.hint.surface).toBe('dice-tray');
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
+    });
+
+    it('奖励骰组选提示留在骰盘，不在GameHints生成第二份承载', () => {
+        const diceInteraction = createDiceInteraction('bonusGroupReroll');
+        render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
+
+        expect(diceInteraction?.hint.surface).toBe('dice-tray');
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
+    });
+
+    it('重复重投沿用原进度提示，选满后仍显示原确认状态', () => {
+        const contract = (selected: number[]) => createDiceInteraction('reroll', { selected, max: 2, repeat: true });
+        const { rerender } = render(<GameHints {...baseProps} diceInteraction={contract([])} />);
+        expect(contract([])?.hint.key).toBe('interaction.hint_select');
+        expect(screen.queryByTestId('dice-interaction-hint-detail')).not.toBeInTheDocument();
+        rerender(<GameHints {...baseProps} diceInteraction={contract([0])} />);
+        expect(contract([0])?.hint.key).toBe('interaction.hint_select');
+        rerender(<GameHints {...baseProps} diceInteraction={contract([0, 0])} />);
+        expect(contract([0, 0])?.hint.key).toBe('interaction.hint_done');
+        expect(screen.queryByTestId('dice-interaction-hint-detail')).not.toBeInTheDocument();
+    });
+
+    it('固定4/5改骰由同一骰盘承载，不在GameHints重复显示', () => {
+        const diceInteraction = createFixedValueDiceInteraction();
+        render(<GameHints {...baseProps} diceInteraction={diceInteraction} />);
+
+        expect(diceInteraction?.hint.surface).toBe('dice-tray');
+        expect(diceInteraction?.hint.key).toBe('interaction.hint_choose_value');
+        expect(screen.queryByTestId('dice-interaction-hint-anchor')).not.toBeInTheDocument();
+    });
+
+    it('闪避结算合同复用响应窗口提示承载，不重复生成骰子提示', () => {
+        const interaction = {
+            id: 'token-response-evasion',
+            kind: 'dt:token-response',
+            playerId: '0',
+            data: {},
+        } as unknown as Parameters<typeof createDiceInteractionContract>[0]['interaction'];
+        const diceInteraction = createDiceInteractionContract({
+            interaction,
+            rootPlayerId: '0',
+            isTokenEvasionConfirmation: true,
+        });
+
+        render(
+            <GameHints
+                {...baseProps}
+                diceInteraction={diceInteraction}
+                responsePrompt={{ kind: 'token' }}
+            />,
+        );
+
+        expect(screen.queryByTestId('dice-interaction-hint')).not.toBeInTheDocument();
+        expect(screen.getByTestId('dicethrone-response-window-hint')).toHaveAttribute('data-response-kind', 'token');
+        expect(screen.getByTestId('dicethrone-response-window-hint')).toHaveTextContent('response.yourTurn');
+        expect(screen.queryByTestId('dicethrone-response-pass-button')).not.toBeInTheDocument();
+    });
+
     it('响应窗口没有跳过操作时仍渲染状态提示但不渲染让过按钮', () => {
         render(
             <GameHints

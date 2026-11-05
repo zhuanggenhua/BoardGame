@@ -25,7 +25,6 @@ export type BetrayalTradeAgreementState =
 export type BetrayalTradeFlowReadModel = {
   statusText: string;
   instructionText: string;
-  shouldShowMobileStatus: boolean;
   shouldShowInlineConfirm: boolean;
   shouldShowTopPrompt: boolean;
   agreementState: BetrayalTradeAgreementState;
@@ -37,7 +36,6 @@ export type BetrayalTradeFlowReadModel = {
 
 export type BetrayalTradeFlowReadModelInput = {
   t: TradeFlowText;
-  recommendedAction: string | null | undefined;
   shouldPauseHauntBoardActions: boolean;
   hasActiveHauntTargetGuide: boolean;
   mummyReward: AttackRewardPromptInput;
@@ -141,7 +139,6 @@ export function resolveBetrayalTradeActionCommand({
 
 export function resolveBetrayalTradeFlowReadModel({
   t,
-  recommendedAction,
   shouldPauseHauntBoardActions,
   hasActiveHauntTargetGuide,
   mummyReward,
@@ -238,16 +235,6 @@ export function resolveBetrayalTradeFlowReadModel({
     selectedTradeGiveText,
     selectedTradeReturnText,
   });
-  const shouldShowMobileStatus =
-    hasPendingTradeAgreement ||
-    hasPendingSicknessExchange ||
-    Boolean(mummyReward) ||
-    Boolean(helpingHandsReward) ||
-    shouldStartDustSicknessExchange ||
-    recommendedAction !== "trade" ||
-    Boolean(selectedCorpseLootTargetName) ||
-    hasCorpseLootTargets ||
-    activeTradeTargetCount === 0;
   const shouldShowTopPrompt = Boolean(
     !shouldPauseHauntBoardActions &&
       !hasPendingSicknessExchange &&
@@ -304,7 +291,6 @@ export function resolveBetrayalTradeFlowReadModel({
   return {
     statusText,
     instructionText,
-    shouldShowMobileStatus,
     shouldShowInlineConfirm,
     shouldShowTopPrompt,
     agreementState,
@@ -565,6 +551,7 @@ function resolvePendingTradeInstruction({
 > & {
   pendingTradeAgreement: PendingTradeAgreementInput;
 }): string {
+  if (!pendingTradeAgreement) return '';
   if (isPendingTradeForViewer) {
     if (pendingTradeAgreement.hasReturnCards) {
       return pendingTradeAgreement.hasOfferCards

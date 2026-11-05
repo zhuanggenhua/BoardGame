@@ -16,6 +16,7 @@ import type { Page, TestInfo } from '@playwright/test';
 import { resolveUseDevServers } from '../../scripts/infra/e2e-mode-config.js';
 import { getCardDef as getSmashUpCardDef, getBaseDef } from '../../src/games/smashup/data/cards';
 import { CHARACTER_DATA_MAP, initHeroState } from '../../src/games/dicethrone/domain/characters';
+import { DOCTOR_STRANGE_FACE } from '../../src/games/dicethrone/heroes/doctor_strange/constants';
 import {
     BARBARIAN_DICE_FACE_IDS,
     DICE_FACE_IDS,
@@ -111,6 +112,41 @@ interface SmashUpResponseWindowSceneConfig {
 }
 
 /**
+ * 状态注入后的运行时消费证明。
+ * 只写“注入了什么”不算复现；必须证明页面与权威 state 已进入目标时机。
+ */
+export interface SceneConsumptionExpectation {
+    phase?: string;
+    interactionId?: string;
+    interactionSourceId?: string;
+    interactionPlayerId?: string;
+    responseWindowId?: string;
+    responseWindowType?: string;
+    targetUid?: string;
+    visibleText?: string[];
+    timeout?: number;
+}
+
+export interface SceneConsumptionSnapshot {
+    phase?: string;
+    currentPlayerIndex?: number;
+    interaction?: {
+        id?: string;
+        sourceId?: string;
+        playerId?: string;
+    };
+    responseWindow?: {
+        id?: string;
+        windowType?: string;
+        sourceId?: string;
+    };
+    targetUidLocations: Array<{ uid: string; zone: string; ownerId?: string; baseIndex?: number }>;
+    visibleText: string;
+    actionLogTail: any[];
+    eventStreamTail: any[];
+}
+
+/**
  * 玩家场景配置（SmashUp）
  */
 interface PlayerSceneConfig {
@@ -181,6 +217,8 @@ interface SceneConfig {
     randomQueue?: number[];
     /** 额外的状态字段（游戏特定） */
     extra?: Record<string, any>;
+    /** 注入后必须由运行时消费的阶段 / 交互 / 目标证明 */
+    verifyConsumption?: SceneConsumptionExpectation;
     /** 预构建玩家状态（框架内部使用） */
     prebuiltPlayers?: Partial<Record<'0' | '1', Record<string, any>>>;
 }
@@ -342,6 +380,7 @@ function normalizeDiceThroneExtraDice(
             ninja: [NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.KATANA, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.SHURIKEN, NINJA_DICE_FACE_IDS.MASK],
             zhanshujia: [ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.SABRE, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.BANNER, ZHANSHUJIA_DICE_FACE_IDS.MEDAL],
             cursed_pirate: [CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.CUTLASS, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.LOOT, CURSED_PIRATE_DICE_FACE_IDS.SKULL],
+            doctor_strange: [DOCTOR_STRANGE_FACE.MANDALA, DOCTOR_STRANGE_FACE.MANDALA, DOCTOR_STRANGE_FACE.BOOK, DOCTOR_STRANGE_FACE.BOOK, DOCTOR_STRANGE_FACE.CLOAK, DOCTOR_STRANGE_FACE.AMULET],
             tianshi: [TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.BLADE, TIANSHI_DICE_FACE_IDS.WING, TIANSHI_DICE_FACE_IDS.CROSS, TIANSHI_DICE_FACE_IDS.SHIELD],
             vampire_lord: [VAMPIRE_LORD_DICE_FACE_IDS.CLAW, VAMPIRE_LORD_DICE_FACE_IDS.CLAW, VAMPIRE_LORD_DICE_FACE_IDS.CLAW, VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE, VAMPIRE_LORD_DICE_FACE_IDS.MESMERIZE, VAMPIRE_LORD_DICE_FACE_IDS.BLOOD_DROP],
         };
@@ -1273,6 +1312,126 @@ export class GameTestContext {
 
         // 等待 React 重新渲染
         await this.page.waitForTimeout(500);
+
+        if (config.verifyConsumption) {
+            await this.assertSceneStateConsumed(config.verifyConsumption);
+        }
+    }
+
+    /**
+     * 读取注入后真正进入牌桌的权威状态和诊断尾部。
+     * 该快照用于区分“夹具写入成功”和“运行时真的消费了该状态”。
+     */
+    async readSceneConsumptionSnapshot(): Promise<SceneConsumptionSnapshot> {
+        return await this.page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.() ?? {};
+            const sys = state.sys ?? {};
+            const core = state.core ?? {};
+            const interaction = sys.interaction?.current;
+            const responseWindow = sys.responseWindow?.current;
+            const targetUidLocations: Array<{ uid: string; zone: string; ownerId?: string; baseIndex?: number }> = [];
+            const targetZones = ['hand', 'deck', 'discard'];
+
+            for (const [ownerId, player] of Object.entries(core.players ?? {})) {
+                for (const zone of targetZones) {
+                    const cards = (player as any)?.[zone];
+                    if (!Array.isArray(cards)) continue;
+                    for (const card of cards) {
+                        if (typeof card?.uid === 'string') {
+                            targetUidLocations.push({ uid: card.uid, zone: `player:${ownerId}:${zone}`, ownerId });
+                        }
+                    }
+                }
+            }
+
+            for (const [baseIndex, base] of (core.bases ?? []).entries()) {
+                for (const minion of base?.minions ?? []) {
+                    if (typeof minion?.uid === 'string') {
+                        targetUidLocations.push({ uid: minion.uid, zone: 'base:minion', baseIndex });
+                    }
+                }
+            }
+
+            return {
+                phase: sys.phase,
+                currentPlayerIndex: core.currentPlayerIndex,
+                interaction: interaction
+                    ? {
+                        id: interaction.id,
+                        sourceId: interaction.data?.sourceId,
+                        playerId: interaction.playerId,
+                    }
+                    : undefined,
+                responseWindow: responseWindow
+                    ? {
+                        id: responseWindow.id,
+                        windowType: responseWindow.windowType,
+                        sourceId: responseWindow.sourceId,
+                    }
+                    : undefined,
+                targetUidLocations,
+                visibleText: document.body?.innerText ?? '',
+                actionLogTail: Array.isArray(sys.actionLog?.entries) ? sys.actionLog.entries.slice(-20) : [],
+                eventStreamTail: Array.isArray(sys.eventStream?.entries) ? sys.eventStream.entries.slice(-20) : [],
+            } satisfies SceneConsumptionSnapshot;
+        });
+    }
+
+    /**
+     * 断言注入状态已经被真实页面和权威状态消费。
+     * 失败时输出阶段、交互、响应窗口、可见文本、actionLog 和 eventStream 尾部，
+     * 让反馈复现失败直接变成可定位的诊断，而不是“当前没复现”。
+     */
+    async assertSceneStateConsumed(expectation: SceneConsumptionExpectation): Promise<SceneConsumptionSnapshot> {
+        const timeout = expectation.timeout ?? 5000;
+        await this.page.waitForFunction(
+            (expected) => {
+                const harness = (window as any).__BG_TEST_HARNESS__;
+                const state = harness?.state?.get?.();
+                if (!state) return false;
+                const interaction = state.sys?.interaction?.current;
+                const responseWindow = state.sys?.responseWindow?.current;
+                const visibleText = document.body?.innerText ?? '';
+                if (expected.phase && state.sys?.phase !== expected.phase) return false;
+                if (expected.interactionId && interaction?.id !== expected.interactionId) return false;
+                if (expected.interactionSourceId && interaction?.data?.sourceId !== expected.interactionSourceId) return false;
+                if (expected.interactionPlayerId && interaction?.playerId !== expected.interactionPlayerId) return false;
+                if (expected.responseWindowId && responseWindow?.id !== expected.responseWindowId) return false;
+                if (expected.responseWindowType && responseWindow?.windowType !== expected.responseWindowType) return false;
+                if (expected.visibleText?.some((text: string) => !visibleText.includes(text))) return false;
+                if (expected.targetUid) {
+                    const playerZones = Object.values(state.core?.players ?? {});
+                    const inPlayerZone = playerZones.some((player: any) =>
+                        ['hand', 'deck', 'discard'].some(zone =>
+                            Array.isArray(player?.[zone]) && player[zone].some((entry: any) => entry?.uid === expected.targetUid),
+                        ),
+                    );
+                    const inBase = (state.core?.bases ?? []).some((base: any) =>
+                        Array.isArray(base?.minions) && base.minions.some((entry: any) => entry?.uid === expected.targetUid),
+                    );
+                    if (!inPlayerZone && !inBase) return false;
+                }
+                return true;
+            },
+            expectation,
+            { timeout, polling: 200 },
+        );
+
+        const snapshot = await this.readSceneConsumptionSnapshot();
+        const missing: string[] = [];
+        if (expectation.phase && snapshot.phase !== expectation.phase) missing.push(`phase=${expectation.phase}`);
+        if (expectation.interactionId && snapshot.interaction?.id !== expectation.interactionId) missing.push(`interactionId=${expectation.interactionId}`);
+        if (expectation.interactionSourceId && snapshot.interaction?.sourceId !== expectation.interactionSourceId) missing.push(`interactionSourceId=${expectation.interactionSourceId}`);
+        if (expectation.interactionPlayerId && snapshot.interaction?.playerId !== expectation.interactionPlayerId) missing.push(`interactionPlayerId=${expectation.interactionPlayerId}`);
+        if (expectation.responseWindowId && snapshot.responseWindow?.id !== expectation.responseWindowId) missing.push(`responseWindowId=${expectation.responseWindowId}`);
+        if (expectation.responseWindowType && snapshot.responseWindow?.windowType !== expectation.responseWindowType) missing.push(`responseWindowType=${expectation.responseWindowType}`);
+        if (expectation.visibleText?.some(text => !snapshot.visibleText.includes(text))) missing.push(`visibleText=${expectation.visibleText.join('|')}`);
+        if (expectation.targetUid && !snapshot.targetUidLocations.some(entry => entry.uid === expectation.targetUid)) missing.push(`targetUid=${expectation.targetUid}`);
+        if (missing.length > 0) {
+            throw new Error(`状态注入未被运行时消费：${missing.join(', ')}\n${JSON.stringify(snapshot, null, 2)}`);
+        }
+        return snapshot;
     }
 
     /**
@@ -1294,6 +1453,8 @@ export class GameTestContext {
             targetMinionUid?: string;
         }
     ): Promise<void> {
+        await this.dismissRevealOverlayIfPresent();
+
         // 1. 找到手牌中的卡牌
         const cardUid = await this.page.evaluate((defId) => {
             const harness = (window as any).__BG_TEST_HARNESS__;

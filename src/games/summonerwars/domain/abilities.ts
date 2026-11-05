@@ -23,6 +23,7 @@ import { HUIJIN_ABILITIES } from './abilities-huijin';
 import { SHOUREN_ABILITIES } from './abilities-shouren';
 import { YONGHENG_ABILITIES } from './abilities-yongheng';
 import { SHADOW_ABILITIES } from './abilities-shadow';
+import { ZHONGCAI_ABILITIES } from './abilities-zhongcai';
 import { abilityText } from './abilityTextHelper';
 import type { InteractionChain } from '../../../engine/primitives/ability';
 
@@ -38,7 +39,7 @@ export type AbilityTrigger =
   | 'beforeAttack'       // 攻击前（吸取生命）
   | 'afterAttack'        // 攻击后（读心传念、念力、高阶念力）
   | 'onDamageDealt'      // 造成伤害后
-  | 'onKill'             // 消灭敌方单位后（感染、心灵捕获）
+  | 'onKill'             // 消灭单位后（感染、心灵捕获）
   | 'onDeath'            // 被消灭时（献祭）
   | 'onUnitDestroyed'    // 任意单位被消灭时（血腥狂怒、灵魂转移）
   | 'onTurnStart'        // 回合开始时
@@ -93,7 +94,7 @@ export type AbilityEffect =
   // 单位操作
   | { type: 'destroyUnit'; target: TargetRef }
   | { type: 'moveUnit'; target: TargetRef; to: CellCoord | 'victimPosition' }
-  | { type: 'summonFromDiscard'; cardType: 'undead' | 'plagueZombie'; position: TargetRef }
+  | { type: 'summonFromDiscard'; cardType: 'undead' | 'carrier' | 'plagueZombie'; position: TargetRef }
   | { type: 'replaceUnit'; target: TargetRef; with: TargetRef }
   // 魔力操作
   | { type: 'modifyMagic'; target: 'owner' | 'opponent'; value: number }
@@ -131,7 +132,7 @@ export type Expression =
 export type AbilityCondition =
   | { type: 'always' }
   | { type: 'hasCharge'; target: TargetRef; minStacks?: number }
-  | { type: 'isUnitType'; target: TargetRef; unitType: 'undead' | 'summoner' | 'champion' | 'common' }
+  | { type: 'isUnitType'; target: TargetRef; unitType: 'undead' | 'carrier' | 'summoner' | 'champion' | 'common' }
   | { type: 'isInRange'; target: TargetRef; range: number }
   | { type: 'isOwner'; target: TargetRef; owner: 'self' | 'opponent' }
   | { type: 'hasCardInDiscard'; cardType: string }
@@ -578,14 +579,14 @@ export const NECROMANCER_ABILITIES: AbilityDef[] = [
     description: abilityText('infection', 'description'),
     sfxKey: 'magic.general.modern_magic_sound_fx_pack_vol.dark_magic.dark_magic_blight_curse_001',
     trigger: 'onKill',
-    condition: { type: 'hasCardInDiscard', cardType: 'plagueZombie' },
+    condition: { type: 'hasCardInDiscard', cardType: 'carrier' },
     effects: [
-      { type: 'summonFromDiscard', cardType: 'plagueZombie', position: 'victim' },
+      { type: 'summonFromDiscard', cardType: 'carrier', position: 'victim' },
     ],
     requiresTargetSelection: true,
     targetSelection: {
       type: 'card',
-      filter: { type: 'isUnitType', target: 'self', unitType: 'common' },
+      filter: { type: 'isUnitType', target: 'self', unitType: 'carrier' },
     },
     interactionChain: {
       steps: [
@@ -693,3 +694,6 @@ abilityRegistry.registerAll(YONGHENG_ABILITIES);
 
 // 注册暗影精灵技能
 abilityRegistry.registerAll(SHADOW_ABILITIES);
+
+// 注册仲裁派系技能
+abilityRegistry.registerAll(ZHONGCAI_ABILITIES);

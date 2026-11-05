@@ -26,14 +26,13 @@ interface StagePlacement {
 interface QidahenBoardMetrics {
     scene: StagePlacement;
     hud: StagePlacement;
-    viewportWidth: number;
-    viewportHeight: number;
     mobileEdgePull: number;
     mobileTopInset: number;
     mobileBottomInset: number;
     mobileChronologyTop: number;
-    isMobileLandscape: boolean;
+    sceneInverseScale: number;
 }
+
 
 const buildMetrics = (
     width: number,
@@ -41,10 +40,12 @@ const buildMetrics = (
     layout: QidahenBoardLayoutConfig,
 ): QidahenBoardMetrics => {
     const isMobileLandscape = width <= layout.mobileMaxViewportWidth && width > height;
-    const sceneScale = Math.max(width / layout.width, height / layout.height);
-    const hudScale = isMobileLandscape ? 1 : Math.min(width / layout.width, height / layout.height);
-    const hudLeft = isMobileLandscape ? 0 : Math.max(0, (width - layout.width * hudScale) / 2);
-    const hudTop = isMobileLandscape ? 0 : Math.max(0, (height - layout.height * hudScale) / 2);
+    const hudScale = Math.min(width / layout.width, height / layout.height);
+    const sceneScale = isMobileLandscape
+        ? hudScale
+        : Math.max(width / layout.width, height / layout.height);
+    const hudLeft = Math.max(0, (width - layout.width * hudScale) / 2);
+    const hudTop = Math.max(0, (height - layout.height * hudScale) / 2);
 
     return {
         scene: {
@@ -57,15 +58,11 @@ const buildMetrics = (
             left: hudLeft,
             top: hudTop,
         },
-        viewportWidth: width,
-        viewportHeight: height,
         mobileEdgePull: 0,
-        mobileTopInset: isMobileLandscape ? layout.mobileLandscapeTopSafeInset : 0,
-        mobileBottomInset: isMobileLandscape ? layout.mobileLandscapeBottomDockInset : layout.bottomDockInset,
-        mobileChronologyTop: isMobileLandscape
-            ? layout.mobileLandscapeChronologyTop
-            : 542,
-        isMobileLandscape,
+        mobileTopInset: 0,
+        mobileBottomInset: layout.bottomDockInset,
+        mobileChronologyTop: 542,
+        sceneInverseScale: isMobileLandscape ? 1 : 1 / sceneScale,
     };
 };
 
@@ -102,14 +99,15 @@ export const QidahenBoardShell: React.FC<QidahenBoardShellProps> = ({
     }, [layout]);
 
     const hudStyle = {
-        width: metrics.isMobileLandscape ? metrics.viewportWidth : layout.width,
-        height: metrics.isMobileLandscape ? metrics.viewportHeight : layout.height,
+        width: layout.width,
+        height: layout.height,
         left: metrics.hud.left,
         top: metrics.hud.top,
         color: 'inherit',
         transform: `scale(${metrics.hud.scale})`,
         transformOrigin: 'top left',
-        overflow: 'hidden',
+        // 固定HUD不能被按钮聚焦或浏览器scrollIntoView滚动；各决策面板自己承接滚动。
+        overflow: 'clip',
         '--qidahen-mobile-edge-pull': `${metrics.mobileEdgePull}px`,
         '--qidahen-mobile-top-inset': `${metrics.mobileTopInset}px`,
         '--qidahen-mobile-bottom-inset': `${metrics.mobileBottomInset}px`,
@@ -126,10 +124,10 @@ export const QidahenBoardShell: React.FC<QidahenBoardShellProps> = ({
             ref={containerRef}
             className="relative h-full min-h-0 w-full overflow-hidden"
             data-testid="qidahen-board"
-            data-qidahen-layout-mode={metrics.isMobileLandscape ? 'mobile-landscape' : 'desktop'}
+            data-qidahen-layout-mode="desktop"
             style={{
                 backgroundColor,
-                '--qidahen-scene-inverse-scale': String(1 / metrics.scene.scale),
+                '--qidahen-scene-inverse-scale': String(metrics.sceneInverseScale),
             } as React.CSSProperties}
         >
             <div
@@ -159,7 +157,7 @@ export const QidahenBoardShell: React.FC<QidahenBoardShellProps> = ({
                     className="pointer-events-none absolute"
                     data-testid="qidahen-desktop-stage"
                     data-layer-role="hud-stage"
-                    data-qidahen-layout-mode={metrics.isMobileLandscape ? 'mobile-landscape' : 'desktop'}
+                    data-qidahen-layout-mode="desktop"
                     style={hudStyle}
                 >
                     {hud}

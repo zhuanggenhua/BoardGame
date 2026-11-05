@@ -9,7 +9,7 @@
  * - 对手手牌：宫廷卫士（保证首回合对局能结算出失败方）
  */
 
-import type { TutorialManifest } from '../../engine/types';
+import type { TutorialHiddenAutomationContract, TutorialManifest } from '../../engine/types';
 import type { CardInstance } from './domain/types';
 import { CARDIA_COMMANDS } from './domain/commands';
 import { CARDIA_EVENTS } from './domain/events';
@@ -19,6 +19,20 @@ import { CARD_IDS_DECK_I, type CardId } from './domain/ids';
 import cardRegistry from './domain/cardRegistry';
 import { createModifierStack } from '../../engine/primitives/modifier';
 import { createTagContainer } from '../../engine/primitives/tags';
+
+const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
+    kind: 'setup-precondition',
+    reason,
+});
+
+const compressedRepeat = (
+    equivalentStepIds: string[],
+    reason: string,
+): TutorialHiddenAutomationContract => ({
+    kind: 'compressed-repeat',
+    equivalentStepIds,
+    reason,
+});
 
 // ============================================================================
 // 教学固定手牌
@@ -91,6 +105,7 @@ const CARDIA_TUTORIAL: TutorialManifest = {
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the fixed legal hand before the first visible Cardia tutorial step.'),
         },
 
         // ================================================================
@@ -181,6 +196,10 @@ const CARDIA_TUTORIAL: TutorialManifest = {
                     playerId: '1',
                 },
             ],
+            hiddenAutomation: compressedRepeat(
+                ['playFirstCard'],
+                'Opponent repeats the same formal play-card action after the player has played a card.',
+            ),
             advanceOnEvents: [{ type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'ability' } }],
         },
 

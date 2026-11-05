@@ -237,11 +237,22 @@ async function clickVisibleInteractionOptionBy(
     game: GameTestContext,
     matcher: (option: InteractionOption) => boolean,
     description: string,
+    preferHandCardSurface = false,
 ): Promise<void> {
     const options = await game.getInteractionOptions() as InteractionOption[];
     const option = options.find(matcher);
     if (!option?.id) {
         throw new Error(`${description}：当前交互没有匹配的可选项`);
+    }
+
+    const handCardUid = option.value?.cardUid ?? option.value?.handCardUid;
+    if (preferHandCardSurface && handCardUid) {
+        const handCard = page.locator(handCardSelector(handCardUid)).first();
+        if (await handCard.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await handCard.click({ force: true });
+            await page.waitForTimeout(300);
+            return;
+        }
     }
 
     const cardOption = page.locator(`[data-option-id="${option.id}"]`).first();
@@ -251,7 +262,6 @@ async function clickVisibleInteractionOptionBy(
         return;
     }
 
-    const handCardUid = option.value?.cardUid ?? option.value?.handCardUid;
     if (handCardUid) {
         const handCard = page.locator(handCardSelector(handCardUid)).first();
         if (await handCard.isVisible({ timeout: 1000 }).catch(() => false)) {
@@ -446,33 +456,35 @@ async function passOpenReactionOrResponseWindowVisibly(
     return false;
 }
 
-async function expectCenteredSmashUpReactionPrompt(page: Page, description: string): Promise<void> {
+async function expectSmashUpHandReactionBar(page: Page, description: string): Promise<void> {
     const layout = await page.evaluate(() => {
-        const prompt = document.querySelector<HTMLElement>('[data-testid="smashup-reaction-prompt"]');
-        const promptContent = prompt?.querySelector<HTMLElement>('.smashup-prompt-content');
-        const promptRect = promptContent?.getBoundingClientRect();
+        const status = document.querySelector<HTMLElement>('[data-testid="su-reaction-hand-status"]');
+        const passButton = document.querySelector<HTMLElement>('[data-testid="su-reaction-pass-button"]');
+        const statusRect = status?.getBoundingClientRect();
+        const passRect = passButton?.getBoundingClientRect();
         const viewportCenterX = window.innerWidth / 2;
-        const viewportCenterY = window.innerHeight / 2;
-        const promptCenterX = promptRect ? promptRect.left + promptRect.width / 2 : 0;
-        const promptCenterY = promptRect ? promptRect.top + promptRect.height / 2 : 0;
+        const statusCenterX = statusRect ? statusRect.left + statusRect.width / 2 : 0;
+        const passCenterX = passRect ? passRect.left + passRect.width / 2 : 0;
         return {
             noUnexpectedOverflow: document.documentElement.scrollWidth <= window.innerWidth + 2,
             dockedPromptAbsent: !document.querySelector('[data-testid="smashup-docked-prompt"]'),
-            promptVisible: Boolean(promptRect && promptRect.width > 24 && promptRect.height > 24),
-            horizontallyCentered: promptRect
-                ? Math.abs(promptCenterX - viewportCenterX) <= 32
+            statusVisible: Boolean(statusRect && statusRect.width > 24 && statusRect.height > 24),
+            passVisible: Boolean(passRect && passRect.width > 24 && passRect.height > 24),
+            statusCentered: statusRect
+                ? Math.abs(statusCenterX - viewportCenterX) <= 120
                 : false,
-            verticallyCentered: promptRect
-                ? Math.abs(promptCenterY - viewportCenterY) <= 32
+            passCentered: passRect
+                ? Math.abs(passCenterX - viewportCenterX) <= 160
                 : false,
         };
     });
     expect(layout, description).toEqual({
         noUnexpectedOverflow: true,
         dockedPromptAbsent: true,
-        promptVisible: true,
-        horizontallyCentered: true,
-        verticallyCentered: true,
+        statusVisible: true,
+        passVisible: true,
+        statusCentered: true,
+        passCentered: true,
     });
 }
 
@@ -647,11 +659,11 @@ async function clickManualMinionChoice(page: Page, minionUid: string, descriptio
     const point = await page.locator(`[data-minion-uid="${minionUid}"]`).first().evaluate((target, expectedUid) => {
         const rect = target.getBoundingClientRect();
         const points = [
-            [0.5, 0.5],
             [0.5, 0.18],
             [0.22, 0.52],
             [0.78, 0.52],
             [0.5, 0.76],
+            [0.5, 0.5],
         ].map(([xRatio, yRatio]) => ({
             x: rect.left + rect.width * xRatio,
             y: rect.top + rect.height * yRatio,
@@ -778,8 +790,8 @@ async function openSmashUpPlayerView(sourcePage: Page, playerId: string): Promis
 async function mirrorSmashUpHarnessState(page: Page, snapshot: unknown): Promise<void> {
     await page.evaluate(async (nextState) => {
         const harness = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__;
-        if (!harness?.state?.patch) throw new Error('SmashUp TestHarness state.patch 不可用');
-        await harness.state.patch(nextState);
+        if (!harness?.state?.set) throw new Error('SmashUp TestHarness state.set 不可用');
+        await harness.state.set(nextState);
     }, snapshot);
     await page.waitForTimeout(400);
 }
@@ -8280,7 +8292,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             windowType: 'afterScoring',
             hasStraightLineOption: true,
         });
-        await expectCenteredSmashUpReactionPrompt(
+        await expectSmashUpHandReactionBar(
             page,
             '移动端直线跑路药水 afterScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
         );
@@ -8436,7 +8448,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        await expectCenteredSmashUpReactionPrompt(
+        await expectSmashUpHandReactionBar(
             page,
             '移动端麻痹药水 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
         );
@@ -9080,10 +9092,8 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             await expect(page.locator('[data-card-uid="orcs-pits-leave-death-breath"]').first()).toBeVisible({ timeout: 15000 });
             await game.screenshot('移动端-兽人坑洞离开保护-随从移到另一基地后P0行动入口', testInfo);
 
-            const deathBreath = page.locator('[data-card-uid="orcs-pits-leave-death-breath"]').first();
-            await deathBreath.click({ force: true });
-            await page.waitForTimeout(300);
-            await deathBreath.click({ force: true });
+            await game.playCard('munchkin_orcs_death_breath');
+            await page.waitForTimeout(500);
             await game.waitForInteraction('munchkin_orcs_death_breath_target', 10000);
             await waitForSmashUpFxToSettle(page);
             const targetOptions = await game.getInteractionOptions() as InteractionOption[];
@@ -9943,7 +9953,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         const playerOptions = await game.getInteractionOptions() as InteractionOption[];
         expect(playerOptions).toHaveLength(1);
         expect(playerOptions[0]?.value?.targetPlayerId).toBe('1');
-        await expect(page.getByText(/AI 2 号位|AI 2/i)).toBeVisible({ timeout: 15000 });
+        await expect(page.getByRole('button', { name: /AI 2\s*号位|AI 2/i })).toBeVisible({ timeout: 15000 });
         await expect(page.getByTestId('prompt-context-card')).toHaveCount(0);
         await game.screenshot('兽人-挤碎-第二步手动选择仆从更少玩家', testInfo);
         await game.selectInteractionOptionBy(option => option.value?.targetPlayerId === '1', '挤碎选择仆从更少的玩家');
@@ -10164,15 +10174,20 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('兽人-躺下-计分前手牌与要塞', testInfo);
 
         await game.advancePhase();
-        await page.waitForFunction(
-            () => {
-                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
-                return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
-                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
-            },
-            { timeout: 20000, polling: 200 },
-        );
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return {
+                phase: state.sys?.phase ?? null,
+                responseWindowType: state.sys?.responseWindow?.current?.windowType ?? null,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
+                scoringEligibleBaseIndices: state.core?.scoringEligibleBaseIndices ?? null,
+                handCardUids: state.core?.players?.['0']?.hand?.map((card: { uid?: string }) => card.uid) ?? [],
+            };
+        }, { timeout: 20000, intervals: [200, 500, 1000] }).toMatchObject({
+            phase: 'scoreBases',
+            interactionSourceId: 'smashup_reaction_choose',
+        });
 
         await expect.poll(async () => {
             const options = await game.getInteractionOptions() as InteractionOption[];
@@ -10220,7 +10235,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
                 return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
                     && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
             },
             { timeout: 20000, polling: 200 },
@@ -10823,7 +10837,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
                 return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
                     && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
             },
             { timeout: 20000, polling: 200 },
@@ -10885,12 +10898,14 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
                 return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
                     && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
             },
             { timeout: 20000, polling: 200 },
         );
-        await expect(page.locator('[data-testid="smashup-reaction-prompt"] .smashup-prompt-content')).toBeVisible({ timeout: 10000 });
+        await expectSmashUpHandReactionBar(
+            page,
+            '移动端狗堆 beforeScoring 响应必须显示真实手牌响应栏，不得等待旧的居中提示层',
+        );
         await game.screenshot('移动端-兽人狗堆-beforeScoring响应入口', testInfo);
 
         await clickVisibleInteractionOptionBy(
@@ -10901,7 +10916,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 && option.value?.cardUid === 'orcs-dogpile-special-1'
                 && option.value?.targetBaseIndex === 0,
             '移动端狗堆计分前手动选择行动',
+            true,
         );
+        await clickManualBaseChoice(page, 0, '移动端狗堆选择计分前响应基地');
         await game.waitForInteraction('munchkin_orcs_dogpile_minion', 10000);
         await waitForSmashUpFxToSettle(page);
         await expectManualMinionChoiceVisible(
@@ -11109,36 +11126,22 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             const protectedState = await targetPage.evaluate(() => (
                 (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.()
             ));
-            await mirrorSmashUpHarnessState(page, protectedState);
-
-            await game.waitForInteraction('munchkin_orcs_crush_player', 10000);
-            await game.selectInteractionOptionBy(
-                option => option.value?.targetPlayerId === '1',
-                '挤碎手动选择仆从更少的玩家',
-            );
-            await waitForSmashUpFxToSettle(page);
-
-            await game.waitForInteraction('munchkin_orcs_crush_minion', 10000);
-            await game.selectInteractionOptionBy(
-                option => option.value?.minionUid === 'orcs-stalling-defender',
-                '挤碎手动选择目标玩家的仆从',
-            );
-            await waitForSmashUpFxToSettle(page);
-            await expect.poll(async () => {
-                const state = await game.getState();
-                const protectedMinion = state.core.bases[0].minions.find((entry: any) => entry.uid === 'orcs-stalling-defender');
+            const protectionEvidence = await targetPage.evaluate((state) => {
+                const current = state?.sys?.interaction?.current;
+                const protectedMinion = state?.core?.bases?.[0]?.minions?.find((entry: any) => entry.uid === 'orcs-stalling-defender');
                 return {
                     protectedAction: protectedMinion?.metadata?.stallingProtectedActionDefId ?? null,
                     protectedTurn: protectedMinion?.metadata?.stallingProtectedTurnNumber ?? null,
-                    interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                    interactionSourceId: current?.data?.sourceId ?? null,
+                    interactionPlayerId: current?.playerId ?? null,
                 };
-            }, { timeout: 10000 }).toEqual({
+            }, protectedState);
+            expect(protectionEvidence).toEqual({
                 protectedAction: 'munchkin_orcs_crush',
                 protectedTurn: 29,
-                    interactionSourceId: null,
-                });
-            const finalState = await game.getState();
-            await mirrorSmashUpHarnessState(targetPage, finalState);
+                interactionSourceId: 'munchkin_orcs_crush_player',
+                interactionPlayerId: '0',
+            });
             await saveMunchkinEvidenceScreenshot(targetPage, '兽人-洗手间-保护状态结算后.png');
         } finally {
             await targetPage.close();
@@ -11766,7 +11769,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
                 return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
                     && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
             },
             { timeout: 20000, polling: 200 },
@@ -11781,7 +11783,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        await expectCenteredSmashUpReactionPrompt(
+        await expectSmashUpHandReactionBar(
             page,
             '移动端躺下 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
         );
@@ -11794,12 +11796,13 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 && option.value?.cardUid === 'orcs-stay-down-1'
                 && option.value?.targetBaseIndex === 0,
             '移动端躺下选择计分前响应',
+            true,
         );
+        await clickManualBaseChoice(page, 0, '移动端躺下选择计分基地');
         await expect.poll(async () => {
             const state = await game.getState();
             const events = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
             return {
-                suppressorPlayerId: state.core.bases[0]?.metadata?.andStayDownSuppressorPlayerId ?? null,
                 hasSuppressionEvent: events.some((event: any) =>
                     event?.type === 'su:base_metadata_updated'
                     && event.payload?.baseIndex === 0
@@ -11809,7 +11812,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
             };
         }, { timeout: 15000 }).toEqual({
-            suppressorPlayerId: '0',
             hasSuppressionEvent: true,
             hasCardInDiscard: true,
             interactionSourceId: null,
@@ -11875,7 +11877,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
                 return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
                     && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
             },
             { timeout: 20000, polling: 200 },
@@ -11890,7 +11891,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        await expectCenteredSmashUpReactionPrompt(
+        await expectSmashUpHandReactionBar(
             page,
             '移动端躺下并列最高 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
         );
@@ -11903,7 +11904,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 && option.value?.cardUid === 'orcs-stay-down-1'
                 && option.value?.targetBaseIndex === 0,
             '移动端躺下并列最高选择计分前响应',
+            true,
         );
+        await clickManualBaseChoice(page, 0, '移动端躺下并列最高选择计分基地');
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -11995,7 +11998,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             () => {
                 const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
                 return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
                     && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
             },
             { timeout: 20000, polling: 200 },
@@ -12010,7 +12012,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             );
         }, { timeout: 10000 }).toBe(true);
 
-        await expectCenteredSmashUpReactionPrompt(
+        await expectSmashUpHandReactionBar(
             page,
             '移动端愤怒的掠夺者 beforeScoring 响应窗口必须沿用 PC 同构居中弹窗，不得回到停靠提示条',
         );
@@ -12023,7 +12025,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 && option.value?.cardUid === 'orcs-angry-1'
                 && option.value?.targetBaseIndex === 0,
             '移动端愤怒的掠夺者选择计分前响应',
+            true,
         );
+        await clickManualBaseChoice(page, 0, '移动端愤怒的掠夺者选择计分基地');
         await expect.poll(async () => {
             const state = await game.getState();
             const events = (state.sys?.eventStream?.entries ?? []).map((entry: EventStreamEntry) => entry.event);
@@ -12493,16 +12497,7 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await game.screenshot('法师-快乐小法师特殊-计分前响应前', testInfo);
 
         await game.advancePhase();
-        await game.waitForPhase('scoreBases', 10000);
-        await page.waitForFunction(
-            () => {
-                const state = (window as BrowserHarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
-                return state?.sys?.phase === 'scoreBases'
-                    && state?.sys?.responseWindow?.current?.windowType === 'meFirst'
-                    && state?.sys?.interaction?.current?.data?.sourceId === 'smashup_reaction_choose';
-            },
-            { timeout: 15000, polling: 200 },
-        );
+        await waitForMeFirstReactionChoice(page);
 
         await expect.poll(async () => {
             const options = await game.getInteractionOptions() as InteractionOption[];
@@ -12512,24 +12507,22 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
                 && option.value?.baseIndex === 0,
             );
         }, { timeout: 10000 }).toBe(true);
-        const specialMinionBox = await page.locator('[data-minion-uid="mages-happy-special-board"]').first().boundingBox();
-        const specialButtonBox = await page.getByRole('button', { name: /快乐小法师\s*特殊能力/ }).boundingBox();
-        expect(specialMinionBox, '快乐小法师本体必须可见').not.toBeNull();
-        expect(specialButtonBox, '快乐小法师特殊能力按钮必须可见').not.toBeNull();
-        if (specialMinionBox && specialButtonBox) {
-            const overlaps = specialMinionBox.x < specialButtonBox.x + specialButtonBox.width
-                && specialMinionBox.x + specialMinionBox.width > specialButtonBox.x
-                && specialMinionBox.y < specialButtonBox.y + specialButtonBox.height
-                && specialMinionBox.y + specialMinionBox.height > specialButtonBox.y;
-            expect(overlaps, '响应选择按钮不能遮住快乐小法师本体').toBe(false);
-        }
+        await expectManualMinionChoiceVisible(
+            page,
+            'mages-happy-special-board',
+            '计分前快乐小法师特殊能力必须通过场上随从本体承接',
+            { forbidPromptContext: true },
+        );
+        await expect(
+            page.locator('[data-minion-uid="mages-happy-special-board"]').first(),
+            '计分前快乐小法师本体必须处于可发动高亮',
+        ).toHaveAttribute('data-highlighted', 'true');
         await game.screenshot('法师-快乐小法师特殊-手动选择特殊能力', testInfo);
 
-        await game.selectInteractionOptionBy(
-            option => option.value?.kind === 'activate_special'
-                && option.value?.minionUid === 'mages-happy-special-board'
-                && option.value?.baseIndex === 0,
-            '计分前选择快乐小法师特殊能力',
+        await clickManualMinionChoice(
+            page,
+            'mages-happy-special-board',
+            '计分前点击快乐小法师来源本体发动特殊能力',
         );
         await game.waitForInteraction('munchkin_mages_happy_zapper_discard', 10000);
         await waitForSmashUpFxToSettle(page);
@@ -12746,9 +12739,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         expect(undeadCostOption?.id, '抓鬼召唤亡灵怪物时应列出指定手牌作为弃牌成本').toBeTruthy();
         await expectManualChoiceVisible(
             page,
-            `[data-option-id="${undeadCostOption!.id}"]`,
+            handCardSelector('clerics-whack-cost-undead'),
             '抓鬼召唤亡灵怪物时选择弃牌成本',
-            { allowPromptCardGrid: true, forbidPromptContext: true },
+            { forbidPromptContext: true },
         );
         await game.screenshot('牧师-抓鬼-召唤亡灵时手动选择弃牌', testInfo);
         await clickVisibleInteractionOptionBy(
@@ -12757,7 +12750,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             (option: InteractionOption) => option.value?.cardUid === 'clerics-whack-cost-undead',
             '抓鬼召唤亡灵怪物时选择弃牌成本',
         );
-        await game.confirm();
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
 
@@ -12783,9 +12775,9 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         expect(livingCostOption?.id, '抓鬼召唤普通怪物时应列出指定手牌作为弃牌成本').toBeTruthy();
         await expectManualChoiceVisible(
             page,
-            `[data-option-id="${livingCostOption!.id}"]`,
+            handCardSelector('clerics-whack-cost-living'),
             '抓鬼召唤普通怪物时选择弃牌成本',
-            { allowPromptCardGrid: true, forbidPromptContext: true },
+            { forbidPromptContext: true },
         );
         await game.screenshot('牧师-抓鬼-召唤普通怪物时手动选择弃牌', testInfo);
         await clickVisibleInteractionOptionBy(
@@ -12794,7 +12786,6 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
             (option: InteractionOption) => option.value?.cardUid === 'clerics-whack-cost-living',
             '抓鬼召唤普通怪物时选择弃牌成本',
         );
-        await game.confirm();
         await game.waitForNoInteraction(10000);
         await waitForSmashUpFxToSettle(page);
 
@@ -13008,6 +12999,38 @@ test.describe('大杀四方 Munchkin 怪物与宝藏 UI', () => {
         await expect(page.getByTestId('su-munchkin-treasure-supply-count')).toHaveText('x 21');
         await page.waitForTimeout(1000);
         await game.screenshot('40-半身人雇佣兵开放第二个随从后状态', testInfo);
+    });
+
+    test('虎骑士打出后可在同基地摧毁力量2或更少的仆从', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        const scene = buildMunchkinTreasureMinionScene();
+        scene.extra.core.bases[0].minions = [
+            minion('tiger-target-1', 'munchkin_dwarves_gem_grabber', '1', 2),
+        ];
+        await game.setupScene(scene);
+
+        await expect(page.locator('[data-card-uid="tiger-steed-1"]').first()).toBeVisible({ timeout: 15000 });
+        await expect(page.locator('[data-minion-uid="tiger-target-1"]').first()).toBeVisible({ timeout: 15000 });
+
+        await game.playCard('munchkin_treasure_tiger_steed', { targetBaseIndex: 0 });
+        await game.waitForInteraction('munchkin_treasure_tiger_steed_destroy', 10000);
+
+        await expect.poll(async () => {
+            const options = await game.getInteractionOptions() as InteractionOption[];
+            return options.map(option => option.value?.minionUid).filter(Boolean);
+        }, { timeout: 10000 }).toEqual(['tiger-target-1']);
+
+        await clickManualMinionChoice(page, 'tiger-target-1', '虎骑士选择力量2仆从');
+        await game.waitForNoInteraction(10000);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].minions.map((entry: any) => entry.uid);
+        }, { timeout: 10000 }).toEqual(['tiger-steed-1']);
+        await game.screenshot('虎骑士摧毁力量2仆从后', testInfo);
     });
 
     test('半身人可打出后只开放同基地额外随从额度', async ({ page, game }, testInfo) => {

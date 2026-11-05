@@ -32,6 +32,39 @@ export interface FeedbackPageFlags {
     mobileProfile?: string;
 }
 
+export interface FeedbackPerformanceContext {
+    capturedAt: string;
+    windowMs: number;
+    frame?: {
+        averageFps?: number;
+        minFps?: number;
+        averageFrameTimeMs?: number;
+        maxFrameTimeMs?: number;
+        bucketCount?: number;
+    };
+    longTasks?: {
+        count: number;
+        totalDurationMs: number;
+        maxDurationMs?: number;
+    };
+    network?: {
+        connectionRttMs?: number;
+        effectiveType?: string;
+        downlinkMbps?: number;
+        requestCount: number;
+        averageDurationMs?: number;
+        maxDurationMs?: number;
+        averageTtfbMs?: number;
+        recentRequests?: Array<{
+            path: string;
+            initiatorType?: string;
+            durationMs: number;
+            ttfbMs?: number;
+            connectMs?: number;
+        }>;
+    };
+}
+
 export interface FeedbackClientContext {
     route?: string;
     mode?: string;
@@ -55,6 +88,7 @@ export interface FeedbackClientContext {
     lastRouteChange?: FeedbackRouteChangeSummary;
     recentRouteChanges?: FeedbackRouteChangeSummary[];
     pageFlags?: FeedbackPageFlags;
+    performance?: FeedbackPerformanceContext;
 }
 
 export interface FeedbackErrorContext {
@@ -64,6 +98,51 @@ export interface FeedbackErrorContext {
     source?: string;
     jsStack?: string;
     componentStack?: string;
+}
+
+export type FeedbackReplayability = 'full' | 'partial' | 'unreplayable';
+export type FeedbackCollectionStatus = 'complete' | 'partial' | 'failed';
+
+export interface FeedbackDiagnosticPacket {
+    schemaVersion: 1;
+    captureId: string;
+    chainId?: string;
+    capturedAt: string;
+    source: 'user' | 'client-auto' | 'server';
+    collectionStatus: FeedbackCollectionStatus;
+    replayability: FeedbackReplayability;
+    missingFields: string[];
+    correlation: {
+        matchId?: string;
+        roomId?: string;
+        requestId?: string;
+        stateId?: number;
+        stateRevision?: number;
+        decisionEpoch?: number;
+    };
+    build?: {
+        appVersion?: string;
+        appCommitSha?: string;
+        appBuildTime?: string;
+        appReleaseChannel?: string;
+    };
+    phase?: string;
+    turnNumber?: number;
+    currentPlayerId?: string;
+    interaction?: unknown;
+    responseWindow?: unknown;
+    legalActions?: unknown;
+    aiDecisionPreview?: unknown;
+    snapshots: {
+        before?: unknown;
+        at?: unknown;
+        after?: unknown;
+    };
+    actionLogTail?: unknown[];
+    eventStreamTail?: unknown[];
+    undo?: unknown;
+    randomCursor?: number;
+    collectionErrors?: string[];
 }
 
 export interface FeedbackConfigProposalSourceContext {

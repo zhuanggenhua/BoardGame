@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
@@ -9,8 +9,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { SocialProvider } from './contexts/SocialContext';
 import { CursorPreferenceProvider } from './core/cursor/CursorPreferenceContext';
 import { useTokenRefresh } from './hooks/useTokenRefresh';
-import { ModalStackProvider } from './contexts/ModalStackContext';
-import { ToastProvider } from './contexts/ToastContext';
+import { ModalStackProvider, useModalStack } from './contexts/ModalStackContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { EngineNotificationListener } from './components/system/EngineNotificationListener';
 import { ViewportDebugProbe } from './components/system/ViewportDebugProbe';
 import { Toaster } from 'react-hot-toast';
@@ -20,7 +20,6 @@ import { GamePageRescueGate } from './components/system/GamePageRescueGate';
 import { LoadingScreen } from './components/system/LoadingScreen';
 import { TextEntryAutoScrollAgent } from './components/system/TextEntryAutoScrollAgent';
 import { MobileTextEntryProxyLayer } from './components/system/MobileTextEntryProxyLayer';
-import { PcWebMascot } from './components/system/PcWebMascot';
 import { InteractionGuardProvider } from './components/game/framework/InteractionGuard';
 import AdminGuard from './components/auth/AdminGuard';
 import { MobileOrientationGuard, type GameMobileEntry } from './components/common/MobileOrientationGuard';
@@ -33,6 +32,8 @@ import { GAME_MANIFEST, GAME_MANIFEST_BY_ID } from './games/manifest';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 import { GlobalHUD } from './components/system/GlobalHUD';
 import { CONFIG_REVIEW_PAGE_ROUTES, ConfigReviewRoutePage } from './pages/ConfigReviewRoutes';
+import { useOnlineMatchRouteMissingGuard } from './pages/useOnlineMatchRouteMissingGuard';
+import { PcAltObjectMagnifier } from './components/system/PcAltObjectMagnifier';
 
 const ENABLE_INTERNAL_DEVTOOLS = import.meta.env.DEV;
 
@@ -43,6 +44,7 @@ const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoomWithAudio'))
 const LazyNotFound = React.lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 const LazyMaintenancePage = React.lazy(() => import('./pages/Maintenance').then(m => ({ default: m.MaintenancePage })));
 const LazyHomeEntry = React.lazy(() => import('./pages/HomeEntry'));
+const LazyFateDominationDev = React.lazy(() => import('./pages/FateDominationDev'));
 // 旧的测试路由已废弃，使用新的 TestHarness 框架
 const EmptyToastViewport: React.FC = () => null;
 
@@ -59,6 +61,27 @@ const LazyToastViewport = React.lazy(loadToastViewportModule);
 const LazyMobileLiveUpdateManager = React.lazy(() => import('./components/system/MobileLiveUpdateManager').then((module) => ({ default: module.MobileLiveUpdateManager })));
 const LazyAndroidNativeUpdateManager = React.lazy(() => import('./components/system/AndroidNativeUpdateManager').then((module) => ({ default: module.AndroidNativeUpdateManager })));
 const LazyAndroidBackNavigationBridge = React.lazy(() => import('./components/system/AndroidBackNavigationBridge').then((module) => ({ default: module.AndroidBackNavigationBridge })));
+
+const OnlineMatchRoomRoute = ({ fallback }: { fallback: React.ReactNode }) => {
+  const { gameId, matchId } = useParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { closeAll } = useModalStack();
+
+  useOnlineMatchRouteMissingGuard({
+    gameId,
+    matchId,
+    navigate,
+    closeAll,
+    toastWarning: toast.warning,
+  });
+
+  return (
+    <React.Suspense fallback={fallback}>
+      <MatchRoom />
+    </React.Suspense>
+  );
+};
 
 const queryClient = new QueryClient();
 
@@ -87,14 +110,10 @@ const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import(
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
 const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
 const DevToolsQidahenRuntimePreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRuntimePreview')) : null;
-const HomeV2AuthoringPage = ENABLE_INTERNAL_DEVTOOLS
-  ? React.lazy(() => import('./pages/HomeV2Draft').then(m => ({ default: m.HomeV2Draft })))
-  : null;
-const HomeV2PreviewPage = ENABLE_INTERNAL_DEVTOOLS
-  ? React.lazy(() => import('./pages/HomeV2').then(m => ({ default: m.HomeV2 })))
-  : null;
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
+const ExternalGamePage = React.lazy(() => import('./pages/ExternalGamePage'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
+const CreatorReview = React.lazy(() => import('./pages/admin/CreatorReview'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
 const UserDetailPage = React.lazy(() => import('./pages/admin/UserDetail'));
 const GameChangelogsPage = React.lazy(() => import('./pages/admin/GameChangelogs'));
@@ -126,6 +145,7 @@ const AppRouteChrome = ({
 
   return (
     <>
+      {isPlayRoute ? <PcAltObjectMagnifier enabled={!isNativeMobile} /> : null}
       {DevMobileEvidenceCaptureAgent ? (
         <React.Suspense fallback={null}>
           <DevMobileEvidenceCaptureAgent />
@@ -155,7 +175,6 @@ const AppRouteChrome = ({
           <LazyMobileLiveUpdateManager />
         </React.Suspense>
       ) : null}
-      {!isPlayRoute ? <PcWebMascot /> : null}
       <EngineNotificationListener />
       <GamePageRescueGate />
     </>
@@ -237,6 +256,23 @@ const AppContent = () => {
                   loadGameMobileEntry={loadDynamicGameMobileEntry}
                 >
                   <Routes>
+                    {/* 独立开发版入口，保留旧地址兼容访问。 */}
+                    <Route
+                      path="/fate-domination-dev/index.html"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <LazyFateDominationDev />
+                        </React.Suspense>
+                      )}
+                    />
+                    <Route
+                      path="/dev/fate-domination"
+                      element={(
+                        <React.Suspense fallback={playRouteFallback}>
+                          <LazyFateDominationDev />
+                        </React.Suspense>
+                      )}
+                    />
                     <Route
                       path="/"
                       element={(
@@ -245,12 +281,11 @@ const AppContent = () => {
                         </React.Suspense>
                       )}
                     />
+                    <Route path="/external/:gameId" element={<React.Suspense fallback={playRouteFallback}><ExternalGamePage /></React.Suspense>} />
                     <Route
                       path="/play/:gameId/match/:matchId"
                       element={(
-                        <React.Suspense fallback={playRouteFallback}>
-                          <MatchRoom />
-                        </React.Suspense>
+                        <OnlineMatchRoomRoute fallback={playRouteFallback} />
                       )}
                     />
                     <Route
@@ -295,11 +330,11 @@ const AppContent = () => {
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsQidahenRuntimePreview && (
                       <Route path="/dev/qidahen-runtime-preview" element={<React.Suspense fallback={null}><DevToolsQidahenRuntimePreview /></React.Suspense>} />
                     )}
-                    {ENABLE_INTERNAL_DEVTOOLS && HomeV2AuthoringPage && (
-                      <Route path="/dev/home-v2-authoring" element={<React.Suspense fallback={null}><HomeV2AuthoringPage /></React.Suspense>} />
+                    {ENABLE_INTERNAL_DEVTOOLS && (
+                      <Route path="/dev/home-v2-authoring" element={<Navigate to="/" replace />} />
                     )}
-                    {ENABLE_INTERNAL_DEVTOOLS && HomeV2PreviewPage && (
-                      <Route path={HOME_V2_PREVIEW_PATH} element={<React.Suspense fallback={null}><HomeV2PreviewPage /></React.Suspense>} />
+                    {ENABLE_INTERNAL_DEVTOOLS && (
+                      <Route path={HOME_V2_PREVIEW_PATH} element={<Navigate to="/" replace />} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && SmashUp4PLayoutTest && (
                       <Route path="/dev/smashup-4p-layout" element={<React.Suspense fallback={null}><SmashUp4PLayoutTest /></React.Suspense>} />
@@ -359,6 +394,7 @@ const AppContent = () => {
                         element={<AdminDashboard />}
                       />
                       <Route path="users" element={renderAdminOnly(<UsersPage />)} />
+                      <Route path="creator-review" element={renderAdminOnly(<CreatorReview />)} />
                       <Route path="users/:id" element={renderAdminOnly(<UserDetailPage />)} />
                       <Route
                         path="matches"

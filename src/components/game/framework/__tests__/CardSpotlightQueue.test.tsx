@@ -15,7 +15,8 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('CardSpotlightQueue', () => {
-    it('点击空白背景或关闭按钮关闭，卡牌本体点击不关闭', () => {
+    it('默认短暂展示后自动关闭，关闭按钮仍可立即关闭', () => {
+        vi.useFakeTimers();
         const onDismiss = vi.fn();
 
         render(
@@ -38,18 +39,14 @@ describe('CardSpotlightQueue', () => {
         const closeButton = screen.getByRole('button', { name: '关闭特写' });
 
         expect(screen.getByText('关闭特写')).toBeInTheDocument();
-        expect(queue.className).toContain('pointer-events-auto');
-        expect(positioner.className).toContain('items-center');
-        expect(positioner.className).toContain('justify-center');
+        expect(queue.className).toContain('pointer-events-none');
+        expect(positioner.className).toContain('top-');
 
-        fireEvent.click(content);
-        expect(onDismiss).not.toHaveBeenCalled();
-
-        fireEvent.click(queue);
+        fireEvent.click(closeButton);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
 
         onDismiss.mockClear();
-        fireEvent.click(closeButton);
+        vi.advanceTimersByTime(800);
         expect(onDismiss).toHaveBeenCalledWith('spotlight-1');
     });
 

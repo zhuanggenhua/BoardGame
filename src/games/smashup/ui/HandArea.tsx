@@ -11,10 +11,10 @@ import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture
 // ============================================================================
 // Layout Constants
 // ============================================================================
-export type HandAreaDropTarget = {
-    baseIndex: number;
-    minionUid?: string;
-};
+export type HandAreaDropTarget =
+    | { kind: 'board' }
+    | { kind: 'base'; baseIndex: number }
+    | { kind: 'minion'; baseIndex: number; minionUid: string };
 
 export type HandAreaDragPreview = {
     cardUid: string;
@@ -272,6 +272,7 @@ const HandCard: React.FC<HandCardProps> = ({
         <motion.div
             data-card-uid={card.uid}
             data-selected={isSelected ? 'true' : 'false'}
+            data-discard-selected={isDiscardSelected ? 'true' : 'false'}
             data-highlighted={isHighlighted ? 'true' : 'false'}
             data-disabled={isDisabled ? 'true' : 'false'}
             className={`
@@ -338,7 +339,7 @@ const HandCard: React.FC<HandCardProps> = ({
                 {/* Card Asset Preview */}
                 <div className="smashup-card-inner w-full h-full rounded-md overflow-hidden border shadow-inner relative">
                     <CardPreview
-                        previewRef={isOpponentView 
+                        previewRef={isOpponentView
                             ? SMASHUP_CARD_BACK
                             : (def?.previewRef
                                 ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: card.defId, cardUid: card.uid } }
@@ -366,7 +367,7 @@ const HandCard: React.FC<HandCardProps> = ({
                     }}
                 >
                     <svg
-                        className="fill-current"
+                        className="board-shell-fixed-icon fill-current"
                         style={{ width: inspectIconSize, height: inspectIconSize }}
                         viewBox="0 0 20 20"
                     >
@@ -441,6 +442,7 @@ export const HandArea: React.FC<Props> = ({
                             index={i}
                             total={hand.length}
                             isSelected={false}
+                            isHighlighted={false}
                             isDiscardSelected={false}
                             isDiscardMode={false}
                             disableInteraction={true}

@@ -208,6 +208,21 @@ export const SUMMONER_WARS_FACTION_AI_PROFILES: Record<FactionId, SummonerWarsFa
             summonerSafety: 1.06,
         },
     },
+    zhongcai: {
+        factionId: 'zhongcai',
+        summary: ['仲裁者联动多能力', '重视审判、救援与单位位置调整'],
+        strategyTagWeights: {
+            'ability-tempo': 1.2,
+            'board-control': 1.14,
+            'summoner-defense': 1.08,
+            'summoner-pressure': 1.04,
+        },
+        evaluationWeights: {
+            positionControl: 1.16,
+            tempo: 1.12,
+            summonerSafety: 1.08,
+        },
+    },
 };
 
 export function getSummonerWarsFactionAiProfile(

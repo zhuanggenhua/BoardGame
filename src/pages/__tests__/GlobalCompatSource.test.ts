@@ -41,11 +41,12 @@ describe('Global compatibility source guards', () => {
         expect(source).toContain('backdrop-filter: none !important;');
     });
 
-    it('board-shell 游戏在显示方向建议 banner 时应预留顶部让位变量，避免主界面被顶条压住', () => {
+    it('board-shell 全局默认不应给宽度型游戏补固定高度，避免手机横屏底部 UI 被裁掉', () => {
         const source = readIndexCss();
 
-        expect(source).toContain('--mobile-orientation-banner-offset: 0px;');
-        expect(source).toContain('max(var(--safe-area-top), var(--mobile-orientation-banner-offset, 0px))');
+        expect(source).toContain('height: var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1)));');
+        expect(source).not.toMatch(/--mobile-board-shell-design-height:\s*1080px;/);
+        expect(source).not.toMatch(/--mobile-board-shell-reference-height:\s*1080px;/);
     });
 
     it('共享 modal 入口应使用 runtime viewport + 100vh fallback，而不是内联 100dvh', () => {

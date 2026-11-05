@@ -193,6 +193,130 @@ describe('伤害结算输出边界', () => {
     });
 });
 
+describe('lastResolvedAttackDamage 净掉血语义', () => {
+    it('ATTACK_RESOLVED 使用防御方净掉血而非未扣盾伤害', () => {
+        const core = createCore();
+        const hpBefore = core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
+
+        const initiated = reduce(core, ev('ATTACK_INITIATED', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            isDefendable: true,
+        }));
+
+        const withShield: DiceThroneCore = {
+            ...initiated,
+            players: {
+                ...initiated.players,
+                '1': {
+                    ...initiated.players['1'],
+                    damageShields: [{ value: 3, sourceId: 'test-shield', preventStatus: false }],
+                },
+            },
+        };
+
+        const afterDamage = reduce(withShield, ev('DAMAGE_DEALT', {
+            targetId: '1',
+            amount: 5,
+            actualDamage: 5,
+            sourceAbilityId: 'test-attack',
+        }));
+
+        expect(afterDamage.players['1'].resources[RESOURCE_IDS.HP]).toBe(hpBefore - 2);
+
+        const resolved = reduce(afterDamage, ev('ATTACK_RESOLVED', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            totalDamage: 5,
+        }));
+
+        expect(resolved.lastResolvedAttackDamage).toBe(2);
+    });
+
+    it('开始下一次攻击时不清掉本回合最近一次正式攻击伤害', () => {
+        const core = {
+            ...createCore(),
+            lastResolvedAttackDamage: 7,
+        };
+
+        const next = reduce(core, ev('ATTACK_INITIATED', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'next-attack',
+            isDefendable: true,
+        }));
+
+        expect(next.lastResolvedAttackDamage).toBe(7);
+    });
+
+    it('独立卡牌伤害不会覆盖本回合最近一次正式攻击伤害', () => {
+        const core = {
+            ...createCore(),
+            lastResolvedAttackDamage: 10,
+        };
+
+        const next = reduce(core, ev('DAMAGE_DEALT', {
+            targetId: '1',
+            amount: 3,
+            actualDamage: 3,
+            sourceAbilityId: 'card-independent-damage',
+        }));
+
+        expect(next.lastResolvedAttackDamage).toBe(10);
+    });
+
+    it('攻击尚未收口时，带 direct 范围的卡牌伤害也不会覆盖攻击累计伤害', () => {
+        const initiated = reduce(createCore(), ev('ATTACK_INITIATED', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            isDefendable: true,
+        }));
+        const withAttackDamage: DiceThroneCore = {
+            ...initiated,
+            pendingAttack: initiated.pendingAttack
+                ? { ...initiated.pendingAttack, resolvedDamage: 10 }
+                : initiated.pendingAttack,
+        };
+
+        const afterCardDamage = reduce(withAttackDamage, ev('DAMAGE_DEALT', {
+            targetId: '1',
+            amount: 3,
+            actualDamage: 3,
+            sourceAbilityId: 'card-independent-damage',
+            sourcePlayerId: '0',
+            damageScope: 'direct',
+        }));
+
+        expect(afterCardDamage.pendingAttack?.resolvedDamage).toBe(10);
+
+        const resolved = reduce(afterCardDamage, ev('ATTACK_RESOLVED', {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            totalDamage: 999,
+        }));
+
+        expect(resolved.lastResolvedAttackDamage).toBe(10);
+    });
+
+    it('回合切换后清空共享的最近一次正式攻击伤害记录', () => {
+        const core: DiceThroneCore = {
+            ...createCore(),
+            lastResolvedAttackDamage: 7,
+        };
+
+        const next = reduce(core, ev('TURN_CHANGED', {
+            nextPlayerId: '1',
+            turnNumber: 2,
+        }));
+
+        expect(next.lastResolvedAttackDamage).toBeUndefined();
+    });
+});
+
 describe('防止、闪避与命中依据边界', () => {
     it('PREVENT_DAMAGE 只改 pendingDamage，不把防止量编码成负攻击加伤', () => {
         let state = reduce(createCore(), ev('ATTACK_INITIATED', {

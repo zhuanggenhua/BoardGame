@@ -582,6 +582,103 @@ describe('mage-wars control and area spells', () => {
         expect(attacked.state.core.players['1'].discardSpellCardIds).toEqual([attackSpellId]);
     });
 
+    it('casts Flame Ring as a same-zone area fire attack excluding only the caster', () => {
+        const attackSpellId = 1707;
+        const statusRandom: RandomFn = {
+            ...fixedRandom,
+            d: (sides: number) => (sides === 12 ? 11 : 3),
+        };
+        const planningState = setupState('planning');
+        const planned = runCommand({
+            core: withPlayerMage(planningState.core, '0', MAGE_IDS.WARLOCK_APPRENTICE),
+            sys: planningState.sys,
+        }, planCommand([attackSpellId]));
+        const friendlyCat = makeArenaObject('flame-ring-friendly-cat', '0', PLAYER_ZERO_START_ZONE, {
+            life: 30,
+        });
+        const enemyCat = makeArenaObject('flame-ring-enemy-cat', '1', PLAYER_ZERO_START_ZONE, {
+            life: 30,
+        });
+
+        const attacked = runCommand({
+            core: withArenaObject(
+                withArenaObject(withPlayerInZone(planned.state.core, '1', PLAYER_ZERO_START_ZONE), friendlyCat),
+                enemyCat,
+            ),
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId: attackSpellId,
+                manaCost: 9,
+                targetZoneId: PLAYER_ZERO_START_ZONE,
+            },
+        }, statusRandom);
+
+        expect(planned.success).toBe(true);
+        expect(attacked.success).toBe(true);
+        expect(attacked.events.filter((event) => event.type === MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED)).toHaveLength(3);
+        expect(attacked.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+                payload: expect.objectContaining({
+                    spellCardId: attackSpellId,
+                    sourceAbilityId: 'mw.spell.1707',
+                    targetPlayerId: '1',
+                    targetZoneId: PLAYER_ZERO_START_ZONE,
+                    diceResults: [3, 3, 3, 3, 3],
+                    effectDieResult: 11,
+                    baseDamage: 15,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                payload: expect.objectContaining({
+                    targetPlayerId: '1',
+                    statusTokenId: STATUS_TOKEN_IDS.BURN,
+                    amount: 2,
+                    sourceAbilityId: 'mw.spell.1707',
+                    spellCardId: attackSpellId,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                payload: expect.objectContaining({
+                    targetObjectId: friendlyCat.id,
+                    statusTokenId: STATUS_TOKEN_IDS.BURN,
+                    amount: 2,
+                    sourceAbilityId: 'mw.spell.1707',
+                    spellCardId: attackSpellId,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                payload: expect.objectContaining({
+                    targetObjectId: enemyCat.id,
+                    statusTokenId: STATUS_TOKEN_IDS.BURN,
+                    amount: 2,
+                    sourceAbilityId: 'mw.spell.1707',
+                    spellCardId: attackSpellId,
+                }),
+            }),
+        ]));
+        expect(attacked.state.core.players['0']).toMatchObject({ damage: 0, statusTokens: {} });
+        expect(attacked.state.core.players['1']).toMatchObject({
+            damage: 15,
+            statusTokens: { [STATUS_TOKEN_IDS.BURN]: 2 },
+        });
+        expect(attacked.state.core.objects[friendlyCat.id]).toMatchObject({
+            damage: 15,
+            statusTokens: { [STATUS_TOKEN_IDS.BURN]: 2 },
+        });
+        expect(attacked.state.core.objects[enemyCat.id]).toMatchObject({
+            damage: 15,
+            statusTokens: { [STATUS_TOKEN_IDS.BURN]: 2 },
+        });
+        expect(attacked.state.core.players['0'].discardSpellCardIds).toEqual([attackSpellId]);
+    });
+
     it('casts Lightning Ring from the wizard spellbook as a same-zone area stun attack', () => {
         const attackSpellId = 1704;
         const statusRandom: RandomFn = {

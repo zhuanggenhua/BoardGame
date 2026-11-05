@@ -1449,6 +1449,117 @@ describe('mage-wars spell action cards', () => {
         expect(dispelled.state.core.players['0'].mana).toBe(state.core.players['0'].mana - 5);
     });
 
+    it('implements 3414 Reverse Dispel against a hidden enchantment with fixed cost', () => {
+        const spellCardId = 3414;
+        const planningState = setupState('planning');
+        const planned = runCommand({
+            core: withPlayerMage(planningState.core, '0', MAGE_IDS.WARLOCK_APPRENTICE),
+            sys: planningState.sys,
+        }, planCommand([spellCardId]));
+        const enchantedCreature = makeArenaObject('reverse-dispel-creature-1', '1', ARENA_ZONE_IDS.A2);
+        const hiddenEnchantment = makeVisibleEnchantmentObject('reverse-dispel-hidden', '1', ARENA_ZONE_IDS.A2, {
+            anchoredToObjectId: enchantedCreature.id,
+            revealed: false,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(
+                withArenaObject(withPlayerInZone(planned.state.core, '1', ARENA_ZONE_IDS.A2), enchantedCreature),
+                hiddenEnchantment,
+            ),
+            sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
+        };
+        const command: MageWarsCommand = {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId,
+                manaCost: 2,
+                targetObjectId: hiddenEnchantment.id,
+            },
+        };
+        const resolved = runCommand(state, command);
+
+        expect(getMageWarsSpellCardFromConfig(spellCardId)?.requiresCodeSupport).toBe(false);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE,
+                payload: expect.objectContaining({
+                    spellCardId,
+                    targetObjectId: hiddenEnchantment.id,
+                    destructionKind: 'dispel',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: hiddenEnchantment.id,
+                    spellCardId,
+                }),
+            }),
+        ]));
+        expect(resolved.state.core.objects[hiddenEnchantment.id]).toBeUndefined();
+        expect(resolved.state.core.objects[enchantedCreature.id]).toBeDefined();
+        expect(resolved.state.core.players['0'].mana).toBe(state.core.players['0'].mana - 2);
+    });
+
+    it('implements 3420 Purification by destroying all enchantments attached to the target object', () => {
+        const spellCardId = 3420;
+        const planningState = setupState('planning');
+        const planned = runCommand({
+            core: withPlayerMage(planningState.core, '0', MAGE_IDS.WIZARD_APPRENTICE),
+            sys: planningState.sys,
+        }, planCommand([spellCardId]));
+        const target = makeArenaObject('purification-target-1', '1', ARENA_ZONE_IDS.A2);
+        const visibleEnchantment = makeVisibleEnchantmentObject('purification-visible', '1', ARENA_ZONE_IDS.A2, {
+            anchoredToObjectId: target.id,
+        });
+        const hiddenEnchantment = makeVisibleEnchantmentObject('purification-hidden', '1', ARENA_ZONE_IDS.A2, {
+            anchoredToObjectId: target.id,
+            revealed: false,
+        });
+        const unattached = makeVisibleEnchantmentObject('purification-unattached', '1', ARENA_ZONE_IDS.A2);
+        const core = withArenaObject(
+            withArenaObject(
+                withArenaObject(withPlayerInZone(planned.state.core, '1', ARENA_ZONE_IDS.A2), target),
+                visibleEnchantment,
+            ),
+            hiddenEnchantment,
+        );
+        const state: MatchState<MageWarsCore> = {
+            core: {
+                ...withArenaObject(core, unattached),
+                players: {
+                    ...withArenaObject(core, unattached).players,
+                    '0': {
+                        ...withArenaObject(core, unattached).players['0'],
+                        mana: 20,
+                    },
+                },
+            },
+            sys: { ...planned.state.sys, phase: 'initiativeQuickcast' },
+        };
+        const resolved = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId,
+                manaCost: 12,
+                targetObjectId: target.id,
+            },
+        });
+
+        expect(getMageWarsSpellCardFromConfig(spellCardId)?.requiresCodeSupport).toBe(false);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.filter((event) => event.type === MAGE_WARS_EVENTS.SPELL_OBJECT_DESTRUCTION_AVAILABLE))
+            .toHaveLength(2);
+        expect(resolved.state.core.objects[target.id]).toBeDefined();
+        expect(resolved.state.core.objects[visibleEnchantment.id]).toBeUndefined();
+        expect(resolved.state.core.objects[hiddenEnchantment.id]).toBeUndefined();
+        expect(resolved.state.core.objects[unattached.id]).toBeDefined();
+        expect(resolved.state.core.players['0'].mana).toBe(state.core.players['0'].mana - 12);
+    });
+
     it('keeps alternate Dispel 3419 as a non-standard alias outside the current spellbook plan gate', () => {
         const dispelSpellId = 3419;
         const planningState = setupState('planning');

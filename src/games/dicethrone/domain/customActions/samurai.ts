@@ -11,7 +11,7 @@ import type {
 } from '../events';
 import { SAMURAI_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
 import { getActiveDice, getFaceCounts, getMaxDuplicateValueCount, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 import type { PendingInteraction } from '../core-types';
 
 const FACE = SAMURAI_DICE_FACE_IDS;

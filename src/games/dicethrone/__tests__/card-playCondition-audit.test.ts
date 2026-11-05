@@ -242,14 +242,40 @@ describe('卡牌 playCondition 一致性审计', () => {
             });
         });
 
-        it('card-just-this 必须限定为当前防御掷骰者在防御投掷阶段使用', () => {
+        it('card-just-this 限定防御阶段与已投骰，并把自愿重掷交给当前掷骰者', () => {
             const card = COMMON_CARDS.find(c => c.id === 'card-just-this')!;
             expect(card.playCondition).toEqual({
                 phase: 'defensiveRoll',
-                requireIsRoller: true,
                 requireDiceExists: true,
                 requireHasRolled: true,
             });
+            expect(card.effects?.[0]?.action).toMatchObject({ type: 'custom', target: 'select', customActionId: 'reroll-die-5' });
+        });
+
+        it.each(['card-i-can-again', 'card-just-this'])('%s grants the current roller an optional reroll, not a forced reroll', cardId => {
+            const card = COMMON_CARDS.find(c => c.id === cardId)!;
+            const phase = cardId === 'card-i-can-again' ? 'offensiveRoll' : 'defensiveRoll';
+            const core = makeRuleCheckCore(card);
+            core.turnPhase = phase;
+            core.activePlayerId = '0';
+            core.pendingAttack = phase === 'defensiveRoll' ? { attackerId: '0', defenderId: '1' } as any : null as any;
+            expect(card.playCondition?.requireIsRoller).toBeUndefined();
+            expect(card.effects?.[0]?.action).toMatchObject({ type: 'custom', target: 'select', customActionId: 'reroll-die-5' });
+            const cardActor = phase === 'offensiveRoll' ? '1' : '0';
+            expect(checkPlayCard(core, cardActor, card, phase)).toEqual({ ok: true });
+            expect(checkPlayCard(core, cardActor, card, phase === 'offensiveRoll' ? 'defensiveRoll' : 'offensiveRoll')).toMatchObject({ ok: false });
+        });
+
+        it('card-worthy-of-me is usable by the current roller or a teammate, never an opponent', () => {
+            const card = COMMON_CARDS.find(c => c.id === 'card-worthy-of-me')!;
+            expect(card.playCondition).toEqual({
+                requireIsRollerOrTeammate: true,
+                requireDiceExists: true,
+                requireHasRolled: true,
+            });
+            expect(card.effects?.[0]?.action).toMatchObject({ type: 'custom', target: 'select', customActionId: 'reroll-die-2' });
+            expect(checkPlayCard(makeRuleCheckCore(card), '0', card, 'offensiveRoll')).toEqual({ ok: true });
+            expect(checkPlayCard(makeRuleCheckCore(card), '1', card, 'offensiveRoll')).toMatchObject({ ok: false, reason: 'requireIsRoller' });
         });
 
         it('card-me-too 必须有最少骰子数量限制', () => {

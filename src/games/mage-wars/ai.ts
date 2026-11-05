@@ -3,12 +3,13 @@ import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import type { Command, MatchState, PlayerId } from '../../engine/types';
 import {
     buildAiLegalActionsFromInteractionDecision,
+    createAiActionOutcomeNoBenefitScorer,
     createAiLegalActionId,
-    type AiDecisionContext,
+    createLookaheadLocalAiPolicy,
+    type AiDecisionDescriptor,
     type AiLegalAction,
     type GameAiRuntime,
-    type LocalAiPolicy,
-    type AiDecisionDescriptor,
+    type LocalAiActionScorer,
 } from '../../engine/ai';
 import { MageWarsDomain, MAGE_WARS_COMMANDS } from './domain';
 import type {
@@ -20,7 +21,18 @@ import type {
 import { MAGE_WARS_MAX_PREPARED_SPELLS } from './domain/constants';
 import { getMageWarsSpellCardFromConfig } from './data/configPackage';
 import { getMageWarsPlayerSpellbookCardIds } from './domain/spellbook';
-import { resolveMageWarsSpellRawCostTotal } from './domain/spellRules';
+import { resolveMageWarsMageEquipmentArmor } from './domain/damageRules';
+import {
+    getMageWarsObjectAttackProfiles,
+    isMageWarsAttackSpell,
+    isMageWarsConjurationSpell,
+    isMageWarsCreatureSpell,
+    isMageWarsHealingSpell,
+    getMageWarsZoneDistance,
+    resolveMageWarsObjectEffectiveArmor,
+    resolveMageWarsSpellRawCostTotal,
+} from './domain/spellRules';
+import { buildMageWarsSpellCastOpportunity } from './domain/spellCastRuntime';
 import {
     areAdjacentZones,
     getOpponentId,
@@ -29,6 +41,15 @@ import {
     isMageWarsConfiguredSpellcastingSource,
     isMageWarsSpellcastingObject,
 } from './domain/spellCasting';
+import {
+    getMageWarsObjectValue,
+    getMageWarsSpellPlanningValue,
+    getMageWarsTargetValue,
+} from './ai/evaluation';
+import {
+    projectMageWarsActionDelta,
+    projectMageWarsActionOutcome,
+} from './ai/search';
 
 type MageWarsState = MatchState<MageWarsCore>;
 
@@ -61,23 +82,6 @@ const SEQUENTIAL_PHASES = new Set<MageWarsPhase>([
     'creatureAction',
     'finalQuickcast',
 ]);
-
-const ACTION_PRIORITY: Record<string, number> = {
-    'interaction-choice': 0,
-    'interaction-confirm': 0,
-    'interaction-skip': 0,
-    'plan-object-spell': 10,
-    'plan-spells': 20,
-    'cast-object-spell': 30,
-    'cast-spell': 40,
-    'object-attack': 50,
-    attack: 60,
-    'move-object': 70,
-    'move-mage': 80,
-    'guard-object': 90,
-    guard: 100,
-    'advance-phase': 200,
-};
 
 const asMageWarsState = (state: MatchState<unknown>): MageWarsState => state as MageWarsState;
 
@@ -242,9 +246,11 @@ function buildCurrentInteractionActions(state: MageWarsState, playerId: PlayerId
         return actions;
     }
     for (const option of enabledOptions) {
+        if (typeof option.id !== 'string') continue;
+        const optionLabel = typeof option.label === 'string' ? option.label : option.id;
         appendIfValid(actions, state, playerId, createAction({
             kind: 'interaction-choice',
-            label: typeof option.label === 'string' ? option.label : option.id,
+            label: optionLabel,
             commandType: INTERACTION_COMMANDS.RESPOND,
             payload: { interactionId, optionId: option.id },
             keyParts: [interactionId, option.id],
@@ -275,7 +281,6 @@ function buildPlanObjectSpellActions(state: MageWarsState, playerId: PlayerId): 
     for (const object of sourceObjects) {
         for (const spellCardId of spellCardIds) {
             const spellName = getMageWarsSpellCardFromConfig(spellCardId)?.name ?? String(spellCardId);
-            const beforeLength = actions.length;
             appendIfValid(actions, state, playerId, createAction({
                 kind: 'plan-object-spell',
                 label: `${object.name} 准备 ${spellName}`,
@@ -288,11 +293,41 @@ function buildPlanObjectSpellActions(state: MageWarsState, playerId: PlayerId): 
                     sourceId: object.spellcastingSource?.abilityId,
                 },
             }));
-            if (actions.length > beforeLength) break;
         }
     }
 
     return actions;
+}
+
+function buildSpellPlanCandidates(state: MageWarsState, playerId: PlayerId): number[][] {
+    const player = state.core.players[playerId];
+    if (!player) return [[]];
+
+    const spellCardIds = getMageWarsPlayerSpellbookCardIds(player);
+    const current = spellCardIds.slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
+    const strategic = [...spellCardIds]
+        .sort((left, right) => (
+            getMageWarsSpellPlanningValue(right, state.core, playerId)
+            - getMageWarsSpellPlanningValue(left, state.core, playerId)
+            || left - right
+        ))
+        .slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
+    const lowCost = [...spellCardIds]
+        .sort((left, right) => (
+            (getMageWarsSpellCardFromConfig(left)?.manaCost ?? 99)
+            - (getMageWarsSpellCardFromConfig(right)?.manaCost ?? 99)
+            || left - right
+        ))
+        .slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
+
+    const candidates = [current, strategic, lowCost, []];
+    const seen = new Set<string>();
+    return candidates.filter((candidate) => {
+        const key = JSON.stringify(candidate);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
 }
 
 function buildPlanSpellsActions(state: MageWarsState, playerId: PlayerId): AiLegalAction[] {
@@ -301,18 +336,24 @@ function buildPlanSpellsActions(state: MageWarsState, playerId: PlayerId): AiLeg
     }
     const player = state.core.players[playerId];
     if (!player) return [];
-    const spellCardIds = getMageWarsPlayerSpellbookCardIds(player)
-        .slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
-    const selected = spellCardIds.slice(0, MAGE_WARS_MAX_PREPARED_SPELLS);
     const actions: AiLegalAction[] = [];
-    appendIfValid(actions, state, playerId, createAction({
-        kind: 'plan-spells',
-        label: selected.length > 0 ? `准备 ${selected.length} 张法术` : '确认不准备法术',
-        commandType: MAGE_WARS_COMMANDS.PLAN_SPELLS,
-        payload: { spellCardIds: selected },
-        keyParts: selected.length > 0 ? selected : ['none'],
-        metadata: { spellCardIds: selected },
-    }));
+    for (const selected of buildSpellPlanCandidates(state, playerId)) {
+        const planningValueTotal = selected.reduce(
+            (total, spellCardId) => total + getMageWarsSpellPlanningValue(spellCardId, state.core, playerId),
+            0,
+        );
+        appendIfValid(actions, state, playerId, createAction({
+            kind: 'plan-spells',
+            label: selected.length > 0 ? `准备 ${selected.length} 张法术` : '确认不准备法术',
+            commandType: MAGE_WARS_COMMANDS.PLAN_SPELLS,
+            payload: { spellCardIds: selected },
+            keyParts: selected.length > 0 ? selected : ['none'],
+            metadata: {
+                spellCardIds: selected,
+                planningValueTotal,
+            },
+        }));
+    }
     return actions;
 }
 
@@ -373,21 +414,88 @@ function appendCastActions(
     spellCardId: number,
     casterObject?: MageWarsArenaObjectState,
 ): void {
+    const spell = getMageWarsSpellCardFromConfig(spellCardId);
+    if (!spell) return;
+    const spellMetadata = {
+        spellCardId,
+        spellName: spell.name,
+        spellType: spell.spellType,
+        spellManaCost: spell.manaCost ?? resolveMageWarsSpellRawCostTotal(spell) ?? 0,
+        isAttackSpell: isMageWarsAttackSpell(spell),
+        isCreatureSpell: isMageWarsCreatureSpell(spell),
+        isConjurationSpell: isMageWarsConjurationSpell(spell),
+        isHealingSpell: isMageWarsHealingSpell(spell),
+        isSummonSpell: isMageWarsCreatureSpell(spell) || isMageWarsConjurationSpell(spell),
+        ...(casterObject ? { casterObjectId: casterObject.id } : {}),
+    };
+
+    if (!casterObject) {
+        const opportunity = buildMageWarsSpellCastOpportunity({
+            state,
+            playerId,
+            spellCardId,
+        });
+        for (const candidate of opportunity?.choice?.candidates ?? []) {
+            if (candidate.disabled || candidate.stale || candidate.commands?.length !== 1) continue;
+            const command = candidate.commands[0];
+            if (!command || typeof command.payload !== 'object' || command.payload === null) continue;
+            const payload = command.payload as Record<string, unknown>;
+            const targetObjectId = typeof payload.targetObjectId === 'string'
+                ? payload.targetObjectId
+                : undefined;
+            const targetPlayerId = typeof payload.targetPlayerId === 'string'
+                ? payload.targetPlayerId
+                : undefined;
+            const targetZoneId = typeof payload.targetZoneId === 'string'
+                ? payload.targetZoneId
+                : undefined;
+            appendIfValid(actions, state, playerId, createAction({
+                kind: 'cast-spell',
+                label: `施放 ${spell.name}${candidate.label ? `：${candidate.label}` : ''}`,
+                commandType: MAGE_WARS_COMMANDS.CAST_SPELL,
+                payload,
+                keyParts: [spellCardId, candidate.id],
+                metadata: {
+                    ...spellMetadata,
+                    ...(candidate.metadata ?? {}),
+                    ...(targetObjectId ? {
+                        targetObjectId,
+                        targetValue: getMageWarsTargetValue(state.core, targetObjectId),
+                    } : {}),
+                    ...(targetPlayerId ? {
+                        targetPlayerId,
+                        targetValue: getMageWarsTargetValue(state.core, undefined, targetPlayerId),
+                    } : {}),
+                    ...(targetZoneId ? { targetZoneId } : {}),
+                },
+            }));
+        }
+        return;
+    }
+
     const seenPayloads = new Set<string>();
     for (const payload of buildCastPayloads(state, playerId, spellCardId, casterObject)) {
         const key = JSON.stringify(payload);
         if (seenPayloads.has(key)) continue;
         seenPayloads.add(key);
-        const spellName = getMageWarsSpellCardFromConfig(spellCardId)?.name ?? String(spellCardId);
+        const targetObjectId = typeof payload.targetObjectId === 'string' ? payload.targetObjectId : undefined;
+        const targetPlayerId = typeof payload.targetPlayerId === 'string' ? payload.targetPlayerId : undefined;
         appendIfValid(actions, state, playerId, createAction({
             kind: casterObject ? 'cast-object-spell' : 'cast-spell',
-            label: casterObject ? `${casterObject.name} 施放 ${spellName}` : `施放 ${spellName}`,
+            label: `${casterObject.name} 施放 ${spell.name}`,
             commandType: MAGE_WARS_COMMANDS.CAST_SPELL,
             payload,
             keyParts: [casterObject?.id, spellCardId, key],
             metadata: {
-                spellCardId,
-                ...(casterObject ? { casterObjectId: casterObject.id } : {}),
+                ...spellMetadata,
+                ...(targetObjectId ? {
+                    targetObjectId,
+                    targetValue: getMageWarsTargetValue(state.core, targetObjectId),
+                } : {}),
+                ...(targetPlayerId ? {
+                    targetPlayerId,
+                    targetValue: getMageWarsTargetValue(state.core, undefined, targetPlayerId),
+                } : {}),
             },
         }));
     }
@@ -427,13 +535,24 @@ function appendAttackActions(
     const opponent = state.core.players[opponentId];
 
     if (opponent?.mageZoneId === player.mageZoneId) {
+        const targetValue = getMageWarsTargetValue(state.core, undefined, opponentId);
+        const targetLife = Math.max(0, opponent.life - opponent.damage);
+        const targetArmor = resolveMageWarsMageEquipmentArmor(state.core, opponentId);
+        const expectedDamage = Math.max(0, player.baseMeleeDice * 2 - targetArmor);
         appendIfValid(actions, state, playerId, createAction({
             kind: 'attack',
             label: '法师基础攻击',
             commandType: MAGE_WARS_COMMANDS.DECLARE_ATTACK,
             payload: { targetPlayerId: opponentId },
             keyParts: [opponentId],
-            metadata: { targetPlayerId: opponentId },
+            metadata: {
+                targetPlayerId: opponentId,
+                targetValue,
+                targetLife,
+                targetArmor,
+                expectedDamage,
+                lethalLikely: expectedDamage >= targetLife,
+            },
         }));
     }
 
@@ -443,27 +562,63 @@ function appendAttackActions(
     for (const object of Object.values(state.core.objects)
         .filter((candidate) => candidate.ownerId === playerId && candidate.kind === 'creature')
         .sort((left, right) => left.id.localeCompare(right.id))) {
-        const targets = [
+        const targets: Array<{ targetPlayerId: string } | { targetObjectId: string }> = [
             { targetPlayerId: opponentId },
             ...enemyObjects.map((target) => ({ targetObjectId: target.id })),
         ];
-        for (const target of targets) {
-            appendIfValid(actions, state, playerId, createAction({
-                kind: 'object-attack',
-                label: `${object.name} 攻击`,
-                commandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
-                payload: {
-                    attackerObjectId: object.id,
-                    attackProfileId: 'attack-0',
-                    ...target,
-                },
-                keyParts: [object.id, target.targetPlayerId ?? target.targetObjectId],
-                metadata: {
-                    attackerObjectId: object.id,
-                    attackProfileId: 'attack-0',
-                    ...target,
-                },
-            }));
+        for (const attackProfile of getMageWarsObjectAttackProfiles(object)) {
+            for (const target of targets) {
+                const targetObjectId = 'targetObjectId' in target ? target.targetObjectId : undefined;
+                const targetPlayerId = 'targetPlayerId' in target ? target.targetPlayerId : undefined;
+                const targetObject = targetObjectId
+                    ? state.core.objects[targetObjectId]
+                    : undefined;
+                const targetValue = getMageWarsTargetValue(
+                    state.core,
+                    targetObjectId,
+                    targetPlayerId,
+                );
+                const targetLife = targetObject
+                    ? Math.max(0, targetObject.life - targetObject.damage)
+                    : targetPlayerId
+                        ? Math.max(
+                            0,
+                            state.core.players[targetPlayerId]?.life
+                                - state.core.players[targetPlayerId]?.damage,
+                        )
+                        : 0;
+                const targetArmor = targetObject
+                    ? resolveMageWarsObjectEffectiveArmor(state.core, targetObject)
+                    : 0;
+                const expectedDamage = Math.max(
+                    0,
+                    attackProfile.diceCount * 2 * Math.max(1, attackProfile.strikeCount)
+                        - targetArmor
+                        + attackProfile.pierce,
+                );
+                appendIfValid(actions, state, playerId, createAction({
+                    kind: 'object-attack',
+                    label: `${object.name} 使用 ${attackProfile.attackName ?? attackProfile.id} 攻击`,
+                    commandType: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+                    payload: {
+                        attackerObjectId: object.id,
+                        attackProfileId: attackProfile.id,
+                        ...target,
+                    },
+                    keyParts: [object.id, attackProfile.id, targetPlayerId ?? targetObjectId],
+                    metadata: {
+                        attackerObjectId: object.id,
+                        attackProfileId: attackProfile.id,
+                        attackerValue: getMageWarsObjectValue(state.core, object),
+                        targetValue,
+                        expectedDamage,
+                        targetArmor,
+                        lethalLikely: expectedDamage >= targetLife,
+                        targetLife,
+                        ...target,
+                    },
+                }));
+            }
         }
     }
 }
@@ -475,6 +630,8 @@ function appendMovementAndGuardActions(
 ): void {
     const player = state.core.players[playerId];
     if (!player) return;
+    const opponentId = getOpponentId(state.core, playerId);
+    const opponent = state.core.players[opponentId];
     const adjacentZones = state.core.arena
         .filter((zone) => areAdjacentZones(state.core, player.mageZoneId, zone.id))
         .sort((left, right) => left.row - right.row || left.col - right.col);
@@ -486,7 +643,15 @@ function appendMovementAndGuardActions(
             commandType: MAGE_WARS_COMMANDS.MOVE_MAGE,
             payload: { toZoneId: zone.id },
             keyParts: [zone.id],
-            metadata: { toZoneId: zone.id },
+            metadata: {
+                toZoneId: zone.id,
+                distanceToEnemyMageAfter: opponent
+                    ? getMageWarsZoneDistance(state.core, zone.id, opponent.mageZoneId) ?? 99
+                    : 99,
+                distanceToEnemyMageBefore: opponent
+                    ? getMageWarsZoneDistance(state.core, player.mageZoneId, opponent.mageZoneId) ?? 99
+                    : 99,
+            },
         }));
     }
     appendIfValid(actions, state, playerId, createAction({
@@ -495,6 +660,10 @@ function appendMovementAndGuardActions(
         commandType: MAGE_WARS_COMMANDS.GUARD,
         payload: {},
         keyParts: ['mage'],
+        metadata: {
+            actor: 'mage',
+            remainingLife: Math.max(0, player.life - player.damage),
+        },
     }));
 
     const ownCreatures = Object.values(state.core.objects)
@@ -511,7 +680,16 @@ function appendMovementAndGuardActions(
                 commandType: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
                 payload: { objectId: object.id, toZoneId: zone.id },
                 keyParts: [object.id, zone.id],
-                metadata: { objectId: object.id, toZoneId: zone.id },
+                metadata: {
+                    objectId: object.id,
+                    toZoneId: zone.id,
+                    distanceToEnemyMageAfter: opponent
+                        ? getMageWarsZoneDistance(state.core, zone.id, opponent.mageZoneId) ?? 99
+                        : 99,
+                    distanceToEnemyMageBefore: opponent
+                        ? getMageWarsZoneDistance(state.core, object.zoneId, opponent.mageZoneId) ?? 99
+                        : 99,
+                },
             }));
         }
         appendIfValid(actions, state, playerId, createAction({
@@ -520,7 +698,10 @@ function appendMovementAndGuardActions(
             commandType: MAGE_WARS_COMMANDS.GUARD,
             payload: { objectId: object.id },
             keyParts: [object.id],
-            metadata: { objectId: object.id },
+            metadata: {
+                objectId: object.id,
+                objectValue: getMageWarsObjectValue(state.core, object),
+            },
         }));
     }
 }
@@ -567,21 +748,288 @@ export function buildMageWarsAiLegalActions(args: {
     ];
 }
 
-const baselineLocalPolicy: LocalAiPolicy = {
-    id: 'baseline',
-    decide(context: AiDecisionContext) {
-        const ranked = [...context.legalActions].sort((left, right) => (
-            (ACTION_PRIORITY[left.kind] ?? 1000) - (ACTION_PRIORITY[right.kind] ?? 1000)
-            || left.actionId.localeCompare(right.actionId)
-        ));
-        return ranked[0] ? { actionId: ranked[0].actionId } : null;
+const mageWarsActionKindScorer: LocalAiActionScorer = {
+    id: 'action-kind',
+    score(_context, action) {
+        switch (action.kind) {
+            case 'interaction-choice':
+            case 'interaction-confirm':
+            case 'interaction-skip':
+                return 1000;
+            case 'object-attack':
+            case 'attack':
+                return 52;
+            case 'cast-spell':
+            case 'cast-object-spell':
+                return 46;
+            case 'plan-object-spell':
+                return 20;
+            case 'plan-spells':
+                return 16;
+            case 'move-object':
+            case 'move-mage':
+                return 22;
+            case 'guard-object':
+            case 'guard':
+                return 18;
+            case 'advance-phase':
+                return -20;
+            default:
+                return 0;
+        }
     },
 };
+
+const mageWarsTargetValueScorer: LocalAiActionScorer = {
+    id: 'target-value',
+    score(_context, action) {
+        const targetValue = typeof action.metadata?.targetValue === 'number'
+            ? action.metadata.targetValue
+            : 0;
+        const lethalBonus = action.metadata?.lethalLikely === true ? 90 : 0;
+        const expectedDamage = typeof action.metadata?.expectedDamage === 'number'
+            ? action.metadata.expectedDamage
+            : 0;
+        const targetLife = typeof action.metadata?.targetLife === 'number'
+            ? action.metadata.targetLife
+            : 0;
+        const damageCoverage = expectedDamage > 0
+            ? Math.min(1, expectedDamage / Math.max(1, targetLife))
+            : 0;
+        if (action.kind === 'object-attack' || action.kind === 'attack') {
+            return {
+                score: targetValue * 0.22 * damageCoverage + expectedDamage * 4 + lethalBonus,
+                reason: action.metadata?.lethalLikely === true
+                    ? '本次攻击有机会直接击杀关键目标'
+                    : expectedDamage > 0
+                        ? '优先攻击价值更高、能产生实际伤害的目标'
+                        : '目标护甲过高，本次攻击几乎不能造成伤害',
+            };
+        }
+        if (action.kind === 'cast-spell' || action.kind === 'cast-object-spell') {
+            if (action.metadata?.isAttackSpell !== true) return null;
+            return {
+                score: targetValue * 0.16 + lethalBonus,
+                reason: lethalBonus > 0 ? '攻击法术有明确击杀窗口' : '攻击法术有明确敌方目标',
+            };
+        }
+        return null;
+    },
+};
+
+const mageWarsSpellIntentScorer: LocalAiActionScorer = {
+    id: 'spell-intent',
+    score(context, action) {
+        const state = context.visibleState as MageWarsState;
+        const player = state.core.players[context.playerId];
+        if (!player) return null;
+
+        if (action.kind === 'plan-object-spell') {
+            const spellCardId = typeof action.metadata?.spellCardId === 'number'
+                ? action.metadata.spellCardId
+                : null;
+            if (spellCardId === null) return null;
+            return {
+                score: getMageWarsSpellPlanningValue(spellCardId, state.core, context.playerId) * 0.7,
+                reason: '优先让施法来源准备本回合更能兑现的法术',
+            };
+        }
+
+        if (action.kind !== 'cast-spell' && action.kind !== 'cast-object-spell') return null;
+        let score = 0;
+        const reasons: string[] = [];
+        if (action.metadata?.isSummonSpell === true) {
+            score += 44;
+            reasons.push('召唤能增加场面实体');
+        }
+        if (action.metadata?.isHealingSpell === true) {
+            const damageRatio = player.life > 0 ? player.damage / player.life : 0;
+            score += damageRatio > 0.3 ? 72 : 18;
+            reasons.push(damageRatio > 0.3 ? '法师已受伤，治疗能降低失败风险' : '保留治疗作为可兑现的生命资源');
+        }
+        if (action.metadata?.isConjurationSpell === true) {
+            score += 26;
+            reasons.push('持续区域或场面效果有长期价值');
+        }
+        if (action.metadata?.targetPlayerId === context.playerId && action.metadata?.isHealingSpell === true) {
+            score += 28;
+        }
+        if (action.metadata?.targetOwnerId && action.metadata.targetOwnerId !== context.playerId) {
+            score += 18;
+        }
+        return score === 0 ? null : { score, reason: reasons.join('，') };
+    },
+};
+
+const mageWarsSafetyScorer: LocalAiActionScorer = {
+    id: 'mage-safety',
+    score(context, action) {
+        const state = context.visibleState as MageWarsState;
+        const player = state.core.players[context.playerId];
+        if (!player) return null;
+        const remainingLife = Math.max(0, player.life - player.damage);
+        const dangerRatio = player.life > 0 ? remainingLife / player.life : 0;
+        if (dangerRatio > 0.38) return null;
+
+        if (action.kind === 'guard') {
+            return {
+                score: 82,
+                reason: '法师生命过低，先守卫降低被击杀风险',
+            };
+        }
+        if (
+            (action.kind === 'cast-spell' || action.kind === 'cast-object-spell')
+            && action.metadata?.isHealingSpell === true
+        ) {
+            return {
+                score: 110,
+                reason: '法师生命过低，优先兑现治疗',
+            };
+        }
+        if (action.kind === 'object-attack' || action.kind === 'attack') {
+            const targetValue = action.metadata?.targetValue;
+            const expectedDamage = action.metadata?.expectedDamage;
+            return typeof targetValue === 'number'
+                && targetValue >= 300
+                && typeof expectedDamage === 'number'
+                && expectedDamage > 0
+                ? { score: 72, reason: '高压下优先处理能直接威胁法师的目标' }
+                : null;
+        }
+        if (action.kind === 'move-mage' || action.kind === 'move-object') {
+            const before = typeof action.metadata?.distanceToEnemyMageBefore === 'number'
+                ? action.metadata.distanceToEnemyMageBefore
+                : 0;
+            const after = typeof action.metadata?.distanceToEnemyMageAfter === 'number'
+                ? action.metadata.distanceToEnemyMageAfter
+                : before;
+            return after > before
+                ? { score: (after - before) * 18, reason: '法师承压时优先拉开与敌方法师的距离' }
+                : null;
+        }
+        return null;
+    },
+};
+
+const mageWarsPositionScorer: LocalAiActionScorer = {
+    id: 'position',
+    score(_context, action) {
+        if (action.kind !== 'move-mage' && action.kind !== 'move-object') return null;
+        const before = typeof action.metadata?.distanceToEnemyMageBefore === 'number'
+            ? action.metadata.distanceToEnemyMageBefore
+            : 0;
+        const after = typeof action.metadata?.distanceToEnemyMageAfter === 'number'
+            ? action.metadata.distanceToEnemyMageAfter
+            : before;
+        const delta = before - after;
+        return delta === 0
+            ? { score: -12, reason: '移动没有改善接敌距离' }
+            : {
+                score: delta * 18,
+                reason: delta > 0 ? '移动后更接近敌方法师，增加后续攻击机会' : '移动后远离敌方法师，暂时降低前压价值',
+            };
+    },
+};
+
+const mageWarsResourceScorer: LocalAiActionScorer = {
+    id: 'resource',
+    score(context, action) {
+        const state = context.visibleState as MageWarsState;
+        const player = state.core.players[context.playerId];
+        if (!player || (action.kind !== 'cast-spell' && action.kind !== 'cast-object-spell')) return null;
+        const cost = typeof action.metadata?.spellManaCost === 'number'
+            ? action.metadata.spellManaCost
+            : 0;
+        const remainingMana = player.mana - cost;
+        return {
+            score: remainingMana < 0 ? -120 : -cost * 1.4,
+            reason: remainingMana < 0 ? '施法会耗尽不可用的法力资源' : `施法成本 ${cost} 点法力`,
+        };
+    },
+};
+
+const mageWarsPlanningScorer: LocalAiActionScorer = {
+    id: 'planning-value',
+    score(_context, action) {
+        if (action.kind !== 'plan-spells') return null;
+        const value = typeof action.metadata?.planningValueTotal === 'number'
+            ? action.metadata.planningValueTotal
+            : 0;
+        return {
+            score: value * 1.6,
+            reason: value > 0 ? '准备能覆盖召唤、攻击和保命的法术组合' : '不准备法术只作为最后退路',
+        };
+    },
+};
+
+const mageWarsPhaseTempoScorer: LocalAiActionScorer = {
+    id: 'phase-tempo',
+    score(context, action) {
+        if (action.kind !== 'advance-phase') return null;
+        const hasOtherPlayableAction = context.legalActions.some((candidate) => (
+            candidate.actionId !== action.actionId
+            && !candidate.kind.startsWith('interaction-')
+            && candidate.kind !== 'advance-phase'
+        ));
+        return {
+            score: hasOtherPlayableAction ? -100 : 45,
+            reason: hasOtherPlayableAction
+                ? '本阶段还有可以兑现的动作，不应直接推进'
+                : '本阶段没有更好的主动动作，可以推进流程',
+        };
+    },
+};
+
+const mageWarsNoBenefitScorer = createAiActionOutcomeNoBenefitScorer({
+    id: 'no-benefit-action',
+    actionKinds: ['cast-spell', 'cast-object-spell', 'attack', 'object-attack'],
+    projectOutcome: projectMageWarsActionOutcome,
+    noBenefitScore: -100,
+    treatNonPositiveUtilityAsNoBenefit: true,
+    getReason: () => '动作预演没有改善局面，避免为了消耗行动而强行执行',
+});
+
+const baselineLocalPolicy = createLookaheadLocalAiPolicy({
+    id: 'baseline',
+    scorers: [
+        mageWarsActionKindScorer,
+        mageWarsTargetValueScorer,
+        mageWarsSpellIntentScorer,
+        mageWarsSafetyScorer,
+        mageWarsPositionScorer,
+        mageWarsResourceScorer,
+        mageWarsPlanningScorer,
+        mageWarsPhaseTempoScorer,
+        mageWarsNoBenefitScorer,
+    ],
+    maxReasonCount: 3,
+    relativeUtility: {
+        enabled: true,
+        weight: 10,
+        minimumUtility: 0.05,
+    },
+    candidateLoop: {
+        enabled: true,
+        maxIterations: 2,
+        batchSize: 6,
+        stopOnUtility: 0.9,
+    },
+    projectAction({ context, action, difficulty, remainingBudgetMs }) {
+        return projectMageWarsActionDelta({
+            context,
+            action,
+            difficulty,
+            remainingBudgetMs,
+            buildLegalActions: buildMageWarsAiLegalActions,
+        });
+    },
+});
 
 export const mageWarsAiRuntime: GameAiRuntime = {
     gameId: 'mage-wars',
     buildLegalActions: buildMageWarsAiLegalActions,
     defaultMinimumActionDelayMs: 900,
+    projectActionOutcome: projectMageWarsActionOutcome,
     localPolicies: {
         baseline: baselineLocalPolicy,
     },

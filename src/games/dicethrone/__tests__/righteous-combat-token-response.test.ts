@@ -60,10 +60,11 @@ describe('正义战法奖励骰时机', () => {
                 cmd('SKIP_BONUS_DICE_REROLL', '0'),  // 确认当前奖励骰结果 → defensiveRoll
                 cmd('ROLL_DICE', '1'),               // 防御方投掷防御骰
                 cmd('CONFIRM_ROLL', '1'),             // 确认防御骰面
+                cmd('RESPONSE_PASS', '0'),            // 防御骰确认后的攻击方响应窗口让过
                 cmd('ADVANCE_PHASE', '1'),           // defensiveRoll exit → resolveAttack
                 // damage(5) → 防御方有守护 Token → TOKEN_RESPONSE_REQUESTED → halt
                 cmd('SKIP_TOKEN_RESPONSE', '1'),     // 防御方跳过守护 Token
-                // autoContinue → pendingAttack=null → main2
+                cmd('RESPONSE_PASS', '0'),            // 攻击结算后的响应窗口让过 → main2
             ],
             expect: {
                 turnPhase: 'main2',
@@ -130,7 +131,9 @@ describe('正义战法奖励骰时机', () => {
                 cmd('SKIP_BONUS_DICE_REROLL', '0'),  // 确认当前奖励骰结果 → defensiveRoll
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
+                cmd('RESPONSE_PASS', '0'),            // 防御骰确认后的攻击方响应窗口让过
                 cmd('ADVANCE_PHASE', '1'),           // defensiveRoll exit → resolveAttack
+                cmd('RESPONSE_PASS', '0'),            // 攻击结算后的响应窗口让过 → main2
             ],
             expect: {
                 turnPhase: 'main2',

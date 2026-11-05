@@ -81,12 +81,16 @@ import type {
     DuelEndedEvent,
     TitanOngoingSuppressedEvent,
     CardBuriedEvent,
+    MinionReturnedEvent,
+    BuriedCardReturnedToHandEvent,
+    BaseAbilitySuppressedEvent,
+    PendingAfterScoringSpecial,
     MinionOnBase,
     MonsterOnBase,
     CardType,
     CardInstance,
     BaseInPlay,
-    BaseOngoingAction,
+    OngoingActionOnBase,
     AttachedActionOnMinion,
     ActionCardDef,
     FusionCardDef,
@@ -139,6 +143,7 @@ import {
     getRemainingBaseLimitedMinionQuotaRestrictions,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
+    findSpecificExtraActionPlay,
     findSpecificExtraMinionPlay,
     getBestMatchingGlobalPowerLimitedQuota,
     getRemainingBaseLimitedPowerLimitedMinionQuotas,
@@ -368,7 +373,7 @@ function allocateMunchkinTreasureUids(
     };
 }
 
-function getMunchkinTreasureCardType(defId: string): CardType {
+function getMunchkinTreasureCardType(defId: string): 'minion' | 'action' {
     const def = getCardDef(defId);
     if (!def || (def.type !== 'minion' && def.type !== 'action')) {
         throw new Error(`unknown Munchkin treasure card: ${defId}`);
@@ -836,13 +841,13 @@ export function reduceBaseReplacedEvent(state: SmashUpCore, event: BaseReplacedE
                     powerCounters: 0,
                     talentUsed: false,
                     metadata: undefined,
-                    location: { zone: 'setaside' },
+                    location: { zone: 'setaside' as const },
                 };
             })
             : state.titans;
         const cleanedTitanSuppressed = removedTitanUids.size > 0
             ? (state.titanOngoingSuppressedUntilTurnEnd ?? []).filter(uid => !removedTitanUids.has(uid))
-            : state.titanOngoingSuppressedUntilTurnEnd;
+            : [];
         const monsterSetup = dealMunchkinMonstersToBases(state, updatedBases, state.monsterDeck, state.nextUid);
         return {
             ...state,
@@ -1210,6 +1215,7 @@ export function reduceTurnStartedEvent(
                 baseLimitedMinionQuotaRestrictions: undefined,
                 baseLimitedSameNameRequired: undefined,
                 specificExtraMinionPlays: undefined,
+                specificExtraActionPlays: undefined,
                 extraMinionPowerCaps: undefined,
                 extraMinionPowerMax: undefined,
                 sameNameMinionRemaining: undefined,
@@ -1957,6 +1963,11 @@ export function reduceTalentUsedEvent(
 
     const newBases = state.bases.map(base => {
         if (ongoingCardUid) {
+            const hasTalentUsedLifecycle = (defId: string): boolean => {
+                const cardDef = getCardDef(defId);
+                return cardDef?.type === 'action'
+                    && cardDef.lifecycle?.expires.condition?.talentUsed === true;
+            };
             return {
                 ...base,
                 ongoingActions: base.ongoingActions.map(o =>
@@ -1964,11 +1975,11 @@ export function reduceTalentUsedEvent(
                         ? {
                             ...o,
                             talentUsed: true,
-                            metadata: (consumedSeastarExtra || getCardDef(o.defId)?.type === 'action' && getCardDef(o.defId)?.lifecycle?.expires.condition?.talentUsed === true)
+                            metadata: (consumedSeastarExtra || hasTalentUsedLifecycle(o.defId))
                                 ? {
                                     ...(o.metadata ?? {}),
                                     ...(consumedSeastarExtra ? { mythicHorsesSeastarExtraTalentConsumed: true } : {}),
-                                    ...(getCardDef(o.defId)?.type === 'action' && getCardDef(o.defId)?.lifecycle?.expires.condition?.talentUsed === true ? { lifecycleArmed: true } : {}),
+                                    ...(hasTalentUsedLifecycle(o.defId) ? { lifecycleArmed: true } : {}),
                                 }
                                 : o.metadata,
                         }
@@ -1981,11 +1992,11 @@ export function reduceTalentUsedEvent(
                             ? {
                                 ...a,
                                 talentUsed: true,
-                            metadata: (consumedSeastarExtra || getCardDef(a.defId)?.type === 'action' && getCardDef(a.defId)?.lifecycle?.expires.condition?.talentUsed === true)
+                            metadata: (consumedSeastarExtra || hasTalentUsedLifecycle(a.defId))
                                 ? {
                                     ...(a.metadata ?? {}),
                                     ...(consumedSeastarExtra ? { mythicHorsesSeastarExtraTalentConsumed: true } : {}),
-                                    ...(getCardDef(a.defId)?.type === 'action' && getCardDef(a.defId)?.lifecycle?.expires.condition?.talentUsed === true ? { lifecycleArmed: true } : {}),
+                                    ...(hasTalentUsedLifecycle(a.defId) ? { lifecycleArmed: true } : {}),
                                 }
                                 : a.metadata,
                             }
@@ -2082,6 +2093,12 @@ export function reduceActionPlayedEvent(
     const isOngoing = def && def.type === 'action' && (def as ActionCardDef).subtype === 'ongoing';
     const isSpecial = def && def.type === 'action' && (def as ActionCardDef).subtype === 'special';
     const wasExtraActionPlay = isExtraAction === true || player.actionsPlayed >= 1;
+    const specificExtraActionPlay = findSpecificExtraActionPlay(player, {
+        cardUid,
+        defId,
+        targetBaseIndex: event.payload.targetBaseIndex,
+        targetMinionUid: event.payload.targetMinionUid,
+    });
 
     const newHand = (fromBuried || fromDiscard || fromStored) ? player.hand : player.hand.filter(c => c.uid !== cardUid);
     const newStoredCards = fromStored
@@ -2111,7 +2128,7 @@ export function reduceActionPlayedEvent(
     const newUsedAbilities = fromDiscard && discardPlaySourceId
         ? Array.from(new Set([...(player.usedDiscardPlayAbilities ?? []), discardPlaySourceId]))
         : player.usedDiscardPlayAbilities;
-    const nextPlayers = {
+    const nextPlayers: Record<string, PlayerState> = {
         ...state.players,
         [playerId]: {
             ...player,
@@ -2127,6 +2144,9 @@ export function reduceActionPlayedEvent(
             extraCardsPlayedThisTurn: wasExtraActionPlay
                 ? (player.extraCardsPlayedThisTurn ?? 0) + 1
                 : player.extraCardsPlayedThisTurn,
+            specificExtraActionPlays: specificExtraActionPlay
+                ? player.specificExtraActionPlays?.filter((_entry, index) => index !== specificExtraActionPlay.index)
+                : player.specificExtraActionPlays,
         },
     };
     if (resolvedOwnerId !== playerId) {
@@ -2190,9 +2210,9 @@ export function reduceMinionPlayedEvent(
     const newDiscard = allowImplicitSource ? removeCard(player.discard) : fromDiscard ? removeCard(player.discard) : player.discard;
     const newDeck = allowImplicitSource ? removeCard(player.deck) : (fromDeck && cardInDeck) ? removeCard(player.deck) : player.deck;
     const newStoredCards = allowImplicitSource
-        ? removeCard(player.storedCards ?? [])
+        ? (player.storedCards ?? []).filter(c => c.uid !== cardUid)
         : fromStored
-            ? removeCard(player.storedCards ?? [])
+            ? (player.storedCards ?? []).filter(c => c.uid !== cardUid)
             : player.storedCards;
     const minion: MinionOnBase = {
         uid: cardUid,
@@ -3706,16 +3726,49 @@ export function reduceLimitModifiedEvent(
         limitType,
         delta,
         restrictToBase,
+        restrictToMinionUid,
+        restrictToCardUid,
+        restrictToCardDefId,
         powerMax,
         sameNameOnly,
         sameNameDefId,
         specificCardUid,
         excludedMinionDefIds,
         playTiming,
+        destroyAttachedActionAtTurnEnd,
     } = event.payload;
     const player = state.players[playerId];
     if (playTiming === 'immediate') {
         return state;
+    }
+    if (limitType === 'action' && restrictToCardUid !== undefined) {
+        const existing = player.specificExtraActionPlays ?? [];
+        const nextSpecificExtraActionPlays = delta > 0
+            ? [
+                ...existing,
+                ...Array.from({ length: delta }, () => ({
+                    cardUid: restrictToCardUid,
+                    reason: event.payload.reason,
+                    ...(restrictToBase !== undefined ? { restrictToBase } : {}),
+                    ...(restrictToMinionUid !== undefined ? { restrictToMinionUid } : {}),
+                    ...(restrictToCardDefId !== undefined ? { restrictToCardDefId } : {}),
+                    ...(destroyAttachedActionAtTurnEnd ? { destroyAttachedActionAtTurnEnd: true } : {}),
+                })),
+            ]
+            : existing;
+        return {
+            ...state,
+            players: {
+                ...state.players,
+                [playerId]: {
+                    ...player,
+                    actionLimit: player.actionLimit + delta,
+                    specificExtraActionPlays: nextSpecificExtraActionPlays.length > 0
+                        ? nextSpecificExtraActionPlays
+                        : undefined,
+                },
+            },
+        };
     }
     if (limitType === 'minion') {
         if (specificCardUid !== undefined) {
@@ -4834,7 +4887,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         case SU_EVENTS.ONGOING_CARD_COUNTER_CHANGED: {
             const { cardUid, delta, metadataUpdate, replaceMode } = (event as OngoingCardCounterChangedEvent).payload;
             // 使用 cardUid 查找，不依赖 baseIndex（避免基地删除后索引错位）
-            const updateOngoing = (oa: BaseOngoingAction | AttachedActionOnMinion) => {
+            const updateOngoing = (oa: OngoingActionOnBase | AttachedActionOnMinion) => {
                     if (oa.uid !== cardUid) return oa;
                     const prev = ((oa.metadata?.powerCounters as number) ?? 0);
                     const nextPowerCounters = replaceMode

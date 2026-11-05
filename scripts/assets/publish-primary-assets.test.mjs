@@ -237,6 +237,65 @@ test('通过专用 HTTP 上传入口分块提交 staging tar 后再完成发布'
     }
 });
 
+test('上传入口返回 524 时自动降级为小分块单并发并重试', async () => {
+    let chunkRequests = 0;
+    let failedOnce = false;
+    let completed = false;
+    const server = createServer((req, res) => {
+        if (req.method === 'POST' && req.url?.startsWith('/asset-publish/complete/')) {
+            completed = true;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end('{"ok":true}');
+            return;
+        }
+        if (req.method !== 'POST' || !req.url?.startsWith('/asset-publish/chunks/')) {
+            res.writeHead(404);
+            res.end();
+            return;
+        }
+        const buffers = [];
+        req.on('data', (chunk) => buffers.push(chunk));
+        req.on('end', () => {
+            chunkRequests += 1;
+            if (!failedOnce) {
+                failedOnce = true;
+                res.writeHead(524);
+                res.end('upstream timeout');
+                return;
+            }
+            assert.ok(Buffer.concat(buffers).length > 0);
+            res.writeHead(204);
+            res.end();
+        });
+    });
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+    const address = server.address();
+    const staged = await stagePrimaryAssetUploads([
+        {
+            key: 'official/common/test/http-upload-retry.webp',
+            body: Buffer.alloc(300_000, 65),
+            size: 300_000,
+            contentType: 'image/webp',
+        },
+    ]);
+
+    try {
+        await publishStagedAssetsToUploadEndpoint({
+            stagingRoot: staged.stagingRoot,
+            uploadUrl: `http://127.0.0.1:${address.port}/asset-publish`,
+            token: 'asset-token',
+            chunkSizeBytes: 512 * 1024,
+            concurrency: 4,
+        });
+        assert.equal(failedOnce, true);
+        assert.ok(chunkRequests > 1);
+        assert.equal(completed, true);
+    } finally {
+        rmSync(staged.stagingRoot, { recursive: true, force: true });
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
 test('匿名 HTTP 上传模式不发送 Authorization 头', async () => {
     const receivedAuthorization = [];
     const server = createServer((req, res) => {

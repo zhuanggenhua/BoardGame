@@ -57,6 +57,10 @@ export interface GameEngineConfig<
     maxPlayers?: number;
     /** 是否禁用撤销 */
     disableUndo?: boolean;
+    /** 正式 setup 后是否运行系统级自动流程；仅适用于开局会落在无玩家决策自动阶段的游戏。 */
+    postSetupAutoFlow?: {
+        maxRounds?: number;
+    };
     /** 本地模式开局阶段由游戏声明是否需要代控某个 seat */
     resolveLocalPregameControlledPlayerId?: LocalPregameControlResolver;
     /** 本地热座运行中由游戏声明实际操作者；在线命令不会使用此解析。 */
@@ -68,11 +72,11 @@ export interface GameEngineConfig<
         setupData: unknown;
         setupPlayerIds: string[];
         aiSeatIds: string[];
-    }) => MatchState<unknown> | null | undefined;
+    }) => MatchState<TCore> | null | undefined;
     /** 本地测试壳的游戏专属 setup 命令构造；页面层只负责分发，不识别具体游戏命令。 */
     createLocalTestSetupCommands?: (args: {
         testConfig: Record<string, unknown>;
-        state: MatchState<unknown>;
+        state: MatchState<TCore>;
     }) => Array<Pick<Command, 'type' | 'payload' | 'playerId'>>;
     /** 在线 AI watchdog 的游戏级恢复策略 */
     onlineAiRecovery?: {
@@ -83,7 +87,7 @@ export interface GameEngineConfig<
         activeTurnLegalActionOnlyPhases?: string[];
         humanTurnLegalActionProbePhases?: string[];
         shouldProbeHumanTurnLegalActionOnlyCandidate?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
             currentPlayerId: string;
         }) => boolean | undefined;
@@ -91,24 +95,24 @@ export interface GameEngineConfig<
         /** 历史存档里残留的私有响应轮镜像；watchdog 恢复真实交互后可按 sourceId 清理，避免误走通用 RESPONSE_PASS。 */
         legacyResponseWindowMirrorSourceIds?: string[];
         allowForceCommandAfterLegalActionExhausted?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
             previousCandidate: ForceEndTurnStalledAiResolution;
             nextCandidate: ForceEndTurnStalledAiResolution;
         }) => boolean;
         resolveCurrentPlayerId?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
             fallbackPlayerId: string | null;
         }) => string | null | undefined;
         resolveManualSetupSelectionTakeoverPlayerId?: (args: {
-            sharedState: MatchState<unknown>;
+            sharedState: MatchState<TCore>;
             seatControllers: Record<string, unknown>;
             currentPlayerId: string | null;
             hasManualDispatch: boolean;
         }) => string | null | undefined;
         shouldReleaseManualSetupAttemptFromSharedState?: (args: {
-            sharedState: MatchState<unknown>;
+            sharedState: MatchState<TCore>;
             playerId: string;
             actionKind: string;
             selectionId: string;
@@ -137,26 +141,26 @@ export interface GameEngineConfig<
             command: AiCommandSpec | null;
         }) => string | null | undefined;
         buildPregameSelectionProgressSignature?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
             fallbackSignature: string;
         }) => string | undefined;
         buildInteractionRecoveryFingerprintHint?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             playerId: string;
             phase: string;
             interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
             fallbackFingerprintHint: string;
         }) => string | undefined;
         resolveForcedInteractionCommand?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             playerId: string;
             phase: string;
             interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
             fallbackCommand: { type: string; payload: unknown } | null;
         }) => { type: string; payload: unknown } | false | null | undefined;
         resolveSeatLegalOnlyRecovery?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
         }) => {
             playerId: string;
@@ -165,19 +169,19 @@ export interface GameEngineConfig<
             attemptSuffix?: string;
         } | null | undefined;
         resolveOfflineAdjudicationCommand?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             playerId: string;
             interaction: OfflineAdjudicationInteraction;
             fallbackCommandType: string | null;
         }) => string | false | null | undefined;
         shouldSuppressActiveTurnCandidate?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
             currentPlayerId: string;
             turnNumber: number | null;
         }) => boolean;
         shouldSuppressUnsatisfiableInteractionFeedback?: (args: {
-            state: MatchState<unknown>;
+            state: MatchState<TCore>;
             phase: string;
             playerId: string;
             reason: string;
@@ -191,4 +195,4 @@ export interface GameEngineConfig<
 }
 
 /** Type-erased engine config used by registries/providers that only pass configs through. */
-export type AnyGameEngineConfig = GameEngineConfig<unknown, Command, GameEvent>;
+export type AnyGameEngineConfig = GameEngineConfig<any, any, any>;

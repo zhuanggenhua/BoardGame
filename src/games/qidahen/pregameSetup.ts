@@ -11,7 +11,7 @@ import {
     QIDAHEN_IN_MATCH_SCENARIO_VOTE_FIELD,
     QIDAHEN_PLAYER_OPTIONS,
 } from './roomSetup';
-import { QIDAHEN_DEFAULT_TUTORIAL_ID } from './tutorial';
+import { isQidahenTutorialQaRuntime, QIDAHEN_DEFAULT_TUTORIAL_ID } from './tutorial';
 import { buildQidahenTutorialSetupData } from './tutorialSetup';
 
 const QIDAHEN_DEFAULT_LOCAL_PLAYERS = 3;
@@ -32,7 +32,10 @@ export function resolveQidahenLocalSetup({
     const effectiveTutorialId = tutorialMode
         ? (tutorialId ?? QIDAHEN_DEFAULT_TUTORIAL_ID)
         : tutorialId;
-    const tutorialSetupData = buildQidahenTutorialSetupData(effectiveTutorialId);
+    const tutorialSetupData = buildQidahenTutorialSetupData(
+        effectiveTutorialId,
+        tutorialMode && isQidahenTutorialQaRuntime(),
+    );
 
     if (tutorialSetupData) {
         return tutorialSetupData;

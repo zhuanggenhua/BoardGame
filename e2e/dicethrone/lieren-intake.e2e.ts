@@ -461,6 +461,52 @@ const injectUsableNyraBondHeal = async (matchId: string, page: Page): Promise<vo
     await injectMatchState(matchId, next as never, page);
 };
 
+const injectDownedNyraBondHeal = async (matchId: string, page: Page): Promise<void> => {
+    const current = await getMatchState(matchId, page) as JsonRecord;
+    const root = asRecord(current.G ?? current);
+    const core = asRecord(root.core);
+    const sys = asRecord(root.sys);
+    const players = asRecord(core.players);
+    const host = asRecord(players['0']);
+    const companion = asRecord(host.companion);
+    const next = structuredClone(current) as JsonRecord;
+    const nextRoot = asRecord(next.G ?? next);
+    const turnOrder = Array.isArray(sys.turnOrder)
+        ? sys.turnOrder
+        : Array.isArray(core.turnOrder)
+            ? core.turnOrder
+            : Object.keys(players);
+
+    nextRoot.core = {
+        ...core,
+        phase: 'main1',
+        activePlayerId: '0',
+        pendingAttack: undefined,
+        pendingDamage: undefined,
+        players: {
+            ...players,
+            '0': {
+                ...host,
+                resources: { ...asRecord(host.resources), [RESOURCE_IDS.HP]: 50 },
+                companion: { ...companion, hp: 0, maxHp: 7, active: false },
+                tokens: { ...asRecord(host.tokens), [TOKEN_IDS.NYRAS_BOND]: 1 },
+            },
+        },
+    };
+    nextRoot.sys = {
+        ...sys,
+        phase: 'main1',
+        turnOrder,
+        currentPlayerIndex: Math.max(0, turnOrder.indexOf('0')),
+        interaction: {
+            ...asRecord(sys.interaction),
+            current: null,
+            queue: [],
+        },
+    };
+    await injectMatchState(matchId, next as never, page);
+};
+
 const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<void> => {
     const current = await getMatchState(matchId, page) as JsonRecord;
     const root = asRecord(current.G ?? current);
@@ -548,6 +594,91 @@ const injectNyraDamageResponse = async (matchId: string, page: Page): Promise<vo
         },
     };
     await injectMatchState(matchId, next as never, page);
+};
+
+const injectNyraDamageResponseFromCurrentCompanion = async (matchId: string, page: Page): Promise<string[]> => {
+    const current = await getMatchState(matchId, page) as JsonRecord;
+    const root = asRecord(current.G ?? current);
+    const core = asRecord(root.core);
+    const sys = asRecord(root.sys);
+    const players = asRecord(core.players);
+    const next = structuredClone(current) as JsonRecord;
+    const nextRoot = asRecord(next.G ?? next);
+    const pendingDamage: PendingDamage = {
+        id: 'e2e-nyra-downed-after-heal-damage',
+        sourcePlayerId: '1',
+        targetPlayerId: '0',
+        originalDamage: NYRA_E2E_DAMAGE,
+        currentDamage: NYRA_E2E_DAMAGE,
+        sourceAbilityId: 'e2e-nyra-hit-after-downed-heal',
+        responseType: 'beforeDamageReceived',
+        responderId: '0',
+        isFullyEvaded: false,
+    };
+    const nextCore = {
+        ...core,
+        pendingAttack: {
+            attackerId: '1',
+            defenderId: '0',
+            sourceAbilityId: 'e2e-nyra-hit-after-downed-heal',
+            isDefendable: true,
+            damage: NYRA_E2E_DAMAGE,
+            bonusDamage: 0,
+            attackModifierBonusDamage: 0,
+            damageResolved: false,
+            resolvedDamage: 0,
+            preDefenseResolved: true,
+            offensiveRollEndTokenResolved: true,
+        },
+        pendingDamage,
+    } as unknown as DiceThroneCore;
+    const candidates = buildDiceThroneTokenResponseChoiceCandidates(nextCore, pendingDamage);
+    const actionableCandidates = candidates.filter(candidate => candidate.id !== 'skip');
+    const resolutionFrameId = `dicethrone:token-response-frame:${pendingDamage.id}`;
+    const choiceRequestContract = {
+        requestId: `dicethrone:token-response:${pendingDamage.id}:${pendingDamage.responseType}:${pendingDamage.responderId}`,
+        playerId: pendingDamage.responderId,
+        kind: 'choose-option',
+        sourceId: 'dicethrone_token_response',
+        candidates,
+        selection: { min: 1, max: 1 },
+        resolution: { type: 'candidate-commands' },
+        metadata: {
+            pendingDamageId: pendingDamage.id,
+            resolutionFrameId,
+            sourcePlayerId: pendingDamage.sourcePlayerId,
+            targetPlayerId: pendingDamage.targetPlayerId,
+            responderId: pendingDamage.responderId,
+            responseType: pendingDamage.responseType,
+            sourceAbilityId: pendingDamage.sourceAbilityId,
+            originalDamage: pendingDamage.originalDamage,
+            currentDamage: pendingDamage.currentDamage,
+            priority: 70,
+        },
+    };
+
+    nextRoot.core = {
+        ...nextCore,
+        players,
+    };
+    nextRoot.sys = {
+        ...sys,
+        interaction: {
+            ...asRecord(sys.interaction),
+            current: actionableCandidates.length > 0
+                ? {
+                    id: `dt-token-response-${pendingDamage.id}`,
+                    kind: 'dt:token-response',
+                    playerId: pendingDamage.responderId,
+                    resolutionFrameId,
+                    data: { choiceRequestContract },
+                }
+                : null,
+            queue: [],
+        },
+    };
+    await injectMatchState(matchId, next as never, page);
+    return actionableCandidates.map(candidate => candidate.id);
 };
 
 test.describe('DiceThrone 女猎手真实入口', () => {
@@ -681,6 +812,65 @@ test.describe('DiceThrone 女猎手真实入口', () => {
             await expect(match.guestPage.getByTestId('player-board-surface'))
                 .toHaveAttribute('data-character-id', 'monk', { timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '08-牌桌-对手视角已进入');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('妮拉倒下后使用妮拉之系治疗到 2 血仍不能承伤', async ({ browser }, testInfo) => {
+        test.setTimeout(300000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const baseURL = testInfo.project.use.baseURL as string | undefined ?? getGameServerBaseURL();
+        const match = await setupLierenMatch(browser, baseURL);
+
+        try {
+            await readyAndStartGame(match.hostPage, match.guestPage);
+            await waitForGameBoard(match.hostPage);
+            await waitForGameBoard(match.guestPage);
+            await waitForDiceThroneHarness(match.hostPage);
+            await waitForDiceThroneHarness(match.guestPage);
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeDebugPanelIfOpen(match.guestPage);
+            await match.hostPage.setViewportSize({ width: 1280, height: 720 });
+            await match.guestPage.setViewportSize({ width: 1280, height: 720 });
+
+            await injectDownedNyraBondHeal(match.matchId, match.hostPage);
+            const nyraPanel = match.hostPage.getByTestId('nyra-companion-panel');
+            const nyraBondToken = match.hostPage.getByTestId(`dt-player-0-token-${TOKEN_IDS.NYRAS_BOND}`);
+            await expect(nyraPanel).toBeVisible({ timeout: 10000 });
+            await expect(nyraPanel).toContainText('0/7', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('nyra-bond-state')).toContainText('1/1', { timeout: 10000 });
+            await expect(nyraBondToken).toHaveAttribute('data-token-clickable', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-妮拉倒下且妮拉之系可用于治疗');
+
+            await match.hostPage.getByTestId(`dt-player-0-token-${TOKEN_IDS.NYRAS_BOND}-hit-target`).click();
+            await expectNyraHealthEvent(match.matchId, match.hostPage, 2);
+
+            await expect.poll(async () => {
+                const host = await getHostPlayer(match.matchId, match.hostPage);
+                const companion = asRecord(host.companion);
+                return {
+                    hp: companion.hp ?? null,
+                    active: companion.active ?? null,
+                    bond: asRecord(host.tokens)[TOKEN_IDS.NYRAS_BOND] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({
+                hp: 2,
+                active: false,
+                bond: 0,
+            });
+            await expect(nyraPanel).toContainText('2/7', { timeout: 10000 });
+            await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0);
+            await expect(match.hostPage.getByTestId('nyra-damage-response-dock')).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-妮拉倒下后回血到2仍未复活');
+
+            const candidateIds = await injectNyraDamageResponseFromCurrentCompanion(match.matchId, match.hostPage);
+            expect(candidateIds).toEqual([]);
+            await expect(match.hostPage.getByTestId('token-response-modal')).toHaveCount(0);
+            await expect(match.hostPage.getByRole('slider', { name: NYRA_DAMAGE_SLIDER_NAME })).toHaveCount(0);
+            await expect(match.hostPage.getByTestId('nyra-damage-response-dock')).toHaveCount(0);
+            await expect(nyraPanel).toContainText('2/7', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-妮拉2血倒下态再次受伤不出现承伤分配');
         } finally {
             await cleanupDTMatch(match);
         }

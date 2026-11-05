@@ -539,6 +539,10 @@ export function buildPendingPostScoringActionEvents(
             continue;
         }
 
+        const sourcePlayerId = action.sourcePlayerId ?? action.sourceControllerId;
+        if (!sourcePlayerId) {
+            throw new Error(`计分后移动动作缺少来源玩家：${action.reason}`);
+        }
         events.push(...buildValidatedMoveEvents(state as MatchState<SmashUpCore>, {
             minionUid: action.minionUid,
             minionDefId: action.minionDefId,
@@ -547,7 +551,7 @@ export function buildPendingPostScoringActionEvents(
             toBaseDefId: action.targetBaseDefId,
             reason: action.reason,
             now: timestamp,
-            sourcePlayerId: action.sourcePlayerId,
+            sourcePlayerId,
             sourceDefId: action.sourceDefId,
             sourceControllerId: action.sourceControllerId,
             sourceBaseIndex: action.sourceBaseIndex,

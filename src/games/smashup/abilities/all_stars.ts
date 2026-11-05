@@ -86,57 +86,81 @@ function runtimeToAbilityResult(result: RuntimeResult): AbilityResult {
     };
 }
 
-function withEnsignRedirectSkip(event: SmashUpEvent): SmashUpEvent {
-    return {
-        ...event,
-        payload: {
-            ...((event as { payload?: Record<string, unknown> }).payload ?? {}),
-            skipEnsignRedirect: true,
-        },
-    } as SmashUpEvent;
+type EnsignRedirectAffectEvent = Extract<SmashUpEvent, {
+    type:
+        | typeof SU_EVENTS.MINION_DESTROYED
+        | typeof SU_EVENTS.MINION_RETURNED
+        | typeof SU_EVENTS.MINION_MOVED
+        | typeof SU_EVENTS.POWER_COUNTER_ADDED
+        | typeof SU_EVENTS.POWER_COUNTER_REMOVED
+        | typeof SU_EVENTS.TEMP_POWER_ADDED
+        | typeof SU_EVENTS.PERMANENT_POWER_ADDED
+        | typeof SU_EVENTS.ONGOING_ATTACHED;
+}>;
+
+function withEnsignRedirectSkip(event: EnsignRedirectAffectEvent): EnsignRedirectAffectEvent {
+    switch (event.type) {
+        case SU_EVENTS.MINION_DESTROYED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.MINION_RETURNED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.MINION_MOVED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.POWER_COUNTER_ADDED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.POWER_COUNTER_REMOVED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.TEMP_POWER_ADDED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.PERMANENT_POWER_ADDED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+        case SU_EVENTS.ONGOING_ATTACHED:
+            return { ...event, payload: { ...event.payload, skipEnsignRedirect: true } };
+    }
 }
 
 function buildEnsignRedirectedAffectEvent(
-    event: SmashUpEvent,
+    event: EnsignRedirectAffectEvent,
     ensign: MinionOnBase,
     ensignBaseIndex: number,
 ): SmashUpEvent | undefined {
-    const payload = ((event as { payload?: Record<string, unknown> }).payload ?? {}) as Record<string, unknown>;
-    const basePayload = { ...payload, skipEnsignRedirect: true };
     switch (event.type) {
         case SU_EVENTS.MINION_DESTROYED:
             return {
                 ...event,
                 payload: {
-                    ...basePayload,
+                    ...event.payload,
+                    skipEnsignRedirect: true,
                     minionUid: ensign.uid,
                     minionDefId: ensign.defId,
                     fromBaseIndex: ensignBaseIndex,
                     ownerId: ensign.owner,
                     controllerId: ensign.controller,
                 },
-            } as SmashUpEvent;
+            };
         case SU_EVENTS.MINION_RETURNED:
             return {
                 ...event,
                 payload: {
-                    ...basePayload,
+                    ...event.payload,
+                    skipEnsignRedirect: true,
                     minionUid: ensign.uid,
                     minionDefId: ensign.defId,
                     fromBaseIndex: ensignBaseIndex,
                     toPlayerId: ensign.owner,
                 },
-            } as SmashUpEvent;
+            };
         case SU_EVENTS.MINION_MOVED:
             return {
                 ...event,
                 payload: {
-                    ...basePayload,
+                    ...event.payload,
+                    skipEnsignRedirect: true,
                     minionUid: ensign.uid,
                     minionDefId: ensign.defId,
                     fromBaseIndex: ensignBaseIndex,
                 },
-            } as SmashUpEvent;
+            };
         case SU_EVENTS.POWER_COUNTER_ADDED:
         case SU_EVENTS.POWER_COUNTER_REMOVED:
         case SU_EVENTS.TEMP_POWER_ADDED:
@@ -144,34 +168,32 @@ function buildEnsignRedirectedAffectEvent(
             return {
                 ...event,
                 payload: {
-                    ...basePayload,
+                    ...event.payload,
+                    skipEnsignRedirect: true,
                     minionUid: ensign.uid,
                     baseIndex: ensignBaseIndex,
                 },
-            } as SmashUpEvent;
+            };
         case SU_EVENTS.ONGOING_ATTACHED:
-            if (payload.targetType !== 'minion') return undefined;
+            if (event.payload.targetType !== 'minion') return undefined;
             return {
                 ...event,
                 payload: {
-                    ...basePayload,
+                    ...event.payload,
+                    skipEnsignRedirect: true,
                     targetBaseIndex: ensignBaseIndex,
                     targetMinionUid: ensign.uid,
                 },
-            } as SmashUpEvent;
+            };
         default:
             return undefined;
     }
 }
 
-const ensignRedirectPrompt = createPromptProgram<
-    PromptContext<{
+const ensignRedirectPrompt = createPromptProgram<PromptContext<{
         ensignUid: string;
-        originalEvent: SmashUpEvent;
-    }>,
-    SmashUpCore,
-    SmashUpEvent
->({
+        originalEvent: EnsignRedirectAffectEvent;
+    }>>({
     sourceId: 'all_stars_ensign_redirect',
     interactionSourceIds: ['all_stars_ensign'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -216,7 +238,7 @@ function isActionAffectSource(ctx: TriggerContext): boolean {
     return !!sourceDefId && getCardDef(sourceDefId)?.type === 'action';
 }
 
-function canBuildEnsignRedirect(event: SmashUpEvent | undefined): boolean {
+function canBuildEnsignRedirect(event: SmashUpEvent | undefined): event is EnsignRedirectAffectEvent {
     if (!event) return false;
     return event.type === SU_EVENTS.MINION_DESTROYED
         || event.type === SU_EVENTS.MINION_RETURNED
@@ -843,12 +865,12 @@ function servitorTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function lockerRoom(ctx: BaseAbilityContext) {
-    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random ?? { random: Math.random, shuffle: <T>(items: T[]) => items }, ctx.now) };
+    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
 }
 
 function stadium(ctx: BaseAbilityContext) {
     const controller = ctx.controllerId ?? ctx.playerId;
-    return { events: buildStandardDrawEvents(ctx.state, controller, 1, ctx.random ?? { random: Math.random, shuffle: <T>(items: T[]) => items }, ctx.now) };
+    return { events: buildStandardDrawEvents(ctx.state, controller, 1, ctx.random, ctx.now) };
 }
 
 

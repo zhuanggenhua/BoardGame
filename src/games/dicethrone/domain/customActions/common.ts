@@ -16,6 +16,7 @@ import { registerCustomActionHandler, resolveEffectsToEvents, type CustomActionC
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
 import {
+    areTeammates,
     getActiveDice,
     getAttackSnapshotDieIds,
     getPendingBonusSettlementDice,
@@ -93,9 +94,9 @@ export function resolveTargetOpponentDice(action: CustomActionContext['action'],
     if (action.target === 'opponent') return true;
     if (isDefenderSelectingAnyDiceDuringDefense(action, attackerId, state)) return true;
     if (action.target === 'select' && attackerId && state) {
-        // select 模式：判断 attackerId 是否是 rollerId
+        // select 模式以骰区所有者相对出牌者的阵营决定提示语义。
         const rollerId = getRollerId(state);
-        return attackerId !== rollerId; // 如果不是 rollerId，则是在修改对手骰子
+        return !areTeammates(state, attackerId, rollerId);
     }
     return false;
 }
@@ -121,7 +122,7 @@ function resolveAllowedDieIdsForDiceInteraction(
     if (state.pendingBonusDiceSettlement && isCurrentBonusRollSettlement(state)) {
         return getPendingBonusSettlementDice(state.pendingBonusDiceSettlement).map(die => die.index);
     }
-    const currentRollDice = getCurrentRollDice(state, state.turnPhase);
+    const currentRollDice = getCurrentRollDice(state, state.currentRollContext?.phase);
     const attackSnapshotDieIds = action && isDefenderSelectingAnyDiceDuringDefense(action, attackerId, state)
         ? getAttackSnapshotDieIds(state)
         : [];
@@ -142,7 +143,15 @@ function resolveAllowedDieIdsForDiceInteraction(
 // ============================================================================
 
 /** 将1颗骰子改至6 */
-function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext): DiceThroneEvent[] {
+function handleModifyDieTo6(ctx: CustomActionContext): DiceThroneEvent[] {
+    return buildModifyDieSetInteraction(ctx, { targetValue: 6 });
+}
+
+/** 固定结果改骰共用选择、提示、取消与自动提交链。 */
+export function buildModifyDieSetInteraction(
+    { attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext,
+    target: { targetValue: number; allowedValues?: never } | { targetValue?: never; allowedValues: [number, ...number[]] },
+): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -151,7 +160,7 @@ function handleModifyDieTo6({ attackerId, sourceAbilityId, timestamp, action, st
         titleKey: 'interaction.selectDieToModify',
         selectCount: 1,
         selected: [],
-        dieModifyConfig: { mode: 'set', targetValue: 6 },
+        dieModifyConfig: { mode: 'set', ...target },
         diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
         targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
@@ -192,8 +201,10 @@ function handleModifyDieCopy({ attackerId, sourceAbilityId, timestamp, action, s
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
 }
 
-/** 改变任意1颗骰子的数值 */
-function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext): DiceThroneEvent[] {
+/** 构建任意改一颗骰子的既有交互。 */
+export function buildModifyDieAny1Interaction(
+    { attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext,
+): DiceThroneEvent[] {
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
         playerId: attackerId,
@@ -208,6 +219,11 @@ function handleModifyDieAny1({ attackerId, sourceAbilityId, timestamp, action, s
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
+}
+
+/** 改变任意1颗骰子的数值 */
+function handleModifyDieAny1(ctx: CustomActionContext): DiceThroneEvent[] {
+    return buildModifyDieAny1Interaction(ctx);
 }
 
 /** 改变任意2颗骰子的数值 */
@@ -269,17 +285,21 @@ function handleRerollOpponentDie1({ attackerId, sourceAbilityId, timestamp, acti
 
 /** 重掷至多2颗骰子 */
 function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext): DiceThroneEvent[] {
+    const diceOwnerId = resolveDiceOwnerId(state, action, attackerId);
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
-        playerId: attackerId,
+        playerId: action?.target === 'select' ? (diceOwnerId ?? attackerId) : attackerId,
         sourceCardId: sourceAbilityId,
         type: 'selectDie',
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 2,
+        ...(action?.target === 'select' ? { minSelectCount: 0 } : {}),
         selected: [],
         allowRepeatedDieSelection: true,
-        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
-        targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        diceOwnerId,
+        // A select-target reroll is operated by the roller, so its controls and
+        // hint are expressed from that player's own dice perspective.
+        targetOpponentDice: action?.target === 'select' ? false : resolveTargetOpponentDice(action, attackerId, state),
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -287,16 +307,20 @@ function handleRerollDie2({ attackerId, sourceAbilityId, timestamp, action, stat
 
 /** 重掷至多5颗骰子（我又行了！/ 就这？） */
 function handleRerollDie5({ attackerId, sourceAbilityId, timestamp, action, state }: CustomActionContext): DiceThroneEvent[] {
+    const diceOwnerId = resolveDiceOwnerId(state, action, attackerId);
     const interaction: PendingInteraction = {
         id: `${sourceAbilityId}-${timestamp}`,
-        playerId: attackerId,
+        playerId: action?.target === 'select' ? (diceOwnerId ?? attackerId) : attackerId,
         sourceCardId: sourceAbilityId,
         type: 'selectDie',
         titleKey: 'interaction.selectDiceToReroll',
         selectCount: 5,
+        ...(action?.target === 'select' ? { minSelectCount: 0 } : {}),
         selected: [],
-        diceOwnerId: resolveDiceOwnerId(state, action, attackerId),
-        targetOpponentDice: resolveTargetOpponentDice(action, attackerId, state),
+        diceOwnerId,
+        // A select-target reroll is operated by the roller, so its controls and
+        // hint are expressed from that player's own dice perspective.
+        targetOpponentDice: action?.target === 'select' ? false : resolveTargetOpponentDice(action, attackerId, state),
         allowedDieIds: resolveAllowedDieIdsForDiceInteraction(state, action, attackerId),
     };
     return [{ type: 'INTERACTION_REQUESTED', payload: { interaction }, sourceCommandType: 'ABILITY_EFFECT', timestamp } as InteractionRequestedEvent];
@@ -398,6 +422,8 @@ function handleResolveCardEffectsOnSelectedOpponent({
         state,
         damageDealt: 0,
         timestamp,
+        damageOrigin: 'card',
+        isAttackModifierCard: card.isAttackModifier,
     }, { random }));
 
     return events;

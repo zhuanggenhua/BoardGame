@@ -279,7 +279,9 @@ describe('圣骑士 Custom Action 运行时行为断言', () => {
 
             const afterUseProtect = applyEvents(afterAttack, useProtectEvents, reduce);
             expect(afterUseProtect.players['0'].tokens[TOKEN_IDS.PROTECT]).toBe(1);
-            expect(afterUseProtect.pendingDamage?.currentDamage).toBe(5);
+            // 神圣防御 III 先用 2 点护盾把 10 点攻击压到 8 点，再由旧守护将剩余伤害减半到 4 点。
+            expect(afterAttack.pendingDamage?.currentDamage).toBe(8);
+            expect(afterUseProtect.pendingDamage?.currentDamage).toBe(4);
         });
     });
 

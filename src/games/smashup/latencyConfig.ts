@@ -79,15 +79,6 @@ export const smashUpLatencyConfig: LatencyOptimizationConfig = {
             // 这样可以确保 afterScoring 效果（如自助餐）立即生效
             'ADVANCE_PHASE': 'optimistic',
         },
-        // 事件级别乐观模式：基地计分相关事件立即应用，不等待服务器确认
-        // 这样可以确保 afterScoring 触发器产生的效果（如自助餐加指示物）立即显示
-        eventOptimistic: {
-            'su:power_counter_added': true,
-            'su:base_scored': true,
-            'su:base_cleared': true,
-            'su:base_replaced': true,
-            'su:special_after_scoring_consumed': true,
-        },
     },
     batching: {
         enabled: true,

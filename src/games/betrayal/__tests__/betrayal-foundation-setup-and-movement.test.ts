@@ -33,6 +33,7 @@ import {
     setTestRoomDiscoveryDeck,
     setNextDiscoverySymbolRoomsForAllFloors,
     setTestTraitTrack,
+    setDiscoveredTestRoom,
     acknowledgeAnyPendingCardResolutions,
     createOpenFrontierHauntTestCore,
     type BetrayalCore,
@@ -42,6 +43,20 @@ import {
     resolveBetrayalHauntRisk,
     resolveBetrayalOmenCount,
 } from '../hauntProgress';
+
+function findSearchableUpperRoomEntry(core: BetrayalCore) {
+    const discoveredVisualIds = new Set(
+        core.rooms
+            .filter((room) => room.state === 'discovered')
+            .map((room) => room.visualId),
+    );
+    const targetEntry = core.roomDiscoveryDeck.find((entry) => (
+        entry.floor === 'upper'
+        && !discoveredVisualIds.has(entry.room.visualId)
+    ));
+    expect(targetEntry).toBeDefined();
+    return targetEntry!;
+}
 
 describe('Betrayal first scenario runtime - foundation, setup, movement, and discovery', () => {
 it('基础版探索者 catalog 覆盖 12 名角色、正式起始值、卡面属性轨和无特殊能力', () => {
@@ -225,6 +240,17 @@ it('正式开始剧本后只从共享开局和所选角色配置装配探索者'
         expect(explorers.map((explorer) => explorer.inventory)).toEqual([[], [], []]);
         expect(core.turnStartInventoryCardIds).toEqual([]);
         expect(core.deckCounts).toMatchObject(BETRAYAL_INITIAL_DECK_COUNTS);
+        expect(core.rooms.find((room) => room.id === 'upper-west')).toMatchObject({
+            name: '未探索',
+            state: 'unexplored',
+            visualId: 'backUpper',
+            connectedRoomIds: ['upper-landing'],
+            doorways: [
+                expect.objectContaining({ edge: 'east', connectsToRoomId: 'upper-landing' }),
+            ],
+        });
+        expect(core.roomDiscoveryDeck.some((entry) => entry.room.visualId === 'library')).toBe(true);
+        expect(core.roomDiscoveryOrderByFloor.upper.some((room) => room.visualId === 'library')).toBe(true);
         expect(resolveBetrayalOmenCount(core)).toBe(0);
     });
 
@@ -295,8 +321,44 @@ it('普通移动只允许门位直连，几何相邻但无连接门位不能移�
         });
     });
 
+it('普通移动不能直接进入未翻开房间，旁路执行也不能生成移动事件', () => {
+        let core = createStartedFirstScenarioCore();
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
+
+        const unexploredRoom = core.rooms.find((room) => room.state === 'unexplored');
+        expect(unexploredRoom).toBeTruthy();
+        expect(resolveMoveTargetRooms(core).map((room) => room.id)).not.toContain(unexploredRoom!.id);
+
+        const directMoveToUnexplored = createBetrayalCommand(
+            BETRAYAL_COMMANDS.MOVE_TO_ROOM,
+            '0',
+            { roomId: unexploredRoom!.id },
+        );
+        expect(BetrayalDomain.validate(
+            { core, sys: {} as never },
+            directMoveToUnexplored,
+        )).toMatchObject({
+            valid: false,
+            error: '目标房间不可移动。',
+        });
+        expect(BetrayalDomain.execute(
+            { core, sys: {} as never },
+            directMoveToUnexplored,
+            BETRAYAL_FIXED_RANDOM,
+        )).toEqual([]);
+    });
+
 it('基础视线只覆盖同楼层同一直线的连续已发现房间', () => {
         const core = createStartedFirstScenarioCore();
+        setDiscoveredTestRoom(core, 'upper-west', {
+            name: '图书馆',
+            visualId: 'library',
+            tags: ['知识', '调查'],
+        });
+        setTestRoomDiscoveryDeck(
+            core,
+            core.roomDiscoveryDeck.filter((entry) => entry.room.visualId !== 'library'),
+        );
 
         expect(isBetrayalRoomInLineOfSight(core, 'grand-staircase', 'hallway')).toBe(true);
         expect(isBetrayalRoomInLineOfSight(core, 'grand-staircase', 'entrance-hall')).toBe(true);
@@ -447,27 +509,22 @@ it('正式局内探索会消费 setup 生成的当前局发现池顺序，而不
         core = startFirstScenarioFromCharacterSelect(core);
 
         expect(core.drawOrder).toEqual(['omen', 'item', 'event']);
-        const expectedFirstUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[0]!;
-        const expectedPlacedUpperRoom = [...BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper].reverse()[1]!;
-        expect(core.roomDiscoveryOrderByFloor.upper[0]?.name).toBe(expectedFirstUpperRoom.name);
+        const expectedPlacedUpperRoom = core.roomDiscoveryOrderByFloor.upper[0]!;
+        expect(expectedPlacedUpperRoom.name).toBe('神秘电梯');
+        expect(expectedPlacedUpperRoom.discoverySymbol).toBe('none');
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', {}, 100, createBetrayalScriptedRandom(1));
 
-        expect(expectedFirstUpperRoom.name).toBe('神秘电梯');
-        expect(expectedFirstUpperRoom.discoverySymbol).toBe('none');
         expect(core.latestDiscovery?.kind).toBe(expectedPlacedUpperRoom.discoverySymbol);
         expect(core.rooms.find((room) => room.id === 'upper-north')?.name).toBe(expectedPlacedUpperRoom.name);
         expect(core.latestRoomDrawResolution?.selectedRoom?.name).toBe(expectedPlacedUpperRoom.name);
-        expect(core.latestRoomDrawResolution?.buriedRoomTiles).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                floor: 'upper',
-                name: expectedFirstUpperRoom.name,
-                reason: 'sealedRegion',
-            }),
-        ]));
+        expect(core.latestRoomDrawResolution?.buriedRoomTiles.length).toBeGreaterThan(0);
+        expect(core.latestRoomDrawResolution?.buriedRoomTiles.every((room) => (
+            room.floor !== 'upper' && room.reason === 'areaMismatch'
+        ))).toBe(true);
         expect(core.pendingCardResolutionQueue).toEqual([]);
 
         expect(BetrayalDomain.validate(
@@ -518,7 +575,7 @@ it('正式发现池只使用已确认正面素材和可渲染房间图集，不�
 
 it('搜索特定房间板块会移除目标并重洗剩余房间堆', () => {
         const core = createStartedFirstScenarioCore();
-        const targetEntry = core.roomDiscoveryDeck.find((entry) => entry.room.visualId === 'library')!;
+        const targetEntry = findSearchableUpperRoomEntry(core);
         const remainingVisualIds = core.roomDiscoveryDeck
             .filter((entry) => entry.room.visualId !== targetEntry.room.visualId)
             .map((entry) => entry.room.visualId)
@@ -556,7 +613,7 @@ it('搜索特定房间板块会移除目标并重洗剩余房间堆', () => {
 
 it('房间堆搜索预览会标出命中候选和重洗后果', () => {
         const core = createStartedFirstScenarioCore();
-        const targetEntry = core.roomDiscoveryDeck.find((entry) => entry.room.visualId === 'library')!;
+        const targetEntry = findSearchableUpperRoomEntry(core);
 
         const preview = resolveBetrayalTileStackSearchPreview(core, {
             roomName: targetEntry.room.name,
@@ -595,24 +652,33 @@ it('房间堆搜索预览会标出命中候选和重洗后果', () => {
 
 it('房间堆搜索预览会在目标已在屋内时阻止重复搜索', () => {
         const core = createStartedFirstScenarioCore();
+        setDiscoveredTestRoom(core, 'upper-west', {
+            name: '图书馆',
+            visualId: 'library',
+            tags: ['知识', '调查'],
+        });
+        setTestRoomDiscoveryDeck(
+            core,
+            core.roomDiscoveryDeck.filter((entry) => entry.room.visualId !== 'library'),
+        );
 
         const preview = resolveBetrayalTileStackSearchPreview(core, {
-            roomName: '门厅',
-            visualId: 'startHallway',
-            floor: 'ground',
+            roomName: '图书馆',
+            visualId: 'library',
+            floor: 'upper',
         });
 
         expect(preview).toMatchObject({
-            requestedRoomName: '门厅',
-            requestedVisualId: 'startHallway',
-            requestedFloor: 'ground',
+            requestedRoomName: '图书馆',
+            requestedVisualId: 'library',
+            requestedFloor: 'upper',
             candidateRooms: [],
             firstCandidate: null,
             discoveredRooms: [{
-                roomId: 'hallway',
-                floor: 'ground',
-                name: '门厅',
-                visualId: 'startHallway',
+                roomId: 'upper-west',
+                floor: 'upper',
+                name: '图书馆',
+                visualId: 'library',
             }],
             targetAlreadyInHouse: true,
             canSearch: false,

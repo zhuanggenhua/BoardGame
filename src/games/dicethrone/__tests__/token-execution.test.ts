@@ -19,6 +19,8 @@
 import { describe, it, expect } from 'vitest';
 import { createDamageCalculation } from '../../../engine/primitives/damageCalculation';
 import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
+import { executePipeline } from '../../../engine/pipeline';
+import { DiceThroneDomain } from '../domain';
 import {
     fixedRandom,
     createQueuedRandom,
@@ -28,13 +30,14 @@ import {
     getCardById,
     cmd,
     advanceTo,
+    testSystems,
 } from './test-utils';
-import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { PALADIN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { INITIAL_HEALTH, INITIAL_CP } from '../domain/types';
 import { getCustomActionHandler } from '../domain/effects';
 import { validateCommand } from '../domain/commandValidation';
-import { processTokenUsage, shouldOpenTokenResponse, getUsableTokensForTiming, finalizeTokenResponse } from '../domain/tokenResponse';
+import { processTokenUsage, shouldOpenTokenResponse, getUsableTokensForTiming, finalizeTokenResponse, maybeCreateDamageResponseEvent } from '../domain/tokenResponse';
 import { initializeCustomActions } from '../domain/customActions';
 import { reduce } from '../domain/reducer';
 import { buildBonusDiceSettlementEvents, executeTokenCommand } from '../domain/executeTokens';
@@ -43,6 +46,7 @@ import { BARBARIAN_TOKENS } from '../heroes/barbarian/tokens';
 import { PALADIN_TOKENS } from '../heroes/paladin/tokens';
 import { SAMURAI_TOKENS } from '../heroes/samurai/tokens';
 import { ALL_TOKEN_DEFINITIONS } from '../domain/characters';
+import { createCharacterDice } from '../domain/characters';
 
 initializeCustomActions();
 
@@ -1037,6 +1041,70 @@ describe('致盲 (Blinded) 攻击判定', () => {
         expect(settled.finalState.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(settled.finalState.sys.phase).toBe('defensiveRoll');
     });
+
+    it('状态注入全命令链：致盲失败会取消圣光术的治疗与奖励骰效果', () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.turnNumber = 2;
+        state.core.rollCount = 1;
+        state.core.rollConfirmed = true;
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 40;
+        state.core.players['0'].statusEffects[STATUS_IDS.BLINDED] = 1;
+        const values = [5, 5, 1, 1, 3];
+        const faces = [
+            PALADIN_DICE_FACE_IDS.HEART,
+            PALADIN_DICE_FACE_IDS.HEART,
+            PALADIN_DICE_FACE_IDS.SWORD,
+            PALADIN_DICE_FACE_IDS.SWORD,
+            PALADIN_DICE_FACE_IDS.HELM,
+        ];
+        state.core.dice = createCharacterDice('paladin').map((die, index) => ({
+            ...die,
+            value: values[index],
+            symbol: faces[index],
+            symbols: [faces[index]],
+            isKept: false,
+        }));
+
+        const selectAbility = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            cmd('SELECT_ABILITY', '0', { abilityId: 'holy-light' }),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(selectAbility.success).toBe(true);
+        if (!selectAbility.success) return;
+
+        const openBlindedCheck = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selectAbility.state,
+            cmd('ADVANCE_PHASE', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(openBlindedCheck.success).toBe(true);
+        if (!openBlindedCheck.success) return;
+        expect(openBlindedCheck.state.core.pendingBonusDiceSettlement?.customResolutionId).toBe('blinded-check');
+        expect(openBlindedCheck.state.core.pendingBonusDiceSettlement?.dice[0]?.value).toBe(1);
+
+        const settled = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            openBlindedCheck.state,
+            cmd('SKIP_BONUS_DICE_REROLL', '0'),
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(settled.success).toBe(true);
+        if (!settled.success) return;
+
+        expect(settled.state.sys.phase).toBe('main2');
+        expect(settled.state.core.players['0'].resources[RESOURCE_IDS.HP]).toBe(40);
+        expect(settled.state.core.players['0'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(0);
+        expect(settled.state.core.players['0'].tokens[TOKEN_IDS.PROTECT] ?? 0).toBe(0);
+        expect(settled.state.core.pendingBonusDiceSettlement).toBeUndefined();
+    });
 });
 
 // ============================================================================
@@ -1830,6 +1898,85 @@ describe('神罚 (Retribution) 反弹伤害集成测试', () => {
         expect(result.success).toBe(true);
         expect(result.damageModifier).toBe(0); // 不减伤
         expect(result.extra?.reflectDamage).toBe(5); // ceil(10/2) = 5
+    });
+
+    it('护盾已从本次伤害扣除后，神罚不应再估算同一面护盾', () => {
+        const match = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        let state = match.core;
+        state.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'test-attack',
+            isDefendable: true,
+            damage: 10,
+        };
+        state.players['0'].resources[RESOURCE_IDS.HP] = 50;
+        state.players['1'].resources[RESOURCE_IDS.HP] = 50;
+        state.players['1'].tokens[TOKEN_IDS.RETRIBUTION] = 1;
+        state.players['1'].damageShields = [
+            { value: 4, sourceId: 'precommitted-shield', preventStatus: false },
+        ];
+
+        const responseEvent = maybeCreateDamageResponseEvent({
+            state,
+            attackerId: '0',
+            sourceAbilityId: 'test-attack',
+            timestamp: 1,
+            damageEvent: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '1',
+                    amount: 10,
+                    actualDamage: 10,
+                    sourceAbilityId: 'test-attack',
+                    sourcePlayerId: '0',
+                    damageScope: 'attack',
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: 1,
+            },
+        });
+
+        expect(responseEvent?.payload.pendingDamage).toMatchObject({
+            originalDamage: 10,
+            currentDamage: 6,
+            preventionCommitted: true,
+            shieldsConsumed: [expect.objectContaining({ sourceId: 'precommitted-shield', absorbed: 4 })],
+        });
+        state = reduce(state, responseEvent!);
+
+        const useEvents = executeTokenCommand(
+            state,
+            {
+                type: 'USE_TOKEN',
+                playerId: '1',
+                payload: { tokenId: TOKEN_IDS.RETRIBUTION, amount: 1 },
+            } as any,
+            fixedRandom,
+            2,
+            'defensiveRoll',
+        );
+        state = applyEvents(state, useEvents, reduce);
+
+        const closeEvents = executeTokenCommand(
+            state,
+            { type: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: {} } as any,
+            fixedRandom,
+            3,
+            'defensiveRoll',
+        );
+        const damageEvents = closeEvents.filter((event) => event.type === 'DAMAGE_DEALT');
+        expect(damageEvents).toContainEqual(expect.objectContaining({
+            payload: expect.objectContaining({ targetId: '1', amount: 10, actualDamage: 6 }),
+        }));
+        expect(damageEvents).toContainEqual(expect.objectContaining({
+            payload: expect.objectContaining({ targetId: '0', amount: 3, actualDamage: 3 }),
+        }));
+
+        state = applyEvents(state, closeEvents, reduce);
+        expect(state.players['1'].resources[RESOURCE_IDS.HP]).toBe(44);
+        expect(state.players['0'].resources[RESOURCE_IDS.HP]).toBe(47);
+        expect(state.players['1'].damageShields).toEqual([]);
     });
 
     it('神罚反弹伤害向上取整（奇数伤害）', () => {

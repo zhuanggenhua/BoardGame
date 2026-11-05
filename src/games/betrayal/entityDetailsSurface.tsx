@@ -1,7 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { HudPortal, UI_Z_INDEX } from "../../core";
+import { UI_Z_INDEX } from "../../core";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import type {
   BetrayalExplorerSummary,
@@ -68,10 +68,9 @@ export function MonsterDetailsDialog({
   );
 
   return (
-    <HudPortal>
-      <div
+    <div
         data-testid="betrayal-monster-detail-overlay"
-        className="fixed inset-0 flex items-center justify-center bg-[rgba(9,8,6,0.42)] px-4 py-6 text-[#f4ead4] backdrop-blur-[1.5px]"
+        className="absolute inset-0 flex items-center justify-center bg-[rgba(9,8,6,0.42)] px-4 py-6 text-[#f4ead4] backdrop-blur-[1.5px]"
         style={{ zIndex: UI_Z_INDEX.modalOverlay }}
         onClick={onClose}
       >
@@ -84,7 +83,7 @@ export function MonsterDetailsDialog({
           data-monster-definition-id={monster.definitionId ?? ""}
           data-portrait-asset={monster.portraitAsset}
           data-layout-variant="open-single-portrait"
-          className="relative w-[min(92vw,640px)] max-h-[min(86vh,680px)] overflow-visible rounded-[20px] border border-[rgba(246,222,160,0.36)] bg-[linear-gradient(135deg,rgba(119,96,58,0.34),rgba(37,39,32,0.34))] p-0 shadow-[0_20px_48px_rgba(0,0,0,0.38)] backdrop-blur-md"
+          className="relative max-h-[680px] w-[640px] overflow-visible rounded-[20px] border border-[rgba(246,222,160,0.36)] bg-[linear-gradient(135deg,rgba(119,96,58,0.34),rgba(37,39,32,0.34))] p-0 shadow-[0_20px_48px_rgba(0,0,0,0.38)] backdrop-blur-md"
           style={{ zIndex: UI_Z_INDEX.modalContent }}
           onClick={(event) => event.stopPropagation()}
         >
@@ -185,7 +184,6 @@ export function MonsterDetailsDialog({
           </div>
         </section>
       </div>
-    </HudPortal>
   );
 }
 
@@ -211,10 +209,9 @@ export function ExplorerDetailsDialog({
   const detailsLabel = t("board.players.detailsAria", { player: playerName });
 
   return (
-    <HudPortal>
-      <div
+    <div
         data-testid="betrayal-explorer-detail-overlay"
-        className="fixed inset-0 flex items-center justify-center bg-[rgba(2,6,5,0.62)] px-4 py-6 text-[#f1e8d4] backdrop-blur-[2px]"
+        className="absolute inset-0 flex items-center justify-center bg-[rgba(2,6,5,0.62)] px-4 py-6 text-[#f1e8d4] backdrop-blur-[2px]"
         style={{ zIndex: UI_Z_INDEX.modalOverlay }}
         onClick={onClose}
       >
@@ -226,7 +223,7 @@ export function ExplorerDetailsDialog({
           data-player-id={explorer.playerId}
           data-explorer-id={explorer.explorerId}
           data-token-asset={tokenAsset}
-          className="relative grid w-[min(92vw,720px)] max-h-[min(86vh,680px)] grid-cols-[minmax(170px,230px)_minmax(0,1fr)] gap-4 overflow-hidden rounded-[14px] border border-[rgba(214,191,129,0.42)] bg-[linear-gradient(180deg,rgba(18,22,18,0.98),rgba(7,11,10,0.98))] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.58)]"
+          className="relative grid max-h-[680px] w-[720px] grid-cols-[minmax(170px,230px)_minmax(0,1fr)] gap-4 overflow-hidden rounded-[14px] border border-[rgba(214,191,129,0.42)] bg-[linear-gradient(180deg,rgba(18,22,18,0.98),rgba(7,11,10,0.98))] p-4 shadow-[0_26px_70px_rgba(0,0,0,0.58)]"
           style={{ zIndex: UI_Z_INDEX.modalContent }}
           onClick={(event) => event.stopPropagation()}
         >
@@ -336,6 +333,5 @@ export function ExplorerDetailsDialog({
           </div>
         </section>
       </div>
-    </HudPortal>
   );
 }

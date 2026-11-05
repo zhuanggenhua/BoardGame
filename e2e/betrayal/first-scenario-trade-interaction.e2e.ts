@@ -107,8 +107,8 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
         const omenBookImage = omenBook?.querySelector<HTMLImageElement>('[data-testid="betrayal-inventory-omen-book-front-atlas"]');
         const ropeText = rope?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
         const allInventoryText = document.querySelector('[data-testid="betrayal-inventory-section"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
-        const mobileDockActions = Array.from(
-            document.querySelectorAll<HTMLElement>('[data-testid^="betrayal-mobile-dock-"]'),
+        const desktopActionButtons = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-testid^="betrayal-action-"]'),
         ).filter((element) => {
             const rect = element.getBoundingClientRect();
             const style = window.getComputedStyle(element);
@@ -128,7 +128,7 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
             omenBookImageLoaded: Boolean(omenBookImage?.complete && omenBookImage.naturalWidth > 0 && omenBookImage.naturalHeight > 0),
             ropeText,
             allInventoryText,
-            mobileDockActions,
+            desktopActionButtons,
         };
     });
 
@@ -146,7 +146,7 @@ async function assertTradeLayoutDoesNotCoverMap(page: Page) {
     expect(metrics.omenBookImageLoaded, '书本正式预兆牌面必须真实加载完成').toBe(true);
     expect(metrics.ropeText, '兔脚不应显示“正面缺失”回退文案').not.toContain('正面缺失');
     expect(metrics.allInventoryText, '交易持有区不应出现“缺正面”回退文案').not.toContain('缺正面');
-    expect(metrics.mobileDockActions, '交易态不应渲染底部行动 dock，避免形成黑底挡板').toBe(0);
+    expect(metrics.desktopActionButtons, '交易态不应渲染底部行动栏，避免形成黑底挡板').toBe(0);
 }
 
 async function assertTradeActionBarKeepsButtons(page: Page) {

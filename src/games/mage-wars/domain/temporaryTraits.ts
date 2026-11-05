@@ -1,6 +1,6 @@
 import type { MageWarsArenaObjectState } from './core-types';
 
-export type MageWarsTemporaryTraitGrantId = 'swift' | 'teleportMovement';
+export type MageWarsTemporaryTraitGrantId = 'swift' | 'teleportMovement' | 'elusive';
 
 export type MageWarsTemporaryTraitId =
     | MageWarsTemporaryTraitGrantId
@@ -9,16 +9,24 @@ export type MageWarsTemporaryTraitId =
     | 'quickActionAfterMove'
     | 'charge'
     | 'meleeDice'
+    | 'armor'
     | 'vampiric'
-    | 'pierce';
+    | 'pierce'
+    | 'unavoidable'
+    | 'battleFury'
+    | 'elusive';
 
 export interface MageWarsTemporaryTraitGain {
     grants?: readonly MageWarsTemporaryTraitGrantId[];
     chargeDiceModifier?: number;
     meleeDiceModifier?: number;
     meleeDiceModifierUntilRoundNumber?: number;
+    armorModifier?: number;
+    armorModifierUntilRoundNumber?: number;
     vampiricNextMelee?: boolean;
     nextMeleePierceModifier?: number;
+    nextMeleeUnavoidable?: boolean;
+    battleFuryRoundNumber?: number;
 }
 
 export interface MageWarsTemporaryTraitReader {
@@ -31,6 +39,10 @@ export function hasTemporarySwift(reader: MageWarsTemporaryTraitReader): boolean
 
 export function hasTemporaryTeleportMovement(reader: MageWarsTemporaryTraitReader): boolean {
     return reader.temporaryTraits?.teleportMovement === true;
+}
+
+export function hasTemporaryElusive(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.elusive === true;
 }
 
 export function hasTemporarySwiftFreeMoveUsed(reader: MageWarsTemporaryTraitReader): boolean {
@@ -53,8 +65,16 @@ export function getTemporaryMeleeDiceModifier(reader: MageWarsTemporaryTraitRead
     return reader.temporaryTraits?.meleeDiceModifier ?? 0;
 }
 
+export function getTemporaryArmorModifier(reader: MageWarsTemporaryTraitReader): number {
+    return reader.temporaryTraits?.armorModifier ?? 0;
+}
+
 export function getTemporaryNextMeleePierceModifier(reader: MageWarsTemporaryTraitReader): number {
     return reader.temporaryTraits?.nextMeleePierceModifier ?? 0;
+}
+
+export function hasTemporaryNextMeleeUnavoidable(reader: MageWarsTemporaryTraitReader): boolean {
+    return reader.temporaryTraits?.nextMeleeUnavoidable === true;
 }
 
 export function hasTemporaryVampiricNextMelee(reader: MageWarsTemporaryTraitReader): boolean {
@@ -68,6 +88,7 @@ export function getTemporaryTraitIdsForTurnCleanup(
     const traitIds: MageWarsTemporaryTraitId[] = [];
     if (hasTemporarySwift(reader)) traitIds.push('swift');
     if (hasTemporaryTeleportMovement(reader)) traitIds.push('teleportMovement');
+    if (hasTemporaryElusive(reader)) traitIds.push('elusive');
     if (hasTemporarySwiftFreeMoveUsed(reader)) traitIds.push('swiftFreeMove');
     if (hasTemporaryMovedThisAction(reader)) traitIds.push('movedThisAction');
     if (hasTemporaryQuickActionAfterMove(reader)) traitIds.push('quickActionAfterMove');
@@ -78,8 +99,19 @@ export function getTemporaryTraitIdsForTurnCleanup(
     ) {
         traitIds.push('meleeDice');
     }
+    if (
+        getTemporaryArmorModifier(reader) > 0
+        && reader.temporaryTraits?.armorModifierUntilRoundNumber !== turnNumber
+    ) {
+        traitIds.push('armor');
+    }
     if (hasTemporaryVampiricNextMelee(reader)) traitIds.push('vampiric');
     if (getTemporaryNextMeleePierceModifier(reader) > 0) traitIds.push('pierce');
+    if (hasTemporaryNextMeleeUnavoidable(reader)) traitIds.push('unavoidable');
+    if (
+        reader.temporaryTraits?.battleFuryRoundNumber !== undefined
+        && reader.temporaryTraits.battleFuryRoundNumber !== turnNumber
+    ) traitIds.push('battleFury');
     return traitIds;
 }
 
@@ -110,6 +142,9 @@ export function applyTemporaryTraitGain(
     if (gain.grants?.includes('teleportMovement')) {
         temporaryTraits.teleportMovement = true;
     }
+    if (gain.grants?.includes('elusive')) {
+        temporaryTraits.elusive = true;
+    }
     if ((gain.chargeDiceModifier ?? 0) > 0) {
         temporaryTraits.chargeDiceModifier = Math.max(
             object.temporaryTraits?.chargeDiceModifier ?? 0,
@@ -128,6 +163,18 @@ export function applyTemporaryTraitGain(
             );
         }
     }
+    if ((gain.armorModifier ?? 0) > 0) {
+        temporaryTraits.armorModifier = Math.max(
+            object.temporaryTraits?.armorModifier ?? 0,
+            gain.armorModifier ?? 0,
+        );
+        if (gain.armorModifierUntilRoundNumber !== undefined) {
+            temporaryTraits.armorModifierUntilRoundNumber = Math.max(
+                object.temporaryTraits?.armorModifierUntilRoundNumber ?? 0,
+                gain.armorModifierUntilRoundNumber,
+            );
+        }
+    }
     if (gain.vampiricNextMelee === true) {
         temporaryTraits.vampiricNextMelee = true;
     }
@@ -136,6 +183,13 @@ export function applyTemporaryTraitGain(
             object.temporaryTraits?.nextMeleePierceModifier ?? 0,
             gain.nextMeleePierceModifier ?? 0,
         );
+    }
+    if (gain.nextMeleeUnavoidable === true) {
+        temporaryTraits.nextMeleeUnavoidable = true;
+    }
+    if (gain.battleFuryRoundNumber !== undefined) {
+        temporaryTraits.battleFuryRoundNumber = gain.battleFuryRoundNumber;
+        temporaryTraits.battleFuryExtraAttackAvailable = false;
     }
 
     return withTemporaryTraits(object, temporaryTraits);
@@ -189,6 +243,9 @@ export function clearTemporaryTraits(
             case 'teleportMovement':
                 delete nextTraits.teleportMovement;
                 break;
+            case 'elusive':
+                delete nextTraits.elusive;
+                break;
             case 'swiftFreeMove':
                 delete nextTraits.freeMoveUsedThisAction;
                 break;
@@ -205,11 +262,22 @@ export function clearTemporaryTraits(
                 delete nextTraits.meleeDiceModifier;
                 delete nextTraits.meleeDiceModifierUntilRoundNumber;
                 break;
+            case 'armor':
+                delete nextTraits.armorModifier;
+                delete nextTraits.armorModifierUntilRoundNumber;
+                break;
             case 'vampiric':
                 delete nextTraits.vampiricNextMelee;
                 break;
             case 'pierce':
                 delete nextTraits.nextMeleePierceModifier;
+                break;
+            case 'unavoidable':
+                delete nextTraits.nextMeleeUnavoidable;
+                break;
+            case 'battleFury':
+                delete nextTraits.battleFuryRoundNumber;
+                delete nextTraits.battleFuryExtraAttackAvailable;
                 break;
         }
     }

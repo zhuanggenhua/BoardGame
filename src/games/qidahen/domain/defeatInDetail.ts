@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { computeQidahenAttackPressure } from './attackRules';
 import { buildQidahenBattleForceOutcomes } from './battleForceOutcomes';
 import { getQidahenBattleForceCommitments } from './battleForceCommitments';
@@ -137,8 +138,7 @@ export const resolveQidahenDefeatInDetailPlayed = (
     }
     const commonState = {
         ...state,
-        handCards: state.handCards.filter((card) => card.id !== playedCard.id),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [playedCard.id]),
     };
     if (playedCard.faction !== 'jin') {
         return {

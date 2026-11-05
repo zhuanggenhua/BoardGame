@@ -5,7 +5,7 @@
  * 包含事件卡 baseId、工具函数等。
  */
 
-import type { FactionId, UnitCard } from './types';
+import type { FactionId, UnitTag } from './types';
 
 // ============================================================================
 // 阵营 ID
@@ -13,7 +13,7 @@ import type { FactionId, UnitCard } from './types';
 
 /** 所有合法阵营 ID（从 FactionId 类型派生） */
 export const VALID_FACTION_IDS: readonly FactionId[] = [
-  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow',
+  'necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow', 'zhongcai',
 ] as const;
 
 // ============================================================================
@@ -88,6 +88,12 @@ export const CARD_IDS = {
   SHADOW_MARL_GRIMOIRE: 'shadow-marl-grimoire',
   SHADOW_LIGHTNING_STEP: 'shadow-lightning-step',
   SHADOW_SHADOW_PULSE: 'shadow-shadow-pulse',
+
+  // 仲裁事件卡
+  ZHONGCAI_OBEDIENCE: 'zhongcai-obedience',
+  ZHONGCAI_HOLY_DECREE: 'zhongcai-holy-decree',
+  ZHONGCAI_LOYALTY_DECREE: 'zhongcai-loyalty-decree',
+  ZHONGCAI_FREEDOM_DECREE: 'zhongcai-freedom-decree',
 } as const;
 
 // ============================================================================
@@ -106,19 +112,26 @@ export function getBaseCardId(id: string): string {
   return withoutInstance.replace(/-\d+-\d+$/, '').replace(/-\d+$/, '');
 }
 
-/**
- * 判断卡牌是否为疫病体
- *
- * 疫病体判定：id 含 'plague-zombie' 或名称含 '疫病体'
- */
-export function isPlagueZombieCard(card: { id: string; name: string }): boolean {
-  return card.id.includes('plague-zombie') || card.name.includes('疫病体');
+export function hasUnitTag(card: { cardType?: string; unitTags?: readonly UnitTag[] }, tag: UnitTag): boolean {
+  if (card.cardType !== undefined && card.cardType !== 'unit') return false;
+  return card.unitTags?.includes(tag) ?? false;
 }
 
-/** 判断卡牌是否为莫古的菌袍疫病体 */
-export function isMoguSporePlagueBodyCard(card: { id: string; name: string; faction?: string }): boolean {
-  return card.faction === 'mogu'
-    && (getBaseCardId(card.id) === 'mogu-spore-plague-body' || card.name.includes('菌袍疫病'));
+/** 判断卡牌是否有疫病体 / Carrier 单位标签。 */
+export function isCarrierCard(card: { cardType?: string; unitTags?: readonly UnitTag[] }): boolean {
+  return hasUnitTag(card, 'carrier');
+}
+
+/**
+ * 兼容旧感染链命名：现实规则含义是“疫病体 / Carrier 标签”，不是亡灵法师阵营或卡名关键词。
+ */
+export function isPlagueZombieCard(card: { cardType?: string; unitTags?: readonly UnitTag[] }): boolean {
+  return isCarrierCard(card);
+}
+
+/** 判断卡牌是否为莫古链路可消费的菌袍疫病体：莫古单位且带疫病体 / Carrier 标签。 */
+export function isMoguSporePlagueBodyCard(card: { cardType?: string; faction?: string; unitTags?: readonly UnitTag[] }): boolean {
+  return card.faction === 'mogu' && isCarrierCard(card);
 }
 
 /** 判断卡牌是否为莫古的菌化野兽 */
@@ -127,25 +140,18 @@ export function isMoguFungalBeastCard(card: { id: string; name: string; faction?
     && (getBaseCardId(card.id) === 'mogu-fungal-beast' || card.name.includes('菌化野兽'));
 }
 
-/**
- * 判断卡牌是否为城塞单位
- *
- * 城塞判定：名称含 '城塞'（中文）或 'Fortress'（英文）
- * 注意：不能用 id.includes('fortress')，因为起始单位 id 被覆盖为 paladin-start-xxx
- */
-export function isFortressUnit(card: { id: string; name: string; cardType?: string }): boolean {
-  return card.name.includes('城塞') || card.name.toLowerCase().includes('fortress');
+/** 判断卡牌是否有城塞 / Citadel 单位标签。 */
+export function isFortressUnit(card: { cardType?: string; unitTags?: readonly UnitTag[] }): boolean {
+  return hasUnitTag(card, 'citadel');
 }
 
 /**
  * 判断卡牌是否为亡灵单位
  *
- * 亡灵判定：id 含 'undead'、名称含 '亡灵'、或阵营为 necromancer
+ * 亡灵判定看卡牌自身种族语义，不等于整个亡灵法师阵营。
+ * 地狱火教徒同属 necromancer，但不是复活死灵可选择的亡灵单位。
  */
-export function isUndeadCard(card: { id: string; name: string; cardType: string; faction?: string }): boolean {
-  if (card.cardType !== 'unit') return false;
-  return card.id.includes('undead')
-    || card.name.includes('亡灵')
-    || (card as UnitCard).faction === 'necromancer';
+export function isUndeadCard(card: { cardType: string; unitTags?: readonly UnitTag[] }): boolean {
+  return hasUnitTag(card, 'undead');
 }
 

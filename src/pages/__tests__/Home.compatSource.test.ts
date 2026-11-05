@@ -13,7 +13,9 @@ describe('Home compatibility source guards', () => {
     it('首页主容器应使用 runtime viewport 变量，而不是直接依赖 100dvh', () => {
         const home = readHomeSource();
 
-        expect(home).toContain("style={{ minHeight: 'var(--runtime-viewport-height, 100vh)' }}");
+        const platformCss = readFileSync(resolve(TEST_DIR, '..', '..', 'components', 'home', 'platform-home.css'), 'utf8');
+        expect(home).toContain('<PlatformHomeSurface');
+        expect(platformCss).toContain('min-height: var(--runtime-viewport-height, 100vh)');
         expect(home).not.toContain('min-h-[100dvh]');
     });
 
@@ -23,5 +25,13 @@ describe('Home compatibility source guards', () => {
         expect(categoryPills).toContain('flex-wrap');
         expect(categoryPills).not.toContain('overflow-x-auto');
         expect(categoryPills).not.toContain('min-w-max');
+    });
+
+    it('首页分类选中态应使用下划线，而不是圆角底框', () => {
+        const categoryPills = readCategoryPillsSource();
+
+        expect(categoryPills).toContain('underline-center');
+        expect(categoryPills).not.toContain('rounded-full');
+        expect(categoryPills).not.toContain('bg-parchment-brown/10');
     });
 });

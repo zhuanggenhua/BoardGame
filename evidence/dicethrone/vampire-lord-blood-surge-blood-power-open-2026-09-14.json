@@ -1,0 +1,45 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "source images checked for Blood Surge and Blood Power tier 4",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\01-source-tip.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\02-source-blood-surge-slot-17.png",
+        "rule table confirms Blood Power tier 4 timing and Blood Surge blood-drop branch"
+      ]
+    },
+    {
+      "requirement": "Blood Surge bonus die waits for confirmation and resolves blood-drop 6 as +3 Blood Power",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\03-e2e-blood-surge-bonus-confirm.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\04-e2e-blood-surge-blood-drop-result.jpg"
+      ]
+    },
+    {
+      "requirement": "Blood Power tier 4 pauses after damage before attack closeout and heals after click",
+      "status": "PASS",
+      "evidence": [
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\05-e2e-blood-power-tier4-before.jpg",
+        "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\06-e2e-blood-power-tier4-after.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\01-source-tip.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\02-source-blood-surge-slot-17.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\03-e2e-blood-surge-bonus-confirm.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\04-e2e-blood-surge-blood-drop-result.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\05-e2e-blood-power-tier4-before.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-blood-surge-blood-power-original-open-2026-09-14\\06-e2e-blood-power-tier4-after.jpg"
+  ]
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { ModalBase } from '../common/overlays/ModalBase';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 interface EmailBindModalProps {
     isOpen: boolean;
@@ -10,6 +11,7 @@ interface EmailBindModalProps {
 }
 
 export const EmailBindModal = ({ isOpen, onClose, closeOnBackdrop }: EmailBindModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const { user, sendEmailCode, verifyEmail } = useAuth();
     const [email, setEmail] = useState('');
     const [code, setCode] = useState('');
@@ -98,6 +100,7 @@ export const EmailBindModal = ({ isOpen, onClose, closeOnBackdrop }: EmailBindMo
             <div
                 className="bg-parchment-card-bg pointer-events-auto w-full max-w-[340px] sm:max-w-sm max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] overflow-y-auto shadow-parchment-card-hover border border-parchment-card-border/50 p-6 sm:p-8 relative rounded-sm"
                 data-testid="email-bind-modal"
+                data-platform-dialog="email"
             >
                 {/* 装饰性边角 */}
                 <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-parchment-card-border/60" />

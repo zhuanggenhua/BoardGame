@@ -97,7 +97,7 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
         effects: [
             {
                 description: abilityEffectText('fiery-combo', 'main'),
-                action: { type: 'custom', target: 'self', customActionId: 'fiery-combo-resolve' }
+                action: { type: 'custom', target: 'opponent', customActionId: 'fiery-combo-resolve' }
             }
         ]
     },
@@ -113,7 +113,7 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
             inflictStatus(STATUS_IDS.DAZE, 1, abilityEffectText('meteor', 'inflictStun')),
             {
                 description: abilityEffectText('meteor', 'unblockable'),
-                action: { type: 'custom', target: 'self', customActionId: 'meteor-resolve' }
+                action: { type: 'custom', target: 'opponent', customActionId: 'meteor-resolve' }
             },
             damage(2, abilityEffectText('meteor', 'collateral'), { target: 'allOpponents' })
         ]
@@ -163,7 +163,7 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
         effects: [
             {
                 description: abilityEffectText('burn-down', 'main'),
-                action: { type: 'custom', target: 'self', customActionId: 'burn-down-resolve' }
+                action: { type: 'custom', target: 'opponent', customActionId: 'burn-down-resolve' }
             }
         ]
     },
@@ -177,7 +177,7 @@ export const PYROMANCER_ABILITIES: AbilityDef[] = [
         effects: [
             {
                 description: abilityEffectText('ignite', 'main'),
-                action: { type: 'custom', target: 'self', customActionId: 'ignite-resolve' }
+                action: { type: 'custom', target: 'opponent', customActionId: 'ignite-resolve' }
             }
         ]
     },
@@ -312,7 +312,7 @@ export const HOT_STREAK_2: AbilityDef = {
                 grantToken(TOKEN_IDS.FIRE_MASTERY, 2, abilityEffectText('fiery-combo-2', 'gainFM2')),
                 {
                     description: abilityEffectText('fiery-combo-2', 'main'),
-                    action: { type: 'custom', target: 'self', customActionId: 'fiery-combo-2-resolve' },
+                    action: { type: 'custom', target: 'opponent', customActionId: 'fiery-combo-2-resolve' },
                     timing: 'withDamage'
                 }
             ],
@@ -359,7 +359,7 @@ export const METEOR_2: AbilityDef = {
                 inflictStatus(STATUS_IDS.DAZE, 1, abilityEffectText('meteor-2', 'inflictStun')),
                 {
                     description: abilityEffectText('meteor-2', 'unblockable'),
-                    action: { type: 'custom', target: 'self', customActionId: 'meteor-resolve' }
+                    action: { type: 'custom', target: 'opponent', customActionId: 'meteor-resolve' }
                 },
                 damage(3, abilityEffectText('meteor-2', 'collateral'), { target: 'allOpponents' })
             ],
@@ -431,7 +431,7 @@ export const BURN_DOWN_2: AbilityDef = {
         // FM 获得由 burn-down-2-resolve 内部处理（先获得FM再消耗FM算伤害）
         {
             description: abilityEffectText('burn-down-2', 'main'),
-            action: { type: 'custom', target: 'self', customActionId: 'burn-down-2-resolve' }
+            action: { type: 'custom', target: 'opponent', customActionId: 'burn-down-2-resolve' }
         }
     ]
 };
@@ -452,7 +452,7 @@ export const IGNITE_2: AbilityDef = {
                 inflictStatus(STATUS_IDS.BURN, 1, abilityEffectText('ignite-2', 'inflictBurn')),
                 {
                     description: abilityEffectText('ignite-2', 'main'),
-                    action: { type: 'custom', target: 'self', customActionId: 'ignite-2-resolve' }
+                    action: { type: 'custom', target: 'opponent', customActionId: 'ignite-2-resolve' }
                 }
             ],
             priority: 1,

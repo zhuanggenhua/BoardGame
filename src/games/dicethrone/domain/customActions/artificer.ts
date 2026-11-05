@@ -1,11 +1,10 @@
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import { registerChoiceEffectHandler } from '../choiceEffects';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
 import { ARTIFICER_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../ids';
 import { RESOURCE_IDS } from '../resources';
-import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit } from '../rules';
-import { MAX_HEALTH, type DiceThroneCore, type DieFace } from '../types';
-import { updatePendingAttackSettlementStage } from '../utils';
+import { getActiveDice, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getPlayerHealthCap, getTokenStackLimit } from '../rules';
+import { type DiceThroneCore, type DieFace } from '../types';
+import { markPendingAttackChoiceFollowUpResolvedFromStage } from '../utils';
 import type {
     BonusDieRolledEvent,
     ChoiceRequestedEvent,
@@ -18,7 +17,7 @@ import type {
     TokenLimitChangedEvent,
     TokenUsedEvent,
 } from '../events';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { createDiceThroneDamageCalculation as createDamageCalculation, registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { finalizeTokenResponse } from '../tokenResponse';
 import {
@@ -302,7 +301,7 @@ function handleNanobotDetonate({ state, attackerId, sourceAbilityId, timestamp }
                 payload: {
                     ...event.payload,
                     sourceAbilityId: 'artificer-nanobot-detonate',
-                    damageScope: 'direct',
+                    damageScope: 'direct' as const,
                     unblockable: true,
                 },
             } as DiceThroneEvent
@@ -926,7 +925,7 @@ function handleTinker2Defense({ attackerId, ctx, sourceAbilityId, state, timesta
                 payload: {
                     ...event.payload,
                     sourceAbilityId,
-                    damageScope: 'direct',
+                    damageScope: 'direct' as const,
                 },
             }
             : event)));
@@ -1098,7 +1097,7 @@ const WRENCH_STRIKE_CHOICE_IDS = new Set([
 
 for (const choiceId of WRENCH_STRIKE_CHOICE_IDS) {
     registerChoiceEffectHandler(choiceId, ({ state, sourceAbilityId }) => {
-        if (!isWrenchStrikeAbilityId(sourceAbilityId) || !state.pendingAttack) return undefined;
+        if (!sourceAbilityId || !isWrenchStrikeAbilityId(sourceAbilityId) || !state.pendingAttack) return undefined;
         return {
             pendingAttack: {
                 ...state.pendingAttack,
@@ -1113,40 +1112,48 @@ for (const choiceId of WRENCH_STRIKE_CHOICE_IDS) {
 }
 
 registerChoiceEffectHandler(BUILD_FROM_SCRATCH_CHOICE_ID, ({ state, playerId, sourceAbilityId, value }) => {
-    if (!isBuildFromScratchAbilityId(sourceAbilityId)) return undefined;
+    if (!sourceAbilityId || !isBuildFromScratchAbilityId(sourceAbilityId)) return undefined;
 
-    let players: DiceThroneCore['players'] | undefined;
+    let tokenId: string;
+    let mode: 'build' | 'upgrade';
     switch (value) {
         case BUILD_ADVANCED_NANOBOT:
-            players = buildBuildFromScratchState(state, playerId, TOKEN_IDS.NANOBOT, 'build').players;
+            tokenId = TOKEN_IDS.NANOBOT;
+            mode = 'build';
             break;
         case BUILD_ADVANCED_SHOCK_BOT:
-            players = buildBuildFromScratchState(state, playerId, TOKEN_IDS.SHOCK_BOT, 'build').players;
+            tokenId = TOKEN_IDS.SHOCK_BOT;
+            mode = 'build';
             break;
         case BUILD_ADVANCED_HEAL_BOT:
-            players = buildBuildFromScratchState(state, playerId, TOKEN_IDS.HEAL_BOT, 'build').players;
+            tokenId = TOKEN_IDS.HEAL_BOT;
+            mode = 'build';
             break;
         case UPGRADE_NANOBOT:
-            players = buildBuildFromScratchState(state, playerId, TOKEN_IDS.NANOBOT, 'upgrade').players;
+            tokenId = TOKEN_IDS.NANOBOT;
+            mode = 'upgrade';
             break;
         case UPGRADE_SHOCK_BOT:
-            players = buildBuildFromScratchState(state, playerId, TOKEN_IDS.SHOCK_BOT, 'upgrade').players;
+            tokenId = TOKEN_IDS.SHOCK_BOT;
+            mode = 'upgrade';
             break;
         case UPGRADE_HEAL_BOT:
-            players = buildBuildFromScratchState(state, playerId, TOKEN_IDS.HEAL_BOT, 'upgrade').players;
+            tokenId = TOKEN_IDS.HEAL_BOT;
+            mode = 'upgrade';
             break;
         default:
             return undefined;
     }
+    const buildPatch = buildBuildFromScratchState(state, playerId, tokenId, mode);
+    if (!buildPatch?.players) return undefined;
 
     return {
-        players,
-        pendingAttack: state.pendingAttack?.sourceAbilityId === sourceAbilityId
-            ? {
-                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
-                postDamageFollowUpResolved: true,
-            }
-            : state.pendingAttack,
+        players: buildPatch.players,
+        pendingAttack: markPendingAttackChoiceFollowUpResolvedFromStage(
+            state.pendingAttack,
+            sourceAbilityId,
+            'preDamage',
+        ),
     };
 });
 
@@ -1156,11 +1163,12 @@ export function registerArtificerCustomActions(): void {
         if (!die) return { totalDamage: 0, followupEvents: [] };
         const healAmount = die.face === ARTIFICER_DICE_FACE_IDS.WRENCH ? 1 : 2;
         const currentHp = state.players[settlement.attackerId]?.resources[RESOURCE_IDS.HP] ?? 0;
+        const healthCap = getPlayerHealthCap(state, settlement.attackerId);
         const followupEvents: DiceThroneEvent[] = [{
             type: 'HEAL_APPLIED',
             payload: {
                 targetId: settlement.attackerId,
-                amount: Math.max(0, Math.min(healAmount, MAX_HEALTH - currentHp)),
+                amount: Math.max(0, Math.min(healAmount, healthCap - currentHp)),
                 sourceAbilityId: settlement.sourceAbilityId,
             },
             sourceCommandType: 'BONUS_DICE_SETTLED',
@@ -1256,7 +1264,7 @@ export function registerArtificerCustomActions(): void {
     registerCustomActionHandler('artificer-wrench-strike-branch', handleWrenchStrikeBranch, { categories: ['dice', 'damage', 'token'] });
     registerCustomActionHandler('artificer-mechanical-army', handleMechanicalArmy, {
         categories: ['damage'],
-        estimateDamage: (rawState, playerId) => countOwnedRobotTypes(rawState as DiceThroneCore, playerId) + 5,
+        estimateDamage: (state, playerId) => countOwnedRobotTypes(state, playerId) + 5,
     });
     registerCustomActionHandler('artificer-tinker-defense', handleTinkerDefense, {
         categories: ['defense', 'status', 'token'],

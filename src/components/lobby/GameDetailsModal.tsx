@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useMemo, useCallback, useEffectEvent, type
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { AlertTriangle, Download, HardDriveDownload, Info, LoaderCircle, RefreshCw, TableProperties, X } from 'lucide-react';
+import { AlertTriangle, Download, HardDriveDownload, LoaderCircle, RefreshCw, TableProperties, X } from 'lucide-react';
 import * as matchApi from '../../services/matchApi';
 import { getLocalMatchPreferences, updateLocalMatchPreferences } from '../../api/user-settings';
 import { useAuth } from '../../contexts/AuthContext';
@@ -10,7 +10,7 @@ import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
 import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, isOwnerActiveMatchSuppressed, suppressOwnerActiveMatch, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistAiSeatCredentials, persistMatchCredentials, isMatchNotFoundError } from '../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey, getOwnerType as resolveOwnerType } from '../../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
-import { ModalBase } from '../common/overlays/ModalBase';
+import { HomeGameDetailsPresentation as GameDetailsPresentation } from '../home/HomeGameDetailsPresentation';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { useToast } from '../../contexts/ToastContext';
 import { GAME_SERVER_URL } from '../../config/server';
@@ -26,6 +26,9 @@ import { GameReviews } from '../review/GameReviewSection';
 import { PasswordEntryModal } from '../common/overlays/PasswordEntryModal';
 import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitPayload, notifyExitMatchErrorToast, buildCreateRoomErrorTip, resolveCreateRoomErrorCode, resolveCreateRoomErrorStatus, type Room } from './roomActions';
 import { RoomList } from './RoomList';
+import { RoomPrimaryActions } from './RoomPrimaryActions';
+import { PlatformGameDetails } from '../home/PlatformGameDetails';
+import { GameAuthorInfo } from '../home/GameAuthorInfo';
 import { LeaderboardTab } from './LeaderboardTab';
 import type { LeaderboardEntry } from './leaderboardTypes';
 import { GameDetailsChangelogSection } from './GameDetailsChangelogSection';
@@ -57,6 +60,8 @@ import type { GameRuntimeLocalSetupResult } from '../../games/gameRuntimeAdapter
 
 
 interface GameDetailsModalProps {
+    presentation?: 'modal' | 'inline';
+    favoriteControl?: ReactNode;
     isOpen: boolean;
     onClose: () => void;
     gameId: string;
@@ -66,6 +71,8 @@ interface GameDetailsModalProps {
     closeOnBackdrop?: boolean;
     /** 导航前调用，通知父组件不要清理地址参数 */
     onNavigate?: () => void;
+    /** 首页 lazy 弹窗从骨架接管时跳过首次透明入场，避免交接空帧 */
+    disableEnterAnimation?: boolean;
 }
 
 type PendingRoomAction = {
@@ -82,7 +89,7 @@ type PendingForceReplaceCreate = {
 };
 
 type MatchEntryLoadingPhase = 'creating' | 'joining';
-const LOBBY_CONNECT_ERROR_TOAST_DELAY_MS = 1500;
+const LOBBY_CONNECT_ERROR_DELAY_MS = 1500;
 const lastLoggedPackageStateByGame = new Map<string, string>();
 
 export function __resetGameDetailsModalPackageStateLogForTests(): void {
@@ -111,7 +118,7 @@ const formatInstalledPackageVersionForTitle = (value: string | undefined): strin
     return normalized.length > 8 ? `${normalized.slice(0, 8)}…` : normalized;
 };
 
-export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate }: GameDetailsModalProps) => {
+export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOpen, onClose, gameId, titleKey, descriptionKey, thumbnail, closeOnBackdrop, onNavigate, disableEnterAnimation }: GameDetailsModalProps) => {
     const navigate = useNavigate();
     const modalRef = useRef<HTMLDivElement>(null);
     const activeMatchCheckRef = useRef<string | null>(null);
@@ -127,9 +134,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const gameDisplayName = resolveGameDisplayName(gameManifest ?? { id: gameId, titleKey }, t, gameId);
     const gameDescription = resolveGameDescription(gameManifest ?? { descriptionKey }, t, descriptionKey);
     const gameAuthorName = resolveGameAuthorName(gameManifest);
-    const gameAuthorLabel = t('authorInfo.button', { author: gameAuthorName });
-    const gameAuthorMobileLabel = t('authorInfo.mobileButton', { author: gameAuthorName });
-    const gameAuthorButtonHint = t('authorInfo.buttonHint');
     const isNativeAndroidCapacitorRuntime = isNativeAndroidRuntime();
     const {
         isPackageManaged: isPackageManagedMobileGame,
@@ -303,7 +307,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     // 房间列表状态
     const [rooms, setRooms] = useState<Room[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [isLobbyLoading, setIsLobbyLoading] = useState(false);
+    const [lobbyStatus, setLobbyStatus] = useState<'loading' | 'ready' | 'error'>('ready');
     const [_localStorageTick, setLocalStorageTick] = useState(0);
     const [pendingAction, setPendingAction] = useState<PendingRoomAction | null>(null);
     const [isConfirmingAction, setIsConfirmingAction] = useState(false);
@@ -328,7 +332,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const [pendingCreateRoomSetupGate, setPendingCreateRoomSetupGate] = useState<PendingCreateRoomSetupGate | null>(null);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = useState(false);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = useState<LocalMatchPreferences | null>(null);
-    const [showAuthorInfoModal, setShowAuthorInfoModal] = useState(false);
     const [matchEntryLoadingPhase, setMatchEntryLoadingPhase] = useState<MatchEntryLoadingPhase | null>(null);
     const passwordModalIdRef = useRef<string | null>(null);
 
@@ -414,7 +417,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     // 使用 socket 订阅房间列表更新（替代轮询）
     useEffect(() => {
         if (!isOpen) {
-            setIsLobbyLoading(false);
+            setLobbyStatus('ready');
             return;
         }
 
@@ -427,12 +430,12 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         };
 
         setRooms([]);
-        setIsLobbyLoading(true);
+        setLobbyStatus('loading');
         window.addEventListener('storage', handleStorage);
         const handleOwnerActive = () => handleStorage();
         window.addEventListener('owner-active-match-changed', handleOwnerActive);
         window.addEventListener('match-credentials-changed', handleStorage);
-        let connectErrorToastTimer: number | null = null;
+        let connectErrorTimer: number | null = null;
 
         // 订阅大厅更新（仅当前游戏）
         const unsubscribeMatches = lobbySocket.subscribe(normalizedGameId, (matches: LobbyMatch[]) => {
@@ -449,31 +452,28 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 publicSetupSummary: m.publicSetupSummary,
             }));
             setRooms(roomList);
-            setIsLobbyLoading(false);
+            setLobbyStatus('ready');
         });
 
         // 订阅连接状态
         const unsubscribeStatus = lobbySocket.subscribeStatus((status) => {
             if (status.connected) {
-                if (connectErrorToastTimer !== null) {
-                    window.clearTimeout(connectErrorToastTimer);
-                    connectErrorToastTimer = null;
+                setLobbyStatus(current => current === 'error' ? 'loading' : current);
+                if (connectErrorTimer !== null) {
+                    window.clearTimeout(connectErrorTimer);
+                    connectErrorTimer = null;
                 }
                 return;
             }
 
             if (status.lastError) {
-                if (connectErrorToastTimer !== null) {
-                    window.clearTimeout(connectErrorToastTimer);
+                if (connectErrorTimer !== null) {
+                    window.clearTimeout(connectErrorTimer);
                 }
-                connectErrorToastTimer = window.setTimeout(() => {
-                    toast.error(
-                        { kind: 'i18n', key: 'error.serviceUnavailable.desc', ns: 'lobby' },
-                        { kind: 'i18n', key: 'error.serviceUnavailable.title', ns: 'lobby' },
-                        { dedupeKey: 'lobbySocket.connectError' }
-                    );
-                    connectErrorToastTimer = null;
-                }, LOBBY_CONNECT_ERROR_TOAST_DELAY_MS);
+                connectErrorTimer = window.setTimeout(() => {
+                    setLobbyStatus('error');
+                    connectErrorTimer = null;
+                }, LOBBY_CONNECT_ERROR_DELAY_MS);
             }
         });
 
@@ -481,18 +481,18 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
         return () => {
             clearTimeout(storageTimeout);
-            setIsLobbyLoading(false);
+            setLobbyStatus('ready');
             window.removeEventListener('storage', handleStorage);
             window.removeEventListener('owner-active-match-changed', handleOwnerActive);
             window.removeEventListener('match-credentials-changed', handleStorage);
-            if (connectErrorToastTimer !== null) {
-                window.clearTimeout(connectErrorToastTimer);
-                connectErrorToastTimer = null;
+            if (connectErrorTimer !== null) {
+                window.clearTimeout(connectErrorTimer);
+                connectErrorTimer = null;
             }
             unsubscribeMatches();
             unsubscribeStatus();
         };
-    }, [isOpen, normalizedGameId, toast]);
+    }, [isOpen, normalizedGameId]);
 
     const storedMatchCredentials = listStoredMatchCredentials();
     const latestStoredMatchCredentials = getLatestStoredMatchCredentials();
@@ -1260,6 +1260,15 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 }
             }
             if (existingGameName && existingMatchID) {
+                if (!options?.forceReplaceOwnerRoom && canForceReplace && getOwnerType() === 'user') {
+                    const claimResult = await tryClaimSeat(existingMatchID, existingGameName);
+                    if (claimResult.success) {
+                        lobbySocket.requestRefresh(normalizedGameId);
+                        shouldPreserveLoading = true;
+                        return;
+                    }
+                }
+
                 if (!options?.forceReplaceOwnerRoom && canForceReplace) {
                     setPendingForceReplaceCreate({
                         config,
@@ -1976,24 +1985,20 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
     return (
         <>
-            <ModalBase
-                onClose={onClose}
-                closeOnBackdrop={closeOnBackdrop}
-                containerClassName="p-4 sm:p-8"
-            >
-                <div
-                    ref={modalRef}
-                    data-testid="game-details-modal-root"
-                    className="
-                        bg-parchment-card-bg pointer-events-auto 
-                        w-[96vw] md:w-full max-w-[28.8rem] md:max-w-[50.4rem]
-                        h-[60vh] md:h-[33rem] max-h-[60vh] md:max-h-[95vh]
-                        rounded-sm shadow-parchment-card-hover 
-                        flex flex-col md:flex-row 
-                        border border-parchment-card-border/30 relative 
-                        overflow-hidden
-                    "
-                >
+            <GameDetailsPresentation presentation={presentation} onClose={onClose} closeOnBackdrop={closeOnBackdrop} containerClassName="p-0 home-game-details-layer" skipEnterAnimation={disableEnterAnimation}>
+                <PlatformGameDetails presentation={presentation} rootRef={modalRef} title={gameDisplayName} description={gameDescription}
+                    thumbnail={thumbnail} playerOptions={gameManifest?.playerOptions ?? []} bestPlayers={gameManifest?.bestPlayers ?? []}
+                    installedVersion={shouldShowInstalledPackageVersionBadge ? installedPackageVersionLabel : undefined}
+                    onClose={onClose} tabs={detailTabs} selectedTab={activeTab} onTab={setActiveTab}
+                    primaryActions={<RoomPrimaryActions compact activeMatch={activeMatch} isActionLoading={isLoading || isPreparingCreateRoom}
+                        onJoinRoom={handleJoinRoom} onAction={handleAction} onForceExitLocal={handleForceExitLocal} onOpenCreateRoom={handleOpenCreateRoom} />}
+                    secondaryActions={<>
+                        {favoriteControl}
+                        {hasTutorialEntry && <button type="button" onClick={handleTutorial}>{t('actions.tutorial')}</button>}
+                        {hasConfigReview && <button type="button" data-testid="game-details-config-review-button" onClick={handleConfigReview}>{t('actions.configReview')}</button>}
+                    </>}
+                    author={<GameAuthorInfo authorName={gameAuthorName} />}
+                    overlayControls={<>
                     {shouldShowMobilePackageCard && (
                         <div
                             className="pointer-events-none absolute bottom-3 left-3 z-20"
@@ -2054,190 +2059,25 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                         </div>
                     )}
 
-                    {/* 装饰性边角 */}
-                    <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-parchment-card-border/60" />
-                    <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-parchment-card-border/60" />
-                    <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-parchment-card-border/60" />
-                    <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-parchment-card-border/60" />
-
-                    {/* 左侧面板 - 游戏信息 */}
-                    <div
-                        data-testid="game-details-sidebar"
-                        className="relative w-full md:w-2/5 shrink-0 overflow-hidden border-b border-parchment-card-border/30 bg-parchment-base-bg/50 transition-all md:border-b-0 md:border-r"
-                    >
-                        <div className="flex h-full min-h-0 flex-col overflow-y-auto p-3 text-left font-serif md:items-center md:p-8 md:text-center">
-                            {/* 缩略图 - 移动端隐藏，桌面端显示 */}
-                            <div className="hidden md:flex w-20 h-20 bg-parchment-card-bg border border-parchment-card-border/30 rounded-[4px] shadow-sm items-center justify-center text-4xl text-parchment-base-text font-bold mb-6 overflow-hidden shrink-0">
-                                {thumbnail}
-                            </div>
-
-                            {/* 标题 - 固定在顶部 */}
-                            <div className="mb-4 flex w-full shrink-0 items-start justify-between gap-3 md:mb-0 md:flex-col md:items-center">
-                                <div className="min-w-0 flex-1 md:flex-none md:text-center">
-                                    <h2
-                                        data-testid="game-details-title"
-                                        data-installed-version={shouldShowInstalledPackageVersionBadge ? installedPackageVersionLabel : undefined}
-                                        className={clsx(
-                                            'inline-block max-w-full align-top text-lg font-bold leading-tight tracking-wide text-parchment-base-text md:mb-2 md:text-2xl',
-                                            shouldShowInstalledPackageVersionBadge && installedPackageVersionLabel
-                                                ? 'after:ml-1.5 after:inline-block after:max-w-[4.75rem] after:translate-y-[-0.05em] after:overflow-hidden after:text-ellipsis after:whitespace-nowrap after:rounded-full after:border after:border-emerald-700/25 after:bg-emerald-50/92 after:px-2 after:py-[0.1rem] after:text-[10px] after:font-semibold after:leading-none after:text-emerald-800 after:align-middle after:content-[attr(data-installed-version)]'
-                                                : '',
-                                        )}
-                                    >
-                                        {gameDisplayName}
-                                    </h2>
-                                </div>
-                                <button
-                                    type="button"
-                                    data-testid="game-details-author-button-mobile"
-                                    onClick={() => setShowAuthorInfoModal(true)}
-                                    className="inline-flex shrink-0 self-baseline whitespace-nowrap border-none bg-transparent p-0 text-right text-[10px] font-semibold leading-none tracking-[0.04em] text-parchment-light-text/85 shadow-none transition-colors hover:bg-transparent hover:text-parchment-base-text focus-visible:outline-none cursor-pointer md:hidden"
-                                    style={{ borderStyle: 'none' }}
-                                    title={gameAuthorButtonHint}
-                                    aria-label={gameAuthorButtonHint}
-                                >
-                                    <span>{gameAuthorMobileLabel}</span>
-                                </button>
-                                <div className="hidden md:block h-px w-12 bg-parchment-card-border/50 opacity-30 mb-4 mx-auto" />
-                            </div>
-                            {/* 描述区域 - 可滚动 */}
-                            <div
-                                data-testid="game-details-description"
-                                className="hidden md:block flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-parchment-card-border/30 scrollbar-track-transparent pr-1 mb-3 md:mb-6 min-h-0"
-                            >
-                                <p className="text-[11px] md:text-sm text-parchment-light-text leading-relaxed italic">
-                                    {gameDescription}
-                                </p>
-                            </div>
-
-                            {/* 人数显示 - 固定在底部上方 */}
-                            <div
-                                data-testid="game-details-player-recommendation"
-                                className="hidden md:block shrink-0 mb-3"
-                            >
-                                {(() => {
-                                    const playerOptions = gameManifest?.playerOptions || [2];
-                                    const bestPlayers = gameManifest?.bestPlayers || [];
-
-                                    return (
-                                        <div className="flex flex-col items-center gap-1.5">
-                                            <div className="flex items-center gap-2">
-                                                {playerOptions.map((count) => {
-                                                    const isBest = bestPlayers.includes(count);
-                                                    return (
-                                                        <div
-                                                            key={count}
-                                                            className={clsx(
-                                                                "flex items-center justify-center w-8 h-8 rounded-[4px] text-sm font-bold border transition-all cursor-default select-none",
-                                                                isBest
-                                                                    ? "bg-parchment-base-text text-parchment-card-bg border-parchment-base-text shadow-sm scale-110"
-                                                                    : "bg-transparent text-parchment-light-text border-parchment-card-border/50 opacity-70"
-                                                            )}
-                                                            title={isBest ? t('common:game_details.best_recommendation') : undefined}
-                                                        >
-                                                            {count}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                            {bestPlayers.length > 0 && (
-                                                <span className="text-[10px] text-parchment-light-text font-medium opacity-60">
-                                                    {t('common:game_details.recommended_players')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
-                            </div>
-
-                            {/* 操作按钮 - 固定在底部 */}
-                            {hasTutorialEntry || hasConfigReview ? (
-                                <div className="mt-1 grid shrink-0 w-full gap-2 md:mt-0 md:grid-cols-1">
-                                    {hasTutorialEntry ? (
-                                        <button
-                                            type="button"
-                                            onClick={handleTutorial}
-                                            className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
-                                        >
-                                            {t('actions.tutorial')}
-                                        </button>
-                                    ) : null}
-                                    {hasConfigReview ? (
-                                        <button
-                                            type="button"
-                                            data-testid="game-details-config-review-button"
-                                            onClick={handleConfigReview}
-                                            className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
-                                        >
-                                            <TableProperties aria-hidden="true" className="h-3.5 w-3.5 md:h-4 md:w-4" strokeWidth={2.1} />
-                                            {t('actions.configReview')}
-                                        </button>
-                                    ) : null}
-                                </div>
-                            ) : null}
-
-                            <div className="hidden shrink-0 w-full justify-center pt-2 md:flex md:pt-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAuthorInfoModal(true)}
-                                    className="inline-flex max-w-full items-center gap-3 rounded-full border border-parchment-card-border/40 bg-parchment-card-bg/95 px-3.5 py-1.5 text-[10px] font-medium tracking-[0.08em] text-parchment-light-text shadow-sm transition-all hover:border-parchment-base-text/35 hover:bg-parchment-card-bg hover:text-parchment-base-text cursor-pointer"
-                                    title={gameAuthorButtonHint}
-                                    aria-label={gameAuthorButtonHint}
-                                >
-                                    <span className="truncate">{gameAuthorLabel}</span>
-                                    <Info size={14} strokeWidth={2.2} className="shrink-0 opacity-90" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 右侧面板 - 大厅/排行 */}
-                    <div className="flex-1 p-3 sm:p-8 flex flex-col bg-parchment-card-bg font-serif overflow-hidden">
-                        <div className="flex justify-between items-center mb-4 sm:mb-6 gap-2">
-                            <div
-                                data-testid="game-details-tab-row"
-                                className="flex min-w-0 flex-1 items-center justify-between gap-1.5 pr-1 sm:gap-4 sm:overflow-x-auto sm:no-scrollbar sm:mask-linear-fade sm:pr-2 sm:justify-start"
-                            >
-                                {detailTabs.map((tab, index) => (
-                                    <div key={tab.id} className="contents">
-                                        {index > 0 && <div className="hidden h-4 w-px shrink-0 bg-[#e5e0d0] sm:block sm:h-6" />}
-                                        <button
-                                            type="button"
-                                            data-testid={`game-details-tab-${tab.id}`}
-                                            onClick={() => setActiveTab(tab.id)}
-                                            className={clsx(
-                                                'min-w-0 shrink whitespace-nowrap border-b-2 border-transparent pb-0.5 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors sm:shrink-0 sm:text-lg sm:tracking-wider',
-                                                activeTab === tab.id
-                                                    ? 'border-parchment-base-text text-parchment-base-text'
-                                                    : 'text-parchment-light-text hover:text-parchment-base-text',
-                                            )}
-                                        >
-                                            <span className="sm:hidden">{tab.mobileLabel}</span>
-                                            <span className="hidden sm:inline">{tab.label}</span>
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                            <button
-                                type="button"
-                                data-testid="game-details-close-button"
-                                onClick={onClose}
-                                className="p-1.5 hover:bg-parchment-base-bg rounded-full text-parchment-light-text hover:text-parchment-base-text transition-colors cursor-pointer shrink-0"
-                            >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
+                    </>}
+                >
+                        {presentation === 'inline' && activeTab === 'lobby' && <aside className="platform-library-detail-updates">
+                            <h3>{t('tabs.changelog')}</h3><GameDetailsChangelogSection gameId={normalizedGameId} />
+                        </aside>}
                         {activeTab === 'lobby' && (
                             <RoomList
+                                showPrimaryActions={false}
                                 roomItems={roomItems}
                                 gameManifest={gameManifest}
                                 gameTranslationNamespace={`game-${normalizedGameId}`}
                                 activeMatch={activeMatch}
                                 isActionLoading={isLoading || isPreparingCreateRoom}
-                                isLobbyLoading={isLobbyLoading}
+                                isLobbyLoading={lobbyStatus === 'loading'}
+                                connectionError={lobbyStatus === 'error'}
+                                onRetryConnection={() => {
+                                    setLobbyStatus('loading');
+                                    lobbySocket.reconnectWithCurrentSettings();
+                                }}
                                 onJoinRoom={handleJoinRoom}
                                 onJoinRequest={handleJoinRequest}
                                 onAction={handleAction}
@@ -2262,9 +2102,8 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                                 <GameReviews gameId={normalizedGameId} />
                             </div>
                         )}
-                    </div>
-                </div>
-            </ModalBase>
+                </PlatformGameDetails>
+            </GameDetailsPresentation>
 
             {/* 创建房间配置弹窗 */}
             {gameManifest && (
@@ -2291,47 +2130,6 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                     />
                 </div>
             ) : null}
-
-            {showAuthorInfoModal && (
-                <ModalBase
-                    onClose={() => setShowAuthorInfoModal(false)}
-                    closeOnBackdrop
-                    containerClassName="p-4 sm:p-8"
-                >
-                    <div
-                        data-testid="game-details-author-modal"
-                        className="pointer-events-auto w-[min(92vw,24rem)] rounded-[8px] border border-parchment-card-border/30 bg-parchment-card-bg p-5 text-parchment-base-text shadow-parchment-card-hover"
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-parchment-light-text">
-                                    <Info size={14} />
-                                    <span>{t('authorInfo.title')}</span>
-                                </div>
-                                <h3 className="mt-3 text-xl font-bold leading-tight">
-                                    {gameAuthorName}
-                                </h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowAuthorInfoModal(false)}
-                                className="rounded-full p-1.5 text-parchment-light-text transition-colors hover:bg-parchment-base-bg hover:text-parchment-base-text cursor-pointer"
-                                title={t('authorInfo.close')}
-                            >
-                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="mt-4 rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/40 px-3 py-2 text-sm">
-                            {t('authorInfo.game', { game: gameDisplayName })}
-                        </div>
-                        <p className="mt-3 text-sm leading-6 text-parchment-light-text">
-                            {t('authorInfo.hint')}
-                        </p>
-                    </div>
-                </ModalBase>
-            )}
 
             {pendingPackageInstall && (
                 <GamePackageInstallConfirmModal

@@ -11,12 +11,26 @@
  * - 狱火铸剑用于建造阶段演示事件卡施放
  */
 
-import type { TutorialManifest } from '../../engine/types';
+import type { TutorialHiddenAutomationContract, TutorialManifest } from '../../engine/types';
 import { SW_COMMANDS, SW_EVENTS } from './domain';
 import { FLOW_COMMANDS, FLOW_EVENTS } from '../../engine/systems/FlowSystem';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { SPRITE_INDEX } from './config/factions/necromancer';
 import { getCardPoolByFaction } from './config/cardRegistry';
+
+const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
+  kind: 'setup-precondition',
+  reason,
+});
+
+const compressedRepeat = (
+  equivalentStepIds: string[],
+  reason: string,
+): TutorialHiddenAutomationContract => ({
+  kind: 'compressed-repeat',
+  equivalentStepIds,
+  reason,
+});
 
 // 事件匹配器
 const MATCH_PHASE_MOVE = { type: FLOW_EVENTS.PHASE_CHANGED, match: { to: 'move' } };
@@ -74,6 +88,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
           },
         },
       ],
+      hiddenAutomation: setupPrecondition('Create the fixed legal Summoner Wars starting state before the first visible step.'),
     },
 
     // 1: 欢迎 — 高亮棋盘全局
@@ -425,6 +440,10 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
         { commandType: FLOW_COMMANDS.ADVANCE_PHASE, payload: {}, playerId: '1' },
         { commandType: FLOW_COMMANDS.ADVANCE_PHASE, payload: {}, playerId: '1' },
       ],
+      hiddenAutomation: compressedRepeat(
+        ['end-summon', 'end-move', 'build-action', 'end-attack', 'magic-action', 'end-draw'],
+        'Opponent repeats the same phase progression family after the player has completed a full turn.',
+      ),
       advanceOnEvents: [
         { type: SW_EVENTS.TURN_CHANGED, match: { to: '0' } },
       ],

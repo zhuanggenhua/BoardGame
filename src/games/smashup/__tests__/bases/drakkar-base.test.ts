@@ -68,7 +68,7 @@ describe('base_drakkar: 首次随从揭示并抽取合格牌', () => {
         expect(getPromptOptions(prompt).some((entry: any) => entry.value?.targetPlayerId === '1')).toBe(true);
     });
 
-    it('base_drakkar 首次有随从打到这里时会提示选择另一位玩家并把合格牌抽到发动者手里', () => {
+    it('base_drakkar 首次有随从打到这里时会先揭示，再询问是否把合格牌加入手牌', () => {
         const result = triggerBaseAbilityWithMS('base_drakkar', 'onMinionPlayed', {
             state: makeState({
                 bases: [{
@@ -108,9 +108,17 @@ describe('base_drakkar: 首次随从揭示并抽取合格牌', () => {
         expect(getPromptOptions(prompt).some((entry: any) => entry.value?.skip === true)).toBe(true);
 
         const option = getPromptOption(prompt, entry => entry.value?.targetPlayerId === '1');
-        const resolved = runCommand(
+        const revealed = runCommand(
             result.matchState!,
             respondCommand(option.id, '0'),
+            defaultTestRandom,
+        );
+
+        const drawPrompt = getSimpleChoicePrompt(revealed.finalState, 'vikings_reveal_eligible');
+        const drawOption = getPromptOption(drawPrompt, entry => entry.value?.draw === true);
+        const resolved = runCommand(
+            revealed.finalState,
+            respondCommand(drawOption.id, '0'),
             defaultTestRandom,
         );
 
@@ -156,9 +164,17 @@ describe('base_drakkar: 首次随从揭示并抽取合格牌', () => {
 
         const prompt = getInteractionsFromResult(result)[0];
         const option = getPromptOption(prompt, entry => entry.value?.targetPlayerId === '1');
-        const resolved = runCommand(
+        const revealed = runCommand(
             result.matchState!,
             respondCommand(option.id, '0'),
+            defaultTestRandom,
+        );
+
+        const drawPrompt = getSimpleChoicePrompt(revealed.finalState, 'vikings_reveal_eligible');
+        const drawOption = getPromptOption(drawPrompt, entry => entry.value?.draw === true);
+        const resolved = runCommand(
+            revealed.finalState,
+            respondCommand(drawOption.id, '0'),
             defaultTestRandom,
         );
 
@@ -209,9 +225,17 @@ describe('base_drakkar: 首次随从揭示并抽取合格牌', () => {
         expect(getPromptSourceId(prompt)).toBe('base_drakkar');
 
         const option = getPromptOption(prompt, entry => entry.value?.targetPlayerId === '1');
-        const resolved = runCommand(
+        const revealed = runCommand(
             result.matchState!,
             respondCommand(option.id, '0'),
+            defaultTestRandom,
+        );
+
+        const drawPrompt = getSimpleChoicePrompt(revealed.finalState, 'vikings_reveal_eligible');
+        const drawOption = getPromptOption(drawPrompt, entry => entry.value?.draw === true);
+        const resolved = runCommand(
+            revealed.finalState,
+            respondCommand(drawOption.id, '0'),
             defaultTestRandom,
         );
 

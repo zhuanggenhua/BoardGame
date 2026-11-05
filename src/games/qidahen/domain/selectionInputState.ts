@@ -16,6 +16,14 @@ import {
     getQidahenWheelMoveById,
 } from './wheelMoves';
 import { updateQidahenTurnLabel } from './turnLabelState';
+import {
+    buildQidahenWheelDispatchPaymentState,
+    isQidahenWheelDispatchPaymentPending,
+} from './wheelDispatchPayment';
+import {
+    getQidahenWheelRecruitTrainPaymentState,
+    isQidahenWheelRecruitTrainPaymentPending,
+} from './wheelRecruitTrain';
 import type {
     QidahenCore,
     QidahenEvent,
@@ -188,6 +196,20 @@ export const reduceQidahenSelectionInputEvent = (
         }
         case 'PAYMENT_CARD_SELECTED': {
             const selectedPaymentCardIds = toggleQidahenPaymentCard(state, event.payload.cardId);
+            if (isQidahenWheelDispatchPaymentPending(state)) {
+                return dependencies.updateTurnLabel({
+                    ...state,
+                    selectedPaymentCardIds,
+                    payment: buildQidahenWheelDispatchPaymentState(selectedPaymentCardIds.length),
+                });
+            }
+            if (isQidahenWheelRecruitTrainPaymentPending(state)) {
+                return dependencies.updateTurnLabel({
+                    ...state,
+                    selectedPaymentCardIds,
+                    payment: getQidahenWheelRecruitTrainPaymentState(selectedPaymentCardIds.length),
+                });
+            }
             return dependencies.updateTurnLabel({
                 ...state,
                 selectedPaymentCardIds,

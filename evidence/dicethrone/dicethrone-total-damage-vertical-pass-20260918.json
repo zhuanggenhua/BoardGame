@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-19T01:07:43+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "死无全尸真实入口结算 2 个利爪为攻击修正 +2，并在总伤害徽章内部竖直显示 5 到 7",
+      "status": "PASS",
+      "evidence": [
+        "真实 vampire-lord-real-entry E2E 通过：奖励骰面为 2 个利爪，结算事件 totalDamage 为 2，pendingAttack.attackModifierBonusDamage 为 2。",
+        "真实截图中右侧总伤害徽章保留原位置，变化值按 5、向下箭头、7 竖直排列；攻击修正徽章仍在骰盘上方。"
+      ]
+    },
+    {
+      "requirement": "攻击修正 hover 使用死无全尸自己的攻击修正徽章，提示文字完整显示在窗口内",
+      "status": "PASS",
+      "evidence": [
+        "E2E 直接 hover data-testid=active-modifier-badge，并断言提示包含“已激活的攻击修正牌”和“死无全尸！”。",
+        "截图实际显示攻击修正徽章左侧的 hover 提示，提示框没有越过当前 1920x1080 视口边界。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个利爪加-2-伤害，并竖直显示总伤害-5-到-7\\吸血鬼领主-死无全尸-总伤害5到7竖排-攻击修正位置保留-hover提示在窗口内.jpg"
+  ]
+}

@@ -8,12 +8,14 @@ import {
 export type ManualSetupSelectionActionKind =
     | 'select-faction'
     | 'setup-select-faction'
-    | 'setup-select-character';
+    | 'setup-select-character'
+    | 'faction-selection';
 
 const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'select-faction',
     'setup-select-faction',
     'setup-select-character',
+    'faction-selection',
 ]);
 
 const MANUAL_SETUP_READY_COMMAND_TYPES = new Set([
@@ -252,6 +254,16 @@ export function shouldReleaseManualSetupAttemptFromSharedState(args: {
             return true;
         }
         return phase !== null && phase !== 'factionSelect';
+    }
+
+    if (args.actionKind === 'faction-selection') {
+        const factionSelection = core?.factionSelection as {
+            selections?: Record<string, unknown>;
+        } | null | undefined;
+        if (factionSelection && isPlainRecord(factionSelection.selections)) {
+            return factionSelection.selections[args.playerId] === args.selectionId;
+        }
+        return core?.factionSelection === null;
     }
 
     if (args.actionKind === 'setup-select-faction') {

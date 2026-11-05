@@ -194,6 +194,8 @@
       "skip": "Skip"
     },
     "turn": "Turn",
+    "current_player": "CURRENT PLAYER",
+    "spectator_read_only": "SPECTATOR · VIEW ONLY",
     "you": "YOU",
     "opp": "OPP",
     "score_sheet": "Score Sheet",
@@ -402,13 +404,15 @@
     "diy_clowns_banana_peel_title": "Banana Peel: choose the source base",
     "diy_clowns_banana_peel_minions_title": "Banana Peel: choose up to two of your minions to move",
     "diy_clowns_banana_peel_base_title": "Banana Peel: choose the destination base",
-    "diy_clowns_clown_car_title": "Clown Car: choose one of your minions to move here",
-    "diy_clowns_clown_pyramid_title": "Clown Pyramid: choose one of your minions to gain +2 power",
-    "diy_clowns_colorful_scarf_title": "Colorful Scarf: choose an action to transfer",
-    "diy_clowns_confetti_bucket_title": "Confetti Bucket: choose a minion to return to hand",
-    "diy_clowns_pie_in_the_face_title": "Pie in the Face: choose an opponent to discard an action",
-    "diy_clowns_clown_girl_title": "Clown Girl: choose an extra action to play",
+    "diy_clowns_clown_car_title": "Clown Car: choose cards to shuffle into your deck",
+    "diy_clowns_clown_pyramid_title": "Clown Pyramid: choose one of your minions to gain the power bonus",
+    "diy_clowns_colorful_scarf_title": "Colorful Scarf: choose a card to discard, or skip",
+    "diy_clowns_confetti_bucket_title": "Confetti Bucket: choose cards to discard",
+    "diy_clowns_juggling_title": "Juggling: choose an action to discard",
+    "diy_clowns_pie_in_the_face_title": "Pie in the Face: choose one of your minions to gain power",
+    "diy_clowns_clown_girl_title": "Clown Girl: choose an action to discard from your deck",
     "diy_clowns_mcdonald_clown_title": "McDonald Clown: choose a revealed action to put into your hand",
+    "diy_clowns_dancing_clown_title": "Dancing Clown: play the randomly chosen standard action?",
     "base_diy_clowns_circus_tent_title": "Circus Tent: discard the revealed action card?",
     "base_diy_clowns_circus_tent_discard_option": "Discard the action",
     "base_diy_clowns_circus_tent_keep_option": "Put it back on top",
@@ -1094,6 +1098,8 @@
     "vikings_huscarl_skip_option": "Skip (do not place a card)",
     "vikings_shield_maiden_title": "Shield Maiden: choose another player and reveal the top card of their deck",
     "vikings_shield_maiden_skip_option": "Skip (do not reveal)",
+    "vikings_reveal_eligible_draw_option": "Add to hand",
+    "vikings_reveal_eligible_skip_option": "Return to deck top",
     "vikings_valkyrie_title": "Valkyrie: choose a minion in another player's discard pile",
     "vikings_valkyrie_skip_option": "Skip (do not return one)",
     "vikings_ransack_title": "Ransack: choose a played action or a buried card to put into your hand",
@@ -1425,6 +1431,8 @@
     "munchkin_halitosis_move_title": "Potion of Halitosis: move one of your minions",
     "munchkin_potion_of_duplication_choose_talent_title": "Potion of Duplication: choose another minion's talent",
     "munchkin_magic_missile_destroy_title": "Magic Missile: choose a target minion",
+    "munchkin_tiger_steed_destroy_title": "Tiger Steed: choose a minion to destroy",
+    "munchkin_tiger_steed_skip_destroy_option": "Skip (do not destroy)",
     "munchkin_straight_line_running_away_choose_treasure_title": "Potion of Straight Line Running Away: choose a revealed treasure",
     "munchkin_rocket_boots_move_title": "Rocket Boots: choose a destination base",
     "munchkin_mages_blaster_master_discard_title": "Blaster Master: choose a hand card to discard",
@@ -1497,6 +1505,7 @@
     "munchkin_warriors_big_hero_monster_title": "Big Hero: choose a monster to destroy",
     "munchkin_warriors_berserker_monster_title": "Berserker: choose a monster with power no greater than itself",
     "munchkin_warriors_taunter_mode_title": "Taunter: choose whether to play a monster",
+    "munchkin_warriors_taunter_play_monster_option": "Play a monster",
     "munchkin_warriors_dungeon_bait_mode_title": "Dungeon Bait: choose an effect",
     "munchkin_warriors_dungeon_bait_base_title": "Dungeon Bait: choose the base for the monster",
     "munchkin_warriors_dungeon_bait_minion_title": "Dungeon Bait: choose a minion of power 2 or less",
@@ -1505,6 +1514,9 @@
     "munchkin_warriors_ruckus_mode_title": "Ruckus: choose an effect",
     "munchkin_warriors_war_cry_monster_title": "War Cry: choose a monster",
     "munchkin_warriors_war_cry_minion_title": "War Cry: choose a minion on that base",
+    "ancient_incas_signs_in_the_stars_turn_start_title": "Signs in the Stars: you may turn this card face down until the end of the turn",
+    "ancient_incas_signs_in_the_stars_turn_start_keep_face_up": "Keep face up",
+    "ancient_incas_signs_in_the_stars_turn_start_face_down": "Turn face down until the end of the turn",
     "base_treehouse_player_title": "Treehouse: choose another player",
     "base_treehouse_draw_title": "Treehouse: choose whether to draw a card",
     "base_treehouse_draw_option": "Draw a card",
@@ -1523,6 +1535,8 @@
     "avengers_modular_tech_destination_minion_title": "Modular Tech: choose the equipment's new minion",
     "avengers_modular_tech_source_fallback_option": "Ongoing action",
     "avengers_modular_tech_source_title": "Modular Tech: choose equipment or a base artifact to move",
+    "avengers_modular_tech_source_base_action_option": "Base action",
+    "avengers_modular_tech_source_minion_action_option": "Minion attachment action",
     "avengers_strategize_order_first_title": "Strategize: choose the first card for the top of your deck",
     "avengers_strategize_order_second_title": "Strategize: choose the second card for the top of your deck",
     "shield_reassignment_title": "Reassignment: choose up to two of your minions at other bases to move to the target base",
@@ -1669,14 +1683,41 @@
     "explorers_dr_livingstone_i_presume_title": "Dr Livingstone, I Presume?: choose a lone minion to shuffle into its owner's deck",
     "explorers_forgotten_horrors_title": "Forgotten Horrors: choose another base to transfer to",
     "international_incident_move_destination_title": "Choose a destination base",
+    "sumo_wrestlers_body_slam_player_title": "Body Slam: choose another player",
+    "sumo_wrestlers_body_slam_base_title": "Body Slam: choose a base where you have a minion and that player has a minion",
+    "sumo_wrestlers_body_slam_destination_title": "Body Slam: choose another base to move to",
+    "sumo_wrestlers_yokozuna_move_title": "Yokozuna: choose another player's minion to move",
+    "sumo_wrestlers_technique_prize_title": "Technique Prize: choose one of your minions to place three +1 power counters on",
+    "sumo_wrestlers_fighting_spirit_prize_title": "Fighting Spirit Prize: distribute two +1 power counters among your minions",
+    "sumo_wrestlers_grasp_the_belt_title": "Grasp the Belt: choose a minion to move",
+    "sumo_wrestlers_third_tier_title": "Third Tier: choose another player's minion of power 3 or less here",
+    "musketeers_en_garde_title": "En Garde: choose a minion to gain +1 power until end of turn",
+    "musketeers_on_a_roll_title": "On a Roll: choose a minion for the extra actions to affect",
+    "musketeers_biding_time_title": "Biding Time: choose a minion to gain +2 power until end of turn",
+    "musketeers_make_way_title": "Make Way: choose one of your minions to move",
+    "musketeers_one_for_all_title": "One for All: choose a base",
+    "musketeers_last_stand_title": "Last Stand: choose one of your minions at the scoring base",
+    "mounties_when_calls_the_badge_title": "When Calls the Badge: choose a base to place a +1 power counter on each of your minions there",
+    "mounties_power_poutine_title": "Power Poutine: choose up to two of your minions to gain +2 power",
+    "mounties_move_aboot_title": "Move Aboot: choose one of your minions to move",
+    "mounties_eh_title": "Eh?: choose one of your minions to gain +1 power until end of turn",
+    "luchadors_yellow_demon_title": "Yellow Demon: choose a Set-Up action to put into your hand",
+    "musketeers_token_of_affection_title": "Token of Affection: choose an action that directly affects a minion to put into your hand",
+    "base_the_dohyo_title": "The Dohyo: you may move another player's minion here to another base",
+    "base_strategic_syrup_reserve_title": "Strategic Syrup Reserve: you may move another player's minion to here",
     "mounties_northern_mover_mode_title": "Northern Mover: choose an effect",
     "mounties_northern_mover_target_title": "Northern Mover: choose another of your minions",
+    "mounties_always_get_our_man_source_title": "Always Get Our Man: choose your minion to move",
+    "mounties_always_get_our_man_target_title": "Always Get Our Man: choose a lower-power opposing minion",
     "sumo_wrestlers_chikara_mizu_discard_title": "Chikara Mizu: discard 1 card to give the selected minion +4 power until end of turn",
     "sumo_wrestlers_chikara_mizu_mode_title": "Chikara Mizu: choose +2 or discard for +4",
     "sumo_wrestlers_chikara_mizu_target_title": "Chikara Mizu: choose one of your minions",
     "sumo_wrestlers_bulking_stew_target_title": "Bulking Stew: choose one of your minions to place power counters",
     "sumo_wrestlers_bulking_stew_discard_title": "Bulking Stew: choose any number of hand cards to discard",
     "sumo_wrestlers_yokozuna_mode_title": "Yokozuna: choose a talent effect",
+    "sumo_wrestlers_body_slam_player_title": "Body Slam: choose another player",
+    "sumo_wrestlers_body_slam_base_title": "Body Slam: choose a base where you have a minion and that player has a minion",
+    "sumo_wrestlers_body_slam_destination_title": "Body Slam: choose another base to move to",
     "mounties_haich_q_move_title": "Haich-Q: choose one of your minions to move to or from this base",
     "luchadors_tag_team_base_title": "Tag Team: choose a base for the extra minion",
     "luchadors_cheap_pop_title": "Cheap Pop: choose one of your minions",
@@ -1879,6 +1920,7 @@
     "playerLabel": "P{{playerId}}",
     "baseIndex": "Base {{index}}",
     "baseUnknown": "Unknown Base",
+    "ability_not_implemented": "Ability not yet implemented",
     "limitType": {
       "minion": "Minion",
       "action": "Action"
@@ -2029,7 +2071,7 @@
     },
     "munchkin_mages": {
       "name": "Mages",
-      "description": "A Munchkin faction using discard costs, extra plays, and monster interactions. Static intake only; monster mechanics are still in progress."
+      "description": "A Munchkin faction using discard costs, extra plays, monster interactions, and hand-size recovery."
     },
     "munchkin_elves": {
       "name": "Elves",
@@ -3542,7 +3584,7 @@
     },
     "ninja_seeing_stars": {
       "name": "Seeing Stars",
-      "effectText": "Play on a base. Ongoing: Your minions here are not affected by other players' actions."
+      "effectText": "Destroy a minion of power 3 or less."
     },
     "ninja_disguise": {
       "name": "Disguise",
@@ -11084,27 +11126,27 @@
     },
     "frozen_snowgie": {
       "name": "Snowgie",
-      "abilityText": "Choose a character here. It gains +1 power until the end of the turn."
+      "abilityText": "If you have a character here with power 5 or more, place a +1 power counter on it."
     },
     "frozen_marshmallow": {
       "name": "Marshmallow",
-      "abilityText": "Ongoing: Other players' characters here have -1 power."
+      "abilityText": "Ongoing: If Elsa is here, this character has +2 power."
     },
     "frozen_olaf": {
       "name": "Olaf",
-      "abilityText": "Move one of your characters here to another base. Draw a card."
+      "abilityText": "Talent: Look at the top two cards of your deck. You may place any number of them into your discard pile. Put the rest back on top of your deck in any order."
     },
     "frozen_sven": {
       "name": "Sven",
-      "abilityText": "You may place a character of power 4 or less from your discard pile into your hand."
+      "abilityText": "Talent: Move one of your characters to this base, OR search your deck and/or discard pile for Kristoff, reveal it, and draw it. Shuffle your deck if you searched it."
     },
     "frozen_anna": {
       "name": "Anna",
-      "abilityText": "Ongoing: If Kristoff is here, this character is not affected by other players' cards."
+      "abilityText": "Search your deck and/or discard pile for Elsa or Kristoff, reveal it, and draw it. Shuffle your deck if you searched it. Ongoing: Your other characters here cannot be destroyed by other players' cards."
     },
     "frozen_kristoff": {
       "name": "Kristoff",
-      "abilityText": "Ongoing: If Anna is here, this character has +2 power."
+      "abilityText": "Ongoing: If Anna and/or Elsa is here, this character has +2 power. Talent: Play a character of power 5 or less from your hand or discard pile as an extra character, OR place Marshmallow from your discard pile into your hand."
     },
     "frozen_elsa": {
       "name": "Elsa",
@@ -11112,35 +11154,35 @@
     },
     "frozen_act_of_true_love": {
       "name": "Act of True Love",
-      "effectText": "Choose one of your characters. It is not affected by other players' cards until the end of the turn. Draw a card."
+      "effectText": "Destroy one of your characters. Choose another character from your discard pile and play it as an extra character."
     },
     "frozen_big_summer_blowout": {
       "name": "Big Summer Blowout",
-      "effectText": "Choose a base. Draw a card for each of your characters there."
+      "effectText": "Discard a card. Place a character from your discard pile into your hand."
     },
     "frozen_do_you_want_to_build_a_snowman": {
       "name": "Do You Want to Build a Snowman?",
-      "effectText": "Search your deck and/or discard pile for up to two Snowgies, reveal them, and place them into your hand. Shuffle your deck."
+      "effectText": "Play Marshmallow, Olaf, or a Snowgie from your discard pile as an extra character."
     },
     "frozen_frozen_port": {
       "name": "Frozen Port",
-      "effectText": "Play on a base. Ongoing: Other players cannot move characters to or from here."
+      "effectText": "Base talent. Ongoing: If another player can play a character at another base, they cannot play their first character of each turn here."
     },
     "frozen_hans_westergaard": {
       "name": "Hans Westergaard",
-      "effectText": "Choose a base. Destroy a character there of power 3 or less."
+      "effectText": "Each player reveals a character from their hand, or reveals that they have no characters. Shuffle all revealed characters into their owners' decks."
     },
     "frozen_let_it_go": {
       "name": "Let It Go",
-      "effectText": "Return one of your characters to your hand. Play an extra action."
+      "effectText": "Look at the top three cards of your deck. Draw one, then place the rest into your discard pile and/or back on top of your deck in any order."
     },
     "frozen_lock_the_gates": {
       "name": "Lock the Gates",
-      "effectText": "Play on a base. Ongoing: Other players cannot play characters of power 3 or less here."
+      "effectText": "Base talent. Ongoing: Your characters here cannot be destroyed by other players' cards. Talent: Look at the top card of your deck. Discard it or put it back on top of your deck."
     },
     "frozen_reindeers_are_better_than_people": {
       "name": "Reindeers Are Better Than People",
-      "effectText": "Choose one of your characters. It gains +2 power until the end of the turn. If Sven is in play, it gains +4 power instead."
+      "effectText": "Search your deck and/or discard pile for a character. Shuffle your deck if you searched it. If that card has power 3 or less, play it as an extra character; otherwise, discard it."
     },
     "lion_king_lion_cub": {
       "name": "Lion Cub",
@@ -11272,11 +11314,11 @@
     },
     "base_ice_palace": {
       "name": "Ice Palace",
-      "abilityText": "Other players' characters here have -1 power."
+      "abilityText": "Characters here cannot be destroyed or moved by other players' cards."
     },
     "base_arendelle": {
       "name": "Arendelle",
-      "abilityText": "The player with the most characters here gains 1 extra VP."
+      "abilityText": "After you play a character here, you may look at the top two cards of your deck, draw one, and place the other into your discard pile."
     },
     "base_jungle_paradise": {
       "name": "Jungle Paradise",
@@ -12282,7 +12324,8 @@
       "abilityText": "After you play this minion, you may play an extra minion this turn. That extra minion may be a Treasure minion."
     },
     "munchkin_treasure_tiger_steed": {
-      "name": "Tiger Steed"
+      "name": "Tiger Steed",
+      "abilityText": "You may destroy a minion of power 2 or less here."
     },
     "munchkin_treasure_bag_of_caltrops": {
       "name": "Bag of Caltrops",

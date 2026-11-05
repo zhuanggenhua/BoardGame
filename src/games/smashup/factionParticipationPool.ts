@@ -1,7 +1,6 @@
 import {
     buildFactionSelectionIdentitySet,
     isSmashUpDiyFaction,
-    isSmashUpFactionImplementationInProgress,
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
 } from './domain/ids';
@@ -251,7 +250,6 @@ export function isSmashUpFactionAvailableForParticipation(
     enabledExpansions: readonly string[] = DEFAULT_ENABLED_EXPANSIONS,
 ): boolean {
     return factionId !== SMASHUP_FACTION_IDS.MADNESS
-        && !isSmashUpFactionImplementationInProgress(factionId)
         && (!isSmashUpDiyFaction(factionId) || enabledExpansions.includes('diy'))
         && getFactionCards(factionId).length > 0;
 }

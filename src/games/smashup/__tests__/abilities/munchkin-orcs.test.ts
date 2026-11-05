@@ -1,4 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { GameTestRunner } from '../../../../engine/testing';
+import { createInitialSystemState } from '../../../../engine/pipeline';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry, resolveAbilityDefinition } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
@@ -7,6 +9,8 @@ import { clearOngoingEffectRegistry, fireTriggers, getModifiedBaseVp, isCardSupp
 import { clearPowerModifierRegistry, getEffectivePower } from '../../domain/ongoingModifiers';
 import type { SmashUpCore } from '../../domain/types';
 import { getCardDef } from '../../data/cards';
+import { SmashUpDomain } from '../../domain';
+import { smashUpSystemsForTest } from '../../game';
 import {
     applyEvents,
     expectRegisteredInteractionHandlerContract,
@@ -22,6 +26,31 @@ import {
     respondToPromptOption,
 } from '../helpers';
 import { defaultTestRandom } from '../testRunner';
+
+const ORCS_RESPONSE_PLAYER_IDS = ['0', '1'];
+
+function makeOrcsScoringMatchState(cardDefId: string) {
+    const core = makeState({
+        players: {
+            '0': makePlayer('0', {
+                hand: [makeCard(`response-${cardDefId}`, cardDefId, 'action', '0')],
+            }),
+            '1': makePlayer('1'),
+        },
+        bases: [
+            makeBase('base_garrison', [
+                makeMinion('own-power', 'alien_invader', '0', 8),
+                makeMinion('enemy-power', 'pirate_first_mate', '1', 5),
+            ]),
+            makeBase('base_the_homeworld'),
+        ],
+        baseDeck: ['base_the_homeworld'],
+        turnNumber: 1,
+    });
+    const sys = createInitialSystemState(ORCS_RESPONSE_PLAYER_IDS, smashUpSystemsForTest, undefined);
+    sys.phase = 'playCards';
+    return { core, sys };
+}
 
 beforeAll(() => {
     clearRegistry();
@@ -625,5 +654,31 @@ describe('萌奇金兽人派系随从', () => {
             now: 100,
         });
         expect(invalidValidation).toBe('你没有领先第二名至少 3 点力量');
+    });
+
+    it.each([
+        'munchkin_orcs_and_stay_down',
+        'munchkin_orcs_angry_pillagers',
+        'munchkin_orcs_dogpile',
+    ])('计分前响应窗口应暴露 %s 的真实手牌响应选项', (cardDefId) => {
+        const runner = new GameTestRunner({
+            domain: SmashUpDomain,
+            systems: smashUpSystemsForTest,
+            playerIds: ORCS_RESPONSE_PLAYER_IDS,
+            setup: () => makeOrcsScoringMatchState(cardDefId),
+        });
+
+        const result = runner.run({
+            name: `${cardDefId} beforeScoring response`,
+            commands: [{ type: 'ADVANCE_PHASE', playerId: '0', payload: undefined }] as any[],
+        });
+
+        const prompt = getSimpleChoicePrompt(result.finalState, 'smashup_reaction_choose');
+        expect(prompt.playerId).toBe('0');
+        expect(prompt.options.some(option =>
+            option.value?.kind === 'play_action'
+            && option.value?.cardUid === `response-${cardDefId}`
+            && option.value?.targetBaseIndex === 0,
+        )).toBe(true);
     });
 });

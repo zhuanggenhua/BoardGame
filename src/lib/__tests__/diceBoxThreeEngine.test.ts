@@ -1,504 +1,155 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { Matrix4, Quaternion, Vector3 } from 'three';
 
-import { DiceBoxThreeEngine, installWebGlInfoLogNullGuard, type DiceBoxDieSkin, type DiceBoxStyleProfile } from '../dice-box-threejs/engine';
+import { DiceBoxThreeEngine } from '../dice-box-threejs/engine';
 
-describe('DiceBoxThreeEngine', () => {
-    afterEach(() => {
-        vi.unstubAllGlobals();
-    });
-
-    it('兼容返回 null 的 WebGL shader 日志，避免第三方 three trim 崩溃', () => {
-        class MockWebGLRenderingContext {
-            getShaderInfoLog(_shader: WebGLShader): string | null {
-                return null;
+describe('DiceBoxThreeEngine contained throw animation', () => {
+    it.each([[0.99, 0.99, 0.8, 0.4], [0.15, 0.72, 0.94, 0.25], [0.32, 0.18, 0.66, 0.6]])(
+        '原生随机投掷轴生成纯旋转，首帧不放大骰体：%j', (x, y, z, angle) => {
+            const rawRotation = new Quaternion().setFromAxisAngle(new Vector3(x, y, z), angle * Math.PI * 2);
+            expect(Math.abs(rawRotation.length() - 1)).toBeGreaterThan(0.01);
+            const engine = Object.create(DiceBoxThreeEngine.prototype) as any;
+            engine.styleProfile = { baseScale: 84 };
+            engine.worldBounds = { width: 604, height: 244 };
+            engine.container = { clientWidth: 604, clientHeight: 244 };
+            engine.box = {};
+            const vector = { index: 0, type: 'd10', axis: { x, y, z, a: angle },
+                pos: { x: 0, y: 0, z: 0 }, velocity: { x: 0, y: 0, z: 0 }, angle: { x: 0, y: 0, z: 0 } };
+            engine.constrainThrowVectorsToVisibleTray([vector]);
+            // 与原库spawn相同的轴角公式；真实矩阵必须保长，不能靠画布钳位掩盖几何膨胀。
+            const rotation = new Quaternion().setFromAxisAngle(new Vector3(vector.axis.x, vector.axis.y, vector.axis.z), vector.axis.a * Math.PI * 2);
+            expect(rotation.length()).toBeCloseTo(1, 12);
+            const matrix = new Matrix4().makeRotationFromQuaternion(rotation);
+            for (const basis of [new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 1)]) {
+                expect(basis.applyMatrix4(matrix).length()).toBeCloseTo(1, 12);
             }
+            expect(vector.axis.a).toBe(angle);
+            expect(vector.type).toBe('d10');
+            expect(vector.index).toBe(0);
+        },
+    );
 
-            getProgramInfoLog(_program: WebGLProgram): string | null {
-                return null;
-            }
-        }
-
-        vi.stubGlobal('WebGLRenderingContext', MockWebGLRenderingContext);
-
-        installWebGlInfoLogNullGuard();
-
-        const context = new MockWebGLRenderingContext() as unknown as WebGLRenderingContext;
-        expect(context.getShaderInfoLog({} as WebGLShader)).toBe('');
-        expect(context.getProgramInfoLog({} as WebGLProgram)).toBe('');
-    });
-
-    it('应用 DiceThrone 画布皮肤时不应把画布写入第三方骰子预设 labels', () => {
-        const preset = {
-            labels: ['', '', '1', '2', '3', '4', '5', '6'],
-        };
-        const box = {
-            DiceFactory: {
-                get: vi.fn(() => preset),
-                materials_cache: { old: true },
-            },
-            diceList: [],
-        };
-        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
-            box: typeof box;
-            dieSkins: Array<DiceBoxDieSkin | null>;
-            activePresetSkinId: string | null;
-        };
-        const canvas = document.createElement('canvas');
-        const skin: DiceBoxDieSkin = {
-            id: 'dicethrone:monk-dice:zh-CN',
-            faceCanvases: {
-                1: canvas,
-                2: canvas,
-                3: canvas,
-                4: canvas,
-                5: canvas,
-                6: canvas,
-            },
-            faceImages: {
-                1: canvas,
-                2: canvas,
-                3: canvas,
-                4: canvas,
-                5: canvas,
-                6: canvas,
-            },
-        };
-
-        engine.box = box;
-        engine.styleProfile = {};
-        engine.dieSkins = [];
-        engine.activePresetSkinId = null;
-        engine.setDieSkins([skin]);
-
-        expect(box.DiceFactory.get).toHaveBeenCalledWith('d6');
-        expect(preset.labels).toEqual(['', '', '', '', '', '', '', '']);
-        expect(box.DiceFactory.materials_cache).toEqual({});
-    });
-
-    it('只有显式字符串标签皮肤才会更新第三方骰子预设 labels', () => {
-        const preset = {
-            labels: ['', '', '1', '2', '3', '4', '5', '6'],
-        };
-        const box = {
-            DiceFactory: {
-                get: vi.fn(() => preset),
-                materials_cache: { old: true },
-            },
-            diceList: [],
-        };
-        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
-            box: typeof box;
-            dieSkins: Array<DiceBoxDieSkin | null>;
-            activePresetSkinId: string | null;
-        };
-        const canvas = document.createElement('canvas');
-        const skin: DiceBoxDieSkin = {
-            id: 'custom-labels',
-            faceCanvases: {
-                1: canvas,
-                2: canvas,
-                3: canvas,
-                4: canvas,
-                5: canvas,
-                6: canvas,
-            },
-            faceLabels: {
-                1: '拳',
-                2: '掌',
-                3: '禅',
-                4: '莲',
-                5: '太极',
-                6: '终极',
-            },
-        };
-
-        engine.box = box;
-        engine.styleProfile = {};
-        engine.dieSkins = [];
-        engine.activePresetSkinId = null;
-        engine.setDieSkins([skin]);
-
-        expect(preset.labels).toEqual(['', '', '拳', '掌', '禅', '莲', '太极', '终极']);
-        expect(box.DiceFactory.materials_cache).toEqual({});
-    });
-
-    it('指定值首次投骰使用受控低抛向量，不再调用第三方默认高抛 roll', async () => {
-        const makeVector = (x = 0, y = 0, z = 0) => ({
-            x,
-            y,
-            z,
-            set: vi.fn(function set(this: { x: number; y: number; z: number }, nextX: number, nextY: number, nextZ: number) {
-                this.x = nextX;
-                this.y = nextY;
-                this.z = nextZ;
-            }),
-        });
-        const makeQuaternion = () => ({
-            x: 0,
-            y: 0,
-            z: 0,
-            w: 1,
-            set: vi.fn(function set(this: { x: number; y: number; z: number; w: number }, x: number, y: number, z: number, w: number) {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                this.w = w;
-            }),
-        });
-        const vector = {
-            index: 0,
-            type: 'd6',
-            pos: makeVector(480, -320, 300),
-            velocity: makeVector(900, -700, -10),
-            angle: makeVector(140, -160, 80),
-        };
+    it.each(['animation-frame', 'timer-only'])('首帧后由%s持续调度可见运动直到稳定落地', async scheduler => {
+        const originalRequestAnimationFrame = window.requestAnimationFrame;
         const die = {
-            position: makeVector(),
-            quaternion: makeQuaternion(),
-            rotation: makeVector(),
+            position: { x: 0, y: 0, z: 0 },
+            quaternion: { x: 0, y: 0, z: 0, w: 1 },
             body: {
-                position: makeVector(),
-                quaternion: makeQuaternion(),
-                velocity: makeVector(),
-                angularVelocity: makeVector(),
-                aabbNeedsUpdate: false,
+                position: { x: 0, y: 0, z: 0 },
+                quaternion: { x: 0, y: 0, z: 0, w: 1 },
+                velocity: { x: 0, y: 0, z: 0 },
+                angularVelocity: { x: 0, y: 0, z: 0 },
+                sleep: vi.fn(),
+                updateMassProperties: vi.fn(),
             },
-            getLastValue: vi.fn(() => ({ value: 1 })),
-            storeRolledValue: vi.fn(),
-            material: [],
             updateMatrixWorld: vi.fn(),
         };
-        const startStrengths: number[] = [];
-        const box = {
-            diceList: [] as Array<typeof die>,
-            strength: 0.92,
-            startClickThrow: vi.fn(() => {
-                startStrengths.push(box.strength);
-                return { vectors: [vector], result: [6] };
-            }),
-            spawnDice: vi.fn((_vector: typeof vector, targetDie?: typeof die) => {
-                if (!targetDie) {
-                    box.diceList.push(die);
-                }
-            }),
-            simulateThrow: vi.fn(),
-            animateThrow: vi.fn((_running: number | boolean, callback?: () => void) => {
-                callback?.();
-            }),
-            clearDice: vi.fn(() => {
-                box.diceList = [];
-            }),
-            roll: vi.fn().mockResolvedValue(undefined),
-            swapDiceFace: vi.fn((targetDie: typeof die, value: number) => {
-                targetDie.getLastValue.mockReturnValue({ value });
-            }),
-            getDiceResults: vi.fn(() => ({ total: 6 })),
-            onRollComplete: vi.fn(),
-            renderer: { render: vi.fn(), clear: vi.fn(), domElement: null },
+        const engine = Object.create(DiceBoxThreeEngine.prototype) as any;
+        engine.styleProfile = { baseScale: 64 };
+        engine.box = {
+            diceList: [die],
+            renderer: { domElement: { clientWidth: 320, clientHeight: 180 } },
             scene: { updateMatrixWorld: vi.fn() },
-            camera: { updateProjectionMatrix: vi.fn(), updateMatrixWorld: vi.fn() },
         };
-        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
-            box: typeof box;
-            container: HTMLElement;
-            worldBounds: { width: number; height: number };
-            dieSkins: [];
-            diceHighlights: [];
-            diceHighlightShells: Map<number, unknown>;
-            styleProfile: DiceBoxStyleProfile;
-            finalizeSettledFrame: ReturnType<typeof vi.fn>;
-            renderFrame: ReturnType<typeof vi.fn>;
-        };
-        engine.box = box;
-        engine.container = { clientWidth: 360, clientHeight: 220 } as HTMLElement;
-        engine.worldBounds = { width: 360, height: 220 };
-        engine.dieSkins = [];
-        engine.diceHighlights = [];
-        engine.diceHighlightShells = new Map();
-        engine.styleProfile = { baseScale: 64, strength: 0.16 };
-        engine.finalizeSettledFrame = vi.fn();
+        engine.setVector = vi.fn();
+        engine.setQuaternion = vi.fn();
+        engine.syncDiceHighlightShells = vi.fn();
+        engine.keepProjectedDieInsideCanvas = vi.fn();
+        engine.applyDieTransform = vi.fn();
         engine.renderFrame = vi.fn();
 
-        await engine.rollToValues([6]);
-
-        expect(box.roll).not.toHaveBeenCalled();
-        expect(box.startClickThrow).toHaveBeenCalledWith('1d6@6');
-        expect(startStrengths).toEqual([0.16]);
-        expect(box.strength).toBe(0.92);
-        expect(Math.abs(vector.pos.x)).toBeLessThanOrEqual(130);
-        expect(Math.abs(vector.pos.y)).toBeLessThanOrEqual(81);
-        expect(vector.pos.z).toBeGreaterThanOrEqual(11);
-        expect(vector.pos.z).toBeLessThanOrEqual(20);
-        expect(vector.velocity.z).toBeGreaterThanOrEqual(-3.1);
-        expect(vector.velocity.z).toBeLessThanOrEqual(-2.2);
-        expect(vector.velocity.x * vector.pos.x).toBeLessThanOrEqual(0);
-        expect(vector.velocity.y * vector.pos.y).toBeLessThanOrEqual(0);
-        expect(Math.abs(vector.angle.x)).toBeLessThanOrEqual(6.5);
-        expect(Math.abs(vector.angle.y)).toBeLessThanOrEqual(6.5);
-        expect(box.animateThrow).not.toHaveBeenCalled();
-        expect(box.swapDiceFace).toHaveBeenCalledWith(die, 6);
-        expect(box.onRollComplete).toHaveBeenCalledWith({ total: 6 });
-        expect(engine.finalizeSettledFrame).toHaveBeenCalledTimes(1);
-    });
-
-    it('指定值重骰使用受控框内动画，并在动画结束后才应用目标结果', async () => {
-        const makeVector = (x = 0, y = 0, z = 0) => ({
-            x,
-            y,
-            z,
-            set: vi.fn(function set(this: { x: number; y: number; z: number }, nextX: number, nextY: number, nextZ: number) {
-                this.x = nextX;
-                this.y = nextY;
-                this.z = nextZ;
-            }),
-        });
-        const makeQuaternion = () => ({
-            x: 0,
-            y: 0,
-            z: 0,
-            w: 1,
-            set: vi.fn(function set(this: { x: number; y: number; z: number; w: number }, x: number, y: number, z: number, w: number) {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                this.w = w;
-            }),
-        });
-        const makeDie = (value: number) => ({
-            position: makeVector(1, 2, 3),
-            quaternion: makeQuaternion(),
-            rotation: makeVector(),
-            body: {
-                position: makeVector(1, 2, 3),
-                quaternion: makeQuaternion(),
-                velocity: makeVector(),
-                angularVelocity: makeVector(),
-                type: 1,
-                mass: 1,
-                updateMassProperties: vi.fn(),
-                wakeUp: vi.fn(),
-                sleep: vi.fn(),
-                aabbNeedsUpdate: false,
-            },
-            getLastValue: vi.fn(() => ({ value })),
-            storeRolledValue: vi.fn(),
-            updateMatrixWorld: vi.fn(),
-        });
-        const rerolledDie = makeDie(1);
-        const lockedDie = makeDie(2);
-        const swapDiceFace = vi.fn((die: typeof rerolledDie, value: number) => {
-            die.getLastValue.mockReturnValue({ value });
-        });
-        const box = {
-            diceList: [rerolledDie, lockedDie],
-            last_time: 12345,
-            steps: 99,
-            reroll: vi.fn().mockResolvedValue(undefined),
-            swapDiceFace,
-            renderer: { render: vi.fn(), domElement: null },
-            scene: {},
-            camera: {},
-        };
-        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
-            box: typeof box;
-            dieSkins: [];
-            diceHighlights: [];
-            diceHighlightShells: Map<number, unknown>;
-            styleProfile: DiceBoxStyleProfile;
-            playContainedRerollSpin: ReturnType<typeof vi.fn>;
-            finalizeSettledFrame: ReturnType<typeof vi.fn>;
-        };
-        engine.box = box;
-        engine.dieSkins = [];
-        engine.diceHighlights = [];
-        engine.diceHighlightShells = new Map();
-        engine.styleProfile = {};
-        engine.playContainedRerollSpin = vi.fn().mockImplementation(async () => {
-            expect(swapDiceFace).not.toHaveBeenCalled();
-            expect(swapDiceFace).not.toHaveBeenCalledWith(lockedDie, expect.any(Number));
-            expect(rerolledDie.storeRolledValue).not.toHaveBeenCalled();
-        });
-        engine.finalizeSettledFrame = vi.fn();
-
-        await engine.rerollToValues([0], [6, 2], [1]);
-
-        expect(box.reroll).not.toHaveBeenCalled();
-        expect(engine.playContainedRerollSpin).toHaveBeenCalledWith([0]);
-        expect(swapDiceFace).toHaveBeenCalledWith(rerolledDie, 6);
-        expect(swapDiceFace).not.toHaveBeenCalledWith(lockedDie, expect.any(Number));
-        expect(rerolledDie.storeRolledValue).toHaveBeenCalledWith('forced');
-        expect(engine.finalizeSettledFrame).toHaveBeenCalledTimes(1);
-    });
-
-    it('指定值重骰不依赖第三方单骰 reroll 也能提交结果', async () => {
-        const makeVector = (x = 0, y = 0, z = 0) => ({
-            x,
-            y,
-            z,
-            set: vi.fn(function set(this: { x: number; y: number; z: number }, nextX: number, nextY: number, nextZ: number) {
-                this.x = nextX;
-                this.y = nextY;
-                this.z = nextZ;
-            }),
-        });
-        const makeQuaternion = () => ({
-            x: 0,
-            y: 0,
-            z: 0,
-            w: 1,
-            set: vi.fn(function set(this: { x: number; y: number; z: number; w: number }, x: number, y: number, z: number, w: number) {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                this.w = w;
-            }),
-        });
-        const makeDie = (value: number) => ({
-            position: makeVector(1, 2, 3),
-            quaternion: makeQuaternion(),
-            rotation: makeVector(),
-            body: {
-                position: makeVector(1, 2, 3),
-                quaternion: makeQuaternion(),
-                velocity: makeVector(),
-                angularVelocity: makeVector(),
-                type: 1,
-                mass: 1,
-                updateMassProperties: vi.fn(),
-                wakeUp: vi.fn(),
-                sleep: vi.fn(),
-                aabbNeedsUpdate: false,
-            },
-            getLastValue: vi.fn(() => ({ value })),
-            storeRolledValue: vi.fn(),
-            updateMatrixWorld: vi.fn(),
-        });
-        const die = makeDie(1);
-        const box = {
-            diceList: [die],
-            swapDiceFace: vi.fn((targetDie: typeof die, value: number) => {
-                targetDie.getLastValue.mockReturnValue({ value });
-            }),
-            renderer: { render: vi.fn(), domElement: null },
-            scene: {},
-            camera: {},
-        };
-        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
-            box: typeof box;
-            dieSkins: [];
-            diceHighlights: [];
-            diceHighlightShells: Map<number, unknown>;
-            styleProfile: DiceBoxStyleProfile;
-            playContainedRerollSpin: ReturnType<typeof vi.fn>;
-            finalizeSettledFrame: ReturnType<typeof vi.fn>;
-        };
-        engine.box = box;
-        engine.dieSkins = [];
-        engine.diceHighlights = [];
-        engine.diceHighlightShells = new Map();
-        engine.styleProfile = {};
-        engine.playContainedRerollSpin = vi.fn().mockResolvedValue(undefined);
-        engine.finalizeSettledFrame = vi.fn();
-
-        await engine.rerollToValues([0], [6], []);
-
-        expect(engine.playContainedRerollSpin).toHaveBeenCalledWith([0]);
-        expect(box.swapDiceFace).toHaveBeenCalledWith(die, 6);
-        expect(engine.finalizeSettledFrame).toHaveBeenCalledTimes(1);
-    });
-
-    it('受控重掷过程会同步物理 body 旋转，避免渲染帧覆盖成闪现', async () => {
-        const originalRequestAnimationFrame = window.requestAnimationFrame;
-        const originalCancelAnimationFrame = window.cancelAnimationFrame;
-        const animationFrames: FrameRequestCallback[] = [];
-        vi.useFakeTimers();
-        window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
-            animationFrames.push(callback);
-            return animationFrames.length;
-        });
-        window.cancelAnimationFrame = vi.fn();
-
-        const makeVector = (x = 0, y = 0, z = 0) => ({
-            x,
-            y,
-            z,
-            set: vi.fn(function set(this: { x: number; y: number; z: number }, nextX: number, nextY: number, nextZ: number) {
-                this.x = nextX;
-                this.y = nextY;
-                this.z = nextZ;
-            }),
-        });
-        const makeQuaternion = () => ({
-            x: 0,
-            y: 0,
-            z: 0,
-            w: 1,
-            set: vi.fn(function set(this: { x: number; y: number; z: number; w: number }, x: number, y: number, z: number, w: number) {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                this.w = w;
-            }),
-        });
-        const die = {
-            position: makeVector(1, 2, 3),
-            quaternion: makeQuaternion(),
-            rotation: makeVector(),
-            scale: makeVector(1, 1, 1),
-            body: {
-                position: makeVector(1, 2, 3),
-                quaternion: makeQuaternion(),
-                velocity: makeVector(),
-                angularVelocity: makeVector(),
-                aabbNeedsUpdate: false,
-            },
-            material: [],
-            updateMatrixWorld: vi.fn(),
-        };
-        const box = {
-            diceList: [die],
-            renderer: { render: vi.fn(), clear: vi.fn(), domElement: null },
-            scene: { updateMatrixWorld: vi.fn() },
-            camera: { updateProjectionMatrix: vi.fn(), updateMatrixWorld: vi.fn() },
-        };
-        const engine = Object.create(DiceBoxThreeEngine.prototype) as DiceBoxThreeEngine & {
-            box: typeof box;
-            diceHighlights: [];
-            diceHighlightShells: Map<number, unknown>;
-            styleProfile: { baseScale: number };
-        };
-        engine.box = box;
-        engine.diceHighlights = [];
-        engine.diceHighlightShells = new Map();
-        engine.styleProfile = { baseScale: 64 };
+        window.requestAnimationFrame = scheduler === 'timer-only'
+            ? () => 0
+            : (callback: FrameRequestCallback) => window.setTimeout(() => callback(performance.now()), 0) as unknown as number;
 
         try {
-            const spin = (engine as unknown as {
-                playContainedRerollSpin: (indices: number[], durationMs?: number) => Promise<void>;
-            }).playContainedRerollSpin([0], 300);
+            const result = await Promise.race([
+                (engine as any).playContainedRollToSettledTransforms(
+                    new Map([[0, {
+                        position: { x: 1, y: 1, z: 1 },
+                        quaternion: { x: 0, y: 0, z: 0, w: 1 },
+                    }]]),
+                    360,
+                ).then(() => 'resolved').catch(() => 'rejected'),
+                new Promise<string>((resolve) => window.setTimeout(() => resolve('timeout'), 1000)),
+            ]);
 
-            animationFrames.shift()?.(1000);
-            animationFrames.shift()?.(1150);
-
-            expect(Math.abs(die.body.quaternion.x) + Math.abs(die.body.quaternion.y)).toBeGreaterThan(0.01);
-            expect(Math.abs(die.quaternion.x) + Math.abs(die.quaternion.y)).toBeGreaterThan(0.01);
-            expect(Math.hypot(die.body.position.x - 1, die.body.position.y - 2)).toBeGreaterThan(1);
-            expect(die.body.position.z - 3).toBeLessThanOrEqual(11.25);
-
-            for (let frame = 0; frame < 24; frame += 1) {
-                animationFrames.shift()?.(1300 + frame * 33);
-            }
-            await spin;
-
-            expect(die.body.quaternion.x).toBeCloseTo(0, 5);
-            expect(die.body.quaternion.y).toBeCloseTo(0, 5);
-            expect(die.body.quaternion.z).toBeCloseTo(0, 5);
-            expect(die.body.quaternion.w).toBeCloseTo(1, 5);
+            expect(result).toBe('resolved');
+            expect(engine.renderFrame).toHaveBeenCalled();
+            expect(die.body.sleep).toHaveBeenCalled();
         } finally {
             window.requestAnimationFrame = originalRequestAnimationFrame;
-            window.cancelAnimationFrame = originalCancelAnimationFrame;
-            vi.useRealTimers();
         }
     });
 
+    it.each([30, 60, 144])('%s赫兹下运动仍按配置时长结束，不按帧数缩短', async refreshRate => {
+        let clock = 0;
+        const period = 1000 / refreshRate;
+        const now = vi.spyOn(performance, 'now').mockImplementation(() => clock);
+        const original = window.requestAnimationFrame;
+        const die = { position: { x: 0, y: 0, z: 0 }, quaternion: { x: 0, y: 0, z: 0, w: 1 }, updateMatrixWorld: vi.fn() };
+        const engine = Object.create(DiceBoxThreeEngine.prototype) as any;
+        engine.styleProfile = { baseScale: 84 };
+        engine.box = { diceList: [die], renderer: { domElement: { clientWidth: 0, clientHeight: 0 } }, scene: { updateMatrixWorld: vi.fn() } };
+        engine.syncDiceHighlightShells = vi.fn();
+        const draws: number[] = [];
+        engine.renderFrame = vi.fn(() => draws.push(clock));
+        window.requestAnimationFrame = callback => window.setTimeout(() => { clock += period; callback(clock); }, 0);
+        try {
+            await engine.playContainedRollToSettledTransforms(new Map([[0, { position: { x: 1, y: 1, z: 1 }, quaternion: { x: 0, y: 0, z: 0, w: 1 } }]]), 360);
+            expect(draws.length).toBeGreaterThan(2);
+            expect(draws.at(-1)! - draws[0]).toBeGreaterThanOrEqual(360);
+            expect(draws.at(-1)! - draws[0]).toBeLessThan(360 + period + 0.01);
+        } finally { window.requestAnimationFrame = original; now.mockRestore(); }
+    });
+
+    it('动画帧抛错时会拒绝 promise，而不是永久停在运动中', async () => {
+        const originalRequestAnimationFrame = window.requestAnimationFrame;
+        const die = {
+            position: { x: 0, y: 0, z: 0 },
+            quaternion: { x: 0, y: 0, z: 0, w: 1 },
+            body: {
+                position: { x: 0, y: 0, z: 0 },
+                quaternion: { x: 0, y: 0, z: 0, w: 1 },
+                velocity: { x: 0, y: 0, z: 0 },
+                angularVelocity: { x: 0, y: 0, z: 0 },
+                sleep: vi.fn(),
+                updateMassProperties: vi.fn(),
+            },
+            updateMatrixWorld: vi.fn(),
+        };
+        const engine = Object.create(DiceBoxThreeEngine.prototype) as any;
+        engine.styleProfile = { baseScale: 64 };
+        engine.box = {
+            diceList: [die],
+            renderer: { domElement: { clientWidth: 0, clientHeight: 0 } },
+            scene: { updateMatrixWorld: vi.fn() },
+        };
+        engine.setVector = vi.fn();
+        engine.setQuaternion = vi.fn();
+        engine.syncDiceHighlightShells = vi.fn();
+        engine.renderFrame = vi.fn(() => {
+            throw new Error('frame render failed');
+        });
+
+        window.requestAnimationFrame = (callback: FrameRequestCallback) =>
+            window.setTimeout(() => callback(performance.now()), 0) as unknown as number;
+
+        try {
+            const result = await Promise.race([
+                (engine as any).playContainedRollToSettledTransforms(
+                    new Map([[0, {
+                        position: { x: 1, y: 1, z: 1 },
+                        quaternion: { x: 0, y: 0, z: 0, w: 1 },
+                    }]]),
+                    360,
+                ).then(() => 'resolved').catch(() => 'rejected'),
+                new Promise<string>((resolve) => window.setTimeout(() => resolve('timeout'), 250)),
+            ]);
+
+            expect(result).toBe('rejected');
+        } finally {
+            window.requestAnimationFrame = originalRequestAnimationFrame;
+        }
+    });
 });

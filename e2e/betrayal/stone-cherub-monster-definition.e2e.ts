@@ -699,7 +699,7 @@ const selectPeekabooStoneCherubs = async (page: Page) => {
 
 const resolveDamageAllocationWith = async (page: Page, traits: string[]) => {
     for (const trait of traits) {
-        await page.getByTestId(`betrayal-damage-allocation-trait-${trait}`).click();
+        await page.getByTestId(`betrayal-damage-allocation-trait-${trait}-increase`).click();
     }
     const confirmButton = page.getByTestId('betrayal-damage-allocation-confirm');
     await expect(confirmButton).toBeEnabled();

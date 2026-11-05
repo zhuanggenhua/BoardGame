@@ -120,6 +120,7 @@ async function main() {
             : [`线上反馈状态通过 ${remoteUpdate.writer} 回写成功后同步本地状态镜像`];
         updateBoardItems(board, [options.id], {
             status: options.status,
+            lastFetchedStatus: remoteUpdate.status,
             owner: 'codex',
             closedReason: options.closedReason,
             resolvedMethod: options.resolvedMethod,
@@ -139,6 +140,7 @@ async function main() {
             : [`线上反馈状态通过 ${remoteUpdate.writer} 回写成功后同步本地状态镜像`];
         updateBoardItems(board, [options.id], {
             status: options.status,
+            lastFetchedStatus: remoteUpdate.status,
             owner: 'codex',
             closedReason: options.closedReason,
             resolvedMethod: options.resolvedMethod,

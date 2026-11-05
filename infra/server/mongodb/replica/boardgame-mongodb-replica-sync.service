@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh Acer standby MongoDB from cloud primary
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/boardgame-mongodb-replica-sync

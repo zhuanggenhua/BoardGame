@@ -9,6 +9,7 @@ describe('staleChunkReloadGuard', () => {
     it('detects known stale chunk error signatures', () => {
         expect(isStaleChunkError(new Error('Failed to fetch dynamically imported module'))).toBe(true);
         expect(isStaleChunkError(new Error('error loading dynamically imported module: https://easyboardgame.top/assets/cursor-BonIRdwH.js'))).toBe(true);
+        expect(isStaleChunkError(new Error('504 (Outdated Optimize Dep)'))).toBe(true);
         expect(isStaleChunkError('ChunkLoadError: Loading chunk 42 failed')).toBe(true);
         expect(isStaleChunkError('Importing a module script failed')).toBe(true);
         expect(isStaleChunkError(new Error('Expected a JavaScript module script but the server responded with text/html'))).toBe(true);

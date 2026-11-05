@@ -130,8 +130,13 @@ async function claimSeat(
 
 async function waitForScenarioVoteScreen(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
+    const overlay = page.getByTestId('qidahen-scenario-vote-screen');
+    if (!(await overlay.isVisible().catch(() => false))) {
+        await page.getByTestId('qidahen-scenario-menu-open').click();
+    }
+    await expect(overlay).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-scenario-vote-option-dingmao-rebellion-1627')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-scenario-vote-option-dingmao-rebellion-1627')).toBeDisabled({ timeout: 15000 });
     await expect(page.getByTestId('qidahen-scenario-vote-locked-dingmao-rebellion-1627')).toContainText('当前 3 人房不可投', { timeout: 15000 });
@@ -151,10 +156,11 @@ async function selectFaction(page: Page, factionId: 'ming' | 'mongol' | 'jin'): 
     await page.getByTestId('qidahen-faction-selection-confirm').click();
 }
 
-async function waitForActionWindow(page: Page, factionName: string): Promise<void> {
+async function waitForActionWindow(page: Page, factionId: 'ming' | 'mongol' | 'jin'): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('qidahen-turn-banner')).toContainText(factionName, { timeout: 30000 });
+    await expect(page.getByTestId(`qidahen-player-${factionId}`)).toContainText('当前', { timeout: 30000 });
+    await expect(page.getByTestId('qidahen-turn-banner')).toHaveCount(0);
 }
 
 async function expectViewerPrivateHand(page: Page, factionName: '大明' | '蒙古' | '后金'): Promise<void> {
@@ -259,11 +265,15 @@ async function performWheelStep(page: Page, moveId: 'move-1-free' | 'move-2-one-
     const target = page.getByTestId(`qidahen-wheel-move-target-${moveId}`);
     await expect(target).toBeVisible({ timeout: 15000 });
     await target.click();
+    if (moveId === 'move-2-one-opponent') {
+        const opponent = page.locator('button[data-testid^="qidahen-wheel-opponent-"]').first();
+        await expect(opponent).toBeVisible({ timeout: 10000 });
+        await opponent.click();
+        return;
+    }
     await page.waitForTimeout(200);
-    const turnBanner = page.getByTestId('qidahen-turn-banner');
-    const wheelAlreadyUsed = (await turnBanner.textContent())?.includes('轮盘 已用') ?? false;
     const targetDisabled = (await target.getAttribute('aria-disabled')) === 'true';
-    if (!wheelAlreadyUsed && !targetDisabled) {
+    if (!targetDisabled) {
         await target.click();
     }
 }
@@ -466,7 +476,7 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
                 expect(jin.page.getByTestId('qidahen-inmatch-setup-overlay')).toHaveCount(0, { timeout: 30000 }),
             ]);
 
-            await waitForActionWindow(host.page, '大明');
+            await waitForActionWindow(host.page, 'ming');
             await expectViewerPrivateHand(host.page, '大明');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02-第1轮开始-大明行动窗口.png');
             const hostUpgradeActionButton = await openUpgradeArmamentPaymentFlow(host.page, { selectSongjin: true });
@@ -476,24 +486,26 @@ test.describe('七大恨联机完整首轮到第二回合开始', () => {
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-02B-大明弃牌确认条固定在手牌上方.png');
             await paySelectedAction(host.page, 2);
 
-            await waitForActionWindow(host.page, '蒙古');
+            await waitForActionWindow(host.page, 'mongol');
             await expectViewerPrivateHand(host.page, '大明');
-            await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('蒙古', { timeout: 30000 });
             await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
             await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-03-大明视角-蒙古行动中仍显示大明手牌.png');
             await performKhanEdictTurn(mongol.page);
 
-            await waitForActionWindow(host.page, '后金');
+            await waitForActionWindow(host.page, 'jin');
             await expectViewerPrivateHand(host.page, '大明');
-            await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('后金', { timeout: 30000 });
             await expect(host.page.getByTestId('qidahen-fortification-strip')).toHaveCount(0);
             await expect(host.page.getByTestId('qidahen-shared-printed-runtime-switcher')).toHaveCount(0);
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-04-大明视角-后金行动中仍显示大明手牌.png');
             await performUpgradeArmamentTurn(jin.page);
 
-            await waitForActionWindow(host.page, '大明');
-            await expect(host.page.getByTestId('qidahen-turn-banner')).toContainText('第 2 轮', { timeout: 30000 });
+            await waitForActionWindow(host.page, 'ming');
+            await expect.poll(async () => host.page.evaluate(() => (
+                (window as Window & {
+                    __BG_TEST_HARNESS__?: { state?: { get?: () => { core?: { roundNumber?: number } } } };
+                }).__BG_TEST_HARNESS__?.state?.get?.()?.core?.roundNumber ?? null
+            )), { timeout: 30000 }).toBe(2);
             await expectViewerPrivateHand(host.page, '大明');
             await logVisibleHostActions(host.page, 'round-2-ming');
             await captureEvidence(host.page, testInfo, '七大恨-完整首轮-05-第2轮开始-回到大明行动窗口.png');

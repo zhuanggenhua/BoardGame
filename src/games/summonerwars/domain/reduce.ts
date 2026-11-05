@@ -213,7 +213,8 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       newBoard[from.row][from.col].unit = undefined;
       const consumesMoveAction = reason !== 'grab'
         && reason !== 'huijin_call_guards'
-        && reason !== 'shadow_lightning_step';
+        && reason !== 'shadow_lightning_step'
+        && reason !== 'zhongcai_obedience';
       newBoard[to.row][to.col].unit = { ...unit, position: to, hasMoved: consumesMoveAction ? true : unit.hasMoved };
       const pid = unit.owner as PlayerId;
       return {
@@ -320,7 +321,11 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
     }
 
     case SW_EVENTS.UNIT_ATTACKED: {
-      const { attacker, target } = payload as { attacker: CellCoord; target: CellCoord };
+      const { attacker, target, healingMode } = payload as {
+        attacker: CellCoord;
+        target: CellCoord;
+        healingMode?: boolean;
+      };
       const newBoard = core.board.map(row => row.map(cell => ({ ...cell })));
       const unit = newBoard[attacker.row][attacker.col].unit;
       // 判断是否为额外攻击（extraAttacks > 0 时消耗一次，不增加 attackCount）
@@ -336,6 +341,13 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       }
       const pid = unit?.owner as PlayerId;
       if (!pid) return { ...core, board: newBoard };
+      const attackedTarget = newBoard[target.row]?.[target.col]?.unit;
+      if (attackedTarget && !healingMode && attackedTarget.owner !== pid) {
+        newBoard[target.row][target.col].unit = {
+          ...attackedTarget,
+          wasAttackedThisTurn: true,
+        };
+      }
       let hasAttackedEnemy = false;
       const targetCell = core.board[target.row]?.[target.col];
       if (targetCell?.unit && targetCell.unit.owner !== pid) {
@@ -401,6 +413,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
           // 回合切换：重置移动/攻击状态，清除临时技能（幻化）、额外攻击和冲锋临时战力
           const {
             tempAbilities: _removed,
+            suppressedUntilTurnEnd: _suppressed,
             originalOwner: origOwner,
             extraAttacks: _ea,
             destroyAfterExtraAttackSource: _destroyAfterExtraAttackSource,
@@ -747,6 +760,7 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
         abilityId?: string; sourceUnitId?: string;
         sourcePosition?: CellCoord;
         grantedAbility?: string; targetUnitId?: string;
+        grantSuppression?: boolean;
         skipUsageCount?: boolean;
       };
 
@@ -760,6 +774,21 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
             if (!existing.includes(abilityPayload.grantedAbility!)) {
               return { ...cell, unit: { ...cell.unit, tempAbilities: [...existing, abilityPayload.grantedAbility!] } };
             }
+          }
+          return cell;
+        }));
+        updatedCore = { ...updatedCore, board: newBoard };
+      }
+
+      if (abilityPayload.grantSuppression && abilityPayload.targetUnitId) {
+        console.log('[DEBUG 仲裁抹消归约]', JSON.stringify({
+          targetUnitId: abilityPayload.targetUnitId,
+          matched: updatedCore.board.flatMap((row) => row.map((cell) => cell.unit?.instanceId)).filter((id) => id === abilityPayload.targetUnitId).length,
+          interactionResolved: (event.payload as { interactionResolved?: boolean }).interactionResolved,
+        }));
+        const newBoard = updatedCore.board.map(row => row.map(cell => {
+          if (cell.unit && cell.unit.instanceId === abilityPayload.targetUnitId) {
+            return { ...cell, unit: { ...cell.unit, suppressedUntilTurnEnd: true } };
           }
           return cell;
         }));
@@ -959,7 +988,8 @@ export function reduceEvent(core: SummonerWarsCore, event: GameEvent): SummonerW
       return { ...core, board: newBoard };
     }
 
-    case SW_EVENTS.FUNERAL_PYRE_CHARGED: {
+    case SW_EVENTS.FUNERAL_PYRE_CHARGED:
+    case SW_EVENTS.ACTIVE_EVENT_CHARGED: {
       const { playerId: fpPlayerId, cardId: fpCardId, eventCardId: fpEventCardId, charges: fpAbsoluteCharges } = payload as {
         playerId: PlayerId; cardId?: string; eventCardId?: string; charges?: number;
       };

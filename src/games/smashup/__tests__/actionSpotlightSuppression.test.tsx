@@ -147,7 +147,7 @@ describe('SmashUp action spotlight suppression', () => {
     expect(fxBus.push).toHaveBeenCalledTimes(1);
   });
 
-  it('行动卡特写保持到玩家点击空白背景关闭，关闭后不会回流旧卡面', async () => {
+  it('行动卡特写短暂展示后自动关闭，关闭后不会回流旧卡面', async () => {
     const eventEntries = [makeActionPlayedEntry(2, '1', 'super_spies_secret_agent')];
     const { rerender } = render(<SpotlightHarness entries={[]} />);
 
@@ -158,17 +158,9 @@ describe('SmashUp action spotlight suppression', () => {
       'super_spies_secret_agent',
     );
 
-    fireEvent.click(screen.getByTestId('card-spotlight-content'));
-    expect(await screen.findByTestId('smashup-action-spotlight-card')).toHaveAttribute(
-      'data-card-def-id',
-      'super_spies_secret_agent',
-    );
-
-    fireEvent.click(screen.getByTestId('card-spotlight-queue'));
-
     await waitFor(() => {
       expect(screen.queryByTestId('card-spotlight-queue')).toBeNull();
-    });
+    }, { timeout: 2000 });
 
     rerender(<SpotlightHarness entries={eventEntries} />);
 

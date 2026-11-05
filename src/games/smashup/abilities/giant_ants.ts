@@ -2,7 +2,8 @@
  * 大杀四方 - 巨蚁派系能力
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import type { MinionPlayedEvent } from '../domain/types';
 import {
@@ -30,6 +31,8 @@ import type { CardsDrawnEvent, DeckReshuffledEvent, SmashUpCore, SmashUpEvent } 
 import { type PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -394,7 +397,7 @@ function giantAntWorker(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const giantAntSoldierPromptProgram = createPromptProgram<GiantAntPromptContext & SoldierTransferContext, SmashUpCore, SmashUpEvent>({
+const giantAntSoldierPromptProgram = createPromptProgram<GiantAntPromptContext & SoldierTransferContext>({
     sourceId: 'giant_ant_soldier_choose_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_soldier_choose_minion_${context.now}`,
@@ -430,11 +433,7 @@ const giantAntSoldierPromptProgram = createPromptProgram<GiantAntPromptContext &
     },
 });
 
-const giantAntKillerQueenPromptProgram = createPromptProgram<
-    GiantAntPromptContext & { queenUid: string; queenBaseIndex: number },
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntKillerQueenPromptProgram = createPromptProgram<GiantAntPromptContext & { queenUid: string; queenBaseIndex: number }>({
     sourceId: 'giant_ant_killer_queen_choose_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_killer_queen_choose_minion_${context.now}`,
@@ -513,11 +512,7 @@ function buildDronePreventDestroyOptions(
     ];
 }
 
-const giantAntDronePreventDestroyPromptProgram = createPromptProgram<
-    GiantAntPromptContext & DronePreventContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntDronePreventDestroyPromptProgram = createPromptProgram<GiantAntPromptContext & DronePreventContext>({
     sourceId: 'giant_ant_drone_prevent_destroy',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -590,11 +585,7 @@ const giantAntDronePreventDestroyPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntClaimThePrizePromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntClaimThePrizePromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_claim_the_prize',
     buildInteraction: (context) => {
         const options = collectOwnMinions(context.matchState.core, context.playerId).map((minion) => ({
@@ -646,11 +637,7 @@ const giantAntClaimThePrizePromptProgram = createPromptProgram<
     },
 });
 
-const giantAntHeadlongChooseBasePromptProgram = createPromptProgram<
-    HeadlongMoveContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntHeadlongChooseBasePromptProgram = createPromptProgram<HeadlongMoveContext>({
     sourceId: 'giant_ant_headlong_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_headlong_base_${context.now}`,
@@ -700,11 +687,7 @@ const giantAntHeadlongChooseBasePromptProgram = createPromptProgram<
     },
 });
 
-const giantAntHeadlongChooseMinionPromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntHeadlongChooseMinionPromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_headlong_choose_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_headlong_minion_${context.now}`,
@@ -731,22 +714,17 @@ const giantAntHeadlongChooseMinionPromptProgram = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId ?? minion.defId,
                 fromBaseIndex: selected.baseIndex,
-            },
-            nextProgram: giantAntHeadlongChooseBasePromptProgram,
+            }, giantAntHeadlongChooseBasePromptProgram),
         };
     },
 });
 
-const giantAntUnderPressureChooseAmountPromptProgram = createPromptProgram<
-    CounterTransferAmountPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntUnderPressureChooseAmountPromptProgram = createPromptProgram<CounterTransferAmountPromptContext>({
     sourceId: 'giant_ant_under_pressure_choose_amount',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -798,11 +776,7 @@ const giantAntUnderPressureChooseAmountPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntUnderPressureChooseTargetPromptProgram = createPromptProgram<
-    CounterTransferPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntUnderPressureChooseTargetPromptProgram = createPromptProgram<CounterTransferPromptContext>({
     sourceId: 'giant_ant_under_pressure_choose_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_under_pressure_choose_target_${context.now}`,
@@ -846,22 +820,17 @@ const giantAntUnderPressureChooseTargetPromptProgram = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceCounterAmount: maxAmount,
                 targetMinionUid: target.uid,
                 targetBaseIndex: selected.baseIndex,
-            },
-            nextProgram: giantAntUnderPressureChooseAmountPromptProgram,
+            }, giantAntUnderPressureChooseAmountPromptProgram),
         };
     },
 });
 
-const giantAntUnderPressureChooseSourcePromptProgram = createPromptProgram<
-    UnderPressureSourcePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntUnderPressureChooseSourcePromptProgram = createPromptProgram<UnderPressureSourcePromptContext>({
     sourceId: 'giant_ant_under_pressure_choose_source',
     buildInteraction: (context) => {
         const scoringBase = context.matchState.core.bases[context.scoringBaseIndex];
@@ -909,7 +878,7 @@ const giantAntUnderPressureChooseSourcePromptProgram = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceMinionUid: selected.minionUid,
                 sourceDefId: selected.defId ?? source.defId,
@@ -917,17 +886,12 @@ const giantAntUnderPressureChooseSourcePromptProgram = createPromptProgram<
                 sourceCounterAmount: source.powerCounters,
                 reason: 'giant_ant_under_pressure',
                 scoringBaseIndex: context.scoringBaseIndex,
-            },
-            nextProgram: giantAntUnderPressureChooseTargetPromptProgram,
+            }, giantAntUnderPressureChooseTargetPromptProgram),
         };
     },
 });
 
-const giantAntWeAreTheChampionsChooseAmountPromptProgram = createPromptProgram<
-    CounterTransferAmountPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWeAreTheChampionsChooseAmountPromptProgram = createPromptProgram<CounterTransferAmountPromptContext>({
     sourceId: 'giant_ant_we_are_the_champions_choose_amount',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -983,11 +947,7 @@ const giantAntWeAreTheChampionsChooseAmountPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntWeAreTheChampionsChooseTargetPromptProgram = createPromptProgram<
-    CounterTransferPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWeAreTheChampionsChooseTargetPromptProgram = createPromptProgram<CounterTransferPromptContext>({
     sourceId: 'giant_ant_we_are_the_champions_choose_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_we_are_the_champions_choose_target_${context.now}`,
@@ -1032,22 +992,17 @@ const giantAntWeAreTheChampionsChooseTargetPromptProgram = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceCounterAmount: maxAmount,
                 targetMinionUid: target.uid,
                 targetBaseIndex: selected.baseIndex,
-            },
-            nextProgram: giantAntWeAreTheChampionsChooseAmountPromptProgram,
+            }, giantAntWeAreTheChampionsChooseAmountPromptProgram),
         };
     },
 });
 
-const giantAntWeAreTheChampionsChooseSourcePromptProgram = createPromptProgram<
-    WeAreTheChampionsLiveSourcePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWeAreTheChampionsChooseSourcePromptProgram = createPromptProgram<WeAreTheChampionsLiveSourcePromptContext>({
     sourceId: 'giant_ant_we_are_the_champions_choose_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_we_are_the_champions_choose_source_${context.now}_${context.playerId}`,
@@ -1084,7 +1039,7 @@ const giantAntWeAreTheChampionsChooseSourcePromptProgram = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceMinionUid: selected.minionUid,
                 sourceDefId: selected.defId ?? source.defId,
@@ -1092,17 +1047,12 @@ const giantAntWeAreTheChampionsChooseSourcePromptProgram = createPromptProgram<
                 sourceCounterAmount,
                 reason: context.reason,
                 scoringBaseIndex: context.scoringBaseIndex,
-            },
-            nextProgram: giantAntWeAreTheChampionsChooseTargetPromptProgram,
+            }, giantAntWeAreTheChampionsChooseTargetPromptProgram),
         };
     },
 });
 
-const giantAntWeAreTheChampionsChooseSnapshotSourcePromptProgram = createPromptProgram<
-    WeAreTheChampionsSnapshotSourcePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWeAreTheChampionsChooseSnapshotSourcePromptProgram = createPromptProgram<WeAreTheChampionsSnapshotSourcePromptContext>({
     sourceId: 'giant_ant_we_are_the_champions_choose_snapshot_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_we_are_the_champions_choose_source_${context.now}_${context.playerId}`,
@@ -1145,7 +1095,7 @@ const giantAntWeAreTheChampionsChooseSnapshotSourcePromptProgram = createPromptP
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceMinionUid: selected.minionUid,
                 sourceDefId: selected.defId ?? source?.defId ?? 'giant_ant_worker',
@@ -1153,17 +1103,16 @@ const giantAntWeAreTheChampionsChooseSnapshotSourcePromptProgram = createPromptP
                 sourceCounterAmount,
                 reason: context.reason,
                 scoringBaseIndex: context.scoringBaseIndex,
-            },
-            nextProgram: giantAntWeAreTheChampionsChooseTargetPromptProgram,
+            }, giantAntWeAreTheChampionsChooseTargetPromptProgram),
         };
     },
 });
 
-const giantAntWhoWantsToLiveForeverPromptProgram = createPromptProgram<
+const giantAntWhoWantsToLiveForeverPromptProgram: AbilityProgram<
     GiantAntPromptContext & WhoWantsContext,
     SmashUpCore,
     SmashUpEvent
->({
+> = createPromptProgram<GiantAntPromptContext & WhoWantsContext>({
     sourceId: 'giant_ant_who_wants_to_live_forever',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1229,24 +1178,23 @@ const giantAntWhoWantsToLiveForeverPromptProgram = createPromptProgram<
 
         return {
             events: [removePowerCounter(selected.minionUid, selected.baseIndex, 1, 'giant_ant_who_wants_to_live_forever', timestamp)],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 removedByMinion: {
                     ...context.removedByMinion,
                     [selected.minionUid]: updatedSnapshot,
                 },
                 removedTotal: context.removedTotal + 1,
-            },
-            nextProgram: giantAntWhoWantsToLiveForeverPromptProgram,
+            }, giantAntWhoWantsToLiveForeverPromptProgram),
         };
     },
 });
 
-const giantAntAKindOfMagicDistributePromptProgram = createPromptProgram<
+const giantAntAKindOfMagicDistributePromptProgram: AbilityProgram<
     GiantAntPromptContext & KindOfMagicContext,
     SmashUpCore,
     SmashUpEvent
->({
+> = createPromptProgram<GiantAntPromptContext & KindOfMagicContext>({
     sourceId: 'giant_ant_a_kind_of_magic_distribute',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1327,17 +1275,12 @@ const giantAntAKindOfMagicDistributePromptProgram = createPromptProgram<
             }
             : {
                 events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, context.reason, timestamp)],
-                context: nextContext,
-                nextProgram: giantAntAKindOfMagicDistributePromptProgram,
+                continuation: createAbilityRuntimeContinuation(nextContext, giantAntAKindOfMagicDistributePromptProgram),
             };
     },
 });
 
-const giantAntWeWillRockYouPodPromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWeWillRockYouPodPromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_we_will_rock_you_pod_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_we_will_rock_you_pod_base_${context.now}`,
@@ -1373,11 +1316,7 @@ const giantAntWeWillRockYouPodPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntGimmeThePrizePodSecondPromptProgram = createPromptProgram<
-    GiantAntPromptContext & GimmePodFirstContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntGimmeThePrizePodSecondPromptProgram = createPromptProgram<GiantAntPromptContext & GimmePodFirstContext>({
     sourceId: 'giant_ant_gimme_the_prize_pod_second',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_gimme_the_prize_pod_second_${context.now}`,
@@ -1410,11 +1349,7 @@ const giantAntGimmeThePrizePodSecondPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntGimmeThePrizePodFirstPromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntGimmeThePrizePodFirstPromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_gimme_the_prize_pod_first',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_gimme_the_prize_pod_first_${context.now}`,
@@ -1456,21 +1391,16 @@ const giantAntGimmeThePrizePodFirstPromptProgram = createPromptProgram<
 
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 firstMinionUid: selected.minionUid,
                 firstBaseIndex: selected.baseIndex,
-            },
-            nextProgram: giantAntGimmeThePrizePodSecondPromptProgram,
+            }, giantAntGimmeThePrizePodSecondPromptProgram),
         };
     },
 });
 
-const giantAntSoldierPodChooseTargetPromptProgram = createPromptProgram<
-    GiantAntPromptContext & SoldierPodTransferContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntSoldierPodChooseTargetPromptProgram = createPromptProgram<GiantAntPromptContext & SoldierPodTransferContext>({
     sourceId: 'giant_ant_soldier_pod_choose_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_soldier_pod_choose_target_${context.now}`,
@@ -1510,11 +1440,7 @@ const giantAntSoldierPodChooseTargetPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntSoldierPodChooseSourcePromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntSoldierPodChooseSourcePromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_soldier_pod_choose_source',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_soldier_pod_choose_source_${context.now}`,
@@ -1553,21 +1479,16 @@ const giantAntSoldierPodChooseSourcePromptProgram = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 sourceMinionUid: selected.minionUid,
                 sourceBaseIndex: selected.baseIndex,
-            },
-            nextProgram: giantAntSoldierPodChooseTargetPromptProgram,
+            }, giantAntSoldierPodChooseTargetPromptProgram),
         };
     },
 });
 
-const giantAntKillerQueenPodPromptProgram = createPromptProgram<
-    GiantAntPromptContext & KillerQueenPodContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntKillerQueenPodPromptProgram = createPromptProgram<GiantAntPromptContext & KillerQueenPodContext>({
     sourceId: 'giant_ant_killer_queen_pod_choose',
     buildInteraction: (context) => {
         const playedThisTurn = (context.matchState.core.bases[context.queenBaseIndex]?.minions ?? [])
@@ -1669,11 +1590,7 @@ const giantAntKillerQueenPodPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntWhoWantsToLiveForeverPodSearchPromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWhoWantsToLiveForeverPodSearchPromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_who_wants_to_live_forever_pod_search',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_who_wants_to_live_forever_pod_search_${context.now}`,
@@ -1720,11 +1637,7 @@ const giantAntWhoWantsToLiveForeverPodSearchPromptProgram = createPromptProgram<
     },
 });
 
-const giantAntWhoWantsToLiveForeverPodDestroyPromptProgram = createPromptProgram<
-    GiantAntPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWhoWantsToLiveForeverPodDestroyPromptProgram = createPromptProgram<GiantAntPromptContext>({
     sourceId: 'giant_ant_who_wants_to_live_forever_pod_destroy',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_who_wants_to_live_forever_pod_destroy_${context.now}`,
@@ -1772,17 +1685,12 @@ const giantAntWhoWantsToLiveForeverPodDestroyPromptProgram = createPromptProgram
 
         return {
             events,
-            context,
-            nextProgram: giantAntWhoWantsToLiveForeverPodSearchPromptProgram,
+            continuation: createAbilityRuntimeContinuation(context, giantAntWhoWantsToLiveForeverPodSearchPromptProgram),
         };
     },
 });
 
-const giantAntWorkerPodReplayPromptProgram = createPromptProgram<
-    GiantAntPromptContext & WorkerPodReplayContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const giantAntWorkerPodReplayPromptProgram = createPromptProgram<GiantAntPromptContext & WorkerPodReplayContext>({
     sourceId: 'giant_ant_worker_pod_replay',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `giant_ant_worker_pod_replay_${context.now}`,

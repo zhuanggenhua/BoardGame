@@ -14,7 +14,9 @@ export interface MageWarsSpellcastingSource {
     phase?: 'creatureAction' | 'deployment';
     allowedSpellTypes?: string[];
     allowedTypeLineIncludes?: string[];
+    allowedSchoolLineIncludes?: string[];
     maxSpellLevel?: number;
+    minimumMana?: number;
     channeling?: number;
 }
 
@@ -58,6 +60,8 @@ export interface MageWarsPlayerState {
     preparedSpellSlots: number;
     preparedSpellCardIds: number[];
     discardSpellCardIds: number[];
+    /** 被摧毁、仍可被起死回生选择的活体生物卡牌副本。 */
+    defeatedLivingCreatureCardIds?: number[];
 }
 
 export interface MageWarsArenaObjectState {
@@ -66,6 +70,10 @@ export interface MageWarsArenaObjectState {
     ownerId: PlayerId;
     sourceSpellCardId: number;
     sourceObjectId: string;
+    /** 领域内按对象效果开始生效顺序分配的稳定序号。 */
+    createdAtSequence?: number;
+    /** 记录创建或重新附属时的命令时间戳，供审计和回放使用。 */
+    createdAtTimestamp?: number;
     spellcastingSource?: MageWarsSpellcastingSource;
     mana?: number;
     preparedSpellCardId?: number;
@@ -81,18 +89,31 @@ export interface MageWarsArenaObjectState {
     guarding: boolean;
     summonedTurnNumber?: number;
     rousedBySpellTurnNumber?: number;
+    movementActionsUsedThisTurn?: number;
+    movementActionsLimitThisTurn?: number;
     defenseUsesThisRound?: Partial<Record<string, number>>;
     temporaryTraits?: {
         swift?: boolean;
         teleportMovement?: boolean;
+        elusive?: boolean;
         freeMoveUsedThisAction?: boolean;
         movedThisAction?: boolean;
         quickActionAfterMoveAvailable?: boolean;
         chargeDiceModifier?: number;
         meleeDiceModifier?: number;
         meleeDiceModifierUntilRoundNumber?: number;
+        armorModifier?: number;
+        armorModifierUntilRoundNumber?: number;
         vampiricNextMelee?: boolean;
         nextMeleePierceModifier?: number;
+        nextMeleeUnavoidable?: boolean;
+        battleFuryRoundNumber?: number;
+        battleFuryExtraAttackAvailable?: boolean;
+    };
+    banished?: {
+        remainingTokens: number;
+        returnToZoneId: ArenaZoneId;
+        sourceSpellCardId: number;
     };
     statusTokens: Partial<Record<StatusTokenId, number>>;
     typeLine?: string;
@@ -113,7 +134,12 @@ export interface MageWarsArenaObjectState {
     meleeAttackManaTaxAttackerObjectIdsThisRound?: string[];
     damageBarrierRoundNumber?: number;
     damageBarrierAttackerIdsThisRound?: string[];
+    pentagramRoundNumber?: number;
+    pentagramTargetObjectIdsThisRound?: string[];
+    fearHelmetRoundNumber?: number;
+    fearHelmetAttackerObjectIdsThisRound?: string[];
     abilityUseRoundNumbers?: Partial<Record<string, number>>;
+    abilityUseCountsThisRound?: Partial<Record<string, number>>;
 }
 
 export interface MageWarsArenaZone {
@@ -153,6 +179,8 @@ export interface MageWarsFoundationStatus {
 export interface MageWarsCore {
     playerOrder: PlayerId[];
     currentPlayerId: PlayerId;
+    /** 下一个新建或重新附属对象使用的效果顺序序号。 */
+    nextObjectSequence?: number;
     /** 当前准备/行动阶段真正拥有操作权的玩家；准备阶段可暂不设置。 */
     phaseActorId?: PlayerId;
     /** 当前阶段已经完成阶段动作的玩家。准备阶段双方都完成后才进入下一阶段。 */

@@ -283,6 +283,35 @@ describe('炽天使领域行为', () => {
         expect(eventTypes).not.toContain('BONUS_DIE_ROLLED');
     });
 
+    it('圣洁光辉获得飞行后须在对手防御前保留进攻阶段使用机会', () => {
+        let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
+        const run = (type: string, values: number[], payload: Record<string, unknown> = {}) => {
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems }, state,
+                command(type, '0', payload), createQueuedRandom(values), playerIds,
+            );
+            expect(result.success).toBe(true);
+            if (result.success) state = result.state;
+            return result.events;
+        };
+        run('ADVANCE_PHASE', [1]);
+        run('ROLL_DICE', [3, 5, 3, 3, 4]);
+        run('CONFIRM_ROLL', [1]);
+        run('SELECT_ABILITY', [1], { abilityId: 'holy-radiance' });
+        run('ADVANCE_PHASE', [1]);
+
+        expect(state.core.players['0'].tokens[TOKEN_IDS.FLIGHT]).toBe(1);
+        expect(state.sys.phase).toBe('offensiveRoll');
+        expect(state.core.pendingAttack?.defenseResolved).not.toBe(true);
+
+        run('USE_TOKEN', [6, 1], { tokenId: TOKEN_IDS.FLIGHT, amount: 1 });
+        expect(state.core.pendingBonusDiceSettlement).toBeDefined();
+        const settled = run('SKIP_BONUS_DICE_REROLL', [1]);
+        expect(settled.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(false);
+        expect(state.sys.phase).not.toBe('defensiveRoll');
+        expect(state.core.players['1'].resources[RESOURCE_IDS.HP]).toBeLessThan(50);
+    });
+
     it('圣洁光辉选定后不应自动跳过进攻阶段，显式推进后进入防御并结算伤害', () => {
         let state = createHeroMatchup('tianshi', 'moon_elf')(['0', '1'], createQueuedRandom([1]));
         const defenderHpBefore = state.core.players['1'].resources[RESOURCE_IDS.HP] ?? 0;
@@ -352,6 +381,14 @@ describe('炽天使领域行为', () => {
         expect(advanceToDefense.success).toBe(true);
         if (!advanceToDefense.success) return;
         state = advanceToDefense.state;
+        expect(state.sys.phase).toBe('offensiveRoll');
+        const skipFlight = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems }, state,
+            command('ADVANCE_PHASE', '0'), createQueuedRandom([1]), playerIds,
+        );
+        expect(skipFlight.success).toBe(true);
+        if (!skipFlight.success) return;
+        state = skipFlight.state;
         expect(state.sys.phase).toBe('defensiveRoll');
         expect(state.core.pendingAttack).toMatchObject({
             attackerId: '0',
@@ -828,6 +865,21 @@ describe('炽天使领域行为', () => {
         expect(damageEvents.some(event => event.payload.targetId === '0')).toBe(false);
     });
 
+    it('神圣降临可被移除但不可被 TRANSFER_STATUS 转移', () => {
+        const state = createTianshiState();
+        state.core.players['0'].tokens[TOKEN_IDS.DIVINE_ARRIVAL] = 1;
+
+        const events = DiceThroneDomain.execute(state, command('TRANSFER_STATUS', '1', {
+            fromPlayerId: '0',
+            toPlayerId: '1',
+            statusId: TOKEN_IDS.DIVINE_ARRIVAL,
+        }), createQueuedRandom([1]));
+
+        expect(events).toHaveLength(0);
+        expect(state.core.players['0'].tokens[TOKEN_IDS.DIVINE_ARRIVAL]).toBe(1);
+        expect(state.core.players['1'].tokens[TOKEN_IDS.DIVINE_ARRIVAL] ?? 0).toBe(0);
+    });
+
     it('神圣降临的直接伤害会触发对手的神圣祝福致死保护', () => {
         const state = createTianshiThreePlayerState();
         state.core.activePlayerId = '0';
@@ -1119,6 +1171,8 @@ describe('炽天使领域行为', () => {
         });
 
         expect(resolvedEvents.some(event => event.type === 'DAMAGE_DEALT')).toBe(false);
+        expect(resolvedEvents.some(event => event.type === 'ATTACK_INITIATED')).toBe(false);
+        expect(resolvedEvents.some(event => event.type === 'TOKEN_RESPONSE_REQUESTED')).toBe(false);
         expect(resolvedEvents).toContainEqual(expect.objectContaining({
             type: 'HEAL_APPLIED',
             payload: expect.objectContaining({ targetId: '0', amount: heal }),
@@ -1217,7 +1271,13 @@ describe('炽天使领域行为', () => {
         expect(removeStatus.success).toBe(true);
         if (!removeStatus.success) return;
 
-        const allEvents = [...selfChoice.events, ...removeStatus.events];
+        const allEvents = [
+            ...selectAbility.events,
+            ...preDefense.events,
+            ...selfChoice.events,
+            ...removeStatus.events,
+        ];
+        expect(allEvents).not.toContainEqual(expect.objectContaining({ type: 'TOKEN_RESPONSE_REQUESTED' }));
         const healIndex = allEvents.findIndex(event => event.type === 'HEAL_APPLIED');
         const removeIndex = allEvents.findIndex(event => (
             event.type === 'STATUS_REMOVED'
@@ -1234,6 +1294,90 @@ describe('炽天使领域行为', () => {
         expect(powderIndex).toBeGreaterThan(removeIndex);
         expect(removeStatus.state.sys.phase).toBe('main2');
         expect(removeStatus.state.core.players['0'].statusEffects[STATUS_IDS.POWDER_KEG] ?? 0).toBe(1);
+    });
+
+    it('神圣净化选择对手时造成不可防御伤害且不请求对方防御响应', () => {
+        let state = createHeroMatchup('tianshi', 'cursed_pirate')(['0', '1'], createQueuedRandom([1]));
+        setPlayerBoardFace(state, '1', 'cursed');
+        const opponentHp = state.core.players['1'].resources[RESOURCE_IDS.HP];
+
+        const toOffensiveRoll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(toOffensiveRoll.success).toBe(true);
+        if (!toOffensiveRoll.success) return;
+        state = toOffensiveRoll.state;
+
+        const roll = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('ROLL_DICE', '0'),
+            createQueuedRandom([5, 5, 6, 1, 1]),
+            playerIds,
+        );
+        expect(roll.success).toBe(true);
+        if (!roll.success) return;
+        state = roll.state;
+
+        const confirm = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('CONFIRM_ROLL', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(confirm.success).toBe(true);
+        if (!confirm.success) return;
+        state = confirm.state;
+
+        const selectAbility = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            command('SELECT_ABILITY', '0', { abilityId: 'divine-purification' }),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(selectAbility.success).toBe(true);
+        if (!selectAbility.success) return;
+
+        const preDefense = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            selectAbility.state,
+            command('ADVANCE_PHASE', '0'),
+            createQueuedRandom([1]),
+            playerIds,
+        );
+        expect(preDefense.success).toBe(true);
+        if (!preDefense.success) return;
+
+        const targetPrompt = getSimpleChoicePrompt(preDefense.state, 'divine-purification');
+        const opponentOption = targetPrompt.options.find(option => option.value.value === 1);
+        expect(opponentOption).toBeDefined();
+        if (!opponentOption) return;
+
+        const opponentChoice = respondToPrompt(preDefense.state, opponentOption.id, '0', createQueuedRandom([1]), playerIds);
+        expect(opponentChoice.success).toBe(true);
+        if (!opponentChoice.success) return;
+
+        const events = [
+            ...toOffensiveRoll.events,
+            ...roll.events,
+            ...confirm.events,
+            ...selectAbility.events,
+            ...preDefense.events,
+            ...opponentChoice.events,
+        ];
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({ targetId: '1', amount: 5, unblockable: true }),
+        }));
+        expect(events).not.toContainEqual(expect.objectContaining({ type: 'TOKEN_RESPONSE_REQUESTED' }));
+        expect(opponentChoice.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(opponentHp - 5);
+        expect(opponentChoice.state.sys.phase).toBe('main2');
     });
 
     it('神圣净化只面对正面飞行标记时不应把飞行列入负面状态移除交互', () => {
@@ -1604,7 +1748,7 @@ describe('炽天使领域行为', () => {
         expect(events.some(event => event.type === 'TOKEN_GRANTED' && event.payload.tokenId === TOKEN_IDS.PURIFY)).toBe(false);
     });
 
-    it('起飞的不可防御直接伤害仍会触发目标的神圣祝福致死保护', () => {
+    it('起飞可让所选玩家获得飞行，并将不可防御伤害独立施加给对手', () => {
         const state = createTianshiState();
         state.core.players['1'].resources[RESOURCE_IDS.HP] = 2;
         state.core.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] = 1;
@@ -1622,7 +1766,7 @@ describe('炽天使领域行为', () => {
         };
         const events = resolver({
             ctx: context,
-            targetId: '1',
+            targetId: '0',
             attackerId: '0',
             sourceAbilityId: context.sourceAbilityId,
             state: state.core,
@@ -1631,6 +1775,10 @@ describe('炽天使领域行为', () => {
         });
 
         const after = applyEvents(state.core, events);
+        expect(events).toContainEqual(expect.objectContaining({
+            type: 'TOKEN_GRANTED',
+            payload: expect.objectContaining({ targetId: '0', tokenId: TOKEN_IDS.FLIGHT, amount: 1 }),
+        }));
         expect(events).toContainEqual(expect.objectContaining({
             type: 'DAMAGE_DEALT',
             payload: expect.objectContaining({
@@ -1641,6 +1789,7 @@ describe('炽天使领域行为', () => {
         expect(events.some(event => event.type === 'PREVENT_DAMAGE')).toBe(false);
         expect(after.players['1'].tokens[TOKEN_IDS.BLESSING_OF_DIVINITY] ?? 0).toBe(0);
         expect(after.players['1'].resources[RESOURCE_IDS.HP]).toBe(1);
+        expect(after.players['0'].tokens[TOKEN_IDS.FLIGHT]).toBe(1);
     });
 
     it.each([
@@ -1790,8 +1939,9 @@ describe('炽天使领域行为', () => {
         state.sys.responseWindow = {
             current: {
                 windowId: 'afterRollConfirmed-defense-flight',
-                responderQueue: ['1'],
+                responderQueue: ['0', '1'],
                 currentResponderIndex: 0,
+                passedPlayers: [],
                 windowType: 'afterRollConfirmed',
                 sourceId: 'defense-roll-confirmed-before-flight',
             } as any,
@@ -1842,12 +1992,22 @@ describe('炽天使领域行为', () => {
         });
         expect(confirmed.state.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
 
+        const responsePassed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            confirmed.state,
+            command('RESPONSE_PASS', '0'),
+            createQueuedRandom([]),
+            playerIds,
+        );
+        expect(responsePassed.success).toBe(true);
+        if (!responsePassed.success) return;
+
         const giveHand = getCardById('card-give-hand');
-        expect(checkPlayCard(confirmed.state.core, '1', giveHand, 'defensiveRoll', 'afterRollConfirmed')).toEqual({ ok: true });
+        expect(checkPlayCard(responsePassed.state.core, '1', giveHand, 'defensiveRoll', 'afterRollConfirmed')).toEqual({ ok: true });
 
         const played = executePipeline(
             { domain: DiceThroneDomain, systems: testSystems },
-            confirmed.state,
+            responsePassed.state,
             command('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
             createQueuedRandom([6]),
             playerIds,

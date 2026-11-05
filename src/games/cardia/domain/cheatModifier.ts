@@ -1,114 +1,28 @@
 /**
- * Cardia CheatModifier
- * 调试作弊命令，用于测试和开发
- *
- * 当前仍是历史残留接口，尚未接入共享 CheatSystem 的稳定 cardId 直接补牌能力。
- * 在补齐 cardRegistry 与实例构造规则前，Cardia 默认视为不支持完整卡池注入。
+ * Cardia 对共享调试作弊系统的适配。
  */
 
-import type { CheatModifier } from '../../../engine/systems/CheatSystem';
-import type { CardiaCore, GamePhase, CardInstance } from './core-types';
+import type { CheatResourceModifier } from '../../../engine/systems/CheatSystem';
+import type { CardiaCore } from './core-types';
+import { PHASE_ORDER } from './core-types';
 import { updatePlayer } from './utils';
 
-/**
- * Cardia 作弊修改器
- */
-export const cardiaCheatModifier: CheatModifier<CardiaCore> = {
-    /**
-     * 设置游戏阶段
-     */
-    setPhase: (core, phase: string) => {
-        return {
-            ...core,
-            phase: phase as GamePhase,
-        };
+export const cardiaCheatModifier: CheatResourceModifier<CardiaCore> = {
+    getResource: (core, playerId, resourceId) => {
+        if (resourceId !== 'signets') return undefined;
+        return core.players[playerId]?.signets;
     },
-    
-    /**
-     * 设置当前玩家
-     */
-    setCurrentPlayer: (core, playerId: string) => {
-        if (!core.players[playerId]) {
-            return core;
-        }
-        
-        return {
-            ...core,
-            currentPlayerId: playerId,
-        };
-    },
-    
-    /**
-     * 设置玩家印戒数量
-     */
-    setSignets: (core, playerId: string, signets: number) => {
-        if (!core.players[playerId]) {
-            return core;
-        }
-        
+
+    setResource: (core, playerId, resourceId, value) => {
+        if (resourceId !== 'signets' || !core.players[playerId]) return core;
         return updatePlayer(core, playerId, {
-            signets: Math.max(0, signets),
+            signets: Math.max(0, value),
         });
     },
-    
-    /**
-     * 添加卡牌到手牌
-     */
-    addCardToHand: (core, playerId: string, cardDefId: string) => {
-        if (!core.players[playerId]) {
-            return core;
-        }
-        
-        const player = core.players[playerId];
-        
-        // TODO: 从 cardRegistry 创建卡牌实例
-        // 这里需要实现 createCardInstance 的完整逻辑
-        
-        return core;
-    },
-    
-    /**
-     * 清空手牌
-     */
-    clearHand: (core, playerId: string) => {
-        if (!core.players[playerId]) {
-            return core;
-        }
-        
-        return updatePlayer(core, playerId, {
-            hand: [],
-        });
-    },
-    
-    /**
-     * 设置牌库
-     */
-    setDeck: (core, playerId: string, cardDefIds: string[]) => {
-        if (!core.players[playerId]) {
-            return core;
-        }
-        
-        // TODO: 从 cardRegistry 创建卡牌实例列表
-        
-        return core;
-    },
-    
-    /**
-     * 强制结束游戏
-     */
-    forceGameOver: (core, winnerId?: string) => {
-        if (winnerId && !core.players[winnerId]) {
-            return core;
-        }
-        
-        // 设置足够的印戒数量来触发游戏结束
-        if (winnerId) {
-            return updatePlayer(core, winnerId, {
-                signets: core.targetSignets,
-            });
-        }
-        
-        return core;
+
+    setPhase: (core, phase) => {
+        const nextPhase = PHASE_ORDER.find((candidate) => candidate === phase);
+        return nextPhase ? { ...core, phase: nextPhase } : core;
     },
 };
 

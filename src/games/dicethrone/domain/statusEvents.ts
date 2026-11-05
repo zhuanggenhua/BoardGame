@@ -79,7 +79,8 @@ export function buildStatusAppliedOrChoiceEvents({
 
     const currentStacks = target.statusEffects[statusId] ?? 0;
     if (statusId === STATUS_IDS.POWDER_KEG && currentStacks > 0 && triggerExplosionOnExisting) {
-        return [
+        const statusApplicationId = `${sourceAbilityId ?? ''}:${targetId}:${statusId}:${timestamp}`;
+        return ([
             ...buildPowderKegExplosionEvents({
                 state,
                 targetId,
@@ -100,7 +101,7 @@ export function buildStatusAppliedOrChoiceEvents({
                 timestamp: timestamp + 0.02,
                 sfxKey,
             } as StatusAppliedEvent,
-        ];
+        ] as DiceThroneEvent[]).map(event => ({ ...event, statusApplicationId }));
     }
 
     const maxStacks = getTokenStackLimit(state, targetId, statusId);

@@ -60,7 +60,6 @@ export async function resolveOnlineAiRecoveryDispatch(args: {
     if (candidate.fingerprintHint?.startsWith(MANUAL_FORCE_ADVANCE_AFTER_CONFIRMED_ROLL_PREFIX)) {
         return { kind: 'no-legal-action' };
     }
-
     const resolveStrictOnlineDecisionView = (playerId: string) => aiModule.resolveOnlineAiDecisionView({
         runtime: aiModule.getGameAiRuntime(args.gameId) ?? null,
         sharedState: args.sharedState,
@@ -82,7 +81,11 @@ export async function resolveOnlineAiRecoveryDispatch(args: {
         && shouldUseOnlineAiEmergencyOverlayFallback(candidate.reason)
         && isPrivateOverlayBlockedReason(aiDispatchResult.blockedReason);
 
-    if (shouldRetryWithEmergencyOverlay && aiDispatchResult.kind === 'blocked') {
+    if (
+        shouldRetryWithEmergencyOverlay
+        && aiDispatchResult.kind === 'blocked'
+        && isPrivateOverlayBlockedReason(aiDispatchResult.blockedReason)
+    ) {
         args.onEmergencyOverlayFallbackRetry?.({
             playerId: candidate.playerId,
             reason: candidate.reason,

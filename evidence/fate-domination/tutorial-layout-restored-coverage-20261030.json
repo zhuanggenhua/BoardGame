@@ -1,0 +1,711 @@
+{
+  "status": "PASS",
+  "reviewer": "/root",
+  "reviewedAt": "2026-10-30T02:31:47.922Z",
+  "revision": 14,
+  "sourceRun": "1793324980952-301040-7f7d4213-73f6-4e17-b249-239f503a8a24",
+  "sourceRevision": "tree-sha256:d7d0f8542f83d90afc428db20141283bf2be5d2a1de0bc055be8e35b61539ae4",
+  "totalNodes": 39,
+  "media": 59,
+  "steps": [
+    {
+      "stepId": "intro",
+      "lessonId": "opening",
+      "content": "在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。\n\n你是玩家1，控制韦伯与伊斯坎达尔。玩家2（间桐慎二）和玩家3（言峰绮礼）是由电脑控制的对手。",
+      "necessity": "只教首次胜负目标，不再重复局长。",
+      "behaviorStepId": "intro",
+      "media": [
+        {
+          "uiStateId": "intro",
+          "sha256": "7d014eb9ca495049bf7b2dc806ad41e792481c19ffb9719c070efad7b8bb8439"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-7",
+      "lessonId": "preparation",
+      "content": "对手玩家 2（间桐慎二）\n\n按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。",
+      "necessity": "首次实际补牌前给来源与上限。",
+      "behaviorStepId": "play-7-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-preparation",
+          "sha256": "7772ba9320f5368f983156c007737820ba5ab24dd27f135365897524e9667cd9"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-8",
+      "lessonId": "preparation",
+      "content": "",
+      "necessity": "首次实际补牌前给来源与上限。",
+      "behaviorStepId": "play-8",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-10",
+      "lessonId": "deployment",
+      "content": "对手玩家 2（间桐慎二）\n\n按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值。\n\n玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。",
+      "necessity": "首次介绍部署去处与工房数字顺序；后续同类仅点名本次点位。",
+      "behaviorStepId": "play-10-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-deployment",
+          "sha256": "ece94e81ee0d73fea1b623c7fdafd681b4b950821a26d4fd9c048fb1a7bfd8ef"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-11",
+      "lessonId": "phaseOrder",
+      "content": "对手玩家 2（间桐慎二）\n\n当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。",
+      "necessity": "首次他席阶段完成后解释按顺位轮流。",
+      "behaviorStepId": "play-11-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-phaseOrder",
+          "sha256": "2388ef25ee28d6c5b78c4d41f365ad17f132f83a529a621ffde9376c27aa9f5b"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-12",
+      "lessonId": "deploymentChoice",
+      "content": "玩家若选择部署于此，由数字的由高到低依次部署并获得等于其数字的基础地利值，地利值将在计算战力时增加您的合计威力。\n\n拖动地图查看各处点位，再选择一个当前合法的部署点位。",
+      "necessity": "首次合法部署需要先知道拖图，显露下沿点位后再选；只增加电子功能说明，不改规则摘句。",
+      "behaviorStepId": "play-12",
+      "media": [
+        {
+          "uiStateId": "lesson-deploymentChoice",
+          "sha256": "7adb3c2a1e2a7330ff30783d9284e046d93232824172ccd51589488f8dadf669"
+        },
+        {
+          "uiStateId": "deployment-selected",
+          "sha256": "a8f867e682a51faa680d30eb7433339ab0727f2b49e29408e82ffc19fb210d54"
+        },
+        {
+          "uiStateId": "deployment-map-pan",
+          "sha256": "6f54506240d052a673a13eea6bd5a0ba4077abd06370485ac7f1a1cccd6dd654"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "first-deployment-result",
+      "lessonId": "outpost",
+      "content": "玩家可以于自己的前哨阶段的任意时候（包括部署前和部署后）使用自己的“前哨阶段”能力。",
+      "necessity": "实际部署后说明前哨能力可在部署前后使用。",
+      "behaviorStepId": "first-deployment-result",
+      "media": [
+        {
+          "uiStateId": "deployment-landed-workshop-third-option",
+          "sha256": "340872abce0ae5ba724ad6f5d532524c0e1f5ade636aec59212ffca0bc60acde"
+        },
+        {
+          "uiStateId": "deployment-landed",
+          "sha256": "d03c08753b1cb73841a2ca8cd200f2b67da361e3a8c48e6bb1c4bd983bed8329"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-13",
+      "lessonId": "masterAbility",
+      "content": "你能支付1魔力来抽2张牌。\n\n现在使用“战略部署”补充手牌，为本轮出牌增加选择。",
+      "necessity": "首次对应御主的真实能力摘句；不同御主不能按同一lessonId漏教。",
+      "behaviorStepId": "play-13",
+      "media": [
+        {
+          "uiStateId": "lesson-masterAbility",
+          "sha256": "b6b8dbce3c03c349730cbc18aa9e98fd6fe0a22d0ecd16a74442d812813f6eae"
+        },
+        {
+          "uiStateId": "master-ability-tooltip",
+          "sha256": "516432b840f467df980b07441d5a36dd4207701cad5a21cea0ede4d75c7a35f9"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-14",
+      "lessonId": "phaseOrder",
+      "content": "",
+      "necessity": "首次他席阶段完成后解释按顺位轮流。",
+      "behaviorStepId": "play-14",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-15",
+      "lessonId": "battleDeployment",
+      "content": "对手玩家 3（言峰绮礼）\n\n若部署于战场且位于地利位置，战力结算时，若该玩家仍位于此位置，获得等同于该地利位置标注的地利数的合计威力（地利可以被其他能力影响而增加或减少）。",
+      "necessity": "首次本人战场部署只点当前地利对象，前面的选择规则已教。",
+      "behaviorStepId": "play-15",
+      "media": [
+        {
+          "uiStateId": "lesson-battleDeployment",
+          "sha256": "f49761f3d2cc4e181eb72367bf21227d6df8bef7c19e8d14ca741a164efadd8b"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-17",
+      "lessonId": "mixedAttack",
+      "content": "对手玩家 2（间桐慎二）\n\n打出正好两张攻击牌作为你本回合的常规出牌。\n\n它们可以是你手中的普通攻击牌（背面为深蓝色），或是你技能区的技能攻击（背面为红色且具有魔力消耗和威力）",
+      "necessity": "首次混选解释两种来源；重复决策只点本次卡名。",
+      "behaviorStepId": "play-17-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-mixedAttack",
+          "sha256": "84d8743e109e1c033ba7c4b05f577b46698fcd751b6023111f2f5a5330672732"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "map-camera",
+      "lessonId": "navigation",
+      "content": "滚轮缩放地图；点局势或事件牌可检视。",
+      "necessity": "拖图已在首次部署前教过，此处只教新的缩放与检视，不重复拖动说明。",
+      "behaviorStepId": "map-camera",
+      "media": [
+        {
+          "uiStateId": "lesson-navigation",
+          "sha256": "2d51c68932ccf1bd510fcfa14a6d182387f1bb7e6c65b1906efbc19ff31b8c7c"
+        },
+        {
+          "uiStateId": "navigation-zoomed",
+          "sha256": "5592bb8f3eab7f9a485870aaab0134e4fe70c1cf3faec9cc124bf9b231448315"
+        },
+        {
+          "uiStateId": "detail",
+          "sha256": "16a67d13d982d0689767be5b70e60aa2830df24ed185186d4d670eb8574ac6ca"
+        },
+        {
+          "uiStateId": "detail-inspection",
+          "sha256": "2230576c049316419cf81854800f5748809820ac02ae256f9b6eae72a8f311fc"
+        },
+        {
+          "uiStateId": "inspection-constrained",
+          "sha256": "92940600bf082dd2e758b50dfe067c88502da7a898a3e714b910142835cc6b0e"
+        },
+        {
+          "uiStateId": "opponent-detail-hidden",
+          "sha256": "270e342e2c1f1938302d06f0317c98e17225fe40e98d30984081cdc495869b57"
+        },
+        {
+          "uiStateId": "deck-count",
+          "sha256": "130d5256145b0b9f8e0d4bfb50ee02fd39172eb00ef5d092830e601734473f8c"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-19",
+      "lessonId": "movement",
+      "content": "然后，按回合顺位，玩家们必须以如下顺序进行行动： 1.进行常规移动。2.进行常规出牌。\n\n常规移动不可拆分，需一次决定起点与终点且一次性花费魔力。\n\n令胜利者（们）获得该战场事件牌的战果点数之和的战果\n\n点本人棋子开始移动；本次前往深山町争夺事件战果。",
+      "necessity": "移动前给顺序与支付条件；事件战果及当前目的地点建立实际用途。",
+      "behaviorStepId": "play-19",
+      "media": [
+        {
+          "uiStateId": "lesson-movement",
+          "sha256": "0cd59a9fa13cb8abcfa1e928472f14e8950f7950e2368fb979c946d54e4db7ab"
+        },
+        {
+          "uiStateId": "movement-cancel",
+          "sha256": "1ae9ed643914a6c06d63c509bcd1709b7b163894b586b2356d222373c1b85b8a"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "engagement-observe",
+      "lessonId": "engagement",
+      "content": "若你与至少一名对手（包括玩家和NPC）一起位于一处会发生战斗的战场，则你处于“交战状态”，此时你无法进行常规移动。",
+      "necessity": "抵达实际已有对手的战场后解释交战限制；不混淆常规移动与效果移动。",
+      "behaviorStepId": "engagement-observe",
+      "media": [
+        {
+          "uiStateId": "lesson-engagement",
+          "sha256": "54785f76834551321decf721bf7d269a9b4f58a738d5ca50a9f51cefd2e7530c"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "ui-inspection-16",
+      "lessonId": "cardReading",
+      "content": "攻击牌有魔力消耗和基本威力。\n\n“打出时：”-可以理解为在您打出此牌时必须遵循的“被动：”能力。\n\n手牌较多时可横向滚动；长按或右键检视攻击牌。",
+      "necessity": "首次技能攻击前读费用、基本威力及时机；隐藏检视手势为必要新增说明。",
+      "behaviorStepId": "ui-inspection-16",
+      "media": [
+        {
+          "uiStateId": "lesson-cardReading",
+          "sha256": "cc2945cb04d608abea4e96f8dc77309fcea34829be733051ee854887d6f78d9a"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-20",
+      "lessonId": "sealMana",
+      "content": "通常你必须在出牌前拥有8点及以上的魔力才可以从技能区打出攻击。\n\n现在使用一枚令咒恢复魔力，使魔力达到技能攻击所需的8点门槛。",
+      "necessity": "按实际资源核对：主线5→9，恢复后才满足8点技能门槛；备用分支2→6→10则两次手动支付，不用不足门槛的状态声称已足够。",
+      "behaviorStepId": "play-20",
+      "media": [
+        {
+          "uiStateId": "lesson-sealMana",
+          "sha256": "1bc80f40104542a0ca70def092b80862ad763b7ef72f0abc149a5806af10d7e5"
+        },
+        {
+          "uiStateId": "seal-cancel",
+          "sha256": "b6d678c829b77ca04957984a34e349fb2c89c96b1e5ebe76da06f74176c7da6f"
+        },
+        {
+          "uiStateId": "seal-mana",
+          "sha256": "9cbff52eedf8f26ff912c750d7e21edcc95b838f169f8c74d907ecf6536456ff"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-21",
+      "lessonId": "mixedAttack",
+      "content": "本次打出强打（明置）、骑乘（明置），建立本轮攻击。",
+      "necessity": "首次混选解释两种来源；重复决策只点本次卡名。",
+      "behaviorStepId": "play-21",
+      "media": [
+        {
+          "uiStateId": "draft",
+          "sha256": "51954c7825767768bf3c92c2192309bfcc4404d4367d6b90761dd6571f4475d4"
+        },
+        {
+          "uiStateId": "cards-wide-desktop",
+          "sha256": "752ae9988737b830428efa1b9fcd11693a53a0db35f3d5f9826b2ce2747a9629"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-22",
+      "lessonId": "riding",
+      "content": "印刷于攻击或技能牌上的“行动阶段”能力若不具有“被动/”，则需要将此牌激活才可使用。（激活：明置于你的攻击区）\n\n坐骑召唤-行动阶段：打出至多3张基本威力为3或更低的手牌。",
+      "necessity": "已激活后才使用行动能力，真实卡文限定追加至多三张低威力牌。",
+      "behaviorStepId": "play-22",
+      "media": [
+        {
+          "uiStateId": "lesson-riding",
+          "sha256": "7c24c34a5fd564489d7e5eba4ea8f2533f452831903534fd94a41d6057ed9a1d"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-23",
+      "lessonId": "ridingChoice",
+      "content": "这次用迫击、强打、急行追加攻击。",
+      "necessity": "卡名确定本次演示对象；数量、实付和确认由正式面板承接。",
+      "behaviorStepId": "play-23",
+      "media": [
+        {
+          "uiStateId": "lesson-ridingChoice",
+          "sha256": "6b000bf70d9a7839da6941a521fb64297e17a63829cbf66e641f56440a1bc24c"
+        },
+        {
+          "uiStateId": "riding",
+          "sha256": "38affd8cb5ad249ce3037ef783d23421963e418676e64bfcb0b4aad49dd4fb69"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-24",
+      "lessonId": "actionAbility",
+      "content": "一些效果记为“沿着/逆着箭头移动X步”“移动至XX地点”，使用这些效果移动时若无特别说明，无需花费移动成本，且默认无视交战状态。\n\n行动阶段：无视交战状态，沿箭头移动至下一地点。\n\n现在发动已打出的“急行”，沿箭头前往新都。",
+      "necessity": "骑乘追加急行后，先呈现中文急行原卡动作和目的地，再进入效果移动选择；原句解释无视交战的规则例外。",
+      "behaviorStepId": "play-24",
+      "media": [
+        {
+          "uiStateId": "lesson-actionAbility",
+          "sha256": "37c16cce93481fe08c821136f7d4ab8ec9863587da64690de1c2e73dc4a70e60"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-25",
+      "lessonId": "endAction",
+      "content": "",
+      "necessity": "无新增教学文案，正式控件与合法管线承接重复操作。",
+      "behaviorStepId": "play-25",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-28",
+      "lessonId": "battle",
+      "content": "对手玩家 2（间桐慎二）\n\n然后，在所有玩家的战斗阶段结束后开始进行战力结算。",
+      "necessity": "所有人完成战斗后才进入统一结算。",
+      "behaviorStepId": "play-28-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-battle",
+          "sha256": "346e4821893e959139f00fc55703cbc7e4d6bba03e5b5101915a74e69f58b214"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "ui-public-cards-25",
+      "lessonId": "publicPower",
+      "content": "然后，计算你当前的合计威力并向其他玩家展示。\n\n悬停对手头像查看已打出的牌；触控可点玩家摘要展开。",
+      "necessity": "临时数据一级显示；只补隐藏的悬停/触控展开入口。",
+      "behaviorStepId": "ui-public-cards-25",
+      "media": [
+        {
+          "uiStateId": "lesson-publicPower",
+          "sha256": "b7c93d6d3157723c136795713ea0c42a7b7a7362936e164394cd89d84664423d"
+        },
+        {
+          "uiStateId": "public-cards",
+          "sha256": "809d61f8392e3436d38849980657ce3399e10076f65a31626a995fa0cd555c6e"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "revelation-observe",
+      "lessonId": "revelation",
+      "content": "对手玩家 2（间桐慎二）\n\n有些卡牌会拥有【真名解放】词条，当你使用这些卡牌后，立即展示你的从者概览卡与所有技能牌并处于【真名解放】状态。",
+      "necessity": "实际揭示时说明公开信息变化，明示他席归属。",
+      "behaviorStepId": "revelation-observe",
+      "media": [
+        {
+          "uiStateId": "lesson-revelation",
+          "sha256": "524a6a8bb8e5384b18365e74146f817622774a220be69697e8795ea02b7e4f3d"
+        },
+        {
+          "uiStateId": "opponent-detail-revealed",
+          "sha256": "dc60778f3f5fa8a37db80a18ef4c9c837398ad13ee355e8e1b47be416ebf1825"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-29",
+      "lessonId": "battle",
+      "content": "",
+      "necessity": "所有人完成战斗后才进入统一结算。",
+      "behaviorStepId": "play-29",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-31",
+      "lessonId": "settlement",
+      "content": "对手玩家 3（言峰绮礼）\n\n一名玩家激活的攻击威力+地利数+受到自己能力的影响以及局势牌和天气牌的影响。",
+      "necessity": "首次结算时给合计构成，不要求开详情读临时数值。",
+      "behaviorStepId": "play-31-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-settlement",
+          "sha256": "a5e40f44a5f4007ef69f05a89ff46c4f455c0d71ee97732c58195c79a0d4c236"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "round-return-observe",
+      "lessonId": "roundReturn",
+      "content": "回合结束时\n\n令技能牌明置返回其技能区并令非技能牌暗置进入其弃牌堆",
+      "necessity": "真实回合清理后说明牌的去向，不复述普通推进按钮。",
+      "behaviorStepId": "round-return-observe",
+      "media": [
+        {
+          "uiStateId": "lesson-roundReturn",
+          "sha256": "18c71a425b4482fa43855ae9fafb70249070a712509f8770988141f1d93159f7"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "ui-pile-33",
+      "lessonId": "discard",
+      "content": "你可以于任何时候查看自己的弃牌堆。",
+      "necessity": "弃牌非空后教可随时查看；无关闭牌/技能含混文案。",
+      "behaviorStepId": "ui-pile-33",
+      "media": [
+        {
+          "uiStateId": "lesson-discard",
+          "sha256": "bf17463c56fbeefb91f10c3ef2885c5819be9c4e55f504fc5bc81078490e262e"
+        },
+        {
+          "uiStateId": "discard",
+          "sha256": "d2f626cef5dd664a42f3998d801f6c60757a35779cccaa3a4daa5e4e385ebba1"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-45",
+      "lessonId": "normalAttack",
+      "content": "本次打出幸运（明置）、浑身的一击（明置），建立本轮攻击。",
+      "necessity": "首次两张规则已教，后续只保留具体演示卡名；不重复按钮。",
+      "behaviorStepId": "play-45",
+      "media": [
+        {
+          "uiStateId": "lesson-normalAttack",
+          "sha256": "1edf3b5dd493ebaf721bcec7bc6cabbf4e89d0c24cf0b54050275facdec16e0f"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-50",
+      "lessonId": "sealBattle",
+      "content": "对手玩家 2（间桐慎二） · 令咒·强化战斗\n\n获得2 点合计威力以及获胜后获得 2 点战果点数",
+      "necessity": "他席首次使用时标明玩家、御主及令咒·强化战斗；本人后续手动使用，完整句点明本轮目的。",
+      "behaviorStepId": "play-50-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-sealBattle",
+          "sha256": "cb0aca054849e60e7ca91f87ec021c558e26dbf942e03dffb404057f7170fc0a"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-67",
+      "lessonId": "battleDeployment",
+      "content": "这次部署到深山町的可用地利点，为战力结算取得地利。",
+      "necessity": "首次本人战场部署只点当前地利对象，前面的选择规则已教。",
+      "behaviorStepId": "play-67",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-75",
+      "lessonId": "mixedAttack",
+      "content": "本次打出骑乘（明置）、神威车轮（明置），建立本轮攻击。",
+      "necessity": "首次混选解释两种来源；重复决策只点本次卡名。",
+      "behaviorStepId": "play-75",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-78",
+      "lessonId": "sealBattle",
+      "content": "使用一枚令咒强化本轮战斗。",
+      "necessity": "他席首次使用时标明玩家、御主及令咒·强化战斗；本人后续手动使用，完整句点明本轮目的。",
+      "behaviorStepId": "play-78",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-80",
+      "lessonId": "masterAbility",
+      "content": "对手玩家 3（言峰绮礼） · 执行者\n\n战斗阶段：你的总威力+2。",
+      "necessity": "首次对应御主的真实能力摘句；不同御主不能按同一lessonId漏教。",
+      "behaviorStepId": "play-80-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-masterAbility-m_kirei-s3",
+          "sha256": "73d7034893b32dca327332869904b3cea32846a10067c4e5855ac4918076422a"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-84",
+      "lessonId": "settlement",
+      "content": "",
+      "necessity": "首次结算时给合计构成，不要求开详情读临时数值。",
+      "behaviorStepId": "play-84",
+      "media": [],
+      "teachingScope": "重复已教动作或无新增可见UI节点，正式行为断言覆盖",
+      "omissionReason": "同构动作、规则已经展示；不为重复牌名和推进按钮增加相似图。",
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-87",
+      "lessonId": "postBattle",
+      "content": "此战场的胜者可以恢复1枚令咒。",
+      "necessity": "事件卡原文由正式窗口承接，不在窗口上再叠教学。",
+      "behaviorStepId": "play-87",
+      "media": [
+        {
+          "uiStateId": "lesson-postBattle",
+          "sha256": "d0367a99a976ca22f2d5462d2e0cc6bb426bbd0652a92f7543832599ce7c910b"
+        },
+        {
+          "uiStateId": "post-battle",
+          "sha256": "e3636a339fbb2e15b1b5d1fefe451ce4278598f59cd9becb68075fa3c41222cf"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-100",
+      "lessonId": "battlefieldDarkAttack",
+      "content": "若你位于战场，则你的常规出牌中必须要有一张明置牌。\n\n暗置牌处于未被激活的状态，它们不消耗魔力，不计算威力，也不属于攻击且于回合结束时进入你的弃牌堆。通常而言，技能牌不能被暗置打出。\n\n本次打出瞬间的一击（明置）、会心的一击（暗置）；将有费用的普通牌暗置，为后续行动保留魔力。",
+      "necessity": "本次在战场必须至少一张明置，暗置性质另摘；排除场外两张暗置条件。",
+      "behaviorStepId": "play-100",
+      "media": [
+        {
+          "uiStateId": "lesson-battlefieldDarkAttack",
+          "sha256": "26a4aa6bbbba85f88182b8ff3a276846c957d817695b6f2b0d4a4dee0eb9f250"
+        },
+        {
+          "uiStateId": "dark-mode",
+          "sha256": "e3885e026cf20ce3b413767a583228abeafecd4e06fa7281ad2da7f9cdabff0e"
+        },
+        {
+          "uiStateId": "dark-draft",
+          "sha256": "aa93133b850d3da649afca28191e0029eb2e05a83fb84d6f05e675dac6d3e55c"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "play-103",
+      "lessonId": "sealMove",
+      "content": "对手玩家 3（言峰绮礼） · 令咒·移动\n\n在深山町或新都进行移动",
+      "necessity": "实际他席使用令咒移动时标明令咒·移动及归属；效果移动例外主线已随急行教过则不重复。",
+      "behaviorStepId": "play-103-automatic",
+      "media": [
+        {
+          "uiStateId": "lesson-sealMove",
+          "sha256": "6ed4e72f63d7751ac39e2d156895ead519d3dcc3e5bab7dbda03fa8bb6548640"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    },
+    {
+      "stepId": "elimination-observe",
+      "lessonId": "elimination",
+      "content": "在第 10 天【回合结束时】，除了 VP 的前 2 名的玩家外，所有玩家都被淘汰出局。",
+      "necessity": "第十天真实结算后教淘汰，头像直接表达结果。",
+      "behaviorStepId": "elimination-observe",
+      "media": [
+        {
+          "uiStateId": "lesson-elimination",
+          "sha256": "5caa97702e6efcc1d5398ddee6568b1f4ffcf325fc46f2dc749d8aa17dc962bf"
+        },
+        {
+          "uiStateId": "eliminated-detail",
+          "sha256": "39849075ba4b667947546a82a28486811363cd76706b9c607823238df37391fe"
+        }
+      ],
+      "teachingScope": "当前提示或正式UI直接可见",
+      "omissionReason": null,
+      "status": "PASS"
+    }
+  ],
+  "branches": [
+    "三条完整分支以正式领域管线复演与作者审稿验证；浏览器完整走工房主链，另两处分支只验证首次选点与落位及正式回退，不声称全分支完整浏览器验收。",
+    "数值规则与输入由测试证明，逐图报告只证明实际可见UI。"
+  ],
+  "explicitBranchBacktracks": [
+    {
+      "uiStateId": "deployment-landed-workshop-third-option",
+      "observation": "正式确认后本人棋子落于工房第三处候选，手牌和前哨推进保留；此帧是明确标记的回退重选分支。"
+    },
+    {
+      "uiStateId": "deployment-landed-miyama",
+      "observation": "正式回退重选后本人落于深山町+3，牌桌读数与棋子地利可见；提示不挡落位结果，分支身份独立记录。"
+    },
+    {
+      "uiStateId": "deployment-landed-shinto",
+      "observation": "新都分支确认后本人头像落在+3点位，提示与棋子、地利分离；分支回退流程独立标记。"
+    },
+    {
+      "uiStateId": "deployment-landed",
+      "observation": "正式复位并回到工房主链后本人落在+1，完整默认取景恢复；前哨推进、能力与手牌布局不随分支漂移。"
+    }
+  ],
+  "newInteractionFrames": [
+    "deployment-map-pan",
+    "dark-mode",
+    "dark-draft"
+  ]
+}

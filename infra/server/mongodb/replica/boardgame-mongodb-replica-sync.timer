@@ -1,0 +1,11 @@
+[Unit]
+Description=Pull BoardGame MongoDB standby snapshot every 15 minutes
+
+[Timer]
+OnBootSec=8m
+OnUnitActiveSec=15m
+Persistent=true
+Unit=boardgame-mongodb-replica-sync.service
+
+[Install]
+WantedBy=timers.target

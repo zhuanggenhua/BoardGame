@@ -31,6 +31,7 @@ export const ConfirmRemoveKnockdownModal = ({
                     <GameButton
                         variant="primary"
                         onClick={onConfirm}
+                        data-tutorial-id="knockdown-pay-button"
                         className="flex-1"
                     >
                         {t('confirmRemoveKnockdown.confirm')}

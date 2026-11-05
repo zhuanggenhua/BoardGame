@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { FRIENDS_CHAT_DETAIL_CONTENT_CLASS } from './layoutContracts';
 import { SYSTEM_NOTIFICATION_ID } from './constants';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 type ModalViewportCssVars = {
     '--modal-active-viewport-height': string;
@@ -27,6 +28,7 @@ interface FriendsChatModalProps {
 }
 
 export const FriendsChatModal = ({ isOpen, onClose, inviteData, initialFriendId }: FriendsChatModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const [selectedFriendId, setSelectedFriendId] = useState<string | null>(initialFriendId ?? null);
     const { t } = useTranslation(['social']);
 
@@ -62,13 +64,15 @@ export const FriendsChatModal = ({ isOpen, onClose, inviteData, initialFriendId 
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 onClick={(e) => e.stopPropagation()}
                 data-testid="friends-chat-modal-content"
+                data-platform-dialog="social"
                 className="relative bg-parchment-card-bg w-full max-w-4xl min-h-0 rounded-lg shadow-2xl overflow-hidden flex flex-col md:flex-row border border-parchment-card-border/30"
                 style={{ height: 'min(600px, var(--modal-max-height, var(--runtime-modal-max-height)))' }}
             >
                 {/* 关闭按钮 */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-20 p-2 rounded-full bg-parchment-card-bg/80 hover:bg-parchment-base-bg transition-colors"
+                    aria-label={t('common:close')}
+                    className="platform-dialog-close absolute top-4 right-4 z-20 p-2 rounded-full bg-parchment-card-bg/80 hover:bg-parchment-base-bg transition-colors"
                 >
                     <X size={20} className="text-parchment-base-text" />
                 </button>

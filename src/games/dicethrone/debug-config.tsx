@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resolveCardDisplayName } from '../../components/game/framework/debug/cardNameResolver';
 import { HEROES_DATA } from './heroes';
+import type { DiceThroneCore } from './domain/types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const REVERSED_COMMON_ATLAS_HEROES = new Set(['gunslinger', 'samurai']);
@@ -52,12 +53,15 @@ const getDeckSectionId = (characterId: string | null | undefined, atlasIndex: nu
 };
 
 interface DiceThroneDebugConfigProps {
-    G: unknown;
+    G: {
+        core: DiceThroneCore;
+        sys: { phase?: string };
+    };
     dispatch: (type: string, payload?: unknown) => void;
     playerNames?: Record<string, string>;
 }
 
-const getCurrentDiceValues = (gameState: any): string[] => {
+const getCurrentDiceValues = (gameState: DiceThroneDebugConfigProps['G']): string[] => {
     const phase = gameState?.sys?.phase;
     const currentRollContext = gameState?.core?.currentRollContext;
     const isMainRollPhase = phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll';
@@ -499,6 +503,19 @@ export const DiceThroneDebugConfig: React.FC<DiceThroneDebugConfigProps> = ({ G,
                         className="w-full px-3 py-1.5 bg-purple-500 text-white rounded text-xs font-bold hover:bg-purple-600"
                     >
                         {t('debug.token.set_amount')}
+                    </button>
+                    <button
+                        onClick={() => {
+                            dispatch('SYS_CHEAT_ADD_TOKEN', {
+                                playerId: tokenPlayer,
+                                tokenId: tokenType,
+                                delta: Number(tokenValue),
+                            });
+                        }}
+                        className="w-full px-3 py-1.5 bg-green-500 text-white rounded text-xs font-bold hover:bg-green-600"
+                        data-testid="dt-debug-token-add"
+                    >
+                        {t('debug.token.add_amount')}
                     </button>
                 </div>
             </div>

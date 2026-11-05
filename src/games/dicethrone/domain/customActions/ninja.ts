@@ -5,7 +5,7 @@ import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
 import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getOpponents, getPendingBonusSettlementDice, getPlayerDieFace, getSeatingOrder, getTokenStackLimit } from '../rules';
 import { reduce } from '../reducer';
 import { applyEvents } from '../utils';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 import { maybeCreateDamageResponseEvent } from '../tokenResponse';
 import type {
     AttackMadeUndefendableEvent,
@@ -182,6 +182,10 @@ function attackMadeUndefendable(attackerId: string, timestamp: number): AttackMa
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as AttackMadeUndefendableEvent;
+}
+
+function goingForwardUndefendableEvents(attackerId: string, total: number, timestamp: number): DiceThroneEvent[] {
+    return total <= 6 ? [attackMadeUndefendable(attackerId, timestamp)] : [];
 }
 
 function buildDisplayOnlySingleDie(
@@ -729,13 +733,16 @@ export function registerNinjaCustomActions(): void {
         const totalDamage = getPendingBonusSettlementDice(settlement).reduce((sum, die) => sum + die.value, 0);
         return {
             totalDamage: 0,
-            followupEvents: totalDamage > 0
-                ? [bonusDamageEvent(settlement.attackerId, totalDamage, settlement.sourceAbilityId, timestamp)]
-                : [],
+            followupEvents: [
+                ...(totalDamage > 0
+                    ? [bonusDamageEvent(settlement.attackerId, totalDamage, settlement.sourceAbilityId, timestamp)]
+                    : []),
+                ...goingForwardUndefendableEvents(settlement.attackerId, totalDamage, timestamp + 1),
+            ],
         };
     });
 
-    registerBonusDiceSettlementHandler(DEATH_BLOSSOM_SETTLEMENT_ID, ({ state, settlement, timestamp }) => {
+    registerBonusDiceSettlementHandler(DEATH_BLOSSOM_SETTLEMENT_ID, ({ settlement, timestamp }) => {
         let katanaCount = 0;
         let shurikenCount = 0;
         let maskCount = 0;
@@ -755,8 +762,7 @@ export function registerNinjaCustomActions(): void {
             ));
         }
         if (maskCount > 0) {
-            const ninjutsuEvent = grantTokenEvent(state, settlement.sourceAbilityId, settlement.attackerId, TOKEN_IDS.NINJUTSU, maskCount, timestamp + 1);
-            if (ninjutsuEvent) followupEvents.push(ninjutsuEvent);
+            followupEvents.push(attackMadeUndefendable(settlement.attackerId, timestamp + 1));
         }
         return {
             totalDamage: 0,
@@ -768,9 +774,7 @@ export function registerNinjaCustomActions(): void {
         const totalDamage = getPendingBonusSettlementDice(settlement).reduce((sum, die) => sum + die.value, 0);
         return {
             totalDamage,
-            followupEvents: totalDamage <= 6
-                ? [attackMadeUndefendable(settlement.attackerId, timestamp + 1)]
-                : [],
+            followupEvents: goingForwardUndefendableEvents(settlement.attackerId, totalDamage, timestamp + 1),
         };
     });
 

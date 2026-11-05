@@ -30,10 +30,9 @@ export type BetrayalScenarioReaderPresentation = {
   shouldShowScenarioStartOpening: boolean;
   referenceScenarioPages: ScenarioReaderPage[];
   referenceScenarioBookSpreadCount: number;
-  referenceScenarioHasOpeningStage: boolean;
-  referenceScenarioSpreadCount: number;
   isReferenceScenarioOpeningStage: boolean;
   referenceScenarioBookSpreadIndex: number;
+  referenceScenarioReaderProgressLabel: string;
   referenceScenarioLeftPage: ScenarioReaderPage | null;
   referenceScenarioRightPage: ScenarioReaderPage | null;
   canTurnReferenceScenarioBack: boolean;
@@ -44,7 +43,8 @@ export function resolveBetrayalScenarioReaderPresentation({
   core,
   viewerPlayerId,
   referenceScenarioOpeningStageActive,
-  referenceScenarioSpreadIndex,
+  referenceScenarioOpeningStageIncluded,
+  referenceScenarioBookSpreadIndex,
   scenarioStartOpeningCinematicKey,
   dismissedScenarioStartOpeningCinematicKey,
   text,
@@ -52,7 +52,8 @@ export function resolveBetrayalScenarioReaderPresentation({
   core: BetrayalCore;
   viewerPlayerId: string;
   referenceScenarioOpeningStageActive: boolean;
-  referenceScenarioSpreadIndex: number;
+  referenceScenarioOpeningStageIncluded: boolean;
+  referenceScenarioBookSpreadIndex: number;
   scenarioStartOpeningCinematicKey: string | null;
   dismissedScenarioStartOpeningCinematicKey: string | null;
   text: ScenarioReaderText;
@@ -99,17 +100,21 @@ export function resolveBetrayalScenarioReaderPresentation({
     1,
     Math.ceil(referenceScenarioPages.length / 2),
   );
-  const referenceScenarioHasOpeningStage =
+  const isReferenceScenarioOpeningStage =
     referenceScenarioOpeningStageActive &&
+    referenceScenarioOpeningStageIncluded &&
     Boolean(referenceScenarioOpeningSection);
-  const referenceScenarioSpreadCount =
+  const referenceScenarioHasOpeningStage =
+    referenceScenarioOpeningStageIncluded &&
+    Boolean(referenceScenarioOpeningSection);
+  const referenceScenarioSequenceCount =
     referenceScenarioBookSpreadCount +
     (referenceScenarioHasOpeningStage ? 1 : 0);
-  const isReferenceScenarioOpeningStage =
-    referenceScenarioHasOpeningStage && referenceScenarioSpreadIndex === 0;
-  const referenceScenarioBookSpreadIndex = referenceScenarioHasOpeningStage
-    ? Math.max(0, referenceScenarioSpreadIndex - 1)
-    : referenceScenarioSpreadIndex;
+  const referenceScenarioSequenceIndex = isReferenceScenarioOpeningStage
+    ? 0
+    : referenceScenarioBookSpreadIndex +
+      (referenceScenarioHasOpeningStage ? 1 : 0);
+  const referenceScenarioReaderProgressLabel = `${referenceScenarioSequenceIndex + 1}/${referenceScenarioSequenceCount}`;
   const referenceScenarioLeftPage =
     referenceScenarioPages[referenceScenarioBookSpreadIndex * 2] ?? null;
   const referenceScenarioRightPage =
@@ -130,14 +135,16 @@ export function resolveBetrayalScenarioReaderPresentation({
     shouldShowScenarioStartOpening,
     referenceScenarioPages,
     referenceScenarioBookSpreadCount,
-    referenceScenarioHasOpeningStage,
-    referenceScenarioSpreadCount,
     isReferenceScenarioOpeningStage,
     referenceScenarioBookSpreadIndex,
+    referenceScenarioReaderProgressLabel,
     referenceScenarioLeftPage,
     referenceScenarioRightPage,
-    canTurnReferenceScenarioBack: referenceScenarioSpreadIndex > 0,
+    canTurnReferenceScenarioBack:
+      !isReferenceScenarioOpeningStage &&
+      referenceScenarioBookSpreadIndex > 0,
     canTurnReferenceScenarioForward:
-      referenceScenarioSpreadIndex < referenceScenarioSpreadCount - 1,
+      isReferenceScenarioOpeningStage ||
+      referenceScenarioBookSpreadIndex < referenceScenarioBookSpreadCount - 1,
   };
 }

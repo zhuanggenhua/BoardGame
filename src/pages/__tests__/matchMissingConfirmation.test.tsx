@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { resolveMissingMatchConfirmationSignal, useMissingMatchConfirmation } from '../matchMissingConfirmation';
 
 describe('useMissingMatchConfirmation', () => {
-    it('transport match_not_found 一旦成立就触发 caller 清理，不再等待 REST 二次确认', async () => {
+    it('任一房间不存在信号成立就触发 caller 清理', async () => {
         const onConfirmedMissingMatch = vi.fn();
 
         const { result, rerender } = renderHook((props: {
@@ -27,9 +27,9 @@ describe('useMissingMatchConfirmation', () => {
             },
         });
 
-        expect(result.current).toBe('transport_not_found');
+        expect(result.current).toBe('match_not_found');
         await waitFor(() => {
-            expect(onConfirmedMissingMatch).toHaveBeenCalledWith('transport_not_found');
+            expect(onConfirmedMissingMatch).toHaveBeenCalledWith('match_not_found');
         });
         expect(onConfirmedMissingMatch).toHaveBeenCalledTimes(1);
 
@@ -37,7 +37,7 @@ describe('useMissingMatchConfirmation', () => {
             onlineTransportError: 'match_not_found',
             matchStatusErrorKind: 'transient_unreachable',
         });
-        expect(result.current).toBe('transport_not_found');
+        expect(result.current).toBe('match_not_found');
         expect(onConfirmedMissingMatch).toHaveBeenCalledTimes(1);
 
         rerender({
@@ -45,7 +45,7 @@ describe('useMissingMatchConfirmation', () => {
             matchStatusErrorKind: 'not_found',
         });
 
-        expect(result.current).toBe('transport_not_found');
+        expect(result.current).toBe('match_not_found');
         expect(onConfirmedMissingMatch).toHaveBeenCalledTimes(1);
 
         rerender({
@@ -53,6 +53,27 @@ describe('useMissingMatchConfirmation', () => {
             matchStatusErrorKind: 'not_found',
         });
         expect(onConfirmedMissingMatch).toHaveBeenCalledTimes(1);
+    });
+
+    it('REST 房间状态确认 404 时也触发 caller 清理', async () => {
+        const onConfirmedMissingMatch = vi.fn();
+
+        const { result } = renderHook(() => useMissingMatchConfirmation({
+            gameId: 'dicethrone',
+            isTutorialRoute: false,
+            matchId: 'missing-match',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: null,
+            matchStatusErrorKind: 'not_found',
+            onConfirmedMissingMatch,
+        }));
+
+        expect(result.current).toBe('match_not_found');
+        await waitFor(() => {
+            expect(onConfirmedMissingMatch).toHaveBeenCalledWith('match_not_found');
+        });
     });
 
     it('即使缺房信号成立，缺少 gameId 时也不应触发 caller 清理', async () => {
@@ -70,7 +91,7 @@ describe('useMissingMatchConfirmation', () => {
             onConfirmedMissingMatch,
         }));
 
-        expect(result.current).toBe('transport_not_found');
+        expect(result.current).toBe('match_not_found');
         await waitFor(() => {
             expect(onConfirmedMissingMatch).not.toHaveBeenCalled();
         });
@@ -78,7 +99,7 @@ describe('useMissingMatchConfirmation', () => {
 });
 
 describe('resolveMissingMatchConfirmationSignal', () => {
-    it('只要 transport match_not_found 成立就确认缺房，REST 错误类型不再参与判定', () => {
+    it('transport match_not_found 和 REST not_found 都确认缺房', () => {
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
             matchId: 'match-1',
@@ -87,7 +108,7 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
             matchStatusErrorKind: 'not_found',
-        })).toBe('transport_not_found');
+        })).toBe('match_not_found');
 
         expect(resolveMissingMatchConfirmationSignal({
             isTutorialRoute: false,
@@ -97,6 +118,16 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
             matchStatusErrorKind: 'transient_unreachable',
-        })).toBe('transport_not_found');
+        })).toBe('match_not_found');
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: null,
+            matchStatusErrorKind: 'not_found',
+        })).toBe('match_not_found');
     });
 });

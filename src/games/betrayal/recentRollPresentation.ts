@@ -197,3 +197,9 @@ export function resolveBetrayalRerollTargetBoxSize(
   const visibleHeight = layout.visualHeight ?? layout.height;
   return Math.max(visibleWidth, visibleHeight);
 }
+
+/** Branch minima partition totals; only the highest branch is open-ended. */
+export function buildRollThresholdRanges<T extends { min: number; label: string }>(branches: readonly T[]) {
+  const sorted = [...branches].sort((left, right) => right.min - left.min);
+  return sorted.map((branch, index) => ({ ...branch, max: index === 0 ? null : sorted[index - 1].min - 1 }));
+}

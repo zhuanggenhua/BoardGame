@@ -88,6 +88,7 @@ interface BoardGridProps {
   validMovePositions: CellCoord[];
   validAttackPositions: CellCoord[];
   validEventTargets: CellCoord[];
+  zhongcaiObedienceHighlights: CellCoord[];
   validAbilityPositions: CellCoord[];
   validAbilityUnits: CellCoord[];
   actionableUnitPositions: CellCoord[];
@@ -197,6 +198,7 @@ const GridLayer: React.FC<{
             data-valid-move={props.validMovePositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-attack={props.validAttackPositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-event-target={props.validEventTargets.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
+            data-valid-zhongcai-obedience={props.zhongcaiObedienceHighlights.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-ability-pos={props.validAbilityPositions.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             data-valid-ability-unit={props.validAbilityUnits.some(p => p.row === gameCoord.row && p.col === gameCoord.col) ? 'true' : 'false'}
             className="absolute cursor-pointer"
@@ -271,6 +273,8 @@ function getCardTargetHighlight(row: number, col: number, props: BoardGridProps)
     return 'ring-2 ring-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] animate-pulse';
   if (props.validEventTargets.some(p => p.row === row && p.col === col))
     return 'ring-2 ring-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.6)] animate-pulse';
+  if (props.zhongcaiObedienceHighlights.some(p => p.row === row && p.col === col))
+    return 'ring-2 ring-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.9)] animate-pulse';
   if (props.validAttackPositions.some(p => p.row === row && p.col === col))
     return 'ring-2 ring-red-400 shadow-[0_0_10px_rgba(248,113,113,0.6)]';
   if (props.validAbilityUnits.length > 0 && props.validAbilityUnits.some(p => p.row === row && p.col === col))
@@ -307,6 +311,7 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   const isAnnihilateTarget = props.annihilateHighlights.some(p => p.row === row && p.col === col);
   const isBloodSummonTarget = props.bloodSummonHighlights.some(p => p.row === row && p.col === col);
   const isValidEventTarget = props.validEventTargets.some(p => p.row === row && p.col === col);
+  const isZhongcaiObedienceTarget = props.zhongcaiObedienceHighlights.some(p => p.row === row && p.col === col);
   const isValidSummon = props.selectedHandCardId && props.validSummonPositions.some(p => p.row === row && p.col === col);
   const isValidBuild = props.selectedHandCardId && props.validBuildPositions.some(p => p.row === row && p.col === col);
   // 技能高亮：BoardGrid 不关心具体 step，由 useCellInteraction 的 memo 控制数组内容
@@ -354,6 +359,7 @@ function getCellStyle(gameCoord: CellCoord, _isSelected: boolean, props: BoardGr
   if (isTelekinesisTarget) return baseCellVisualStyle('rgba(94,234,212,1)', 'rgba(94,234,212,0.3)', 'animate-pulse');
   if (isBloodSummonTarget) return baseCellVisualStyle('rgba(244,63,94,1)', 'rgba(244,63,94,0.3)', 'animate-pulse');
   if (isValidEventTarget) return baseCellVisualStyle('rgba(251,146,60,1)', 'rgba(251,146,60,0.3)', 'animate-pulse');
+  if (isZhongcaiObedienceTarget) return baseCellVisualStyle('rgba(251,191,36,1)', 'rgba(251,191,36,0.45)', 'ring-2 ring-amber-300 animate-pulse');
   if (isValidSummon) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.3)');
   if (isValidBuild) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.3)');
   if (isAbilityPos) return baseCellVisualStyle('rgba(74,222,128,1)', 'rgba(74,222,128,0.5)', 'animate-pulse');
@@ -723,7 +729,7 @@ const UnitCell: React.FC<{
             className={`absolute flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyUnit ? 'rotate-180' : ''}`}
             style={{ ...MAGNIFY_BUTTON_STYLE, zIndex: BOARD_GRID_Z.magnifyButton }}
           >
-            <svg className="fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
+            <svg className="board-shell-fixed-icon fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </button>
@@ -890,7 +896,7 @@ const StructureCell: React.FC<{
             className={`absolute flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg border border-white/20 ${!isMyStructure ? 'rotate-180' : ''}`}
             style={{ ...MAGNIFY_BUTTON_STYLE, zIndex: BOARD_GRID_Z.magnifyButton }}
           >
-            <svg className="fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
+            <svg className="board-shell-fixed-icon fill-current" style={MAGNIFY_ICON_STYLE} viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
             </svg>
           </button>

@@ -5,8 +5,8 @@
  * 每个派系独立注册能力执行函数，在游戏初始化时调用。
  */
 
-import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel, ValidationResult } from './types';
+import type { PlayerId, RandomFn, MatchState, ValidationResult } from '../../../engine/types';
+import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel } from './types';
 import { getBaseDef, getCardDef, getTitanDef } from '../data/cards';
 import { isCardSuppressed } from './ongoingEffects';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';

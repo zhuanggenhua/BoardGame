@@ -16,6 +16,8 @@ import {
     type LocalProviderRandom,
 } from './localProviderBootstrap';
 import {
+    clearLocalMatchSnapshot,
+    type LocalMatchSnapshot,
     persistLocalMatchSnapshot,
     readLocalMatchSnapshot,
 } from './localSession';
@@ -30,6 +32,7 @@ export function useLocalProviderSession(args: {
     aiSeatIds: string[];
     persistSession: boolean;
     persistGameId?: string;
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
 }) {
     const {
         config,
@@ -40,41 +43,47 @@ export function useLocalProviderSession(args: {
         aiSeatIds,
         persistSession,
         persistGameId,
+        shouldRestorePersistedSession,
     } = args;
     const storageGameId = persistGameId ?? config.gameId;
 
-    const persistedSnapshot = useMemo(
-        () => (
-            persistSession
-                ? readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers })
-                : null
-        ),
-        [numPlayers, persistSession, seed, storageGameId],
-    );
+    const persistedSnapshotResult = useMemo(() => {
+        if (!persistSession) return null;
+        const snapshot = readLocalMatchSnapshot({ gameId: storageGameId, seed, numPlayers });
+        if (!snapshot) return null;
+        if (shouldRestorePersistedSession && !shouldRestorePersistedSession(snapshot)) {
+            return { snapshot: null, rejectedSeed: seed };
+        }
+        return { snapshot, rejectedSeed: null };
+    }, [numPlayers, persistSession, seed, shouldRestorePersistedSession, storageGameId]);
+    const persistedSnapshot = persistedSnapshotResult?.snapshot ?? null;
+    const rejectedPersistedSnapshotSeed = persistedSnapshotResult?.rejectedSeed ?? null;
 
-    const [initialRandom] = useState<LocalProviderRandom>(() =>
-        createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0),
-    );
-    const randomRef = useRef<LocalProviderRandom>(initialRandom);
-
-    const [state, setState] = useState<MatchState<unknown>>(() =>
-        createInitialLocalProviderState({
-            config,
-            persistedState: persistedSnapshot?.state,
-            aiSeatIds,
-            initialRandom,
-            setupData,
-            setupPlayerIds,
-        }),
-    );
+    // 初始状态和已消费的随机源必须一起创建。StrictMode重跑初始化时，
+    // 每次使用独立随机源，避免被丢弃的setup继续推进保留下来的游标。
+    const [initialSession] = useState(() => {
+        const random = createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0);
+        return {
+            random,
+            state: createInitialLocalProviderState({
+                config,
+                persistedState: persistedSnapshot?.state,
+                aiSeatIds,
+                initialRandom: random,
+                setupData,
+                setupPlayerIds,
+            }),
+        };
+    });
+    const randomRef = useRef<LocalProviderRandom>(initialSession.random);
+    const [state, setState] = useState<MatchState<unknown>>(initialSession.state);
     const stateRef = useRef(state);
 
     useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
-
-    useEffect(() => {
         if (!persistSession) return;
+        if (rejectedPersistedSnapshotSeed) {
+            clearLocalMatchSnapshot(storageGameId, rejectedPersistedSnapshotSeed);
+        }
         persistLocalMatchSnapshot({
             gameId: storageGameId,
             seed,
@@ -82,7 +91,7 @@ export function useLocalProviderSession(args: {
             state,
             randomCursor: randomRef.current.getCursor(),
         });
-    }, [numPlayers, persistSession, seed, state, storageGameId]);
+    }, [numPlayers, persistSession, rejectedPersistedSnapshotSeed, seed, state, storageGameId]);
 
     const reset = useCallback(() => {
         randomRef.current = createLocalProviderRandom(seed);

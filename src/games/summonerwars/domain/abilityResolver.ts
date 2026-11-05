@@ -47,6 +47,7 @@ import {
 import {
   getBaseCardId,
   isUndeadCard,
+  isCarrierCard,
   isPlagueZombieCard,
   isFortressUnit,
   isMoguSporePlagueBodyCard,
@@ -206,6 +207,9 @@ registerConditionHandler(swConditionRegistry, 'isUnitType', (params, ctx) => {
     if (unitType === 'undead') {
       return isUndeadCard(u.card);
     }
+    if (unitType === 'carrier') {
+      return isCarrierCard(u.card);
+    }
     return u.card.unitClass === unitType;
   });
 });
@@ -246,7 +250,7 @@ registerConditionHandler(swConditionRegistry, 'hasCardInDiscard', (params, ctx) 
     if (cardType === 'undead') {
       return isUndeadCard(card);
     }
-    if (cardType === 'plagueZombie') {
+    if (cardType === 'carrier' || cardType === 'plagueZombie') {
       return isPlagueZombieCard(card);
     }
     if (cardType === 'mogu_spore_plague_body') {
@@ -969,6 +973,19 @@ export function calculateEffectiveStrength(
     if (radiantBonus > 0) {
       strength += radiantBonus;
       modifiers.push({ source: 'radiant_shot', sourceName: '辉光射击', value: radiantBonus });
+    }
+  }
+
+  // 仲裁“忠诚律令”：与友方召唤师相邻的士兵获得 +1 战力。
+  if (unit.card.unitClass === 'common') {
+    const hasLoyaltyDecree = state.players[unit.owner]?.activeEvents.some(ev =>
+      getBaseCardId(ev.id) === CARD_IDS.ZHONGCAI_LOYALTY_DECREE,
+    );
+    const summoner = state.players[unit.owner] ? getPlayerUnits(state, unit.owner)
+      .find(candidate => candidate.card.unitClass === 'summoner' && manhattanDistance(candidate.position, unit.position) === 1) : undefined;
+    if (hasLoyaltyDecree && summoner) {
+      strength += 1;
+      modifiers.push({ source: CARD_IDS.ZHONGCAI_LOYALTY_DECREE, sourceName: '忠诚律令', value: 1 });
     }
   }
 

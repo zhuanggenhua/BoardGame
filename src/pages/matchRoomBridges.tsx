@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useGameClient } from '../engine/transport/react';
-import type { MatchState, TutorialManifest } from '../engine/types';
+import type { MatchState, TutorialManifest, TutorialState } from '../engine/types';
 import { TUTORIAL_COMMANDS } from '../engine/systems/TutorialSystem';
-import { useTutorial } from '../contexts/TutorialContext';
+import { useTutorial, type TutorialSessionScope } from '../contexts/TutorialContext';
 import { useGameMode } from '../contexts/GameModeContext';
 import type { OnlineAiDebugWindow } from './onlineAiRuntimeSupport';
 
@@ -16,6 +16,60 @@ export type MatchRoomSeatValidationSnapshot = {
 type OnlineSeatValidationBridgeProps = {
     onSnapshotChange: (snapshot: MatchRoomSeatValidationSnapshot) => void;
 };
+
+type TutorialProgressView = {
+    manifestId: string | null;
+    manifestRevision?: number;
+    stepIndex: number;
+    stepId: string | null;
+    totalSteps: number;
+};
+
+const getProjectedTutorialStepCount = (
+    tutorial: TutorialState | undefined,
+    manifest?: TutorialManifest | null,
+): number => {
+    if (!tutorial) return 0;
+    const transportTotal = (tutorial as TutorialState & { totalSteps?: number }).totalSteps;
+    if (typeof transportTotal === 'number' && transportTotal > 0) return transportTotal;
+    if (tutorial.steps?.length) return tutorial.steps.length;
+    if (manifest && tutorial.manifestId === manifest.id) return manifest.steps.length;
+    return 0;
+};
+
+const isSameTutorialRevision = (
+    manifest: TutorialManifest,
+    progress: { manifestRevision?: number | null },
+): boolean => (
+    !Number.isInteger(manifest.revision)
+    || progress.manifestRevision === manifest.revision
+);
+
+const snapshotTutorialProgress = (
+    tutorial: TutorialState | undefined,
+    manifest?: TutorialManifest | null,
+): TutorialProgressView | null => {
+    if (!tutorial?.active) return null;
+    const totalSteps = getProjectedTutorialStepCount(tutorial, manifest);
+    return {
+        manifestId: tutorial.manifestId ?? null,
+        manifestRevision: tutorial.manifestRevision,
+        stepIndex: tutorial.stepIndex,
+        stepId: tutorial.step?.id ?? null,
+        totalSteps,
+    };
+};
+
+const wasLastActiveTutorialStep = (
+    progress: TutorialProgressView | null,
+    manifest: TutorialManifest,
+): boolean => Boolean(
+    progress
+    && progress.manifestId === manifest.id
+    && isSameTutorialRevision(manifest, progress)
+    && progress.totalSteps > 0
+    && progress.stepIndex >= progress.totalSteps - 1
+);
 
 export type MatchRoomLiveDebugBridgeProps = {
     matchId?: string;
@@ -39,12 +93,14 @@ export type MatchRoomOnlineRuntimeDebugBridgeProps = {
 export const TutorialDispatchBridge = ({
     children,
     tutorialManifest,
+    sessionScope,
 }: {
     children: ReactNode;
     tutorialManifest?: TutorialManifest | null;
+    sessionScope?: TutorialSessionScope | null;
 }) => {
     const { dispatch, state } = useGameClient();
-    const { bindDispatch, unbindDispatch, syncTutorialState } = useTutorial();
+    const { bindDispatch, unbindDispatch, syncTutorialState, tutorial: contextTutorial, isBoardMounted: contextBoardMounted } = useTutorial();
     const gameMode = useGameMode();
     const isTutorialMode = gameMode?.mode === 'tutorial';
     const dispatchRef = useRef(dispatch);
@@ -53,12 +109,17 @@ export const TutorialDispatchBridge = ({
         manifest: TutorialManifest | null;
         stateKey: string | null;
     }>({ manifest: null, stateKey: null });
+    const lastActiveTutorialProgressRef = useRef<TutorialProgressView | null>(null);
+    const sessionScopeKey = sessionScope?.key ?? '';
+    const contextTutorialActive = contextTutorial.active;
+    const contextTutorialManifestId = contextTutorial.manifestId;
+    const contextTutorialManifestRevision = contextTutorial.manifestRevision;
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         dispatchRef.current = dispatch;
     }, [dispatch]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         contextRef.current = { bindDispatch, unbindDispatch, syncTutorialState };
     }, [bindDispatch, unbindDispatch, syncTutorialState]);
 
@@ -68,13 +129,14 @@ export const TutorialDispatchBridge = ({
     // playing 阶段的 state，只需预加载一次。
     useLayoutEffect(() => {
         if (!isTutorialMode) return;
-        const gen = contextRef.current.bindDispatch(
-            (...args: [string, unknown?]) => dispatchRef.current(...args),
-        );
+        const dispatchTutorialCommand = (...args: [string, unknown?]) => dispatchRef.current(...args);
+        const gen = sessionScope
+            ? contextRef.current.bindDispatch(dispatchTutorialCommand, sessionScope)
+            : contextRef.current.bindDispatch(dispatchTutorialCommand);
         return () => {
             contextRef.current.unbindDispatch(gen);
         };
-    }, [isTutorialMode]);
+    }, [isTutorialMode, sessionScope]);
 
     useLayoutEffect(() => {
         if (!isTutorialMode || !tutorialManifest) {
@@ -83,6 +145,28 @@ export const TutorialDispatchBridge = ({
         }
 
         const tutorial = (state as MatchState | undefined)?.sys?.tutorial;
+        const isGameOver = Boolean((state as MatchState | undefined)?.sys?.gameover);
+        const activeProgress = snapshotTutorialProgress(tutorial, tutorialManifest);
+        if (activeProgress?.manifestId === tutorialManifest.id) {
+            lastActiveTutorialProgressRef.current = activeProgress;
+        }
+        const contextMatchesManifest = contextTutorialActive
+            && contextTutorialManifestId === tutorialManifest.id
+            && isSameTutorialRevision(tutorialManifest, {
+                manifestRevision: contextTutorialManifestRevision,
+            });
+        if (
+            contextMatchesManifest
+            && (!tutorial?.active || tutorial.manifestId !== tutorialManifest.id)
+        ) {
+            if (isGameOver || wasLastActiveTutorialStep(lastActiveTutorialProgressRef.current, tutorialManifest)) {
+                boundManifestRef.current = { manifest: tutorialManifest, stateKey: 'completed-local-tutorial' };
+                return;
+            }
+            boundManifestRef.current = { manifest: tutorialManifest, stateKey: 'restart-local-tutorial' };
+            dispatchRef.current(TUTORIAL_COMMANDS.START, { manifest: tutorialManifest });
+            return;
+        }
         if (!tutorial?.active || tutorial.manifestId !== tutorialManifest.id) {
             boundManifestRef.current = { manifest: null, stateKey: null };
             return;
@@ -92,14 +176,24 @@ export const TutorialDispatchBridge = ({
             && Number.isInteger(tutorial.manifestRevision)
             && tutorial.manifestRevision !== tutorialManifest.revision
         ) {
+            boundManifestRef.current = { manifest: tutorialManifest, stateKey: 'restart-version-mismatched-tutorial' };
+            dispatchRef.current(TUTORIAL_COMMANDS.START, { manifest: tutorialManifest });
+            return;
+        }
+        if (tutorial.stepIndex <= 0 && !tutorialManifest.stepValidator) {
+            boundManifestRef.current = { manifest: tutorialManifest, stateKey: null };
             return;
         }
 
         const stateKey = [
+            sessionScopeKey,
             tutorial.manifestId,
             tutorial.manifestRevision ?? '',
             tutorial.stepIndex,
             tutorial.step?.id ?? '',
+            tutorial.step && tutorialManifest.stepValidator
+                ? (tutorialManifest.stepValidator(state as MatchState, tutorial.step) ? 'valid' : 'stale')
+                : 'no-validator',
         ].join(':');
         if (
             boundManifestRef.current.manifest === tutorialManifest
@@ -110,26 +204,84 @@ export const TutorialDispatchBridge = ({
 
         boundManifestRef.current = { manifest: tutorialManifest, stateKey };
         dispatchRef.current(TUTORIAL_COMMANDS.BIND_MANIFEST, { manifest: tutorialManifest });
-    }, [isTutorialMode, state, tutorialManifest]);
+    }, [
+        contextTutorialActive,
+        contextTutorialManifestId,
+        contextTutorialManifestRevision,
+        isTutorialMode,
+        sessionScopeKey,
+        state,
+        tutorialManifest,
+    ]);
 
-    // 提前同步教程状态（Board 被 CriticalImageGate 阻塞时也能同步）
-    const lastSyncRef = useRef<string | null>(null);
+    // 挂载前由房间层同步；挂载后由真实棋盘同步含隐藏/检视状态的显示投影。
+    const lastSyncRef = useRef<{ state: unknown; signature: string } | null>(null);
     useEffect(() => {
         if (!isTutorialMode || !state) return;
         const tutorial = (state as MatchState).sys.tutorial;
         if (!tutorial) return;
+        if (contextBoardMounted && tutorial.active) {
+            lastSyncRef.current = null;
+            return;
+        }
+        const contextMatchesManifest = contextTutorialActive
+            && tutorialManifest
+            && contextTutorialManifestId === tutorialManifest.id
+            && isSameTutorialRevision(tutorialManifest, {
+                manifestRevision: contextTutorialManifestRevision,
+            });
+        const localCloseCompletesCurrentTutorial = Boolean(
+            tutorialManifest
+            && contextMatchesManifest
+            && (!tutorial.active || tutorial.manifestId !== tutorialManifest.id)
+            && (Boolean((state as MatchState).sys.gameover)
+                || wasLastActiveTutorialStep(lastActiveTutorialProgressRef.current, tutorialManifest))
+        );
+        if (
+            contextMatchesManifest
+            && (!tutorial.active || tutorial.manifestId !== tutorialManifest.id)
+            && !localCloseCompletesCurrentTutorial
+        ) {
+            return;
+        }
         const sig = [
+            sessionScopeKey,
             tutorial.active,
             tutorial.stepIndex,
             tutorial.step?.id ?? '',
             tutorial.step?.aiActions?.length ?? 0,
             tutorial.aiActions?.length ?? 0,
             tutorial.pendingAnimationAdvance ?? false,
+            // 教程 AI 批次可能连续执行多条命令，但教程步骤在批次结束前不变。
+            // 等待条件必须覆盖领域状态，否则会在响应窗口仍打开时提前消费 AI。
+            (state as MatchState).sys?.phase ?? '',
+            (state as MatchState).sys?.flowHalted ?? false,
+            (state as MatchState).sys?.interaction?.current?.id ?? '',
+            (state as MatchState).sys?.responseWindow?.current?.id ?? '',
+            (state as MatchState).core && typeof (state as MatchState).core === 'object'
+                ? ((state as MatchState).core as { activePlayerId?: unknown }).activePlayerId ?? ''
+                : '',
+            (state as MatchState).sys?.eventStream?.nextId ?? 0,
         ].join('-');
-        if (lastSyncRef.current === sig) return;
-        lastSyncRef.current = sig;
-        contextRef.current.syncTutorialState(tutorial);
-    }, [isTutorialMode, state]);
+        // 领域换席等正式更新可能没有表现事件，也不改变教程步骤；不能用字段枚举吞掉新快照。
+        if (lastSyncRef.current?.state === state && lastSyncRef.current.signature === sig) return;
+        lastSyncRef.current = { state, signature: sig };
+        if (sessionScope) {
+            contextRef.current.syncTutorialState(tutorial, undefined, sessionScope);
+        } else {
+            contextRef.current.syncTutorialState(tutorial);
+        }
+    }, [
+        contextBoardMounted,
+        contextTutorialActive,
+        contextTutorialManifestId,
+        contextTutorialManifestRevision,
+        isTutorialMode,
+        sessionScope,
+        sessionScopeKey,
+        state,
+        tutorialManifest,
+    ]);
 
     return <>{children}</>;
 };

@@ -201,7 +201,7 @@ describe('卡牌系统', () => {
     });
 
     describe('防御瞬发牌限制', () => {
-        it('下次不算不能在主阶段预先打出', () => {
+        it('下次一定作为投掷阶段行动牌不能在主要阶段打出', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
                 name: '下次不算需要待结算伤害',
@@ -210,7 +210,7 @@ describe('卡牌系统', () => {
                     cmd('PLAY_CARD', '0', { cardId: 'card-next-time' }),
                 ],
                 expect: {
-                    expectError: { command: 'PLAY_CARD', error: 'requirePendingDamage' },
+                    expectError: { command: 'PLAY_CARD', error: 'wrongPhaseForRoll' },
                     turnPhase: 'main1',
                 },
             });
@@ -328,10 +328,10 @@ describe('卡牌系统', () => {
             expect(afterResolved.pendingAttack).toBeNull();
         });
 
-        it('不可防御伤害仍应给防御方打出下次不算的受伤前时机', () => {
+        it('不可防御攻击进入伤害结算前仍可用下次一定防止即将受到的伤害', () => {
             const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 1]));
             const result = runner.run({
-                name: '影步不可防御伤害允许下次不算响应',
+                name: '影步不可防御伤害允许下次一定响应',
                 setup: createHeroMatchup('ninja', 'monk', (core) => {
                     core.players['0'].hand = [];
                     core.players['1'].hand = core.players['1'].hand.filter(card => card.id === 'card-next-time');
@@ -352,7 +352,6 @@ describe('卡牌系统', () => {
                     cmd('SELECT_ABILITY', '0', { abilityId: 'shadow-step' }),
                     cmd('ADVANCE_PHASE', '0'),
                     cmd('PLAY_CARD', '1', { cardId: 'card-next-time' }),
-                    cmd('SKIP_TOKEN_RESPONSE', '1'),
                 ],
                 expect: {
                     players: {
@@ -366,7 +365,12 @@ describe('卡牌系统', () => {
             });
 
             expect(result.assertionErrors).toEqual([]);
-            expect(result.finalState.core.players['1'].damageShields).toEqual([]);
+            expect(result.finalState.core.players['1'].damageShields).toEqual([
+                expect.objectContaining({
+                    sourceId: 'card-next-time',
+                    value: 6,
+                }),
+            ]);
         });
 
         it('攻击方增伤窗口结束后，不可防御伤害仍允许防御方使用太极减伤', () => {

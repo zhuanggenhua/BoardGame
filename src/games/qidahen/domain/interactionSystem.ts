@@ -1,5 +1,7 @@
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
-import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID } from './interactionSources';
+import { isQidahenBattleCasualtyOrderValid } from './pendingTargetChoicePayload';
 import type { EngineSystem, HookResult } from '../../../engine/systems/types';
 import {
     readQidahenResolvedPayload,
@@ -12,6 +14,7 @@ import {
     resolveQidahenTurnActionInteractionEvent,
 } from './turnActionInteractionEventHandlers';
 import type { QidahenCore } from './types';
+import { recordQidahenChronologyStatistics } from './chronologyStatistics';
 import {
     clearQidahenRuntimeInteractionCurrent,
     syncQidahenRuntimeInteractionState,
@@ -52,6 +55,17 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
         name: '七大恨交互桥接',
         priority: 22,
 
+        beforeCommand: ({ state, command }) => {
+            if (command.type !== INTERACTION_COMMANDS.RESPOND) return;
+            const current = state.sys.interaction?.current;
+            const data = current?.data as { sourceId?: string } | undefined;
+            if (data?.sourceId !== QIDAHEN_PENDING_TARGET_INTERACTION_SOURCE_ID) return;
+            const payload = command.payload as { mergedValue?: unknown };
+            if (!isQidahenBattleCasualtyOrderValid(payload.mergedValue)) {
+                return { halt: true, error: 'invalidCasualtyPriority' };
+            }
+        },
+
         afterEvents: ({ state, events, random }): HookResult<QidahenCore> | void => {
             let nextState = state;
             let shouldClearRuntimeInteractionCurrent = false;
@@ -59,6 +73,7 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
             for (const event of events) {
                 if (
                     event.type === 'PENDING_ACTION_RESOLVED'
+                    || event.type === 'TACTIC_CARD_PLAYED'
                     || event.type === 'POST_BATTLE_DECISION_RESOLVED'
                     || event.type === 'WUZHEN_CHAOHA_RESOLVED'
                 ) {
@@ -71,7 +86,7 @@ export function createQidahenInteractionSystem(): EngineSystem<QidahenCore> {
                 if (resolvedCore !== undefined && resolvedCore != null) {
                     nextState = {
                         ...nextState,
-                        core: resolvedCore,
+                        core: recordQidahenChronologyStatistics(nextState.core, resolvedCore),
                     };
                 }
             }

@@ -1,0 +1,17 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "qidahen",
+  "basePrefix": "official/qidahen/",
+  "files": {
+    "thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "deff4dde76e8ef07b3441d9f88e31501344f9d52c7c34cc1d48c77b2a47334f4",
+          "bytes": 43530,
+          "mime": "image/webp"
+        }
+      }
+    }
+  }
+}

@@ -7,6 +7,7 @@ import { ADMIN_API_URL } from '../../config/server';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
+import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
 
 type ModalViewportCssVars = {
     '--modal-active-viewport-height': string;
@@ -78,6 +79,7 @@ const formatFeedbackTime = (value: string) => {
 };
 
 export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
+    useAuthModalSession(isOpen, onClose);
     const { token } = useAuth();
     const { success, error } = useToast();
     const { t } = useTranslation(['auth', 'admin']);
@@ -252,6 +254,7 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                 onClick={(event) => event.stopPropagation()}
                 className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-parchment-card-border/30 bg-parchment-card-bg shadow-2xl"
                 data-testid="my-feedback-modal"
+                data-platform-dialog="my-feedback"
                 style={{ maxHeight: 'min(760px, var(--modal-max-height, var(--runtime-modal-max-height)))' }}
             >
                 <div className="flex items-center justify-between border-b border-parchment-card-border/30 bg-parchment-base-bg px-4 py-3">

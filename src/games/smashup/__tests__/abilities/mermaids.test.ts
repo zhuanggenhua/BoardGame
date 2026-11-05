@@ -20,6 +20,7 @@ import {
     getPromptOptions,
     getReactionPrompt,
     respondToPrompt,
+    respondToPromptOption,
     expectNoPrompt,
 } from '../helpers';
 import { runCommand, defaultTestRandom } from '../testRunner';
@@ -608,6 +609,75 @@ describe('Mermaids abilities', () => {
         const resolved = respondToPrompt(promptState, option.id, '0', defaultTestRandom);
         expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(false);
         expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(true);
+    });
+
+    it('mermaids_shipwreck_cove_pod 响应提交后也会把 POD 持续行动移到另一个基地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('ship-pod-1', 'mermaids_shipwreck_cove_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                { defId: 'base_a', minions: [], ongoingActions: [] },
+                { defId: 'base_b', minions: [], ongoingActions: [] },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'ship-pod-1', targetBaseIndex: 0, targetType: 'base' } as any },
+            defaultTestRandom,
+        );
+        const sourceCardUid = played.finalState.core.bases[0].ongoingActions.find(action => action.defId === 'mermaids_shipwreck_cove_pod')?.uid;
+        expect(sourceCardUid).toBe('ship-pod-1');
+
+        const queued = collectTriggers(played.finalState.core, 'afterScoring', {
+            state: played.finalState.core,
+            matchState: played.finalState,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 0, vp: 0 }],
+            random: defaultTestRandom,
+            now: 3901,
+        });
+        const podTrigger = (queued as any)?.payload.triggers.find((trigger: any) => trigger.sourceDefId === 'mermaids_shipwreck_cove_pod');
+        expect(podTrigger).toBeDefined();
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...played.finalState.core, triggerQueue: (queued as any).payload.triggers }),
+            defaultTestRandom,
+            3901,
+        );
+        const openedMovePrompt = respondToPromptOption(
+            queuedState!.state,
+            option => option.value?.triggerId === podTrigger.id,
+            'trigger POD 沉船湾',
+            '0',
+            defaultTestRandom,
+        );
+        const prompt = getSimpleChoicePrompt(openedMovePrompt.finalState, 'mermaids_becalmed_shores');
+        const option = getPromptOption(prompt, entry => entry.value?.baseIndex === 1, 'POD destination base');
+
+        const resolved = respondToPrompt(openedMovePrompt.finalState, option.id, '0', defaultTestRandom);
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: expect.objectContaining({
+                cardUid: sourceCardUid,
+                defId: 'mermaids_shipwreck_cove_pod',
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ONGOING_ATTACHED,
+            payload: expect.objectContaining({
+                cardUid: sourceCardUid,
+                defId: 'mermaids_shipwreck_cove_pod',
+                targetBaseIndex: 1,
+            }),
+        }));
+        expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(false);
+        expect(resolved.finalState.core.bases[1].ongoingActions.find(action => action.uid === sourceCardUid)?.defId).toBe('mermaids_shipwreck_cove_pod');
     });
 
     it('mermaids_shipwreck_cove 在对手计分时仍应把 queued afterScoring 选择权交给持续行动控制者', () => {

@@ -16,6 +16,7 @@ import type { AbilityContext } from './abilityResolver';
 import { SW_EVENTS } from './types';
 import {
     getUnitAt,
+    getPlayerUnits,
     getSummoner,
     isCellEmpty,
     manhattanDistance,
@@ -99,6 +100,37 @@ swCustomActionRegistry.register('guidance_draw', ({ ctx, timestamp }) => {
         payload: { playerId: ctx.ownerId, count: guidanceDraw, sourceAbilityId: 'guidance' },
         timestamp,
     }];
+});
+
+// --- 仲裁：需要玩家确认的提示型能力统一转成交互事件 ---
+for (const actionId of ['zhongcai_word', 'zhongcai_erase', 'zhongcai_inspire'] as const) {
+  swCustomActionRegistry.register(actionId, ({ ctx, abilityId, timestamp }) => [{
+    type: SW_EVENTS.ABILITY_TRIGGERED,
+    payload: {
+      abilityId,
+      actionId,
+      sourceUnitId: ctx.sourceUnit.instanceId,
+      sourcePosition: ctx.sourcePosition,
+      targetPosition: ctx.targetPosition,
+    },
+    timestamp,
+  }]);
+}
+
+// --- 仲裁：高贵者凯西雅在攻击阶段结束时治疗范围内友方士兵 ---
+swCustomActionRegistry.register('zhongcai_radiant_healing', ({ ctx, timestamp }) => {
+  const events: GameEvent[] = [];
+  for (const unit of getPlayerUnits(ctx.state, ctx.ownerId)) {
+    if (unit.instanceId === ctx.sourceUnit.instanceId || unit.card.unitClass !== 'common' || unit.damage <= 0) continue;
+    if (manhattanDistance(ctx.sourcePosition, unit.position) <= 2) {
+      events.push({
+        type: SW_EVENTS.UNIT_HEALED,
+        payload: { position: unit.position, amount: 1, sourceAbilityId: 'zhongcai_radiant_healing' },
+        timestamp,
+      });
+    }
+  }
+  return events;
 });
 
 // --- 暗影精灵：死亡契约（本单位被消灭后伤害己方召唤师） ---

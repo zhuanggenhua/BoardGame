@@ -14,6 +14,7 @@ type BuildActionPlayedEventParams = {
     fromStored?: boolean;
     discardPlaySourceId?: string;
     consumesNormalLimit?: boolean;
+    destinationOverride?: 'hand';
     targetBaseIndex?: number;
     targetMinionUid?: string;
     sourceCommandType?: string;
@@ -32,6 +33,7 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
         fromStored,
         discardPlaySourceId,
         consumesNormalLimit,
+        destinationOverride,
         targetBaseIndex,
         targetMinionUid,
         sourceCommandType,
@@ -50,6 +52,7 @@ export function buildActionPlayedEvent(params: BuildActionPlayedEventParams): Ac
             ...(fromStored ? { fromStored: true } : {}),
             ...(discardPlaySourceId ? { discardPlaySourceId } : {}),
             ...(consumesNormalLimit === false ? { consumesNormalLimit: false } : {}),
+            ...(destinationOverride ? { destinationOverride } : {}),
             ...(targetBaseIndex !== undefined
                 ? {
                     targetBaseIndex,

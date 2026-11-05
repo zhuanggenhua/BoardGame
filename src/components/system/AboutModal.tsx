@@ -1,15 +1,15 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { X, Github, Heart, MessageCircle, Coffee } from 'lucide-react';
+import { X, Github, MessageCircle, Coffee } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { createParticle, parseColorToRgb, type Particle } from '../common/animations/canvasParticleEngine';
 import { useToast } from '../../contexts/ToastContext';
 import { SPONSOR_API_URL } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
-import { versionedPublicFileUrl } from '../../lib/publicFileUrl';
 
 interface AboutModalProps {
     onClose: () => void;
+    showSponsors?: boolean;
 }
 
 interface SponsorItem {
@@ -24,7 +24,7 @@ const ROW_HEIGHT = 48;
 const PAGE_SIZE = 50;
 const OVERSCAN = 6;
 
-export const AboutModal = ({ onClose }: AboutModalProps) => {
+export const AboutModal = ({ onClose, showSponsors = true }: AboutModalProps) => {
     const { t } = useTranslation('game');
     const { success, error } = useToast();
     const backdropRef = useRef<HTMLDivElement>(null);
@@ -270,8 +270,8 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
     }, [sponsorHasMore, loadSponsors]);
 
     useEffect(() => {
-        loadSponsors(1, true);
-    }, [loadSponsors]);
+        if (showSponsors) void loadSponsors(1, true);
+    }, [loadSponsors, showSponsors]);
 
     useEffect(() => {
         const element = scrollRef.current;
@@ -307,6 +307,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
 
     // 自动轮播逻辑
     useEffect(() => {
+        if (!showSponsors) return;
         let animationFrameId: number;
         const animate = () => {
             const element = scrollRef.current;
@@ -330,7 +331,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
         };
         animationFrameId = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(animationFrameId);
-    }, [containerHeight, isHovered, loadMoreSponsors, sponsorHasMore, sponsors.length, updateStartIndex]);
+    }, [containerHeight, isHovered, loadMoreSponsors, showSponsors, sponsorHasMore, sponsors.length, updateStartIndex]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) onClose();
@@ -362,12 +363,13 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 className="bg-parchment-base-bg rounded-xl shadow-2xl w-full max-w-md overflow-hidden border-2 border-parchment-brown/30 flex flex-col max-h-[90vh]"
+                data-platform-dialog="about"
             >
                 {/* 布局规范：h-14 紧凑页眉 */}
                 <div className="relative h-14 bg-parchment-brown flex items-center justify-center overflow-hidden border-b border-parchment-gold/20 shrink-0">
                     <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-parchment-gold via-transparent to-transparent" />
                     <h2 className="relative text-lg font-bold tracking-widest text-parchment-cream drop-shadow-md">{t('hud.about.title')}</h2>
-                    <button onClick={onClose} className="absolute right-4 p-2 text-parchment-cream/60 hover:text-parchment-cream transition-colors">
+                    <button onClick={onClose} aria-label={t('common:close')} className="platform-dialog-close absolute right-4 p-2 text-parchment-cream/60 hover:text-parchment-cream transition-colors">
                         <X size={18} />
                     </button>
                 </div>
@@ -405,48 +407,11 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                         </button>
                     </div>
 
-                    <div className="pt-4 border-t border-parchment-brown/10 space-y-4">
-                        <div className="text-center space-y-1">
-                            <div className="flex items-center justify-center gap-2">
-                                <Heart size={14} className="text-rose-500 fill-rose-500 animate-pulse shrink-0" />
-                                <p className="text-sm font-bold text-parchment-brown leading-snug">{t('hud.about.supportTitle')}</p>
-                            </div>
-                            <p className="text-[11px] text-parchment-light-text opacity-70">{t('hud.about.supportSubtitle')}</p>
-                        </div>
-
-                        <div className="flex justify-center gap-10">
-                            {[
-                                {
-                                    label: t('hud.about.wechatLabel'),
-                                    color: 'text-green-600',
-                                    src: versionedPublicFileUrl('/logos/weixin.jpg'),
-                                    alt: '微信支付二维码'
-                                },
-                                {
-                                    label: t('hud.about.alipayLabel'),
-                                    color: 'text-blue-600',
-                                    src: versionedPublicFileUrl('/logos/zhifubao.jpg'),
-                                    alt: '支付宝支付二维码'
-                                }
-                            ].map((qr, idx) => (
-                                <div key={idx} className="flex flex-col items-center gap-1.5 pt-1">
-                                    <div className="w-24 h-24 bg-zinc-100 flex items-center justify-center text-zinc-300 text-[10px] rounded-lg border border-parchment-brown/5 shadow-inner overflow-hidden">
-                                        <img
-                                            src={qr.src}
-                                            alt={qr.alt}
-                                            className="w-full h-full object-cover"
-                                            loading="eager"
-                                            decoding="async"
-                                        />
-                                    </div>
-                                    <span className={`text-[10px] font-bold ${qr.color} opacity-80`}>{qr.label}</span>
-                                </div>
-                            ))}
-                        </div>
-
+                    {showSponsors && <div className="pt-4 border-t border-parchment-brown/10 space-y-4">
                         {/* Sponsor Area - Bottom */}
                         <div
-                            className="relative rounded-xl overflow-hidden border border-parchment-gold/30 bg-parchment-brown/5 shadow-inner h-40"
+                            className="platform-about-sponsors relative rounded-xl overflow-hidden border border-parchment-gold/30 bg-parchment-brown/5 shadow-inner h-40"
+                            data-empty={sponsors.length === 0}
                             onMouseEnter={() => setIsHovered(true)}
                             onMouseLeave={() => setIsHovered(false)}
                         >
@@ -499,7 +464,7 @@ export const AboutModal = ({ onClose }: AboutModalProps) => {
                             <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-parchment-base-bg/10 to-transparent z-10 pointer-events-none" />
                             <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-parchment-base-bg/10 to-transparent z-10 pointer-events-none" />
                         </div>
-                    </div>
+                    </div>}
                 </div>
             </motion.div>
         </div>

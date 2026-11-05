@@ -7,8 +7,33 @@ import {
     resolveForceEndTurnForStalledAi,
     resolveForceSkippableHiddenAiInteraction,
 } from './onlineAiRecovery';
-import { buildLocalAiSeatStates } from './stateNormalization';
+import {
+    buildLocalAiSeatStates,
+    resolveRuntimeSeatControllers,
+} from './stateNormalization';
 import { logLocalAiPerfInfo } from './localAiDiagnostics';
+
+function withRuntimeSeatControllers(
+    state: MatchState<unknown>,
+    seatControllers: Record<string, AiSeatController>,
+): MatchState<unknown> {
+    if (!Object.values(seatControllers).some((controller) => controller.type === 'human')) {
+        return state;
+    }
+
+    const core = state.core;
+    if (!core || typeof core !== 'object' || Array.isArray(core)) {
+        return state;
+    }
+
+    return {
+        ...state,
+        core: {
+            ...(core as Record<string, unknown>),
+            seatControllers: resolveRuntimeSeatControllers({ state, seatControllers }),
+        },
+    };
+}
 
 function resolveLocalAiDecisionBudgetMs(args: {
     state: MatchState<unknown>;
@@ -67,9 +92,11 @@ export async function resolveLocalAiActionWithRecovery(args: {
         stallRecoveryGraceMs,
     } = args;
 
+    const decisionState = withRuntimeSeatControllers(state, seatControllers);
+
     const resolution = await resolveNextAiAction({
         engineConfig: config,
-        state,
+        state: decisionState,
         matchId,
         seatControllers,
         decisionBudgetMs: resolveLocalAiDecisionBudgetMs({
@@ -82,9 +109,9 @@ export async function resolveLocalAiActionWithRecovery(args: {
         return resolution;
     }
 
-    const seatStates = buildLocalAiSeatStates(state, seatControllers);
+    const seatStates = buildLocalAiSeatStates(decisionState, seatControllers);
     const forceSkipCandidate = resolveForceSkippableHiddenAiInteraction({
-        sharedState: state,
+        sharedState: decisionState,
         seatControllers,
         seatStates,
         engineConfig: config,
@@ -93,7 +120,7 @@ export async function resolveLocalAiActionWithRecovery(args: {
     const stalledCandidate = forceSkipCandidate
         ? null
         : resolveForceEndTurnForStalledAi({
-            sharedState: state,
+            sharedState: decisionState,
             seatControllers,
             seatStates,
             engineConfig: config,

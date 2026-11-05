@@ -41,6 +41,7 @@ function createHarness(options?: {
     const match = options?.match ?? createMatch();
     const persisted: StoredMatchState[] = [];
     const logs: string[] = [];
+    let restoredRandomCursor: number | undefined;
     const hooks: MatchStateInjectionCoordinatorHooks<TestMatch> = {
         getOrLoadMatch: vi.fn(async () => match),
         persistState: vi.fn(async (_matchID, storedState) => {
@@ -52,6 +53,9 @@ function createHarness(options?: {
         clearAllBaselines: vi.fn((activeMatch) => {
             activeMatch.clearCount += 1;
             activeMatch.lastBroadcastedViews.clear();
+        }),
+        restoreRandomCursor: vi.fn((_activeMatch, randomCursor) => {
+            restoredRandomCursor = randomCursor;
         }),
         broadcast: vi.fn((activeMatch) => {
             activeMatch.broadcastCount += 1;
@@ -68,6 +72,9 @@ function createHarness(options?: {
         match,
         persisted,
         logs,
+        get restoredRandomCursor() {
+            return restoredRandomCursor;
+        },
     };
 }
 
@@ -144,5 +151,19 @@ describe('MatchStateInjectionCoordinator', () => {
         expect(harness.match.clearCount).toBe(1);
         expect(harness.match.broadcastCount).toBe(1);
         expect(harness.logs).toEqual(['match-inject']);
+    });
+
+    it('显式 randomCursor 会在状态切换前恢复随机游标并写入持久化状态', async () => {
+        const harness = createHarness();
+
+        const result = await harness.coordinator.injectState(
+            'match-inject',
+            createState('random-replay'),
+            17,
+        );
+
+        expect(result).toEqual({ stateID: 8, randomCursor: 17 });
+        expect(harness.persisted[0]?.randomCursor).toBe(17);
+        expect(harness.restoredRandomCursor).toBe(17);
     });
 });

@@ -18,12 +18,12 @@ import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
 import {
     appendAbilityRuntimeContinuationProgram,
+    createAbilityRuntimeContinuation,
     createEffectProgram,
     executeAbilityProgram,
 } from './abilityRuntime';
 import { buildOngoingDetachedEvent } from './ongoingDetach';
 import { getSmashUpRelationToPlayer } from './teamMode';
-import type { ProtectionType } from './ongoingEffects';
 import { collectBaseAbilityTriggers } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import {
@@ -92,6 +92,13 @@ import type {
     CardToDeckBottomEvent,
     TitanRemovedFromPlayEvent,
     TitanMetadataUpdatedEvent,
+    ActionCardDef,
+    SpecialLimitUsedEvent,
+    TitanPlayAsKind,
+    TitanPlayedEvent,
+    TitanMovedEvent,
+    TitanPowerCounterAddedEvent,
+    TitanPowerCounterRemovedEvent,
 } from './types';
 import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
@@ -142,6 +149,31 @@ export function createSkipOption(label: string = '跳过', labelKey?: string): E
         displayMode: 'button',
         _ai: OPTIONAL_SKIP_AI_HINT,
     };
+}
+
+/**
+ * 返回随从当前回合可用于规则比较的全部名称。
+ * Abe Frohman 的天赋通过元数据增加临时名称，其他定义/UID 校验不能复用此语义。
+ */
+export function getMinionEffectiveNames(core: SmashUpCore, minion: MinionOnBase): string[] {
+    const names = new Set<string>([minion.defId]);
+    if (minion.metadata?.teensAbeFrohmanTurn !== core.turnNumber) return [...names];
+
+    const aliases = minion.metadata?.teensAbeFrohmanNames;
+    if (Array.isArray(aliases)) {
+        for (const alias of aliases) {
+            if (typeof alias === 'string' && alias.length > 0) names.add(alias);
+        }
+    }
+    return [...names];
+}
+
+export function minionHasEffectiveName(
+    core: SmashUpCore,
+    minion: MinionOnBase,
+    targetDefId: string,
+): boolean {
+    return getMinionEffectiveNames(core, minion).includes(targetDefId);
 }
 
 // ============================================================================
@@ -613,6 +645,7 @@ export function buildValidatedBaseMoveEvents(
         reason: string;
         now: number;
         sourcePlayerId: PlayerId;
+        sourceControllerId?: PlayerId;
         sourceDefId: string;
         sourceBaseIndex: number;
     },
@@ -627,7 +660,7 @@ export function buildValidatedBaseMoveEvents(
         now: params.now,
         sourcePlayerId: params.sourcePlayerId,
         sourceDefId: params.sourceDefId,
-        sourceControllerId: params.sourcePlayerId,
+        sourceControllerId: params.sourceControllerId ?? params.sourcePlayerId,
         sourceBaseIndex: params.sourceBaseIndex,
         sourceKind: 'nonAction',
     });
@@ -1512,6 +1545,7 @@ function collectMinionPlayedFollowupTriggers(
     const frameId = `minion-played-frame:${cardUid}:${baseIndex}:${now}`;
     const queuedBase = collectBaseAbilityTriggers({
         core,
+        matchState: params.matchState,
         timing: 'onMinionPlayed',
         ownerPlayerId: playerId,
         baseIndex,
@@ -1625,14 +1659,12 @@ const emitMinionPlayedFollowupEventsThenContinueProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    matchState: context.matchState,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         random: context.random,
         playedEvt: context.playedEvt,
         preOnPlayTriggerBaseMinionUids: context.preOnPlayTriggerBaseMinionUids,
-    } satisfies MinionPlayedFollowupContinuationContext,
-    nextProgram: resolveMinionPlayedFollowupTriggersAfterOnPlayProgram,
+    } satisfies MinionPlayedFollowupContinuationContext, resolveMinionPlayedFollowupTriggersAfterOnPlayProgram),
 }));
 
 function appendMinionPlayedFollowupsAfterOnPlayEvents(params: {
@@ -1799,13 +1831,11 @@ const emitMinionPlayedEventsThenContinueProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    matchState: context.matchState,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         random: context.random,
         playedEvt: context.playedEvt,
-    } satisfies MinionPlayedTriggerContinuationContext,
-    nextProgram: resolveMinionPlayedTriggersAfterEventsProgram,
+    } satisfies MinionPlayedTriggerContinuationContext, resolveMinionPlayedTriggersAfterEventsProgram),
 }));
 
 export function appendMinionPlayedTriggersAfterEvents(params: {
@@ -1886,6 +1916,8 @@ export function grantExtraAction(
         restrictToCardDefId?: string;
         restrictToBaseModifier?: boolean;
         allowFromDiscard?: boolean;
+        allowSkip?: boolean;
+        destroyAttachedActionAtTurnEnd?: boolean;
     },
 ): LimitModifiedEvent {
     return {
@@ -1903,6 +1935,8 @@ export function grantExtraAction(
             ...(options?.restrictToCardDefId ? { restrictToCardDefId: options.restrictToCardDefId } : {}),
             ...(options?.restrictToBaseModifier ? { restrictToBaseModifier: true } : {}),
             ...(options?.allowFromDiscard ? { allowFromDiscard: true } : {}),
+            ...(options?.allowSkip !== undefined ? { allowSkip: options.allowSkip } : {}),
+            ...(options?.destroyAttachedActionAtTurnEnd ? { destroyAttachedActionAtTurnEnd: true } : {}),
         },
         timestamp: now,
     };
@@ -1934,7 +1968,7 @@ export function buildStandardDrawEvents(
     state: SmashUpCore | MatchState<SmashUpCore>,
     playerId: PlayerId,
     count: number,
-    random: RandomFn,
+    random: RandomFn | undefined,
     now: number,
 ): SmashUpEvent[] {
     const core = 'core' in state ? state.core : state;
@@ -1990,7 +2024,15 @@ export function grantContextualExtraMinion(
     ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
     reason: string,
     restrictToBase?: number,
-    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; specificCardUid?: string; excludedMinionDefIds?: string[]; allowFromDiscard?: boolean },
+    options?: {
+        sameNameOnly?: boolean;
+        sameNameDefId?: string;
+        powerMax?: number;
+        specificCardUid?: string;
+        excludedMinionDefIds?: string[];
+        allowFromDiscard?: boolean;
+        playTiming?: 'banked' | 'immediate';
+    },
 ): LimitModifiedEvent {
     return grantExtraMinion(
         ctx.playerId,
@@ -1999,7 +2041,7 @@ export function grantContextualExtraMinion(
         restrictToBase,
         {
             ...options,
-            playTiming: resolveExtraPlayTiming(ctx.matchState),
+            playTiming: options?.playTiming ?? resolveExtraPlayTiming(ctx.matchState),
         },
     );
 }
@@ -2015,6 +2057,8 @@ export function grantContextualExtraAction(
         restrictToCardDefId?: string;
         restrictToBaseModifier?: boolean;
         allowFromDiscard?: boolean;
+        allowSkip?: boolean;
+        destroyAttachedActionAtTurnEnd?: boolean;
     },
 ): LimitModifiedEvent {
     return grantExtraAction(ctx.playerId, reason, ctx.now, {
@@ -2025,6 +2069,8 @@ export function grantContextualExtraAction(
         restrictToCardDefId: options?.restrictToCardDefId,
         restrictToBaseModifier: options?.restrictToBaseModifier,
         allowFromDiscard: options?.allowFromDiscard,
+        allowSkip: options?.allowSkip,
+        destroyAttachedActionAtTurnEnd: options?.destroyAttachedActionAtTurnEnd,
     });
 }
 
@@ -2309,18 +2355,21 @@ export function madnessVpPenalty(madnessCount: number): number {
 // 交互辅助函数（目标选择）
 // ============================================================================
 
-type MinionTargetEffectType = ProtectionType | 'buff';
+type MinionTargetEffectType = MinionSemanticEffectType | 'power_change';
 
 function inferMinionEffectIntent(
     effectType: MinionTargetEffectType | undefined,
 ): AiEffectIntent | undefined {
     switch (effectType) {
         case 'buff':
+        case 'power_change':
             return 'buff';
         case 'destroy':
             return 'destroy';
         case 'move':
             return 'move';
+        case 'return':
+        case 'control':
         case 'action':
         case 'affect':
             return 'affect';
@@ -2368,9 +2417,10 @@ export function buildPlayerTargetOptions<TExtraValue extends Record<string, unkn
         derivedFrom?: AiHint['derivedFrom'];
     },
 ): EnginePromptOption<{ targetPlayerId: PlayerId } & TExtraValue>[] {
-    const relationResolver = context.state
+    const state = context.state;
+    const relationResolver = state
         ? ({ actorPlayerId, targetPlayerId }: { actorPlayerId?: string; targetPlayerId?: string }) => getSmashUpRelationToPlayer(
-            context.state,
+            state,
             actorPlayerId as PlayerId | undefined,
             targetPlayerId as PlayerId | undefined,
         )
@@ -2408,7 +2458,7 @@ export function buildPlayerTargetOptions<TExtraValue extends Record<string, unkn
  * @returns 引擎层 PromptOption 数组
  */
 export function buildMinionTargetOptions(
-    candidates: { uid: string; defId: string; baseIndex: number; label: string }[],
+    candidates: { uid: string; defId: string; baseIndex?: number; label?: string }[],
     context: {
         /** 当前游戏状态（用于保护检查） */
         state: SmashUpCore;
@@ -2442,8 +2492,18 @@ export function buildMinionTargetOptions(
         respectActionProtection = false,
     } = context;
     const effectSourceKind = inferSemanticSourceKind(sourceKind, sourceDefId);
-    const semanticEffectType: MinionSemanticEffectType | undefined = effectType;
-    const filteredCandidates = semanticRole !== 'target' ? candidates : candidates.filter(c => {
+    const semanticEffectType: MinionSemanticEffectType | undefined = effectType === 'power_change'
+        ? 'buff'
+        : effectType;
+    const liveCandidates = candidates.flatMap((candidate) => {
+        const location = state.bases.flatMap((base, baseIndex) => (
+            base.minions.some((minion) => minion.uid === candidate.uid && minion.defId === candidate.defId)
+                ? [{ baseIndex }]
+                : []
+        ))[0];
+        return location ? [{ ...candidate, baseIndex: location.baseIndex }] : [];
+    });
+    const filteredCandidates = semanticRole !== 'target' ? liveCandidates : liveCandidates.filter(c => {
         const minion = state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
         if (!minion) return false;
         return isMinionTargetAllowed(state, minion, c.baseIndex, {
@@ -2461,7 +2521,7 @@ export function buildMinionTargetOptions(
         if (!minion) {
             return {
                 id: `minion-${i}`,
-                label: c.label,
+                label: c.label ?? getCardDef(c.defId)?.name ?? c.defId,
                 value: {
                     minionUid: c.uid,
                     baseIndex: c.baseIndex,
@@ -2475,7 +2535,7 @@ export function buildMinionTargetOptions(
 
         return {
             id: `minion-${i}`,
-            label: c.label,
+            label: c.label ?? getCardDef(c.defId)?.name ?? c.defId,
             value: {
                 minionUid: c.uid,
                 baseIndex: c.baseIndex,
@@ -2560,6 +2620,9 @@ export function buildFieldSourceToMinionTargetOptions<TExtra extends Record<stri
         ?? (source.type === 'action' || source.type === 'ongoing' ? 'action' : 'nonAction');
     const effectSourceKind = inferSemanticSourceKind(sourceKind, context.sourceDefId ?? source.defId);
     const respectActionProtection = context.respectActionProtection ?? sourceKind === 'action';
+    const effectType: MinionSemanticEffectType = context.effectType === 'power_change'
+        ? 'buff'
+        : context.effectType ?? 'destroy';
     const filteredTargets = (context.semanticRole ?? 'target') !== 'target'
         ? targets
         : targets.filter(target => {
@@ -2568,7 +2631,7 @@ export function buildFieldSourceToMinionTargetOptions<TExtra extends Record<stri
             return isMinionTargetAllowed(context.state, minion, target.baseIndex, {
                 sourcePlayerId: context.sourcePlayerId,
                 sourceKind: effectSourceKind,
-                effectType: context.effectType ?? 'destroy',
+                effectType,
                 respectActionProtection,
                 mode: 'preview',
             });
@@ -2589,7 +2652,7 @@ export function buildFieldSourceToMinionTargetOptions<TExtra extends Record<stri
                         state: context.state,
                         minion,
                         sourcePlayerId: context.sourcePlayerId,
-                        effectType: context.effectType,
+                        effectType,
                     }),
                 } : {}),
             };
@@ -2705,7 +2768,7 @@ function buildSemanticSingleMinionEffectEvents<TMinion extends MinionOnBase>(
         return buildEvents(partitioned.allowed[0]);
     }
 
-    const events = options.feedbackPlayerId
+    const events: SmashUpEvent[] = options.feedbackPlayerId
         ? buildSemanticProtectionFeedback(
             options.feedbackPlayerId,
             partitioned.blocked.length,

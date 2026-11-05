@@ -16,7 +16,7 @@ import { STATUS_IDS, TOKEN_IDS, DICETHRONE_COMMANDS, DICETHRONE_CARD_ATLAS_IDS }
 import { RESOURCE_IDS } from '../domain/resources';
 import { resolveEffectsToEvents, type EffectContext } from '../domain/effects';
 import { executeCardCommand } from '../domain/executeCards';
-import { getLeftOpponentId, getResponderQueue, getRightOpponentId, getTeamIdByPlayerIdMap } from '../domain/rules';
+import { getAvailableAbilityIds, getLeftOpponentId, getResponderQueue, getRightOpponentId, getTeamIdByPlayerIdMap } from '../domain/rules';
 import { buildAfterRollConfirmedSignature } from '../domain/responseWindowGuards';
 import { playerView } from '../domain/view';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
@@ -79,7 +79,9 @@ function createInitializedStateWithCharacters(
         sys: createInitialSystemState(playerIds, testSystems, undefined),
     };
 
-    const allCharacterIds = DICETHRONE_CHARACTER_CATALOG.map((item) => item.id);
+    const allCharacterIds = DICETHRONE_CHARACTER_CATALOG
+        .filter((item) => item.setupOptionStatus === undefined)
+        .map((item) => item.id);
     const usedCharacterIds = new Set<string>();
     const setupCharacters: Record<PlayerId, string> = {} as Record<PlayerId, string>;
 
@@ -427,7 +429,7 @@ describe('王权骰铸流程测试', () => {
                     timestamp: Date.now(),
                 } as DiceThroneCommand;
                 const result = executePipeline(pipelineConfig, state, command, fixedRandom, playerIds);
-                expect(result.success).toBe(true);
+                expect(result.success, `${input.type}: ${result.error ?? 'unknown error'}`).toBe(true);
                 state = result.state as MatchState<DiceThroneCore>;
             }
 
@@ -916,6 +918,18 @@ describe('王权骰铸流程测试', () => {
             expect(responderQueue).toEqual(['1', '3']);
         });
 
+        it('观战视图公开所有玩家手牌，供只读查看而不继承玩家座位权限', () => {
+            const playerIds: PlayerId[] = ['0', '1'];
+            const state = createInitializedState(playerIds, fixedRandom);
+            state.core.players['0'].hand = [getCardById('card-inner-peace')];
+            state.core.players['1'].hand = [getCardById('card-surprise')];
+
+            const filtered = playerView(state.core, '__spectator__').players!;
+            expect(filtered['0'].hand[0]?.name).toBe(state.core.players['0'].hand[0]?.name);
+            expect(filtered['1'].hand[0]?.name).toBe(state.core.players['1'].hand[0]?.name);
+            expect(filtered['1'].hand[0]?.previewRef).toEqual(state.core.players['1'].hand[0]?.previewRef);
+        });
+
         it('4 人模式下卡牌对手效果优先命中当前战斗对手', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
             const pipelineConfig = {
@@ -1085,6 +1099,230 @@ describe('王权骰铸流程测试', () => {
 
             expect(state.sys.responseWindow?.current?.windowType).toBe('afterRollConfirmed');
             expect(state.sys.responseWindow?.current?.responderQueue).toEqual(['1', '3']);
+        });
+
+        it('第一名对手改骰后，第二名对手仍应能继续改骰使终极失效', () => {
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+                '0': 'monk',
+                '1': 'barbarian',
+                '2': 'monk',
+                '3': 'monk',
+            });
+
+            for (const pid of playerIds) {
+                state.core.players[pid].hand = [];
+                state.core.players[pid].deck = [];
+            }
+
+            state.core.players['1'].hand = [getCardById('card-flick')];
+            state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+            state.core.players['3'].hand = [getCardById('card-flick')];
+            state.core.players['3'].resources[RESOURCE_IDS.CP] = 10;
+
+            for (const input of [
+                ...advanceTo('offensiveRoll', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+            ]) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                const result = executePipeline(pipelineConfig, state, command, fixedRandom, playerIds);
+                expect(result.success).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            expect(state.sys.responseWindow?.current).toMatchObject({
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1', '3'],
+                currentResponderIndex: 0,
+            });
+
+            const firstPlay = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '1',
+                    payload: { cardId: 'card-flick' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(firstPlay.success).toBe(true);
+            state = firstPlay.state as MatchState<DiceThroneCore>;
+
+            const firstTargetDie = state.core.dice[0];
+            expect(firstTargetDie).toBeDefined();
+            const firstNewValue = firstTargetDie.value === 6 ? 5 : firstTargetDie.value + 1;
+            const firstModify = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'MODIFY_DIE',
+                    playerId: '1',
+                    payload: { dieId: firstTargetDie.id, newValue: firstNewValue },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(firstModify.success).toBe(true);
+            state = firstModify.state as MatchState<DiceThroneCore>;
+
+            const firstInteractionId = getCurrentInteractionSummary(state).id;
+            expect(firstInteractionId).toBeDefined();
+            const firstConfirm = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'SYS_INTERACTION_CONFIRM',
+                    playerId: '1',
+                    payload: { interactionId: firstInteractionId },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(firstConfirm.success).toBe(true);
+            state = firstConfirm.state as MatchState<DiceThroneCore>;
+
+            expect(state.core.rollConfirmed).toBe(false);
+            expect(state.sys.responseWindow?.current).toMatchObject({
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1', '3'],
+                currentResponderIndex: 1,
+            });
+
+            const secondPlay = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '3',
+                    payload: { cardId: 'card-flick' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(secondPlay.success).toBe(true);
+        });
+
+        it('第一名对手强制重掷后，第二名对手仍应能继续干预已确认骰面', () => {
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const random = createQueuedRandom([6, 6, 6, 6, 6, 1, 2]);
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+                '0': 'barbarian',
+                '1': 'monk',
+                '2': 'monk',
+                '3': 'monk',
+            });
+
+            for (const pid of playerIds) {
+                state.core.players[pid].hand = [];
+                state.core.players[pid].deck = [];
+            }
+
+            state.core.players['1'].hand = [getCardById('card-give-hand')];
+            state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+            state.core.players['3'].hand = [getCardById('card-give-hand')];
+            state.core.players['3'].resources[RESOURCE_IDS.CP] = 10;
+
+            for (const input of [
+                ...advanceTo('offensiveRoll', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+            ]) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                const result = executePipeline(pipelineConfig, state, command, random, playerIds);
+                expect(result.success).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            expect(state.sys.responseWindow?.current).toMatchObject({
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1', '3'],
+                currentResponderIndex: 0,
+            });
+            expect(getAvailableAbilityIds(state.core, '0', 'offensiveRoll')).toContain('rage');
+
+            for (const input of [
+                cmd('PLAY_CARD', '1', { cardId: 'card-give-hand' }),
+                cmd('RESOLVE_INTERACTION', '1', { selectedPlayerIds: ['0'] }),
+                cmd('REROLL_DIE', '1', { dieId: 0 }),
+                cmd('SYS_INTERACTION_CONFIRM', '1'),
+            ]) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                const result = executePipeline(pipelineConfig, state, command, random, playerIds);
+                expect(result.success, `${input.type}: ${result.error ?? 'unknown error'}`).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            expect(state.core.rollConfirmed).toBe(false);
+            expect(getAvailableAbilityIds(state.core, '0', 'offensiveRoll')).not.toContain('rage');
+            expect(state.sys.responseWindow?.current).toMatchObject({
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1', '3'],
+                currentResponderIndex: 1,
+            });
+
+            const secondPlay = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '3',
+                    payload: { cardId: 'card-give-hand' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                playerIds,
+            );
+            expect(secondPlay.success).toBe(true);
+            state = secondPlay.state as MatchState<DiceThroneCore>;
+
+            for (const input of [
+                cmd('RESOLVE_INTERACTION', '3', { selectedPlayerIds: ['0'] }),
+                cmd('REROLL_DIE', '3', { dieId: 1 }),
+                cmd('SYS_INTERACTION_CONFIRM', '3'),
+            ]) {
+                const command = {
+                    type: input.type,
+                    playerId: input.playerId,
+                    payload: input.payload,
+                    timestamp: Date.now(),
+                } as DiceThroneCommand;
+                const result = executePipeline(pipelineConfig, state, command, random, playerIds);
+                expect(result.success, `${input.type}: ${result.error ?? 'unknown error'}`).toBe(true);
+                state = result.state as MatchState<DiceThroneCore>;
+            }
+
+            expect(state.core.dice.map((die) => die.value)).toEqual([1, 2, 6, 6, 6]);
+            expect(getAvailableAbilityIds(state.core, '0', 'offensiveRoll')).not.toContain('rage');
         });
 
         it('4 人模式下攻击方队友不会进入响应队列，但可直接打出改骰牌', () => {

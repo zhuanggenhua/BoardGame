@@ -13,6 +13,10 @@ export { HandAreaSkeleton } from './HandAreaSkeleton';
 export { ActionBarSkeleton } from './ActionBarSkeleton';
 export { ResourceTraySkeleton } from './ResourceTraySkeleton';
 export { ZoomPanViewport } from './ZoomPanViewport';
+export {
+    ZOOM_PAN_CANCEL_INERTIA_EVENT,
+    ZOOM_PAN_RESET_CENTER_EVENT,
+} from './ZoomPanViewport';
 export type {
     ZoomPanViewportProps,
     ZoomPanViewportState,
@@ -21,9 +25,11 @@ export type {
 export { SpotlightSkeleton } from './SpotlightSkeleton';
 export { MobileBattlefieldViewport, MobileBoardShell } from './MobileBoardShell';
 export { CardListOverlay } from './CardListOverlay';
+export { CardChoiceOverlay } from './CardChoiceOverlay';
 export { CardSpotlightQueue } from './CardSpotlightQueue';
 export type { CardSpotlightQueueProps } from './CardSpotlightQueue';
 export type { CardListOverlayProps, CardListItem } from './CardListOverlay';
+export type { CardChoiceOverlayProps, CardChoiceOption } from './CardChoiceOverlay';
 export { CharacterSelectionSkeleton } from './CharacterSelectionSkeleton';
 export type { CharacterSelectionSkeletonProps } from './CharacterSelectionSkeleton';
 export { SelectableGameObject } from './SelectableGameObject';

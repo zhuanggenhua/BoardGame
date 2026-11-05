@@ -16,10 +16,13 @@ export class OnlineAiRecoveryRuntimeLedger {
     private readonly repeatedRecoveryAttempts = new Map<string, OnlineAiRepeatedRecoveryAttempt>();
     private readonly overlayResyncCooldowns = new Map<string, number>();
     private readonly recoveryInFlight = new Set<string>();
+    private readonly overlayResyncCooldownMs: number;
 
     constructor(
-        private readonly overlayResyncCooldownMs = DEFAULT_OVERLAY_RESYNC_COOLDOWN_MS,
-    ) {}
+        overlayResyncCooldownMs = DEFAULT_OVERLAY_RESYNC_COOLDOWN_MS,
+    ) {
+        this.overlayResyncCooldownMs = overlayResyncCooldownMs;
+    }
 
     clearMatch(matchId: string): void {
         this.clearTracker(matchId);

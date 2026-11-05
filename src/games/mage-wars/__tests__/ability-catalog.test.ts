@@ -21,6 +21,8 @@ import {
 } from '../domain/abilityCatalog';
 import { MageWarsDomain } from '../domain';
 import { MAGE_WARS_COMMANDS } from '../domain/commands';
+import { MAGE_WARS_EVENTS } from '../domain/events';
+import { validateCommand } from '../domain/validate';
 import {
     buildMageWarsObjectAbilityActivationOpportunity,
     MAGE_WARS_OBJECT_ABILITY_EXECUTION_TAG,
@@ -185,6 +187,53 @@ function withPreparedMageWarsSpell(
 }
 
 describe('mage-wars ability catalog', () => {
+    test('keeps 2206 cost separate from the player mana pool', () => {
+        const spellCardId = 2206;
+        const state = withPreparedMageWarsSpell(
+            makeMageWarsAbilityState({
+                mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                mana: 18,
+                phase: 'deployment',
+            }),
+            '0',
+            spellCardId,
+        );
+
+        expect(getMageWarsSpellCardFromConfig(spellCardId)).toMatchObject({
+            name: '尖齿与利爪',
+            manaCost: 7,
+            rawCost: '7',
+        });
+
+        const opportunity = buildMageWarsSpellCastOpportunity({
+            state,
+            playerId: '0',
+            spellCardId,
+        });
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        const enabledCandidates = request.candidates.filter((candidate) => candidate.disabled !== true);
+
+        expect(enabledCandidates.length).toBeGreaterThan(0);
+        expect(enabledCandidates.every((candidate) => candidate.value?.manaCost === 7)).toBe(true);
+        expect(enabledCandidates.every((candidate) => candidate.commands?.[0]?.payload.manaCost === 7)).toBe(true);
+
+        const validCommand = enabledCandidates[0]?.commands?.[0];
+        const commandWithPlayer = validCommand && { ...validCommand, playerId: '0' };
+        expect(commandWithPlayer && validateCommand(state, commandWithPlayer)).toEqual({ valid: true });
+
+        const wrongManaPoolCommand = {
+            ...commandWithPlayer!,
+            payload: {
+                ...commandWithPlayer!.payload,
+                manaCost: 18,
+            },
+        };
+        expect(validateCommand(state, wrongManaPoolCommand)).toMatchObject({
+            valid: false,
+            error: 'manaCostMismatch',
+        });
+    });
+
     test('registers every current arena object ability with an executor', () => {
         const objectAbilityIds = Object.values(MAGE_WARS_OBJECT_ABILITY_IDS);
 
@@ -201,7 +250,7 @@ describe('mage-wars ability catalog', () => {
                     implementationStatus: 'implemented',
                 },
             });
-            expect(ability?.meta.sourceKind).toMatch(/^(creature|attached-equipment)$/);
+            expect(ability?.meta.sourceKind).toMatch(/^(creature|attached-equipment|area-conjuration|hidden-enchantment)$/);
             expect(ability?.meta.sourceSpellCardId).toEqual(expect.any(Number));
             expect(ability?.meta.actionSpeed).toMatch(/^(quick|normal|source-trait)$/);
             expect(ability?.meta.actionCost).toMatch(/^(normal|none)$/);
@@ -251,13 +300,14 @@ describe('mage-wars ability catalog', () => {
         const needsCodeIds = mageWarsAbilityRegistry.getByTag('implementation:needs-code')
             .map((def) => def.id)
             .sort();
-        expect(needsCodeIds).toHaveLength(63);
-        expect(needsCodeIds).toEqual(expect.arrayContaining([
-            getMageWarsSpellAbilityId(1804),
-        ]));
+        expect(needsCodeIds).toHaveLength(0);
+        expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(1804));
         expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(3407));
         expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(2500));
         expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(25700));
+        expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(3415));
+        expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(2203));
+        expect(needsCodeIds).not.toContain(getMageWarsSpellAbilityId(2209));
     });
 
     test('uses concrete spell-cast families instead of a coarse zone target family', () => {
@@ -271,6 +321,7 @@ describe('mage-wars ability catalog', () => {
             familyBySpellCardId(1701),
             familyBySpellCardId(3405),
             familyBySpellCardId(1913),
+            familyBySpellCardId(1804),
         ];
 
         expect(families).toEqual([
@@ -278,20 +329,21 @@ describe('mage-wars ability catalog', () => {
             'zone-attack',
             'zone-healing',
             'visible-area-enchantment',
+            'visible-object-enchantment',
         ]);
         expect(families).not.toContain('zone-target');
     });
 
-    test('throws a contract error when execution is reached without a spell-cast family', () => {
+    test('executes a fully contracted visible object enchantment family', () => {
         const spellCardId = 1804;
         const spell = getMageWarsSpellCardFromConfig(spellCardId);
         expect(spell).toBeDefined();
 
-        expect(() => executeMageWarsSpellAbility({
+        const events = executeMageWarsSpellAbility({
             ownerId: '0',
             timestamp: 104,
             state: makeMageWarsAbilityState({
-                mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                mageId: MAGE_IDS.WARLOCK_APPRENTICE,
                 mana: 20,
                 phase: 'creatureAction',
             }),
@@ -300,28 +352,41 @@ describe('mage-wars ability catalog', () => {
                 playerId: '0',
                 payload: {
                     spellCardId,
-                    manaCost: 8,
-                    targetPlayerId: '1',
+                    manaCost: 5,
+                    targetObjectId: 'blue-gremlin-1',
                 },
             },
             random: fixedRandom,
             spell: spell!,
-            manaCost: 8,
-        })).toThrow(/without a spell-cast family/);
+            manaCost: 5,
+        });
+
+        expect(events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SUMMONED,
+                payload: {
+                    object: expect.objectContaining({
+                        sourceSpellCardId: spellCardId,
+                        revealed: true,
+                        anchoredToObjectId: 'blue-gremlin-1',
+                    }),
+                },
+            }),
+        ]));
     });
 
     test('tracks standard starting spell effects separately from code gaps', () => {
         expect(summarizeMageWarsAbilityGaps()).toEqual({
             total: 153,
-            implemented: 90,
-            needsCode: 63,
+            implemented: 153,
+            needsCode: 0,
             bySpellType: {
-                '攻击': { total: 12, implemented: 10, needsCode: 2 },
-                '结界': { total: 38, implemented: 22, needsCode: 16 },
-                '魔物': { total: 15, implemented: 4, needsCode: 11 },
-                '生物': { total: 33, implemented: 25, needsCode: 8 },
-                '咒语': { total: 28, implemented: 15, needsCode: 13 },
-                '装备': { total: 27, implemented: 14, needsCode: 13 },
+                '攻击': { total: 12, implemented: 12, needsCode: 0 },
+                '结界': { total: 38, implemented: 38, needsCode: 0 },
+                '魔物': { total: 15, implemented: 15, needsCode: 0 },
+                '生物': { total: 33, implemented: 33, needsCode: 0 },
+                '咒语': { total: 28, implemented: 28, needsCode: 0 },
+                '装备': { total: 27, implemented: 27, needsCode: 0 },
             },
         });
 
@@ -2891,6 +2956,87 @@ describe('mage-wars ability catalog', () => {
             targetRef: targetZoneId,
             commandPreview: [expectedCommand],
         }]);
+
+        const legalActions = projectChoiceRequestToAiLegalActions(request);
+        expect(legalActions.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+        expect(legalActions.actions.map((action) => action.commands[0])).toEqual(expect.arrayContaining([
+            expectedCommand,
+        ]));
+    });
+
+    test('projects Mana Siphon dual zone-and-mage choices through Ability -> Opportunity -> ChoiceRequest', () => {
+        const spellCardId = 2223;
+        const baseState = withPreparedMageWarsSpell(makeMageWarsAbilityState({
+            mageId: MAGE_IDS.WIZARD_APPRENTICE,
+            mana: 20,
+            phase: 'initiativeQuickcast',
+        }), '0', spellCardId);
+        const state: MatchState<MageWarsCore> = {
+            ...baseState,
+            core: {
+                ...baseState.core,
+                players: {
+                    ...baseState.core.players,
+                    '1': {
+                        ...baseState.core.players['1'],
+                        mageZoneId: ARENA_ZONE_IDS.B2,
+                    },
+                },
+                arena: baseState.core.arena.map((zone) => ({
+                    ...zone,
+                    occupantIds: zone.id === ARENA_ZONE_IDS.B2
+                        ? [...zone.occupantIds.filter((id) => id !== '1'), '1']
+                        : zone.occupantIds.filter((id) => id !== '1'),
+                })),
+            },
+        };
+        const opportunity = buildMageWarsSpellCastOpportunity({
+            state,
+            playerId: '0',
+            spellCardId,
+            timestamp: 104,
+        });
+
+        expect(opportunity).toMatchObject({
+            targetRequest: {
+                kind: 'select-player',
+                metadata: {
+                    targetMode: 'player-target-zone',
+                    spellCardId,
+                },
+            },
+        });
+
+        const request = buildChoiceRequestFromOpportunity(opportunity!);
+        const candidateId = `target-player:1:target-zone:${ARENA_ZONE_IDS.A2}`;
+        const expectedCommand = {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            payload: {
+                spellCardId,
+                manaCost: 12,
+                targetPlayerId: '1',
+                targetZoneId: ARENA_ZONE_IDS.A2,
+            },
+        };
+        const candidate = request.candidates.find((entry) => entry.id === candidateId);
+
+        expect(candidate).toMatchObject({
+            value: {
+                action: 'cast-spell',
+                playerId: '0',
+                spellCardId,
+                manaCost: 12,
+                targetPlayerId: '1',
+                targetZoneId: ARENA_ZONE_IDS.A2,
+            },
+            commands: [expectedCommand],
+            metadata: {
+                targetPlayerId: '1',
+                targetZoneId: ARENA_ZONE_IDS.A2,
+                spellCardId,
+                targetMode: 'player-target-zone',
+            },
+        });
 
         const legalActions = projectChoiceRequestToAiLegalActions(request);
         expect(legalActions.diagnostics.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);

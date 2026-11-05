@@ -31,16 +31,6 @@ const createTransporter = () => {
     });
 };
 
-const isDevEmailFallbackEnabled = () => process.env.NODE_ENV !== 'production';
-
-const logDevEmailFallback = (label: string, email: string, code: string) => {
-    console.log('\n==================================================');
-    console.log(` [开发模式] ${label}`);
-    console.log(` 收件人: ${email}`);
-    console.log(` 验证码: ${code}  <--- 请使用此验证码`);
-    console.log('==================================================\n');
-};
-
 /**
  * 生成 6 位数字验证码
  */
@@ -112,12 +102,7 @@ export async function sendVerificationEmailWithCode(
         logger.info(`验证码已发送至 ${email}: ${code}`);
         return { success: true, message: t('email.success.sent') };
     } catch (error) {
-        logger.error('发送邮件失败 (网络原因):', error);
-
-        if (isDevEmailFallbackEnabled()) {
-            logDevEmailFallback('模拟邮件发送', email, code);
-            return { success: true, message: t('email.info.devFallback') };
-        }
+        logger.error('发送邮件失败:', error);
 
         return { success: false, message: t('email.error.sendFailed') };
     }
@@ -154,12 +139,7 @@ export async function sendPasswordResetEmailWithCode(
         logger.info(`密码重置验证码已发送至 ${email}: ${code}`);
         return { success: true, message: t('email.success.sent') };
     } catch (error) {
-        logger.error('发送密码重置邮件失败 (网络原因):', error);
-
-        if (isDevEmailFallbackEnabled()) {
-            logDevEmailFallback('模拟密码重置邮件发送', email, code);
-            return { success: true, message: t('email.info.devFallback') };
-        }
+        logger.error('发送密码重置邮件失败:', error);
 
         return { success: false, message: t('email.error.sendFailed') };
     }

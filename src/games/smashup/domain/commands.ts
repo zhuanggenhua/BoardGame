@@ -8,6 +8,7 @@ import type {
     SmashUpCore,
     ActionCardDef,
     FusionCardDef,
+    MinionOnBase,
     PlayConstraint,
     SmashUpActivationKind,
     SmashUpActivationWindow,
@@ -24,7 +25,7 @@ import { canPlayActionFromDiscard } from './discardActionPlayability';
 import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
-import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility, type BaseAbilityContext } from './baseAbilities';
+import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, getActiveBaseAbilitySources, type BaseAbilityContext } from './baseAbilities';
 import {
     getActionPlayTargetMode,
     getActionPlayRestrictionError,
@@ -41,6 +42,7 @@ import {
     getActionLikeResponseWindowTiming,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
+    findSpecificExtraActionPlay,
     findSpecificExtraMinionPlay,
     getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
@@ -65,6 +67,14 @@ import {
 } from './pregameDraft';
 
 type TitanAbilityKind = SmashUpActivationKind;
+
+const GOBLINS_BLASTER = 'goblins_blaster';
+const GOBLINS_BLASTER_USED_TURN_METADATA_KEY = 'goblinsBlasterUsedTurn';
+
+function isGoblinBlasterUsedThisTurn(core: SmashUpCore, minion: MinionOnBase): boolean {
+    return minion.defId === GOBLINS_BLASTER
+        && Number(minion.metadata?.[GOBLINS_BLASTER_USED_TURN_METADATA_KEY] ?? -1) === core.turnNumber;
+}
 
 function canUseGreatWolfSpiritDoubleTalent(
     core: SmashUpCore,
@@ -1032,20 +1042,31 @@ export function validate(
                     return { valid: false, error: '该行动卡不需要选择随从目标' };
                 }
 
-                const specialValidation = resolveSpecial(rCard.defId)
-                    ? validateSpecialUse({
+                const specialValidation = (() => {
+                    if (!resolveSpecial(rCard.defId)) return { valid: true };
+                    const baseIndex = typeof targetBase === 'number'
+                        ? targetBase
+                        : reactionWindow.sourceBaseIndex;
+                    if (
+                        baseIndex === undefined
+                        || baseIndex < 0
+                        || baseIndex >= core.bases.length
+                    ) {
+                        return { valid: false, error: '该特殊能力缺少有效的基地上下文' };
+                    }
+                    return validateSpecialUse({
                         state: core,
                         matchState: state,
                         playerId: command.playerId,
                         cardUid: rCard.uid,
                         defId: rCard.defId,
-                        baseIndex: typeof targetBase === 'number' ? targetBase : undefined,
-                        targetBaseIndex: typeof targetBase === 'number' ? targetBase : undefined,
+                        baseIndex,
+                        ...(typeof targetBase === 'number' ? { targetBaseIndex: targetBase } : {}),
                         targetMinionUid,
                         random: { random: () => Math.random(), d: () => 1, range: (min: number) => min, shuffle: <T>(arr: T[]) => [...arr] },
                         now: core.turnNumber ?? 0,
-                    })
-                    : { valid: true };
+                    });
+                })();
                 if (!specialValidation.valid) {
                     return specialValidation;
                 }
@@ -1088,11 +1109,19 @@ export function validate(
                 };
             }
             if (!isCardActionLike(card)) return { valid: false, error: '该卡牌不是行动卡' };
-            if (fromStored && (card.counters ?? 0) > 0) {
+            if (fromStored && 'counters' in card && typeof card.counters === 'number' && card.counters > 0) {
                 return { valid: false, error: '该停滞牌仍有停滞指示物' };
             }
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return { valid: false, error: '卡牌定义不存在' };
+            if (fromStored && (player.specificExtraActionPlays?.length ?? 0) > 0 && !findSpecificExtraActionPlay(player, {
+                cardUid: card.uid,
+                defId: card.defId,
+                targetBaseIndex: command.payload.targetBaseIndex,
+                targetMinionUid: command.payload.targetMinionUid,
+            })) {
+                return { valid: false, error: '该额外行动只能打出指定卡牌' };
+            }
             const immediateExtraAction = getImmediateExtraContext(options, command.playerId, 'action');
             const immediateExtraActionValidation = validateImmediateExtraActionUse(immediateExtraAction, {
                 cardUid: card.uid,
@@ -1258,31 +1287,46 @@ export function validate(
             const base = core.bases[baseIndex];
             if (!base) return { valid: false, error: '无效的基地索引' };
 
-            if (!hasActiveBaseAbility(base.defId)) {
+            const activeSources = getActiveBaseAbilitySources(core, baseIndex);
+            if (activeSources.length === 0) {
                 return { valid: false, error: '该基地没有可主动使用的能力' };
             }
 
-            const activeOptions = getActiveBaseAbilityOptions(base.defId);
-            if (activeOptions?.oncePerTurn) {
-                const used = core.usedBaseAbilitiesThisTurn ?? [];
-                if (used.some(entry => entry.playerId === command.playerId && entry.baseIndex === baseIndex && entry.baseDefId === base.defId)) {
-                    return { valid: false, error: '该基地能力本回合已使用' };
+            const used = core.usedBaseAbilitiesThisTurn ?? [];
+            const allActiveSourcesUsedThisTurn = activeSources.length > 0 && activeSources.every(sourceDefId => {
+                const activeOptions = getActiveBaseAbilityOptions(sourceDefId);
+                return activeOptions?.oncePerTurn === true && used.some(entry => (
+                    entry.playerId === command.playerId
+                    && entry.baseIndex === baseIndex
+                    && entry.baseDefId === sourceDefId
+                ));
+            });
+            const canUse = activeSources.some(sourceDefId => {
+                const activeOptions = getActiveBaseAbilityOptions(sourceDefId);
+                if (activeOptions?.oncePerTurn && used.some(entry => (
+                    entry.playerId === command.playerId
+                    && entry.baseIndex === baseIndex
+                    && entry.baseDefId === sourceDefId
+                ))) {
+                    return false;
                 }
-            }
-
-            const baseAbilityContext: BaseAbilityContext = {
-                state: core,
-                matchState: state,
-                baseIndex,
-                baseDefId: base.defId,
-                playerId: command.playerId,
-                targetBaseIndex,
-                targetMinionUid,
-                now: core.turnNumber ?? 0,
-            };
-            const canUse = canUseActiveBaseAbility(base.defId, baseAbilityContext);
+                const baseAbilityContext: BaseAbilityContext = {
+                    state: core,
+                    matchState: state,
+                    baseIndex,
+                    baseDefId: sourceDefId,
+                    playerId: command.playerId,
+                    targetBaseIndex,
+                    targetMinionUid,
+                    now: core.turnNumber ?? 0,
+                };
+                return canUseActiveBaseAbility(sourceDefId, baseAbilityContext);
+            });
             if (!canUse) {
-                return { valid: false, error: '当前不能使用该基地能力' };
+                return {
+                    valid: false,
+                    error: allActiveSourcesUsedThisTurn ? '该基地能力本回合已使用' : '当前不能使用该基地能力',
+                };
             }
 
             return { valid: true };
@@ -1584,11 +1628,14 @@ export function validate(
             if (isSpecialLimitBlocked(core, spMinion.defId, spBaseIndex)) {
                 return { valid: false, error: '该基地本回合已使用过同组特殊能力' };
             }
+            if (isGoblinBlasterUsedThisTurn(core, spMinion)) {
+                return { valid: false, error: '该爆破手本回合已使用过特殊能力' };
+            }
             const specialValidation = validateSpecialUse({
                 state: core,
                 matchState: state,
                 playerId: command.playerId,
-                cardUid: spMinionUid,
+                cardUid: spMinion.uid,
                 defId: spMinion.defId,
                 baseIndex: spBaseIndex,
                 targetBaseIndex: spTargetBaseIndex,

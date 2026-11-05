@@ -1,10 +1,13 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbility, type AbilityContext, type AbilityResult } from '../domain/abilityRegistry';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerTrigger, type TriggerContext, type TriggerResult } from '../domain/ongoingEffects';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -100,6 +103,7 @@ type GoblinBaseChoice = {
 const CHAOS_LORD = 'goblins_chaos_lord';
 const DIVINER = 'goblins_diviner';
 const BLASTER = 'goblins_blaster';
+const BLASTER_USED_TURN_METADATA_KEY = 'goblinsBlasterUsedTurn';
 const GOBBO = 'goblins_gobbo';
 const MAGIC_HELMET = 'goblins_magic_helmet';
 const RECRUITERS = 'goblins_recruiters';
@@ -244,6 +248,23 @@ function markDivinerChangeUsed(source: LocatedMinion, turnNumber: number, reason
     } as SmashUpEvent;
 }
 
+function hasBlasterUsedThisTurn(state: SmashUpCore, source: LocatedMinion): boolean {
+    return Number(source.minion.metadata?.[BLASTER_USED_TURN_METADATA_KEY] ?? -1) === state.turnNumber;
+}
+
+function markBlasterUsed(source: LocatedMinion, turnNumber: number, now: number): SmashUpEvent {
+    return {
+        type: SU_EVENTS.MINION_METADATA_UPDATED,
+        payload: {
+            minionUid: source.minion.uid,
+            baseIndex: source.baseIndex,
+            metadataUpdate: { [BLASTER_USED_TURN_METADATA_KEY]: turnNumber },
+            reason: BLASTER,
+        },
+        timestamp: now,
+    } as SmashUpEvent;
+}
+
 function requireGoblinMatchState(context: GoblinCoinProgramContext): MatchState<SmashUpCore> {
     if (!context.matchState) {
         throw new Error('goblins coin continuation 缺少正式 matchState');
@@ -265,7 +286,7 @@ function continueGoblinCoin(
 ) {
     return {
         events,
-        ...(nextContext ? { context: nextContext, nextProgram: goblinCoinProgram } : {}),
+        ...(nextContext ? { continuation: createAbilityRuntimeContinuation(nextContext, goblinCoinProgram) } : {}),
     };
 }
 
@@ -297,14 +318,13 @@ function continueAfterPrompt(
         return {
             events,
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...baseContext,
                 stage: 'start' as const,
                 heads: undefined,
                 afterEffects: undefined,
                 purpose: { ...purpose, remainingFlips: purpose.remainingFlips - 1 },
-            },
-            nextProgram: goblinCoinProgram,
+            }, goblinCoinProgram),
         };
     }
 
@@ -319,23 +339,21 @@ function continueAfterPrompt(
         return {
             events,
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...baseContext,
                 stage: 'start' as const,
                 playerId: purpose.playerIds[purpose.index + 1],
                 heads: undefined,
                 afterEffects: undefined,
                 purpose: { ...purpose, index: purpose.index + 1 },
-            },
-            nextProgram: goblinCoinProgram,
+            }, goblinCoinProgram),
         };
     }
 
     return {
         events,
         matchState: state,
-        context: baseContext,
-        nextProgram: goblinCoinProgram,
+        continuation: createAbilityRuntimeContinuation(baseContext, goblinCoinProgram),
     };
 }
 
@@ -437,7 +455,7 @@ function buildDemolitionDestroyEvents(
     });
 }
 
-const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext, SmashUpCore, SmashUpEvent>({
+const goblinChoicePromptProgram: AbilityProgram<GoblinChoicePromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<GoblinChoicePromptContext>({
     sourceId: 'goblins_choice',
     interactionSourceIds: [
         'goblins_diviner',
@@ -710,7 +728,7 @@ const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext,
             return {
                 events,
                 matchState: state,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...nextContext,
                     stage: 'start' as const,
                     heads: undefined,
@@ -720,8 +738,7 @@ const goblinChoicePromptProgram = createPromptProgram<GoblinChoicePromptContext,
                         flipIndex: nextContext.purpose.flipIndex + 1,
                         targetMinionUid: selected.minionUid,
                     },
-                },
-                nextProgram: goblinCoinProgram,
+                }, goblinCoinProgram),
             };
         }
 
@@ -845,15 +862,13 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
             if (heads) {
                 return {
                     events: [],
-                    context: { ...context, choiceKind: 'blaster_heads_confirm' as const },
-                    nextProgram: goblinChoicePromptProgram,
+                    continuation: createAbilityRuntimeContinuation({ ...context, choiceKind: 'blaster_heads_confirm' as const }, goblinChoicePromptProgram),
                 };
             }
             if (purpose.targetBaseIndex === undefined) {
                 return {
                     events: [],
-                    context: { ...context, choiceKind: 'blaster_tails_destination' as const },
-                    nextProgram: goblinChoicePromptProgram,
+                    continuation: createAbilityRuntimeContinuation({ ...context, choiceKind: 'blaster_tails_destination' as const }, goblinChoicePromptProgram),
                 };
             }
             return continueGoblinCoin(context, buildBlasterMoveEvents(context, state, purpose.targetBaseIndex));
@@ -881,8 +896,7 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
                 if (!context.matchState) return continueGoblinCoin(context, []);
                 return {
                     events: [],
-                    context: { ...context, choiceKind: 'bushwhacking_tails_destination' as const },
-                    nextProgram: goblinChoicePromptProgram,
+                    continuation: createAbilityRuntimeContinuation({ ...context, choiceKind: 'bushwhacking_tails_destination' as const }, goblinChoicePromptProgram),
                 };
             }
             return continueGoblinCoin(context, buildBushwhackingMoveEvents(context, state, purpose.targetBaseIndex));
@@ -927,11 +941,10 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
             if (hasChoice) {
                 return {
                     events: [],
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         ...context,
                         choiceKind: heads ? 'demolition_counter_target' as const : 'demolition_destroy_action' as const,
-                    },
-                    nextProgram: goblinChoicePromptProgram,
+                    }, goblinChoicePromptProgram),
                 };
             }
             return continueGoblinCoin(context, [], purpose.remainingFlips > 1 ? {
@@ -959,12 +972,11 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
                 }
                 return {
                     events: [addPowerCounter(target.minion.uid, target.baseIndex, 1, 'goblins_he_who_smelt_it_heads', context.now)],
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         ...context,
                         choiceKind: 'he_who_smelt_it_next_target' as const,
                         purpose: { ...purpose, targetMinionUid: target.minion.uid },
-                    },
-                    nextProgram: goblinChoicePromptProgram,
+                    }, goblinChoicePromptProgram),
                 };
             }
         case 'revving_up': {
@@ -1003,13 +1015,12 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
             if (discardCount > 0) {
                 return {
                     events: [],
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         ...context,
                         playerId,
                         choiceKind: 'discard_hand_cards' as const,
                         choiceCount: discardCount,
-                    },
-                    nextProgram: goblinChoicePromptProgram,
+                    }, goblinChoicePromptProgram),
                 };
             }
             return continueGoblinCoin(context, [], purpose.index + 1 < purpose.playerIds.length ? {
@@ -1026,7 +1037,11 @@ function executeGoblinPostCoinPurpose(context: GoblinCoinProgramContext, state: 
     }
 }
 
-const goblinCoinProgram = createEffectProgram<
+const goblinCoinProgram: AbilityProgram<
+    GoblinCoinProgramContext,
+    SmashUpCore,
+    SmashUpEvent
+> = createEffectProgram<
     GoblinCoinProgramContext,
     SmashUpCore,
     SmashUpEvent
@@ -1050,14 +1065,13 @@ const goblinCoinProgram = createEffectProgram<
         ) {
             return {
                 events: changed.events,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     stage: 'after-change' as const,
                     heads: changed.heads,
                     initialEvents: undefined,
                     choiceKind: 'diviner_change_discard' as const,
-                },
-                nextProgram: goblinChoicePromptProgram,
+                }, goblinChoicePromptProgram),
             };
         }
         return continueGoblinCoin(context, changed.events, {
@@ -1089,12 +1103,11 @@ const goblinCoinProgram = createEffectProgram<
                 }
                 return {
                     events: [],
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         ...context,
                         afterEffects: remainingEffects,
                         choiceKind: 'chaos_lord_counter_target' as const,
-                    },
-                    nextProgram: goblinChoicePromptProgram,
+                    }, goblinChoicePromptProgram),
                 };
             }
             const drawEvents = buildStandardDrawEvents(matchState.core, context.playerId, 1, random, context.now);
@@ -1105,13 +1118,12 @@ const goblinCoinProgram = createEffectProgram<
             }
             return {
                 events: drawEvents,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     afterEffects: remainingEffects,
                     choiceKind: 'discard_hand_cards' as const,
                     choiceCount: 1,
-                },
-                nextProgram: goblinChoicePromptProgram,
+                }, goblinChoicePromptProgram),
             };
         }
         if (effect.kind === 'recruiters' && context.heads !== true) {
@@ -1122,12 +1134,11 @@ const goblinCoinProgram = createEffectProgram<
             }
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context,
                     afterEffects: remainingEffects,
                     choiceKind: 'recruiters_shuffle_discard' as const,
-                },
-                nextProgram: goblinChoicePromptProgram,
+                }, goblinChoicePromptProgram),
             };
         }
         return continueGoblinCoin(
@@ -1168,7 +1179,12 @@ function gobboOnPlay(ctx: AbilityContext): AbilityResult {
 function blasterBeforeScoring(ctx: AbilityContext): AbilityResult {
     const source = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!source) return { events: [] };
+    if (hasBlasterUsedThisTurn(ctx.state, source)) return { events: [] };
     const limitEvent = emitSpecialLimitUsed(ctx.playerId, BLASTER, source.baseIndex, ctx.now);
+    const initialEvents = [
+        markBlasterUsed(source, ctx.state.turnNumber, ctx.now),
+        ...(limitEvent ? [limitEvent] : []),
+    ];
     return runGoblinCoin({
         matchState: ctx.matchState,
         random: ctx.random,
@@ -1176,7 +1192,7 @@ function blasterBeforeScoring(ctx: AbilityContext): AbilityResult {
         now: ctx.now,
         reason: 'goblins_blaster',
         preferredResult: ctx.targetBaseIndex !== undefined ? 'tails' : 'heads',
-        initialEvents: limitEvent ? [limitEvent] : undefined,
+        initialEvents,
         purpose: { kind: 'blaster', sourceCardUid: source.minion.uid, targetBaseIndex: ctx.targetBaseIndex },
     });
 }

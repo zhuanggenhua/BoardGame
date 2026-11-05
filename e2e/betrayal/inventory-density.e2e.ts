@@ -22,6 +22,12 @@ const PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/02-山屋惊魂-高密度持有区-�
 const EXTREME_RUNTIME_SCREENSHOT = `${EVIDENCE_DIR}/03-山屋惊魂-极限持有区-运行时.png`;
 const EXTREME_INVENTORY_SECTION_SCREENSHOT = `${EVIDENCE_DIR}/04-山屋惊魂-极限持有区-局部.png`;
 const MOBILE_MAP_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/05-山屋惊魂-手机横屏-地图卡放大完整显示.png`;
+const MOBILE_BOOK_INSPECT_EVIDENCE_DIR =
+  "evidence/betrayal-tutorial/mobile-book-inspect-20260919";
+const MOBILE_BOOK_INSPECT_BEFORE_SCREENSHOT =
+  `${MOBILE_BOOK_INSPECT_EVIDENCE_DIR}/01-触屏长按书本前-保持本体主操作.png`;
+const MOBILE_BOOK_INSPECT_PREVIEW_SCREENSHOT =
+  `${MOBILE_BOOK_INSPECT_EVIDENCE_DIR}/02-触屏长按书本后-牌面放大可读.png`;
 const ROOM_PREVIEW_SCREENSHOT = `${EVIDENCE_DIR}/12-山屋惊魂-房间板块放大-明确收起入口.png`;
 const MAP_USE_READY_SCREENSHOT = `${EVIDENCE_DIR}/06-山屋惊魂-地图物品-使用前牌桌可操作.png`;
 const MAP_SELECTED_SCREENSHOT = `${EVIDENCE_DIR}/07-山屋惊魂-地图物品-地图本体已选中.png`;
@@ -113,6 +119,29 @@ function createMapInventoryCore(): BetrayalCore {
     kind: "item",
   });
 }
+
+const dispatchTouchLongPress = async (
+  locator: import("@playwright/test").Locator,
+  durationMs = 620,
+) => {
+  await locator.dispatchEvent("pointerdown", {
+    pointerType: "touch",
+    pointerId: 1,
+    isPrimary: true,
+    buttons: 1,
+    clientX: 24,
+    clientY: 24,
+  });
+  await locator.page().waitForTimeout(durationMs);
+  await locator.dispatchEvent("pointerup", {
+    pointerType: "touch",
+    pointerId: 1,
+    isPrimary: true,
+    buttons: 0,
+    clientX: 24,
+    clientY: 24,
+  });
+};
 
 test.describe("山屋惊魂持有区高密度证据", () => {
   test("运行时能承载高密度物品与预兆", async ({ page, context }) => {
@@ -327,6 +356,58 @@ test.describe("山屋惊魂持有区高密度证据", () => {
 
     assertNoFatalFrontendErrors([
       { label: "betrayal-map-card-mobile-preview", diagnostics },
+    ]);
+  });
+
+  test("触屏长按书本打开牌面且不误触发使用，普通点击仍可选择", async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(120000);
+    await initBetrayalContext(context);
+    const diagnostics = attachPageDiagnostics(
+      page,
+      "betrayal-book-touch-long-press-preview",
+    );
+
+    await page.setViewportSize({ width: 932, height: 430 });
+    await warmBetrayalFrontend(context);
+    await page.goto("/play/betrayal?bgForceCoarsePointer=1", {
+      waitUntil: "domcontentloaded",
+    });
+    await waitForBetrayalPageReady(page);
+
+    await injectCore(page, createDenseInventoryCore());
+    const book = page.getByTestId("betrayal-inventory-omen-book");
+    await expect(book).toBeVisible();
+    await expect(book).toHaveAttribute(
+      "data-touch-inspect-enabled",
+      "true",
+    );
+    await saveScreenshot(page, MOBILE_BOOK_INSPECT_BEFORE_SCREENSHOT);
+
+    await dispatchTouchLongPress(book);
+    const previewOverlay = page.getByTestId(
+      "betrayal-inventory-preview-overlay",
+    );
+    await expect(previewOverlay).toBeVisible();
+    await expect(
+      page.getByTestId("betrayal-inventory-preview-card"),
+    ).toContainText("书本");
+    await saveScreenshot(page, MOBILE_BOOK_INSPECT_PREVIEW_SCREENSHOT);
+
+    await book.dispatchEvent("click", { clientX: 24, clientY: 24 });
+    await expect(book).not.toHaveAttribute("aria-pressed", "true");
+
+    await page
+      .getByTestId("betrayal-inventory-preview-overlay-close")
+      .click();
+    await expect(previewOverlay).toBeHidden();
+    await book.click();
+    await expect(book).toHaveAttribute("aria-pressed", "true");
+
+    assertNoFatalFrontendErrors([
+      { label: "betrayal-book-touch-long-press-preview", diagnostics },
     ]);
   });
 

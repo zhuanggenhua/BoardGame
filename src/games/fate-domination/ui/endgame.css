@@ -1,0 +1,7 @@
+.fd-endgame-panel { padding:24px; border:1px solid #c4a860; background:#111a17; color:#ede3ca; }
+.fd-endgame-results { width:100%; margin-bottom:20px; }
+.fd-endgame-results h2 { margin:0 0 20px; text-align:center; font-size:24px; line-height:1.4; color:#f6dfa1; }
+.fd-endgame-results ol { margin:0; padding:0; list-style:none; }
+.fd-endgame-results li { display:flex; justify-content:space-between; align-items:center; gap:16px; min-height:44px; border-bottom:1px solid #5c5036; }
+.fd-endgame-results li[data-winner] { color:#f6dfa1; font-weight:700; }
+.fd-endgame-results strong { font-size:22px; }

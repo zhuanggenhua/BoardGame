@@ -298,9 +298,10 @@ describe('FactionSelection', () => {
 
     expect(screen.getByTestId('sw-faction-grid')).toHaveAttribute('data-page', '2');
     expect(screen.getByTestId('sw-faction-card-huijin')).toBeInTheDocument();
+    expect(screen.getByTestId('sw-faction-card-zhongcai')).toBeInTheDocument();
     expect(screen.queryByTestId('sw-faction-card-necromancer')).not.toBeInTheDocument();
     expect(screen.getByTestId('sw-custom-deck-entry')).toBeInTheDocument();
-    expect(screen.queryAllByTestId('sw-faction-grid-placeholder')).toHaveLength(3);
+    expect(screen.queryAllByTestId('sw-faction-grid-placeholder')).toHaveLength(2);
     expect(Array.from(screen.getByTestId('sw-faction-grid').children)).toHaveLength(8);
     expect(Array.from(screen.getByTestId('sw-faction-grid').children).at(-1)).toBe(screen.getByTestId('sw-custom-deck-entry'));
 

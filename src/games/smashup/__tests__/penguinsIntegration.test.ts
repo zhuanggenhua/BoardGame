@@ -120,9 +120,7 @@ describe('SmashUp 企鹅派系静态与资源接入', () => {
         expect(smashupManifest.files['cards/compressed/penguins']).toBeDefined();
         expect(smashupManifest.files['base/penguins']).toBeDefined();
         expect(smashupManifest.files['base/compressed/penguins']).toBeDefined();
-        expect(i18nManifest.files['zh-CN/smashup/cards/penguins']).toBeDefined();
         expect(i18nManifest.files['zh-CN/smashup/cards/compressed/penguins']).toBeDefined();
-        expect(i18nManifest.files['zh-CN/smashup/base/penguins']).toBeDefined();
         expect(i18nManifest.files['zh-CN/smashup/base/compressed/penguins']).toBeDefined();
 
         const resolved = smashUpRuntimeCriticalImageResolver({

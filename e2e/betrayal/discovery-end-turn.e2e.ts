@@ -40,7 +40,7 @@ async function readCore(page: Page): Promise<BetrayalCore> {
 }
 
 test.describe("山屋惊魂探索后结束回合", () => {
-  test("探索并结算新房间后行动区只保留结束回合", async ({ page, context }) => {
+  test("代表态探索并结算新房间后行动区只保留结束回合", async ({ page, context }) => {
     test.setTimeout(120000);
     await initBetrayalContext(context);
     const diagnostics = attachPageDiagnostics(
@@ -53,15 +53,21 @@ test.describe("山屋惊魂探索后结束回合", () => {
     await page.goto("/play/betrayal", { waitUntil: "domcontentloaded" });
     await waitForBetrayalPageReady(page);
 
+    // 代表态入口：注入运行时起点；只证明探索至下一位行动，不证明自然开局。
     await injectCore(page, createRuntimeCore());
     await expect(page.getByTestId("betrayal-board")).toBeVisible({
       timeout: 30000,
     });
 
-    await page.getByTestId("betrayal-action-move").click();
+    await expect(page.getByTestId("betrayal-room-hallway")).toHaveAttribute(
+      "data-direct-target",
+      "true",
+    );
     await page.getByTestId("betrayal-room-hallway").click();
-    await expect(page.getByTestId("betrayal-action-explore")).toBeEnabled();
-    await page.getByTestId("betrayal-action-explore").click();
+    await expect(
+      page.getByTestId("betrayal-room-explore-target-ground-north"),
+    ).toBeVisible();
+    await expect(page.getByTestId("betrayal-action-explore")).toHaveCount(0);
     await expect(
       page.getByTestId("betrayal-room-explore-target-ground-north"),
     ).toBeVisible();

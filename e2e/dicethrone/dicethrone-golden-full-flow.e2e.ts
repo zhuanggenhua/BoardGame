@@ -24,6 +24,7 @@ import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { BARBARIAN_CARDS } from '../../src/games/dicethrone/heroes/barbarian/cards';
 import { MOON_ELF_CARDS } from '../../src/games/dicethrone/heroes/moon_elf/cards';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import { STATUS_IDS } from '../../src/games/dicethrone/domain/ids';
 import {
     expectNoCentralBonusDicePresentation,
     expectRightTrayBonusDiceInterferenceView,
@@ -34,7 +35,7 @@ import {
 
 const OPEN_TIMEOUT_MS = 180000;
 const TEST_TIMEOUT_MS = 480000;
-const GOLDEN_TEST_NAME = 'DiceThrone 黄金全流程：覆盖开局、卖牌换CP、攻骰改骰、攻击修正奖励骰、防御响应、伤害、弃牌和回合交接';
+const GOLDEN_TEST_NAME = 'DiceThrone 黄金全流程：覆盖开局、卖牌换CP、攻骰改骰、攻击修正奖励骰、防御响应、伤害、起开移除状态、弃牌和回合交接';
 const EXPECTED_LONGBOW_ATTACK_ID = 'longbow-4-1';
 const MOON_ELF_BOW_VALUES = new Set([1, 2, 3]);
 const moonElfFaceForValue = (value: number) => (value <= 3 ? 'bow' : value <= 5 ? 'foot' : 'moon');
@@ -583,14 +584,7 @@ async function waitForCardSpotlightClear(page: Page): Promise<void> {
     const overlay = overlays.first();
     if (!(await overlay.isVisible({ timeout: 500 }).catch(() => false))) return;
 
-    const spotlightRoot = page.getByTestId('spotlight-container-root').filter({ has: overlay }).first();
-    if (await spotlightRoot.isVisible({ timeout: 1000 }).catch(() => false)) {
-        await spotlightRoot.click({ position: { x: 12, y: 12 } });
-    } else {
-        await page.mouse.click(8, 8);
-    }
-
-    await expect(overlays, '阶段截图前卡牌特写必须由玩家关闭并退场，避免把遮挡图当作流程证据').toHaveCount(0, { timeout: 7000 });
+    await expect(overlays, '阶段截图前卡牌特写必须自动退场，避免把提示图当作流程证据').toHaveCount(0, { timeout: 10000 });
 }
 
 async function clickVisibleDie(page: Page, dieIndex: number): Promise<void> {
@@ -1357,13 +1351,71 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForServerPlayedCard(matchId, guestPage, 'card-flick', '1');
             await screenshotStep(hostPage, testInfo, '26-伤害结算完成-进入攻击方第二主要阶段');
 
+            await dragHandCardToPlay(hostPage, 'card-get-away');
+            await waitForServerPlayedCard(matchId, hostPage, 'card-get-away', '0');
+            await waitForState(hostPage, (state) => (
+                state.sys?.interaction?.current?.kind === 'dt:card-interaction'
+                && state.sys.interaction.current.playerId === '0'
+                && state.sys.interaction.current.data?.type === 'selectStatus'
+                && state.sys.interaction.current.data?.sourceId === 'card-get-away'
+                && state.core?.players?.['1']?.statusEffects?.[STATUS_IDS.ENTANGLE] === 1
+            ));
+            const getAwayModal = hostPage.locator('#modal-root');
+            await expect(getAwayModal.getByText(/选择要移除的状态效果|Select a status effect to remove/i)).toBeVisible({ timeout: 10000 });
+            const entangleOption = getAwayModal
+                .getByTestId('dt-status-owner-1')
+                .getByTestId(`dt-status-effect-1-${STATUS_IDS.ENTANGLE}`);
+            await expect(entangleOption).toBeVisible({ timeout: 10000 });
+            await screenshotStep(hostPage, testInfo, '27-起开打出后-移除状态弹窗可选择缠绕');
+
+            await entangleOption.click();
+            const getAwayConfirmButton = getAwayModal.getByRole('button', { name: /确认|Confirm/i }).last();
+            await expect(getAwayConfirmButton).toBeEnabled({ timeout: 5000 });
+            await screenshotStep(hostPage, testInfo, '28-起开选择缠绕后-确认移除状态');
+            await getAwayConfirmButton.click();
+
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage) as MutableRecord;
+                const root = state.G && typeof state.G === 'object' ? state.G : state;
+                const entries = Array.isArray(root.sys?.eventStream?.entries) ? root.sys.eventStream.entries : [];
+                const removed = entries.find((entry: MutableRecord) => (
+                    entry?.event?.type === 'STATUS_REMOVED'
+                    && entry?.event?.payload?.targetId === '1'
+                    && entry?.event?.payload?.statusId === STATUS_IDS.ENTANGLE
+                ));
+                const confirmed = entries.find((entry: MutableRecord) => (
+                    entry?.event?.type === 'SYS_INTERACTION_CONFIRMED'
+                    && entry?.event?.payload?.sourceId === 'card-get-away'
+                    && entry?.event?.payload?.playerId === '0'
+                ));
+                return {
+                    entangle: root.core?.players?.['1']?.statusEffects?.[STATUS_IDS.ENTANGLE] ?? 0,
+                    handContainsGetAway: root.core?.players?.['0']?.hand?.some?.((card: MutableRecord) => card?.id === 'card-get-away') ?? null,
+                    discardContainsGetAway: root.core?.players?.['0']?.discard?.some?.((card: MutableRecord) => card?.id === 'card-get-away') ?? null,
+                    interactionKind: root.sys?.interaction?.current?.kind ?? null,
+                    removedAmount: removed?.event?.payload?.stacks ?? null,
+                    confirmed: Boolean(confirmed),
+                };
+            }, {
+                message: '起开确认后必须从防御方身上移除缠绕，并关闭移除状态弹窗',
+                timeout: 15000,
+            }).toEqual({
+                entangle: 0,
+                handContainsGetAway: false,
+                discardContainsGetAway: true,
+                interactionKind: null,
+                removedAmount: 1,
+                confirmed: true,
+            });
+            await screenshotStep(hostPage, testInfo, '29-起开确认后-防御方缠绕已移除');
+
             await clickToolbarButton(hostPage, 'advance-phase-button');
             await waitForPhase(hostPage, 'discard');
-            await screenshotStep(hostPage, testInfo, '27-进入弃牌阶段-手牌超限需要弃牌');
+            await screenshotStep(hostPage, testInfo, '30-进入弃牌阶段-手牌超限需要弃牌');
 
             await discardUntilHandLimit(hostPage, '0');
             await waitForState(hostPage, (state) => (state.core?.players?.['0']?.hand?.length ?? 0) <= 6);
-            await screenshotStep(hostPage, testInfo, '28-弃牌后-手牌回到上限');
+            await screenshotStep(hostPage, testInfo, '31-弃牌后-手牌回到上限');
 
             const afterDiscardSummary = await readStateSummary(hostPage);
             if (!(afterDiscardSummary?.phase === 'main1' && afterDiscardSummary?.activePlayerId === '1')) {
@@ -1373,7 +1425,7 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
             await waitForState(guestPage, (state) => state.core?.activePlayerId === '1' || state.core?.currentPlayerIndex === 1);
             await waitForServerPlayedCard(matchId, guestPage, 'card-surprise', '1');
             await waitForServerPlayedCard(matchId, guestPage, 'card-flick', '1');
-            await screenshotStep(guestPage, testInfo, '29-回合交接完成-防御方成为下一回合玩家');
+            await screenshotStep(guestPage, testInfo, '32-回合交接完成-防御方成为下一回合玩家');
 
             await waitForServerState(
                 matchId,
@@ -1391,7 +1443,9 @@ test.describe('DiceThrone 黄金全流程 E2E', () => {
                 'card-play-six',
                 'volley',
                 'card-surprise',
+                'card-get-away',
             ]));
+            expect(root.core?.players?.['1']?.statusEffects?.[STATUS_IDS.ENTANGLE] ?? 0).toBe(0);
             expect(root.core?.players?.['1']?.discard?.map((card: MutableRecord) => card.id)).toEqual(expect.arrayContaining([
                 'card-surprise',
                 'card-flick',

@@ -1,9 +1,10 @@
+import './load-dev-env.mjs';
 import net from 'node:net';
 import os from 'node:os';
 import { execFileSync, spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { saveDevRuntimePorts, removeDevRuntimePorts } from './dev-port-runtime.js';
+import { createDevRuntimeEnv, saveDevRuntimePorts, removeDevRuntimePorts } from './dev-port-runtime.js';
 import { findAvailablePort } from './port-allocator.js';
 import { getPortPids } from './port-allocator.js';
 import { DEV_PROCESS_MATCHERS, isRepoDevProcess } from './clean_ports.js';
@@ -171,7 +172,7 @@ function startCommand(label, command, args = [], extraEnv = {}, options = {}) {
             return;
         }
         console.error(`[dev-orchestrator] ${label} exited unexpectedly (${detail})`);
-        shutdown(typeof code === 'number' ? code : 1);
+        shutdown(typeof code === 'number' && code !== 0 ? code : 1);
     });
 
     return child;
@@ -312,6 +313,10 @@ function resolveGameDevEnv(mongoUri) {
     return { USE_PERSISTENT_STORAGE: 'false' };
 }
 
+export function shouldStartApi({ skipApiMode, mongoUri }) {
+    return !skipApiMode && Boolean(mongoUri?.trim());
+}
+
 async function main() {
     disableHotReload = isHotReloadDisabled(process.env);
     removeDevRuntimePorts();
@@ -322,22 +327,18 @@ async function main() {
     });
     const resolvedMongoUri = await resolveLocalDevMongoUri();
     saveDevRuntimePorts(resolvedPorts);
-    const sharedDevEnv = {
-        VITE_DEV_PORT: String(resolvedPorts.frontend),
-        GAME_SERVER_PORT: String(resolvedPorts.gameServer),
-        API_SERVER_PORT: String(resolvedPorts.apiServer),
+    const sharedDevEnv = createDevRuntimeEnv(resolvedPorts, {
         // 端口已由本编排器成组分配，前端必须使用同一端口，避免代理和运行时地址漂移。
         BG_DEV_STRICT_PORTS: '1',
         VITE_DEV_SKIP_API: skipApiMode ? 'true' : 'false',
-        GAME_SERVER_PROXY_TARGET: `http://127.0.0.1:${resolvedPorts.gameServer}`,
         ...(resolvedMongoUri ? { MONGO_URI: resolvedMongoUri } : {}),
         ...(disableHotReload
             ? {
                 PW_SERVER_WATCH: 'false',
                 VITE_DISABLE_WATCH: 'true',
             }
-            : {}),
-    };
+                : {}),
+    });
 
     console.log('[dev-orchestrator] resolved dev ports:', resolvedPorts);
     for (const [service, defaultPort] of Object.entries(DEFAULT_DEV_PORTS)) {
@@ -357,15 +358,20 @@ async function main() {
     if (disableHotReload) {
         console.log('[dev-orchestrator] hot reload disabled: game/api run once, Vite HMR/watch disabled');
     }
-    console.log('[dev-orchestrator] starting api and game in parallel');
-    const apiChild = skipApiMode
-        ? null
-        : startCommand('dev:api', process.execPath, createBundleRunnerArgs({
+    const startApi = shouldStartApi({ skipApiMode, mongoUri: resolvedMongoUri });
+    if (!startApi) {
+        console.warn('[dev-orchestrator] API 因 MONGO_URI/本地 Mongo 不可用而跳过；前端 + game 继续启动');
+    } else {
+        console.log('[dev-orchestrator] starting api and game in parallel');
+    }
+    const apiChild = startApi
+        ? startCommand('dev:api', process.execPath, createBundleRunnerArgs({
             label: 'api',
             entry: 'apps/api/src/main.ts',
             outfile: getBundleOutfile('api', 'main.mjs'),
             tsconfig: 'apps/api/tsconfig.json',
-        }), sharedDevEnv, { optional: true });
+        }), sharedDevEnv, { optional: true })
+        : null;
     const gameExtraEnv = resolveGameDevEnv(resolvedMongoUri);
     const gameArgs = createBundleRunnerArgs({
         label: 'game',
@@ -393,7 +399,7 @@ async function main() {
     await waitForPort(gamePort, 'game');
 
     let apiReady = false;
-    if (!skipApiMode) {
+    if (startApi) {
         try {
             await waitForPort(apiPort, 'api', 15000);
             apiReady = true;
@@ -420,8 +426,15 @@ async function main() {
         startCommand('dev:frontend', process.execPath, ['scripts/infra/vite-with-logging.js'], sharedDevEnv);
     }
 
+    console.log(`[dev-orchestrator] frontend: http://127.0.0.1:${resolvedPorts.frontend}`);
+
     if (skipApiMode) {
         console.log('[dev-orchestrator] frontend 已启动；API 已按当前模式跳过');
+        return;
+    }
+
+    if (!startApi) {
+        console.log('[dev-orchestrator] frontend 已启动；API 因本地数据库不可用被跳过');
         return;
     }
 
@@ -429,8 +442,6 @@ async function main() {
         console.log('[dev-orchestrator] frontend 已启动；API 因本地数据库不可用被跳过');
         return;
     }
-
-    console.log(`[dev-orchestrator] frontend: http://127.0.0.1:${resolvedPorts.frontend}`);
 }
 
 const isDirectExecution = process.argv[1]

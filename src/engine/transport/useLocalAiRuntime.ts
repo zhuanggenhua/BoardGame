@@ -26,6 +26,7 @@ import {
     syncLocalAiActivePhase,
 } from './localAiProviderLifecycle';
 import { onAppVisible } from '../../lib/mobile/appVisibility';
+import { consumeRestoredRandomCursor } from './restoredRandomCursor';
 
 type RefBox<T> = {
     current: T;
@@ -77,7 +78,7 @@ export function useLocalAiRuntime(args: {
         setState(snapshot.state);
     }, [randomRef, seed, setState, stateRef]);
     const dispatch = useCallback((type: string, payload: unknown) => {
-        const nextState = executeLocalDispatch({
+        const executedState = executeLocalDispatch({
             commandType: type,
             payload,
             prevState: stateRef.current,
@@ -89,6 +90,9 @@ export function useLocalAiRuntime(args: {
             localPregameControlledPlayerId,
             commandEffectsByToken: aiCommandEffectByTokenRef.current,
             onCommandRejected: onCommandRejectedRef.current,
+        });
+        const { state: nextState } = consumeRestoredRandomCursor(executedState, cursor => {
+            randomRef.current = createLocalProviderRandom(seed, cursor);
         });
         // 规则执行会消费随机数和写入诊断副作用，不能放进 React state updater。
         // 开发/测试 StrictMode 可能重复调用 updater，导致预置随机数被丢弃的预执行吃掉。

@@ -82,8 +82,15 @@ async function claimSeatViaApi(args: {
 }
 
 async function selectSmashUpFactionById(page: Page, factionId: string) {
-    await expect(page.getByTestId(`faction-option-${factionId}`)).toBeVisible({ timeout: 10000 });
-    await page.getByTestId(`faction-option-${factionId}`).click();
+    const factionOption = page.getByTestId(`faction-option-${factionId}`);
+    if (!await factionOption.isVisible().catch(() => false)) {
+        const searchInput = page.getByTestId('faction-search-input');
+        if (await searchInput.isVisible().catch(() => false)) {
+            await searchInput.fill(factionId);
+        }
+    }
+    await expect(factionOption).toBeVisible({ timeout: 10000 });
+    await factionOption.click();
 
     const confirmButton = page.getByTestId('faction-confirm-button');
     await confirmButton.waitFor({ state: 'visible', timeout: 10000 });

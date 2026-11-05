@@ -14,7 +14,11 @@ export type StateSyncSocket = {
 };
 
 export class TransportStateSynchronizer {
-    constructor(private readonly io: IOServer) {}
+    private readonly io: IOServer;
+
+    constructor(io: IOServer) {
+        this.io = io;
+    }
 
     applyPlayerView(match: Pick<TransportStateProjectionMatch, 'engineConfig' | 'state'>, playerID: string | null): unknown {
         return applyMatchPlayerView(match, playerID);

@@ -1,10 +1,9 @@
 import {
     addFactionHandCards,
-    buildDrawnHandCards,
+    appendDrawnHandCards,
     drawFromFactionPile,
     getFactionDrawPileCount,
 } from './handCardState';
-import { getArmamentLevel } from './armamentStateAccessors';
 import { materializeNonSiegedCityActionSourceRegion } from './actionSourceRegionState';
 import {
     isRegionControlledByFaction,
@@ -17,15 +16,16 @@ import {
     canPlaceRegularTroopsInRegion,
     getPreferredRegularTroopPlacementRegion,
     getPreferredSelectedRegionIdForFaction,
+    getQidahenRegularTroopPlacementTarget,
 } from './regionSelectionPreferences';
 import { refreshRuntimeRegionRules } from './runtimeRegionRules';
 import { buildSeasonSummary } from './seasonSummaryBuilder';
 import { buildRegularTroopStack } from './troopStacks';
 import { addSpecialTroopStackToRegion } from './troopCompat';
-import { trainArtilleryStacksToLevel } from './troopTraining';
 import type {
     QidahenCore,
     QidahenFactionId,
+    QidahenSeasonSummary,
 } from './types';
 import { getQidahenWheelImmediateEffectConfig } from './wheelRules';
 
@@ -46,7 +46,7 @@ export const applyQidahenWheelImmediateEffect = (
         && region.id === resolveQidahenPrimaryRuntimeRegionId(state.selectedRegionId)
         && (
             requiresRegularTroopPlacement
-                ? canPlaceRegularTroopsInRegion(region, factionId)
+                ? canPlaceRegularTroopsInRegion(region, factionId, state)
                 : isRegionControlledByFaction(region, factionId)
         )
     ));
@@ -57,10 +57,18 @@ export const applyQidahenWheelImmediateEffect = (
                 : getPreferredSelectedRegionIdForFaction(state, factionId)
         )
         : state.selectedRegionId;
-    const targetRegionId = selectedRegion?.id ?? fallbackRegionId ?? state.selectedRegionId;
-    const targetRegion = state.regions.find((region) => !region.isLogicalRegion && region.id === targetRegionId);
+    const regularTroopTarget = requiresRegularTroopPlacement
+        ? getQidahenRegularTroopPlacementTarget(state, factionId)
+        : null;
+    const targetRegionId = requiresRegularTroopPlacement
+        ? regularTroopTarget?.id ?? state.selectedRegionId
+        : selectedRegion?.id ?? fallbackRegionId ?? state.selectedRegionId;
+    const targetRegion = requiresRegularTroopPlacement
+        ? regularTroopTarget
+        : state.regions.find((region) => !region.isLogicalRegion && region.id === targetRegionId);
     const drawCards = Math.max(0, Math.min(config.drawCards, getFactionDrawPileCount(state, factionId)));
     const summaryLines: string[] = [];
+    let mapResult: QidahenSeasonSummary['mapResult'];
 
     const nextRegions = targetRegion
         ? refreshRuntimeRegionRules(
@@ -73,11 +81,19 @@ export const applyQidahenWheelImmediateEffect = (
                     const actionTargetRegion = materializeNonSiegedCityActionSourceRegion(region);
                     const troopDelta = Math.max(0, config.troopDelta);
                     const populationDelta = Math.max(0, config.populationDelta);
+                    const troopsBefore = actionTargetRegion.troops;
+                    const troopsAfter = troopsBefore + troopDelta;
                     if (populationDelta > 0) {
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，人口 +${populationDelta}。`);
+                        summaryLines.push(`${actionTargetRegion.name}：人口 +${populationDelta}。`);
                     }
                     if (troopDelta > 0) {
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，部队 +${troopDelta}。`);
+                        mapResult = {
+                            regionId: actionTargetRegion.id,
+                            troopDelta,
+                            beforeTroops: troopsBefore,
+                            afterTroops: troopsAfter,
+                        };
+                        summaryLines.push(`${actionTargetRegion.name}：部队 +${troopDelta}。`);
                     }
                     const nextRegion = {
                         ...actionTargetRegion,
@@ -85,32 +101,21 @@ export const applyQidahenWheelImmediateEffect = (
                         population: actionTargetRegion.population + populationDelta,
                         note: `${actionTargetRegion.name} 执行轮盘${config.label}后${troopDelta > 0 ? `部队 +${troopDelta}` : ''}${troopDelta > 0 && populationDelta > 0 ? '，' : ''}${populationDelta > 0 ? `人口 +${populationDelta}` : ''}。`,
                     };
-                    const artilleryTraining = config.id === 'wheel-recruit-train'
-                        ? trainArtilleryStacksToLevel(nextRegion, getArmamentLevel(state, factionId, 'artillery-tech'))
-                        : null;
-                    if (artilleryTraining && artilleryTraining.trainedCount > 0) {
-                        summaryLines.push(`${state.factions[factionId].name} 在 ${actionTargetRegion.name} 执行${config.label}，训练 ${artilleryTraining.trainedCount} 个炮兵至等级 ${artilleryTraining.targetLevel}。`);
-                    }
-                    const artilleryTrainedRegion = artilleryTraining && artilleryTraining.trainedCount > 0
-                        ? {
-                            ...nextRegion,
-                            note: `${nextRegion.note} 轮盘征兵训练将 ${artilleryTraining.trainedCount} 个炮兵训练至 ${artilleryTraining.targetLevel} 级。`.trim(),
-                            specialTroops: artilleryTraining.specialTroops,
-                        }
-                        : nextRegion;
                     return troopDelta > 0
-                        ? addSpecialTroopStackToRegion(artilleryTrainedRegion, buildRegularTroopStack(factionId, `wheel-${config.id}`, troopDelta))
-                        : artilleryTrainedRegion;
+                        ? addSpecialTroopStackToRegion(nextRegion, buildRegularTroopStack(factionId, `wheel-${config.id}`, troopDelta))
+                        : nextRegion;
                 }),
             state.fortifications,
         )
         : state.regions;
 
     if (!targetRegion) {
-        summaryLines.push(`${state.factions[factionId].name} 当前没有可结算轮盘${config.label}的己方区域。`);
+        summaryLines.push(requiresRegularTroopPlacement
+            ? `${state.factions[factionId].name} 当前没有可建立正规军的本土区域，未建立部队。`
+            : `${state.factions[factionId].name} 当前没有可结算轮盘${config.label}的己方区域。`);
     }
     if (drawCards > 0) {
-        summaryLines.push(`${state.factions[factionId].name} 因轮盘${config.label}获得 ${drawCards} 张手牌。`);
+        summaryLines.push(`抽 ${drawCards} 张手牌。`);
     }
     if (summaryLines.length === 0) {
         summaryLines.push(`${state.factions[factionId].name} 执行轮盘${config.label}，当前无额外可见效果。`);
@@ -126,13 +131,16 @@ export const applyQidahenWheelImmediateEffect = (
         regionFocusState: buildQidahenRegionFocusState(targetRegionId),
         regions: nextRegions,
         drawPileCount: state.drawPileCount - drawnResult.drawnCards,
-        handCards: buildDrawnHandCards(state, factionId, drawnResult.drawnCards),
-        lastSeasonSummary: buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),
+        handCards: appendDrawnHandCards(state.handCards, drawnResult.cards, factionId),
+        lastSeasonSummary: {
+            ...buildSeasonSummary(config.summaryTitle, timestamp, summaryLines),
+            ...(mapResult ? { mapResult } : {}),
+        },
         factions: {
             ...nextFactions,
             [factionId]: {
                 ...nextFactions[factionId],
-                troops: state.factions[factionId].troops + Math.max(0, config.troopDelta),
+                troops: state.factions[factionId].troops + (targetRegion ? Math.max(0, config.troopDelta) : 0),
             },
         },
         actionLog: [

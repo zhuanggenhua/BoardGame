@@ -27,7 +27,7 @@
 | `mage-status-board.png` | 正式图片副本 / `reference-only` | `public/assets/i18n/zh-CN/mage-wars/boards/mage-status/mage-status-board.png` | `3093x1628` | `ce186fa186e91762` | 只用于推导聚魔、法力池、生命 / 伤害轨道语义；不得在 Step 1 主界面可见 |
 | `spell-card-back.jpg` | 正式图片副本 / `visible-subject` | `public/assets/i18n/zh-CN/mage-wars/cards/backs/spell-card-back.jpg` | `992x1391` | `3d51171b2794f48c` | 对手已计划法术、隐性结界、未公开法术书内容背面；禁止称为对手手牌 |
 | `attack-die-texture.png` | 正式图片副本 / `visible-subject` | `public/assets/i18n/zh-CN/mage-wars/dice/attack-die-texture.png` | `1280x1280` | `3d77f99c84d3bda6` | 攻击骰视觉，不得替换成普通 D6 |
-| `effect-die-d12-face.png` | 正式图片副本 / `visible-subject` | `public/assets/i18n/zh-CN/mage-wars/dice/effect-die-d12-face.png` | `329x329` | `9161c1037c5037b6` | Workshop `效果骰` / `Die_12` 正面；v55 起作为效果骰视觉，禁止回退成程序化蓝圆或普通 D12 |
+| `Die_12` | 内置物件 / `source-locked-programmatic` | 不进入图片目录或图片 manifest | 12 面 | — | Workshop `效果骰` / `Die_12` 作为蓝色程序化效果骰；禁止录入为图片，也不得与就绪 token 共享素材 hash |
 | `action-marker-red-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/action/action-marker-red-front.png` | `86x78` | `33b4ec5d3bc4d034` | 红方行动标记 |
 | `action-marker-blue-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/action/action-marker-blue-front.png` | `86x78` | `2b851a732d0fec46` | 蓝方行动标记 |
 | `ready-token-front.png` | 正式图片副本 | `public/assets/i18n/zh-CN/mage-wars/tokens/action/ready-token-front.png` | `329x329` | `9161c1037c5037b6` | 生物 / 对象就绪状态 |

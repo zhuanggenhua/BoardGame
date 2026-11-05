@@ -47,6 +47,8 @@ describe('圣光术奖励骰反馈回归', () => {
 
         expect(state.core.pendingBonusDiceSettlement).toBeUndefined();
         expect(getCurrentInteractionSummary(state).id).toBeUndefined();
+
+        dispatch('RESPONSE_PASS');
         expect(state.sys.phase).toBe('main2');
     });
 });

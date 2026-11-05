@@ -57,6 +57,7 @@ export type AuthoritativeCommandFailureCoordinatorHooks<TMatch extends Authorita
         commandPayload: unknown;
         progressMarker: string;
         stateIdBefore: number;
+        randomCursorBefore?: number;
         visibleState: MatchState<unknown>;
         feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
     }) => CommandFailureFeedbackPayload;
@@ -88,10 +89,12 @@ export class AuthoritativeCommandFailureCoordinator<TMatch extends Authoritative
         onlineAiAttemptKey?: string | null;
         clientTransport?: OnlineAiClientTransportDiagnostics | null;
         stateIdBefore: number;
+        randomCursorBefore?: number;
         progressMarkerBeforeCommand: string;
         preCommandSeatView: MatchState<unknown>;
         feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
         reportFailureFeedback?: boolean;
+        suppressCommandPayload?: boolean;
     }): Promise<false> {
         const failureReason = args.execution.failureReason;
         args.match.lastCommandFailureReason = failureReason;
@@ -121,7 +124,7 @@ export class AuthoritativeCommandFailureCoordinator<TMatch extends Authoritative
             stateIdBefore: args.stateIdBefore,
             progressMarker: args.progressMarkerBeforeCommand,
             feedbackSource: args.feedbackSource,
-            commandPayload: args.effectivePayload,
+            commandPayload: args.suppressCommandPayload ? '[omitted admin debug payload]' : args.effectivePayload,
         });
         this.hooks.emitPlayerError(args.match, args.playerId, failureReason);
 
@@ -137,6 +140,7 @@ export class AuthoritativeCommandFailureCoordinator<TMatch extends Authoritative
                 commandPayload: args.effectivePayload,
                 progressMarker: args.progressMarkerBeforeCommand,
                 stateIdBefore: args.stateIdBefore,
+                randomCursorBefore: args.randomCursorBefore,
                 visibleState: args.preCommandSeatView,
                 feedbackSource: args.feedbackSource,
             }));

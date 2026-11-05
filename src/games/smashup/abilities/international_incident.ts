@@ -1,5 +1,9 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type {
+ MatchState, PlayerId } from '../../../engine/types';
+import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     type AbilityRuntimeResult,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -15,6 +19,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildPlayerTargetOptions,
     buildStandardDrawEvents,
     buildStandardDrawEventsFromRuntimeContext,
     buildValidatedControlChangeEvents,
@@ -27,6 +32,7 @@ import {
     queueMinionPlayEffect,
     recoverCardsFromDiscard,
 } from '../domain/abilityHelpers';
+import { getPlayerLabel } from '../domain/utils';
 import {
     registerCardAbilitySuppression,
     registerProtection,
@@ -88,7 +94,7 @@ type BoardActionCandidate = {
 type ExtraActionMinionContext = PromptContext & {
     sourceId: string;
     sourceDefId: string;
-    title: string;
+    titleKey: string;
     candidates: MinionTargetCandidate[];
     count: number;
 };
@@ -146,7 +152,7 @@ type MinionTargetCandidate = {
 type MinionEffectContext = PromptContext & {
     sourceId: string;
     sourceDefId: string;
-    title: string;
+    titleKey: string;
     candidates: MinionTargetCandidate[];
     effect: 'powerCounter' | 'tempPower';
     amount: number;
@@ -168,6 +174,7 @@ type MoveDestinationContext = PromptContext & {
     reason: string;
     tempPowerAfter?: number;
     drawAfter?: number;
+    extraActionAfter?: boolean;
     fixedToBaseIndex?: number;
     allowedToBaseIndices?: number[];
 };
@@ -175,13 +182,15 @@ type MoveDestinationContext = PromptContext & {
 type MoveMinionContext = PromptContext & {
     sourceId: string;
     sourceDefId: string;
-    title: string;
+    titleKey: string;
     candidates: MinionTargetCandidate[];
     reason: string;
     tempPowerAfter?: number;
     drawAfter?: number;
+    extraActionAfter?: boolean;
     fixedToBaseIndex?: number;
     allowedToBaseIndices?: number[];
+    allowSkip?: boolean;
 };
 
 type NorthernMoverTargetContext = PromptContext & {
@@ -194,7 +203,7 @@ type NorthernMoverModeContext = PromptContext & {
 
 type BaseEffectContext = PromptContext & {
     sourceId: string;
-    title: string;
+    titleKey: string;
     baseCandidates: Array<{ baseIndex: number; label: string }>;
     effect: 'ownMinionsTempPower' | 'ownMinionsPowerCounter';
     amount: number;
@@ -216,7 +225,7 @@ type HaichQMoveContext = PromptContext & {
 
 type SearchActionContext = PromptContext & {
     sourceId: string;
-    title: string;
+    titleKey: string;
     candidates: Array<CardChoice & { label: string }>;
     extraActionAfter?: boolean;
 };
@@ -237,6 +246,19 @@ type ReversalDestroyActionsContext = PromptContext & {
 
 type SumoHeadButtContext = PromptContext & {
     candidates: BoardActionCandidate[];
+};
+
+type BodySlamBaseContext = PromptContext & {
+    targetPlayerId: PlayerId;
+};
+
+type BodySlamDestinationContext = PromptContext & {
+    targetPlayerId: PlayerId;
+    fromBaseIndex: number;
+};
+
+type AlwaysGetOurManContext = PromptContext & {
+    selected: MinionTargetCandidate;
 };
 
 type OngoingActionChoice = {
@@ -286,7 +308,7 @@ type BaseMoveChoice = {
 
 type BaseMovePromptContext = PromptContext & {
     sourceId: string;
-    title: string;
+    titleKey: string;
     sourceBaseIndex: number;
     candidates: Array<BaseMoveChoice & { label: string }>;
 };
@@ -333,17 +355,17 @@ type AllForOneDestroyMarker = {
     turnNumber: number;
 };
 
-function createPromptContext<TExtra extends object>(
+function createPromptContext<TExtra extends object = Record<string, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,
-    extra: TExtra,
+    extra?: TExtra,
 ): PromptContext & TExtra {
     return {
         matchState,
         playerId,
         now,
-        ...extra,
+        ...(extra ?? {} as TExtra),
     };
 }
 
@@ -638,7 +660,6 @@ function isActionThatDirectlyAffectsMinion(defId?: string): boolean {
     if (!def || def.type !== 'action') return false;
     return def.playNeedsMinion === true
         || def.ongoingTarget === 'minion'
-        || def.specialNeedsBase === true
         || def.specialTiming === 'beforeScoring';
 }
 
@@ -704,7 +725,7 @@ function canSeeOwnMinionOnBase(state: SmashUpCore, playerId: PlayerId, baseIndex
     return state.bases[baseIndex]?.minions.some(minion => minion.controller === playerId) ?? false;
 }
 
-const minionEffectPrompt = createPromptProgram<MinionEffectContext, SmashUpCore, SmashUpEvent>({
+const minionEffectPrompt = createPromptProgram<MinionEffectContext>({
     sourceId: 'international_incident_minion_effect',
     buildInteraction: (context) => {
         const options = buildMinionTargetOptions(context.candidates, {
@@ -716,7 +737,7 @@ const minionEffectPrompt = createPromptProgram<MinionEffectContext, SmashUpCore,
         return createAbilityRuntimeSimpleChoice(
             `${context.sourceId}_${context.now}`,
             context.playerId,
-            context.title,
+            context.titleKey,
             options,
             {
                 sourceId: context.sourceId,
@@ -724,6 +745,7 @@ const minionEffectPrompt = createPromptProgram<MinionEffectContext, SmashUpCore,
                 ...(context.multiMax
                     ? { multi: { min: context.multiMin ?? 1, max: Math.min(context.multiMax, options.length) } }
                     : {}),
+                titleKey: context.titleKey,
                 autoResolveIfSingle: false,
             },
         );
@@ -781,11 +803,8 @@ function runMinionEffect(
     candidates: MinionTargetCandidate[],
     config: Omit<MinionEffectContext, 'matchState' | 'playerId' | 'now' | 'candidates'>,
 ): AbilityResult {
-    const drawEvents = config.drawAfter
-        ? buildStandardDrawEvents(ctx.state, ctx.playerId, config.drawAfter, ctx.random, ctx.now)
-        : [];
     if (candidates.length === 0) {
-        return { events: drawEvents.length ? drawEvents : [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     const targetFromCommand = ctx.targetMinionUid
         ? candidates.find(candidate => (
@@ -794,8 +813,11 @@ function runMinionEffect(
         ))
         : undefined;
     if (ctx.targetMinionUid && !targetFromCommand) {
-        return { events: drawEvents.length ? drawEvents : [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
+    const drawEvents = config.drawAfter
+        ? buildStandardDrawEvents(ctx.state, ctx.playerId, config.drawAfter, ctx.random, ctx.now)
+        : [];
     if (targetFromCommand && !config.multiMax) {
         return {
             events: [
@@ -831,19 +853,19 @@ function runMinionEffect(
     }));
 }
 
-const extraActionMinionPrompt = createPromptProgram<ExtraActionMinionContext, SmashUpCore, SmashUpEvent>({
+const extraActionMinionPrompt = createPromptProgram<ExtraActionMinionContext>({
     sourceId: 'international_incident_extra_action_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
         context.playerId,
-        context.title,
+        context.titleKey,
         buildMinionTargetOptions(context.candidates, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
             sourceDefId: context.sourceDefId,
             effectType: 'buff',
         }),
-        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false },
+        { sourceId: context.sourceId, targetType: 'minion', titleKey: context.titleKey, autoResolveIfSingle: false },
     ),
     onResolve: ({ context, value, timestamp }) => {
         const selected = value as MinionChoice;
@@ -876,7 +898,7 @@ function runExtraActionsRestrictedToMinion(
     }));
 }
 
-const moveDestinationPrompt = createPromptProgram<MoveDestinationContext, SmashUpCore, SmashUpEvent>({
+const moveDestinationPrompt = createPromptProgram<MoveDestinationContext>({
     sourceId: 'international_incident_move_destination',
     buildInteraction: (context) => {
         const allowedTargets = context.allowedToBaseIndices
@@ -921,32 +943,47 @@ const moveDestinationPrompt = createPromptProgram<MoveDestinationContext, SmashU
         if (moveEvents.length > 0 && context.drawAfter) {
             events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: state.core }, context.playerId, context.drawAfter));
         }
+        if (moveEvents.length > 0 && context.extraActionAfter) {
+            events.push(grantContextualExtraAction(
+                { playerId: context.playerId, now: timestamp, matchState: context.matchState },
+                context.sourceDefId,
+            ));
+        }
         return { events };
     },
 });
 
-const moveMinionPrompt = createPromptProgram<MoveMinionContext, SmashUpCore, SmashUpEvent>({
+const moveMinionPrompt = createPromptProgram<MoveMinionContext>({
     sourceId: 'international_incident_move_minion',
-    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
-        `${context.sourceId}_${context.now}`,
-        context.playerId,
-        context.title,
-        buildMinionTargetOptions(context.candidates, {
+    buildInteraction: (context) => {
+        const minionOptions = buildMinionTargetOptions(context.candidates, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
             sourceDefId: context.sourceDefId,
             effectType: 'move',
-        }),
-        { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: false },
-    ),
+        });
+        return createAbilityRuntimeSimpleChoice(
+            `${context.sourceId}_${context.now}`,
+            context.playerId,
+            context.titleKey,
+            [
+                ...(context.allowSkip
+                    ? [createSkipOption('跳过（不移动随从）', 'ui.international_incident_skip_move_minion_option')]
+                    : []),
+                ...minionOptions,
+            ],
+            { sourceId: context.sourceId, targetType: 'minion', titleKey: context.titleKey, autoResolveIfSingle: false },
+        );
+    },
     onResolve: ({ context, value, timestamp }) => {
         const selected = value as MinionChoice;
+        if (selected.skip) return { events: [] };
         if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) {
             return { events: [] };
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
@@ -958,15 +995,155 @@ const moveMinionPrompt = createPromptProgram<MoveMinionContext, SmashUpCore, Sma
                 reason: context.reason,
                 tempPowerAfter: context.tempPowerAfter,
                 drawAfter: context.drawAfter,
+                extraActionAfter: context.extraActionAfter,
                 fixedToBaseIndex: context.fixedToBaseIndex,
                 allowedToBaseIndices: context.allowedToBaseIndices,
-            } satisfies MoveDestinationContext,
-            nextProgram: moveDestinationPrompt,
+            } satisfies MoveDestinationContext, moveDestinationPrompt),
         };
     },
 });
 
-const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, SmashUpCore, SmashUpEvent>({
+const bodySlamPlayerPrompt = createPromptProgram<PromptContext>({
+    sourceId: 'sumo_wrestlers_body_slam_player',
+    buildInteraction: (context) => {
+        const candidates = Object.keys(context.matchState.core.players)
+            .filter(targetPlayerId => targetPlayerId !== context.playerId)
+            .filter(targetPlayerId => context.matchState.core.bases.some((base, baseIndex) => (
+                canSeeOwnMinionOnBase(context.matchState.core, context.playerId, baseIndex)
+                && base.minions.some(minion => minion.controller === targetPlayerId)
+            )))
+            .map(targetPlayerId => ({
+                label: getPlayerLabel(targetPlayerId),
+                targetPlayerId,
+            }));
+        return createAbilityRuntimeSimpleChoice(
+            `sumo_wrestlers_body_slam_player_${context.now}`,
+            context.playerId,
+            'ui.sumo_wrestlers_body_slam_player_title',
+            buildPlayerTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectIntent: 'move',
+            }),
+            {
+                sourceId: 'sumo_wrestlers_body_slam_player',
+                targetType: 'player',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                titleKey: 'ui.sumo_wrestlers_body_slam_player_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { targetPlayerId?: PlayerId };
+        if (!selected.targetPlayerId || selected.targetPlayerId === context.playerId) return { events: [] };
+        const hasValidBase = state.core.bases.some((base, baseIndex) => (
+            canSeeOwnMinionOnBase(state.core, context.playerId, baseIndex)
+            && base.minions.some(minion => minion.controller === selected.targetPlayerId)
+        ));
+        if (!hasValidBase) return { events: [] };
+        return {
+            events: [],
+            continuation: createAbilityRuntimeContinuation({
+                matchState: state,
+                playerId: context.playerId,
+                now: timestamp,
+                targetPlayerId: selected.targetPlayerId,
+            } satisfies BodySlamBaseContext, bodySlamBasePrompt),
+        };
+    },
+});
+
+const bodySlamBasePrompt = createPromptProgram<BodySlamBaseContext>({
+    sourceId: 'sumo_wrestlers_body_slam_base',
+    buildInteraction: (context) => {
+        const candidates = context.matchState.core.bases
+            .map((_base, baseIndex) => ({ baseIndex, label: getBaseLabel(context.matchState.core, baseIndex) }))
+            .filter(({ baseIndex }) => (
+                canSeeOwnMinionOnBase(context.matchState.core, context.playerId, baseIndex)
+                && context.matchState.core.bases[baseIndex].minions.some(minion => minion.controller === context.targetPlayerId)
+            ));
+        return createAbilityRuntimeSimpleChoice(
+            `sumo_wrestlers_body_slam_base_${context.now}`,
+            context.playerId,
+            'ui.sumo_wrestlers_body_slam_base_title',
+            buildBaseTargetOptions(candidates, context.matchState.core),
+            {
+                sourceId: 'sumo_wrestlers_body_slam_base',
+                targetType: 'base',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                titleKey: 'ui.sumo_wrestlers_body_slam_base_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.baseIndex === undefined) return { events: [] };
+        const base = state.core.bases[selected.baseIndex];
+        if (!base
+            || !base.minions.some(minion => minion.controller === context.playerId)
+            || !base.minions.some(minion => minion.controller === context.targetPlayerId)) {
+            return { events: [] };
+        }
+        return {
+            events: [],
+            continuation: createAbilityRuntimeContinuation({
+                matchState: state,
+                playerId: context.playerId,
+                now: timestamp,
+                targetPlayerId: context.targetPlayerId,
+                fromBaseIndex: selected.baseIndex,
+            } satisfies BodySlamDestinationContext, bodySlamDestinationPrompt),
+        };
+    },
+});
+
+const bodySlamDestinationPrompt = createPromptProgram<BodySlamDestinationContext>({
+    sourceId: 'sumo_wrestlers_body_slam_destination',
+    buildInteraction: (context) => {
+        const candidates = context.matchState.core.bases
+            .map((_base, baseIndex) => ({ baseIndex, label: getBaseLabel(context.matchState.core, baseIndex) }))
+            .filter(({ baseIndex }) => baseIndex !== context.fromBaseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `sumo_wrestlers_body_slam_destination_${context.now}`,
+            context.playerId,
+            'ui.sumo_wrestlers_body_slam_destination_title',
+            buildBaseTargetOptions(candidates, context.matchState.core),
+            {
+                sourceId: 'sumo_wrestlers_body_slam_destination',
+                targetType: 'base',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+                titleKey: 'ui.sumo_wrestlers_body_slam_destination_title',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.baseIndex === undefined || selected.baseIndex === context.fromBaseIndex) return { events: [] };
+        const base = state.core.bases[context.fromBaseIndex];
+        if (!base || !state.core.bases[selected.baseIndex]) return { events: [] };
+        const minionsToMove = base.minions.filter(minion => minion.controller === context.targetPlayerId);
+        return {
+            events: minionsToMove.flatMap(minion => buildValidatedMoveEvents(state.core, {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: selected.baseIndex!,
+                reason: 'sumo_wrestlers_body_slam',
+                now: timestamp,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'sumo_wrestlers_body_slam',
+                sourceControllerId: context.playerId,
+                sourceBaseIndex: context.fromBaseIndex,
+                sourceKind: 'action',
+            })),
+        };
+    },
+});
+
+const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext>({
     sourceId: 'mounties_northern_mover_mode',
     buildInteraction: (context) => {
         const canMove = hasOtherBaseTarget(context.matchState.core, context.selected.baseIndex);
@@ -989,7 +1166,7 @@ const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, Sm
         if (selected.mode === 'move' && hasOtherBaseTarget(state.core, context.selected.baseIndex)) {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
@@ -999,8 +1176,7 @@ const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, Sm
                     minionDefId: context.selected.defId,
                     fromBaseIndex: context.selected.baseIndex,
                     reason: 'mounties_northern_mover',
-                } satisfies MoveDestinationContext,
-                nextProgram: moveDestinationPrompt,
+                } satisfies MoveDestinationContext, moveDestinationPrompt),
             };
         }
         return {
@@ -1014,7 +1190,7 @@ const northernMoverModePrompt = createPromptProgram<NorthernMoverModeContext, Sm
     },
 });
 
-const northernMoverTargetPrompt = createPromptProgram<NorthernMoverTargetContext, SmashUpCore, SmashUpEvent>({
+const northernMoverTargetPrompt = createPromptProgram<NorthernMoverTargetContext>({
     sourceId: 'mounties_northern_mover_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mounties_northern_mover_target_${context.now}`,
@@ -1039,18 +1215,17 @@ const northernMoverTargetPrompt = createPromptProgram<NorthernMoverTargetContext
         if (!candidate) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 selected: candidate,
-            } satisfies NorthernMoverModeContext,
-            nextProgram: northernMoverModePrompt,
+            } satisfies NorthernMoverModeContext, northernMoverModePrompt),
         };
     },
 });
 
-const chikaraMizuDiscardPrompt = createPromptProgram<ChikaraMizuDiscardContext, SmashUpCore, SmashUpEvent>({
+const chikaraMizuDiscardPrompt = createPromptProgram<ChikaraMizuDiscardContext>({
     sourceId: 'sumo_wrestlers_chikara_mizu_discard',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_chikara_mizu_discard_${context.now}`,
@@ -1082,7 +1257,7 @@ const chikaraMizuDiscardPrompt = createPromptProgram<ChikaraMizuDiscardContext, 
     },
 });
 
-const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext, SmashUpCore, SmashUpEvent>({
+const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext>({
     sourceId: 'sumo_wrestlers_chikara_mizu_mode',
     buildInteraction: (context) => {
         const canDiscard = getDiscardableHandCards(
@@ -1113,14 +1288,13 @@ const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext, SmashU
         if (selected.mode === 'discardPower4') {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: context.matchState,
                     playerId: context.playerId,
                     now: timestamp,
                     selected: context.selected,
                     sourceCardUid: context.sourceCardUid,
-                } satisfies ChikaraMizuDiscardContext,
-                nextProgram: chikaraMizuDiscardPrompt,
+                } satisfies ChikaraMizuDiscardContext, chikaraMizuDiscardPrompt),
             };
         }
         return {
@@ -1134,7 +1308,7 @@ const chikaraMizuModePrompt = createPromptProgram<ChikaraMizuModeContext, SmashU
     },
 });
 
-const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext, SmashUpCore, SmashUpEvent>({
+const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext>({
     sourceId: 'sumo_wrestlers_chikara_mizu_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_chikara_mizu_target_${context.now}`,
@@ -1159,19 +1333,18 @@ const chikaraMizuTargetPrompt = createPromptProgram<ChikaraMizuTargetContext, Sm
         if (!candidate) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 selected: candidate,
                 sourceCardUid: context.sourceCardUid,
-            } satisfies ChikaraMizuModeContext,
-            nextProgram: chikaraMizuModePrompt,
+            } satisfies ChikaraMizuModeContext, chikaraMizuModePrompt),
         };
     },
 });
 
-const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext, SmashUpCore, SmashUpEvent>({
+const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext>({
     sourceId: 'sumo_wrestlers_bulking_stew_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_bulking_stew_target_${context.now}`,
@@ -1211,7 +1384,7 @@ const bulkingStewTargetPrompt = createPromptProgram<BulkingStewTargetContext, Sm
     },
 });
 
-const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext, SmashUpCore, SmashUpEvent>({
+const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext>({
     sourceId: 'sumo_wrestlers_bulking_stew_discard',
     buildInteraction: (context) => {
         const discardable = getDiscardableHandCards(
@@ -1243,15 +1416,14 @@ const bulkingStewDiscardPrompt = createPromptProgram<BulkingStewDiscardContext, 
         if (selectedCardUids.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceCardUid: context.sourceCardUid,
                 selectedCardUids,
                 candidates: context.candidates,
-            } satisfies BulkingStewTargetContext,
-            nextProgram: bulkingStewTargetPrompt,
+            } satisfies BulkingStewTargetContext, bulkingStewTargetPrompt),
         };
     },
 });
@@ -1274,14 +1446,14 @@ function runMoveMinion(
     }));
 }
 
-const baseEffectPrompt = createPromptProgram<BaseEffectContext, SmashUpCore, SmashUpEvent>({
+const baseEffectPrompt = createPromptProgram<BaseEffectContext>({
     sourceId: 'international_incident_base_effect',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
         context.playerId,
-        context.title,
+        context.titleKey,
         buildBaseTargetOptions(context.baseCandidates, context.matchState.core),
-        { sourceId: context.sourceId, targetType: 'base', autoResolveIfSingle: false },
+        { sourceId: context.sourceId, targetType: 'base', titleKey: context.titleKey, autoResolveIfSingle: false },
     ),
     onResolve: (args) => {
         const { context, value, timestamp } = args;
@@ -1335,7 +1507,7 @@ function runBaseEffect(
     }));
 }
 
-const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext, SmashUpCore, SmashUpEvent>({
+const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext>({
     sourceId: 'sumo_wrestlers_yokozuna_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_yokozuna_mode_${context.now}`,
@@ -1362,17 +1534,16 @@ const yokozunaModePrompt = createPromptProgram<YokozunaMoveContext, SmashUpCore,
         if (candidates.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: 'sumo_wrestlers_yokozuna_move',
                 sourceDefId: 'sumo_wrestlers_yokozuna',
-                title: '横纲：选择要移动的其他玩家随从',
+                titleKey: 'ui.sumo_wrestlers_yokozuna_move_title',
                 candidates,
                 reason: 'sumo_wrestlers_yokozuna',
-            } satisfies MoveMinionContext,
-            nextProgram: moveMinionPrompt,
+            } satisfies MoveMinionContext, moveMinionPrompt),
         };
     },
 });
@@ -1393,7 +1564,7 @@ function sumoTechniquePrize(ctx: AbilityContext): AbilityResult {
     return runMinionEffect(ctx, collectOwnMinions(ctx.state, ctx.playerId), {
         sourceId: 'sumo_wrestlers_technique_prize',
         sourceDefId: 'sumo_wrestlers_technique_prize',
-        title: '技术奖：选择你的一个随从放置 3 个 +1 力量指示物',
+        titleKey: 'ui.sumo_wrestlers_technique_prize_title',
         effect: 'powerCounter',
         amount: 3,
         reason: 'sumo_wrestlers_technique_prize',
@@ -1408,7 +1579,7 @@ function sumoFightingSpiritPrize(ctx: AbilityContext): AbilityResult {
     return runMinionEffect(ctx, collectOwnMinions(ctx.state, ctx.playerId), {
         sourceId: 'sumo_wrestlers_fighting_spirit_prize',
         sourceDefId: 'sumo_wrestlers_fighting_spirit_prize',
-        title: '斗志奖：分配 2 个 +1 力量指示物',
+        titleKey: 'ui.sumo_wrestlers_fighting_spirit_prize_title',
         effect: 'powerCounter',
         amount: 1,
         reason: 'sumo_wrestlers_fighting_spirit_prize',
@@ -1418,7 +1589,7 @@ function sumoFightingSpiritPrize(ctx: AbilityContext): AbilityResult {
     });
 }
 
-const sumoHeadButtPrompt = createPromptProgram<SumoHeadButtContext, SmashUpCore, SmashUpEvent>({
+const sumoHeadButtPrompt = createPromptProgram<SumoHeadButtContext>({
     sourceId: 'sumo_wrestlers_head_butt',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_head_butt_${context.now}`,
@@ -1558,30 +1729,19 @@ function sumoBulkingStew(ctx: AbilityContext): AbilityResult {
 }
 
 function sumoBodySlam(ctx: AbilityContext): AbilityResult {
-    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
-        if (!canSeeOwnMinionOnBase(ctx.state, ctx.playerId, baseIndex)) continue;
-        const opponentId = ctx.state.bases[baseIndex]?.minions.find(minion => minion.controller !== ctx.playerId)?.controller;
-        if (!opponentId) continue;
-        const toBaseIndex = getFirstOtherBaseIndex(ctx.state, baseIndex);
-        if (toBaseIndex === undefined || toBaseIndex < 0) continue;
-        const minionsToMove = ctx.state.bases[baseIndex].minions.filter(minion => minion.controller === opponentId);
-        return {
-            events: minionsToMove.flatMap(minion => buildValidatedMoveEvents(ctx.state, {
-                minionUid: minion.uid,
-                minionDefId: minion.defId,
-                fromBaseIndex: baseIndex,
-                toBaseIndex,
-                reason: 'sumo_wrestlers_body_slam',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'sumo_wrestlers_body_slam',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: baseIndex,
-                sourceKind: 'action',
-            })),
-        };
+    const hasValidTarget = ctx.state.bases.some((base, baseIndex) => (
+        canSeeOwnMinionOnBase(ctx.state, ctx.playerId, baseIndex)
+        && base.minions.some(minion => minion.controller !== ctx.playerId)
+        && ctx.state.bases.some((_candidate, destinationIndex) => destinationIndex !== baseIndex)
+    ));
+    if (!hasValidTarget || !ctx.matchState) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    return runtimeToAbilityResult(executeAbilityProgram(bodySlamPlayerPrompt, createPromptContext(
+        ctx.matchState,
+        ctx.playerId,
+        ctx.now,
+    )));
 }
 
 function sumoChikaraMizu(ctx: AbilityContext): AbilityResult {
@@ -1605,13 +1765,12 @@ function sumoGraspTheBelt(ctx: AbilityContext): AbilityResult {
     return runMoveMinion(ctx, candidates, {
         sourceId: 'sumo_wrestlers_grasp_the_belt',
         sourceDefId: 'sumo_wrestlers_grasp_the_belt',
-        title: '抓住腰带：选择要移动的随从',
+        titleKey: 'ui.sumo_wrestlers_grasp_the_belt_title',
         reason: 'sumo_wrestlers_grasp_the_belt',
     });
 }
 
 function sumoThirdTierTalent(ctx: AbilityContext): AbilityResult {
-    const toBaseIndex = getFirstOtherBaseIndex(ctx.state, ctx.baseIndex);
     const candidates = collectOtherPlayersMinionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex)
         .filter(candidate => {
             const minion = ctx.state.bases[candidate.baseIndex]?.minions.find(entry => entry.uid === candidate.uid);
@@ -1620,10 +1779,10 @@ function sumoThirdTierTalent(ctx: AbilityContext): AbilityResult {
     return runMoveMinion(ctx, candidates, {
         sourceId: 'sumo_wrestlers_third_tier',
         sourceDefId: 'sumo_wrestlers_third_tier',
-        title: '关胁：选择这里力量 3 或以下的其他玩家随从',
+        titleKey: 'ui.sumo_wrestlers_third_tier_title',
         reason: 'sumo_wrestlers_third_tier',
         drawAfter: 1,
-        fixedToBaseIndex: toBaseIndex !== undefined && toBaseIndex >= 0 ? toBaseIndex : undefined,
+        allowSkip: true,
     });
 }
 
@@ -1639,7 +1798,7 @@ function sumoTopTierOnCardsDiscarded(ctx: TriggerContext): SmashUpEvent[] {
     })];
 }
 
-const rookieSumoTargetPrompt = createPromptProgram<RookieSumoTargetContext, SmashUpCore, SmashUpEvent>({
+const rookieSumoTargetPrompt = createPromptProgram<RookieSumoTargetContext>({
     sourceId: 'sumo_wrestlers_rookie_sumo_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_rookie_sumo_target_${context.now}`,
@@ -1681,13 +1840,16 @@ const rookieSumoTargetPrompt = createPromptProgram<RookieSumoTargetContext, Smas
     },
 });
 
-const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext, SmashUpCore, SmashUpEvent>({
+const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext>({
     sourceId: 'sumo_wrestlers_rookie_sumo_discard',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sumo_wrestlers_rookie_sumo_discard_${context.now}`,
         context.playerId,
         '相扑新人：选择要弃掉的手牌',
-        buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? []),
+        [
+            createSkipOption('跳过（不弃牌）', 'ui.international_incident_skip_discard_option'),
+            ...buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? []),
+        ],
         {
             sourceId: 'sumo_wrestlers_rookie_sumo_discard',
             targetType: 'hand',
@@ -1697,6 +1859,7 @@ const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext, Sm
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as CardChoice;
+        if (selected.skip) return { events: [] };
         if (!selected.cardUid) return { events: [] };
         const selectedCard = state.core.players[context.playerId]?.hand.find(card => card.uid === selected.cardUid);
         if (!selectedCard) return { events: [] };
@@ -1704,14 +1867,13 @@ const rookieSumoDiscardPrompt = createPromptProgram<RookieSumoDiscardContext, Sm
         if (candidates.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 selectedCardUid: selectedCard.uid,
                 candidates,
-            } satisfies RookieSumoTargetContext,
-            nextProgram: rookieSumoTargetPrompt,
+            } satisfies RookieSumoTargetContext, rookieSumoTargetPrompt),
         };
     },
 });
@@ -1734,11 +1896,12 @@ function musketeersEnGarde(ctx: AbilityContext): AbilityResult {
     return runMinionEffect(ctx, collectMinions(ctx.state, () => true), {
         sourceId: 'musketeers_en_garde',
         sourceDefId: 'musketeers_en_garde',
-        title: '预备姿势：选择一个随从直到回合结束 +1 力量',
+        titleKey: 'ui.musketeers_en_garde_title',
         effect: 'tempPower',
         amount: 1,
         reason: 'musketeers_en_garde',
         drawAfter: 1,
+        extraActionAfter: true,
     });
 }
 
@@ -1746,7 +1909,7 @@ function musketeersOnARoll(ctx: AbilityContext): AbilityResult {
     return runExtraActionsRestrictedToMinion(ctx, collectMinions(ctx.state, () => true), {
         sourceId: 'musketeers_on_a_roll',
         sourceDefId: 'musketeers_on_a_roll',
-        title: '连连获胜：选择一个随从作为额外行动影响目标',
+        titleKey: 'ui.musketeers_on_a_roll_title',
         count: 2,
     });
 }
@@ -1755,7 +1918,7 @@ function musketeersBidingTime(ctx: AbilityContext): AbilityResult {
     return runMinionEffect(ctx, collectMinions(ctx.state, () => true), {
         sourceId: 'musketeers_biding_time',
         sourceDefId: 'musketeers_biding_time',
-        title: '等待时机：选择一个随从直到回合结束 +2 力量',
+        titleKey: 'ui.musketeers_biding_time_title',
         effect: 'tempPower',
         amount: 2,
         reason: 'musketeers_biding_time',
@@ -1777,13 +1940,13 @@ function musketeersToBattle(ctx: AbilityContext): AbilityResult {
 }
 
 function musketeersMakeWay(ctx: AbilityContext): AbilityResult {
-    const result = runMoveMinion(ctx, collectOwnMinions(ctx.state, ctx.playerId), {
+    return runMoveMinion(ctx, collectOwnMinions(ctx.state, ctx.playerId), {
         sourceId: 'musketeers_make_way',
         sourceDefId: 'musketeers_make_way',
-        title: '让路：选择你的一个随从移动',
+        titleKey: 'ui.musketeers_make_way_title',
         reason: 'musketeers_make_way',
+        extraActionAfter: true,
     });
-    return { events: [...result.events, grantContextualExtraAction(ctx, 'musketeers_make_way')], matchState: result.matchState };
 }
 
 function musketeersOneForAll(ctx: AbilityContext): AbilityResult {
@@ -1792,7 +1955,7 @@ function musketeersOneForAll(ctx: AbilityContext): AbilityResult {
         .filter(base => collectOwnMinionsOnBase(ctx.state, ctx.playerId, base.baseIndex).length > 0);
     return runBaseEffect(ctx, baseCandidates, {
         sourceId: 'musketeers_one_for_all',
-        title: '一为全：选择一个基地',
+        titleKey: 'ui.musketeers_one_for_all_title',
         effect: 'ownMinionsTempPower',
         amount: 1,
         reason: 'musketeers_one_for_all',
@@ -1805,7 +1968,7 @@ function musketeersLastStand(ctx: AbilityContext): AbilityResult {
     return runMinionEffect(ctx, candidates, {
         sourceId: 'musketeers_last_stand',
         sourceDefId: 'musketeers_last_stand',
-        title: '最后一搏：选择计分基地上你的一个随从',
+        titleKey: 'ui.musketeers_last_stand_title',
         effect: 'tempPower',
         amount: 2,
         reason: 'musketeers_last_stand',
@@ -1963,12 +2126,34 @@ function canTriggerMusketeersAramis(ctx: TriggerContext): boolean {
 }
 
 function mountiesWhenCallsTheBadge(ctx: AbilityContext): AbilityResult {
+    if (ctx.targetBaseIndex !== undefined) {
+        const ownMinions = collectOwnMinionsOnBase(ctx.state, ctx.playerId, ctx.targetBaseIndex);
+        if (ownMinions.length === 0) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        }
+        return {
+            events: ownMinions.map(minion => addPowerCounter(
+                minion.uid,
+                ctx.targetBaseIndex!,
+                1,
+                'mounties_when_calls_the_badge',
+                ctx.now,
+                {
+                    sourcePlayerId: ctx.playerId,
+                    sourceDefId: 'mounties_when_calls_the_badge',
+                    sourceControllerId: ctx.playerId,
+                    sourceBaseIndex: ctx.targetBaseIndex!,
+                },
+            )),
+        };
+    }
+
     const baseCandidates = ctx.state.bases
         .map((_base, baseIndex) => ({ baseIndex, label: getBaseLabel(ctx.state, baseIndex) }))
         .filter(base => collectOwnMinionsOnBase(ctx.state, ctx.playerId, base.baseIndex).length > 0);
     return runBaseEffect(ctx, baseCandidates, {
         sourceId: 'mounties_when_calls_the_badge',
-        title: '呼叫警徽：选择一个基地给你的每个随从 +1 指示物',
+        titleKey: 'ui.mounties_when_calls_the_badge_title',
         effect: 'ownMinionsPowerCounter',
         amount: 1,
         reason: 'mounties_when_calls_the_badge',
@@ -1981,7 +2166,7 @@ function mountiesPowerPoutine(ctx: AbilityContext): AbilityResult {
     return runMinionEffect(ctx, candidates, {
         sourceId: 'mounties_power_poutine',
         sourceDefId: 'mounties_power_poutine',
-        title: '力量肉汁薯条：选择至多两个你的随从 +2 力量',
+        titleKey: 'ui.mounties_power_poutine_title',
         effect: 'tempPower',
         amount: 2,
         reason: 'mounties_power_poutine',
@@ -1989,6 +2174,157 @@ function mountiesPowerPoutine(ctx: AbilityContext): AbilityResult {
         multiMin: 0,
     });
 }
+
+function buildAlwaysGetOurManTargetCandidates(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    source: MinionTargetCandidate,
+): MinionTargetCandidate[] {
+    const sourceMinion = state.bases[source.baseIndex]?.minions.find(minion => (
+        minion.uid === source.uid && minion.defId === source.defId && minion.controller === playerId
+    ));
+    if (!sourceMinion) return [];
+    const sourcePower = getEffectivePower(state, sourceMinion, source.baseIndex);
+    return state.bases.flatMap((base, baseIndex) => {
+        if (baseIndex === source.baseIndex) return [];
+        return base.minions
+            .filter(minion => minion.controller !== playerId)
+            .filter(minion => getEffectivePower(state, minion, baseIndex) < sourcePower)
+            .map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: getMinionLabel(state, minion, baseIndex),
+            }));
+    });
+}
+
+const alwaysGetOurManTargetPrompt = createPromptProgram<AlwaysGetOurManContext>({
+    sourceId: 'mounties_always_get_our_man_target',
+    buildInteraction: (context) => {
+        const candidates = buildAlwaysGetOurManTargetCandidates(
+            context.matchState.core,
+            context.playerId,
+            context.selected,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `mounties_always_get_our_man_target_${context.now}`,
+            context.playerId,
+            'ui.mounties_always_get_our_man_target_title',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mounties_always_get_our_man',
+                effectType: 'move',
+            }),
+            {
+                sourceId: 'mounties_always_get_our_man_target',
+                targetType: 'minion',
+                titleKey: 'ui.mounties_always_get_our_man_target_title',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const sourceMinion = state.core.bases[context.selected.baseIndex]?.minions.find(minion => (
+            minion.uid === context.selected.uid
+            && minion.defId === context.selected.defId
+            && minion.controller === context.playerId
+        ));
+        const targetMinion = state.core.bases[selected.baseIndex]?.minions.find(minion => (
+            minion.uid === selected.minionUid
+            && minion.defId === selected.defId
+            && minion.controller !== context.playerId
+        ));
+        if (!sourceMinion || !targetMinion || selected.baseIndex === context.selected.baseIndex) return { events: [] };
+        if (getEffectivePower(state.core, targetMinion, selected.baseIndex)
+            >= getEffectivePower(state.core, sourceMinion, context.selected.baseIndex)) {
+            return { events: [] };
+        }
+        const moveEvents = buildValidatedMoveEvents(state.core, {
+            minionUid: sourceMinion.uid,
+            minionDefId: sourceMinion.defId,
+            fromBaseIndex: context.selected.baseIndex,
+            toBaseIndex: selected.baseIndex,
+            reason: 'mounties_always_get_our_man',
+            now: timestamp,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'mounties_always_get_our_man',
+            sourceControllerId: context.playerId,
+            sourceBaseIndex: context.selected.baseIndex,
+            sourceKind: 'action',
+        });
+        if (moveEvents.length === 0) return { events: [] };
+        return {
+            events: [
+                ...moveEvents,
+                buildMinionMetadataUpdatedEvent(targetMinion.uid, selected.baseIndex, {
+                    [MOUNTIES_ALWAYS_GET_OUR_MAN_META]: {
+                        sourcePlayerId: context.playerId,
+                        sourceDefId: 'mounties_always_get_our_man',
+                        turnNumber: state.core.turnNumber,
+                    },
+                }, 'mounties_always_get_our_man_mark', timestamp),
+            ],
+        };
+    },
+});
+
+const alwaysGetOurManSourcePrompt = createPromptProgram<PromptContext>({
+    sourceId: 'mounties_always_get_our_man_source',
+    buildInteraction: (context) => {
+        const candidates = collectOwnMinions(context.matchState.core, context.playerId)
+            .filter(candidate => buildAlwaysGetOurManTargetCandidates(
+                context.matchState.core,
+                context.playerId,
+                candidate,
+            ).length > 0);
+        return createAbilityRuntimeSimpleChoice(
+            `mounties_always_get_our_man_source_${context.now}`,
+            context.playerId,
+            'ui.mounties_always_get_our_man_source_title',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mounties_always_get_our_man',
+                effectType: 'move',
+            }),
+            {
+                sourceId: 'mounties_always_get_our_man_source',
+                targetType: 'minion',
+                titleKey: 'ui.mounties_always_get_our_man_source_title',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const candidate = collectOwnMinions(state.core, context.playerId).find(entry => (
+            entry.uid === selected.minionUid
+            && entry.defId === selected.defId
+            && entry.baseIndex === selected.baseIndex
+        ));
+        if (!candidate) return { events: [] };
+        const targets = buildAlwaysGetOurManTargetCandidates(state.core, context.playerId, candidate);
+        if (targets.length === 0) {
+            return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
+        }
+        return {
+            events: [],
+            continuation: createAbilityRuntimeContinuation({
+                matchState: state,
+                playerId: context.playerId,
+                now: timestamp,
+                selected: candidate,
+            } satisfies AlwaysGetOurManContext, alwaysGetOurManTargetPrompt),
+        };
+    },
+});
 
 function mountiesMoveAboot(ctx: AbilityContext): AbilityResult {
     const destinationBases = ctx.state.bases
@@ -2001,7 +2337,7 @@ function mountiesMoveAboot(ctx: AbilityContext): AbilityResult {
         : candidates, {
         sourceId: 'mounties_move_aboot',
         sourceDefId: 'mounties_move_aboot',
-        title: '挪过去：选择要移动的己方随从',
+        titleKey: 'ui.mounties_move_aboot_title',
         reason: 'mounties_move_aboot',
         tempPowerAfter: 2,
         allowedToBaseIndices: destinationBases,
@@ -2009,44 +2345,17 @@ function mountiesMoveAboot(ctx: AbilityContext): AbilityResult {
 }
 
 function mountiesAlwaysGetOurMan(ctx: AbilityContext): AbilityResult {
-    for (const own of collectOwnMinions(ctx.state, ctx.playerId)) {
-        const ownMinion = ctx.state.bases[own.baseIndex]?.minions.find(minion => minion.uid === own.uid);
-        if (!ownMinion) continue;
-        for (let targetBaseIndex = 0; targetBaseIndex < ctx.state.bases.length; targetBaseIndex += 1) {
-            if (targetBaseIndex === own.baseIndex) continue;
-            const target = ctx.state.bases[targetBaseIndex].minions.find(minion =>
-                minion.controller !== ctx.playerId
-                && getEffectivePower(ctx.state, minion, targetBaseIndex) < getEffectivePower(ctx.state, ownMinion, own.baseIndex),
-            );
-            if (!target) continue;
-            const moveEvents = buildValidatedMoveEvents(ctx.state, {
-                minionUid: ownMinion.uid,
-                minionDefId: ownMinion.defId,
-                fromBaseIndex: own.baseIndex,
-                toBaseIndex: targetBaseIndex,
-                reason: 'mounties_always_get_our_man',
-                now: ctx.now,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: 'mounties_always_get_our_man',
-                sourceControllerId: ctx.playerId,
-                sourceBaseIndex: own.baseIndex,
-                sourceKind: 'action',
-            });
-            return {
-                events: [
-                    ...moveEvents,
-                    buildMinionMetadataUpdatedEvent(target.uid, targetBaseIndex, {
-                        [MOUNTIES_ALWAYS_GET_OUR_MAN_META]: {
-                            sourcePlayerId: ctx.playerId,
-                            sourceDefId: 'mounties_always_get_our_man',
-                            turnNumber: ctx.state.turnNumber,
-                        },
-                    }, 'mounties_always_get_our_man_mark', ctx.now),
-                ],
-            };
-        }
+    const candidates = collectOwnMinions(ctx.state, ctx.playerId)
+        .filter(candidate => buildAlwaysGetOurManTargetCandidates(ctx.state, ctx.playerId, candidate).length > 0);
+    if (candidates.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    if (!ctx.matchState) return { events: [] };
+    return runtimeToAbilityResult(executeAbilityProgram(alwaysGetOurManSourcePrompt, createPromptContext(
+        ctx.matchState,
+        ctx.playerId,
+        ctx.now,
+    )));
 }
 
 function mountiesAlwaysGetOurManTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
@@ -2123,7 +2432,7 @@ function mountiesDudleeTalent(ctx: AbilityContext): AbilityResult {
     })));
 }
 
-const haichQMovePrompt = createPromptProgram<HaichQMoveContext, SmashUpCore, SmashUpEvent>({
+const haichQMovePrompt = createPromptProgram<HaichQMoveContext>({
     sourceId: 'mounties_haich_q_move',
     buildInteraction: (context) => {
         const candidates = collectOwnMinions(context.matchState.core, context.playerId)
@@ -2147,7 +2456,7 @@ const haichQMovePrompt = createPromptProgram<HaichQMoveContext, SmashUpCore, Sma
         const fixedToBaseIndex = selected.baseIndex === context.sourceBaseIndex ? undefined : context.sourceBaseIndex;
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: context.matchState,
                 playerId: context.playerId,
                 now: timestamp,
@@ -2158,8 +2467,7 @@ const haichQMovePrompt = createPromptProgram<HaichQMoveContext, SmashUpCore, Sma
                 fromBaseIndex: selected.baseIndex,
                 reason: 'mounties_haich_q',
                 fixedToBaseIndex,
-            } satisfies MoveDestinationContext,
-            nextProgram: moveDestinationPrompt,
+            } satisfies MoveDestinationContext, moveDestinationPrompt),
         };
     },
 });
@@ -2180,7 +2488,7 @@ function mountiesEhSpecial(ctx: AbilityContext): AbilityResult {
     const effect = runMinionEffect(ctx, candidates, {
         sourceId: 'mounties_eh',
         sourceDefId: 'mounties_eh',
-        title: '嗯？：选择你的一个随从直到回合结束 +1 力量',
+        titleKey: 'ui.mounties_eh_title',
         effect: 'tempPower',
         amount: 1,
         reason: 'mounties_eh',
@@ -2203,7 +2511,7 @@ function luchadorsQuickSetUpOnPlay(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraAction(ctx, 'luchadors_quick_set_up')] };
 }
 
-const tagTeamBasePrompt = createPromptProgram<TagTeamBaseContext, SmashUpCore, SmashUpEvent>({
+const tagTeamBasePrompt = createPromptProgram<TagTeamBaseContext>({
     sourceId: 'luchadors_tag_team_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_tag_team_base_${context.now}`,
@@ -2230,7 +2538,7 @@ const tagTeamBasePrompt = createPromptProgram<TagTeamBaseContext, SmashUpCore, S
     },
 });
 
-const cheapPopPrompt = createPromptProgram<CheapPopContext, SmashUpCore, SmashUpEvent>({
+const cheapPopPrompt = createPromptProgram<CheapPopContext>({
     sourceId: 'luchadors_cheap_pop',
     buildInteraction: (context) => {
         const options = buildMinionTargetOptions(context.candidates, {
@@ -2304,7 +2612,7 @@ function luchadorsTagTeam(ctx: AbilityContext): AbilityResult {
     })));
 }
 
-const muchoslamRecoverActionPrompt = createPromptProgram<MuchoslamRecoverActionContext, SmashUpCore, SmashUpEvent>({
+const muchoslamRecoverActionPrompt = createPromptProgram<MuchoslamRecoverActionContext>({
     sourceId: 'luchadors_senor_muchoslam',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_senor_muchoslam_${context.now}`,
@@ -2359,7 +2667,7 @@ function luchadorsSenorMuchoslamTalent(ctx: AbilityContext): AbilityResult {
     return { events: [grantContextualExtraAction(ctx, 'luchadors_senor_muchoslam')] };
 }
 
-const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsContext, SmashUpCore, SmashUpEvent>({
+const reversalDestroyActionsPrompt = createPromptProgram<ReversalDestroyActionsContext>({
     sourceId: 'luchadors_reversal_destroy_actions',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_reversal_destroy_actions_${context.now}`,
@@ -2479,7 +2787,7 @@ function luchadorsReversalTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
     return events;
 }
 
-const muchoslamVsMonstersPrompt = createPromptProgram<MuchoslamVsMonstersContext, SmashUpCore, SmashUpEvent>({
+const muchoslamVsMonstersPrompt = createPromptProgram<MuchoslamVsMonstersContext>({
     sourceId: 'luchadors_senor_muchoslam_vs_the_monsters',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_senor_muchoslam_vs_the_monsters_${context.now}`,
@@ -2550,12 +2858,12 @@ function luchadorsSenorMuchoslamVsTheMonsters(ctx: AbilityContext): AbilityResul
     })));
 }
 
-const searchActionPrompt = createPromptProgram<SearchActionContext, SmashUpCore, SmashUpEvent>({
+const searchActionPrompt = createPromptProgram<SearchActionContext>({
     sourceId: 'international_incident_search_action',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
         context.playerId,
-        context.title,
+        context.titleKey,
         [
             createSkipOption(),
             ...context.candidates.map((card, index) => ({
@@ -2566,7 +2874,7 @@ const searchActionPrompt = createPromptProgram<SearchActionContext, SmashUpCore,
                 _source: card.zone,
             })),
         ],
-        { sourceId: 'international_incident_base_move', targetType: 'generic' },
+        { sourceId: 'international_incident_base_move', targetType: 'generic', titleKey: context.titleKey },
     ),
     onResolve: ({ state, context, value, timestamp, random }) => {
         const selected = value as CardChoice;
@@ -2587,7 +2895,7 @@ const searchActionPrompt = createPromptProgram<SearchActionContext, SmashUpCore,
     },
 });
 
-const capaRojaTargetPrompt = createPromptProgram<CapaRojaTargetContext, SmashUpCore, SmashUpEvent>({
+const capaRojaTargetPrompt = createPromptProgram<CapaRojaTargetContext>({
     sourceId: 'luchadors_capa_roja',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -2657,7 +2965,7 @@ const capaRojaTargetPrompt = createPromptProgram<CapaRojaTargetContext, SmashUpC
     },
 });
 
-const heyaTrainingStablePrompt = createPromptProgram<HeyaTrainingStableContext, SmashUpCore, SmashUpEvent>({
+const heyaTrainingStablePrompt = createPromptProgram<HeyaTrainingStableContext>({
     sourceId: 'base_heya_training_stable',
     buildInteraction: (context) => {
         const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
@@ -2706,13 +3014,13 @@ const heyaTrainingStablePrompt = createPromptProgram<HeyaTrainingStableContext, 
     },
 });
 
-const baseMovePrompt = createPromptProgram<BaseMovePromptContext, SmashUpCore, SmashUpEvent>({
+const baseMovePrompt = createPromptProgram<BaseMovePromptContext>({
     sourceId: 'international_incident_base_move',
     interactionSourceIds: ['base_the_dohyo', 'base_strategic_syrup_reserve'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.playerId}_${context.now}`,
         context.playerId,
-        context.title,
+        context.titleKey,
         [
             createSkipOption('跳过（不移动随从）', 'ui.international_incident_skip_move_minion_option'),
             ...context.candidates.map((candidate, index) => ({
@@ -2727,7 +3035,7 @@ const baseMovePrompt = createPromptProgram<BaseMovePromptContext, SmashUpCore, S
                 displayMode: 'button' as const,
             })),
         ],
-        { sourceId: 'international_incident_base_move', targetType: 'generic' },
+        { sourceId: 'international_incident_base_move', targetType: 'generic', titleKey: context.titleKey },
     ),
     onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as BaseMoveChoice;
@@ -2770,30 +3078,29 @@ const baseMovePrompt = createPromptProgram<BaseMovePromptContext, SmashUpCore, S
     },
 });
 
-const greatWhiteNorthPrompt = createPromptProgram<GreatWhiteNorthContext, SmashUpCore, SmashUpEvent>({
+const greatWhiteNorthPrompt: AbilityProgram<GreatWhiteNorthContext, SmashUpCore, SmashUpEvent> = createPromptProgram<GreatWhiteNorthContext>({
     sourceId: 'base_great_white_north_eh',
     buildInteraction: (context) => {
-        const candidates = collectOwnMinionsOnBase(context.matchState.core, context.playerId, context.sourceBaseIndex);
-        const destinationIndices = context.matchState.core.bases
-            .map((_base, baseIndex) => baseIndex)
-            .filter(baseIndex => baseIndex !== context.sourceBaseIndex);
-        const options = candidates.flatMap((candidate, candidateIndex) => destinationIndices.map((toBaseIndex, destinationIndex) => ({
-            id: `north-${candidateIndex}-${destinationIndex}`,
-            label: `${candidate.label} → ${getBaseLabel(context.matchState.core, toBaseIndex)}`,
-            value: {
-                minionUid: candidate.uid,
-                minionDefId: candidate.defId,
-                fromBaseIndex: context.sourceBaseIndex,
-                toBaseIndex,
-            },
-            displayMode: 'button' as const,
-        })));
+        const options = buildGreatWhiteNorthOptions(
+            context.matchState.core,
+            context.playerId,
+            context.sourceBaseIndex,
+        );
         return createAbilityRuntimeSimpleChoice(
             `base_great_white_north_eh_${context.playerId}_${context.now}`,
             context.playerId,
             '大白北方，嗯？：可以移动你在这里的一个随从并使其 +1',
             [createSkipOption('跳过（不移动随从）', 'ui.international_incident_skip_move_minion_option'), ...options],
-            { sourceId: 'base_great_white_north_eh', targetType: 'generic' , titleKey: 'ui.base_great_white_north_eh_title'},
+            {
+                sourceId: 'base_great_white_north_eh',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+                optionsGenerator: (state) => [
+                    createSkipOption('跳过（不移动随从）', 'ui.international_incident_skip_move_minion_option'),
+                    ...buildGreatWhiteNorthOptions((state as MatchState<SmashUpCore>).core, context.playerId, context.sourceBaseIndex),
+                ],
+                titleKey: 'ui.base_great_white_north_eh_title',
+            },
         );
     },
     onResolve: ({ state, context, value, timestamp }) => {
@@ -2828,7 +3135,7 @@ const greatWhiteNorthPrompt = createPromptProgram<GreatWhiteNorthContext, SmashU
                     sourceKind: 'nonAction',
                 });
                 events.push(...moveEvents);
-                if (moveEvents.length > 0) {
+                if (moveEvents.some(event => event.type === SU_EVENTS.MINION_MOVED)) {
                     events.push(addTempPower(minion.uid, selected.toBaseIndex, 1, 'base_great_white_north_eh', timestamp, {
                         sourcePlayerId: context.playerId,
                         sourceDefId: 'base_great_white_north_eh',
@@ -2843,17 +3150,38 @@ const greatWhiteNorthPrompt = createPromptProgram<GreatWhiteNorthContext, SmashU
         if (!nextPlayerId) return { events };
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: nextPlayerId,
                 now: timestamp,
                 sourceBaseIndex: context.sourceBaseIndex,
                 remainingPlayerIds,
-            } satisfies GreatWhiteNorthContext,
-            nextProgram: greatWhiteNorthPrompt,
+            } satisfies GreatWhiteNorthContext, greatWhiteNorthPrompt),
         };
     },
 });
+
+function buildGreatWhiteNorthOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    sourceBaseIndex: number,
+): Array<PromptOption<BaseMoveChoice>> {
+    const candidates = collectOwnMinionsOnBase(state, playerId, sourceBaseIndex);
+    const destinationIndices = state.bases
+        .map((_base, baseIndex) => baseIndex)
+        .filter(baseIndex => baseIndex !== sourceBaseIndex);
+    return candidates.flatMap((candidate, candidateIndex) => destinationIndices.map((toBaseIndex, destinationIndex) => ({
+        id: `north-${candidateIndex}-${destinationIndex}`,
+        label: `${candidate.label} → ${getBaseLabel(state, toBaseIndex)}`,
+        value: {
+            minionUid: candidate.uid,
+            minionDefId: candidate.defId,
+            fromBaseIndex: sourceBaseIndex,
+            toBaseIndex,
+        },
+        displayMode: 'button' as const,
+    })));
+}
 
 function buildActionSearchCandidates(
     state: SmashUpCore,
@@ -2885,7 +3213,7 @@ function luchadorsYellowDemon(ctx: AbilityContext): AbilityResult {
     }
     return runtimeToAbilityResult(executeAbilityProgram(searchActionPrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceId: 'luchadors_yellow_demon',
-        title: '黄色恶魔：选择一张 Set-Up 行动加入手牌',
+        titleKey: 'ui.luchadors_yellow_demon_title',
         candidates,
     })));
 }
@@ -2897,13 +3225,13 @@ function musketeersTokenOfAffection(ctx: AbilityContext): AbilityResult {
     }
     return runtimeToAbilityResult(executeAbilityProgram(searchActionPrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceId: 'musketeers_token_of_affection',
-        title: '情谊信物：选择一个直接影响随从的行动加入手牌',
+        titleKey: 'ui.musketeers_token_of_affection_title',
         candidates,
         extraActionAfter: true,
     })));
 }
 
-const luchadorsOutForTheCountPrompt = createPromptProgram<OutForTheCountContext, SmashUpCore, SmashUpEvent>({
+const luchadorsOutForTheCountPrompt = createPromptProgram<OutForTheCountContext>({
     sourceId: 'luchadors_out_for_the_count',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `luchadors_out_for_the_count_${context.now}`,
@@ -2963,7 +3291,8 @@ function luchadorsSmartSetUpTrigger(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 function mountiesBringEmInTrigger(ctx: TriggerContext): SmashUpEvent[] {
-    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.moveToBaseIndex === undefined) return [];
+    if (!ctx.sourceCardUid || ctx.moveFromBaseIndex === undefined || ctx.moveToBaseIndex === undefined) return [];
+    if (ctx.moveFromBaseIndex === ctx.moveToBaseIndex) return [];
     if (ctx.triggerMinionUid === undefined) return [];
     const movedMinion = ctx.state.bases[ctx.moveToBaseIndex]?.minions.find(minion => minion.uid === ctx.triggerMinionUid);
     if (!movedMinion?.attachedActions.some(action => action.uid === ctx.sourceCardUid)) return [];
@@ -2985,12 +3314,16 @@ function porthosProtection(ctx: ProtectionCheckContext): boolean {
 }
 
 function battleMooseProtection(ctx: ProtectionCheckContext): boolean {
+    if (ctx.sourceKind !== 'action') return false;
     if (ctx.sourcePlayerId === ctx.targetMinion.controller) return false;
     const base = ctx.state.bases[ctx.targetBaseIndex];
     if (!base) return false;
     return base.minions.some(minion =>
         minion.controller === ctx.targetMinion.controller
-        && minion.attachedActions.some(action => action.defId === 'mounties_battle_moose'),
+        && minion.attachedActions.some(action =>
+            action.defId === 'mounties_battle_moose'
+            && getActionControllerId(action) === ctx.targetMinion.controller,
+        ),
     );
 }
 
@@ -3072,7 +3405,7 @@ function baseTheDohyoMinionPlayed(ctx: TriggerContext) {
     if (candidates.length === 0) return [];
     return executeAbilityProgram(baseMovePrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceId: 'base_the_dohyo',
-        title: '土俵：可以将这里另一位玩家的一个随从移动到另一个基地',
+        titleKey: 'ui.base_the_dohyo_title',
         sourceBaseIndex: ctx.sourceBaseIndex,
         candidates,
     }));
@@ -3134,7 +3467,7 @@ function baseStrategicSyrupReserveMinionPlayed(ctx: TriggerContext) {
     if (candidates.length === 0) return [];
     return executeAbilityProgram(baseMovePrompt, createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         sourceId: 'base_strategic_syrup_reserve',
-        title: '战略枫糖储备：可以将另一位玩家的一个随从移动到这里',
+        titleKey: 'ui.base_strategic_syrup_reserve_title',
         sourceBaseIndex: ctx.sourceBaseIndex,
         candidates,
     }));
@@ -3341,7 +3674,7 @@ export function registerInternationalIncidentAbilities(): void {
             const currentTurnPlayerId = core.turnOrder[core.currentPlayerIndex];
             if (!currentTurnPlayerId || currentTurnPlayerId !== playerId) return [];
             const player = core.players[playerId];
-            if (!player || player.actionsPlayed < 1) return [];
+            if (!player || player.actionsPlayed !== 1) return [];
             if (player.usedDiscardPlayAbilities?.includes('mounties_eh')) return [];
             const ownMinions = collectOwnMinions(core, playerId);
             if (ownMinions.length === 0) return [];
@@ -3374,7 +3707,7 @@ export function registerInternationalIncidentAbilities(): void {
     });
     registerTrigger('mounties_always_get_our_man', 'onTurnEnd', mountiesAlwaysGetOurManTurnEnd, {
         global: true,
-        globalZones: ['discard'],
+        globalZones: ['hand', 'discard', 'deck'],
     });
     registerAbilityProgram('mounties_northern_mover', 'talent', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mountiesNorthernMoverTalent),

@@ -4,7 +4,8 @@
  * 主题：知识研究、抽牌、行动卡操控
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { requireOnPlay, requireSpecial, resolveOnPlay, resolveSpecial } from '../domain/abilityRegistry';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
@@ -22,6 +23,8 @@ import {
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { getCardDef, getBaseDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -338,7 +341,7 @@ function buildMiskatonicMandatoryReadingDrawOptions(
     return options;
 }
 
-const miskatonicMandatoryReadingChooseMinionPromptProgram = createPromptProgram<MiskatonicMadnessBoostPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicMandatoryReadingChooseMinionPromptProgram = createPromptProgram<MiskatonicMadnessBoostPromptContext>({
     sourceId: 'miskatonic_mandatory_reading',
     interactionSourceIds: ['miskatonic_things_best_not_known_pod'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -367,19 +370,18 @@ const miskatonicMandatoryReadingChooseMinionPromptProgram = createPromptProgram<
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
-            },
-            nextProgram: miskatonicMandatoryReadingChooseDrawPromptProgram,
+            }, miskatonicMandatoryReadingChooseDrawPromptProgram),
         };
     },
 });
 
-const miskatonicMandatoryReadingChooseDrawPromptProgram = createPromptProgram<MiskatonicMadnessBoostPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicMandatoryReadingChooseDrawPromptProgram = createPromptProgram<MiskatonicMadnessBoostPromptContext>({
     sourceId: 'miskatonic_mandatory_reading_draw',
     interactionSourceIds: ['miskatonic_things_best_not_known_pod_draw'],
     buildInteraction: (context) => {
@@ -471,8 +473,7 @@ const miskatonicMandatoryReadingProgram = createEffectProgram<AbilityContext, Sm
 
     return {
         events: [],
-        context,
-        nextProgram: miskatonicMandatoryReadingChooseMinionPromptProgram,
+        continuation: createAbilityRuntimeContinuation(context, miskatonicMandatoryReadingChooseMinionPromptProgram),
     };
 });
 
@@ -499,12 +500,11 @@ const miskatonicThingsBestNotKnownPodProgram = createEffectProgram<AbilityContex
 
     return {
         events: [],
-        context,
-        nextProgram: miskatonicMandatoryReadingChooseMinionPromptProgram,
+        continuation: createAbilityRuntimeContinuation(context, miskatonicMandatoryReadingChooseMinionPromptProgram),
     };
 });
 
-const miskatonicResearcherChooseMinionPromptProgram = createPromptProgram<MiskatonicResearcherPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicResearcherChooseMinionPromptProgram = createPromptProgram<MiskatonicResearcherPromptContext>({
     sourceId: 'miskatonic_researcher_pod_choose_minion',
     buildInteraction: (context) => {
         if (!context.minionCandidates?.length) {
@@ -541,7 +541,7 @@ const miskatonicResearcherChooseMinionPromptProgram = createPromptProgram<Miskat
     },
 });
 
-const miskatonicResearcherPromptProgram = createPromptProgram<MiskatonicResearcherPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicResearcherPromptProgram = createPromptProgram<MiskatonicResearcherPromptContext>({
     sourceId: 'miskatonic_researcher',
     interactionSourceIds: ['miskatonic_researcher_pod'],
     buildInteraction: (context) => {
@@ -590,13 +590,12 @@ const miskatonicResearcherPromptProgram = createPromptProgram<MiskatonicResearch
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation<MiskatonicResearcherPromptContext, SmashUpCore, SmashUpEvent>({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 sourceId: 'miskatonic_researcher_pod_choose_minion',
-            },
-            nextProgram: miskatonicResearcherChooseMinionPromptProgram,
+            }, miskatonicResearcherChooseMinionPromptProgram),
         };
     },
 });
@@ -654,7 +653,7 @@ function buildMiskatonicPsychologistOptions(
     return options;
 }
 
-const miskatonicPsychologistPromptProgram = createPromptProgram<MiskatonicPsychologistPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicPsychologistPromptProgram = createPromptProgram<MiskatonicPsychologistPromptContext>({
     sourceId: 'miskatonic_psychologist',
     interactionSourceIds: ['miskatonic_psychologist_pod'],
     buildInteraction: (context) => {
@@ -743,7 +742,7 @@ function buildMiskatonicBookOptions(
     return options;
 }
 
-const miskatonicBookPromptProgram = createPromptProgram<MiskatonicBookPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicBookPromptProgram = createPromptProgram<MiskatonicBookPromptContext>({
     sourceId: 'miskatonic_book_of_iter_the_unseen',
     interactionSourceIds: ['miskatonic_jinkies_pod'],
     buildInteraction: (context) => {
@@ -836,7 +835,7 @@ function buildMiskatonicFieldTripOptions(
     ];
 }
 
-const miskatonicFieldTripPromptProgram = createPromptProgram<MiskatonicFieldTripPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicFieldTripPromptProgram = createPromptProgram<MiskatonicFieldTripPromptContext>({
     sourceId: 'miskatonic_field_trip',
     interactionSourceIds: ['miskatonic_field_trip_pod'],
     buildInteraction: (context) => {
@@ -912,7 +911,7 @@ const miskatonicFieldTripPromptProgram = createPromptProgram<MiskatonicFieldTrip
     },
 });
 
-const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<MiskatonicLibrarianPodPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<MiskatonicLibrarianPodPromptContext>({
     sourceId: 'miskatonic_librarian_pod_play_madness',
     buildInteraction: (context) => {
         const madnessCards = context.matchState.core.players[context.playerId].hand
@@ -962,7 +961,7 @@ const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<Miska
         }) as SmashUpEvent];
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 cardUid: card.uid,
@@ -970,13 +969,12 @@ const miskatonicLibrarianPodPlayMadnessPromptProgram = createPromptProgram<Miska
                 random,
                 now: timestamp,
                 baseIndex: context.baseIndex ?? 0,
-            } satisfies MiskatonicResolvedActionAfterPlayedContext,
-            nextProgram: miskatonicResolvedActionAfterPlayedProgram,
+            } satisfies MiskatonicResolvedActionAfterPlayedContext, miskatonicResolvedActionAfterPlayedProgram),
         };
     },
 });
 
-const miskatonicLibrarianPodPromptProgram = createPromptProgram<MiskatonicLibrarianPodPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicLibrarianPodPromptProgram = createPromptProgram<MiskatonicLibrarianPodPromptContext>({
     sourceId: 'miskatonic_librarian_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_librarian_pod_${context.now}`,
@@ -1004,18 +1002,17 @@ const miskatonicLibrarianPodPromptProgram = createPromptProgram<MiskatonicLibrar
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation<MiskatonicLibrarianPodPromptContext, SmashUpCore, SmashUpEvent>({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 sourceId: 'miskatonic_librarian_pod_play_madness',
-            },
-            nextProgram: miskatonicLibrarianPodPlayMadnessPromptProgram,
+            }, miskatonicLibrarianPodPlayMadnessPromptProgram),
         };
     },
 });
 
-const miskatonicItJustMightWorkPodPromptProgram = createPromptProgram<MiskatonicItJustMightWorkPodPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicItJustMightWorkPodPromptProgram = createPromptProgram<MiskatonicItJustMightWorkPodPromptContext>({
     sourceId: 'miskatonic_it_just_might_work_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_it_just_might_work_pod_${context.now}`,
@@ -1108,7 +1105,7 @@ function collectMeddlingKidsActionChoices(
     return options;
 }
 
-const miskatonicMeddlingKidsSelectPromptProgram = createPromptProgram<MiskatonicMeddlingKidsPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicMeddlingKidsSelectPromptProgram: AbilityProgram<MiskatonicMeddlingKidsPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<MiskatonicMeddlingKidsPromptContext>({
     sourceId: 'miskatonic_those_meddling_kids_select',
     buildInteraction: (context) => {
         if (context.baseIndex === undefined) {
@@ -1172,18 +1169,17 @@ const miskatonicMeddlingKidsSelectPromptProgram = createPromptProgram<Miskatonic
         return {
             events,
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 removedActionUids,
-            },
-            nextProgram: miskatonicMeddlingKidsSelectPromptProgram,
+            }, miskatonicMeddlingKidsSelectPromptProgram),
         };
     },
 });
 
-const miskatonicMeddlingKidsBasePromptProgram = createPromptProgram<MiskatonicMeddlingKidsPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicMeddlingKidsBasePromptProgram = createPromptProgram<MiskatonicMeddlingKidsPromptContext>({
     sourceId: 'miskatonic_those_meddling_kids',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_those_meddling_kids_${context.now}`,
@@ -1208,20 +1204,19 @@ const miskatonicMeddlingKidsBasePromptProgram = createPromptProgram<MiskatonicMe
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 sourceId: 'miskatonic_those_meddling_kids_select',
                 baseIndex: selected.baseIndex,
                 removedActionUids: [],
-            },
-            nextProgram: miskatonicMeddlingKidsSelectPromptProgram,
+            }, miskatonicMeddlingKidsSelectPromptProgram),
         };
     },
 });
 
-const miskatonicThoseMeddlingKidsPodModePromptProgram = createPromptProgram<MiskatonicMeddlingKidsPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicThoseMeddlingKidsPodModePromptProgram = createPromptProgram<MiskatonicMeddlingKidsPromptContext>({
     sourceId: 'miskatonic_those_meddling_kids_pod_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_those_meddling_kids_pod_mode_${context.now}`,
@@ -1253,13 +1248,12 @@ const miskatonicThoseMeddlingKidsPodModePromptProgram = createPromptProgram<Misk
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation<MiskatonicMeddlingKidsPromptContext, SmashUpCore, SmashUpEvent>({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 sourceId: 'miskatonic_those_meddling_kids',
-            },
-            nextProgram: miskatonicMeddlingKidsBasePromptProgram,
+            }, miskatonicMeddlingKidsBasePromptProgram),
         };
     },
 });
@@ -1362,13 +1356,12 @@ const miskatonicLibrarianTalentProgram = createEffectProgram<AbilityContext, Sma
 
     return {
         events: [discardEvent],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             random: ctx.random,
-        } satisfies MiskatonicLibrarianAfterDiscardContext,
-        nextProgram: miskatonicLibrarianAfterDiscardProgram,
+        } satisfies MiskatonicLibrarianAfterDiscardContext, miskatonicLibrarianAfterDiscardProgram),
     };
 });
 
@@ -1429,7 +1422,7 @@ function collectThingOnDoorstepTopMinions(
         });
 }
 
-const miskatonicThingOnTheDoorstepPromptProgram = createPromptProgram<MiskatonicThingOnDoorstepPromptContext, SmashUpCore, SmashUpEvent>({
+const miskatonicThingOnTheDoorstepPromptProgram = createPromptProgram<MiskatonicThingOnDoorstepPromptContext>({
     sourceId: 'miskatonic_thing_on_the_doorstep',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `miskatonic_thing_on_the_doorstep_${context.now}`,
@@ -1485,24 +1478,22 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicMeddlingKidsPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicMeddlingKidsPromptContext(ctx, {
                     sourceId: 'miskatonic_those_meddling_kids',
                     baseIndex: undefined,
                     removedActionUids: [],
-                }),
-                nextProgram: miskatonicMeddlingKidsBasePromptProgram,
+                }), miskatonicMeddlingKidsBasePromptProgram),
             };
         }),
     });
     registerAbilityProgram('miskatonic_those_meddling_kids_pod', 'onPlay', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
             events: [],
-            context: createMiskatonicMeddlingKidsPromptContext(ctx, {
+            continuation: createAbilityRuntimeContinuation(createMiskatonicMeddlingKidsPromptContext(ctx, {
                 sourceId: 'miskatonic_those_meddling_kids_pod_mode',
                 baseIndex: undefined,
                 removedActionUids: [],
-            }),
-            nextProgram: miskatonicThoseMeddlingKidsPodModePromptProgram,
+            }), miskatonicThoseMeddlingKidsPodModePromptProgram),
         })),
     });
     // 心理分析（这太疯狂了...）：抽疯狂卡+全体己方随从+1力量+额外战术
@@ -1525,10 +1516,9 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicItJustMightWorkPodPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicItJustMightWorkPodPromptContext(ctx, {
                     maxDiscard: Math.min(2, madnessInHand.length),
-                }),
-                nextProgram: miskatonicItJustMightWorkPodPromptProgram,
+                }), miskatonicItJustMightWorkPodPromptProgram),
             };
         }),
     });
@@ -1543,8 +1533,7 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicBookPromptContext(ctx, { sourceId: 'miskatonic_book_of_iter_the_unseen' }),
-                nextProgram: miskatonicBookPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createMiskatonicBookPromptContext(ctx, { sourceId: 'miskatonic_book_of_iter_the_unseen' }), miskatonicBookPromptProgram),
             };
         }),
     });
@@ -1558,8 +1547,7 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicBookPromptContext(ctx, { sourceId: 'miskatonic_jinkies_pod' }),
-                nextProgram: miskatonicBookPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createMiskatonicBookPromptContext(ctx, { sourceId: 'miskatonic_jinkies_pod' }), miskatonicBookPromptProgram),
             };
         }),
     });
@@ -1582,8 +1570,7 @@ export function registerMiskatonicAbilities(): void {
             if (!ctx.matchState) return { events: [] };
             return {
                 events: [],
-                context: createMiskatonicThingOnDoorstepPromptContext(ctx, { baseIndex, candidates }),
-                nextProgram: miskatonicThingOnTheDoorstepPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createMiskatonicThingOnDoorstepPromptContext(ctx, { baseIndex, candidates }), miskatonicThingOnTheDoorstepPromptProgram),
             };
         }),
     });
@@ -1605,8 +1592,7 @@ export function registerMiskatonicAbilities(): void {
             if (!ctx.matchState) return { events: [] };
             return {
                 events: [],
-                context: createMiskatonicThingOnDoorstepPromptContext(ctx, { baseIndex, candidates }),
-                nextProgram: miskatonicThingOnTheDoorstepPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createMiskatonicThingOnDoorstepPromptContext(ctx, { baseIndex, candidates }), miskatonicThingOnTheDoorstepPromptProgram),
             };
         }),
     });
@@ -1620,12 +1606,11 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicFieldTripPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicFieldTripPromptContext(ctx, {
                     sourceId: 'miskatonic_field_trip',
                     includeMadness: false,
                     drawBonus: 0,
-                }),
-                nextProgram: miskatonicFieldTripPromptProgram,
+                }), miskatonicFieldTripPromptProgram),
             };
         }),
     });
@@ -1640,12 +1625,11 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicFieldTripPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicFieldTripPromptContext(ctx, {
                     sourceId: 'miskatonic_field_trip_pod',
                     includeMadness: true,
                     drawBonus: 1,
-                }),
-                nextProgram: miskatonicFieldTripPromptProgram,
+                }), miskatonicFieldTripPromptProgram),
             };
         }),
     });
@@ -1677,11 +1661,10 @@ export function registerMiskatonicAbilities(): void {
     registerAbilityProgram('miskatonic_librarian_pod', 'talent', {
         program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
             events: [],
-            context: createMiskatonicLibrarianPodPromptContext(ctx, {
+            continuation: createAbilityRuntimeContinuation(createMiskatonicLibrarianPodPromptContext(ctx, {
                 sourceId: 'miskatonic_librarian_pod',
                 baseIndex: ctx.baseIndex,
-            }),
-            nextProgram: miskatonicLibrarianPodPromptProgram,
+            }), miskatonicLibrarianPodPromptProgram),
         })),
     });
     // 心理学家（power 3, onPlay）：将手牌或弃牌堆中的1张疯狂卡返回疯狂牌库
@@ -1693,11 +1676,10 @@ export function registerMiskatonicAbilities(): void {
             if (handMadness.length === 0 && discardMadness.length === 0) return { events: [] };
             return {
                 events: [],
-                context: createMiskatonicPsychologistPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicPsychologistPromptContext(ctx, {
                     sourceId: 'miskatonic_psychologist',
                     allowDrawDiscard: false,
-                }),
-                nextProgram: miskatonicPsychologistPromptProgram,
+                }), miskatonicPsychologistPromptProgram),
             };
         }),
     });
@@ -1709,11 +1691,10 @@ export function registerMiskatonicAbilities(): void {
             if (handMadness.length === 0 && discardMadness.length === 0) return { events: [] };
             return {
                 events: [],
-                context: createMiskatonicPsychologistPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicPsychologistPromptContext(ctx, {
                     sourceId: 'miskatonic_psychologist_pod',
                     allowDrawDiscard: true,
-                }),
-                nextProgram: miskatonicPsychologistPromptProgram,
+                }), miskatonicPsychologistPromptProgram),
             };
         }),
     });
@@ -1725,8 +1706,7 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicResearcherPromptContext(ctx, { sourceId: 'miskatonic_researcher' }),
-                nextProgram: miskatonicResearcherPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createMiskatonicResearcherPromptContext(ctx, { sourceId: 'miskatonic_researcher' }), miskatonicResearcherPromptProgram),
             };
         }),
     });
@@ -1755,11 +1735,10 @@ export function registerMiskatonicAbilities(): void {
             }
             return {
                 events: [],
-                context: createMiskatonicResearcherPromptContext(ctx, {
+                continuation: createAbilityRuntimeContinuation(createMiskatonicResearcherPromptContext(ctx, {
                     sourceId: 'miskatonic_researcher_pod',
                     minionCandidates,
-                }),
-                nextProgram: miskatonicResearcherPromptProgram,
+                }), miskatonicResearcherPromptProgram),
             };
         }),
     });

@@ -56,7 +56,8 @@ const MEGABOT = 'mega_troopers_megabot';
 
 function getPlayerTurnEndExpiration(state: SmashUpCore, playerId: PlayerId): number {
     const turnOrder = state.turnOrder;
-    const currentIndex = turnOrder.indexOf(state.currentPlayer);
+    const currentPlayerId = state.turnOrder[state.currentPlayerIndex];
+    const currentIndex = currentPlayerId ? turnOrder.indexOf(currentPlayerId) : -1;
     const playerIndex = turnOrder.indexOf(playerId);
     if (turnOrder.length === 0 || currentIndex < 0 || playerIndex < 0) {
         return state.turnNumber + Math.max(1, turnOrder.length);

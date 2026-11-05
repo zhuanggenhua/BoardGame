@@ -216,6 +216,29 @@ export const SHADOW_HERO_ATLAS: SpriteAtlasConfig = {
   rowHeights: [562],
 };
 
+/** zhongcai/hero.png 与 zhongcai/cards.png 均由 1050×750 原始卡面组成。 */
+export const ZHONGCAI_HERO_ATLAS: SpriteAtlasConfig = {
+  imageW: 1050,
+  imageH: 750,
+  cols: 1,
+  rows: 1,
+  colStarts: [0],
+  colWidths: [1050],
+  rowStarts: [0],
+  rowHeights: [750],
+};
+
+export const ZHONGCAI_CARDS_ATLAS: SpriteAtlasConfig = {
+  imageW: 8400,
+  imageH: 1500,
+  cols: 8,
+  rows: 2,
+  colStarts: [0, 1050, 2100, 3150, 4200, 5250, 6300, 7350],
+  colWidths: [1050, 1050, 1050, 1050, 1050, 1050, 1050, 1050],
+  rowStarts: [0, 750],
+  rowHeights: [750, 750],
+};
+
 /**
  * dice.png 配置（骰子面精灵图）
  * 3x3 布局，约 1024x1024
@@ -256,10 +279,11 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
   shouren: 'shouren',
   yongheng: 'yongheng',
   shadow: 'shadow',
+  zhongcai: 'zhongcai',
 };
 
 /** 所有阵营目录名列表 */
-const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow'] as const;
+const ALL_FACTION_DIRS = ['Necromancer', 'Trickster', 'Paladin', 'Goblin', 'Frost', 'Barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow', 'zhongcai'] as const;
 
 /**
  * 根据阵营名获取精灵图 atlas ID
@@ -285,6 +309,7 @@ const CARD_ID_PREFIX_MAP: Record<string, FactionId> = {
   shouren: 'shouren',
   yongheng: 'yongheng',
   shadow: 'shadow',
+  zhongcai: 'zhongcai',
 };
 
 function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
@@ -293,6 +318,7 @@ function getHeroAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'shouren') return SHOUREN_HERO_ATLAS;
   if (dir === 'yongheng') return YONGHENG_HERO_ATLAS;
   if (dir === 'shadow') return SHADOW_HERO_ATLAS;
+  if (dir === 'zhongcai') return ZHONGCAI_HERO_ATLAS;
   return HERO_ATLAS;
 }
 
@@ -303,6 +329,7 @@ function getCardsAtlasConfig(dir: string): SpriteAtlasConfig {
   if (dir === 'shouren') return SHOUREN_CARDS_ATLAS;
   if (dir === 'yongheng') return YONGHENG_CARDS_ATLAS;
   if (dir === 'shadow') return SHADOW_CARDS_ATLAS;
+  if (dir === 'zhongcai') return ZHONGCAI_CARDS_ATLAS;
   return CARDS_ATLAS;
 }
 

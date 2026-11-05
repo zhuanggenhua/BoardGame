@@ -14,7 +14,7 @@ const TOKEN_PICKER_SCREENSHOT = `${EVIDENCE_DIR}/04-点击地图Token-Token候�
 const EDIT_DRAFT_SCREENSHOT = `${EVIDENCE_DIR}/05-选择地图Token-待提交修正.jpg`;
 const PROPOSAL_MODAL_SCREENSHOT = `${EVIDENCE_DIR}/06-配置表修改交互-修正提案弹窗.jpg`;
 
-const DRAFT_TOKEN_ASSET = 'betrayal/tokens/explorers/darryl-highla';
+const DRAFT_TOKEN_ASSET = 'betrayal/tokens/explorers/michelle-monroe';
 
 test.describe('山屋惊魂配置表探索者素材关联', () => {
     test('真实配置表入口可索引探索者玩家面板资源和地图 token', async ({ page, context }) => {
@@ -73,6 +73,7 @@ test.describe('山屋惊魂配置表探索者素材关联', () => {
         await expect(panelOption).toBeVisible();
         await expect(panelOption).toContainText('Jade Jones');
         await expect(panelOption).not.toContainText('betrayal/explorers/jade-jones');
+        await expect(page.locator('[data-testid="betrayal-config-asset-picker-option"][data-asset="betrayal/explorers/sera-nguyen"]')).toHaveCount(1);
         await saveScreenshot(page, PANEL_PICKER_SCREENSHOT);
         await page.getByTestId('betrayal-config-asset-picker-close').click();
         await expect(page.getByTestId('betrayal-config-asset-picker')).toBeHidden();
@@ -80,11 +81,17 @@ test.describe('山屋惊魂配置表探索者素材关联', () => {
         await page.getByTestId('betrayal-config-explorer-asset-token-button').click();
         await expect(page.getByTestId('betrayal-config-asset-picker')).toBeVisible();
         await expect(page.getByTestId('betrayal-config-asset-picker-title')).toContainText('地图 Token');
-        await expect(page.getByText('点击正确 Token 图；提交前只是草稿。', { exact: true })).toBeVisible();
+        await expect(page.getByText('点击正确地图标记图；提交前只是草稿。', { exact: true })).toBeVisible();
+        const tokenOptions = page.locator('[data-testid="betrayal-config-asset-picker-option"]');
+        await expect(tokenOptions).toHaveCount(12);
+        await expect(page.locator('[data-testid="betrayal-config-asset-picker-option"][data-asset^="betrayal/tokens/explorers/httpssteam"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="betrayal-config-asset-picker-option"][data-asset="betrayal/tokens/explorers/darryl-highla"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="betrayal-config-asset-picker-option"][data-asset="betrayal/tokens/explorers/rebecca-allen"]')).toHaveCount(0);
         const draftTokenOption = page.locator(`[data-testid="betrayal-config-asset-picker-option"][data-asset="${DRAFT_TOKEN_ASSET}"]`);
         await draftTokenOption.scrollIntoViewIfNeeded();
         await expect(draftTokenOption).toBeVisible();
-        await expect(draftTokenOption).not.toContainText('Darryl Highla');
+        await expect(draftTokenOption).toHaveAttribute('aria-label', '选择地图 Token Michelle Monroe');
+        await expect(draftTokenOption).toHaveAttribute('title', /候选：Michelle Monroe；/);
         await expect(draftTokenOption).not.toContainText('Token 候选');
         await expect(draftTokenOption).not.toContainText('正式素材候选');
         await expect(draftTokenOption).not.toContainText(DRAFT_TOKEN_ASSET);
@@ -92,7 +99,7 @@ test.describe('山屋惊魂配置表探索者素材关联', () => {
         await draftTokenOption.click();
 
         await expect(page.getByTestId('betrayal-config-asset-picker')).toBeHidden();
-        await expect(page.getByTestId('betrayal-config-asset-picker-cell-mapTokenAsset')).toContainText('Darryl Highla');
+        await expect(page.getByTestId('betrayal-config-asset-picker-cell-mapTokenAsset')).toContainText('Michelle Monroe');
         await expect(page.getByTestId('betrayal-config-asset-picker-cell-mapTokenAsset')).not.toContainText(DRAFT_TOKEN_ASSET);
         await expect(page.getByTestId('betrayal-config-asset-picker-cell-mapTokenAsset')).toHaveAttribute('data-asset', DRAFT_TOKEN_ASSET);
         await expect(page.getByTestId('betrayal-config-explorer-asset-preview')).toHaveAttribute('data-map-token-asset', DRAFT_TOKEN_ASSET);
@@ -106,7 +113,7 @@ test.describe('山屋惊魂配置表探索者素材关联', () => {
         await expect(page.getByTestId('feedback-config-proposal-context')).toContainText('配置修正提案');
         await expect(page.getByTestId('feedback-config-proposal-context')).toContainText('杰登·琼斯');
         await expect(page.getByTestId('feedback-config-proposal-change')).toContainText('Jaden Jones');
-        await expect(page.getByTestId('feedback-config-proposal-change')).toContainText('Darryl Highla');
+        await expect(page.getByTestId('feedback-config-proposal-change')).toContainText('Michelle Monroe');
         await expect(page.getByTestId('feedback-config-proposal-change')).not.toContainText('betrayal/tokens/explorers/jaden-jones');
         await expect(page.getByTestId('feedback-config-proposal-change')).not.toContainText(DRAFT_TOKEN_ASSET);
         await saveScreenshot(page, PROPOSAL_MODAL_SCREENSHOT);

@@ -1,8 +1,10 @@
+// e2e-harness-boundary: representative-state
 import { expect, test } from '../framework/fixtures';
-import type { Browser, BrowserContext, Locator, Page } from '@playwright/test';
+import type { Browser, BrowserContext, Locator, Page, TestInfo } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { createGuestId, getGameServerBaseURL, joinMatchViaAPI, seedMatchCredentials } from '../helpers/common';
+import type { GameTestContext } from '../framework/fixtures';
 import { THE_GANG_CHALLENGES } from '../../src/games/the-gang/domain/expansions';
 
 const THE_GANG_GAME_ID = 'the-gang';
@@ -2008,6 +2010,76 @@ async function expectSingleHandMiddleCenterNotManuallyShifted(page: Page, label:
     expect(transform, `${label}：单副手牌公共牌阶段不能继承两副手牌中区下移 transform`).toBe('none');
 }
 
+async function runTheGangPersonalCommunityFeedbackFlow(args: {
+    game: GameTestContext;
+    page: Page;
+    testInfo: TestInfo;
+    gameMode: 'seven-card-stud' | 'banana-split';
+    modeTestId: string;
+    expectedCommunityCount: number;
+}) {
+    const { game, page, testInfo, gameMode, modeTestId, expectedCommunityCount } = args;
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await game.openTestGame(THE_GANG_GAME_ID, {
+        players: 3,
+        seed: `the-gang-feedback-${gameMode}-browser-e2e`,
+        seat1: 'human',
+        seat2: 'human',
+        seat3: 'human',
+    }, 30000);
+
+    await expect(page.getByRole('heading', { name: '纸牌帮' })).toBeVisible();
+    await page.getByTestId('the-gang-rules-config').getByRole('button', { name: '扩展' }).click();
+    await page.getByTestId(modeTestId).click();
+    await expect(page.getByTestId(modeTestId)).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('the-gang-apply-rules-config').click();
+
+    await expect.poll(async () => {
+        const state = await getTheGangState(page);
+        return {
+            gameMode: state?.core?.rules?.config?.gameMode,
+            personalCommunityCards: state?.core?.players?.['0']?.communityCards?.length ?? 0,
+            sharedCommunityCards: state?.core?.communityCards?.length ?? 0,
+        };
+    }, { message: `${gameMode} 规则配置通过真实入口生效` }).toEqual({
+        gameMode,
+        personalCommunityCards: gameMode === 'seven-card-stud' ? 1 : 0,
+        sharedCommunityCards: 0,
+    });
+
+    const assertVisibleCommunityCards = async (expectedCount: number, label: string) => {
+        await expect.poll(async () => {
+            const state = await getTheGangState(page);
+            return {
+                stateCount: state?.core?.players?.['0']?.communityCards?.length ?? 0,
+                riverCount: await page.locator('[data-bgg-zone="card-river"] img').count(),
+            };
+        }, { message: `${gameMode} ${label} 个人公共牌可见` }).toEqual({
+            stateCount: expectedCount,
+            riverCount: expectedCount,
+        });
+    };
+
+    await startHeistFromSetup(page);
+    await assertVisibleCommunityCards(gameMode === 'seven-card-stud' ? 1 : 0, '开局');
+
+    const roundExpectedCounts = gameMode === 'seven-card-stud' ? [2, 3, 4] : [1, 2, 3];
+    for (let round = 1; round <= 4; round += 1) {
+        await chooseChipsForSeats(page, 3);
+        if (round < 4) {
+            await confirmProgressForSeats(page, '下一轮', 3);
+            await assertVisibleCommunityCards(roundExpectedCounts[round - 1]!, `第 ${round + 1} 轮`);
+        }
+    }
+
+    await expect(page.getByRole('button', { name: '摊牌' })).toBeEnabled();
+    await confirmProgressForSeats(page, '摊牌', 3);
+    await expect(page.getByLabel('摊牌结算')).toBeVisible();
+    await expect(page.locator('[data-bgg-zone="reveal-community-cards"] img')).toHaveCount(expectedCommunityCount);
+    await expect(page.locator('[data-bgg-zone="reveal-pocket-cards"]')).toHaveCount(3);
+    await game.screenshot(`${gameMode} 真实反馈路径个人公共牌可见并完成摊牌`, testInfo);
+}
+
 test.describe('The Gang 测试入口与代表态截图', () => {
     test('桌面端挑战牌设置弹窗真实显示挑战牌图片', async ({ game, page }, testInfo) => {
         test.setTimeout(90000);
@@ -2446,6 +2518,30 @@ test.describe('The Gang 测试入口与代表态截图', () => {
         await toolsModal.getByRole('button', { name: '关闭工具与专家牌' }).click();
         await expect(page.getByTestId('the-gang-tool-cards')).toBeVisible();
         await game.screenshot('桌面夜视眼镜选牌后回到牌桌', testInfo);
+    });
+
+    test('七张梭哈真实入口可看到个人公共牌并完成摊牌', async ({ game, page }, testInfo) => {
+        test.setTimeout(180000);
+        await runTheGangPersonalCommunityFeedbackFlow({
+            game,
+            page,
+            testInfo,
+            gameMode: 'seven-card-stud',
+            modeTestId: 'the-gang-mode-seven-card-stud',
+            expectedCommunityCount: 4,
+        });
+    });
+
+    test('香蕉分牌真实入口可看到个人公共牌并完成摊牌', async ({ game, page }, testInfo) => {
+        test.setTimeout(180000);
+        await runTheGangPersonalCommunityFeedbackFlow({
+            game,
+            page,
+            testInfo,
+            gameMode: 'banana-split',
+            modeTestId: 'the-gang-mode-banana-split',
+            expectedCommunityCount: 3,
+        });
     });
 
     test('桌面端单副手牌在公共牌出现后显示当前牌型提示', async ({ game, page }, testInfo) => {

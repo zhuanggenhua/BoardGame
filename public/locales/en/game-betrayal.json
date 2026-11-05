@@ -60,6 +60,8 @@
     "exploreRoom": "{{playerId}} explored {{room}}",
     "exploreEvent": "{{playerId}} triggered event: {{event}}",
     "exploreRoomEvent": "{{playerId}} explored {{room}} and triggered event: {{event}}",
+    "exploreRoomCard": "{{playerId}} explored {{room}} and gained {{card}}",
+    "exploreRoomCardBuried": "{{playerId}} explored {{room}} and buried {{card}}",
     "eventRollResult": "{{playerId}} resolved {{event}}: {{roll}}, total {{total}}, {{result}}",
     "eventRolledPhysicalDamageResult": "{{playerId}} resolved {{event}} damage dice: {{damageRolls}}; total {{damageTotal}}; dealt {{appliedDamage}} physical damage",
     "eventRolledMentalDamageResult": "{{playerId}} resolved {{event}} damage dice: {{damageRolls}}; total {{damageTotal}}; dealt {{appliedDamage}} mental damage",
@@ -156,7 +158,6 @@
       "scenarioDossierDetail": "Scenario Text",
       "closeScenarioDialog": "Close",
       "scenarioOnly": "In-Match Confirmation",
-      "scenarioStepSubtitle": "Browse candidate scenario cards, then confirm the current proposal before exploring.",
       "scenarioCardsTitle": "Candidate Scenario Cards",
       "scenarioCardsCount": "7 Candidates",
       "scenarioCardMeta": "Scenario {{card}} / trigger {{omen}}",
@@ -244,6 +245,8 @@
       "noSelectedCard": "No card selected",
       "damage": "Damage",
       "damageAllocationTitle": "Damage Allocation",
+      "chooseTrait": "Choose a trait",
+      "chooseCheckTrait": "Choose a trait to check",
       "damageAllocationHeading": "Assign {{amount}} {{kind}}",
       "damageAllocationAmount": "{{amount}} {{kind}}",
       "damageAllocationSource": "Source: {{source}}",
@@ -332,7 +335,7 @@
       "lootTargetsAvailable": "Lootable corpses: {{count}}",
       "noTradeTargets": "No teammate is in the same room",
       "turnHintMove": "Reach: {{targets}}",
-      "turnHintExplore": "Reveal: {{floor}}",
+      "turnHintExplore": "Tap a doorway marked ? to explore ({{floor}} floor)",
       "turnHintDiscoveryEndTurn": "Discovery complete: end turn",
       "turnHintHold": "Stay in this room",
       "turnHintBloodFromStoneSetupPlacement": "{{count}} rooms left",
@@ -376,8 +379,8 @@
       "actionCueMoveMode": "Now: tap a green room",
       "actionCueMoveSingle": "Now: tap {{room}}",
       "actionCueMoveMany": "Now: tap a green room",
-      "actionCueExplore": "Now: tap Explore for {{floor}}",
-      "actionCueExploreSelect": "Now: tap a gold doorway slot",
+      "actionCueExplore": "Exploration is unavailable right now",
+      "actionCueExploreSelect": "Now: tap a question mark to explore",
       "actionCueExploreOrient": "Now: rotate {{room}} and confirm",
       "actionCueUse": "Now: tap Use",
       "actionCueUseCard": "Now: use {{card}}",
@@ -424,6 +427,7 @@
       "mummyRewardWaiting": "Waiting for {{player}} to choose the post-attack mummy reward",
       "mummyRewardDamage": "Deal {{damage}} damage",
       "mummyRewardSteal": "Steal {{card}}",
+      "mummyRewardDefenderHoldings": "Defender {{player}} currently holds these Items/Omens",
       "mummyRewardInvalidTargets": "{{count}} steal target(s) expired",
       "helpingHandsRewardTitle": "Damage or Steal",
       "helpingHandsRewardChoose": "Against {{player}}: deal {{damage}} damage or steal",
@@ -534,6 +538,9 @@
       "readerStatusPublicBook": "Scenario Dossier",
       "readerStatusHeroBook": "You are a hero: Hero Scenario Book",
       "readerStatusTraitorBook": "You are the traitor: Traitor Scenario Book",
+      "readerScopePublic": "Public scenario",
+      "readerScopeHero": "Hero view",
+      "readerScopeTraitor": "Traitor view",
       "readerPageLabel": "Page",
       "readerPageAria": "Current page {{mobile}}, desktop spread {{desktop}}",
       "readerPrev": "Previous",
@@ -602,9 +609,9 @@
         "reader": {
           "prologueLabel": "Public Reveal",
           "prologue": "Dry scraping comes from the sarcophagus. The mummy wakes, turns toward the Girl, and every step through the house starts to feel like a march toward a wedding that should never happen.",
-          "prologueHeroesLabel": "Hero Opening Cutscene",
+          "prologueHeroesLabel": "Hero Prologue",
           "prologueHeroes": "Dust suddenly swirls through the room, and a shadow of dread crosses your mind. Not far away, you hear a friend's cry, mixed with fear and a trace of excitement. A strange, deep voice echoes in your head: \"My beloved was lost in the ancient flood. Though my tears have turned to ash, love still burns in my heart like the sun. Now my love has returned. We shall never be parted! Anyone who stops me will die, body and soul!\"",
-          "prologueTraitorLabel": "Traitor Opening Cutscene",
+          "prologueTraitorLabel": "Traitor Prologue",
           "prologueTraitor": "There is a crack in the wall. When you touch it, the wall slides aside, revealing a dusty sarcophagus covered in strange designs. The markings on the sarcophagus glow faintly, and you cannot help studying what must be ancient Egyptian hieroglyphs.\n\nA strange, deep voice flashes through your mind: \"My beloved was lost in the ancient flood. Though my tears have turned to ash, love still burns in my heart like the sun. Now my love has returned. We shall never be parted! You will not stop our union!\" Your mind goes blank. You know only that, to let true lovers be together, sacrificing your friends is worthwhile. The sarcophagus slowly opens, and you gaze devoutly upon your master.",
           "setupLabel": "Opening Record",
           "setup": "Your character has become the traitor but continues playing.\n\nTake the large Mummy monster token and a pentagonal item token, which represents the sarcophagus, and place them in your room.\n\nYou immediately lose the Girl companion. Discard the Girl omen and lose its effect. Set the Girl omen aside, take a magenta token to represent the Girl, and place it in another room on the same floor as the Mummy. The Girl and Mummy must be at least 5 rooms apart. If the floor is too small for that, place the Girl token in the room farthest from the Mummy.",
@@ -768,6 +775,32 @@
           "endingSurvivors": "When the Magic Camera shatters, the trapped Essence returns to the bodies it belonged to. The shadows retreat, and the shutter falls silent.",
           "endingTraitor": "When the last photograph develops, every hero's Essence is gone. The shadows in the prints look up and walk out in their place."
         }
+      },
+      "uponReflection": {
+        "title": "Upon Reflection",
+        "objective": "Heroes find the correct Trait, Omen, and Room combination to break the curse while Mirror Beings pursue the explorers.",
+        "heroGoal": "Hold the matching Omen in the correct Room and pass the curse-breaking check with the correct Trait.",
+        "traitorGoal": "There is no traitor. The haunter's soul is trapped in the mirror and can communicate only through event-card hints.",
+        "nextFallback": "Find clues for the Trait, Omen, and Room, or give a teammate an event hint",
+        "progress": {
+          "combination": "Curse combination",
+          "mirrorBeings": "Mirror Beings",
+          "hint": "Event hint"
+        },
+        "reader": {
+          "prologueLabel": "Silence in the Mirror",
+          "prologue": "The Eerie Mirror makes the house unreliable. The haunter's soul is trapped in the mirror, and Mirror Beings begin pursuing the explorers.",
+          "setupLabel": "Opening Record",
+          "setup": "The haunter remains in the game but is treated as dead and cannot communicate normally. The secret combination contains one Trait, one Omen, and one Room; other players cannot see it. Place 2/3/4/5 Mirror Beings in the Entrance Hall, based on player count.",
+          "heroesLabel": "Hero Goal",
+          "heroes": "A hero must hold the correct Omen in the correct Room and make the curse-breaking check with the correct Trait. A result of 5+ with all three correct wins the game; otherwise the haunter gives only an affirmative or negative gesture. All heroes dying is a loss.",
+          "specialLabel": "Curse and Hints",
+          "special": "The haunter cannot speak, gesture, or write. Each turn, they may choose one card from the Event deck and give it to any living player as a hint. The event does not resolve and is set aside afterward.",
+          "monsterLabel": "Mirror Being",
+          "monster": "A Mirror Being has Might 4, Speed 3, Sanity 6, and Knowledge 4. It moves toward the nearest explorer through discovered rooms. If it ends movement in the same room as an explorer, it attacks with Sanity and deals only Knowledge or Sanity damage.",
+          "endingSurvivorsLabel": "Ending",
+          "endingSurvivors": "The mirror curse is broken. The surviving explorers escape the house."
+        }
       }
     },
     "actions": {
@@ -860,10 +893,14 @@
       "tilePlaceholder": "Unrevealed room",
       "ready": "Move here",
       "slotUndiscovered": "Not revealed yet",
-      "slotReady": "Press Explore to reveal a new room",
+      "slotReady": "Select this doorway to explore a new room",
       "explorable": "Explorable",
       "moveTarget": "Move target",
       "skeletonKeyMoveTarget": "Use Skeleton Key to move through walls",
+      "moveCostTitle": "Move here · cost {{count}}",
+      "skeletonKeyMoveCostTitle": "Use Skeleton Key · {{count}} move point",
+      "moveCostBadge": "{{count}} pts",
+      "skeletonKeyMoveCostBadge": "Key · {{count}} pt",
       "preview": "Zoom preview",
       "focusSelf": "Focus my room",
       "obstacle": "Obstacle",
@@ -934,6 +971,7 @@
       "essence": "Essence"
     },
     "players": {
+      "moveTokenAria": "Select {{player}} to move; right-click or hold for details",
       "inventoryCount": "Holding {{count}}",
       "sameRoom": "Same room",
       "tradeTarget": "Trade target",
@@ -945,7 +983,9 @@
       "ability": "Ability",
       "inventory": "Inventory",
       "emptyInventory": "No possessions",
-      "detailSeparator": ": "
+      "detailSeparator": ": ",
+      "viewAbilityDetails": "View",
+      "closeAbilityDetails": "Close ability details"
     },
     "summary": {
       "objective": "Current Objective",
@@ -954,6 +994,8 @@
       "nextValue": "Prioritize {{action}}"
     },
     "discovery": {
+      "roomSceneTitle": "New room discovered",
+      "skipRoomScene": "Skip room reveal",
       "label": "Discovery",
       "resultLabel": "Result",
       "revealed": "Revealed",
@@ -972,19 +1014,30 @@
       "confirmCard": "Confirm",
       "confirmWithProgress": "Confirm {{confirmed}}/{{total}}",
       "confirmedWithProgress": "Confirmed {{confirmed}}/{{total}}",
+      "waitingForCardConfirmation": "Waiting {{confirmed}}/{{total}}",
       "nextSearchCard": "Next card",
+      "nextTraitCheck": "Make the {{trait}} check",
+      "chooseRewardTrait": "Choose reward trait",
+      "resolveNextStep": "Enter next rules stage",
+      "reviewResult": "Review result",
       "confirmationProgress": "Players confirmed {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "A room with an event symbol has been revealed; choose to skip the event or draw an event card.",
       "rollEvent": "Roll Event"
     },
     "roll": {
       "fallbackLabel": "Dice Roll",
+      "rolling": "Dice rolling; waiting to settle",
       "bonus": "Bonus {{value}}",
       "noBonus": "No bonus",
       "diceSubtotal": "Dice faces {{value}}",
       "passiveBonus": "Bonus {{value}}",
       "detail": "Dice faces {{subtotal}} | bonus {{bonus}} | total {{total}}",
       "total": "Total {{value}}",
+      "thresholds": "Check requirement (total): {{value}}",
+      "threshold": "Total {{value}}: {{label}}",
+      "thresholdRange": "{{min}}–{{max}} points: {{label}}",
+      "hauntSuccessThreshold": "Total {{threshold}} or higher: {{label}}",
+      "hauntFailureThreshold": "Below {{threshold}}: {{label}}",
       "eventRollTotal": "Event total {{value}}",
       "eventRollDiceSubtotal": "Event dice faces {{value}}",
       "eventDamageDiceLabel": "Damage Dice",
@@ -1002,6 +1055,10 @@
       "diceFaces": "Dice faces {{value}}",
       "cancelModifier": "Cancel",
       "confirmModifier": "Use {{card}}"
+      ,"modifierAppliedFlashlight": "Flashlight applied: +2 dice to this event trait check"
+      ,"modifierAppliedLantern": "Lantern applied: +2 dice to this event trait check"
+      ,"modifierAppliedCamera": "Magic Camera applied: this Knowledge check uses Sanity"
+      ,"modifierAppliedBook": "Book used: this non-combat check uses Knowledge"
     },
     "useEffects": {
       "move": "Move {{value}}",
@@ -1053,6 +1110,10 @@
       "status": {
         "stunned": "Stunned"
       }
+    },
+    "turnIntro": {
+      "title": "Your turn",
+      "skip": "Skip turn introduction"
     }
   },
   "errors": {
@@ -1066,20 +1127,17 @@
   },
   "tutorial": {
     "mainPath": {
-      "title": "Main Tutorial: Core Turn to First Hero Goal Action",
-      "description": "Start before the haunt and move naturally through one core turn: movement, exploration, event resolution, Book use, Rabbit's Foot reroll, damage allocation, a natural haunt reveal, and the first hero goal action.",
+      "title": "Main Tutorial: Core Turn to Public Haunt",
+      "description": "Start before the haunt and move naturally through one core turn: movement, exploration, event resolution, Book use, Rabbit's Foot reroll, damage allocation, and the natural haunt reveal into the Hero Scenario Book.",
       "steps": {
-        "endTurnAfterEvent": "After damage allocation, discovering the Event room has already ended your turn. Choose End Turn to pass play to your teammate.",
-        "watchTeammateOneOmenTurn": "It is not your turn now. Teammate 1 first moves back beside the Entrance Hall, explores a ground-floor Omen room, and reveals the Ring; this haunt roll does not trigger.",
-        "teammateOneOmenResults": "Teammate 1 gains the Ring, and the haunt has not started. Play passes to teammate 2.",
-        "watchTeammateTwoOmenTurn": "Teammate 2 moves into the newly discovered ground-floor room, explores an adjacent Omen room, and reveals Dog; this haunt roll still does not trigger.",
-        "teammateTwoOmenResults": "After Dog is confirmed, play returns to you. You are still in the Kitchen; this turn, move to the Upper Landing beside the Library, then wait for the haunt goal before entering it.",
-        "moveToGrandStaircase": "You already know movement. Stay in move mode and move from the Kitchen through the Hallway to the Grand Staircase; it connects the floors.",
+        "endTurnAfterEvent": "After damage allocation, discovering the Event room has already ended your turn. Choose End Turn to pass play to the next explorer.",
+        "watchTeammateOneOmenTurn": "The next explorer takes their own turn, moves, discovers an Omen room, and gains an Omen. You do not operate for them; read the public result. If the haunt roll fails, turn order continues.",
+        "watchTeammateTwoOmenTurn": "Another explorer also takes their own turn, moves, discovers, and gains an Omen. Because the haunt roll still fails, turn order returns to you.",
+        "moveToGrandStaircase": "Two other explorers have gained public Omens and the haunt has not begun, so play has returned to your turn. From the Kitchen, click your explorer token on the map, then click the adjacent Hallway and Grand Staircase in sequence. The Grand Staircase connects the floors.",
         "switchToUpperFloor": "At the Grand Staircase, the floor switcher shows an upper-floor move target. Choose the up arrow to switch the map to the upper floor and reveal the Upper Landing.",
-        "moveToUpperLanding": "The Upper Landing is now visible. Choose it to move beside the Library; this step only completes the movement you can legally make this turn.",
-        "endTurnFromUpperLanding": "You are on the Upper Landing, with the Library to the west. Do not continue exploring this turn; choose End Turn so your teammate can keep exploring until an Omen roll naturally starts the haunt.",
-        "watchTeammateHauntTrigger": "Teammate 1 explores from the new ground-floor room and reveals the Mask. This Omen roll reaches 5+, so the haunt starts naturally.",
-        "teammateConfirmHauntTrigger": "Teammate 1 reads the Mask and haunt roll result, confirms it, and the game moves into the haunt."
+        "moveToUpperLanding": "The discovered Upper Landing is now visible. Choose it; this is movement and will not reveal a new room.",
+        "endTurnFromUpperLanding": "You are on the Upper Landing. Do not continue exploring this turn; choose End Turn and let turn order advance naturally to the public haunt reveal.",
+        "watchTeammateHauntTrigger": "The next explorer takes their own turn, draws a new Omen, and makes the haunt roll. When it reaches 5+, the haunt is revealed and your Hero Scenario Book opens."
       }
     },
     "basicSetup": {
@@ -1087,7 +1145,7 @@
       "description": "Before the haunt begins, you may move, discover a new room, and take special Item or Omen actions in any order. Discovering a new room ends your turn; trade is taught in its own topic.",
       "steps": {
         "setupRuntime": "Before the haunt begins, learn one core turn: move to a room, discover a new room, reveal a discovery card, and see how the turn closes.",
-        "objectiveAndTurn": "It is your turn. Start with Move: moving changes your room and decides which unexplored doorway you can use next.",
+        "objectiveAndTurn": "It’s your turn. Movement changes your room and determines which unexplored doorway you can use next; first, find your explorer token on the map.",
         "traitsAndSpeed": "At the start of your turn, check your Speed. It is the most rooms your explorer can move this turn.",
         "traitTrackReading": "The green number on a trait track is the starting value; the highlighted slot is the current value, and the skull is death, not a number. Repeated values are still separate slots.",
         "movesRemaining": "Check Speed at the start of the turn; the movement marker in the upper-right shows the movement left this turn. A mid-turn Speed change does not change movement already set for the turn.",
@@ -1096,11 +1154,11 @@
         "focusSelfRoom": "After the camera leaves your position, Focus My Room returns it to your explorer's room.",
         "hauntRiskTrack": "The omen track records the number of Omens discovered, and the highlighted slot is the current value. When an Omen is drawn, roll dice equal to the total number of Omens held by all players; on a result of 5+, the haunt begins.",
         "inventoryAndHelp": "Event cards enter the current event resolution when revealed and do not stay in front of you; Items and Omens do. Choose the relevant card here when you use, trade, or resolve a card effect.",
-        "viewBook": "First click the magnifier on the Book and read the card: this non-combat check can spend 1 Sanity to use Knowledge instead. Close the card when you are done.",
+        "viewBook": "On desktop, hover the Book itself to reveal the magnifier in its upper-right corner, then click it to read the card. On touch devices, press and hold the Book to open the enlarged view; holding only inspects the card and does not use it. After reading, close the card: this non-combat check can spend 1 Sanity to use Knowledge instead.",
         "useBook": "Now use the Book itself. After you spend 1 Sanity, this Event check rerolls with Knowledge.",
-        "openMoveTargets": "Choose Move, then choose an adjacent room. Each point of movement reaches one adjacent room.",
+        "openMoveTargets": "Click your explorer token on the map to reveal movement targets. Each point of movement reaches one adjacent room.",
         "moveToHallway": "Move into the Hallway; its unexplored doorway can reveal a new room.",
-        "exploreUpper": "Choose the explorable face-down room, then choose an exit. After revealing it, first read the room tile and the connecting doorway.",
+        "exploreUpper": "Once you reach the Hallway, click an explorable room slot marked ? on the map. This is not movement into a discovered room; it reveals and places a new room. After choosing an exit, read the room tile and the connecting doorway.",
         "rotateRoomPlacement": "Rotate the new room and choose an orientation that connects one doorway to the current unexplored doorway.",
         "confirmRoomPlacement": "The orientation is selected. Choose Confirm Placement; only after placement do you resolve the room text and symbol.",
         "discoveryCardType": "This room has an Event symbol, so it revealed an Event card. Item symbols reveal Item cards, and Omen symbols reveal Omen cards. Read the card kind and face before resolving its instruction.",
@@ -1108,7 +1166,7 @@
         "useRabbitFoot": "The Book changed the check to Knowledge. Now click Rabbit's Foot, choose one die to reroll, then click Confirm Rabbit's Foot.",
         "rabbitFootResult": "Rabbit's Foot has finished the reroll. Read the new dice faces and total, then choose Confirm to acknowledge the result; if the check still fails, the game moves into damage allocation after confirmation.",
         "finish": "Choose the trait that takes 1 physical damage, then confirm the allocation.",
-        "returnToTableAfterDamage": "The damage is now applied to the trait track. Choose Return to Table to go back to your action entry."
+        "returnToTableAfterDamage": "The damage is now applied to the trait track. Discovering the Event room has ended your turn; choose End Turn to pass play to the next explorer."
       }
     },
     "omenConfirmation": {
@@ -1123,23 +1181,20 @@
     },
     "hauntNaturalTrigger": {
       "title": "Natural Haunt Trigger: Omen to First Hero Action",
-      "description": "Continue through normal turns: control only your own turn, let teammate turns advance as public results, read the Hero Scenario Book when a teammate reveals the haunt, then complete the first hero objective action: finding the Mummy's true name.",
+      "description": "Continue through normal turns: control only your own turns, then act again when turn order returns to you. Once the haunt is public, read the Hero Scenario Book and complete the first hero objective action: finding the Mummy's true name.",
       "steps": {
-        "setupNaturalHauntFlow": "This section teaches the majority hero perspective: you end your turn beside the Library and control only your own turn, while teammates gain Omens through normal turns. The traitor book has its own chapter.",
+        "setupNaturalHauntFlow": "This section teaches the majority hero perspective: you end your turn beside the Library and control only your own turn. The traitor book has its own chapter.",
         "handOffToTeammateOne": "Choose End Turn to pass play to the next explorer. Haunt risk rises as players actually gain Omens.",
-        "watchTeammateOmenTurns": "It is not your turn now. Wait while teammate 1 explores an Omen room; this only reveals the first Omen and a failed haunt roll.",
-        "teammateOmenResults": "Teammate 1 gains the Ring, and one haunt die stays below 5+. Play now passes normally to teammate 2.",
-        "watchTeammateTwoOmenTurn": "Teammate 2 moves beside the Observatory, explores the next Omen room, and reveals Dog. The second Omen uses two dice for the haunt roll.",
-        "teammateTwoOmenResults": "After teammate 2 confirms Dog, the turn returns to you. Ring and Dog are in play, so the next Omen will roll three dice.",
-        "handOffToTeammateSecondCycle": "It is your turn again. Choose End Turn to keep watching teammates explore through the normal rules; you are not acting for them.",
-        "watchTeammateHauntTrigger": "Teammate 1 explores south from the Observatory, reveals another Omen room, and gains the Mask. The third Omen rolls three haunt dice.",
-        "teammateConfirmHauntTrigger": "Teammate 1 reads the Mask and the three haunt dice, then confirms after seeing the public result.",
-        "heroReaderOpened": "After the public haunt reveal, teammate 1 is the revealer and becomes the traitor. You are still a hero; the game first shows the hero opening cutscene, not the goal page of the Scenario Book. Read this one-time opening.",
+        "watchTeammateOmenTurns": "The next explorer takes their own turn, discovers, and gains a public Omen. You do not operate for them; read the public result. If the haunt roll fails, turn order continues.",
+        "watchTeammateTwoOmenTurn": "Another explorer also takes their own turn, moves, discovers, and gains a public Omen. Because the haunt roll still does not reach 5+, turn order returns to you.",
+        "handOffToTeammateSecondCycle": "Two other explorers gained public Omens on their own turns; the haunt roll still has not reached 5+, so it is your turn again. Haunt risk comes from the number of public Omens; end your own turn so turn order can continue.",
+        "watchTeammateHauntTrigger": "The next explorer takes their own turn, draws a new Omen, and makes the haunt roll. When it reaches 5+, the haunt is revealed and your Hero Scenario Book opens.",
+        "heroReaderOpened": "Another explorer drew a new Omen on their own turn, and this haunt roll reached 5+. After the public haunt reveal, you are still a hero; the game first shows the hero opening cutscene, not the goal page of the Scenario Book. Read this one-time opening.",
         "heroReaderTurnPage": "After the opening cutscene, choose Enter Scenario Book to open the Hero Scenario Book goal page; that page explains finding the true name, learning the spell, and banishing the Mummy.",
         "heroReaderGoal": "The Hero Scenario Book goal page says the hero can find the true name in the Sarcophagus room, Study, or Library. You are beside the Library now, so after reading you should move into it.",
         "heroReaderClose": "After reading the Hero Scenario Book goal page, close it and return to the table; the next hero turn follows this goal.",
-        "waitForHeroTurnAfterHaunt": "After the haunt begins, turn order continues. Teammate 2 ends their turn through the normal flow, then play returns to you; you are still on the Upper Landing, and the goal just told you the Library can research the Mummy's history.",
-        "openLibraryMoveAfterGoal": "You have read the hero goal and know why the Library matters. Choose Move first to show the rooms reachable from the Upper Landing.",
+        "waitForHeroTurnAfterHaunt": "Please wait; turn order will return to your hero turn.",
+        "openLibraryMoveAfterGoal": "You have read the hero goal and know why the Library matters. Click your explorer token on the map to reveal the rooms reachable from the Upper Landing.",
         "moveToLibraryAfterGoal": "The Library is now an adjacent move target. Choose the Library to move into it; only then can you find the Mummy's true name.",
         "heroStudyNameRoll": "The hero goal allows a 6+ Knowledge check in the Sarcophagus room, Study, or Library to find the true name. You are in the Library, so choose Find the Mummy's True Name; success gains the first knowledge token.",
         "heroStudyNameResult": "The check succeeds: the heroes gain the first knowledge token and record the true name. After reading the roll result, press Confirm to return to the table.",

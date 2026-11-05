@@ -195,7 +195,7 @@ export function createPendingCardResolutionQueue(options: {
                 id: `drawn-card-${options.drawnCard.id}`,
                 kind: 'drawn-card' as const,
                 text: `已加入持有区：${options.drawnCard.name}`,
-                deckKind: options.deckKind,
+                deckKind: options.deckKind ?? undefined,
                 cardId: options.drawnCard.id,
             }]
             : [];
@@ -211,7 +211,7 @@ export function createPendingCardResolutionQueue(options: {
             ? step.deckKind
             : step.kind === 'room-effect'
                 ? undefined
-                : options.deckKind;
+                : options.deckKind ?? undefined;
         return {
             id: `${options.playerId}-${options.roomId}-${options.timestamp}-${step.id}`,
             playerId: options.playerId,
@@ -299,6 +299,14 @@ export function clonePendingEventChoice(
     return {
         ...pending,
         effect: cloneUseEffect(pending.effect),
+        allTraitCheckProgress: pending.allTraitCheckProgress
+            ? {
+                results: pending.allTraitCheckProgress.results.map((result) => ({
+                    ...result,
+                    dice: [...result.dice],
+                })),
+            }
+            : undefined,
         deferredTurnEnd: pending.deferredTurnEnd
             ? cloneTurnEndedPayload(pending.deferredTurnEnd)
             : undefined,

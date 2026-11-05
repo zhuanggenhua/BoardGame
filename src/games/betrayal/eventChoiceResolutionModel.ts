@@ -60,6 +60,7 @@ import type {
     BetrayalPendingEventChoiceState,
     BetrayalPendingEventRollResolutionState,
     BetrayalTraitKey,
+    BetrayalAllTraitCheckResult,
 } from './game';
 import type { BetrayalCommandMap } from './commandTypes';
 
@@ -82,6 +83,11 @@ export interface BetrayalEventChoiceResolvedPayload {
     uponReflectionSetup?: BetrayalPendingEventRollResolutionState['uponReflectionSetup'];
     hauntRoll?: BetrayalPendingEventRollResolutionState['hauntRoll'];
     nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+    allTraitCheckProgress?: {
+        sourceTitle: string;
+        playerId: string;
+        results: BetrayalAllTraitCheckResult[];
+    };
     eventEffect?: UseEffectProfile;
     deathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
     eventRoll?: BetrayalEventRollPayload;
@@ -183,7 +189,7 @@ export function createBetrayalEventSymbolSkipChoice(
         },
         acceptLabel: method === 'idol' ? '用雕像跳过事件' : '跳过事件',
         declineLabel: '抽取事件牌',
-        effect: { mode: 'none' },
+        effect: { mode: 'none', recommendedAction: 'explore' },
     };
 }
 
@@ -200,7 +206,9 @@ export function validateBetrayalEventChoiceResolution(
         if (payload.accept === false) {
             return { valid: true };
         }
-        if (!payload.trait || !pending.effect.allowedTraits.includes(payload.trait)) {
+        if (pending.effect.mode !== 'chosenTrait'
+            || !payload.trait
+            || !pending.effect.allowedTraits.includes(payload.trait)) {
             return { valid: false, error: '牙齿项链必须选择一项当前濒死属性。' };
         }
         return { valid: true };
@@ -309,6 +317,9 @@ export function validateBetrayalEventChoiceResolution(
         return { valid: true };
     }
     if (pending.effect.mode === 'allTraitChecks') {
+        if (!payload.trait || !pending.effect.traits.includes(payload.trait)) {
+            return { valid: false, error: '该事件必须先选择当前要检定的属性。' };
+        }
         if (
             effectHasUnresolvedChosenTraitChoice(pending.effect.allPassEffect)
             && (!payload.trait || !effectAllowsChosenTrait(pending.effect.allPassEffect, payload.trait))
@@ -372,7 +383,7 @@ function resolveDrawnEventChoicePayload(
     const eventCard = resolveEvent(core);
     const eventRollKind = eventCard.roll?.kind ?? 'trait';
     const eventRollResult = eventCard.roll
-        ? eventRollKind === 'dice'
+        ? eventCard.roll.kind === 'dice'
             ? rollEventFixedDice(random, eventCard.roll.dice)
             : rollEventTraitCheckWithDice(random, core.currentExplorer, eventCard.roll.trait, core)
         : null;
@@ -390,7 +401,10 @@ function resolveDrawnEventChoicePayload(
         random,
         core.currentExplorer,
         core,
-        { materializeRandomResults: !deferEventRollEffectRandomResults },
+        {
+            materializeRandomResults:
+                !deferEventRollEffectRandomResults && eventEffect.mode !== 'allTraitChecks',
+        },
     );
     const needsFollowUpChoice = eventEffectNeedsPendingEventChoice(materializedEventEffect);
     const deathPrevention = needsFollowUpChoice || deferEventRollEffectRandomResults
@@ -398,7 +412,7 @@ function resolveDrawnEventChoicePayload(
         : resolveEventDamageDeathPrevention(core, materializedEventEffect, random);
     const effectLabel = formatEffectLabel(materializedEventEffect);
     const eventRollLabel = eventCard.roll
-        ? eventRollKind === 'dice'
+        ? eventCard.roll.kind === 'dice'
             ? eventCard.roll.label
             : `${TRAIT_LABEL[eventCard.roll.trait]}检定`
         : undefined;
@@ -434,7 +448,7 @@ function resolveDrawnEventChoicePayload(
         eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch && eventRollResult
             ? {
                 kind: eventRollKind,
-                trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
+                trait: eventCard.roll.kind === 'dice' ? undefined : eventCard.roll.trait,
                 total: eventRollTotal,
                 label: eventBranch.label,
                 eventDescription: eventCard.description,
@@ -557,6 +571,7 @@ function resolveMaterializedChoicePayload(
     effect: UseEffectProfile,
     accepted: boolean,
     toneOverride?: BetrayalDiscoverySummary['tone'],
+    detailPrefix?: string,
 ): BetrayalEventChoiceResolvedPayload {
     const selectedEffect = applyEventChoiceSelections(core, effect, payload);
     const eventEffect = materializeEventEffect(selectedEffect, random, core.currentExplorer, core);
@@ -572,7 +587,7 @@ function resolveMaterializedChoicePayload(
             kind: 'event',
             title: pending.sourceTitle,
             summary,
-            detail: effectLabel,
+            detail: detailPrefix ? `${detailPrefix}；${effectLabel}` : effectLabel,
             tone: toneOverride ?? (isWarningEventEffect(eventEffect) ? 'warning' : 'accent'),
         },
         logText: `${actorName}${logVerb}：${pending.sourceTitle}（${effectLabel}）`,
@@ -605,7 +620,7 @@ export function resolveBetrayalEventChoiceResolvedPayload(
                 playerId,
                 sourceTitle: pending.sourceTitle,
                 accepted: true,
-                eventEffect: { mode: 'none' },
+                eventEffect: { mode: 'none', recommendedAction: 'explore' },
                 discovery: {
                     kind: 'event',
                     title: summary,
@@ -779,18 +794,101 @@ export function resolveBetrayalEventChoiceResolvedPayload(
         };
     }
     if (pending.effect.mode === 'allTraitChecks') {
-        return resolveMaterializedChoicePayload(
-            core,
-            pending,
-            payload,
+        if (
+            pending.effect.results?.length === pending.effect.traits.length &&
+            pending.effect.results.every((result) => result.passed)
+        ) {
+            return resolveMaterializedChoicePayload(
+                core,
+                pending,
+                payload,
+                playerId,
+                actor.displayName,
+                random,
+                '选择奖励属性',
+                '选择通过后的奖励属性',
+                pending.effect.allPassEffect,
+                true,
+                undefined,
+                '四项属性检定均通过',
+            );
+        }
+        const selectedTrait = payload.trait;
+        if (!selectedTrait || !pending.effect.traits.includes(selectedTrait)) {
+            return null;
+        }
+        const rollResult = rollEventTraitCheckWithDice(random, core.currentExplorer, selectedTrait, core);
+        const currentResult: BetrayalAllTraitCheckResult = {
+            trait: selectedTrait,
+            total: rollResult.total,
+            dice: [...rollResult.dice],
+            passiveBonus: rollResult.passiveBonus,
+            passed: rollResult.total >= pending.effect.passMin,
+        };
+        const previousResults = pending.allTraitCheckProgress?.results ?? [];
+        const results = [...previousResults, currentResult];
+        const remainingTraits = pending.effect.traits.filter((trait) => trait !== selectedTrait);
+        const allPassed = results.every((result) => result.passed);
+        const finalEffect = {
+            ...cloneUseEffect(pending.effect),
+            traits: [...pending.effect.traits],
+            results,
+        } as Extract<UseEffectProfile, { mode: 'allTraitChecks' }>;
+        const nextPendingEventChoice = remainingTraits.length > 0
+            ? {
+                ...pending,
+                id: `${pending.id}-${selectedTrait}-${timestamp}`,
+                effect: {
+                    ...cloneUseEffect(pending.effect),
+                    traits: remainingTraits,
+                    results: undefined,
+                } as Extract<UseEffectProfile, { mode: 'allTraitChecks' }>,
+                allTraitCheckProgress: { results },
+            }
+            : allPassed && eventEffectNeedsPendingEventChoice(finalEffect.allPassEffect)
+                ? {
+                    ...pending,
+                    id: `${pending.id}-reward-${timestamp}`,
+                    effect: cloneUseEffect(finalEffect.allPassEffect),
+                    allTraitCheckProgress: { results },
+                }
+                : undefined;
+        const eventEffect = nextPendingEventChoice ? undefined : finalEffect;
+        const effectLabel = currentResult.passed ? '通过' : `失败（属性 -${pending.effect.failAmount}）`;
+        return {
             playerId,
-            actor.displayName,
-            random,
-            '每项属性均通过',
-            `选择${payload.trait ? TRAIT_LABEL[payload.trait] : '任意属性'}`,
-            pending.effect.allPassEffect,
-            true,
-        );
+            sourceTitle: pending.sourceTitle,
+            accepted: true,
+            nextPendingEventChoice,
+            eventEffect,
+            allTraitCheckProgress: {
+                sourceTitle: pending.sourceTitle,
+                playerId,
+                results,
+            },
+            eventRoll: {
+                kind: 'trait',
+                trait: selectedTrait,
+                total: rollResult.total,
+                label: currentResult.passed ? '通过' : '失败',
+                eventDescription: pending.eventDescription,
+                rollLabel: `${TRAIT_LABEL[selectedTrait]}检定`,
+                dice: rollResult.dice,
+                passiveBonus: rollResult.passiveBonus,
+                branchThresholds: [
+                    { min: pending.effect.passMin, label: '通过', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+                    { min: 0, label: '失败', effect: { mode: 'none', recommendedAction: 'endTurn' } },
+                ],
+            },
+            discovery: {
+                kind: 'event',
+                title: pending.sourceTitle,
+                summary: remainingTraits.length > 0 ? '选择下一项属性检定' : allPassed ? '四项属性检定完成，选择奖励属性' : '四项属性检定完成',
+                detail: `${TRAIT_LABEL[selectedTrait]}检定 ${rollResult.total}：${effectLabel}`,
+                tone: currentResult.passed ? 'accent' : 'warning',
+            },
+            logText: `${actor.displayName}选择${TRAIT_LABEL[selectedTrait]}并完成${pending.sourceTitle}检定（${rollResult.total}，${effectLabel}）`,
+        };
     }
     if (pending.effect.mode === 'traitRoll') {
         return resolveTraitRollEventChoicePayload(
@@ -857,6 +955,9 @@ export function resolveBetrayalEventChoiceResolvedPayload(
         || effectNeedsAdjacentRoomChoice(pending.effect)
         || effectNeedsRoomTargetChoice(pending.effect)
     ) {
+        const allTraitChecksPassed = pending.allTraitCheckProgress?.results.length
+            ? pending.allTraitCheckProgress.results.every((result) => result.passed)
+            : false;
         return resolveMaterializedChoicePayload(
             core,
             pending,
@@ -868,6 +969,8 @@ export function resolveBetrayalEventChoiceResolvedPayload(
             '选择事件效果',
             pending.effect,
             true,
+            undefined,
+            allTraitChecksPassed ? '每项属性均通过' : undefined,
         );
     }
     if (pending.effect.mode === 'optionalEffect') {

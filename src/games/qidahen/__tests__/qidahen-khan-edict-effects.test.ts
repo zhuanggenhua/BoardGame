@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';import { QidahenDomain } from '../domain';
 
 import { QIDAHEN_COMMANDS } from '../domain/commands';
+import { getQidahenWheelRecruitTrainChoices } from '../domain/wheelRecruitTrain';
 import { getActionChoicesForFaction } from '../domain/factionActionWindow';import { random, apply, getKhanEdictSelection, getDiplomacySelection } from './helpers/paymentSelectionHarness';
 
 describe('七大恨大汗令箭效果', () => {
@@ -114,7 +115,8 @@ it('大汗令箭当前选中敌区时会保留焦点，令箭效果面板回退�
         expect(next.selectedRegionId).toBe('city-region-24');
         expect(getKhanEdictSelection(next)?.sourceRegionId).toBe('city-region-25');
         expect(getKhanEdictSelection(next)?.sourceRegionName).toBe('山海关');
-        expect(getKhanEdictSelection(next)?.recruitTargetRegionId).toBe('city-region-25');
+        // 占领山海关不会把它变成蒙古本土；仍可雇佣和从此出兵。
+        expect(getKhanEdictSelection(next)?.recruitTargetRegionId).toBeNull();
         expect(getKhanEdictSelection(next)?.hireTargetRegionId).toBe('city-region-25');
 
         const rebound = apply(next, {
@@ -130,8 +132,8 @@ it('大汗令箭当前选中敌区时会保留焦点，令箭效果面板回退�
         expect(getKhanEdictSelection(rebound)).toMatchObject({
             displayAnchorRegionId: 'city-region-25',
             displayAnchorRegionName: '山海关',
-            recruitTargetRegionId: 'city-region-25',
-            recruitTargetRegionName: '山海关',
+            recruitTargetRegionId: null,
+            recruitTargetRegionName: null,
             hireTargetRegionId: 'city-region-25',
             hireTargetRegionName: '山海关',
         });
@@ -199,7 +201,7 @@ it('大汗令箭进入选择面板后就算 core.khanEdictSelection 被清空，
         expect(rebuiltSelection?.sourceRegionName).toBeTruthy();
     });
 
-it('大汗令箭选择征兵训练后会给当前蒙古控制区增加 2 部队', () => {
+it('大汗令箭选择征兵训练后进入共用选择流程，不自动增加部队或再次弃牌', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '1';
         core.wheelActionUsed = true;
@@ -239,26 +241,15 @@ it('大汗令箭选择征兵训练后会给当前蒙古控制区增加 2 部队'
 
         expect(resolved.khanEdictSelection).toBeNull();
         expect(resolved.turnPhase).toBe('action-window');
-        expect(resolved.selectedRegionId).toBe('city-region-13');
+        expect(resolved.selectedRegionId).toBe('city-region-25');
+        expect(resolved.wheelRecruitTrainProgress).toMatchObject({ source: 'khan-edict', phase: 'choose-action' });
         const recruitRegion = resolved.regions.find((region) => region.id === 'city-region-25');
-        expect(recruitRegion?.troops).toBe(4);
-        expect(recruitRegion?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                id: 'mongol-khan-edict-recruit-train-regular-cavalry-lv2',
-                label: '蒙古骑兵',
-                faction: 'mongol',
-                troopKind: 'cavalry',
-                count: 2,
-                level: 2,
-            }),
-        ]));
-        expect(resolved.factions.mongol.troops).toBe(core.factions.mongol.troops + 2);
-        expect(resolved.lastSeasonSummary?.title).toBe('大汗令箭');
-        expect(resolved.lastSeasonSummary?.lines[0]).toContain('征兵训练');
-        expect(resolved.lastSeasonSummary?.lines[0]).toContain('蒙古骑兵');
+        expect(recruitRegion?.troops).toBe(2);
+        expect(resolved.factions.mongol.troops).toBe(core.factions.mongol.troops);
+        expect(resolved.lastSeasonSummary).toBeNull();
     });
 
-it('大汗令箭在非围城 cityState 城市执行征兵训练时会先并回守军，再建立新骑兵', () => {
+it('大汗令箭征兵训练流程保留非围城 cityState，等待玩家选择目标', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '1';
         core.wheelActionUsed = true;
@@ -306,18 +297,15 @@ it('大汗令箭在非围城 cityState 城市执行征兵训练时会先并回�
         });
 
         expect(resolved.regions.find((region) => region.id === 'city-region-25')).toMatchObject({
-            troops: 4,
-            population: 2,
-            cityState: null,
-            specialTroops: expect.arrayContaining([
-                expect.objectContaining({ id: 'mongol-shanhaiguan-cavalry-lv2', count: 2, level: 2 }),
-                expect.objectContaining({ id: 'mongol-khan-edict-recruit-train-regular-cavalry-lv2', count: 2, level: 2 }),
-            ]),
+            troops: 0,
+            cityState: { troops: 2 },
+            specialTroops: [],
         });
-        expect(resolved.factions.mongol.troops).toBe(core.factions.mongol.troops + 2);
+        expect(resolved.wheelRecruitTrainProgress?.phase).toBe('choose-action');
+        expect(resolved.factions.mongol.troops).toBe(core.factions.mongol.troops);
     });
 
-it('大汗令箭的征兵训练不会把正规军建在蒙古附庸区，而会回退到蒙古本土控制区', () => {
+it('大汗令箭征兵训练只提供蒙古本土目标，不自动从附庸区回退建军', () => {
         const core = QidahenDomain.setup(['0', '1', '2'], random);
         core.currentPlayer = '1';
         core.wheelActionUsed = true;
@@ -372,18 +360,12 @@ it('大汗令箭的征兵训练不会把正规军建在蒙古附庸区，而会�
             controlLabel: '蒙古附庸',
             troops: 1,
         });
-        const fallbackRegion = resolved.regions.find((region) => region.id === 'city-region-14');
-        expect(fallbackRegion?.troops).toBe(5);
-        expect(fallbackRegion?.specialTroops).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                id: 'mongol-khan-edict-recruit-train-regular-cavalry-lv2',
-                label: '蒙古骑兵',
-                faction: 'mongol',
-                troopKind: 'cavalry',
-                count: 2,
-                level: 2,
-            }),
-        ]));
+        const choices = getQidahenWheelRecruitTrainChoices(resolved);
+        expect(choices.map((choice) => choice.id)).not.toContain('recruit:city-region-24');
+        expect(choices.map((choice) => choice.id)).not.toContain('action:recruit');
+        expect(resolved.regions.find((region) => region.id === 'city-region-14')?.troops)
+            .toBe(selected.regions.find((region) => region.id === 'city-region-14')?.troops);
+        expect(resolved.wheelRecruitTrainProgress).toMatchObject({ source: 'khan-edict', phase: 'choose-action' });
     });
 
 it('大汗令箭当前选中附庸区时，令箭效果面板会回退到实际蒙古来源区', () => {
@@ -511,8 +493,8 @@ it('大汗令箭以逻辑区辽西为当前选区时，会保留当前焦点并�
         expect(getKhanEdictSelection(selected)).toMatchObject({
             sourceRegionId: 'city-region-19-liaoxi',
             sourceRegionName: '辽西',
-            recruitTargetRegionId: 'city-region-19-liaoxi',
-            recruitTargetRegionName: '辽西',
+            recruitTargetRegionId: null,
+            recruitTargetRegionName: null,
             hireTargetRegionId: 'city-region-19-liaoxi',
             hireTargetRegionName: '辽西',
         });
@@ -524,20 +506,11 @@ it('大汗令箭以逻辑区辽西为当前选区时，会保留当前焦点并�
         });
 
         expect(resolved.turnPhase).toBe('action-window');
-        expect(resolved.selectedRegionId).toBe('city-region-19-liaoxi');
-        expect(resolved.regions.find((region) => region.id === 'city-region-19-liaoxi')).toMatchObject({
-            troops: 4,
-            specialTroops: expect.arrayContaining([
-                expect.objectContaining({
-                    id: 'mongol-khan-edict-recruit-train-regular-cavalry-lv2',
-                    label: '蒙古骑兵',
-                    faction: 'mongol',
-                    troopKind: 'cavalry',
-                    count: 2,
-                    level: 2,
-                }),
-            ]),
-        });
+        expect(resolved.selectedRegionId).toBe('liao-xi');
+        expect(resolved.wheelRecruitTrainProgress).toMatchObject({ source: 'khan-edict', phase: 'choose-action' });
+        expect(resolved.regions.find((region) => region.id === 'city-region-19-liaoxi')?.troops).toBe(
+            selected.regions.find((region) => region.id === 'city-region-19-liaoxi')?.troops,
+        );
     });
 
 it('大汗令箭从附庸区回退到真实蒙古来源区后，进入外交雇佣并点逻辑区辽西时会同步 selectedRegionId', () => {
@@ -955,14 +928,14 @@ it('外交目标若只有 cityState 城内正规军，也会被判定为存在�
         const targeted = apply(chooseDiplomacy, {
             type: QIDAHEN_COMMANDS.SELECT_REGION,
             playerId: '1',
-            payload: { regionId: 'jinzhou' },
+            payload: { regionId: 'city-region-24' },
         });
 
         expect(targeted.diplomacyProgress).toMatchObject({
             sourceRegionId: 'city-region-25',
             remainingTargetCount: 3,
         });
-        expect(getDiplomacySelection(targeted)?.targetRegionId).toBe('jinzhou');
+        expect(getDiplomacySelection(targeted)?.targetRegionId).toBe('city-region-24');
         expect(getDiplomacySelection(targeted)?.targetHint).toContain('存在正规军');
         expect(getDiplomacySelection(targeted)?.choices.map((choice) => choice.id)).toEqual(['hire-only']);
     });

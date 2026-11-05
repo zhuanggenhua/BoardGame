@@ -1,0 +1,49 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "Mage Wars 底部法术书牌列和已计划法术必须保持同一牌面尺度族，不能一边放大、一边把计划牌压成右侧缩略图。",
+      "status": "PASS",
+      "evidence": [
+        "实现已把已计划牌高度改为复用法术书牌高变量，并按两张计划牌真实占位收敛计划区宽度。",
+        "2560x1304 真实入口 E2E 通过，新增断言比较已计划牌与法术书牌的实际高度比例，并要求计划区宽度足够容纳两个同尺度计划槽。",
+        "AI 图面核验 2560x1304 截图：法术书牌列和右侧已计划法术均为大牌面，计划牌不再像角落挂件。"
+      ]
+    },
+    {
+      "requirement": "修复不能只服务用户点名的 2560x1304，必须同时保持 1920x1080 和 1366x768 桌面基线。",
+      "status": "PASS",
+      "evidence": [
+        "1920x1080 教程真实卡面点击计划用例先复现失败：法术书牌列宽 1418.578125px，小于 1450px 基线；修复后同一用例通过。",
+        "1366x768 教程真实卡面点击计划用例通过，6 张法术书、计划槽、弃牌和确认计划按钮保持可见且不相交。",
+        "AI 图面核验 1920x1080 与 1366x768 截图：底部没有回到低可读小卡条，计划牌和法术书仍在同一底部主交互区。"
+      ]
+    },
+    {
+      "requirement": "规范和 E2E 必须补上这次漏检的本质：同类主对象只查不重叠不够，必须查相对尺寸和最终图面。",
+      "status": "PASS",
+      "evidence": [
+        "项目响应式规范已新增同一流程同类主对象使用同一尺度族、验收比较实际像素尺寸和相对比例的要求。",
+        "项目 UI 改动门禁已新增同类主对象尺度一致要求，禁止只靠不重叠、数量还在或能点击通过。",
+        "Mage Wars 专项 drift-check 已把用户口语的手牌映射到法术书牌列，并要求法术书和已计划法术保持同一底部牌面尺度族。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\bottom-scale-responsive-pass-20260917\\01-2560x1304-board-bottom-scale.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\bottom-scale-responsive-pass-20260917\\02-1920x1080-plan-reselect.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\bottom-scale-responsive-pass-20260917\\03-1366x768-plan-reselect.png"
+  ],
+  "sourceMedia": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-2560x1304-board.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\05-1920-plan-card-reselect-after-slot-cancel.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\tutorial-plan-click-responsive\\02-1366-plan-card-reselect-after-slot-cancel.png"
+  ]
+}

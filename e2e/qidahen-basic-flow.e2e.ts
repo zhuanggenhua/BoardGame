@@ -54,7 +54,10 @@ const INTERNAL_DISPATCH_CONFIRMED_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/06-王
 const GAO_DI_DISPATCH_DIRECT_BEFORE_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/07-高第调度-选牌后地图目标可暂选.png`;
 const GAO_DI_DISPATCH_DRAFT_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/07b-高第调度-地图目标已暂选待确认.png`;
 const GAO_DI_DISPATCH_DIRECT_AFTER_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/08-高第调度-确认后完成并恢复视口.png`;
+const ACTION_TOOLTIP_BEFORE_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/00-行动窗口-悬浮前无功能提示.png`;
 const ACTION_TOOLTIP_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/09-行动按钮-悬浮显示功能提示.png`;
+const WHEEL_SECTOR_TOOLTIP_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/11-轮盘扇区-悬浮显示功能提示.png`;
+const ACTION_TOOLTIP_AFTER_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/12-移出后功能提示关闭.png`;
 const RAID_PAYMENT_TARGET_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/10-突袭支付-地图目标已改选待确认.png`;
 const FACTION_DECK_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/03-行动窗口-突袭结算后进入下一势力行动.png`;
 const FACTION_HAND_SCREENSHOT = `${ACTION_WINDOW_FLOW_DIR}/04-行动窗口-赐印招安后大明手牌变化.png`;
@@ -250,6 +253,10 @@ const expectMapArmyFace = async (
     }
 };
 
+const mapArmyTokensInRegion = (page: Page, regionId: string) => page.locator(
+    `[data-testid^="qidahen-map-token-"][data-qidahen-map-token-type="army"][data-qidahen-map-token-region="${regionId}"]`,
+);
+
 const QIDAHEN_BASIC_OPENING_TEST_URL = '/play/qidahen?tutorialSetup=basic-opening&players=3&seat0=human&seat1=human&seat2=human&playerID=0';
 
 const clickMapRegion = async (page: import('@playwright/test').Page, regionId: keyof typeof MAP_REGION_POINTS) => {
@@ -360,19 +367,6 @@ const expectMapContentToCoverLayer = async (page: Page) => {
     expect(mapContentBox.y + mapContentBox.height).toBeGreaterThanOrEqual(mapLayerBox.y + mapLayerBox.height - 1);
 };
 
-const clickQidahenHandCardVisibleZone = async (
-    page: import('@playwright/test').Page,
-    index: number,
-) => {
-    const locator = page.locator('[data-testid^="qidahen-hand-card-"]:not([data-testid^="qidahen-hand-card-kind-"])').nth(index);
-    await locator.evaluate((element) => {
-        if (!(element instanceof HTMLElement)) {
-            throw new Error('qidahen hand card is not an HTMLElement');
-        }
-        element.click();
-    });
-};
-
 const dispatchHarnessCommand = async (
     page: import('@playwright/test').Page,
     command: { type: string; playerId: string; payload: Record<string, unknown> },
@@ -418,7 +412,10 @@ const selectActionPaymentCards = async (
     ));
     if (visibleCurrentPlayerCardIds.length >= count) {
         for (let selectedCount = 1; selectedCount <= count; selectedCount += 1) {
-            await clickQidahenHandCardVisibleZone(page, selectedCount - 1);
+            const cardId = visibleCurrentPlayerCardIds[selectedCount - 1];
+            const card = page.locator(`[data-testid="qidahen-hand-card-${cardId}"]`);
+            await expect(card).toBeVisible();
+            await card.click();
             await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText(`已选 ${selectedCount} 张`);
         }
         return;
@@ -437,6 +434,35 @@ const selectActionPaymentCards = async (
         });
         await expect(page.locator('[data-testid="qidahen-action-payment-status"]')).toContainText(`已选 ${selectedCount} 张`);
     }
+};
+
+const confirmWheelDispatchPayment = async (page: import('@playwright/test').Page) => {
+    await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-panel"]')).toBeVisible();
+    await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-status"]')).toContainText('需弃 1 张');
+    await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toHaveCount(0);
+    const harnessState = await readRequiredQidahenHarnessState(page);
+    const currentPlayerId = harnessState.core.currentPlayer as keyof typeof PLAYER_ID_TO_FACTION;
+    const currentFaction = PLAYER_ID_TO_FACTION[currentPlayerId];
+    const paymentCard = harnessState.core.handCards.find((card) => (
+        card.faction === currentFaction && card.status !== 'disabled'
+    ));
+    if (!paymentCard) {
+        throw new Error('进攻调度弃牌时当前势力没有可弃手牌');
+    }
+    const visibleCard = page.locator(`[data-testid="qidahen-hand-card-${paymentCard.id}"]`);
+    if (await visibleCard.count()) {
+        await visibleCard.click();
+    } else {
+        await dispatchHarnessCommand(page, {
+            type: 'SELECT_PAYMENT_CARD',
+            playerId: currentPlayerId,
+            payload: { cardId: paymentCard.id },
+        });
+    }
+    await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-status"]')).toContainText('已选 1 张');
+    await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-confirm"]')).toBeEnabled();
+    await page.locator('[data-testid="qidahen-wheel-dispatch-payment-confirm"]').click();
+    await expect(page.locator('[data-testid="qidahen-wheel-dispatch-payment-panel"]')).toHaveCount(0);
 };
 
 const confirmActionPayment = async (
@@ -603,10 +629,14 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         }).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true);
         await waitForAtlasFrames(page, '[data-testid^="qidahen-year-card-slot-"] [data-card-atlas-frame], [data-testid^="qidahen-hand-card-"] [data-card-atlas-frame]');
         await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('行动窗口');
-        await expect(page.locator('[data-testid="qidahen-top-action-banner"]')).toContainText('手牌行动');
+        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toHaveCount(0);
+        await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前');
+        await expect(page.locator('[data-testid="qidahen-top-action-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-action-grant-pardon"]')).toBeEnabled();
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BOARD_AFTER_CONFIRM);
+        await expect(page.locator('[data-testid="qidahen-action-tooltip-grant-pardon"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toHaveCount(0);
+        await saveScreenshot(page, ACTION_TOOLTIP_BEFORE_SCREENSHOT);
 
         const grantPardonButton = page.locator('[data-testid="qidahen-action-grant-pardon"]');
         const grantPardonDetail = await grantPardonButton.getAttribute('title');
@@ -614,7 +644,20 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await grantPardonButton.hover();
         await expect(page.locator('[data-testid="qidahen-action-tooltip-grant-pardon"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-tooltip-grant-pardon"]')).toContainText(grantPardonDetail ?? '');
+        await expect(page.locator('[data-testid="qidahen-action-tooltip-grant-pardon"]')).toContainText('功能说明');
         await saveScreenshot(page, ACTION_TOOLTIP_SCREENSHOT);
+
+        await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').hover();
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('一名对手抽 2，走 2');
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('进攻调度');
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('指挥最多 6 个部队');
+        await saveScreenshot(page, WHEEL_SECTOR_TOOLTIP_SCREENSHOT);
+
+        await page.mouse.move(960, 540);
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-action-tooltip-grant-pardon"]')).toHaveCount(0);
+        await saveScreenshot(page, ACTION_TOOLTIP_AFTER_SCREENSHOT);
 
         await page.getByRole('button', { name: /赐印招安/ }).click();
         await expect(page.locator('[data-testid="qidahen-action-payment-panel"]')).toBeVisible();
@@ -627,13 +670,13 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-grant-pardon-map-choice="jinzhou->city-region-25"]')).toBeVisible();
         await clickGuidedMapTarget(page, 'city-region-25');
         await expect(page.locator('[data-testid="qidahen-internal-dispatch-selection"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('公共轮盘推进');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('选择推进几格');
+        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-action-wheel"]')).toBeVisible();
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_ACTION_CONFIRM);
         await saveScreenshot(page, BASIC_GUIDED_FLOW_BEFORE_DISPATCH_RESOLVE);
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await saveScreenshot(page, BASIC_GUIDED_FLOW_AFTER_DISPATCH_RESOLVED);
 
         const finalState = await readRequiredQidahenHarnessState(page);
@@ -664,9 +707,10 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-map-hitmap-canvas"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-region-mask-overlay"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-player-float"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-armaments-ming"]')).toContainText('火炮技术1');
-        await expect(page.locator('[data-testid="qidahen-armaments-mongol"]')).toContainText('骑兵铁甲1');
-        await expect(page.locator('[data-testid="qidahen-armaments-jin"]')).toContainText('步兵铁甲1');
+        await expect(page.locator('[data-testid="qidahen-player-ming"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-player-jin"]')).toBeVisible();
+        await expect(page.locator('[data-testid="qidahen-player-float"]')).not.toContainText('军备详情');
         await expect(page.locator('[data-testid="qidahen-action-wheel"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-wheel-asset"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-layer"] [data-testid="qidahen-action-wheel"]')).toHaveCount(0);
@@ -752,6 +796,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(wheelTip).toBeHidden();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').hover();
         await expect(wheelTip).toBeVisible();
+        await expect(wheelTip).toContainText('进攻调度');
+        await expect(wheelTip).toContainText('一名对手抽 2，走 2');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').hover();
         await expect(wheelTip).toContainText('所有对手抽 2，走 3');
@@ -874,6 +920,10 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').hover();
         await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('一名对手抽 2，走 2');
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('进攻调度');
+        await page.locator('[data-testid="qidahen-wheel-sector-hit-wheel-attack"]').hover();
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('外交雇佣');
+        await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('可弃牌建立雇佣军');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').hover();
         await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('所有对手抽 2，走 3');
@@ -891,7 +941,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { actionId: 'grant-pardon' },
         });
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).toContainText('0/15');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-draw-pile"]')).toContainText('大明抽牌');
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toContainText('大明弃牌');
         await expect(page.locator('[data-testid="qidahen-hand-zone"]')).toBeVisible();
@@ -905,7 +955,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         expect(shanhaiguan?.troops).toBe(3);
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 大明');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 3');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'city-region-25')).toHaveCount(3);
 
         await saveScreenshot(page, FACTION_HAND_SCREENSHOT);
         await saveScreenshot(page, ACTION_FLOW_SCREENSHOT);
@@ -959,7 +1010,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]').click();
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-hand-limit-discard-selection"]')).toContainText('检查手牌上限');
         await expect(page.locator('[data-testid="qidahen-hand-limit-discard-selection"]')).toContainText('手牌 12/10');
         await expect(page.locator('[data-testid="qidahen-hand-limit-discard-selection"]')).toContainText('需弃 2');
@@ -1029,7 +1080,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         }, selectedDiscardCardIds);
 
         await expect(page.locator('[data-testid="qidahen-hand-limit-discard-selection"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-draw-pile"]')).toContainText('蒙古抽牌');
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toContainText('蒙古弃牌');
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toContainText('3');
@@ -1302,7 +1353,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-post-battle-selection"]')).toContainText('战后处理');
         await selectPostBattleChoice(page, 'occupy');
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-action-khan-edict"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-draw-pile"]')).toContainText('大明抽牌');
         await expect(page.locator('[data-testid="qidahen-draw-pile"]')).toContainText('20');
@@ -1967,6 +2018,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
         await saveScreenshot(page, WHEEL_HIGHLIGHT_SCREENSHOT);
+        await confirmWheelDispatchPayment(page);
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('轮盘进攻/调度 · 调骑 4');
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-selection-banner"]')).toContainText('选择参与部队');
@@ -2019,7 +2071,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('登莱');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('占领');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-32');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('大明');
+        await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前');
     });
 
     test('王化贞免费调度点地图只暂选目标，取消后可重选，确认后才结算并恢复视口', async ({ page }) => {
@@ -2400,6 +2452,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         });
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
+        await confirmWheelDispatchPayment(page);
         await expect(page.locator('[data-testid="qidahen-wheel-dispatch-selection"]')).toContainText('轮盘进攻/调度 · 调骑 4');
         await expect(page.locator('[data-testid^="qidahen-wheel-dispatch-target-"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-guide-hit-target-city-region-25"][data-action="wheel-dispatch"]')).toBeVisible();
@@ -2525,7 +2578,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('劫掠 土默特部 2 人口');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('抽后金牌堆获得 2 张手牌');
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).toContainText('5/15');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('大明');
+        await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-20');
 
         await saveScreenshot(page, POST_BATTLE_PLUNDER_SCREENSHOT);
@@ -2642,7 +2695,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('抽后金牌堆获得 2 张手牌');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('守军仍留在原地');
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).toContainText('5/15');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-19');
 
         await saveScreenshot(page, CAVALRY_PLUNDER_SCREENSHOT);
@@ -2782,7 +2835,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-player-jin"]')).not.toContainText('败×1');
         await clickMapRegion(page, 'liaoxi');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('敖汉部 · 后金');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 3');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'city-region-19')).toHaveCount(3);
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('后金骑兵 x2（2级）');
 
         await saveScreenshot(page, CAVALRY_EVASION_SCREENSHOT);
@@ -2808,14 +2862,16 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await clickMapRegion(page, 'songjin');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('皮岛 · 大明');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 2');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(2);
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('轮盘征兵/训练');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('皮岛');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 4');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(4);
         const finalState = await readRequiredQidahenHarnessState(page);
         const songJin = finalState.core.regions.find((region) => region.id === 'song-jin');
         expect(finalState.core.currentPlayer).toBe('0');
@@ -2864,10 +2920,11 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return harness.state.set(next);
         });
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('大明');
+        await expect(page.getByTestId('qidahen-player-ming')).toContainText('当前');
         await clickMapRegion(page, 'songjin');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('皮岛 · 大明');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 2');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(2);
 
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
 
@@ -2882,7 +2939,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('建立 2 个等级 2 雇佣军');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
         await clickMapRegion(page, 'songjin');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 4');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(4);
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('雇佣军 x2（2级）');
 
         await saveScreenshot(page, WHEEL_HIRE_SCREENSHOT);
@@ -2908,7 +2966,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await clickMapRegion(page, 'songjin');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('皮岛 · 大明');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 2');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(2);
 
         await previewAndConfirmActionPayment(page, /征召军队/, 1);
         await expect(page.locator('[data-testid="qidahen-recruit-selection"]')).toContainText('征召军队');
@@ -2924,7 +2983,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await page.locator('[data-testid="qidahen-recruit-choice-level-2-troops"]').click();
 
         await clickMapRegion(page, 'songjin');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 8');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(8);
         await expect(page.locator('[data-testid="qidahen-player-ming"]')).toContainText('2/15');
         const finalState = await readRequiredQidahenHarnessState(page);
         const songJin = finalState.core.regions.find((region) => region.id === 'song-jin');
@@ -2967,7 +3027,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await page.locator('[data-testid="qidahen-recruit-choice-level-4-chuanbing"]').click();
 
         await clickMapRegion(page, 'songjin');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 4');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(4);
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('川兵 x2（4级）');
         const finalState = await readRequiredQidahenHarnessState(page);
         const songJin = finalState.core.regions.find((region) => region.id === 'song-jin');
@@ -3072,7 +3133,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
                 && core.selectedActionId === 'ma-shi-trade'
                 && core.selectedRegionId === 'song-jin';
         });
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
 
         await previewAndConfirmActionPayment(page, /马市贸易/, 1);
         await expect(page.locator('[data-testid="qidahen-ma-shi-trade-selection"]')).toContainText('马市贸易');
@@ -3090,11 +3151,12 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: '3' },
         });
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('后金');
+        await expect(page.getByTestId('qidahen-player-jin')).toContainText('当前');
         await expect(page.getByText('蒙古在 皮岛 发动马市贸易，大明选择建立 3 个部队。')).toBeVisible();
         await expect(page.getByText('蒙古因马市贸易获得 6 张手牌。')).toBeVisible();
         await clickMapRegion(page, 'songjin');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 13');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'song-jin')).toHaveCount(13);
         await expect(page.locator('[data-testid="qidahen-player-mongol"]')).toContainText('11/10');
         const finalState = await readRequiredQidahenHarnessState(page);
         const songJin = finalState.core.regions.find((region) => region.id === 'song-jin');
@@ -3220,7 +3282,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             });
             return state.set(next);
         });
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
         await page.evaluate(() => {
@@ -3248,8 +3310,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             payload: { optionId: 'recruit-train' },
         });
         await expect(page.locator('[data-testid="qidahen-khan-edict-selection"]')).toHaveCount(0);
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('免费走 1');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
@@ -3314,7 +3375,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return state.set(next);
         });
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
         await page.evaluate(() => {
@@ -3376,15 +3437,15 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             });
         });
 
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-wheel-next-step-choices"]')).toContainText('一名对手抽 2，走 2');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'ningyuan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('宣府 · 蒙古友好');
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 蒙古');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 4');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'city-region-25')).toHaveCount(4);
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('雇佣军 x2（2级）');
 
         await saveScreenshot(page, KHAN_EDICT_HIRE_SCREENSHOT);
@@ -3468,7 +3529,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return state.set(next);
         });
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
 
         await page.evaluate(() => {
@@ -3569,7 +3630,8 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 蒙古');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 4');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'city-region-25')).toHaveCount(4);
         await clickMapRegion(page, 'ningyuan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('蒙古附庸');
 
@@ -3631,10 +3693,11 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return state.set(next);
         });
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('后金');
+        await expect(page.getByTestId('qidahen-player-jin')).toContainText('当前');
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 大明');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 2');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'city-region-25')).toHaveCount(2);
 
         await page.evaluate(() => {
             const harness = (window as Window & {
@@ -3657,13 +3720,13 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await expect(page.locator('[data-testid="qidahen-resolve-pending-action"]')).toBeVisible();
         await resolvePendingActionByCommand(page, { retreatLossMode: 'rout' });
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('轮盘');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('轮盘行动');
-        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toContainText('点轮盘');
+        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-wheel-next-step-banner"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await clickMapRegion(page, 'shanhaiguan');
         await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('山海关 · 后金');
-        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).toContainText('兵力 1');
+        await expect(page.locator('[data-testid="qidahen-map-region-tip"]')).not.toContainText('兵力');
+        await expect(mapArmyTokensInRegion(page, 'city-region-25')).toHaveCount(1);
 
         await saveScreenshot(page, MARRIAGE_SUBJUGATION_SCREENSHOT);
     });
@@ -3739,7 +3802,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             return state.set(next);
         });
 
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('蒙古');
+        await expect(page.getByTestId('qidahen-player-mongol')).toContainText('当前');
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'city-region-25');
         await page.evaluate(() => {
             const harness = (window as Window & {
@@ -3772,9 +3835,10 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('后金处理 1 个战败标记，掷骰 4');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('努尔哈赤(1) 掷 4');
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('额亦都(d10) 掷 10→9：无效果');
-        await expect(page.locator('[data-testid="qidahen-character-markers-mongol"]')).toContainText('人物 0');
+        await expect(page.locator('[data-testid="qidahen-character-markers-mongol"]')).toHaveCount(0);
+        await expect(page.locator('[data-testid="qidahen-player-mongol"]')).not.toContainText('人物 0');
         await saveScreenshot(page, MIDYEAR_DEFEAT_MARKERS_SCREENSHOT);
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('后金');
+        await expect(page.getByTestId('qidahen-player-jin')).toContainText('当前');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-1-free"]').click();
         await expect(page.locator('[data-testid="qidahen-fortification-maintenance-selection"]')).toContainText('新年防线维护');
         await expect(page.locator('[data-testid="qidahen-upkeep-attrition-priority"]')).toContainText('兵力耗损');
@@ -3793,7 +3857,7 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
             },
         });
         await expect(page.locator('[data-testid="qidahen-season-summary"]')).toContainText('新年结算');
-        await expect(page.locator('[data-testid="qidahen-turn-banner"]')).toContainText('天命五年 1620');
+        await expect(page.getByTestId('qidahen-chronology-zone')).toContainText('天命五年 1620');
         await expect(page.locator('[data-testid="qidahen-fortification-strip"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toHaveAttribute('data-map-selected', 'song-jin');
 

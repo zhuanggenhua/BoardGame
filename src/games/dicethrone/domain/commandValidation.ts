@@ -58,21 +58,26 @@ import {
     getAvailableAbilityIds,
     getActiveDice,
     getAttackSnapshotDieIndex,
+    isNyraCompanionActive,
     getSeatingOrder,
     isAttackSnapshotDieId,
 } from './rules';
 import { findPlayerAbility } from './abilityLookup';
 import { RESOURCE_IDS } from './resources';
-import { getPassiveActionTokenCosts, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
+import { getPlayerPassiveAbilities, getPassiveActionTokenCosts, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './passiveAbility';
 import { STATUS_IDS, DICETHRONE_COMMANDS, TOKEN_IDS } from './ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG } from './core-types';
 import { getUsableTokenAmountForTiming } from './tokenResponse';
 import { getTokenUseOptions } from './tokenTypes';
+import { getCustomActionHandler } from './effects';
 import { getGameMode, isDiceThroneAiSeat } from './utils';
-import { canRemoveStatusFromPlayer, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
+import { canReceiveTransferredStatus, canRemoveStatusFromPlayer, canTransferStatus, isPurifiableDebuffId, isRemovableStatusId } from './statusRemoval';
 import { isDirectDiceInterferenceActor } from './responseWindowGuards';
+import { canUseDejaVuCore } from './doctorStrange/rules';
 import { findCurrentRollDie, getCurrentRollDice, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { isPendingDamageResponseBonusSettlement } from './damageSummary';
+import { getUsableActiveRollToken } from './activeRollTokens';
+import { getActionBlockedByStunLikeStatus } from './statusActionBlocking';
 
 // ============================================================================
 // 验证函数
@@ -123,32 +128,6 @@ const validateCurrentResponseWindowActor = (
     }
 
     return ok();
-};
-
-const getActionBlockedByStunLikeStatus = (
-    state: DiceThroneCore,
-    playerId: PlayerId,
-): string | null => {
-    if (!isMoveAllowed(playerId, state.activePlayerId)) {
-        return null;
-    }
-
-    const player = state.players[playerId];
-    if (!player) {
-        return null;
-    }
-
-    const dazeStacks = player.statusEffects[STATUS_IDS.DAZE] ?? 0;
-    if (dazeStacks > 0) {
-        return 'player_is_dazed';
-    }
-
-    const stunStacks = player.statusEffects[STATUS_IDS.STUN] ?? 0;
-    if (stunStacks > 0) {
-        return 'player_is_stunned';
-    }
-
-    return null;
 };
 
 const isCommandType = <TType extends DiceThroneCommand['type']>(
@@ -219,6 +198,16 @@ const validateInteractionOwnership = (
     }
     if (pendingInteraction.playerId !== playerId) {
         return fail('player_mismatch');
+    }
+    return null;
+};
+
+const validateInteractionId = (
+    pendingInteraction: InteractionDescriptor,
+    interactionId?: string,
+): ValidationResult | null => {
+    if (typeof interactionId === 'string' && pendingInteraction.id !== interactionId) {
+        return fail('interaction_id_mismatch');
     }
     return null;
 };
@@ -738,11 +727,15 @@ const validateSelectAbility = (
         if (!state.pendingAttack) {
             return fail('no_pending_attack');
         }
-        if (!isMoveAllowed(playerId, state.pendingAttack.defenderId)) {
+        const defenderId = state.pendingAttack.defenderId;
+        if (!defenderId) {
+            return fail('no_pending_attack');
+        }
+        if (!isMoveAllowed(playerId, defenderId)) {
             return fail('player_mismatch');
         }
 
-        const defender = state.players[state.pendingAttack.defenderId];
+        const defender = state.players[defenderId];
         if (!defender) return fail('player_not_found');
 
         // 防御阶段分两步：
@@ -769,7 +762,7 @@ const validateSelectAbility = (
         }
 
         // 掷骰后选择：实时计算可用技能（派生状态）
-        const availableAbilityIds = getAvailableAbilityIds(state, state.pendingAttack.defenderId, phase);
+        const availableAbilityIds = getAvailableAbilityIds(state, defenderId, phase);
         if (!availableAbilityIds.includes(abilityId)) {
             return fail('ability_not_available');
         }
@@ -1163,6 +1156,10 @@ const validateModifyDie = (
     if (cmd.payload.newValue < 1 || cmd.payload.newValue > 6) {
         return fail('invalid_die_value');
     }
+    const allowedValues = pendingInteraction?.dieModifyConfig?.allowedValues;
+    if (Array.isArray(allowedValues) && !allowedValues.includes(cmd.payload.newValue)) {
+        return fail('invalid_die_value');
+    }
     return ok();
 };
 
@@ -1198,6 +1195,9 @@ const validateRemoveStatus = (
     if (ownershipError) return ownershipError;
 
     const interaction = pendingInteraction!;
+    const interactionIdError = validateInteractionId(interaction, cmd.payload.interactionId);
+    if (interactionIdError) return interactionIdError;
+
     const targetError = validateTargetPlayerInInteraction(state, interaction, cmd.payload.targetPlayerId);
     if (targetError) return targetError;
 
@@ -1228,12 +1228,11 @@ const validateTransferStatus = (
     if (ownershipError) return ownershipError;
 
     const interaction = pendingInteraction!;
+    const interactionIdError = validateInteractionId(interaction, cmd.payload.interactionId);
+    if (interactionIdError) return interactionIdError;
+
     const sourceTargetError = validateTargetPlayerInInteraction(state, interaction, cmd.payload.fromPlayerId);
     if (sourceTargetError) return sourceTargetError;
-
-    if (!canRemoveStatusFromPlayer(state, playerId, cmd.payload.fromPlayerId, cmd.payload.statusId)) {
-        return fail('invalid_status');
-    }
 
     const targetError = validateTargetPlayerInInteraction(state, interaction, cmd.payload.toPlayerId);
     if (targetError) return targetError;
@@ -1253,6 +1252,19 @@ const validateTransferStatus = (
         return fail('no_status');
     }
 
+    if (!canTransferStatus(state, playerId, cmd.payload.fromPlayerId, cmd.payload.statusId)) {
+        return fail('invalid_status');
+    }
+
+    if (!canReceiveTransferredStatus(
+        state,
+        cmd.payload.fromPlayerId,
+        cmd.payload.toPlayerId,
+        cmd.payload.statusId,
+    )) {
+        return fail('invalid_status');
+    }
+
     return ok();
 };
 
@@ -1268,6 +1280,9 @@ const validateResolveInteraction = (
     if (pendingInteraction.playerId !== playerId) {
         return fail('player_mismatch');
     }
+    const interactionIdError = validateInteractionId(pendingInteraction, cmd.payload.interactionId);
+    if (interactionIdError) return interactionIdError;
+
     if (pendingInteraction.type === 'selectPlayer') {
         const selectedPlayerIds = cmd.payload.selectedPlayerIds ?? [];
         const targetPlayerIds = pendingInteraction.targetPlayerIds ?? Object.keys(state.players);
@@ -1280,7 +1295,7 @@ const validateResolveInteraction = (
         }
         return ok();
     }
-    if (pendingInteraction.type === 'selectHandCard') {
+    if (pendingInteraction.type === 'selectHandCard' || pendingInteraction.type === 'selectDeckCard') {
         const player = state.players[playerId];
         if (!player) {
             return fail('player_not_found');
@@ -1289,9 +1304,10 @@ const validateResolveInteraction = (
         if (selectedCardIds.length < (pendingInteraction.selectCount ?? 1)) {
             return fail('not_enough_cards_selected');
         }
-        const handCardIds = new Set(player.hand.map(card => card.id));
-        if (selectedCardIds.some(cardId => !handCardIds.has(cardId))) {
-            return fail('card_not_in_hand');
+        const sourceCards = pendingInteraction.type === 'selectHandCard' ? player.hand : player.deck;
+        const sourceCardIds = new Set(sourceCards.map(card => card.id));
+        if (selectedCardIds.some(cardId => !sourceCardIds.has(cardId))) {
+            return fail(pendingInteraction.type === 'selectHandCard' ? 'card_not_in_hand' : 'card_not_in_deck');
         }
         return ok();
     }
@@ -1301,10 +1317,7 @@ const validateResolveInteraction = (
         }
         return ok();
     }
-    if (pendingInteraction.type !== 'selectPlayer') {
-        return fail('invalid_interaction_type');
-    }
-    return ok();
+    return fail('invalid_interaction_type');
 };
 
 /**
@@ -1360,6 +1373,8 @@ const validateUseToken = (
     cmd: UseTokenCommand,
     playerId: PlayerId,
     phase: TurnPhase,
+    responseWindowType?: DtResponseWindowType,
+    currentResponseWindow?: ResponseWindowState['current'],
 ): ValidationResult => {
     const pendingDamage = state.pendingDamage;
     const pendingDamageMismatch = validateCommandPendingDamageId(pendingDamage, cmd.payload);
@@ -1369,8 +1384,10 @@ const validateUseToken = (
         const player = state.players[playerId];
         if (!pendingDamage) return fail('no_pending_damage');
         if (!isMoveAllowed(playerId, pendingDamage.responderId)) return fail('player_mismatch');
+        const blockedError = getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false });
+        if (blockedError) return fail(blockedError);
         if (state.pendingAttack?.isUltimate) return fail('invalid_token_timing');
-        if (player?.characterId !== 'lieren' || (player.companion?.hp ?? 0) <= 0) return fail('no_token');
+        if (!isNyraCompanionActive(player)) return fail('no_token');
         return cmd.payload.amount === pendingDamage.currentDamage ? ok() : fail('invalid_amount');
     }
 
@@ -1385,8 +1402,10 @@ const validateUseToken = (
     if (cmd.payload.tokenId === TOKEN_IDS.NYRAS_BOND && pendingDamage) {
         const player = state.players[playerId];
         if (!isMoveAllowed(playerId, pendingDamage.responderId)) return fail('player_mismatch');
+        const blockedError = getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false });
+        if (blockedError) return fail(blockedError);
         if (state.pendingAttack?.isUltimate) return fail('invalid_token_timing');
-        if (player?.characterId !== 'lieren' || (player.companion?.hp ?? 0) <= 0) return fail('no_token');
+        if (!isNyraCompanionActive(player)) return fail('no_token');
         if ((player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) < 1) return fail('no_token');
         const maxAssignableDamage = Math.max(0, pendingDamage.currentDamage - 1);
         return Number.isInteger(cmd.payload.amount) && cmd.payload.amount >= 1 && cmd.payload.amount <= maxAssignableDamage
@@ -1404,21 +1423,38 @@ const validateUseToken = (
         && isRollPhase
         && tokenDef.activeUse?.timing?.includes('duringRoll');
     if (canUseDuringRoll) {
-        if (getRollerId(state, phase) !== playerId) {
-            return fail('player_mismatch');
-        }
-        if (!state.pendingAttack) {
-            return fail('no_pending_attack');
+        if (responseWindowType) {
+            const responseWindowActorCheck = validateCurrentResponseWindowActor(
+                state,
+                currentResponseWindow,
+                playerId,
+                true,
+            );
+            if (!responseWindowActorCheck.valid) {
+                return responseWindowActorCheck;
+            }
         }
 
-        const currentAmount = state.players[playerId]?.tokens[cmd.payload.tokenId] ?? 0;
-        if (currentAmount <= 0) {
+        const activeRollToken = getUsableActiveRollToken(state, playerId, phase, cmd.payload.tokenId, {
+            responseWindowType,
+        });
+        if (!activeRollToken) {
+            const currentAmount = state.players[playerId]?.tokens[cmd.payload.tokenId] ?? 0;
+            if (currentAmount <= 0) {
+                return fail('no_token');
+            }
+            if (!state.pendingAttack && tokenDef.activeUse?.requiresOpponentRollDice !== true) {
+                return fail('no_pending_attack');
+            }
+            return fail('invalid_token_timing');
+        }
+        if (activeRollToken.allowedAmounts.length === 0) {
             return fail('no_token');
         }
         if (cmd.payload.amount <= 0) {
             return fail('invalid_amount');
         }
-        if (!getTokenUseOptions(tokenDef, currentAmount).includes(cmd.payload.amount)) {
+        if (!activeRollToken.allowedAmounts.includes(cmd.payload.amount)) {
             return fail('invalid_amount');
         }
         return ok();
@@ -1429,6 +1465,12 @@ const validateUseToken = (
     }
     if (!isMoveAllowed(playerId, pendingDamage.responderId)) {
         return fail('player_mismatch');
+    }
+    if (pendingDamage.responseType === 'beforeDamageDealt') {
+        const blockedError = getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false });
+        if (blockedError) {
+            return fail(blockedError);
+        }
     }
 
     const p = state.players[playerId];
@@ -1456,7 +1498,17 @@ const validateUseToken = (
         return fail('invalid_token_timing');
     }
 
-    const availableAmount = getUsableTokenAmountForTiming(state, playerId, cmd.payload.tokenId, pendingDamage.responseType);
+    const availableAmount = getUsableTokenAmountForTiming(
+        state,
+        playerId,
+        cmd.payload.tokenId,
+        pendingDamage.responseType,
+        {
+            damageScope: pendingDamage.damageScope,
+            originalDamageOverride: pendingDamage.originalDamage,
+            unblockable: pendingDamage.unblockable,
+        },
+    );
     if (availableAmount <= 0) {
         return fail('invalid_amount');
     }
@@ -1589,6 +1641,12 @@ const validateRerollBonusDie = (
     }
     // 检查骰子索引是否有效
     const dieIndex = cmd.payload.dieIndex;
+    const indices = cmd.payload.dieIndices ?? [dieIndex];
+    if (!Array.isArray(indices) || (!state.pendingBonusDiceSettlement.groupReroll && indices.length !== 1)
+        || indices.length === 0 || indices[0] !== dieIndex || new Set(indices).size !== indices.length
+        || indices.some(index => !Number.isInteger(index) || !findCurrentRollDie(state, index))) {
+        return fail('invalid_die_index');
+    }
     const die = findCurrentRollDie(state, dieIndex)?.die;
     if (!die) {
         return fail('invalid_die_index');
@@ -1663,7 +1721,7 @@ const validateUsePassiveAbility = (
         }
     }
 
-    const passives = player.passiveAbilities ?? [];
+    const passives = getPlayerPassiveAbilities(state, playerId);
     const passive = passives.find(p => p.id === cmd.payload.passiveId);
     if (!passive) return fail('passive_not_found');
 
@@ -1695,6 +1753,10 @@ const validateUsePassiveAbility = (
     // custom 动作需要配置 customActionId
     if (action.type === 'custom' && !action.customActionId) {
         return fail('custom_action_missing');
+    }
+    // 处理器缺失时不能放行命令，否则 execute() 会先扣资源再静默结束。
+    if (action.type === 'custom' && action.customActionId && !getCustomActionHandler(action.customActionId)) {
+        return fail('custom_action_handler_missing');
     }
 
     // rerollDie 需要合法且处于当前投掷池内的 targetDieId
@@ -1739,6 +1801,9 @@ const validateGrantTokens = (
     if (ownershipError) return ownershipError;
 
     const interaction = pendingInteraction!;
+    const interactionIdError = validateInteractionId(interaction, cmd.payload.interactionId);
+    if (interactionIdError) return interactionIdError;
+
     const targetError = validateTargetPlayerInInteraction(state, interaction, cmd.payload.targetPlayerId);
     if (targetError) return targetError;
 
@@ -1766,6 +1831,13 @@ export const validateCommand = (
     }
 
     const playerId = command.playerId;
+    // 终极已开始执行前置效果后，直到完整结算仅攻击者可以行动。
+    if (state.pendingAttack?.isUltimate && state.pendingAttack.preDefenseResolved
+        && playerId !== state.pendingAttack.attackerId) return fail('ultimate_resolving');
+    if (isCommandType(command, 'USE_DEJA_VU')) {
+        return canUseDejaVuCore(state, phase, playerId, currentResponseWindow?.windowType ?? responseWindowType, Boolean(pendingInteraction))
+            ? ok() : fail('deja_vu_unavailable');
+    }
     if (isCommandType(command, 'ROLL_DICE')) return validateRollDice(state, command, playerId, phase);
     if (isCommandType(command, 'TOGGLE_DIE_LOCK')) return validateToggleDieLock(state, command, playerId, phase);
     if (isCommandType(command, 'CONFIRM_ROLL')) return validateConfirmRoll(state, command, playerId, phase);
@@ -1797,7 +1869,7 @@ export const validateCommand = (
     if (isCommandType(command, 'RESOLVE_INTERACTION')) return validateResolveInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CONFIRM_INTERACTION')) return validateConfirmInteraction(state, command, playerId, pendingInteraction);
     // if (isCommandType(command, 'CANCEL_INTERACTION')) return validateCancelInteraction(state, command, playerId, pendingInteraction);
-    if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId, phase);
+    if (isCommandType(command, 'USE_TOKEN')) return validateUseToken(state, command, playerId, phase, responseWindowType, currentResponseWindow);
     if (isCommandType(command, 'SKIP_TOKEN_RESPONSE')) return validateSkipTokenResponse(state, command, playerId);
     if (isCommandType(command, 'USE_PURIFY')) return validateUsePurify(state, command, playerId);
     if (isCommandType(command, DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN)) {

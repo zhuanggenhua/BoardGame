@@ -1,0 +1,32 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "未悬浮书本时放大镜隐藏，悬浮书本后放大镜清晰出现且不遮挡牌面。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Playwright E2E：书本未悬浮时 opacity=0、pointer-events=none；悬浮后 opacity=1、pointer-events=auto。",
+        "01-悬浮书本后显示放大按钮.jpg"
+      ]
+    },
+    {
+      "requirement": "点击放大按钮后牌面清晰可读，关闭按钮可见，关闭后可以继续教程。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Playwright E2E：打开牌面、读取、关闭、进入使用书本步骤。",
+        "02-打开书本牌面并可关闭.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/final-book-view-20260919/01-悬浮书本后显示放大按钮.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/final-book-view-20260919/02-打开书本牌面并可关闭.jpg"
+  ]
+}

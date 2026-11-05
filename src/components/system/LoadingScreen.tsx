@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { LoadingArcaneAether } from './LoadingVariants';
 import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { UI_Z_INDEX } from '../../core';
 
 // 全局计数器：追踪当前存活的 LoadingScreen 实例数
@@ -19,6 +20,7 @@ interface LoadingScreenProps {
     className?: string;
     titleClassName?: string;
     descriptionClassName?: string;
+    descriptionStyle?: CSSProperties;
 }
 
 /**
@@ -35,7 +37,8 @@ export const LoadingScreen = ({
     anchor = 'viewport',
     className,
     titleClassName,
-    descriptionClassName
+    descriptionClassName,
+    descriptionStyle
 }: LoadingScreenProps) => {
     const { t } = useTranslation('lobby');
     
@@ -159,6 +162,7 @@ export const LoadingScreen = ({
                             initial={textVariants.initial}
                             animate={textVariants.animate}
                             transition={shouldAnimate ? { delay: 0.3 } : { duration: 0.3 }}
+                            style={descriptionStyle}
                             className={clsx(
                                 "text-amber-200/60 text-xs md:text-sm font-serif tracking-widest leading-relaxed line-clamp-2",
                                 descriptionClassName

@@ -9,6 +9,7 @@ import type { MatchState } from '../types';
 import type { EngineSystem } from '../systems/types';
 import { TestHarness, isTestEnvironment } from '../testing';
 import { INTERACTION_COMMANDS, refreshInteractionOptions } from '../systems/InteractionSystem';
+import { UNDO_COMMANDS } from '../systems/UndoSystem';
 import { getTransportBatchCommands, TRANSPORT_BATCH_COMMAND } from '../batchDispatchCommand';
 import type {
     ManualForceEndAiPhaseResult,
@@ -31,13 +32,21 @@ import {
 import { normalizeReceivedStateForGame } from './stateNormalization';
 import { createCommandBatcher, type CommandBatcher } from './latency/commandBatcher';
 import { onAppVisible } from '../../lib/mobile/appVisibility';
+import { registerFeedbackReplayCapture } from '../../lib/feedback/feedbackReplayBridge';
 import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
 import type { GameClientContextValue } from './reactContext';
 import { useOptionalToast } from '../../contexts/useOptionalToast';
 
 const SERIALIZED_COMMAND_TYPES = new Set(['ADVANCE_PHASE']);
-const PENDING_COMPANION_COMMAND_TYPES = new Set<string>([
+const BUILTIN_PENDING_COMPANION_COMMAND_TYPES = new Set<string>([
+    INTERACTION_COMMANDS.RESPOND,
+    INTERACTION_COMMANDS.STEP,
     INTERACTION_COMMANDS.CONFIRM,
+    INTERACTION_COMMANDS.CANCEL,
+    UNDO_COMMANDS.REQUEST_UNDO,
+    UNDO_COMMANDS.APPROVE_UNDO,
+    UNDO_COMMANDS.REJECT_UNDO,
+    UNDO_COMMANDS.CANCEL_UNDO,
 ]);
 const COMMAND_PENDING_TOAST_DEDUPE_KEY = 'game-provider:command-pending';
 
@@ -45,12 +54,27 @@ function shouldSerializeCommand(type: string): boolean {
     return SERIALIZED_COMMAND_TYPES.has(type);
 }
 
-function canSendWhileOptimisticPending(type: string): boolean {
-    return PENDING_COMPANION_COMMAND_TYPES.has(type);
+function canSendWhileOptimisticPending(
+    type: string,
+    pendingCompanionCommandTypes: ReadonlySet<string>,
+): boolean {
+    return BUILTIN_PENDING_COMPANION_COMMAND_TYPES.has(type)
+        || pendingCompanionCommandTypes.has(type);
 }
 
 function canDeferCommandWaitingForPreviousStep(type: string): boolean {
     return shouldSerializeCommand(type);
+}
+
+function resolveExpectedStateIDForSingleCommand(args: {
+    lastStateID: number | null;
+    precedingPendingCount: number;
+}): number | undefined {
+    if (typeof args.lastStateID !== 'number') {
+        return undefined;
+    }
+    // 前置版本只包括本次派发前已有的命令；当前命令尚未由服务端执行。
+    return args.lastStateID + args.precedingPendingCount;
 }
 
 type DeferredCommand = {
@@ -63,6 +87,7 @@ export function useGameProviderRuntime(args: {
     matchId: string;
     playerId: string | null;
     credentials?: string;
+    adminToken?: string | null;
     onError?: (error: string) => void;
     onConnectionChange?: (connected: boolean) => void;
     onStateReady?: () => void;
@@ -77,16 +102,23 @@ export function useGameProviderRuntime(args: {
         matchId,
         playerId,
         credentials,
+        adminToken,
         onError,
         onConnectionChange,
         onStateReady,
         engineConfig,
         latencyConfig,
     } = args;
+    // 在线旁观者没有玩家身份：保留 Board 的点击/拖拽等交互，
+    // 但所有会改变对局的命令必须在公共入口变成 no-op。
+    const isSpectator = playerId === null;
     const [state, setState] = useState<MatchState<unknown> | null>(null);
     const [matchPlayers, setMatchPlayers] = useState<MatchPlayerInfo[]>([]);
     const [isConnected, setIsConnected] = useState(false);
+    const [adminDebugAvailable, setAdminDebugAvailable] = useState(false);
     const clientRef = useRef<GameTransportClient | null>(null);
+    const adminTokenRef = useRef<string | null>(adminToken ?? null);
+    adminTokenRef.current = adminToken ?? null;
     const optimisticEngineRef = useRef<OptimisticEngineType | null>(null);
     const batcherRef = useRef<CommandBatcher | null>(null);
     const batchSeqRef = useRef(0);
@@ -107,6 +139,10 @@ export function useGameProviderRuntime(args: {
     const onStateReadyRef = useRef(onStateReady);
     const hasReportedStateReadyRef = useRef(false);
     const toast = useOptionalToast();
+    const pendingCompanionCommandTypes = useMemo(
+        () => new Set(latencyConfig?.optimistic?.pendingCompanionCommands ?? []),
+        [latencyConfig?.optimistic?.pendingCompanionCommands],
+    );
 
     const notifyCommandWaitingForPreviousStep = useCallback((queued = false) => {
         toast?.info(
@@ -256,21 +292,33 @@ export function useGameProviderRuntime(args: {
                     const command = commands[0];
                     const pendingCount = optimisticEngineRef.current?.getPendingCommandCount?.() ?? 0;
                     const lastStateID = client.lastReceivedStateID;
-                    const expectedStateID = command.type === 'ADVANCE_PHASE'
-                        && typeof lastStateID === 'number'
+                    const expectedStateID = typeof lastStateID === 'number'
                         ? lastStateID + Math.max(0, pendingCount - 1)
                         : undefined;
-                    return expectedStateID === undefined
+                    const sent = expectedStateID === undefined
                         ? client.sendCommand(command.type, command.payload)
                         : client.sendCommand(command.type, command.payload, { expectedStateID });
+                    if (!sent) {
+                        rollbackOptimisticRenderAndResync();
+                    }
+                    return sent;
                 } else {
                     const batchId = `b-${++batchSeqRef.current}`;
-                    return client.sendBatch(batchId, commands, undefined, (reason) => {
+                    const pendingCount = optimisticEngineRef.current?.getPendingCommandCount?.() ?? 0;
+                    const lastStateID = client.lastReceivedStateID;
+                    const expectedStateID = typeof lastStateID === 'number'
+                        ? lastStateID + Math.max(0, pendingCount - commands.length)
+                        : undefined;
+                    const sent = client.sendBatch(batchId, commands, undefined, (reason) => {
                         recoverFromRejectedCommand(reason);
                         if (baseShouldForwardOnlineBatchRejectionToError(reason, shouldSilentlyRetryOnlineAiBatchRejection)) {
                             onErrorRef.current?.(reason);
                         }
-                    });
+                    }, { expectedStateID });
+                    if (!sent) {
+                        rollbackOptimisticRenderAndResync();
+                    }
+                    return sent;
                 }
             },
         });
@@ -279,7 +327,7 @@ export function useGameProviderRuntime(args: {
             batcher.destroy();
             batcherRef.current = null;
         };
-    }, [latencyConfig, recoverFromRejectedCommand]);
+    }, [latencyConfig, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
 
     useEffect(() => {
         const client = new GameTransportClient({
@@ -287,6 +335,7 @@ export function useGameProviderRuntime(args: {
             matchID: matchId,
             playerID: playerId,
             credentials,
+            getAdminDebugToken: () => adminTokenRef.current,
             onStateUpdate: (newState, players, meta, randomMeta) => {
                 const normalizedAuthoritativeState = normalizeReceivedStateForGame(
                     engineConfigRef.current,
@@ -376,6 +425,7 @@ export function useGameProviderRuntime(args: {
                 recoverFromRejectedCommand(error);
                 onErrorRef.current?.(error);
             },
+            onAdminDebugAccessChange: setAdminDebugAvailable,
             onPlayerConnectionChange: (connectionPlayerId, connected) => {
                 setMatchPlayers((previous) => previous.map((player) => {
                     if (String(player.id) !== String(connectionPlayerId)) {
@@ -394,13 +444,22 @@ export function useGameProviderRuntime(args: {
 
         clientRef.current = client;
         client.connect();
+        const unregisterFeedbackCapture = playerId
+            ? registerFeedbackReplayCapture(matchId, playerId, request => client.captureFeedbackReplay(request))
+            : undefined;
 
         return () => {
             hasReportedStateReadyRef.current = false;
+            unregisterFeedbackCapture?.();
             client.disconnect();
             clientRef.current = null;
         };
     }, [clearDeferredSerializedCommand, credentials, flushDeferredSerializedCommand, matchId, playerId, recoverFromRejectedCommand, resetOptimisticProviderRuntime, server]);
+
+    useEffect(() => {
+        if (!adminToken) setAdminDebugAvailable(false);
+        clientRef.current?.requestAdminDebugAccess();
+    }, [adminToken]);
 
     useEffect(() => {
         return onAppVisible(() => {
@@ -413,6 +472,9 @@ export function useGameProviderRuntime(args: {
     }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
     const dispatch = useCallback((type: string, payload: unknown): boolean => {
+        if (isSpectator) {
+            return false;
+        }
         if (commandDispatchBlockedUntilSyncRef.current) {
             notifyCommandWaitingForPreviousStep();
             return false;
@@ -455,12 +517,12 @@ export function useGameProviderRuntime(args: {
             }
             return sent;
         }
-        const sendWithoutPrediction = Boolean(engine?.hasPendingCommands() && canSendWhileOptimisticPending(type));
+        const sendWithoutPrediction = Boolean(
+            engine?.hasPendingCommands()
+            && canSendWhileOptimisticPending(type, pendingCompanionCommandTypes),
+        );
         const serialized = shouldSerializeCommand(type);
-        if (engine?.hasPendingCommands() && !sendWithoutPrediction && !serialized) {
-            deferCommandWaitingForPreviousStep(type, payload);
-            return false;
-        }
+        const precedingPendingCount = engine?.getPendingCommandCount?.() ?? 0;
         let shouldSend = true;
         let wasPredicted = false;
         if (engine && !sendWithoutPrediction) {
@@ -483,29 +545,39 @@ export function useGameProviderRuntime(args: {
         }
         const batcher = batcherRef.current;
         let sent = false;
-        if (batcher) {
+        if (batcher && sendWithoutPrediction && !batcher.flush()) {
+            if (engine) {
+                rollbackOptimisticRenderAndResync();
+            }
+            return false;
+        }
+        if (batcher && !sendWithoutPrediction) {
             sent = batcher.enqueue(type, payload);
         } else {
-            const pendingCount = engine?.getPendingCommandCount?.() ?? 0;
             const lastStateID = client.lastReceivedStateID;
-            const expectedStateID = serialized
-                && typeof lastStateID === 'number'
-                ? lastStateID + Math.max(0, pendingCount - 1)
-                : undefined;
+            const expectedStateID = resolveExpectedStateIDForSingleCommand({
+                lastStateID,
+                precedingPendingCount,
+            });
             sent = expectedStateID === undefined
                 ? client.sendCommand(type, payload)
                 : client.sendCommand(type, payload, { expectedStateID });
         }
-        if (!sent && engine) {
+        if (!sent && engine && !batcher) {
             rollbackOptimisticRenderAndResync();
             return false;
         }
-        if (sent && serialized && !wasPredicted) {
+        if (sent && serialized) {
             inFlightSerializedCommandTypeRef.current = type;
             lastSerializedCommandRef.current = { type, payload };
         }
         return sent;
-    }, [deferCommandWaitingForPreviousStep, notifyCommandWaitingForPreviousStep, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+    }, [deferCommandWaitingForPreviousStep, isSpectator, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
+
+    const adminDebugDispatch = useCallback((type: string, payload: unknown): boolean => {
+        if (!adminDebugAvailable) return false;
+        return clientRef.current?.sendAdminDebugCommand(type, payload) ?? false;
+    }, [adminDebugAvailable]);
 
     useEffect(() => {
         dispatchRef.current = dispatch;
@@ -514,15 +586,17 @@ export function useGameProviderRuntime(args: {
     const requestManualSetupSelection = useCallback((
         request: ManualSetupSelectionRequest,
         onResult?: (result: ManualSetupSelectionResult) => void,
-    ): boolean => (
-        clientRef.current?.requestManualSetupSelection(request, onResult) ?? false
-    ), []);
+    ): boolean => {
+        if (isSpectator) return false;
+        return clientRef.current?.requestManualSetupSelection(request, onResult) ?? false;
+    }, [isSpectator]);
 
     const requestForceEndAiPhase = useCallback((
         onResult?: (result: ManualForceEndAiPhaseResult) => void,
-    ): boolean => (
-        clientRef.current?.requestForceEndAiPhase(onResult) ?? false
-    ), []);
+    ): boolean => {
+        if (isSpectator) return false;
+        return clientRef.current?.requestForceEndAiPhase(onResult) ?? false;
+    }, [isSpectator]);
 
     const sendUiEvent = useCallback((type: string, payload: unknown) => {
         clientRef.current?.sendUiEvent(type, payload);
@@ -552,6 +626,8 @@ export function useGameProviderRuntime(args: {
     const value = useMemo<GameClientContextValue>(() => ({
         state,
         dispatch,
+        adminDebugAvailable,
+        adminDebugDispatch,
         requestManualSetupSelection,
         requestForceEndAiPhase,
         playerId,
@@ -561,7 +637,7 @@ export function useGameProviderRuntime(args: {
         isMultiplayer: true,
         sendUiEvent,
         subscribeUiEvent,
-    }), [dispatch, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
+    }), [adminDebugAvailable, adminDebugDispatch, dispatch, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
 
     return {
         rollbackSignal,

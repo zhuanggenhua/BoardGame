@@ -16,6 +16,10 @@ export class RegisterDto {
     @IsOptional()
     @IsString()
     password?: string;
+
+    @IsOptional()
+    @IsString()
+    guestId?: string;
 }
 
 export class SendRegisterCodeDto {
@@ -38,6 +42,10 @@ export class LoginDto {
     @IsOptional()
     @IsString()
     password?: string;
+
+    @IsOptional()
+    @IsString()
+    guestId?: string;
 }
 
 export class ChangePasswordDto {

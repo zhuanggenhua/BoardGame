@@ -517,7 +517,7 @@ describe('效果解析', () => {
       timestamp: fixedTimestamp,
     };
 
-    const effect = { type: 'summonFromDiscard' as const, cardType: 'plagueZombie' as const, position: 'victim' as const };
+    const effect = { type: 'summonFromDiscard' as const, cardType: 'carrier' as const, position: 'victim' as const };
     const events = resolveEffect(effect, ctx, 'infection');
 
     expect(events.length).toBe(1);

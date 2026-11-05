@@ -66,7 +66,7 @@ function creature(
     };
 }
 
-function hiddenCurse(id: string, ownerId: string, targetObjectId: string): MageWarsArenaObjectState {
+function magebaneCurse(id: string, ownerId: string, targetObjectId: string): MageWarsArenaObjectState {
     return {
         id,
         kind: 'enchantment',
@@ -81,7 +81,7 @@ function hiddenCurse(id: string, ownerId: string, targetObjectId: string): MageW
         actionReady: false,
         guarding: false,
         statusTokens: {},
-        revealed: false,
+        revealed: true,
         anchoredToObjectId: targetObjectId,
     };
 }
@@ -149,13 +149,13 @@ describe('mage-wars spell caster source', () => {
 
     it('applies 1804 direct damage only after a configured creature caster resolves a spell', () => {
         const caster = creature('spellcaster-with-curse', '0', { abilityId: 'mw.creature.test.spellcasting' });
-        const curse = hiddenCurse('curse-on-spellcaster', '1', caster.id);
+        const curse = magebaneCurse('curse-on-spellcaster', '1', caster.id);
         const core = addObject(
             addObject(
                 addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
                 curse,
             ),
-            hiddenCurse('second-curse-on-spellcaster', '1', caster.id),
+            magebaneCurse('second-curse-on-spellcaster', '1', caster.id),
         );
 
         const result = afterSpellResolved(core, {
@@ -188,7 +188,7 @@ describe('mage-wars spell caster source', () => {
         const caster = creature('spellcaster-before-resolution', '0', { abilityId: 'mw.creature.test.spellcasting' });
         const core = addObject(
             addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
-            hiddenCurse('curse-before-resolution', '1', caster.id),
+            magebaneCurse('curse-before-resolution', '1', caster.id),
         );
         const event: MageWarsSpellCastStartedEvent = {
             type: MAGE_WARS_EVENTS.SPELL_CAST_STARTED,
@@ -212,7 +212,7 @@ describe('mage-wars spell caster source', () => {
         const caster = creature('spellcaster-legacy-owner', '0', { abilityId: 'mw.creature.test.spellcasting' });
         const core = addObject(
             addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
-            hiddenCurse('curse-legacy-owner', '1', caster.id),
+            magebaneCurse('curse-legacy-owner', '1', caster.id),
         );
         const state: MatchState<MageWarsCore> = {
             core,
@@ -249,7 +249,7 @@ describe('mage-wars spell caster source', () => {
         const caster = creature('spellcaster-countered', '0', { abilityId: 'mw.creature.test.spellcasting' });
         const core = addObject(
             addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), caster),
-            hiddenCurse('curse-on-countered-caster', '1', caster.id),
+            magebaneCurse('curse-on-countered-caster', '1', caster.id),
         );
         const context: MageWarsSpellResponseContext = {
             kind: 'spell-counter',
@@ -315,7 +315,7 @@ describe('mage-wars spell caster source', () => {
         const ordinary = creature('ordinary-caster', '0');
         const core = addObject(
             addObject(MageWarsDomain.setup(['0', '1'], fixedRandom), ordinary),
-            hiddenCurse('curse-on-ordinary-creature', '1', ordinary.id),
+            magebaneCurse('curse-on-ordinary-creature', '1', ordinary.id),
         );
 
         const mageResult = afterSpellResolved(core, { kind: 'mage', playerId: '0' });
@@ -333,7 +333,7 @@ describe('mage-wars spell caster source', () => {
         const missingCasterId = 'removed-spellcaster';
         const core = addObject(
             MageWarsDomain.setup(['0', '1'], fixedRandom),
-            hiddenCurse('stale-curse', '1', missingCasterId),
+            magebaneCurse('stale-curse', '1', missingCasterId),
         );
 
         const result = afterSpellResolved(core, {

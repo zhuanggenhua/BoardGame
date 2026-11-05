@@ -21,6 +21,8 @@ export type OnlineAiRepeatedRecoveryUnblockMatch = {
     gameId: string;
     state: MatchState<unknown>;
     stateID: number;
+    randomSeed?: string;
+    getRandomCursor?: () => number;
     unloaded: boolean;
     executing: boolean;
     lastCommandFailureReason: string | null;

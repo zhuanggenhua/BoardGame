@@ -1360,7 +1360,9 @@ test.describe('DiceThrone - 防御技能选择', () => {
         });
         await expect(rollButton).toBeDisabled({ timeout: 5000 });
         await expect(confirmButton).toBeDisabled({ timeout: 5000 });
-        await expect(endDefenseButton).toBeHidden({ timeout: 5000 });
+        // 当前 UI 合同：阶段按钮在响应窗口期间保持常驻，但必须置灰不可点。
+        await expect(endDefenseButton).toBeVisible({ timeout: 5000 });
+        await expect(endDefenseButton).toBeDisabled({ timeout: 5000 });
         await game.screenshot('01-防御方确认骰面后-等待攻击方响应', testInfo);
 
         const attackerContext = await browser.newContext();

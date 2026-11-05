@@ -112,6 +112,7 @@ describe('AbilityOverlays', () => {
 
         expect(onMagnifyCard).toHaveBeenCalledTimes(1);
         expect(onMagnifyCard.mock.calls[0]?.[0]).toMatchObject({ id: 'card-thrust-punch-2' });
+        expect(getByTestId('dt-upgrade-magnify-button-fist').querySelector('svg')).toHaveClass('board-shell-fixed-icon');
         expect(onSelectAbility).not.toHaveBeenCalled();
     });
 
@@ -738,7 +739,8 @@ describe('AbilityOverlays', () => {
                 }
             }
         }
-        expect(checkedUpgradeCount).toBe(136);
+        // 当前注册还包含博士和雷神的 10 张替换型升级牌。
+        expect(checkedUpgradeCount).toBe(150);
     });
 
     it('技能槽 DOM 应区分主面板和放大预览，避免升级卡飞错目标', () => {

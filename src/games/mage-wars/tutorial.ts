@@ -1,4 +1,9 @@
-import type { TutorialAiAction, TutorialCollection, TutorialManifest } from '../../engine/types';
+import type {
+    TutorialAiAction,
+    TutorialCollection,
+    TutorialHiddenAutomationContract,
+    TutorialManifest,
+} from '../../engine/types';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { MAGE_WARS_COMMANDS, MAGE_WARS_EVENTS } from './domain';
 
@@ -6,6 +11,7 @@ const JUNGLE_WOLF_CARD_ID = 2819;
 const ROUSE_THE_BEAST_CARD_ID = 3403;
 const ASYRAN_CLERIC_CARD_ID = 2811;
 const PILLAR_OF_LIGHT_CARD_ID = 1706;
+const THORNS_WALL_CARD_ID = 25700;
 const PLAYER_ONE_CLERIC_OBJECT_ID = 'mwobj-1-2811-1';
 
 const advancePhase = (playerId: string): TutorialAiAction => ({
@@ -14,9 +20,18 @@ const advancePhase = (playerId: string): TutorialAiAction => ({
     payload: {},
 });
 
+const compressedRepeat = (
+    equivalentStepIds: string[],
+    reason: string,
+): TutorialHiddenAutomationContract => ({
+    kind: 'compressed-repeat',
+    equivalentStepIds,
+    reason,
+});
+
 export const MageWarsTutorial: TutorialManifest = {
     id: 'mage-wars-basic',
-    revision: 2,
+    revision: 6,
     numPlayers: 2,
     allowManualSkip: true,
     randomPolicy: {
@@ -69,6 +84,13 @@ export const MageWarsTutorial: TutorialManifest = {
                 caption: 'game-mage-wars:tutorial.visuals.spellCardLegendCaption',
             },
             highlightTarget: 'mw-spellbook',
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'planning-skip',
+            content: 'game-mage-wars:tutorial.steps.planningSkip',
+            highlightTarget: 'mw-plan-spells',
             position: 'top',
             infoStep: true,
         },
@@ -145,6 +167,10 @@ export const MageWarsTutorial: TutorialManifest = {
                 playerId: '1',
                 payload: { spellCardIds: [ASYRAN_CLERIC_CARD_ID, PILLAR_OF_LIGHT_CARD_ID] },
             }],
+            hiddenAutomation: compressedRepeat(
+                ['plan-confirm'],
+                'Opponent repeats the same formal planning submit after the player has just confirmed a plan.',
+            ),
         },
         {
             id: 'prepared-and-hidden',
@@ -187,6 +213,13 @@ export const MageWarsTutorial: TutorialManifest = {
         {
             id: 'wolf-summoned',
             content: 'game-mage-wars:tutorial.steps.wolfSummoned',
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'armor-reading',
+            content: 'game-mage-wars:tutorial.steps.armorReading',
             highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
             position: 'top',
             infoStep: true,
@@ -251,6 +284,10 @@ export const MageWarsTutorial: TutorialManifest = {
                     },
                 },
             ],
+            hiddenAutomation: compressedRepeat(
+                ['deploy-select-wolf', 'deploy-target-zone', 'rouse-select-spell', 'rouse-target-wolf'],
+                'Opponent deployment repeats the prepared-spell selection and targeting flow; the next visible steps teach the public result.',
+            ),
         },
         {
             id: 'opponent-public-view',
@@ -281,6 +318,10 @@ export const MageWarsTutorial: TutorialManifest = {
             position: 'center',
             allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
             aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['pass-your-deployment'],
+                'Opponent passes the same deployment phase window already taught to the player.',
+            ),
         },
         {
             id: 'skip-initiative-quickcast',
@@ -301,6 +342,10 @@ export const MageWarsTutorial: TutorialManifest = {
             position: 'center',
             allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
             aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['skip-initiative-quickcast'],
+                'Opponent passes the same quickcast window after the player has seen the pass action.',
+            ),
         },
         {
             id: 'move-select-wolf',
@@ -320,6 +365,248 @@ export const MageWarsTutorial: TutorialManifest = {
             allowedCommands: [MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT],
             allowedTargets: ['mw-zone-a2'],
             advanceOnEvents: [{ type: MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED, match: { ownerId: '0' } }],
+        },
+        {
+            id: 'end-creature-action',
+            content: 'game-mage-wars:tutorial.steps.endCreatureAction',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                match: { playerId: '0', phase: 'creatureAction' },
+            }],
+        },
+        {
+            id: 'opponent-pass-creature-action',
+            content: 'game-mage-wars:tutorial.steps.opponentPassCreatureAction',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['end-creature-action'],
+                'Opponent has no new creature action teaching point, so the repeated phase pass is compressed.',
+            ),
+        },
+        {
+            id: 'skip-final-quickcast',
+            content: 'game-mage-wars:tutorial.steps.skipFinalQuickcast',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.TURN_ADVANCED,
+                match: { fromPlayerId: '0', toPlayerId: '1' },
+            }],
+        },
+        {
+            id: 'round-two-planning',
+            content: 'game-mage-wars:tutorial.steps.roundTwoPlanning',
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'plan-open-all-category',
+            content: 'game-mage-wars:tutorial.steps.planOpenAllCategory',
+            highlightTarget: 'mw-spellbook-category-all',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [],
+            allowedTargets: ['mw-spellbook-category-all'],
+        },
+        {
+            id: 'plan-wall-next-page',
+            content: 'game-mage-wars:tutorial.steps.planWallNextPage',
+            highlightTarget: 'mw-spellbook-next-page',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [],
+            allowedTargets: ['mw-spellbook-next-page'],
+        },
+        {
+            id: 'plan-select-thorns-wall',
+            content: 'game-mage-wars:tutorial.steps.planSelectThornsWall',
+            highlightTarget: `mw-spellbook-card-${THORNS_WALL_CARD_ID}`,
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [],
+            allowedTargets: [`mw-spellbook-card-${THORNS_WALL_CARD_ID}`],
+        },
+        {
+            id: 'plan-confirm-thorns-wall',
+            content: 'game-mage-wars:tutorial.steps.planConfirmThornsWall',
+            highlightTarget: 'mw-plan-spells',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [MAGE_WARS_COMMANDS.PLAN_SPELLS],
+            allowedTargets: ['mw-plan-spells'],
+            advanceOnEvents: [{ type: MAGE_WARS_EVENTS.SPELLS_PLANNED, match: { playerId: '0' } }],
+        },
+        {
+            id: 'prepare-opponent-empty-plan',
+            content: 'game-mage-wars:tutorial.steps.prepareOpponentEmptyPlan',
+            allowedCommands: [MAGE_WARS_COMMANDS.PLAN_SPELLS],
+            aiActions: [{
+                commandType: MAGE_WARS_COMMANDS.PLAN_SPELLS,
+                playerId: '1',
+                payload: { spellCardIds: [] },
+            }],
+            hiddenAutomation: compressedRepeat(
+                ['plan-confirm'],
+                'Opponent repeats planning submission; this bridge only keeps the formal round synchronized.',
+            ),
+        },
+        {
+            id: 'opponent-pass-second-deployment',
+            content: 'game-mage-wars:tutorial.steps.opponentPassSecondDeployment',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['pass-your-deployment'],
+                'Opponent repeats an already compressed deployment pass in the second round.',
+            ),
+        },
+        {
+            id: 'wall-prepared',
+            content: 'game-mage-wars:tutorial.steps.wallPrepared',
+            highlightTarget: `mw-prepared-card-${THORNS_WALL_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'wall-select-spell',
+            content: 'game-mage-wars:tutorial.steps.wallSelectSpell',
+            highlightTarget: `mw-prepared-card-${THORNS_WALL_CARD_ID}`,
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [MAGE_WARS_COMMANDS.CAST_SPELL],
+            allowedTargets: [`mw-prepared-card-${THORNS_WALL_CARD_ID}`],
+        },
+        {
+            id: 'wall-target-edge',
+            content: 'game-mage-wars:tutorial.steps.wallTargetEdge',
+            highlightTarget: 'mw-wall-edge-a3-b3',
+            position: 'right',
+            requireAction: true,
+            allowedCommands: [MAGE_WARS_COMMANDS.CAST_SPELL],
+            allowedTargets: ['mw-wall-edge-a3-b3'],
+            advanceOnEvents: [{ type: MAGE_WARS_EVENTS.WALL_SUMMONED }],
+        },
+        {
+            id: 'wall-card-result',
+            content: 'game-mage-wars:tutorial.steps.wallCardResult',
+            highlightTarget: `mw-wall-card-${THORNS_WALL_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'wall-effect-reading',
+            content: 'game-mage-wars:tutorial.steps.wallEffectReading',
+            highlightTarget: `mw-wall-card-${THORNS_WALL_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'end-second-deployment',
+            content: 'game-mage-wars:tutorial.steps.endSecondDeployment',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                match: { playerId: '0', phase: 'deployment' },
+            }],
+        },
+        {
+            id: 'opponent-pass-second-initiative-quickcast',
+            content: 'game-mage-wars:tutorial.steps.opponentPassSecondInitiativeQuickcast',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['skip-initiative-quickcast'],
+                'Opponent repeats the quickcast pass window already covered earlier.',
+            ),
+        },
+        {
+            id: 'skip-second-initiative-quickcast',
+            content: 'game-mage-wars:tutorial.steps.skipSecondInitiativeQuickcast',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                match: { playerId: '0', phase: 'initiativeQuickcast' },
+            }],
+        },
+        {
+            id: 'opponent-pass-second-creature-action',
+            content: 'game-mage-wars:tutorial.steps.opponentPassSecondCreatureAction',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['end-creature-action'],
+                'Opponent repeats the creature-action pass after the player has already learned that phase transition.',
+            ),
+        },
+        {
+            id: 'guard-select-wolf',
+            content: 'game-mage-wars:tutorial.steps.guardSelectWolf',
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [MAGE_WARS_COMMANDS.GUARD],
+            allowedTargets: [`mw-field-object-${JUNGLE_WOLF_CARD_ID}`],
+        },
+        {
+            id: 'guard-action',
+            content: 'game-mage-wars:tutorial.steps.guardAction',
+            highlightTarget: 'mw-selected-unit-guard',
+            position: 'top',
+            requireAction: true,
+            allowedCommands: [MAGE_WARS_COMMANDS.GUARD],
+            allowedTargets: ['mw-selected-unit-guard'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.GUARD_GAINED,
+                match: { playerId: '0' },
+            }],
+        },
+        {
+            id: 'guard-token-result',
+            content: 'game-mage-wars:tutorial.steps.guardTokenResult',
+            highlightTarget: `mw-field-object-${JUNGLE_WOLF_CARD_ID}`,
+            position: 'top',
+            infoStep: true,
+        },
+        {
+            id: 'end-second-creature-action',
+            content: 'game-mage-wars:tutorial.steps.endSecondCreatureAction',
+            highlightTarget: 'mw-turn-end',
+            position: 'left',
+            requireAction: true,
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            allowedTargets: ['mw-turn-end'],
+            advanceOnEvents: [{
+                type: MAGE_WARS_EVENTS.PHASE_WINDOW_COMPLETED,
+                match: { playerId: '0', phase: 'creatureAction' },
+            }],
+        },
+        {
+            id: 'opponent-pass-second-final-quickcast',
+            content: 'game-mage-wars:tutorial.steps.opponentPassSecondFinalQuickcast',
+            allowedCommands: [FLOW_COMMANDS.ADVANCE_PHASE],
+            aiActions: [advancePhase('1')],
+            hiddenAutomation: compressedRepeat(
+                ['skip-final-quickcast'],
+                'Opponent repeats the final quickcast pass after the player has used the same phase control.',
+            ),
         },
         {
             id: 'finish',

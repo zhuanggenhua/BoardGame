@@ -1,0 +1,1182 @@
+{
+  "manifestHash": "fcaf875c24ae4bae6baebf5268e3779188289a6ea991235fd70060a79457a662",
+  "total": 235,
+  "valid": 235,
+  "rows": [
+    {
+      "key": "backs/attack",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "backs/compressed/attack",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "backs/compressed/servant",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "backs/compressed/skill",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "backs/servant",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "backs/skill",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "board/compressed/fuyuki-city",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/avenger",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "cards/basic-attack-atlas",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "cards/berserker-strength-nine",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "cards/berserker-strength-seven",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "cards/berserker-swift-nine",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "cards/berserker-swift-seven",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/attack-strength-high",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/attack-strength-low",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/attack-strength-mid",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/avenger",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/basic-attack-atlas",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/berserker-strength-nine",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/berserker-strength-seven",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/berserker-swift-nine",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "cards/compressed/berserker-swift-seven",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/ambush",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/back",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/fate-battle",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/fear-of-future",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/fire-suppression",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/glorious-duel",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/ground-zero",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/high-ground",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/holy-ground",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/leyline",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/milk-sea",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/power-test",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/reality-marble",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/reclaim-illya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/risk-it-all",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/ritual-site",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/suppress-threat",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/synergy",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "events/compressed/treacherous-ground",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/emiya-shirou",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_iliya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_kariya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_kayneth",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_kirei",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_kiritsugu",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_rin",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_ryuunosuke",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_sakura",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_shinji",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_shirou_emiya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_tokiomi",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_waver",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/compressed/m_zouken",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "masters/m_iliya",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_kariya",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_kayneth",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_kirei",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_kiritsugu",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_rin",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_ryuunosuke",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_sakura",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_shinji",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_shirou_emiya",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_tokiomi",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_waver",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "masters/m_zouken",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/command-seal-m_kariya",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/command-seal-m_kayneth",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/command-seal-m_ryuunosuke",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/command-seal-m_tokiomi",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/command-seal-m_waver",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/command-seal-shared-atlas",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/command-seal-m_kariya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/command-seal-m_kayneth",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/command-seal-m_ryuunosuke",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/command-seal-m_tokiomi",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/command-seal-m_waver",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/command-seal-shared-atlas",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/compressed/emiya-shirou",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "seals/emiya-shirou",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-archer",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-avenger",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-berserker",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-caster",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-cu-chulainn",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-gilgamesh",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-gilles",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-hassan",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-heracles",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-lancer",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-medusa",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-rider",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-saber",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/compressed/servant-sasaki",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-archer",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-avenger",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-berserker",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-caster",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-cu-chulainn",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-gilgamesh",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-gilles",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-hassan",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-heracles",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-lancer",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-medusa",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-rider",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-saber",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "servants/servant-sasaki",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/angra-curse",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/angra-shadow",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/angra-substance",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/back",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/calm-before-storm",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/fate-night",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/future-hope",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/heavens-feel",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/hell-gate",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/miyama-killer",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/new-city-battle",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/perfect-flow",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/rage",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "situations/compressed/turning-point",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_angra_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_angra_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_angra_3",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_cu_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_cu_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_cu_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_diarmuid_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_diarmuid_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_diarmuid_3",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_emiya_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_emiya_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_emiya_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_gil_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_gil_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_gil_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_gilles_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_gilles_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_gilles_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_hassan_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_hassan_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_hassan_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_herc_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_herc_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_herc_3",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_iskandar_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_iskandar_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_iskandar_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_lance_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_lance_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_lance_3",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_medea_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_medea_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_medea_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_medusa_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_medusa_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_medusa_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_saber_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_saber_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_saber_np",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_sasaki_1",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_sasaki_2",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/compressed/sc_sasaki_3",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_angra_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_angra_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_angra_3",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_cu_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_cu_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_cu_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_diarmuid_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_diarmuid_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_diarmuid_3",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_emiya_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_emiya_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_emiya_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_gil_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_gil_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_gil_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_gilles_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_gilles_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_gilles_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_hassan_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_hassan_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_hassan_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_herc_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_herc_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_herc_3",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_iskandar_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_iskandar_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_iskandar_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_lance_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_lance_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_lance_3",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_medea_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_medea_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_medea_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_medusa_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_medusa_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_medusa_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_saber_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_saber_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_saber_np",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_sasaki_1",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_sasaki_2",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "skills/sc_sasaki_3",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "thumbnails/compressed/cover",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_iliya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_kariya",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_kayneth",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_kiritsugu",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_ryuunosuke",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_sakura",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_tokiomi",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_waver",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/m_zouken",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/token-emiya-shirou",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/token-kotomine-kirei",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/token-matou-shinji",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/compressed/token-tohsaka-rin",
+      "ext": "webp",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_iliya",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_kariya",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_kayneth",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_kiritsugu",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_ryuunosuke",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_sakura",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_tokiomi",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_waver",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/m_zouken",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/token-emiya-shirou",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/token-kotomine-kirei",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/token-matou-shinji",
+      "ext": "png",
+      "valid": true
+    },
+    {
+      "key": "tokens/token-tohsaka-rin",
+      "ext": "png",
+      "valid": true
+    }
+  ]
+}

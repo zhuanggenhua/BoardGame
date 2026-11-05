@@ -21,3 +21,4 @@ import './huijin';
 import './shouren';
 import './yongheng';
 import './shadow';
+import './zhongcai';

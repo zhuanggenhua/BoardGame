@@ -17,6 +17,7 @@ import {
     makePlayer,
     makeState,
     respondToPromptOption,
+    getPromptOptionsGenerator,
 } from '../helpers';
 import { defaultTestRandom } from '../testRunner';
 
@@ -85,6 +86,26 @@ describe('萌奇金勇士派系', () => {
         const source = resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'berserker');
         expect(resolved.finalState.core.bases[0].monsters).toEqual([]);
         expect(source?.powerCounters).toBe(1);
+    });
+
+    it('狂战士刷新候选时仍排除力量高于自身的怪物', () => {
+        const core = makeState({
+            bases: [makeBase('test_base', [makeMinion('berserker', BERSERKER, '0', 3)])],
+            treasureDeck: ['munchkin_treasure_spiky_boots'],
+        });
+        core.bases[0].monsters = [{ uid: 'low-monster', defId: 'munchkin_monster_ghoul' }];
+
+        const played = invoke(core, BERSERKER, 'onPlay', 'berserker');
+        const prompt = getSimpleChoicePrompt(played.matchState!, 'munchkin_warriors_berserker_monster');
+        const optionsGenerator = getPromptOptionsGenerator(prompt);
+        expect(optionsGenerator).toBeTypeOf('function');
+
+        core.bases[0].monsters = [
+            { uid: 'low-monster', defId: 'munchkin_monster_ghoul' },
+            { uid: 'high-monster', defId: 'munchkin_monster_treasure_dragon' },
+        ];
+        const refreshedOptions = optionsGenerator!(makeMatchState(core), prompt.data ?? prompt);
+        expect(refreshedOptions.map(option => option.value?.monsterUid)).toEqual(['low-monster']);
     });
 
     it('骚乱摧毁怪物分支不产生宝藏奖励，打出两个怪物分支逐张入场', () => {
@@ -238,6 +259,17 @@ describe('萌奇金勇士派系', () => {
         expect(extra.options.some(option => option.value?.cardUid === 'munchkin_treasure_100')).toBe(true);
         const skipped = respondToPromptOption(resolved.finalState, option => option.value?.skip === true, '跳过宝藏额外随从', '0');
         expect(skipped.finalState.core.players['0'].hand.map(card => card.defId)).toContain('munchkin_treasure_dwarf_hireling');
+    });
+
+    it('战争怒吼没有可加力量的同基地仆从时不应先暴露怪物选择', () => {
+        const core = makeState({
+            bases: [makeBase('test_base')],
+        });
+        core.bases[0].monsters = [{ uid: 'monster-without-minion', defId: 'munchkin_monster_ghoul' }];
+
+        const played = invoke(core, 'munchkin_warriors_war_cry', 'onPlay', 'war-cry');
+
+        expect(played.matchState).toBeUndefined();
     });
 });
 

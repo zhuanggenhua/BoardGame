@@ -40,19 +40,19 @@ export const CardTransition: React.FC<CardTransitionProps> = ({
             initial: { opacity: 0, scale: 0.8, y: 20 },
             animate: { opacity: 1, scale: 1, y: 0 },
             exit: { opacity: 0, scale: 0.8, y: -20 },
-            transition: { duration: 0.3, ease: 'easeOut' },
+            transition: { duration: 0.3, ease: 'easeOut' as const },
         },
         field: {
             initial: { opacity: 0, scale: 0.9 },
             animate: { opacity: 1, scale: 1 },
             exit: { opacity: 0, scale: 0.9 },
-            transition: { duration: 0.25, ease: 'easeInOut' },
+            transition: { duration: 0.25, ease: 'easeInOut' as const },
         },
         discard: {
             initial: { opacity: 0, scale: 0.7, rotate: -10 },
             animate: { opacity: 1, scale: 1, rotate: 0 },
             exit: { opacity: 0, scale: 0.7, rotate: 10 },
-            transition: { duration: 0.2, ease: 'easeIn' },
+            transition: { duration: 0.2, ease: 'easeIn' as const },
         },
     };
 

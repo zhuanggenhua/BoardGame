@@ -1,5 +1,5 @@
 import {
-    getQidahenInitialController,
+    getQidahenHomelandFaction,
     isQidahenLogicalRuleRegionId,
     resolveQidahenPrimaryRuntimeRegionId,
     resolveQidahenRuleRegionConfig,
@@ -120,5 +120,5 @@ export const getEffectiveHomelandController = (
     ) {
         return 'mongol';
     }
-    return getQidahenInitialController(regionId);
+    return getQidahenHomelandFaction(regionId);
 };

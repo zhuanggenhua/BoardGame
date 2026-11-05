@@ -29,6 +29,9 @@ import {
     grantExtraAction,
     grantExtraMinion,
     grantImmediateExtraPlayForStoredCard,
+    getMinionEffectiveNames,
+    minionHasEffectiveName,
+    getMinionPower,
     inspectDeck,
     modifyBreakpoint,
     recoverCardsFromDiscard,
@@ -139,18 +142,21 @@ function detachOngoing(
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        isDestruction?: boolean;
         destination?: 'discard' | 'hand';
+        targetBaseIndex?: number;
+        targetKind?: 'ongoing' | 'attached_action';
     },
 ): OngoingDetachedEvent {
     return buildOngoingDetachedEvent({ cardUid, defId, ownerId, reason, now, ...source }) as OngoingDetachedEvent;
 }
 
-function queuePrompt<T>(
+function queuePrompt<const TOptions extends readonly PromptOption<unknown>[]>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     sourceId: string,
     title: string,
-    options: PromptOption<T>[],
+    options: TOptions,
     now: number,
     targetType: 'button' | 'base' | 'hand' | 'minion' | 'generic' | 'field-source-target' | 'field-source-action',
     titleKey?: string,
@@ -910,10 +916,12 @@ function registerActionHeroesInteractionHandlers(): void {
         if (!storedAction) return { state, events: [] };
         return {
             state,
-            events: [grantExtraAction(playerId, 'action_heroes_kickboxbro', timestamp, {
-                restrictToCardUid: storedAction.uid,
-                restrictToCardDefId: storedAction.defId,
-            })],
+            events: [grantImmediateExtraPlayForStoredCard(
+                playerId,
+                storedAction,
+                'action_heroes_kickboxbro',
+                timestamp,
+            )],
         };
     });
 }
@@ -1300,6 +1308,10 @@ function isPrintedPower(defId: string, power: number): boolean {
 function isPrintedPowerAtMost(defId: string, powerMax: number): boolean {
     const power = getMinionDef(defId)?.power;
     return power !== undefined && power <= powerMax;
+}
+
+function isCurrentPowerAtMost(core: SmashUpCore, minion: MinionOnBase, baseIndex: number, powerMax: number): boolean {
+    return getMinionPower(core, minion, baseIndex) <= powerMax;
 }
 
 function buildRecoverOrTransferToHandEvent(playerId: PlayerId, card: CardInstance, zone: 'hand' | 'deck' | 'discard', reason: string, now: number): SmashUpEvent | undefined {
@@ -2507,7 +2519,7 @@ function registerExtramorphsInteractionHandlers(): void {
             state.core,
             playerId,
             'extramorphs_egg_field',
-            (minion, baseIndex) => baseIndex === continuation.sourceBaseIndex && isPrintedPowerAtMost(minion.defId, 3),
+            (minion, baseIndex) => baseIndex === continuation.sourceBaseIndex && isCurrentPowerAtMost(state.core, minion, baseIndex, 3),
             'affect',
         );
         if (minionOptions.length === 0) return { state, events: [] };
@@ -2922,7 +2934,7 @@ function registerExtramorphs(): void {
             ...buildDeckCardOptions(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_head_grabber'),
             ...buildDiscardCardOptions(ctx.state, ctx.playerId, card => card.defId === 'extramorphs_head_grabber'),
         ];
-        const hasTarget = ctx.state.bases[baseIndex]?.minions.some(minion => isPrintedPowerAtMost(minion.defId, 3)) ?? false;
+        const hasTarget = ctx.state.bases[baseIndex]?.minions.some(minion => isCurrentPowerAtMost(ctx.state, minion, baseIndex, 3)) ?? false;
         if (headGrabberOptions.length === 0 || !hasTarget) return { events: [] };
         return {
             events: [],
@@ -3139,14 +3151,28 @@ function registerExtramorphs(): void {
 }
 
 function hasTeensMinionAtBase(core: SmashUpCore, baseIndex: number, defId: string, playerId: PlayerId): boolean {
-    return core.bases[baseIndex]?.minions.some(minion => minion.defId === defId && minion.controller === playerId) ?? false;
+    return core.bases[baseIndex]?.minions.some(minion =>
+        minion.controller === playerId && minionHasEffectiveName(core, minion, defId)
+    ) ?? false;
 }
 
-function firstOwnDifferentNamePrintedPower3Minion(core: SmashUpCore, playerId: PlayerId, baseIndex: number, defId: string) {
+function firstOwnDifferentNamePrintedPower3Minion(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    defId: string,
+    triggerMinionUid?: string,
+) {
+    const trigger = core.bases[baseIndex]?.minions.find(minion =>
+        minion.controller === playerId
+        && (triggerMinionUid ? minion.uid === triggerMinionUid : minion.defId === defId)
+    );
+    const triggerNames = new Set(trigger ? getMinionEffectiveNames(core, trigger) : [defId]);
     return firstMinionAtBase(core, baseIndex, minion =>
         minion.controller === playerId
-        && minion.defId !== defId
         && isPrintedPower(minion.defId, 3)
+        && minion.uid !== trigger?.uid
+        && getMinionEffectiveNames(core, minion).every(name => !triggerNames.has(name))
     );
 }
 
@@ -3165,9 +3191,12 @@ function playExtraPrintedPower3FromDeck(ctx: AbilityContext, baseIndex = ctx.bas
 }
 
 function countBrunchBunchNames(core: SmashUpCore, playerId: PlayerId, baseIndex: number): number {
-    return new Set((core.bases[baseIndex]?.minions ?? [])
-        .filter(minion => minion.controller === playerId && isPrintedPower(minion.defId, 3))
-        .map(minion => minion.defId)).size;
+    const names = new Set<string>();
+    for (const minion of core.bases[baseIndex]?.minions ?? []) {
+        if (minion.controller !== playerId || !isPrintedPower(minion.defId, 3)) continue;
+        for (const name of getMinionEffectiveNames(core, minion)) names.add(name);
+    }
+    return names.size;
 }
 
 function buildBrunchBunchEffectOptions(
@@ -3800,7 +3829,7 @@ function registerTeens(): void {
         const names = ctx.state.bases.flatMap(base =>
             base.minions.filter(minion => minion.controller === ctx.playerId && minion.uid !== host.minion.uid).map(minion => minion.defId)
         );
-        return [{
+        return { events: [{
             type: SU_EVENTS.MINION_METADATA_UPDATED,
             payload: {
                 minionUid: host.minion.uid,
@@ -3812,7 +3841,7 @@ function registerTeens(): void {
                 reason: ctx.defId,
             },
             timestamp: ctx.now,
-        } as SmashUpEvent];
+        } as SmashUpEvent] };
     });
     registerSimpleAbility('teens_brunch_bunch', 'onPlay', ctx => {
         if (ctx.targetBaseIndex === undefined) {
@@ -3990,7 +4019,13 @@ function registerTeens(): void {
         const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
         if (baseIndex === undefined) return [];
         const target = ctx.triggerMinionDefId
-            ? firstOwnDifferentNamePrintedPower3Minion(ctx.state, ctx.playerId, baseIndex, ctx.triggerMinionDefId)
+            ? firstOwnDifferentNamePrintedPower3Minion(
+                ctx.state,
+                ctx.playerId,
+                baseIndex,
+                ctx.triggerMinionDefId,
+                ctx.triggerMinionUid,
+            )
             : undefined;
         return target ? [addPowerCounter(target.minion.uid, baseIndex, 1, 'base_montridge_high', ctx.now, {
             sourcePlayerId: ctx.playerId,
@@ -4225,7 +4260,12 @@ function buildDestroyActionLocationEvents(
     sourceInfo: WraithEffectSourceInfo,
 ): SmashUpEvent[] {
     const events: SmashUpEvent[] = [
-        detachOngoing(location.action.uid, location.action.defId, location.action.ownerId, reason, now, sourceInfo),
+        detachOngoing(location.action.uid, location.action.defId, location.action.ownerId, reason, now, {
+            ...sourceInfo,
+            isDestruction: true,
+            targetBaseIndex: location.baseIndex,
+            targetKind: location.hostUid === undefined ? 'ongoing' : 'attached_action',
+        }),
     ];
     if (isWraith(location.action.defId)) {
         const marker = markWraithActionDestroyedOnBase(core, location.baseIndex, playerId, reason, now);
@@ -4292,7 +4332,10 @@ function buildTransferOngoingActionEventsWithSource(
 ): SmashUpEvent[] {
     if (fromBaseIndex === toBaseIndex) return [];
     return [
-        detachOngoing(action.uid, action.defId, action.ownerId, reason, now, sourceInfo),
+        detachOngoing(action.uid, action.defId, action.ownerId, reason, now, {
+            ...sourceInfo,
+            isDestruction: false,
+        }),
         buildOngoingAttachedEvent({
             uid: action.uid,
             defId: action.defId,
@@ -4318,22 +4361,15 @@ function wraithAncientSumerianGodDestroyed(ctx: Pick<TriggerContext, 'state' | '
     if (!playerId || !ctx.sourceCardUid) return wraithDestroyedMarker(ctx, 'wraithrustlers_ancient_sumerian_god');
     const storedActions = (ctx.state.players[playerId]?.storedCards ?? [])
         .filter(card => card.storedUnderUid === ctx.sourceCardUid && getCardDef(card.defId)?.type === 'action');
-    const releaseEvents = storedActions
+    const extraPlayEvents = storedActions
         .slice(0, ctx.state.bases.length)
-        .flatMap((card, index) => [
-            {
-                type: SU_EVENTS.STORED_CARD_RELEASED,
-                payload: { playerId, cardUid: card.uid, reason: 'wraithrustlers_ancient_sumerian_god' },
-                timestamp: ctx.now,
-            } as SmashUpEvent,
-            grantExtraAction(playerId, 'wraithrustlers_ancient_sumerian_god', ctx.now, {
+        .map((card, index) => grantExtraAction(playerId, 'wraithrustlers_ancient_sumerian_god', ctx.now, {
                 restrictToCardUid: card.uid,
                 restrictToCardDefId: card.defId,
                 restrictToBase: index,
                 playTiming: 'immediate',
-            }),
-        ]);
-    return [...wraithDestroyedMarker(ctx, 'wraithrustlers_ancient_sumerian_god'), ...releaseEvents];
+            }));
+    return [...wraithDestroyedMarker(ctx, 'wraithrustlers_ancient_sumerian_god'), ...extraPlayEvents];
 }
 
 function wraithDemonDogsDestroyed(ctx: Pick<TriggerContext, 'state' | 'baseIndex' | 'sourceBaseIndex' | 'sourceControllerId' | 'triggerCardOwnerId' | 'sourceCardUid' | 'now'>): SmashUpEvent[] {
@@ -4585,8 +4621,8 @@ function registerWraithrustlersInteractionHandlers(): void {
             .map((_base, baseIndex) => ({ baseIndex, label: baseName(state.core, baseIndex) }))
             .filter(candidate => candidate.baseIndex !== location.baseIndex);
         const options: PromptOption<WraithActionChoice>[] = [
-            { id: 'destroy', label: '摧毁此行动', labelKey: 'ui.wraithrustlers_resurgence_destroy_option', value: { mode: 'destroy', cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' },
-            ...(otherBases.length > 0 ? [{ id: 'transfer', label: '转移到另一个基地', labelKey: 'ui.wraithrustlers_resurgence_transfer_option', value: { mode: 'transfer', cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' as const }] : []),
+            { id: 'destroy', label: '摧毁此行动', labelKey: 'ui.wraithrustlers_resurgence_destroy_option', value: { mode: 'destroy' as const, cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' },
+            ...(otherBases.length > 0 ? [{ id: 'transfer', label: '转移到另一个基地', labelKey: 'ui.wraithrustlers_resurgence_transfer_option', value: { mode: 'transfer' as const, cardUid: actionUid, sourceBaseIndex: location.baseIndex }, displayMode: 'button' as const }] : []),
         ];
         return {
             state: queuePrompt(
@@ -4780,7 +4816,10 @@ function registerWraithrustlersInteractionHandlers(): void {
         const sourceBaseIndex = typeof continuation?.sourceBaseIndex === 'number' ? continuation.sourceBaseIndex : selectedSourceBaseIndex(selected);
         const targetBaseIndex = typeof continuation?.targetBaseIndex === 'number' ? continuation.targetBaseIndex : selected.targetBaseIndex;
         const targetMinionUid = selected.targetMinionUid;
-        const targetMinionDefId = selected.targetMinionDefId ?? selected.defId;
+        const minion = sourceBaseIndex === undefined
+            ? undefined
+            : state.core.bases[sourceBaseIndex]?.minions.find(candidate => candidate.uid === targetMinionUid);
+        const targetMinionDefId = selected.targetMinionDefId ?? minion?.defId;
         if (
             selected.skip
             || !actionUid
@@ -4792,10 +4831,7 @@ function registerWraithrustlersInteractionHandlers(): void {
             return { state, events: [] };
         }
         const location = findActionLocationByUid(state.core, actionUid, sourceBaseIndex);
-        const minion = state.core.bases[sourceBaseIndex]?.minions.find(candidate =>
-            candidate.uid === targetMinionUid && candidate.controller === playerId
-        );
-        if (!location || location.action.defId !== 'wraithrustlers_ectoplasm_one' || !minion) {
+        if (!location || location.action.defId !== 'wraithrustlers_ectoplasm_one' || !minion || minion.controller !== playerId) {
             return { state, events: [] };
         }
         const events = [

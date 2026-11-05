@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { getPresetSpellbookCardIdsFromConfig, getMageWarsSpellCardFromConfig } from '../data/configPackage';
+import {
+    getMageWarsSpellCardFromConfig,
+    getPresetSpellbookCardIdsFromConfig,
+    getPresetSpellbookCountFromConfig,
+    getPresetSpellbookEntriesFromConfig,
+} from '../data/configPackage';
 import { MageWarsDomain, MAGE_WARS_COMMANDS, MAGE_WARS_EVENTS } from '../domain';
 import { reduceEvent } from '../domain/reducer';
 import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
@@ -38,7 +43,7 @@ function addObject(core: MageWarsCore, object: MageWarsArenaObjectState): MageWa
 
 function sourceObject(
     id: string,
-    sourceSpellCardId: 2908 | 2218,
+    sourceSpellCardId: 2908 | 2218 | 2212,
     kind: 'creature' | 'conjuration',
     zoneId: typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS],
     mana: number,
@@ -53,11 +58,11 @@ function sourceObject(
         sourceObjectId: `spell-${sourceSpellCardId}`,
         spellcastingSource: source,
         mana,
-        name: sourceSpellCardId === 2908 ? '乌鸦魔宠胡金' : '巢穴',
+        name: sourceSpellCardId === 2908 ? '乌鸦魔宠胡金' : sourceSpellCardId === 2218 ? '巢穴' : '战斗锻炉',
         zoneId,
-        life: sourceSpellCardId === 2908 ? 5 : 13,
+        life: sourceSpellCardId === 2908 ? 5 : sourceSpellCardId === 2218 ? 13 : 6,
         damage: 0,
-        armor: sourceSpellCardId === 2908 ? 0 : 3,
+        armor: sourceSpellCardId === 2908 ? 0 : sourceSpellCardId === 2218 ? 3 : 1,
         actionReady: kind === 'creature',
         guarding: false,
         statusTokens: {},
@@ -83,7 +88,7 @@ function ordinaryCreature(id: string, zoneId: typeof ARENA_ZONE_IDS[keyof typeof
 }
 
 function withMage(core: MageWarsCore, mageId: typeof MAGE_IDS[keyof typeof MAGE_IDS], mana: number): MageWarsCore {
-    const spellbookCount = getPresetSpellbookCardIdsFromConfig(mageId).length;
+    const spellbookEntries = getPresetSpellbookEntriesFromConfig(mageId);
     return {
         ...core,
         players: {
@@ -91,7 +96,8 @@ function withMage(core: MageWarsCore, mageId: typeof MAGE_IDS[keyof typeof MAGE_
             '0': {
                 ...core.players['0'],
                 mageId,
-                spellbookCount,
+                spellbookEntries,
+                spellbookCount: getPresetSpellbookCountFromConfig(mageId),
                 mana,
             },
         },
@@ -116,8 +122,64 @@ describe('mage-wars familiar and spawn-point spellcasting', () => {
             allowedTypeLineIncludes: ['动物'],
             channeling: 4,
         });
+        expect(getMageWarsSpellCardFromConfig(2212)?.spellcastingSource).toEqual({
+            abilityId: 'mw.source.2212.spawn-point',
+            kind: 'spawn-point',
+            phase: 'deployment',
+            allowedSpellTypes: ['装备'],
+            channeling: 0,
+        });
         expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.BEASTMASTER_APPRENTICE)).toContain(2218);
         expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WIZARD_APPRENTICE)).toContain(2908);
+        expect(getPresetSpellbookCardIdsFromConfig(MAGE_IDS.WARLOCK_APPRENTICE)).toContain(2212);
+    });
+
+    it('plans and casts an equipment spell from Battle Forge during deployment', () => {
+        const spellCardId = 3702;
+        let core = withMage(MageWarsDomain.setup(playerIds, fixedRandom), MAGE_IDS.WARLOCK_APPRENTICE, 2);
+        const forge = sourceObject('spawn-point-2212', 2212, 'conjuration', ARENA_ZONE_IDS.A1, 0);
+        core = addObject(core, forge);
+
+        const planned = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems, systemsConfig: engineConfig.systemsConfig },
+            stateFor(core, 'planning'),
+            {
+                type: MAGE_WARS_COMMANDS.PLAN_OBJECT_SPELL,
+                playerId: '0',
+                payload: { objectId: forge.id, spellCardId },
+            },
+            fixedRandom,
+            playerIds,
+        );
+        expect(planned.success).toBe(true);
+
+        const cast = executePipeline(
+            { domain: engineConfig.domain, systems: engineConfig.systems, systemsConfig: engineConfig.systemsConfig },
+            stateFor(planned.state.core, 'deployment'),
+            {
+                type: MAGE_WARS_COMMANDS.CAST_SPELL,
+                playerId: '0',
+                payload: {
+                    casterObjectId: forge.id,
+                    spellCardId,
+                    manaCost: 2,
+                    targetPlayerId: '0',
+                },
+            },
+            fixedRandom,
+            playerIds,
+        );
+
+        expect(cast.success).toBe(true);
+        expect(cast.state.core.objects[forge.id]).toMatchObject({
+            preparedSpellCardId: undefined,
+            mana: 0,
+        });
+        expect(cast.state.core.players['0'].mana).toBe(0);
+        expect(cast.state.core.objects['mwobj-0-3702-1']).toMatchObject({
+            sourceSpellCardId: spellCardId,
+            anchoredToPlayerId: '0',
+        });
     });
 
     it('plans and casts a familiar incantation from the familiar location with familiar-first payment', () => {

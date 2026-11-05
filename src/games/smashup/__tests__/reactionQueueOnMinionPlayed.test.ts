@@ -1,23 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpCore } from '../domain/types';
-import { getReactionPrompt, getSimpleChoicePrompt, makeMatchState, makePlayer, respondToPromptOption } from './helpers';
-import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import type { SmashUpCore, SmashUpEvent } from '../domain/types';
+import { getInteractionsFromMS, getReactionPrompt, getSimpleChoicePrompt, makeMatchState, makePlayer, respondToPromptOption } from './helpers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
-import { clearRegistry, registerAbility } from '../domain/abilityRegistry';
+import { clearRegistry, registerAbilityProgram } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { fireMinionPlayedTriggers } from '../domain/abilityHelpers';
 import { postProcessSystemEvents } from '../domain';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createAbilityRuntimeSimpleChoice, createPromptProgram } from '../domain/abilityRuntime';
 
 beforeEach(() => {
   clearRegistry();
   clearBaseAbilityRegistry();
   clearOngoingEffectRegistry();
-  clearInteractionHandlers();
   registerReactionQueueInteractionHandlers();
 });
 
@@ -118,8 +116,10 @@ describe('reaction queue: onMinionPlayed ordering', () => {
   });
 
   it('随从本体交互完成后，同一次进场触发的基地能力仍会继续结算', () => {
-    registerAbility('alien_scout', 'onPlay', (ctx) => {
-      const interaction = createSimpleChoice(
+    registerAbilityProgram('alien_scout', 'onPlay', {
+      program: createPromptProgram({
+        sourceId: 'test_minion_onplay_prompt',
+        buildInteraction: (ctx: { playerId: string }) => createAbilityRuntimeSimpleChoice(
         'test_minion_onplay_prompt',
         ctx.playerId,
         '随从本体',
@@ -132,17 +132,17 @@ describe('reaction queue: onMinionPlayed ordering', () => {
           },
         ],
         { sourceId: 'test_minion_onplay_prompt', targetType: 'button' },
-      );
-      return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        ),
+        onResolve: ({ state, playerId, timestamp }) => ({
+          matchState: state,
+          events: [{
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: { playerId, messageKey: 'onplay_done', tone: 'info' },
+            timestamp,
+          } as SmashUpEvent],
+        }),
+      }),
     });
-    registerInteractionHandler('test_minion_onplay_prompt', (state, playerId, _value, _data, _random, timestamp) => ({
-      state,
-      events: [{
-        type: SU_EVENTS.ABILITY_FEEDBACK,
-        payload: { playerId, messageKey: 'onplay_done', tone: 'info' },
-        timestamp,
-      } as any],
-    }));
     registerBaseAbility('base_castle_blood', 'onMinionPlayed', (ctx) => {
       const interaction = createSimpleChoice(
         'test_base_on_minion_played_prompt',
@@ -177,7 +177,7 @@ describe('reaction queue: onMinionPlayed ordering', () => {
     } as any], { shuffle: (a: any[]) => a } as any, matchState);
 
     expect(getSimpleChoicePrompt(processed.matchState!, 'test_minion_onplay_prompt')).toBeDefined();
-    expect(processed.matchState!.core.triggerQueue ?? []).toHaveLength(1);
+    expect(getInteractionsFromMS(processed.matchState!)).toHaveLength(1);
 
     const resolved = respondToPromptOption(
       processed.matchState!,
@@ -192,11 +192,16 @@ describe('reaction queue: onMinionPlayed ordering', () => {
       type: SU_EVENTS.ABILITY_FEEDBACK,
       payload: expect.objectContaining({ messageKey: 'onplay_done' }),
     }));
-    expect(resolved.events).toContainEqual(expect.objectContaining({
-      type: SU_EVENTS.TRIGGER_CONSUMED,
-    }));
     expect(getSimpleChoicePrompt(resolved.finalState, 'test_base_on_minion_played_prompt')).toBeDefined();
-    expect(resolved.finalState.core.triggerQueue ?? []).toHaveLength(0);
+    const baseResolved = respondToPromptOption(
+      resolved.finalState,
+      (option: any) => option.id === 'base-resolve',
+      'resolve base onMinionPlayed option',
+      '0',
+      { shuffle: (a: any[]) => a } as any,
+    );
+    expect(baseResolved.success).toBe(true);
+    expect(getInteractionsFromMS(baseResolved.finalState)).toHaveLength(0);
   });
 });
 

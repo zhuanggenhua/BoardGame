@@ -80,7 +80,6 @@ export type BetrayalActionCueReadModelInput = {
   selectedDogTradeCardCount: number;
   selectedTradeTarget: BetrayalExplorerSummary | null;
   activeTradeTargetCount: number;
-  unknownRoomLabel: string;
   hasRoomEndTurnEffect: boolean;
   allExplorers: readonly BetrayalExplorerSummary[];
   resolvePlayerName: (playerId: string, explorerName: string) => string;
@@ -132,7 +131,6 @@ type BetrayalActionCueInput = {
   pendingRoomPlacementPreviewRoomName: string | null;
   canStartExploreSelection: boolean;
   firstExplorableFloorLabel: string | null;
-  unknownRoomLabel: string;
   turnEndedByDiscovery: boolean;
   hasRoomEndTurnEffect: boolean;
 };
@@ -229,7 +227,6 @@ function resolveBetrayalActionCueText({
   pendingRoomPlacementPreviewRoomName,
   canStartExploreSelection,
   firstExplorableFloorLabel,
-  unknownRoomLabel,
   turnEndedByDiscovery,
   hasRoomEndTurnEffect,
 }: BetrayalActionCueInput): string {
@@ -320,9 +317,7 @@ function resolveBetrayalActionCueText({
     }
     return canStartExploreSelection
       ? t("board.status.actionCueExploreSelect")
-      : t("board.status.actionCueExplore", {
-          floor: unknownRoomLabel,
-        });
+      : t("board.status.actionCueExplore");
   }
   if (turnEndedByDiscovery) {
     return t("board.status.actionCueDiscoveryEndTurn");
@@ -337,13 +332,9 @@ function resolveBetrayalActionCueText({
       }
       return t("board.status.actionCueMoveMany");
     case "explore":
-      return canStartExploreSelection && firstExplorableFloorLabel
-        ? t("board.status.actionCueExplore", {
-            floor: firstExplorableFloorLabel,
-          })
-        : t("board.status.actionCueExplore", {
-            floor: unknownRoomLabel,
-          });
+      return canStartExploreSelection
+        ? t("board.status.actionCueExploreSelect")
+        : t("board.status.actionCueExplore");
     case "use":
       return selectedInventoryCardName && !selectedCardUsedThisTurn
         ? t("board.status.actionCueUseCard", {
@@ -439,7 +430,6 @@ export function resolveBetrayalActionCueReadModel({
   selectedDogTradeCardCount,
   selectedTradeTarget,
   activeTradeTargetCount,
-  unknownRoomLabel,
   hasRoomEndTurnEffect,
   allExplorers,
   resolvePlayerName,
@@ -547,7 +537,6 @@ export function resolveBetrayalActionCueReadModel({
       pendingRoomPlacementPreview?.room.name ?? null,
     canStartExploreSelection,
     firstExplorableFloorLabel,
-    unknownRoomLabel,
     turnEndedByDiscovery,
     hasRoomEndTurnEffect,
   });

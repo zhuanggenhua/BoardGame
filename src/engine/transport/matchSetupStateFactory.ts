@@ -1,5 +1,5 @@
 import { getAiSeatIds } from '../ai';
-import { createInitialSystemState } from '../pipeline';
+import { createInitialSystemState, executeAutomaticSystemFlow } from '../pipeline';
 import type { EngineSystem } from '../systems/types';
 import { setUndoAiSeatIds } from '../systems/UndoSystem';
 import type { MatchState, PlayerId } from '../types';
@@ -45,10 +45,25 @@ export function createMatchSetupState(args: MatchSetupStateArgs): MatchSetupStat
         args.engineConfig.systems as EngineSystem[],
         args.matchID,
     );
-    const state = setUndoAiSeatIds(
+    let state = setUndoAiSeatIds(
         { sys, core },
         getAiSeatIds(setupSeatControllers),
     );
+    if (args.engineConfig.postSetupAutoFlow) {
+        state = executeAutomaticSystemFlow(
+            {
+                domain: args.engineConfig.domain,
+                systems: args.engineConfig.systems as EngineSystem<unknown>[],
+                systemsConfig: args.engineConfig.systemsConfig,
+            },
+            state,
+            trackedRandom.random,
+            setupPlayerIds,
+            {
+                maxRounds: args.engineConfig.postSetupAutoFlow.maxRounds,
+            },
+        ).state;
+    }
     return {
         state,
         randomCursor: trackedRandom.getCursor(),

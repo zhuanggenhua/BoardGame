@@ -3,6 +3,7 @@ import {
     createAbilityOpportunity,
     type AbilityDef,
 } from '../../../engine/primitives/ability';
+import type { ChoiceRequestCandidate } from '../../../engine/ChoiceRequest';
 import { createTimingPoint, type Opportunity } from '../../../engine/TimingOpportunity';
 import type { MatchState, ValidationResult } from '../../../engine/types';
 import {
@@ -127,12 +128,17 @@ export function resolveMageWarsMageAbilityActionTrack(
 export function resolveMageWarsStatusRemovalCost(
     targetObject: MageWarsArenaObjectState,
     statusTokenIds: readonly StatusTokenId[],
+    statusTokenAmounts: Partial<Record<StatusTokenId, number>> = {},
 ): { manaCost: number } | { error: string } {
     let manaCost = 0;
     for (const statusTokenId of statusTokenIds) {
         const currentAmount = getStatusTokenAmount(targetObject, statusTokenId);
         if (currentAmount <= 0) {
             return { error: 'targetMissingStatusToken' };
+        }
+        const requestedAmount = statusTokenAmounts[statusTokenId] ?? currentAmount;
+        if (!Number.isInteger(requestedAmount) || requestedAmount <= 0 || requestedAmount > currentAmount) {
+            return { error: 'invalidStatusTokenAmount' };
         }
 
         const statusToken = requireMageWarsStatusTokenFromConfig(statusTokenId);
@@ -144,14 +150,14 @@ export function resolveMageWarsStatusRemovalCost(
             if (typeof sourceSpell?.level !== 'number') {
                 return { error: 'missingTargetCreatureLevel' };
             }
-            manaCost += currentAmount * sourceSpell.level;
+            manaCost += requestedAmount * sourceSpell.level;
             continue;
         }
         if (statusToken.removalCostRule !== 'fixed' || statusToken.removalCost === undefined) {
             return { error: 'unsupportedStatusRemovalCostRule' };
         }
 
-        manaCost += currentAmount * statusToken.removalCost;
+        manaCost += requestedAmount * statusToken.removalCost;
     }
     return { manaCost };
 }
@@ -310,7 +316,7 @@ function buildDisabledMageAbilityCandidate(args: {
     targetObject: MageWarsArenaObjectState;
     phase: MageWarsPhase;
     timestamp?: number;
-}) {
+}): ChoiceRequestCandidate<MageWarsMageAbilityActivationChoiceValue> {
     const command = createMageWarsMageAbilityCommand({
         playerId: args.player.id,
         abilityId: args.ability.abilityId,
@@ -358,10 +364,14 @@ function buildMageWarsMageAbilityActivationCandidates(args: {
     ability: MageWarsConfigMageAbility;
     phase: MageWarsPhase;
     timestamp?: number;
-}) {
+}): {
+    candidates: ChoiceRequestCandidate<MageWarsMageAbilityActivationChoiceValue>[];
+    condition: { satisfied: true } | { satisfied: false; reason: string };
+    aiPolicyId: 'choice-request:simple-target';
+} {
     const candidates = Object.values(args.state.core.objects)
         .sort((left, right) => left.id.localeCompare(right.id))
-        .flatMap((targetObject) => {
+        .flatMap<ChoiceRequestCandidate<MageWarsMageAbilityActivationChoiceValue>>((targetObject) => {
             const selections = buildStatusTokenSelections(args.ability, targetObject);
             if (selections.length === 0) {
                 return [buildDisabledMageAbilityCandidate({

@@ -49,26 +49,6 @@
       "cols": 7,
       "rows": 4
     },
-    "spell-wall-core-atlas": {
-      "deck": 25,
-      "label": "墙体",
-      "source": "mage-wars/cards/spells/spell-wall-core-atlas.png",
-      "compressed": "mage-wars/cards/spells/compressed/spell-wall-core-atlas.webp",
-      "width": 4096,
-      "height": 2940,
-      "cols": 4,
-      "rows": 4
-    },
-    "spell-wall-thorns-atlas": {
-      "deck": 257,
-      "label": "墙体 / 荆棘之墙",
-      "source": "mage-wars/cards/spells/spell-wall-thorns-atlas.png",
-      "compressed": "mage-wars/cards/spells/compressed/spell-wall-thorns-atlas.webp",
-      "width": 1386,
-      "height": 992,
-      "cols": 1,
-      "rows": 1
-    },
     "spell-creature-core-a-atlas": {
       "deck": 28,
       "label": "生物 A",
@@ -128,6 +108,26 @@
       "height": 3292,
       "cols": 7,
       "rows": 4
+    },
+    "spell-wall-core-atlas": {
+      "deck": 25,
+      "label": "墙体",
+      "source": "mage-wars/cards/spells/spell-wall-core-atlas.png",
+      "compressed": "mage-wars/cards/spells/compressed/spell-wall-core-atlas.webp",
+      "width": 4096,
+      "height": 2940,
+      "cols": 4,
+      "rows": 4
+    },
+    "spell-wall-thorns-atlas": {
+      "deck": 257,
+      "label": "荆棘墙",
+      "source": "mage-wars/cards/spells/spell-wall-thorns-atlas.png",
+      "compressed": "mage-wars/cards/spells/compressed/spell-wall-thorns-atlas.webp",
+      "width": 1386,
+      "height": 992,
+      "cols": 1,
+      "rows": 1
     }
   },
   "cards": {

@@ -1,0 +1,134 @@
+[
+  {
+    "name": "安妮塔·赫南德兹",
+    "mesh": "character-0.obj",
+    "texture": "character-0.webp",
+    "normal": "character-0-normal.webp",
+    "metalness": "character-0-metal.webp",
+    "occlusion": "character-0-occlusion.webp",
+    "emissive": "character-0-emissive.webp",
+    "rotationY": 89.9996,
+    "scale": 2.399999
+  },
+  {
+    "name": "杰登·琼斯",
+    "mesh": "character-1.obj",
+    "texture": "character-1.webp",
+    "occlusion": "character-1-occlusion.webp",
+    "metalness": "character-1-metal.webp",
+    "normal": "character-1-normal.webp",
+    "emissive": "character-1-emissive.webp",
+    "rotationY": 90.02612,
+    "scale": 2.399999
+  },
+  {
+    "name": "布里塔妮·B-BOX·鲍温",
+    "mesh": "character-2.obj",
+    "texture": "character-2.webp",
+    "normal": "character-2-normal.webp",
+    "occlusion": "character-2-occlusion.webp",
+    "metalness": "character-2-metal.webp",
+    "emissive": "character-2-emissive.webp",
+    "rotationY": 90.01093,
+    "scale": 2.399999
+  },
+  {
+    "name": "米歇尔·梦露",
+    "mesh": "character-3.obj",
+    "texture": "character-3.webp",
+    "occlusion": "character-3-occlusion.webp",
+    "normal": "character-3-normal.webp",
+    "metalness": "character-3-metal.webp",
+    "emissive": "character-3-emissive.webp",
+    "rotationY": 90.00203,
+    "scale": 2.399999
+  },
+  {
+    "name": "珀尔塞福涅·普拉里",
+    "mesh": "character-4.obj",
+    "texture": "character-4.webp",
+    "normal": "character-4-normal.webp",
+    "metalness": "character-4-metal.webp",
+    "occlusion": "character-4-occlusion.webp",
+    "emissive": "character-4-emissive.webp",
+    "rotationY": 180.016174,
+    "scale": 2.399999
+  },
+  {
+    "name": "约瑟夫·“铁子”·斯威夫特",
+    "mesh": "character-5.obj",
+    "texture": "character-5.webp",
+    "normal": "character-5-normal.webp",
+    "occlusion": "character-5-occlusion.webp",
+    "metalness": "character-5-metal.webp",
+    "emissive": "character-5-emissive.webp",
+    "rotationY": 90.03011,
+    "scale": 2.399999
+  },
+  {
+    "name": "阮单 医学博士",
+    "mesh": "character-6.obj",
+    "texture": "character-6.webp",
+    "occlusion": "character-6-occlusion.webp",
+    "normal": "character-6-normal.webp",
+    "metalness": "character-6-metal.webp",
+    "emissive": "character-6-emissive.webp",
+    "rotationY": 90.01089,
+    "scale": 2.399999
+  },
+  {
+    "name": "斯蒂芬妮·里克特",
+    "mesh": "character-7.obj",
+    "texture": "character-7.webp",
+    "occlusion": "character-7-occlusion.webp",
+    "metalness": "character-7-metal.webp",
+    "normal": "character-7-normal.webp",
+    "emissive": "character-7-emissive.webp",
+    "rotationY": 0.0241489727,
+    "scale": 2.399999
+  },
+  {
+    "name": "伊莎·瓦伦西娅",
+    "mesh": "character-8.obj",
+    "texture": "character-8.webp",
+    "occlusion": "character-8-occlusion.webp",
+    "normal": "character-8-normal.webp",
+    "metalness": "character-8-metal.webp",
+    "emissive": "character-8-emissive.webp",
+    "rotationY": -4.37775161e-05,
+    "scale": 2.399999
+  },
+  {
+    "name": "神父 梁沃伦",
+    "mesh": "character-9.obj",
+    "texture": "character-9.webp",
+    "occlusion": "character-9-occlusion.webp",
+    "normal": "character-9-normal.webp",
+    "metalness": "character-9-metal.webp",
+    "emissive": "character-9-emissive.webp",
+    "rotationY": 0.8906759,
+    "scale": 2.399999
+  },
+  {
+    "name": "奥利弗·斯威夫特",
+    "mesh": "character-10.obj",
+    "texture": "character-10.webp",
+    "occlusion": "character-10-occlusion.webp",
+    "normal": "character-10-normal.webp",
+    "metalness": "character-10-metal.webp",
+    "emissive": "character-10-emissive.webp",
+    "rotationY": 90.0144653,
+    "scale": 2.399999
+  },
+  {
+    "name": "塞米·昂勒尔",
+    "mesh": "character-11.obj",
+    "texture": "character-11.webp",
+    "occlusion": "character-11-occlusion.webp",
+    "metalness": "character-11-metal.webp",
+    "normal": "character-11-normal.webp",
+    "emissive": "character-11-emissive.webp",
+    "rotationY": 89.9993057,
+    "scale": 2.399999
+  }
+]

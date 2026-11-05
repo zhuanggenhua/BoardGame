@@ -669,4 +669,34 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
 
         expect(screen.queryByText('ui.waiting_for_player')).not.toBeInTheDocument();
     });
+
+    it('旁观者能只读查看 owner-only prompt 标题与全部选项，不能发送响应', () => {
+        const dispatch = vi.fn();
+        const privatePrompt: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'spectator-readonly-private-prompt',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '选择要弃掉的手牌',
+                sourceId: 'spectator_readonly_prompt_test',
+                targetType: 'hand',
+                options: [
+                    { id: 'secret-option-a', label: '秘密候选 A', value: { cardUid: 'secret-card-a' } },
+                    { id: 'secret-option-b', label: '秘密候选 B', value: { cardUid: 'secret-card-b' } },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction: privatePrompt, dispatch, playerID: null, isSpectator: true });
+
+        const readonlyPrompt = screen.getByTestId('smashup-spectator-prompt-readonly');
+        expect(readonlyPrompt).toHaveTextContent('ui.spectator_read_only');
+        expect(readonlyPrompt).toHaveTextContent('选择要弃掉的手牌');
+        expect(screen.getByTestId('smashup-spectator-prompt-option-secret-option-a')).toHaveTextContent('秘密候选 A');
+        expect(screen.getByTestId('smashup-spectator-prompt-option-secret-option-b')).toHaveTextContent('秘密候选 B');
+        expect(readonlyPrompt.querySelectorAll('button')).toHaveLength(0);
+
+        fireEvent.click(screen.getByTestId('smashup-spectator-prompt-option-secret-option-a'));
+        expect(dispatch).not.toHaveBeenCalled();
+    });
 });

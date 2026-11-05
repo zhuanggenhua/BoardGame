@@ -170,11 +170,15 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         const finalEventTypes = (finalState?.sys?.eventStream?.entries ?? [])
             .slice(-8)
             .map((entry: any) => entry.event?.type);
+        const finalRerollEntries = (finalState?.sys?.actionLog?.entries ?? [])
+            .filter((entry: any) => entry.kind === 'DIE_REROLLED');
 
         expect(finalState?.core?.dice?.map((die: any) => die.value)).toEqual([6, 6, 3, 4, 5]);
         expect(finalHandIds).not.toContain('card-i-can-again');
         expect(finalEventTypes).toContain('CARD_PLAYED');
         expect(finalEventTypes.filter((type: string) => type === 'DIE_REROLLED')).toHaveLength(2);
+        expect(finalRerollEntries).toHaveLength(2);
+        expect(new Set(finalRerollEntries.map((entry: any) => entry.id)).size).toBe(2);
     });
 
     test('card-just-this 防御阶段可通过真实骰子入口重掷已锁定防御骰', async ({ page, game }, testInfo) => {
@@ -704,6 +708,33 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         const modifierBadgeEarly = page.locator('[data-testid="active-modifier-badge"]').first();
         await expect(modifierBadgeEarly).toBeVisible({ timeout: 5000 });
         await expect(modifierBadgeEarly).toHaveAttribute('data-bonus-damage', '0');
+        await modifierBadgeEarly.hover();
+        const modifierTooltip = page.getByTestId('info-tooltip').last();
+        await expect(modifierTooltip).toBeVisible({ timeout: 5000 });
+        await expect(modifierTooltip).toContainText('已激活的攻击修正牌');
+        await expect(modifierTooltip).toContainText('荒野西部！');
+        const modifierTooltipGeometry = await modifierTooltip.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+                position: style.position,
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+                placement: element.getAttribute('data-tooltip-placement'),
+            };
+        });
+        expect(modifierTooltipGeometry.position).toBe('fixed');
+        expect(modifierTooltipGeometry.left).toBeGreaterThanOrEqual(0);
+        expect(modifierTooltipGeometry.top).toBeGreaterThanOrEqual(0);
+        expect(modifierTooltipGeometry.right).toBeLessThanOrEqual(modifierTooltipGeometry.viewportWidth);
+        expect(modifierTooltipGeometry.bottom).toBeLessThanOrEqual(modifierTooltipGeometry.viewportHeight);
+        expect(['left', 'right']).toContain(modifierTooltipGeometry.placement);
+        await game.screenshot('枪手-攻击修正徽章hover-提示在窗口内', testInfo);
+        await page.mouse.move(4, 4);
         await game.screenshot('gunslinger-wild-west-attack-modifier-badge-pending', testInfo);
 
         await expect.poll(async () => {

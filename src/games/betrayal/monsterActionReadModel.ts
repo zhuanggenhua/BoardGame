@@ -1347,7 +1347,7 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
             moveCost: null,
             defaultAttackTrait: null,
             contractGaps: preview.contractGaps.filter(
-                (gap): gap is BetrayalMonsterActionSlotContractGap => gap === 'ui-token-flip',
+                (gap): gap is 'ui-token-flip' => gap === 'ui-token-flip',
             ),
         });
     }
@@ -1368,7 +1368,7 @@ export function resolveBetrayalMonsterActionPanel(core: BetrayalCore): BetrayalM
             moveCost: null,
             defaultAttackTrait: null,
             contractGaps: preview.contractGaps.filter(
-                (gap): gap is BetrayalMonsterActionSlotContractGap => gap === 'path-preview-ui',
+                (gap): gap is 'path-preview-ui' => gap === 'path-preview-ui',
             ),
         });
     }

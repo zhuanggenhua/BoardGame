@@ -2,6 +2,8 @@
 
 本文只保留日常发布的最短入口和验收口径。更完整的执行流程由项目 skill 维护：[`android-app-release`](../.spec/skills/android-app-release/SKILL.md) 与 [`deploy-after-ci`](../.spec/skills/deploy-after-ci/SKILL.md)。底层环境变量、manifest 和包体事实见 [`android-app-build`](android-app-build.md)。
 
+本机 Windows 的 Gradle、Android SDK、ADB 路径和 Wrapper 失败时的直连构建方式见 [`android-local-environment`](android-local-environment.md)。
+
 ## 先判目标
 
 | 用户目标 | 默认交付 |

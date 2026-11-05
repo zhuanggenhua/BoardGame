@@ -36,11 +36,12 @@ import {
     getResponderQueue,
     getTokenStackLimit,
     getSeatingOrder,
+    isSkirmishMode,
     isTeamMode,
     getAttackSnapshotDieIndex,
     isAttackSnapshotDieId,
 } from './rules';
-import { findPlayerAbility, playerAbilityHasDamage } from './abilityLookup';
+import { findPlayerAbility, playerAbilityHasDamage, playerAbilityTargetsOpponentWithDamage } from './abilityLookup';
 import { applyEvents } from './utils';
 import { reduce } from './reducer';
 import type { InteractionDescriptor as PendingInteraction } from './core-types';
@@ -54,7 +55,7 @@ import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
 import { buildStatusAppliedOrChoiceEvents } from './statusEvents';
-import { canRemoveStatusFromPlayer, isRemovableStatusId } from './statusRemoval';
+import { canRemoveStatusFromPlayer, canTransferStatus, isRemovableStatusId } from './statusRemoval';
 import {
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
@@ -204,7 +205,6 @@ export function execute(
 ): DiceThroneEvent[] {
     const state = matchState.core;
     const phase = (matchState.sys?.phase ?? 'setup') as TurnPhase;
-    const isTutorialActive = matchState.sys?.tutorial?.active === true;
     const events: DiceThroneEvent[] = [];
     const timestamp = resolveTimestamp(command);
 
@@ -237,17 +237,13 @@ export function execute(
             }
 
             const results: number[] = [];
-            // 教程模式：骰子固定为 1（fist），确保教程流程中技能匹配
-            // randomPolicy.values:[6] 控制其他随机（如悟道卡 rollDie → lotus）
-            const tutorialFixedValue = 1;
-            
             state.dice.slice(0, state.rollDiceCount).forEach(die => {
                 if (!die.isKept) {
-                    results.push(isTutorialActive ? tutorialFixedValue : random.d(6));
+                    results.push(random.d(6));
                 }
             });
             if (phase === 'defensiveRoll' && state.pendingAttack?.defenseAbilityId === 'duel') {
-                results.push(isTutorialActive ? tutorialFixedValue : random.d(6));
+                results.push(random.d(6));
             }
             
             const event: DiceRolledEvent = {
@@ -521,12 +517,14 @@ export function execute(
             const abilityId = normalizeSelectedAbilityId(state, selectingPlayerId, rawAbilityId);
 
             if (phase === 'defensiveRoll') {
+                const defenderId = state.pendingAttack?.defenderId;
+                if (!defenderId) break;
                 // 防御技能选择
                 const event: AbilityActivatedEvent = {
                     type: 'ABILITY_ACTIVATED',
                     payload: { 
                         abilityId, 
-                        playerId: state.pendingAttack!.defenderId,
+                        playerId: defenderId,
                         isDefense: true,
                     },
                     sourceCommandType: command.type,
@@ -549,7 +547,7 @@ export function execute(
                 events.push(abilityActivatedEvent);
                 
                 // 2. 再发起放击事件
-                const defenderId = isTeamMode(state)
+                const defenderId = isTeamMode(state) || isSkirmishMode(state)
                     ? undefined
                     : (getDefaultOpponentId(state, state.activePlayerId) ?? getNextPlayerId(state));
                 const isDefendable = isDefendableAttack(state, state.activePlayerId, abilityId);
@@ -566,6 +564,11 @@ export function execute(
                         sourceAbilityId: abilityId,
                         isDefendable,
                         isUltimate,
+                        countsAsOffensiveAttackMade: playerAbilityTargetsOpponentWithDamage(
+                            state,
+                            state.activePlayerId,
+                            abilityId,
+                        ),
                     },
                     sourceCommandType: command.type,
                     timestamp,
@@ -674,6 +677,11 @@ export function execute(
             break;
         }
 
+        case 'USE_DEJA_VU': {
+            // 流程系统通过 FlowHooks 消耗 Token 并重启 offensiveRoll。
+            break;
+        }
+
         case 'MODIFY_DIE': {
             const { dieId, newValue } = command.payload as { dieId: number; newValue: number };
             const currentRollContext = resolveCurrentRollContext(state, phase);
@@ -718,14 +726,16 @@ export function execute(
                 
                 // 规则 3.3 步骤 3：如果骰面被修改且已选择技能，触发重选。
                 // 终极技能只有正式发动后才行动锁定；发动前仍可被改骰取消。
-                if (shouldRequireAbilityReselectionForCurrentRoll(state, phase)
+                const pendingAttackSourceAbilityId = state.pendingAttack?.sourceAbilityId;
+                if (pendingAttackSourceAbilityId
+                    && shouldRequireAbilityReselectionForCurrentRoll(state, phase)
                     && die
                     && newValue !== die.value) {
                     events.push({
                         type: 'ABILITY_RESELECTION_REQUIRED',
                         payload: {
                             playerId: state.activePlayerId,
-                            previousAbilityId: state.pendingAttack.sourceAbilityId,
+                            previousAbilityId: pendingAttackSourceAbilityId,
                             reason: 'dieModified',
                         },
                         sourceCommandType: command.type,
@@ -742,11 +752,17 @@ export function execute(
         case 'REROLL_DIE': {
             const { dieId } = command.payload as { dieId: number };
             const currentInteraction = matchState.sys?.interaction?.current;
+            const interactionData = currentInteraction?.kind === 'multistep-choice'
+                ? (currentInteraction.data as { meta?: { dtType?: string; skipAbilityReselection?: boolean }; sourceId?: unknown } | undefined)
+                : undefined;
             const interactionMeta = currentInteraction?.kind === 'multistep-choice'
-                ? (currentInteraction.data as { meta?: { dtType?: string; skipAbilityReselection?: boolean } } | undefined)?.meta
+                ? interactionData?.meta
                 : undefined;
             const skipAbilityReselection = interactionMeta?.dtType === 'selectDie'
                 && interactionMeta?.skipAbilityReselection === true;
+            const sourceCardId = typeof interactionData?.sourceId === 'string'
+                ? interactionData.sourceId
+                : undefined;
             events.push(...buildCurrentRollRerollEvents({
                 state,
                 phase,
@@ -755,6 +771,7 @@ export function execute(
                 random,
                 timestamp,
                 sourceCommandType: command.type,
+                sourceCardId,
                 skipAbilityReselection,
             }));
             break;
@@ -841,11 +858,8 @@ export function execute(
                 const fromTokens = fromPlayer.tokens[statusId] ?? 0;
                 
                 // 检查是否可被转移（不可移除的 token 也不能被转移）
-                if (!isRemovableStatusId(state, statusId)) {
+                if (!canTransferStatus(state, command.playerId, fromPlayerId, statusId)) {
                     // 不可移除的 token 不能被转移，跳过
-                    break;
-                }
-                if (!canRemoveStatusFromPlayer(state, command.playerId, fromPlayerId, statusId)) {
                     break;
                 }
                 
@@ -937,7 +951,7 @@ export function execute(
                 events.push({
                     type: 'INTERACTION_COMPLETED',
                     payload: {
-                        interactionId: currentInteraction.id,
+                        interactionId: interaction.id,
                         sourceCardId: interaction.sourceCardId ?? '',
                     },
                     sourceCommandType: command.type,
@@ -950,6 +964,10 @@ export function execute(
                 const { selectedCardIds = [] } = command.payload as { selectedCardIds?: string[] };
                 const player = state.players[interaction.playerId];
                 if (!player) break;
+
+                const resolveCustomActionId = interaction.resolveCustomActionId;
+                const continuation = resolveCustomActionId ? getCustomActionHandler(resolveCustomActionId) : undefined;
+                if (resolveCustomActionId && !continuation) break;
 
                 const handCardIds = new Set(player.hand.map(card => card.id));
                 const resolvedCardIds = Array.from(new Set(selectedCardIds.filter(cardId => handCardIds.has(cardId))))
@@ -967,16 +985,93 @@ export function execute(
                 }
 
                 if (resolvedCardIds.length > 0) {
+                    const completionTimestamp = timestamp + resolvedCardIds.length + 1;
                     events.push({
                         type: 'INTERACTION_COMPLETED',
                         payload: {
-                            interactionId: currentInteraction.id,
+                            interactionId: interaction.id,
                             sourceCardId: interaction.sourceCardId ?? '',
                         },
                         sourceCommandType: command.type,
                         timestamp: timestamp + resolvedCardIds.length + 1,
                     } as DiceThroneEvent);
+                    if (continuation && resolveCustomActionId) {
+                        const sourceAbilityId = interaction.sourceCardId;
+                        const customTimestamp = completionTimestamp + 1;
+                        const opponentId = getDefaultOpponentId(state, interaction.playerId) ?? interaction.playerId;
+                        events.push(...continuation({
+                            ctx: {
+                                attackerId: interaction.playerId,
+                                defenderId: opponentId,
+                                sourceAbilityId,
+                                state,
+                                damageDealt: 0,
+                                timestamp: customTimestamp,
+                            },
+                            targetId: opponentId,
+                            attackerId: interaction.playerId,
+                            sourceAbilityId,
+                            state,
+                            timestamp: customTimestamp,
+                            random,
+                            action: {
+                                type: 'custom',
+                                target: 'self',
+                                customActionId: resolveCustomActionId,
+                            },
+                        }).filter(event => event !== undefined));
+                    }
                 }
+                break;
+            }
+
+            if (interaction.type === 'selectDeckCard') {
+                const { selectedCardIds = [] } = command.payload as { selectedCardIds?: string[] };
+                const player = state.players[interaction.playerId];
+                if (!player) break;
+
+                const deckCardIds = new Set(player.deck.map(card => card.id));
+                const resolvedCardIds = Array.from(new Set(selectedCardIds.filter(cardId => deckCardIds.has(cardId))))
+                    .slice(0, interaction.selectCount ?? 1);
+                if (resolvedCardIds.length === 0) break;
+
+                const remainingDeck = [...player.deck];
+                for (const [cardIndex, cardId] of resolvedCardIds.entries()) {
+                    const deckIndex = remainingDeck.findIndex(card => card.id === cardId);
+                    if (deckIndex >= 0) {
+                        remainingDeck.splice(deckIndex, 1);
+                    }
+                    events.push({
+                        type: 'CARD_DRAWN',
+                        payload: {
+                            playerId: interaction.playerId,
+                            cardId,
+                            sourceAbilityId: interaction.sourceCardId,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + cardIndex,
+                    } as DiceThroneEvent);
+                }
+
+                const shuffledDeckCardIds = random.shuffle(remainingDeck).map(card => card.id);
+                events.push({
+                    type: 'DECK_SHUFFLED',
+                    payload: {
+                        playerId: interaction.playerId,
+                        deckCardIds: shuffledDeckCardIds,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + resolvedCardIds.length,
+                } as DiceThroneEvent);
+                events.push({
+                    type: 'INTERACTION_COMPLETED',
+                    payload: {
+                        interactionId: interaction.id,
+                        sourceCardId: interaction.sourceCardId ?? '',
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + resolvedCardIds.length + 1,
+                } as DiceThroneEvent);
                 break;
             }
 
@@ -1098,7 +1193,7 @@ export function execute(
                 events.push({
                     type: 'INTERACTION_COMPLETED',
                     payload: {
-                        interactionId: currentInteraction.id,
+                        interactionId: interaction.id,
                         sourceCardId: interaction.sourceCardId ?? '',
                     },
                     sourceCommandType: command.type,
@@ -1121,11 +1216,12 @@ export function execute(
 
         case 'USE_TOKEN':
         case 'SKIP_TOKEN_RESPONSE': {
+            const responseWindowType = matchState.sys?.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
             const choiceSource = resolveDiceThroneTokenResponseChoiceCommandSource(
                 matchState.sys?.interaction?.current,
                 command,
             );
-            return executeTokenCommand(state, command, random, timestamp, phase, choiceSource);
+            return executeTokenCommand(state, command, random, timestamp, phase, choiceSource, responseWindowType);
         }
         case 'USE_PURIFY':
         case DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN:
@@ -1154,6 +1250,16 @@ export function execute(
                 phase,
                 { responseWindowType },
             )) break;
+
+            // 自定义处理器缺失时必须在扣除 CP / Token 前拒绝执行。
+            // 旧路径会先产生成本事件，再因为找不到 handler 静默结束，
+            // 造成“资源已扣、玩家可见效果未发生”的线上反馈。
+            const customActionHandler = action.type === 'custom' && action.customActionId
+                ? getCustomActionHandler(action.customActionId)
+                : undefined;
+            if (action.type === 'custom' && action.customActionId && !customActionHandler) {
+                break;
+            }
             if (action.type === 'rerollDie') {
                 if (!Number.isInteger(targetDieId)) break;
                 const currentRollContext = resolveCurrentRollContext(state, phase);
@@ -1201,6 +1307,7 @@ export function execute(
 
             // 执行动作
             if (action.type === 'rerollDie') {
+                if (targetDieId === undefined) break;
                 events.push(...buildCurrentRollRerollEvents({
                     state,
                     phase,
@@ -1215,10 +1322,9 @@ export function execute(
                     ...buildDrawEvents(state, command.playerId, action.drawCount ?? 1, random, command.type, timestamp + 1, passiveId)
                 );
             } else if (action.type === 'custom' && action.customActionId) {
-                const handler = getCustomActionHandler(action.customActionId);
-                if (handler) {
+                if (customActionHandler) {
                     const opponentId = getDefaultOpponentId(state, command.playerId) ?? command.playerId;
-                    events.push(...handler({
+                    events.push(...customActionHandler({
                         ctx: {
                             attackerId: command.playerId,
                             defenderId: opponentId,

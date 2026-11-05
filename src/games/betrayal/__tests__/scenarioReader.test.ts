@@ -36,8 +36,8 @@ describe("Betrayal scenario reader open plan", () => {
     expect(plan).toMatchObject({
       scope: "heroes",
       includeOpeningStage: true,
-      initialSpreadIndex: 0,
-      spreadCount: 2,
+      initialBookSpreadIndex: 0,
+      bookSpreadCount: 1,
     });
   });
 
@@ -51,8 +51,8 @@ describe("Betrayal scenario reader open plan", () => {
     expect(plan).toMatchObject({
       scope: "heroes",
       includeOpeningStage: false,
-      initialSpreadIndex: 0,
-      spreadCount: 1,
+      initialBookSpreadIndex: 0,
+      bookSpreadCount: 1,
     });
   });
 
@@ -76,8 +76,8 @@ describe("Betrayal scenario reader open plan", () => {
     expect(plan).toMatchObject({
       scope: "all",
       includeOpeningStage: false,
-      initialSpreadIndex: 0,
-      spreadCount: 1,
+      initialBookSpreadIndex: 0,
+      bookSpreadCount: 1,
     });
   });
 });

@@ -11,9 +11,36 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
 import { createInitializedState, fixedRandom } from './test-utils';
 import { validateCommand } from '../domain/commandValidation';
+import { getUsableTokensForTiming } from '../domain/tokenResponse';
 
 function createCore(): DiceThroneCore {
     return createInitializedState(['0', '1'], fixedRandom).core;
+}
+
+function createDazedDefenderTokenResponseCore(): DiceThroneCore {
+    const core = createCore();
+    core.activePlayerId = '0';
+    core.players['1'].tokens[TOKEN_IDS.TAIJI] = 3;
+    core.players['1'].statusEffects[STATUS_IDS.DAZE] = 1;
+    core.pendingAttack = {
+        attackerId: '0',
+        defenderId: '1',
+        isDefendable: true,
+        sourceAbilityId: 'violent-assault',
+    } as any;
+    core.pendingDamage = {
+        id: 'feedback-dazed-taiji-response',
+        sourcePlayerId: '0',
+        targetPlayerId: '1',
+        originalDamage: 2,
+        currentDamage: 2,
+        sourceAbilityId: 'violent-assault',
+        damageScope: 'attack',
+        responseType: 'beforeDamageReceived',
+        responderId: '1',
+        isFullyEvaded: false,
+    };
+    return core;
 }
 
 describe('Daze / Stun 语义', () => {
@@ -84,6 +111,53 @@ describe('Daze / Stun 语义', () => {
         if (!result.valid) {
             expect(result.error).toBe('player_is_stunned');
         }
+    });
+
+    it('规则回归：daze 状态不阻止受伤响应者使用太极减伤', () => {
+        const core = createDazedDefenderTokenResponseCore();
+
+        const result = validateCommand(
+            core,
+            {
+                type: 'USE_TOKEN',
+                playerId: '1',
+                payload: {
+                    tokenId: TOKEN_IDS.TAIJI,
+                    amount: 1,
+                    pendingDamageId: 'feedback-dazed-taiji-response',
+                },
+            } as DiceThroneCommand,
+            'main2'
+        );
+
+        expect(result.valid).toBe(true);
+    });
+
+    it('规则回归：daze 状态下仍应向受伤响应者暴露太极可用动作', () => {
+        const core = createDazedDefenderTokenResponseCore();
+
+        expect(
+            getUsableTokensForTiming(core, '1', 'beforeDamageReceived')
+                .some(token => token.id === TOKEN_IDS.TAIJI)
+        ).toBe(true);
+    });
+
+    it('反馈回归：daze 状态不阻止受伤响应者跳过 Token 响应', () => {
+        const core = createDazedDefenderTokenResponseCore();
+
+        const result = validateCommand(
+            core,
+            {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '1',
+                payload: {
+                    pendingDamageId: 'feedback-dazed-taiji-response',
+                },
+            } as DiceThroneCommand,
+            'main2'
+        );
+
+        expect(result.valid).toBe(true);
     });
 
     it('眩晕不能被对手的移除状态卡移除', () => {

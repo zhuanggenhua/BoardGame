@@ -6,8 +6,9 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
+import { IS_DEV_API_DISABLED } from '../config/server';
 import { readLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
+import { refreshAccessToken } from '../lib/authRefresh';
 
 // 提前刷新时间（提前1天刷新）
 const REFRESH_BEFORE_MS = 24 * 60 * 60 * 1000;
@@ -74,28 +75,6 @@ function getCurrentToken(): string | null {
  * 刷新 token
  * 使用后端的 /auth/refresh 接口（基于 refresh_token cookie）
  */
-async function refreshToken(): Promise<string | null> {
-    if (IS_DEV_API_DISABLED) {
-        return null;
-    }
-
-    try {
-        const response = await fetch(`${AUTH_API_URL}/refresh`, {
-            method: 'POST',
-            credentials: 'include', // 携带 refresh_token cookie
-        });
-
-        if (!response.ok) return null;
-
-        const data = await response.json();
-        if (!data.success || !data.data?.token) return null;
-        
-        return data.data.token;
-    } catch {
-        return null;
-    }
-}
-
 export function useTokenRefresh() {
     const { token, setTokenDirect, logout, isLoading } = useAuth();
     const timerRef = useRef<number | null>(null);
@@ -111,7 +90,7 @@ export function useTokenRefresh() {
 
     const refreshTokenOnce = useCallback(() => {
         if (!refreshInFlightRef.current) {
-            refreshInFlightRef.current = refreshToken().finally(() => {
+            refreshInFlightRef.current = refreshAccessToken().finally(() => {
                 refreshInFlightRef.current = null;
             });
         }

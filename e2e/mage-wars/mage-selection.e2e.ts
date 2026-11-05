@@ -1,3 +1,4 @@
+// e2e-harness-boundary: representative-state
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { expect, test, type Locator, type Page, type TestInfo } from '@playwright/test';
@@ -44,6 +45,15 @@ type MageWarsHarness = {
         set: (state: MageWarsHarnessState) => Promise<void> | void;
     };
 };
+
+const CARD_BODY_PRIMARY_HIT_POINTS = [
+    { label: '中心主体', xRatio: 0.5, yRatio: 0.5 },
+    { label: '右上卡面主体', xRatio: 0.7, yRatio: 0.24 },
+    { label: '右中卡面主体', xRatio: 0.78, yRatio: 0.42 },
+    { label: '标题下方主体', xRatio: 0.62, yRatio: 0.18 },
+] as const;
+
+const CARD_BODY_PLAYER_CLICK_POINT = { label: '玩家中心点击卡牌本体', xRatio: 0.5, yRatio: 0.5 } as const;
 
 async function waitForVisibleImages(page: Page) {
     await page.waitForFunction(() => Array.from(document.images)
@@ -189,6 +199,86 @@ async function expectSpellbookBuilderCardPoolReadable(builder: Locator) {
     expect(metrics.artHeight, `组书卡池普通法术牌面太矮：${metrics.artHeight.toFixed(1)}px`).toBeGreaterThanOrEqual(205);
 }
 
+async function expectMagnifyOverlayHidden(page: Page) {
+    const overlay = page.getByTestId('mage-wars-card-magnify-overlay');
+    await expect(overlay).toBeHidden({ timeout: 5_000 });
+    if (await overlay.count()) {
+        await expect(overlay).toHaveAttribute('aria-hidden', 'true');
+    }
+}
+
+async function expectLocatorPointUnblocked(
+    locator: Locator,
+    label: string,
+    point: { xRatio: number; yRatio: number } = { xRatio: 0.5, yRatio: 0.5 },
+) {
+    const audit = await locator.evaluate((element, hitPoint) => {
+        const rect = element.getBoundingClientRect();
+        const x = rect.left + rect.width * hitPoint.xRatio;
+        const y = rect.top + rect.height * hitPoint.yRatio;
+        const hit = document.elementFromPoint(x, y);
+        const primaryAction = hit?.closest<HTMLElement>('[data-primary-action="true"]') ?? null;
+        return {
+            point: { x, y },
+            rect: {
+                left: rect.left,
+                top: rect.top,
+                right: rect.right,
+                bottom: rect.bottom,
+                width: rect.width,
+                height: rect.height,
+            },
+            containsHit: hit != null && element.contains(hit),
+            hitTestId: hit?.closest<HTMLElement>('[data-testid]')?.getAttribute('data-testid') ?? null,
+            hitInspectButton: Boolean(hit?.closest<HTMLElement>('[data-testid="mage-wars-card-inspect-button"]')),
+            hitPrimaryAction: primaryAction === element,
+            hitBrowseInspectable: Boolean(hit?.closest<HTMLElement>('[data-browse-inspectable="true"]')),
+            targetBrowseInspectable: element.getAttribute('data-browse-inspectable'),
+            targetCursor: window.getComputedStyle(element).cursor,
+            hitTag: hit?.tagName ?? null,
+        };
+    }, point);
+    expect(audit.containsHit, `${label} 必须真实命中自身或子元素，实际命中 ${JSON.stringify(audit)}`).toBe(true);
+    return audit;
+}
+
+function expectPointerCursor(cursor: string, label: string) {
+    expect(
+        /(?:^|,\s*)pointer\s*$/.test(cursor),
+        `${label} 本体鼠标语义必须是主操作 pointer，可以是项目自定义手形光标: ${cursor}`,
+    ).toBe(true);
+    expect(
+        /(?:^|,\s*)zoom-in\s*$/.test(cursor),
+        `${label} 本体不能是放大 zoom-in 光标: ${cursor}`,
+    ).toBe(false);
+}
+
+async function clickFormalSpellbookCardBody(page: Page, card: Locator, cardId: string | number) {
+    const cardLabel = String(cardId);
+    await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toHaveAttribute('data-planning-enabled', 'true');
+    await card.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'center' }));
+    await expect(card, `正式入口法术书卡牌 ${cardLabel} 本体必须承担计划主操作`).toHaveAttribute('data-primary-action', 'true');
+    await expect(card, `正式入口法术书卡牌 ${cardLabel} 本体不能被标记为浏览放大入口`).not.toHaveAttribute('data-browse-inspectable', 'true');
+    await expectMagnifyOverlayHidden(page);
+    for (const hitPoint of CARD_BODY_PRIMARY_HIT_POINTS) {
+        const audit = await expectLocatorPointUnblocked(card, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}`, hitPoint);
+        expect(audit.hitInspectButton, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+        expect(audit.hitPrimaryAction, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}必须命中本体主操作: ${JSON.stringify(audit)}`).toBe(true);
+        expect(audit.hitBrowseInspectable, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}不应命中浏览放大入口: ${JSON.stringify(audit)}`).toBe(false);
+        expectPointerCursor(audit.targetCursor, `正式入口法术书卡牌 ${cardLabel} ${hitPoint.label}`);
+        await page.mouse.move(audit.point.x, audit.point.y);
+        await expectMagnifyOverlayHidden(page);
+    }
+    const audit = await expectLocatorPointUnblocked(card, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}`, CARD_BODY_PLAYER_CLICK_POINT);
+    expect(audit.hitInspectButton, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}不能命中放大镜: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.hitPrimaryAction, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}必须命中本体主操作: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.hitBrowseInspectable, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}不应命中浏览放大入口: ${JSON.stringify(audit)}`).toBe(false);
+    expectPointerCursor(audit.targetCursor, `正式入口法术书卡牌 ${cardLabel} ${CARD_BODY_PLAYER_CLICK_POINT.label}`);
+    await page.mouse.move(audit.point.x, audit.point.y);
+    await page.mouse.click(audit.point.x, audit.point.y);
+    await expectMagnifyOverlayHidden(page);
+}
+
 async function readMageWarsState(page: Page): Promise<MageWarsHarnessState | null> {
     await waitForTestHarness(page, 10_000);
     return page.evaluate(() => (window as Window & {
@@ -267,29 +357,76 @@ async function expectNoRepeatedInvariantMageStats(page: Page) {
     }
 }
 
-async function expectMageSelectionWideNaturalLayout(page: Page) {
+async function expectMageSelectionContainScaleLayout(
+    page: Page,
+    expectedViewport: { width: number; height: number },
+) {
     const audit = await page.getByTestId('mage-wars-mage-selection-gate').evaluate((gate) => {
         const oldDescription = '为双方各直接选择一本法术书；每本法术书已绑定法师，确认后按所选书初始化开局。';
+        const oldLibraryHelp = '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。';
         const editButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-open-spellbook-builder"]');
         const confirmButton = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-confirm"]');
         const header = gate.querySelector<HTMLElement>('header');
         const main = gate.querySelector<HTMLElement>('main');
+        const stage = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-stage"]');
         const library = gate.querySelector<HTMLElement>('[data-testid="mage-wars-mage-selection-spellbook-library"]');
         const summary = confirmButton?.closest('aside') as HTMLElement | null;
         const editRect = editButton?.getBoundingClientRect();
         const confirmRect = confirmButton?.getBoundingClientRect();
         const mainRect = main?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
         const libraryRect = library?.getBoundingClientRect();
         const summaryRect = summary?.getBoundingClientRect();
         const confirmStyle = confirmButton ? window.getComputedStyle(confirmButton) : null;
+        const standardCards = Array.from(gate.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-mage-selection-standard-spellbook"]',
+        )).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                height: rect.height,
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+            };
+        });
+        const standardPreviews = Array.from(gate.querySelectorAll<HTMLElement>(
+            '[data-testid^="mage-wars-mage-selection-standard-spellbook-"][data-testid$="-preview"]',
+        )).map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                height: rect.height,
+                width: rect.width,
+            };
+        });
+        const standardTopSpread = standardCards.length > 0
+            ? Math.max(...standardCards.map((rect) => rect.top)) - Math.min(...standardCards.map((rect) => rect.top))
+            : 0;
+        const standardPreviewMinRatio = standardPreviews.length > 0
+            ? Math.min(...standardPreviews.map((rect) => rect.height / Math.max(rect.width, 1)))
+            : 0;
+        const declaredScale = Number(stage?.dataset.layoutScale ?? Number.NaN);
+        const declaredWidth = Number(stage?.dataset.layoutWidth ?? Number.NaN);
+        const declaredHeight = Number(stage?.dataset.layoutHeight ?? Number.NaN);
+        const expectedScale = Number.isFinite(declaredWidth) && Number.isFinite(declaredHeight)
+            ? Math.min(window.innerWidth / declaredWidth, window.innerHeight / declaredHeight)
+            : Number.NaN;
 
         return {
             viewport: { width: window.innerWidth, height: window.innerHeight },
             oldDescriptionVisible: (gate.textContent ?? '').includes(oldDescription),
+            oldLibraryHelpVisible: (gate.textContent ?? '').includes(oldLibraryHelp),
+            stageMode: stage?.dataset.layoutMode ?? '',
+            declaredScale,
+            expectedScale,
             confirmInHeader: Boolean(confirmButton && header?.contains(confirmButton)),
             confirmBelowEdit: Boolean(editRect && confirmRect && confirmRect.top > editRect.bottom),
             confirmSharesActionGroup: Boolean(editButton && confirmButton && editButton.parentElement === confirmButton.parentElement),
             confirmColor: confirmStyle?.backgroundColor ?? '',
+            stageWithinViewport: Boolean(stageRect
+                && stageRect.left >= -1
+                && stageRect.top >= -1
+                && stageRect.right <= window.innerWidth + 1
+                && stageRect.bottom <= window.innerHeight + 1),
             mainWithinViewport: Boolean(mainRect
                 && mainRect.left >= -1
                 && mainRect.top >= -1
@@ -297,6 +434,13 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
                 && mainRect.bottom <= window.innerHeight + 1),
             libraryWidth: libraryRect?.width ?? 0,
             summaryWidth: summaryRect?.width ?? 0,
+            standardCardCount: standardCards.length,
+            standardTopSpread,
+            standardPreviewMinRatio,
+            gateOverflow: {
+                x: gate.scrollWidth - gate.clientWidth,
+                y: gate.scrollHeight - gate.clientHeight,
+            },
             bodyOverflow: {
                 x: document.documentElement.scrollWidth - window.innerWidth,
                 y: document.documentElement.scrollHeight - window.innerHeight,
@@ -304,16 +448,27 @@ async function expectMageSelectionWideNaturalLayout(page: Page) {
         };
     });
 
-    expect(audit.viewport).toEqual({ width: 2560, height: 1304 });
-    expect(audit.oldDescriptionVisible, `2560x1304 选书页不应继续显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.confirmInHeader, `2560x1304 开始游戏按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
-    expect(audit.confirmSharesActionGroup, `2560x1304 开始游戏按钮必须和编辑选中书在同一右侧动作组: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.confirmBelowEdit, `2560x1304 开始游戏按钮必须在编辑选中书下面: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.confirmColor, `2560x1304 开始游戏按钮要换成绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
-    expect(audit.mainWithinViewport, `2560x1304 三栏主体必须自然落在视口内: ${JSON.stringify(audit)}`).toBe(true);
-    expect(audit.libraryWidth, `2560x1304 法术书库主列不能被侧栏挤窄: ${JSON.stringify(audit)}`).toBeGreaterThan(1400);
-    expect(audit.summaryWidth, `2560x1304 右侧摘要栏必须保留自然宽度: ${JSON.stringify(audit)}`).toBeGreaterThan(300);
-    expect(audit.bodyOverflow.x, `2560x1304 不能产生横向页面溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    const label = `${expectedViewport.width}x${expectedViewport.height}`;
+    expect(audit.viewport).toEqual(expectedViewport);
+    expect(audit.oldDescriptionVisible, `${label} 选书页不应继续显示顶部说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.oldLibraryHelpVisible, `${label} 选书页不应继续显示法术书库说明废话: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.stageMode, `${label} 选书页必须使用固定主构图等比容纳，而不是按小窗口重排: ${JSON.stringify(audit)}`).toBe('contain-scale');
+    expect(audit.declaredScale, `${label} 等比缩放倍率必须匹配当前视口: ${JSON.stringify(audit)}`)
+        .toBeCloseTo(audit.expectedScale, 2);
+    expect(audit.stageWithinViewport, `${label} 等比缩放舞台必须完整落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmInHeader, `${label} 开始按钮不能还在右上 header: ${JSON.stringify(audit)}`).toBe(false);
+    expect(audit.confirmSharesActionGroup, `${label} 开始按钮必须和编辑选中书在同一右侧动作组: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmBelowEdit, `${label} 开始按钮必须在编辑选中书下面: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.confirmColor, `${label} 开始按钮要换成绿色行动色: ${JSON.stringify(audit)}`).toMatch(/rgb\(\s*(0|16|52),\s*(185|211),\s*(129|153)\s*\)/u);
+    expect(audit.mainWithinViewport, `${label} 三栏主体必须随舞台缩放后完整落在视口内: ${JSON.stringify(audit)}`).toBe(true);
+    expect(audit.standardCardCount, `${label} 四本标准书不能因为小窗口减少或折叠: ${JSON.stringify(audit)}`).toBe(4);
+    expect(audit.standardTopSpread, `${label} 标准书卡不能被小窗口压成纵向换行列表: ${JSON.stringify(audit)}`).toBeLessThan(3);
+    expect(audit.standardPreviewMinRatio, `${label} 法师书预览不能被压成横条: ${JSON.stringify(audit)}`).toBeGreaterThan(0.45);
+    expect(audit.libraryWidth, `${label} 法术书库主列必须保留主视觉空间: ${JSON.stringify(audit)}`).toBeGreaterThan(expectedViewport.width * 0.5);
+    expect(audit.summaryWidth, `${label} 右侧摘要栏必须保留自然宽度: ${JSON.stringify(audit)}`).toBeGreaterThan(expectedViewport.width * 0.13);
+    expect(audit.gateOverflow.x, `${label} 选书层自身不能横向溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    expect(audit.gateOverflow.y, `${label} 选书层自身不能依赖纵向滚动隐藏裁切: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
+    expect(audit.bodyOverflow.x, `${label} 不能产生横向页面溢出: ${JSON.stringify(audit)}`).toBeLessThanOrEqual(2);
 }
 
 test('Mage Wars 选书页：2560x1304 非 16:9 视口自然适配按钮和说明文案', async ({ context, page }, testInfo) => {
@@ -337,12 +492,49 @@ test('Mage Wars 选书页：2560x1304 非 16:9 视口自然适配按钮和说明
     await expect(page.getByRole('heading', { name: '选择双方法术书' })).toBeVisible();
     await expectMageSelectionPreviewAspectRatios(page);
     await expectNoRepeatedInvariantMageStats(page);
-    await expectMageSelectionWideNaturalLayout(page);
+    await expectMageSelectionContainScaleLayout(page, { width: 2560, height: 1304 });
     const screenshot = await saveEvidenceScreenshot(page, testInfo, '01-2560x1304-选书页-开始游戏在编辑按钮下方');
 
     await assertNoFatalFrontendErrors([{ label: 'mage-selection-2560x1304', diagnostics }]);
     testInfo.annotations.push({
         type: 'mage-wars-selection-2560x1304-screenshot',
+        description: screenshot,
+    });
+});
+
+test('Mage Wars 选书页：1081x585 小桌面窗口等比缩放而不是换行压扁', async ({ context, page }, testInfo) => {
+    await clearEvidenceScreenshotsForTest(testInfo);
+    await page.setViewportSize({ width: 1081, height: 585 });
+    await initContext(context, {
+        storageKey: 'mage-wars-mage-selection-1081x585',
+        skipImageGate: false,
+        blockCdnAssets: false,
+        locale: 'zh-CN',
+    });
+    const diagnostics = attachPageDiagnostics(page);
+
+    await page.goto('/play/mage-wars?setupGate=true&seed=mage-selection-1081x585&disableLocalAiAutomation=true', {
+        waitUntil: 'domcontentloaded',
+    });
+    await waitForFrontendAssets(page, 45_000);
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+
+    await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 60_000 });
+    await expect(page.getByRole('heading', { name: '选择双方法术书' })).toBeVisible();
+    await expectMageSelectionPreviewAspectRatios(page);
+    await expectNoRepeatedInvariantMageStats(page);
+    await expectMageSelectionContainScaleLayout(page, { width: 1081, height: 585 });
+    const screenshot = await saveEvidenceScreenshot(page, testInfo, '01-1081x585-选书页-等比缩放不换行');
+
+    await page.getByTestId('mage-wars-mage-selection-standard-spellbook-warlock_apprentice').click();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute('data-mage-id', 'warlock_apprentice');
+    await page.getByTestId('mage-wars-mage-selection-seat-1').click();
+    await page.getByTestId('mage-wars-mage-selection-standard-spellbook-wizard_apprentice').click();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-1')).toHaveAttribute('data-mage-id', 'wizard_apprentice');
+
+    await assertNoFatalFrontendErrors([{ label: 'mage-selection-1081x585', diagnostics }]);
+    testInfo.annotations.push({
+        type: 'mage-wars-selection-1081x585-screenshot',
         description: screenshot,
     });
 });
@@ -421,8 +613,8 @@ test('Mage Wars 法术书选择：双方直接选择法术书后进入对应开�
         .toHaveAttribute('data-mage-id', 'warlock_apprentice');
     await expect(page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]'))
         .toHaveAttribute('data-mage-id', 'wizard_apprentice');
-    await expect(page.getByTestId('mage-wars-board')).toContainText('邪术师');
-    await expect(page.getByTestId('mage-wars-board')).toContainText('巫师');
+    await expect(page.getByTestId('mage-wars-mage-hud-self')).toHaveAttribute('aria-label', /邪术师/u);
+    await expect(page.getByTestId('mage-wars-mage-hud-opponent')).toHaveAttribute('aria-label', /巫师/u);
     await waitForVisibleImages(page);
     await expectAtlasFrameAspectRatioPreserved(
         page.locator('[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"] [data-card-atlas-frame="true"]'),
@@ -439,6 +631,51 @@ test('Mage Wars 法术书选择：双方直接选择法术书后进入对应开�
         type: 'mage-wars-spellbook-selection-screenshots',
         description: JSON.stringify([initialScreenshot, selectedScreenshot, boardScreenshot]),
     });
+});
+
+test('Mage Wars 新建法术书法师选择：取消后回到选书页且不打开编辑器', async ({ context, page }, testInfo) => {
+    await clearEvidenceScreenshotsForTest(testInfo);
+    await initContext(context, {
+        storageKey: 'mage-wars-new-spellbook-mage-picker-cancel',
+        skipImageGate: false,
+        blockCdnAssets: false,
+        locale: 'zh-CN',
+    });
+    const diagnostics = attachPageDiagnostics(page);
+
+    await page.goto('/play/mage-wars?setupGate=true&seed=mage-new-spellbook-mage-picker-cancel&disableLocalAiAutomation=true', {
+        waitUntil: 'domcontentloaded',
+    });
+    await waitForFrontendAssets(page, 45_000);
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+
+    await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible({ timeout: 60_000 });
+    await page.getByTestId('mage-wars-mage-selection-seat-0').click();
+    await page.getByTestId('mage-wars-mage-selection-standard-spellbook-beastmaster_apprentice').click();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute(
+        'data-mage-id',
+        'beastmaster_apprentice',
+    );
+
+    await page.getByTestId('mage-wars-mage-selection-new-spellbook-entry').click();
+    const picker = page.getByTestId('mage-wars-new-spellbook-mage-picker');
+    await expect(picker).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid^="mage-wars-new-spellbook-mage-option-"]')).toHaveCount(4);
+    await waitForVisibleImages(page);
+    await saveEvidenceScreenshot(page, testInfo, '01-新建法术书法师选择-取消前四个候选可见');
+
+    await picker.getByTestId('mage-wars-new-spellbook-mage-picker-cancel').click();
+    await expect(picker).toBeHidden({ timeout: 5_000 });
+    await expect(page.getByTestId('mage-wars-spellbook-builder')).toHaveCount(0);
+    await expect(page.getByTestId('mage-wars-mage-selection-gate')).toBeVisible();
+    await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute(
+        'data-mage-id',
+        'beastmaster_apprentice',
+    );
+    await expect(page.getByTestId('mage-wars-mage-selection-new-spellbook-entry')).toBeVisible();
+    await saveEvidenceScreenshot(page, testInfo, '02-新建法术书法师选择-取消后回到选书页');
+
+    await assertNoFatalFrontendErrors([{ label: 'new-spellbook-mage-picker-cancel', diagnostics }]);
 });
 
 test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用、编辑、删除，再进入计划代表态', async ({ context, page }, testInfo) => {
@@ -473,6 +710,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     const magePicker = page.getByTestId('mage-wars-new-spellbook-mage-picker');
     await expect(magePicker).toBeVisible({ timeout: 10_000 });
     await expect(magePicker).toContainText('选择新书绑定法师');
+    await expect(magePicker.getByTestId('mage-wars-new-spellbook-mage-picker-options')).toBeVisible();
     await expect(page.locator('[data-testid^="mage-wars-new-spellbook-mage-option-"]')).toHaveCount(4);
     for (const mageId of [
         'beastmaster_apprentice',
@@ -493,8 +731,15 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     await expect(builder).toHaveAttribute('data-mage-id', 'beastmaster_apprentice');
     await expect(builder).toHaveAttribute('data-saved-spellbook-limit', '10');
     await expect(builder.getByTestId('mage-wars-spellbook-builder-mage-context')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-mage-detail-cue')).toBeVisible();
     await expect(builder.locator('[data-testid^="mage-wars-spellbook-builder-mage-option-"]')).toHaveCount(0);
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-library')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-capacity')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-current-list')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-visible-range')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-rows')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-card-pool')).toBeVisible();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-card-pool-grid')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-type')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-school')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-filter-level')).toBeVisible();
@@ -528,16 +773,60 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-list')).toContainText('标准起始书');
     await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-list')).not.toContainText('暂无命名副本');
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-saved-limit')).toBeVisible();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-standard')).toHaveAttribute('data-active', 'false');
     await expect(builder.getByTestId('mage-wars-spellbook-builder-new-spellbook-entry')).toHaveAttribute('data-active', 'true');
     await expect(builder.getByTestId('mage-wars-spellbook-builder-new-spellbook-entry')).toHaveAttribute('data-saved-spellbook-limit', '10');
     await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
     await expect(builder.getByTestId('mage-wars-spellbook-builder-blank')).toHaveCount(0);
+    const lynxBuilderCard = builder.locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="2906"]');
     await expectAtlasFrameAspectRatioPreserved(
-        builder.locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="2906"] [data-card-atlas-frame="true"]'),
+        lynxBuilderCard.locator('[data-card-atlas-frame="true"]'),
         '组书卡池野性山猫牌面',
     );
+    await lynxBuilderCard.hover();
+    await expect(lynxBuilderCard.getByTestId('mage-wars-spellbook-builder-card-action')).toBeVisible();
     await expectSpellbookBuilderCardPoolReadable(builder);
+    await builder.getByTestId('mage-wars-spellbook-builder-import-open').click();
+    const importPanel = builder.getByTestId('mage-wars-spellbook-builder-import-panel');
+    await expect(importPanel).toBeVisible();
+    await importPanel.getByRole('textbox').fill('2906 x2\n2224 x1');
+    await importPanel.getByTestId('mage-wars-spellbook-builder-import-apply').click();
+    await expect(importPanel).toHaveCount(0);
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-row')).toHaveCount(2);
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-deck-row"][data-source-card-id="2906"]',
+    )).toContainText('2 / 6');
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-deck-row"][data-source-card-id="2224"]',
+    )).toContainText('1 / 6');
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-deck-row"][data-source-card-id="2224"]',
+    ).getByTestId('mage-wars-spellbook-builder-add-card')).toBeVisible();
+    const importScreenshot = await saveEvidenceScreenshot(page, testInfo, '03A-导入列表-两张法术进入当前构筑');
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
+    await builder.getByTestId('mage-wars-spellbook-builder-standard').click();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-deck-row')).toHaveCount(50);
+    await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
+    const searchInput = builder.getByTestId('mage-wars-spellbook-builder-search');
+    await searchInput.fill('野性山猫');
+    await expect(builder.locator('[data-testid="mage-wars-spellbook-builder-card"]')).toHaveCount(1);
+    await expect(builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="2906"]',
+    )).toBeVisible();
+    await searchInput.fill('');
+    for (const [testId, value] of [
+        ['mage-wars-spellbook-builder-filter-school', '自然'],
+        ['mage-wars-spellbook-builder-filter-level', '2'],
+        ['mage-wars-spellbook-builder-filter-mana', '3-5'],
+        ['mage-wars-spellbook-builder-filter-legality', 'inBook'],
+    ] as const) {
+        const filter = builder.getByTestId(testId);
+        await filter.selectOption(value);
+        await expect(filter).toHaveValue(value);
+        await expect(builder.locator('[data-testid="mage-wars-spellbook-builder-card"]')).not.toHaveCount(0);
+        await filter.selectOption('all');
+    }
     await expectNoDuplicateUiOwners(
         builder,
         testInfo,
@@ -552,28 +841,74 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
         '点这里看法师能力牌',
     );
     await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('墙体');
-    const wallFilterScreenshot = await saveEvidenceScreenshot(page, testInfo, '04-类型筛选墙体-横向墙牌保真');
-    await expectAtlasFrameAspectRatioPreserved(
-        builder.locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"] [data-card-atlas-frame="true"]'),
-        '组书卡池荆棘之墙横向牌面',
+    const wallFilterScreenshot = await saveEvidenceScreenshot(page, testInfo, '04-类型筛选墙体-竖向墙牌保真');
+    const wallAtlasFrame = builder.locator(
+        '[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"] [data-card-atlas-frame="true"]',
     );
+    const wallAtlasAspectRatio = await wallAtlasFrame.getAttribute('data-card-atlas-aspect-ratio');
+    expect(Number(wallAtlasAspectRatio), '组书卡池荆棘之墙原始牌面素材必须保留横向源比例').toBeGreaterThan(1);
     const wallCardBox = await builder
         .locator('[data-testid="mage-wars-spellbook-builder-card"][data-source-card-id="25700"]')
         .evaluate((element) => {
             const rect = element.getBoundingClientRect();
             return { width: rect.width, height: rect.height };
     });
-    expect(wallCardBox.width / wallCardBox.height, '墙体牌在组书页必须按横向比例显示').toBeGreaterThan(1);
+    expect(wallCardBox.width / wallCardBox.height, '墙体牌在组书页必须按普通手牌竖向比例显示').toBeLessThan(1);
 
     await builder.getByTestId('mage-wars-spellbook-builder-filter-type').selectOption('all');
+    const mageDetailBeforeScreenshot = await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        '05-点击已选法师本体前-详情层关闭且组书界面可操作',
+    );
     await builder.getByTestId('mage-wars-spellbook-builder-mage-context').click();
     const mageDetail = builder.getByTestId('mage-wars-spellbook-builder-mage-detail');
     await expect(mageDetail).toBeVisible();
+    const mageDetailPanel = builder.getByTestId('mage-wars-spellbook-builder-mage-detail-panel');
+    const mageDetailClose = builder.getByTestId('mage-wars-spellbook-builder-mage-detail-close');
     await expect(mageDetail.locator('[data-card-atlas-frame="true"]')).toBeVisible();
     await expect(mageDetail).toContainText('受训方向');
     await expect(mageDetail).toContainText('相斥方向');
-    const mageDetailScreenshot = await saveEvidenceScreenshot(page, testInfo, '05-法师详情-点击已选法师主控打开');
+    await expect(mageDetail).toContainText('构筑限制');
+    await expect(mageDetail).not.toContainText('这份构筑按这张法师能力牌的训练方向计算');
+    const detailGeometry = await mageDetailPanel.evaluate((panel) => {
+        const panelRect = panel.getBoundingClientRect();
+        const closeRect = panel.querySelector<HTMLElement>(
+            '[data-testid="mage-wars-spellbook-builder-mage-detail-close"]',
+        )?.getBoundingClientRect();
+        return closeRect
+            ? {
+                panel: { left: panelRect.left, top: panelRect.top, right: panelRect.right, bottom: panelRect.bottom },
+                close: {
+                    left: closeRect.left,
+                    top: closeRect.top,
+                    right: closeRect.right,
+                    bottom: closeRect.bottom,
+                    width: closeRect.width,
+                    height: closeRect.height,
+                },
+            }
+            : null;
+    });
+    expect(detailGeometry).not.toBeNull();
+    expect(detailGeometry!.close.width).toBeGreaterThanOrEqual(44);
+    expect(detailGeometry!.close.height).toBeGreaterThanOrEqual(44);
+    expect(detailGeometry!.close.left).toBeGreaterThanOrEqual(detailGeometry!.panel.left);
+    expect(detailGeometry!.close.top).toBeGreaterThanOrEqual(detailGeometry!.panel.top);
+    expect(detailGeometry!.close.right).toBeLessThanOrEqual(detailGeometry!.panel.right);
+    expect(detailGeometry!.close.bottom).toBeLessThanOrEqual(detailGeometry!.panel.bottom);
+    const mageDetailScreenshot = await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        '05-点击已选法师本体-详情层只补充构筑限制且关闭按钮贴合右上角',
+    );
     await builder.getByTestId('mage-wars-spellbook-builder-mage-detail-close').click();
+    await expect(mageDetail).toBeHidden();
+    const mageDetailAfterScreenshot = await saveEvidenceScreenshot(
+        page,
+        testInfo,
+        '05-关闭法师详情后-回到原组书界面继续编辑',
+    );
 
     await builder.getByTestId('mage-wars-spellbook-builder-save-name').fill('兽王标准命名书');
     await builder.getByTestId('mage-wars-spellbook-builder-save-new').click();
@@ -601,7 +936,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
             entryCount: spellbook.entries?.length ?? 0,
             cardCount: spellbook.entries?.reduce((total, entry) => total + entry.count, 0) ?? 0,
             lynxCount: spellbook.entries?.find((entry) => entry.spellCardId === 2906)?.count ?? 0,
-            tanglevineCount: spellbook.entries?.find((entry) => entry.spellCardId === 2224)?.count ?? 0,
+        tanglevineCount: spellbook.entries?.find((entry) => entry.spellCardId === 2224)?.count ?? 0,
         }));
     })).toEqual([{
         mageId: 'beastmaster_apprentice',
@@ -611,6 +946,19 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
         lynxCount: 2,
         tanglevineCount: 3,
     }]);
+    const builderSavedList = builder.getByTestId('mage-wars-spellbook-builder-saved-list');
+    if (!await builderSavedList.isVisible()) {
+        await builder.getByTestId('mage-wars-spellbook-builder-saved-library-toggle').click();
+    }
+    const builderDisposableCard = builder
+        .getByTestId('mage-wars-spellbook-builder-saved-spellbook')
+        .filter({ hasText: '兽王标准命名书' });
+    await expect(builderDisposableCard).toBeVisible();
+    await builderDisposableCard.getByTestId('mage-wars-spellbook-builder-delete-saved').click();
+    await expect(builderDisposableCard).toHaveCount(0);
+    await builder.getByTestId('mage-wars-spellbook-builder-save-name').fill('兽王标准命名书');
+    await builder.getByTestId('mage-wars-spellbook-builder-save-new').click();
+    await expect(builder.getByTestId('mage-wars-spellbook-builder-save-status')).toContainText('已保存 兽王标准命名书');
     const originalSavedId = await page.evaluate(() => {
         const raw = localStorage.getItem('mage-wars:saved-spellbooks:v1');
         if (!raw) return null;
@@ -627,6 +975,8 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     const selectionSavedList = page.getByTestId('mage-wars-mage-selection-saved-spellbook-list');
     await expect(selectionSavedList).toContainText('标准起始书');
     await expect(selectionSavedList).toContainText('兽王标准命名书');
+    await expect(page.getByTestId('mage-wars-mage-selection-saved-limit')).toBeVisible();
+    await expect(selectionSavedList.getByTestId('mage-wars-mage-selection-saved-spellbook-preview')).toHaveCount(1);
     await expect(selectionSavedList.getByTestId('mage-wars-mage-selection-saved-spellbook-diy-badge')).toHaveText('DIY');
     await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toContainText('法术书 67 张');
     await expect(page.getByTestId('mage-wars-mage-selection-summary-0')).toHaveAttribute(
@@ -758,13 +1108,14 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
         runtimeSpellbookCard.locator('[data-card-atlas-frame="true"]'),
         '牌桌法术书缠绕藤蔓牌面',
     );
-    await runtimeSpellbookCard.click();
+    await clickFormalSpellbookCardBody(page, runtimeSpellbookCard, 2224);
     await expect(runtimeSpellbookCard).toHaveAttribute('data-selected-count', '1');
     await expect(runtimeSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
     await expect(page.locator(
         '[data-testid="mage-wars-desktop-prepared-card"][data-planning-draft="true"][data-source-card-id="2224"]',
     )).toHaveCount(1);
-    await runtimeSpellbookCard.click();
+    const runtimeFirstPlanningDraftScreenshot = await saveEvidenceScreenshot(page, testInfo, '11-正式牌桌计划态-中心点击缠绕藤蔓进入计划槽1');
+    await clickFormalSpellbookCardBody(page, runtimeSpellbookCard, 2224);
     await expect(runtimeSpellbookCard).toHaveAttribute('data-selected-count', '2');
     await expect(runtimeSpellbookCard.getByTestId('mage-wars-spellbook-selected-count')).toHaveCount(0);
     await expect(page.locator(
@@ -772,6 +1123,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     )).toHaveCount(2);
     await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划 2/2');
     await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '2/2');
+    const runtimeSecondPlanningDraftScreenshot = await saveEvidenceScreenshot(page, testInfo, '12-正式牌桌计划态-中心点击缠绕藤蔓满2张');
     await page.getByTestId('mage-wars-plan-spells').click();
     await expect.poll(async () => {
         const state = await readMageWarsState(page);
@@ -780,7 +1132,7 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
     }).toEqual([2224, 2224]);
     await expect(page.locator('[data-testid="mage-wars-desktop-prepared-card"][data-source-card-id="2224"]'))
         .toHaveCount(2);
-    const runtimePlanningScreenshot = await saveEvidenceScreenshot(page, testInfo, '11-牌桌计划态-命名副本进入可计划牌列');
+    const runtimePlanningScreenshot = await saveEvidenceScreenshot(page, testInfo, '13-正式牌桌提交计划后-命名副本进入准备区');
 
     await assertNoFatalFrontendErrors([{ label: 'mage-wars-spellbook-builder', diagnostics }]);
     testInfo.annotations.push({
@@ -790,12 +1142,17 @@ test('Mage Wars 组书编辑器：从选中标准书保存命名副本、使用�
             newSpellbookMagePickerScreenshot,
             builderDefaultScreenshot,
             wallFilterScreenshot,
+            mageDetailBeforeScreenshot,
+            importScreenshot,
             mageDetailScreenshot,
+            mageDetailAfterScreenshot,
             savedSpellbookScreenshot,
             selectionLibraryScreenshot,
             directUseScreenshot,
             updatedSpellbookScreenshot,
             deleteSpellbookScreenshot,
+            runtimeFirstPlanningDraftScreenshot,
+            runtimeSecondPlanningDraftScreenshot,
             runtimePlanningScreenshot,
         ]),
     });

@@ -13,6 +13,7 @@ interface LongPressState<TKey extends string | number> {
 interface LastLongPress<TKey extends string | number> {
     key: TKey;
     timestamp: number;
+    pendingClickBlock: boolean;
 }
 
 export interface UseTouchLongPressConfig<TKey extends string | number, TPayload> {
@@ -59,6 +60,8 @@ export function useTouchLongPress<TKey extends string | number, TPayload>({
         if (!enabled || event.pointerType !== pointerType) return;
 
         clearLongPressState();
+        // 新的真实触控已开始，不再消费上一手势可能落在检视遮罩上的兼容点击。
+        lastLongPressRef.current = null;
         stateRef.current = {
             key,
             startX: event.clientX,
@@ -70,7 +73,7 @@ export function useTouchLongPress<TKey extends string | number, TPayload>({
             const current = stateRef.current;
             if (!current || current.key !== key || current.triggered) return;
             current.triggered = true;
-            lastLongPressRef.current = { key, timestamp: Date.now() };
+            lastLongPressRef.current = { key, timestamp: Date.now(), pendingClickBlock: true };
             onLongPress(key, payload);
         }, durationMs);
     }, [clearLongPressState, durationMs, enabled, onLongPress, pointerType]);
@@ -93,7 +96,17 @@ export function useTouchLongPress<TKey extends string | number, TPayload>({
     const shouldBlockClick = useCallback((key: TKey) => {
         const last = lastLongPressRef.current;
         if (!last || last.key !== key) return false;
-        return Date.now() - last.timestamp < clickBlockMs;
+        if (last.pendingClickBlock) {
+            lastLongPressRef.current = {
+                ...last,
+                pendingClickBlock: false,
+            };
+            return true;
+        }
+        if (Date.now() - last.timestamp >= clickBlockMs) {
+            lastLongPressRef.current = null;
+        }
+        return false;
     }, [clickBlockMs]);
 
     useEffect(() => {

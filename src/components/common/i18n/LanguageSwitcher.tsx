@@ -1,14 +1,17 @@
+import './platform-language.css';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown } from 'lucide-react';
 import { LANGUAGE_OPTIONS } from '../../../lib/i18n/types';
 import clsx from 'clsx';
 import { UI_Z_INDEX } from '../../../core';
 
 interface LanguageSwitcherProps {
+    visualStyle?: 'classic' | 'platform';
     className?: string;
 }
 
-export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
+export const LanguageSwitcher = ({ className = '', visualStyle = 'classic' }: LanguageSwitcherProps) => {
     const { i18n, t } = useTranslation('common');
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -16,15 +19,21 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
 
     const currentOption = LANGUAGE_OPTIONS.find(opt => opt.code === currentLanguage) || LANGUAGE_OPTIONS[0];
 
-    // 点击外部关闭下拉菜单
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
         };
+        const handleKey = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setIsOpen(false);
+        };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('keydown', handleKey);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleKey);
+        };
     }, []);
 
     const handleLanguageChange = (code: string) => {
@@ -42,21 +51,40 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
         en: '🇺🇸'
     };
 
+    const isPlatform = visualStyle === 'platform';
+
     return (
-        <div ref={containerRef} className={clsx('relative flex h-8 items-center', className)}>
+        <div data-language-style={visualStyle} ref={containerRef} className={clsx('relative flex h-8 items-center', className)}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
+                aria-label={t('language.label')}
+                aria-expanded={isOpen}
+                aria-haspopup="true"
                 className={clsx(
-                    'group relative inline-flex h-8 items-center border-0 bg-transparent p-0 text-sm font-bold leading-none tracking-tight text-parchment-base-text transition-colors hover:text-parchment-brown cursor-pointer'
+                    'group relative inline-flex h-8 items-center border-0 bg-transparent p-0 text-sm font-bold leading-none tracking-tight cursor-pointer',
+                    isPlatform ? undefined : 'text-parchment-base-text transition-colors hover:text-parchment-brown'
                 )}
                 title={currentOption.label}
             >
-                <span>{t('language.label')}</span>
-                <span className="underline-center" />
+                <span>{isPlatform ? currentOption.label : t('language.label')}</span>
+                {isPlatform ? <ChevronDown aria-hidden="true" size={14} /> : <span className="underline-center" />}
             </button>
 
-            {isOpen && (
-                <div
+            {isOpen && (isPlatform
+                ? <div className="platform-language-menu" style={{ zIndex: UI_Z_INDEX.tooltip }}>
+                    {LANGUAGE_OPTIONS.map((option) => (
+                        <button
+                            key={option.code}
+                            type="button"
+                            aria-pressed={currentLanguage === option.code}
+                            onClick={() => handleLanguageChange(option.code)}
+                        >
+                            <span>{option.label}</span>
+                            {currentLanguage === option.code ? <span aria-hidden="true">✓</span> : null}
+                        </button>
+                    ))}
+                </div>
+                : <div
                     className={clsx(
                         'absolute top-full right-0 mt-1 min-w-[120px]',
                         'bg-[#fefcf7] border border-[#d3ccba] shadow-[0_4px_12px_rgba(67,52,34,0.15)] rounded overflow-hidden',
@@ -84,8 +112,7 @@ export const LanguageSwitcher = ({ className = '' }: LanguageSwitcherProps) => {
                             )}
                         </button>
                     ))}
-                </div>
-            )}
+                </div>)}
         </div>
     );
 };

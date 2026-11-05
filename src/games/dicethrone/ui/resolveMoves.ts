@@ -9,6 +9,7 @@ import { DICETHRONE_COMMANDS } from '../domain/ids';
 
 export type DiceThroneMoveMap = {
     advancePhase: () => void;
+    useDejaVu: () => void;
     rollDice: () => void;
     toggleDieLock: (id: number) => void;
     confirmRoll: () => void;
@@ -23,10 +24,10 @@ export type DiceThroneMoveMap = {
     // 卡牌交互相关
     modifyDie: (dieId: number, newValue: number) => void;
     rerollDie: (dieId: number) => void;
-    removeStatus: (targetPlayerId: string, statusId?: string) => void;
-    transferStatus: (fromPlayerId: string, toPlayerId: string, statusId: string) => void;
+    removeStatus: (targetPlayerId: string, statusId?: string, interactionId?: string) => void;
+    transferStatus: (fromPlayerId: string, toPlayerId: string, statusId: string, interactionId?: string) => void;
     grantTokens: (targetPlayerId: string, tokens: Array<{ tokenId: string; amount: number }>) => void;
-    resolveInteraction: (selectedPlayerIds: string[], selectedCardIds?: string[]) => void;
+    resolveInteraction: (selectedPlayerIds: string[], selectedCardIds?: string[], interactionId?: string) => void;
     selectDefenderTarget: (defenderId: string) => void;
     // confirmInteraction: (interactionId: string, selectedDiceIds?: number[], selectedPlayerId?: string) => void; // @deprecated - 使用 InteractionSystem
     // cancelInteraction: () => void; // @deprecated - 使用 InteractionSystem
@@ -37,7 +38,7 @@ export type DiceThroneMoveMap = {
     // 击倒移除
     payToRemoveKnockdown: () => void;
     // 奖励骰重掷
-    rerollBonusDie: (dieIndex: number) => void;
+    rerollBonusDie: (dieIndex: number, dieIndices?: number[]) => void;
     confirmBonusDice: () => void;
     skipBonusDiceReroll: () => void;
     // 被动能力（如教皇税）
@@ -60,6 +61,7 @@ export const resolveMoves = (
     dispatch: (type: string, payload?: unknown) => void,
 ): DiceThroneMoveMap => ({
     advancePhase: () => dispatch('ADVANCE_PHASE', {}),
+    useDejaVu: () => dispatch('USE_DEJA_VU', {}),
     rollDice: () => dispatch('ROLL_DICE', {}),
     toggleDieLock: (id) => dispatch('TOGGLE_DIE_LOCK', { dieId: id }),
     confirmRoll: () => dispatch('CONFIRM_ROLL', {}),
@@ -74,10 +76,10 @@ export const resolveMoves = (
     // 卡牌交互
     modifyDie: (dieId, newValue) => dispatch('MODIFY_DIE', { dieId, newValue }),
     rerollDie: (dieId) => dispatch('REROLL_DIE', { dieId }),
-    removeStatus: (targetPlayerId, statusId) => dispatch('REMOVE_STATUS', { targetPlayerId, statusId }),
-    transferStatus: (fromPlayerId, toPlayerId, statusId) => dispatch('TRANSFER_STATUS', { fromPlayerId, toPlayerId, statusId }),
+    removeStatus: (targetPlayerId, statusId, interactionId) => dispatch('REMOVE_STATUS', { targetPlayerId, statusId, ...(interactionId ? { interactionId } : {}) }),
+    transferStatus: (fromPlayerId, toPlayerId, statusId, interactionId) => dispatch('TRANSFER_STATUS', { fromPlayerId, toPlayerId, statusId, ...(interactionId ? { interactionId } : {}) }),
     grantTokens: (targetPlayerId, tokens) => dispatch('GRANT_TOKENS', { targetPlayerId, tokens }),
-    resolveInteraction: (selectedPlayerIds, selectedCardIds) => dispatch('RESOLVE_INTERACTION', { selectedPlayerIds, selectedCardIds }),
+    resolveInteraction: (selectedPlayerIds, selectedCardIds, interactionId) => dispatch('RESOLVE_INTERACTION', { selectedPlayerIds, selectedCardIds, ...(interactionId ? { interactionId } : {}) }),
     selectDefenderTarget: (defenderId) => dispatch(DICETHRONE_COMMANDS.SELECT_DEFENDER_TARGET, { defenderId }),
     // confirmInteraction: (interactionId, selectedDiceIds, selectedPlayerId) => dispatch('CONFIRM_INTERACTION', { interactionId, selectedDiceIds, selectedPlayerId }),
     // cancelInteraction: () => dispatch('CANCEL_INTERACTION', {}),
@@ -94,7 +96,7 @@ export const resolveMoves = (
     // 击倒移除
     payToRemoveKnockdown: () => dispatch(DICETHRONE_COMMANDS.PAY_TO_REMOVE_KNOCKDOWN, {}),
     // 奖励骰重掷
-    rerollBonusDie: (dieIndex) => dispatch('REROLL_BONUS_DIE', { dieIndex }),
+    rerollBonusDie: (dieIndex, dieIndices) => dispatch('REROLL_BONUS_DIE', { dieIndex, dieIndices }),
     confirmBonusDice: () => dispatch('CONFIRM_ROLL', {}),
     skipBonusDiceReroll: () => dispatch('SKIP_BONUS_DICE_REROLL', {}),
     // 被动能力

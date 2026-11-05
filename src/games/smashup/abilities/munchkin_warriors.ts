@@ -1,5 +1,6 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerAbility } from '../domain/abilityRegistry';
 import {
@@ -90,8 +91,49 @@ function buildMonsterOptions(state: SmashUpCore, baseIndex?: number) {
     });
 }
 
+function buildBerserkerMonsterOptions(state: SmashUpCore, baseIndex: number, sourceCardUid: string) {
+    const source = state.bases[baseIndex]?.minions.find(minion => minion.uid === sourceCardUid);
+    if (!source || source.defId !== BERSERKER) return [];
+    const sourcePower = getEffectivePower(state, source, baseIndex);
+    return buildMonsterOptions(state, baseIndex).filter(option => {
+        const monster = state.bases[baseIndex]?.monsters?.find(candidate => candidate.uid === option.value.monsterUid);
+        const monsterPower = monster ? getMunchkinSpecialCardDescriptor(monster.defId)?.power ?? 0 : 0;
+        return monsterPower <= sourcePower;
+    });
+}
+
 function buildAllMonsterOptions(state: SmashUpCore) {
     return buildMonsterOptions(state);
+}
+
+function buildWarCryMonsterOptions(state: SmashUpCore, sourcePlayerId: PlayerId) {
+    return state.bases.flatMap((base, index) => {
+        const minionOptions = buildMinionTargetOptions(
+            base.minions.map(minion => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: index,
+                label: cardName(minion.defId),
+            })),
+            {
+                state,
+                sourcePlayerId,
+                sourceDefId: WAR_CRY,
+                sourceKind: 'action',
+                effectType: 'power_change',
+            },
+        );
+        if (minionOptions.length === 0) return [];
+        return (base.monsters ?? [])
+            .filter(isMonsterUncontrolled)
+            .map(monster => ({
+                id: `munchkin-warriors-war-cry-monster-${index}-${monster.uid}`,
+                label: `${cardName(monster.defId)}（${baseName(base.defId)}）`,
+                value: { monsterUid: monster.uid, monsterDefId: monster.defId, baseIndex: index } satisfies MonsterChoice,
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            }));
+    });
 }
 
 function buildMinionOptions(state: SmashUpCore, maxPower: number, baseIndex?: number, sourcePlayerId: PlayerId = '0') {
@@ -229,17 +271,17 @@ function isSourceMinionValid(state: SmashUpCore, playerId: PlayerId, sourceBaseI
     return source?.defId === defId && source.controller === playerId;
 }
 
-function queueModeChoice<T extends Record<string, unknown>>(
+function queueModeChoice<TChoice, T extends Record<string, unknown>>(
     matchState: MatchState<SmashUpCore>,
     id: string,
     playerId: PlayerId,
     title: string,
-    options: unknown[],
+    options: readonly PromptOption<TChoice>[],
     sourceId: string,
     titleKey: string,
     data: T,
 ) {
-    const interaction = createSimpleChoice(
+    const interaction = createSimpleChoice<TChoice>(
         id,
         playerId,
         title,
@@ -283,11 +325,7 @@ function bigHeroTalent(ctx: AbilityContext): AbilityResult {
 function berserkerOnPlay(ctx: AbilityContext): AbilityResult {
     const source = ctx.state.bases[ctx.baseIndex]?.minions.find(minion => minion.uid === ctx.cardUid);
     if (!source || source.defId !== BERSERKER || source.controller !== ctx.playerId || !ctx.matchState) return { events: [] };
-    const options = buildMonsterOptions(ctx.state, ctx.baseIndex).filter(option => {
-        const monster = ctx.state.bases[ctx.baseIndex]?.monsters?.find(candidate => candidate.uid === option.value.monsterUid);
-        const power = monster ? getMunchkinSpecialCardDescriptor(monster.defId)?.power ?? 0 : 0;
-        return power <= getEffectivePower(ctx.state, source, ctx.baseIndex);
-    });
+    const options = buildBerserkerMonsterOptions(ctx.state, ctx.baseIndex, ctx.cardUid);
     if (options.length === 0) return { events: [] };
     const interaction = createSimpleChoice<MonsterChoice>(
         `${BERSERKER_MONSTER_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
@@ -305,7 +343,11 @@ function berserkerOnPlay(ctx: AbilityContext): AbilityResult {
         },
     );
     interaction.data = { ...interaction.data, sourceCardUid: ctx.cardUid, sourceBaseIndex: ctx.baseIndex } satisfies SourceData & Record<string, unknown>;
-    interaction.data.optionsGenerator = latestState => buildMonsterOptions(latestState.core as SmashUpCore, ctx.baseIndex);
+    interaction.data.optionsGenerator = latestState => buildBerserkerMonsterOptions(
+        latestState.core as SmashUpCore,
+        ctx.baseIndex,
+        ctx.cardUid,
+    );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -315,7 +357,7 @@ function taunterOnPlay(ctx: AbilityContext): AbilityResult {
         `${TAUNTER_MODE_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '嘲讽者：可以在这里打出一个怪物',
-        [createSkipOption('跳过', 'ui.skip'), { id: 'play-monster', label: '打出一个怪物', value: { mode: 'playMonster' }, displayMode: 'button' }],
+        [createSkipOption('跳过', 'ui.skip'), { id: 'play-monster', label: '打出一个怪物', labelKey: 'ui.munchkin_warriors_taunter_play_monster_option', value: { mode: 'playMonster' }, displayMode: 'button' }],
         {
             sourceId: TAUNTER_MODE_SOURCE_ID,
             targetType: 'generic',
@@ -411,7 +453,7 @@ function ruckusOnPlay(ctx: AbilityContext): AbilityResult {
 }
 
 function warCryOnPlay(ctx: AbilityContext): AbilityResult {
-    const options = buildMonsterOptions(ctx.state);
+    const options = buildWarCryMonsterOptions(ctx.state, ctx.playerId);
     if (!ctx.matchState || options.length === 0) return { events: [] };
     const interaction = createSimpleChoice<MonsterChoice>(
         `${WAR_CRY_MONSTER_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
@@ -421,7 +463,7 @@ function warCryOnPlay(ctx: AbilityContext): AbilityResult {
         { sourceId: WAR_CRY_MONSTER_SOURCE_ID, targetType: 'monster', titleKey: 'ui.munchkin_warriors_war_cry_monster_title', responseValidationMode: 'live', autoRefresh: 'field', autoResolveIfSingle: false, displayCard: { defId: WAR_CRY, cardUid: ctx.cardUid } },
     );
     interaction.data = { ...interaction.data, sourceCardUid: ctx.cardUid } satisfies SourceData & Record<string, unknown>;
-    interaction.data.optionsGenerator = latestState => buildAllMonsterOptions(latestState.core as SmashUpCore);
+    interaction.data.optionsGenerator = latestState => buildWarCryMonsterOptions(latestState.core as SmashUpCore, ctx.playerId);
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
@@ -582,7 +624,7 @@ export function registerMunchkinWarriorsInteractionHandlers(): void {
     registerInteractionHandler(TAUNTER_MODE_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const data = interactionData as SourceData | undefined;
         const choice = value as ModeChoice | undefined;
-        if (choice?.skip || !data?.sourceCardUid || data.sourceBaseIndex === undefined) return { state, events: [] };
+        if (!choice || choice.skip || !data?.sourceCardUid || data.sourceBaseIndex === undefined) return { state, events: [] };
         if (choice.mode !== 'playMonster' || !isSourceMinionValid(state.core, playerId, data.sourceBaseIndex, data.sourceCardUid, TAUNTER) || !state.core.monsterDeck?.length) return { state, events: [] };
         return { state, events: buildMonsterPlayEvents(state.core, playerId, [data.sourceBaseIndex], TAUNTER, timestamp) };
     });

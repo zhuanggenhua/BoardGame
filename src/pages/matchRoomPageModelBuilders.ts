@@ -12,7 +12,10 @@ import {
 } from './matchRoomStageRuntimeModelBuilders';
 import type { MatchRoomPageIdentityModel } from './useMatchRoomPageIdentity';
 import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
-import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
+import {
+    buildGameHudRuntimeProps,
+    resolveGameHudPlacement,
+} from './gameHudRuntimeProps';
 import type {
     MatchRoomOnlineStageAdapter,
     MatchRoomPageRuntimeModel,
@@ -39,6 +42,7 @@ export type MatchRoomTutorialHudModel = {
     renderRuntimeSettings?: ReturnType<typeof buildGameHudRuntimeProps>['renderRuntimeSettings'];
     availableEmotes: ReturnType<typeof buildGameHudRuntimeProps>['availableEmotes'];
     resolveEmote: ReturnType<typeof buildGameHudRuntimeProps>['resolveEmote'];
+    hudPlacement: 'in-shell' | 'portal';
 };
 
 export type MatchRoomPageShellModel = {
@@ -90,6 +94,7 @@ export function buildTutorialHudModel(args: {
             gameId,
             gameConfig: pageIdentity.gameConfig,
         }),
+        hudPlacement: resolveGameHudPlacement(pageIdentity.gameConfig),
     };
 }
 
@@ -187,7 +192,9 @@ export function buildMatchRoomPageShellModel(args: {
         seoTitle: pageIdentity.isTutorialRoute
             ? tLobby('matchRoom.tutorialTitle', { game: pageIdentity.gameDisplayName })
             : tLobby('matchRoom.matchTitle', { game: pageIdentity.gameDisplayName }),
-        showSpectatorShield: pageRuntime.shell.isSpectatorRoute && !pageIdentity.isTutorialRoute,
+        // spectator 的只读边界由 transport + game board 的命令权限控制。
+        // 不能用全屏透明层拦截页面，否则放大手牌、查看卡图等读操作也会被挡住。
+        showSpectatorShield: false,
         battlefieldZoomMode: pageIdentity.gameConfig?.mobileBattlefieldZoom,
         boardShellStyle: {
             '--font-game-display': pageIdentity.gameConfig?.fontFamily?.display

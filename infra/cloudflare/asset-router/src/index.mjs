@@ -8,7 +8,6 @@ const FORWARDED_REQUEST_HEADERS = [
 ];
 
 const FALLBACK_TCP_MAX_BYTES = 1024 * 1024;
-
 const CACHEABLE_MEDIA_EXTENSIONS = new Set([
     '.webp',
     '.png',
@@ -44,7 +43,8 @@ const parseHostnameList = (value = '') => value
     .filter(Boolean);
 
 const resolveOriginConfig = (request, env) => {
-    const incomingHost = new URL(request.url).hostname.toLowerCase();
+    const incomingUrl = new URL(request.url);
+    const incomingHost = incomingUrl.hostname.toLowerCase();
     const directHostnames = parseHostnameList(env.ORIGIN_DIRECT_HOSTNAMES);
     const directEnabled = Boolean(env.ORIGIN_DIRECT_BASE_URL)
         && (directHostnames.includes('*') || directHostnames.includes(incomingHost));
@@ -53,14 +53,20 @@ const resolveOriginConfig = (request, env) => {
         return {
             baseUrl: env.ORIGIN_BASE_URL,
             resolveOverride: '',
-            route: 'tunnel',
+            hostHeader: env.ORIGIN_HOST_HEADER || new URL(env.ORIGIN_BASE_URL).host,
+            route: env.ORIGIN_ROUTE || 'tunnel',
+            transport: env.ORIGIN_TRANSPORT || 'fetch',
+            streamResponse: env.ORIGIN_TRANSPORT === 'tcp',
         };
     }
 
     return {
         baseUrl: env.ORIGIN_DIRECT_BASE_URL,
+        hostHeader: env.ORIGIN_DIRECT_HOST_HEADER || new URL(env.ORIGIN_DIRECT_BASE_URL).host,
         resolveOverride: env.ORIGIN_DIRECT_RESOLVE_OVERRIDE || '',
         route: 'direct',
+        transport: env.ORIGIN_DIRECT_TRANSPORT || 'fetch',
+        streamResponse: env.ORIGIN_DIRECT_TRANSPORT === 'tcp',
     };
 };
 
@@ -141,13 +147,6 @@ const buildOriginRequest = (request, env, originConfig = resolveOriginConfig(req
     });
 };
 
-const appendBytes = (left, right) => {
-    const output = new Uint8Array(left.length + right.length);
-    output.set(left);
-    output.set(right, left.length);
-    return output;
-};
-
 const findHeaderEnd = (bytes) => {
     for (let index = 0; index <= bytes.length - 4; index += 1) {
         if (
@@ -198,7 +197,14 @@ const hasCompleteChunkedBody = (bodyBytes) => {
     return false;
 };
 
-const decodeChunkedBody = (bodyBytes) => {
+const appendBytes = (left, right) => {
+    const output = new Uint8Array(left.length + right.length);
+    output.set(left);
+    output.set(right, left.length);
+    return output;
+};
+
+export const decodeChunkedBody = (bodyBytes) => {
     let offset = 0;
     let output = new Uint8Array();
     const decoder = new TextDecoder('iso-8859-1');
@@ -272,17 +278,153 @@ const fetchHttpOriginOverTcp = async (request, env, originConfig) => {
     writer.releaseLock();
 
     const reader = socket.readable.getReader();
-    let chunks = new Uint8Array();
+    let keepSocketOpen = false;
+    if (originConfig.streamResponse) {
+        const maxHeaderBytes = 64 * 1024;
+        const headerBuffer = new Uint8Array(maxHeaderBytes);
+        let receivedLength = 0;
+        let headerEnd = -1;
+        let socketClosed = false;
+        const closeSocket = async () => {
+            if (socketClosed) return;
+            socketClosed = true;
+            try {
+                reader.releaseLock();
+            } catch {
+                // The reader may already have been released after an upstream error.
+            }
+            await socket.close().catch(() => {});
+        };
+
+        try {
+            while (receivedLength < maxHeaderBytes && headerEnd < 0) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const writableLength = Math.min(value.length, maxHeaderBytes - receivedLength);
+                headerBuffer.set(value.subarray(0, writableLength), receivedLength);
+                receivedLength += writableLength;
+                headerEnd = findHeaderEnd(headerBuffer.subarray(0, receivedLength));
+            }
+            if (headerEnd < 0) {
+                throw new Error('TCP fallback returned an invalid or oversized HTTP header');
+            }
+
+            const headerBytes = headerBuffer.subarray(0, receivedLength);
+            const headerText = new TextDecoder('iso-8859-1').decode(headerBytes.slice(0, headerEnd));
+            const [statusLine] = headerText.split('\r\n');
+            const statusMatch = /^HTTP\/\d(?:\.\d)?\s+(\d{3})(?:\s+(.*))?$/i.exec(statusLine || '');
+            if (!statusMatch) {
+                throw new Error('TCP fallback returned an invalid HTTP status line');
+            }
+
+            const headers = parseHeaderLines(headerText);
+            if (request.method === 'HEAD') {
+                await closeSocket();
+                return new Response(null, {
+                    status: Number(statusMatch[1]),
+                    statusText: statusMatch[2] || '',
+                    headers,
+                });
+            }
+
+            const contentLength = Number.parseInt(headers.get('content-length') || '', 10);
+            const isChunked = (headers.get('transfer-encoding') || '').toLowerCase().includes('chunked');
+            if (isChunked) {
+                const maxResponseBytes = originConfig.maxResponseBytes || FALLBACK_TCP_MAX_BYTES;
+                const responseBuffer = new Uint8Array(maxResponseBytes);
+                responseBuffer.set(headerBytes);
+                let responseLength = headerBytes.length;
+                while (responseLength < maxResponseBytes && !isTcpResponseComplete(responseBuffer.subarray(0, responseLength))) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const writableLength = Math.min(value.length, maxResponseBytes - responseLength);
+                    responseBuffer.set(value.subarray(0, writableLength), responseLength);
+                    responseLength += writableLength;
+                }
+                const completeResponse = responseBuffer.subarray(0, responseLength);
+                if (!isTcpResponseComplete(completeResponse)) {
+                    throw new Error(`TCP fallback chunked response exceeded ${maxResponseBytes} bytes or was incomplete`);
+                }
+                const bodyBytes = decodeChunkedBody(completeResponse.slice(headerEnd + 4));
+                headers.delete('transfer-encoding');
+                headers.set('content-length', String(bodyBytes.length));
+                await closeSocket();
+                return new Response(bodyBytes, {
+                    status: Number(statusMatch[1]),
+                    statusText: statusMatch[2] || '',
+                    headers,
+                });
+            }
+            if (!Number.isFinite(contentLength) || contentLength < 0) {
+                throw new Error('TCP fallback streaming response requires Content-Length or chunked encoding');
+            }
+
+            const initialBody = headerBytes.slice(headerEnd + 4, headerEnd + 4 + contentLength);
+            let remainingLength = contentLength - initialBody.length;
+            const body = new ReadableStream({
+                start(controller) {
+                    if (initialBody.length > 0) controller.enqueue(initialBody);
+                    if (remainingLength === 0) {
+                        controller.close();
+                        void closeSocket();
+                    }
+                },
+                async pull(controller) {
+                    if (remainingLength === 0) return;
+                    try {
+                        const { value, done } = await reader.read();
+                        if (done) {
+                            await closeSocket();
+                            controller.error(new Error(`TCP fallback response ended with ${remainingLength} bytes missing`));
+                            return;
+                        }
+                        const writableLength = Math.min(value.length, remainingLength);
+                        if (writableLength > 0) controller.enqueue(value.subarray(0, writableLength));
+                        remainingLength -= writableLength;
+                        if (remainingLength === 0) {
+                            controller.close();
+                            await closeSocket();
+                        }
+                    } catch (error) {
+                        await closeSocket();
+                        controller.error(error);
+                    }
+                },
+                async cancel() {
+                    await closeSocket();
+                },
+            });
+            keepSocketOpen = true;
+            return new Response(body, {
+                status: Number(statusMatch[1]),
+                statusText: statusMatch[2] || '',
+                headers,
+            });
+        } finally {
+            if (!keepSocketOpen) await closeSocket();
+        }
+    }
+
+    const maxResponseBytes = originConfig.maxResponseBytes || FALLBACK_TCP_MAX_BYTES;
+    const responseBuffer = new Uint8Array(maxResponseBytes);
+    let responseLength = 0;
     try {
-        while (chunks.length < FALLBACK_TCP_MAX_BYTES) {
+        while (responseLength < maxResponseBytes) {
             const { value, done } = await reader.read();
             if (done) break;
-            chunks = appendBytes(chunks, value);
-            if (isTcpResponseComplete(chunks)) break;
+            const writableLength = Math.min(value.length, maxResponseBytes - responseLength);
+            responseBuffer.set(value.subarray(0, writableLength), responseLength);
+            responseLength += writableLength;
+            if (isTcpResponseComplete(responseBuffer.subarray(0, responseLength))) break;
         }
     } finally {
         reader.releaseLock();
         await socket.close().catch(() => {});
+    }
+
+    const chunks = responseBuffer.subarray(0, responseLength);
+    if (!isTcpResponseComplete(chunks)) {
+        throw new Error(`TCP fallback response exceeded ${maxResponseBytes} bytes or was incomplete`);
     }
 
     const headerEnd = findHeaderEnd(chunks);
@@ -405,7 +547,8 @@ export const createAssetRouter = ({ fetchImpl = fetch } = {}) => async (request,
     try {
         const { response, originConfig } = await fetchOriginWithFallback(request, env, fetchImpl);
         return withServerSource(request, response, originConfig);
-    } catch {
+    } catch (error) {
+        console.error('Asset origin request failed', error instanceof Error ? error.message : String(error));
         const headers = new Headers({ 'Cache-Control': 'no-store' });
         applySharedHeaders(headers, 'server-error');
         headers.set('X-Asset-Origin-Route', resolveOriginConfig(request, env).route);

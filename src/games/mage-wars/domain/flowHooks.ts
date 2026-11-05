@@ -1,14 +1,19 @@
 import type { FlowHooks } from '../../../engine/systems/FlowSystem';
 import type { RandomFn } from '../../../engine/types';
+import { resolveMageWarsMageEquipmentRegeneration } from './damageRules';
 import { MAGE_WARS_EVENTS } from './events';
 import { MAGE_WARS_OBJECT_ABILITY_IDS, STATUS_TOKEN_IDS, type StatusTokenId } from './ids';
 import type { MageWarsCore, MageWarsEvent, MageWarsPhase } from './types';
 import {
     isMageWarsLivingArenaObject,
+    resolveMageWarsAreaConjurationUpkeepDirectDamage,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepDirectDamage,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepHealTransfers,
     resolveMageWarsAttachedVisibleEnchantmentUpkeepManaCosts,
+    resolveMageWarsEquipmentUpkeepDirectDamage,
+    resolveMageWarsObjectChanneling,
     resolveMageWarsObjectRegeneration,
+    resolveMageWarsPlayerChanneling,
 } from './spellRules';
 import { MAGE_WARS_PHASE_ORDER } from './types';
 import { getCreatureObjectIdsForOwner, getOpponentId } from './utils';
@@ -126,7 +131,7 @@ function createUpkeepRegenerationEvents(
     sourceCommandType: string,
     timestamp: number,
 ): MageWarsEvent[] {
-    return Object.values(core.objects).flatMap((object) => {
+    const objectRegenerationEvents = Object.values(core.objects).flatMap((object) => {
         const regeneration = resolveMageWarsObjectRegeneration(core, object);
         if (regeneration.value <= 0 || object.damage <= 0) return [];
 
@@ -143,6 +148,51 @@ function createUpkeepRegenerationEvents(
             timestamp,
         }];
     });
+
+    const mageRegenerationEvents = Object.values(core.players).flatMap((player) => {
+        const regeneration = resolveMageWarsMageEquipmentRegeneration(core, player.id);
+        if (regeneration.value <= 0 || player.damage <= 0) return [];
+
+        return [{
+            type: MAGE_WARS_EVENTS.MAGE_REGENERATED,
+            payload: {
+                playerId: player.id,
+                regeneration: regeneration.value,
+                actualHealing: Math.min(player.damage, regeneration.value),
+                sourceObjectIds: regeneration.sourceObjectIds,
+            },
+            sourceCommandType,
+            timestamp,
+        }];
+    });
+
+    return [
+        ...objectRegenerationEvents,
+        ...mageRegenerationEvents,
+    ];
+}
+
+function createUpkeepBanishTickEvents(
+    core: MageWarsCore,
+    sourceCommandType: string,
+    timestamp: number,
+): MageWarsEvent[] {
+    return Object.values(core.objects)
+        .filter((object) => object.banished !== undefined)
+        .sort((left, right) => (
+            (left.createdAtSequence ?? Number.MAX_SAFE_INTEGER) - (right.createdAtSequence ?? Number.MAX_SAFE_INTEGER)
+            || left.id.localeCompare(right.id)
+        ))
+        .map((object): MageWarsEvent => ({
+            type: MAGE_WARS_EVENTS.ARENA_OBJECT_BANISH_TICKED,
+            payload: {
+                objectId: object.id,
+                sourceAbilityId: 'mw.spell.3413.banish-upkeep',
+                spellCardId: object.banished!.sourceSpellCardId,
+            },
+            sourceCommandType,
+            timestamp,
+        }));
 }
 
 function createObjectManaChannelEvents(
@@ -151,13 +201,14 @@ function createObjectManaChannelEvents(
     timestamp: number,
 ): MageWarsEvent[] {
     return Object.values(core.objects)
-        .filter((object) => (object.spellcastingSource?.channeling ?? 0) > 0)
-        .map((object): MageWarsEvent => ({
+        .map((object) => ({ object, amount: resolveMageWarsObjectChanneling(core, object) }))
+        .filter(({ amount }) => amount > 0)
+        .map(({ object, amount }): MageWarsEvent => ({
             type: MAGE_WARS_EVENTS.OBJECT_MANA_CHANNELED,
             payload: {
                 ownerId: object.ownerId,
                 objectId: object.id,
-                amount: object.spellcastingSource?.channeling ?? 0,
+                amount,
             },
             sourceCommandType,
             timestamp,
@@ -171,12 +222,13 @@ function createPlayerManaChannelEvents(
 ): MageWarsEvent[] {
     return core.playerOrder.flatMap((playerId): MageWarsEvent[] => {
         const player = core.players[playerId];
-        if (!player || player.channeling <= 0) return [];
+        const channeling = resolveMageWarsPlayerChanneling(core, playerId);
+        if (!player || channeling <= 0) return [];
         return [{
             type: MAGE_WARS_EVENTS.MANA_CHANNELED,
             payload: {
                 playerId: player.id,
-                amount: player.channeling,
+                amount: channeling,
             },
             sourceCommandType,
             timestamp,
@@ -272,6 +324,59 @@ function createUpkeepEnchantmentDirectDamageAvailableEvents(
     }
 
     return events;
+}
+
+function createUpkeepAreaConjurationDirectDamageAvailableEvents(
+    core: MageWarsCore,
+    sourceCommandType: string,
+    timestamp: number,
+): MageWarsEvent[] {
+    const events: MageWarsEvent[] = [];
+
+    for (const object of Object.values(core.objects)) {
+        if (!isMageWarsLivingArenaObject(object)) continue;
+
+        for (const source of resolveMageWarsAreaConjurationUpkeepDirectDamage(core, object)) {
+            events.push({
+                type: MAGE_WARS_EVENTS.UPKEEP_AREA_CONJURATION_DIRECT_DAMAGE_AVAILABLE,
+                payload: {
+                    sourceObjectId: source.sourceObjectId,
+                    sourceSpellCardId: source.sourceSpellCardId,
+                    sourcePlayerId: source.ownerId,
+                    targetObjectId: object.id,
+                    amount: source.effect.amount,
+                    damageType: source.effect.damageType,
+                },
+                sourceCommandType,
+                timestamp,
+            });
+        }
+    }
+
+    return events;
+}
+
+function createUpkeepEquipmentDirectDamageAvailableEvents(
+    core: MageWarsCore,
+    sourceCommandType: string,
+    timestamp: number,
+): MageWarsEvent[] {
+    return Object.values(core.objects)
+        .filter((object) => isMageWarsLivingArenaObject(object))
+        .flatMap((object) => resolveMageWarsEquipmentUpkeepDirectDamage(core, object)
+            .map((source): MageWarsEvent => ({
+                type: MAGE_WARS_EVENTS.UPKEEP_EQUIPMENT_DIRECT_DAMAGE_AVAILABLE,
+                payload: {
+                    playerId: source.ownerId,
+                    sourceObjectId: source.sourceObjectId,
+                    sourceSpellCardId: source.sourceSpellCardId,
+                    targetObjectId: object.id,
+                    amount: source.effect.amount,
+                    damageType: source.effect.damageType,
+                },
+                sourceCommandType,
+                timestamp,
+            })));
 }
 
 function createUpkeepEnchantmentCostEvents(
@@ -569,7 +674,17 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                         phaseReadyPlayerIds: ready,
                         phaseActorId: getOpponentId(state.core, command.playerId),
                     }),
-                    events: actionEndEvents,
+                    events: [
+                        createPhaseWindowCompletedEvent(
+                            command.playerId,
+                            phase,
+                            ready,
+                            command.type,
+                            timestamp,
+                            getOpponentId(state.core, command.playerId),
+                        ),
+                        ...actionEndEvents,
+                    ],
                 };
             }
 
@@ -578,7 +693,16 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                     phaseReadyPlayerIds: [],
                     phaseActorId: state.core.currentPlayerId,
                 }),
-                events: actionEndEvents,
+                events: [
+                    createPhaseWindowCompletedEvent(
+                        command.playerId,
+                        phase,
+                        ready,
+                        command.type,
+                        timestamp,
+                    ),
+                    ...actionEndEvents,
+                ],
             };
         }
 
@@ -621,6 +745,15 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
 
         if (from !== 'finalQuickcast') return;
         const nextPlayer = resolveNextPlayer(state.core);
+        const actionReadinessResetEvents: MageWarsEvent[] = state.core.playerOrder.map((playerId) => ({
+            type: MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
+            payload: {
+                playerId,
+                objectIds: getCreatureObjectIdsForOwner(state.core, playerId),
+            },
+            sourceCommandType: command.type,
+            timestamp: command.timestamp ?? 0,
+        }));
         return {
             updatedState: updatePhaseControl(state, {
                 phaseReadyPlayerIds: [],
@@ -635,15 +768,7 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                 },
                 sourceCommandType: command.type,
                 timestamp: command.timestamp ?? 0,
-            }, {
-                type: MAGE_WARS_EVENTS.ACTION_READINESS_RESET,
-                payload: {
-                    playerId: nextPlayer.playerId,
-                    objectIds: getCreatureObjectIdsForOwner(state.core, nextPlayer.playerId),
-                },
-                sourceCommandType: command.type,
-                timestamp: command.timestamp ?? 0,
-            }],
+            }, ...actionReadinessResetEvents],
         };
     },
 
@@ -657,9 +782,12 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
                     phaseActorId,
                 }),
                 events: [
+                    ...createUpkeepBanishTickEvents(state.core, command.type, timestamp),
                     ...createUpkeepRegenerationEvents(state.core, command.type, timestamp),
                     ...createUpkeepRotDamageAvailableEvents(state.core, command.type, timestamp),
                     ...createUpkeepEnchantmentDirectDamageAvailableEvents(state.core, command.type, timestamp),
+                    ...createUpkeepAreaConjurationDirectDamageAvailableEvents(state.core, command.type, timestamp),
+                    ...createUpkeepEquipmentDirectDamageAvailableEvents(state.core, command.type, timestamp),
                     ...createUpkeepEnchantmentCostEvents(state.core, command.type, timestamp),
                     ...createUpkeepEnchantmentHealTransferEvents(state.core, command.type, timestamp),
                     ...createUpkeepBurnRollAvailableEvents(state.core, command.type, timestamp, random),
@@ -691,7 +819,6 @@ export const mageWarsFlowHooks: FlowHooks<MageWarsCore> = {
     },
 
     onAutoContinueCheck: ({ state }) => {
-        if (state.sys.tutorial?.step?.skipAutomaticFlow) return;
         const phase = state.sys.phase as MageWarsPhase;
 
         // reset、聚魔和维持阶段没有玩家决策时由正式流程自动完成。

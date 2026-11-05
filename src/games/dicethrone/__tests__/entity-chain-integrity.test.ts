@@ -478,6 +478,10 @@ describe('能力效果双重授予检测', () => {
         'zhanshujia/war-monger',
         // maximum-power: 独立 bot token/status 与 activate-bots 的交互分支共存，不是重复授予同一对象
         'artificer/maximum-power',
+        // mesmerize-power: 独立 grantToken(MESMERIZE) 与 gain-cp(CP获取) 操作不同类型
+        'vampire_lord/mesmerize-power',
+        // blood-magic: 独立 grantToken(BLOOD_POWER)；custom action 只消费 MESMERIZE 使攻击不可防御
+        'vampire_lord/blood-magic',
     ]);
 
     /** 可能产生 token 授予的 custom action 分类 */
@@ -602,6 +606,7 @@ describe('Token 响应窗口契约完整性', () => {
         'modifyDamageReceived',
         'rollToNegate',
         'removeDebuff',
+        'custom',
     ]);
 
     // UI 层在响应窗口中展示的 effect type（damage modifier + evasion）
@@ -644,6 +649,7 @@ describe('Token 响应窗口契约完整性', () => {
                 '0': {
                     tokens: { [TOKEN_IDS.FIRE_MASTERY]: 5 },
                     resources: { [RESOURCE_IDS.HP]: 50 },
+                    statusEffects: {},
                 },
             },
             tokenDefinitions: ALL_TOKEN_DEFINITIONS,
@@ -699,6 +705,7 @@ describe('Token 响应窗口契约完整性', () => {
                     '0': {
                         tokens: { [def.id]: 1, [TOKEN_IDS.SYNTH]: 2 },
                         resources: { [RESOURCE_IDS.HP]: 50 },
+                        statusEffects: {},
                         artificerBotState: {
                             [TOKEN_IDS.SHOCK_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
                             [TOKEN_IDS.HEAL_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
@@ -734,6 +741,7 @@ describe('Token 响应窗口契约完整性', () => {
                     '0': {
                         tokens: { [def.id]: 1, [TOKEN_IDS.SYNTH]: 2 },
                         resources: { [RESOURCE_IDS.HP]: 50 },
+                        statusEffects: {},
                         artificerBotState: {
                             [TOKEN_IDS.SHOCK_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
                             [TOKEN_IDS.HEAL_BOT]: { built: true, upgraded: false, activationsUsedThisTurn: 0 },
@@ -751,7 +759,9 @@ describe('Token 响应窗口契约完整性', () => {
                 },
             } as any;
 
-            const result = getUsableTokensForTiming(mockState, '0', 'beforeDamageReceived');
+            const result = getUsableTokensForTiming(mockState, '0', 'beforeDamageReceived', {
+                unblockable: true,
+            });
             const found = result.some(t => t.id === def.id);
             expect(found).toBe(true);
         }
@@ -764,7 +774,13 @@ describe('Token 响应窗口契约完整性', () => {
             allTokens[def.id] = 1;
         }
         const mockState = {
-            players: { '0': { tokens: allTokens, resources: { [RESOURCE_IDS.HP]: 50 } } },
+            players: {
+                '0': {
+                    tokens: allTokens,
+                    resources: { [RESOURCE_IDS.HP]: 50 },
+                    statusEffects: {},
+                },
+            },
             tokenDefinitions: ALL_TOKEN_DEFINITIONS,
         } as any;
 
@@ -789,6 +805,7 @@ describe('Token 响应窗口契约完整性', () => {
                 '0': {
                     tokens: {},  // 所有 token 持有量为 0
                     resources: { [RESOURCE_IDS.HP]: 50 },
+                    statusEffects: {},
                 },
             },
             tokenDefinitions: ALL_TOKEN_DEFINITIONS,

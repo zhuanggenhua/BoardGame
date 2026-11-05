@@ -2,9 +2,9 @@ import type { ChoiceRequestDirectSelectionTarget } from '../../../engine/systems
 import type { PlayerId } from '../../../engine/types';
 import {
     MAGE_WARS_COMMANDS,
-    type MageWarsCastSpellCommand,
     type MageWarsCore,
 } from '../domain';
+import type { MageWarsCastSpellCommand } from '../domain/commands';
 import type {
     ArenaZoneId,
     MageWarsWallEdgeId,

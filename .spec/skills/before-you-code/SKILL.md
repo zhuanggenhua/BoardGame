@@ -7,6 +7,12 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 
 先校准任务规模，再读最少必要上下文。不要把已读内容复述成任务回执，也不要无差别加载所有规范。
 
+## 回归优先闸门
+
+用户描述包含“以前 / 之前 / 一个月前 / 最近改坏 / 又坏了 / 回归 / 恢复原来 / 不该变”，或当前任务是在处理刚引入的可见行为变化时，先按回归候选处理。这个判断优先于普通 UI、移动端、E2E、看图和 bug 修复分类；先读 [`regression-closeout`](../../knowledge/standards/regression-closeout.md)，完成其回归锁定卡，再下钻其它专项规范。
+
+命中该闸门后，最后正常证据未锁定前，不得新增替代 UI、替代流程、替代测试期望或 PASS 清单来定义“新的正确行为”。如果已经做出了新方案，先把它降级为失败候选，手工撤掉或隔离错误 hunk 后再继续定位。
+
 ## 强制设计入口
 
 只要本轮会新增或修改手写源码、测试、E2E、项目脚本、devtools 或运行时配置，必须先读 [`code-design`](../../knowledge/standards/code-design.md)。它是 BoardGame 项目内“六大基本原则 / 设计模式选择 / 反模式预防”的唯一执行主源；不能依赖个人系统目录、代码注释、旧 evidence 或局部设计文档来替代。
@@ -19,16 +25,19 @@ description: "BoardGame 动手前的渐进式上下文加载。修改项目代�
 | --- | --- | --- | --- |
 | 小 | 只改一个独立文件，逻辑不跨模块 | 涉及手写代码 / 测试 / 工具时先读 [`code-design`](../../knowledge/standards/code-design.md)，再读直接相关规范、项目 workflow 与源文件 | 直接实施 |
 | 中 | 涉及 2 至 5 个文件，或影响规则、UI、测试、数据、共享行为其中两项以上 | 涉及手写代码 / 测试 / 工具时先读 [`code-design`](../../knowledge/standards/code-design.md)，再读 [知识导航](../../knowledge/README.md)、全部命中标准、workflow 和关键源文件 | 先锁改动边界，再实施 |
-| 大 | 多模块、多步骤依赖、系统架构或 AI 规范结构变更 | 读取 [`code-design`](../../knowledge/standards/code-design.md)、知识导航和相关入口后停止直接编码 | 先锁定对应入口；本 skill 只覆盖 AI 规范的加载和结构裁决 |
+| 大 | 多模块、多步骤依赖、系统架构或 AI 规范结构变更 | 读取 [`code-design`](../../knowledge/standards/code-design.md)、知识导航和相关入口后停止直接编码 | 先锁定对应入口；本 skill 只覆盖上下文加载和下钻顺序，规范落点裁决走系统 `skill-governance` |
 
 ## 加载顺序
 
-1. 根据用户目标和当前文件范围判定任务规模。
-2. 若会改手写源码、测试、E2E、脚本、devtools 或运行时配置，先读 [`code-design`](../../knowledge/standards/code-design.md) 并完成 owner / 六大原则判断。
-3. 从 [知识导航](../../knowledge/README.md) 选择直接相关的标准和项目 workflow。
-4. 阅读所选 workflow 的 `SKILL.md`；只在它明确指向时继续读 references/ 分卷。
-5. 阅读会被改动的关键源文件、接口和现有测试。
-6. 小/中任务直接在已锁定范围内继续；大任务先锁定产品任务入口或 AI 规范结构入口，不在上下文不足时试改。
+1. 先检查是否命中回归优先闸门；命中时先读 [`regression-closeout`](../../knowledge/standards/regression-closeout.md) 并锁定最后正常证据。
+2. 根据用户目标和当前文件范围判定任务规模。
+3. 若会改手写源码、测试、E2E、脚本、devtools 或运行时配置，先读 [`code-design`](../../knowledge/standards/code-design.md) 并完成 owner / 六大原则判断。
+4. 从 [知识导航](../../knowledge/README.md) 选择直接相关的标准和项目 workflow。
+5. 阅读所选 workflow 的 `SKILL.md`；只在它明确指向时继续读 references/ 分卷。
+6. 阅读会被改动的关键源文件、接口和现有测试。
+7. 按 [`改动必要性检查`](../../knowledge/standards/conversation-handoff-target-lock.md#改动必要性检查) 核对拟改项，再实施；交付前回到同一检查反查实际 diff。
+   - **首次写入前锁范围**：写操作前明确记录本轮目标对象、允许修改项、明确排除项，以及共享依赖的直接影响和最小改法。UI 任务必须区分本轮新增 / 改造 UI、作为上下文的既有 UI、共享承载组件及各自影响范围；用户只要求新 UI 时，既有 UI 默认不在修改范围内。只有对应 UI 标准证明既有 UI 或共享组件直接阻断本轮目标，且没有更窄改法时，才把必要改动纳入范围并列出受影响入口与复验点。信息未锁定时继续读规范、查源或补证据，不开始写入。具体裁决按 [`ui-change-gates`](../../knowledge/standards/ui-change-gates.md#点名范围冻结) 执行，本 skill 只把它设为写入前入口检查，不复制其规则正文。
+8. 小/中任务直接在已锁定范围内继续；大任务先锁定产品任务入口或 AI 规范结构入口，不在上下文不足时试改。
 
 ## 边界
 

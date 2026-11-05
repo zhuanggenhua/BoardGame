@@ -32,6 +32,7 @@ import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem
 import { smashUpSystemsForTest } from '../game';
 import {
     getPromptOptions,
+    respondToPromptOption,
     getPromptPlayerId,
     getPromptSourceId,
     getOptionalSimpleChoicePrompt,
@@ -193,7 +194,7 @@ describe('基地记分与力量计算', () => {
                         { uid: 'p1', defId: 'd2', controller: '1', owner: '1', basePower: 8, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
                     ],
                     ongoingActions: [makeBaseOngoing('oa1', 'steampunk_aggromotive', '0')],
-                }],
+            }],
                 baseDeck: [],
                 turnNumber: 1,
                 nextUid: 10,
@@ -846,6 +847,58 @@ describe('基地记分与力量计算', () => {
 
             expect(drawEvents).toHaveLength(1);
             expect((drawEvents[0] as any).payload?.cardUids).not.toContain('sakura-draw-b');
+        });
+
+        it('同一基地同时有樱花花园与致敬阵亡者时，双方触发都应各抽1张', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', {
+                        factions: [SMASHUP_FACTION_IDS.SAMURAI, SMASHUP_FACTION_IDS.ALIENS],
+                        deck: [
+                            { uid: 'combined-draw-a', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
+                            { uid: 'combined-draw-b', defId: 'robot_microbot_beta', type: 'minion', owner: '0' },
+                        ],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_sakura_garden',
+                    minions: [
+                        { uid: 'combined-dead-a', defId: 'samurai_ronin', controller: '0', owner: '0', basePower: 20, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [makeBaseOngoing('combined-honor', 'samurai_honor_the_fallen', '0')],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreBaseViaFlow(state, 0, [], '0', 1000);
+            expect(
+                getPromptSourceId(getSimpleChoicePrompt(result.matchState!, 'smashup_reaction_choose')),
+            ).toBe('smashup_reaction_choose');
+            const resolved = respondToPromptOption(
+                result.matchState!,
+                () => true,
+                'first combined trigger',
+                '0',
+            );
+            expect(resolved.success).toBe(true);
+            const drawEvents = resolved.events.filter(event =>
+                event.type === SU_EVENTS.CARDS_DRAWN
+                && (event as any).payload?.playerId === '0',
+            );
+
+            const combinedDrawEvents = drawEvents.filter(event => (
+                (event as any).payload?.cardUids ?? []
+            ).some((uid: string) => uid === 'combined-draw-a' || uid === 'combined-draw-b'));
+            expect(combinedDrawEvents).toHaveLength(2);
+            expect(combinedDrawEvents.flatMap(event => (event as any).payload?.cardUids ?? [])).toEqual([
+                'combined-draw-a',
+                'combined-draw-b',
+            ]);
         });
 
         it('scoreBaseViaFlow 会让 Samurai Chan 自身在基地计分弃牌后按 self-source LKI 抽牌', () => {

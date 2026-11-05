@@ -6,6 +6,7 @@ import type {
     FeedbackUserActionSummary,
 } from './feedbackPayload';
 import { resolveRuntimeBuildInfo } from './runtimeBuildInfo';
+import { getPerformanceDiagnostics, installPerformanceDiagnostics } from './performanceDiagnostics';
 
 type FeedbackWindow = Window & {
     __BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__?: boolean;
@@ -180,7 +181,9 @@ function installHistoryRouteCapture(host: FeedbackWindow) {
 
 export function installClientDiagnosticCapture() {
     const host = getHost();
-    if (!host || host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__) return;
+    if (!host) return;
+    installPerformanceDiagnostics();
+    if (host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__) return;
     host.__BG_CLIENT_DIAGNOSTIC_CAPTURE_INSTALLED__ = true;
 
     installHistoryRouteCapture(host);
@@ -205,7 +208,7 @@ export function installClientDiagnosticCapture() {
 
 export function getClientDiagnosticContext(): Pick<
     FeedbackClientContext,
-    'activeElement' | 'lastUserAction' | 'recentUserActions' | 'lastRouteChange' | 'recentRouteChanges' | 'pageFlags'
+    'activeElement' | 'lastUserAction' | 'recentUserActions' | 'lastRouteChange' | 'recentRouteChanges' | 'pageFlags' | 'performance'
 > {
     const host = getHost();
     if (!host || typeof document === 'undefined') {
@@ -219,6 +222,7 @@ export function getClientDiagnosticContext(): Pick<
         lastRouteChange: host.__BG_LAST_ROUTE_CHANGE__,
         recentRouteChanges: host.__BG_RECENT_ROUTE_CHANGES__,
         pageFlags: buildPageFlags(),
+        performance: getPerformanceDiagnostics(),
     };
 }
 

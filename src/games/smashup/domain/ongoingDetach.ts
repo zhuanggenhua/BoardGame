@@ -57,9 +57,12 @@ export function buildOngoingDetachedEvent(params: {
     defId: string;
     ownerId: PlayerId;
     reason: string;
-    now?: number;
+    isDestruction?: boolean;
+    now: number;
     clydeReturnToHand?: boolean;
     destination?: 'discard' | 'hand';
+    targetBaseIndex?: number;
+    targetKind?: 'ongoing' | 'attached_action';
     sourcePlayerId?: PlayerId;
     sourceCardUid?: string;
     sourceDefId?: string;
@@ -73,8 +76,11 @@ export function buildOngoingDetachedEvent(params: {
             defId: params.defId,
             ownerId: params.ownerId,
             reason: params.reason,
+            ...(params.isDestruction !== undefined ? { isDestruction: params.isDestruction } : {}),
             ...(params.clydeReturnToHand !== undefined ? { clydeReturnToHand: params.clydeReturnToHand } : {}),
             ...(params.destination !== undefined ? { destination: params.destination } : {}),
+            ...(params.targetBaseIndex !== undefined ? { targetBaseIndex: params.targetBaseIndex } : {}),
+            ...(params.targetKind !== undefined ? { targetKind: params.targetKind } : {}),
             ...(params.sourcePlayerId !== undefined ? { sourcePlayerId: params.sourcePlayerId } : {}),
             ...(params.sourceCardUid !== undefined ? { sourceCardUid: params.sourceCardUid } : {}),
             ...(params.sourceDefId !== undefined ? { sourceDefId: params.sourceDefId } : {}),
@@ -96,6 +102,8 @@ export function buildValidatedOngoingDetachEvents(
         expectedLocation?: 'base' | 'minion' | 'any';
         clydeReturnToHand?: boolean;
         destination?: 'discard' | 'hand';
+        targetBaseIndex?: number;
+        targetKind?: 'ongoing' | 'attached_action';
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
@@ -121,6 +129,8 @@ export function buildValidatedOngoingDetachEvents(
         now: params.now,
         clydeReturnToHand: params.clydeReturnToHand,
         destination: params.destination,
+        targetBaseIndex: location.baseIndex,
+        targetKind: location.targetType === 'base' ? 'ongoing' : 'attached_action',
         sourcePlayerId: params.sourcePlayerId,
         sourceCardUid: params.sourceCardUid,
         sourceDefId: params.sourceDefId,

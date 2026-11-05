@@ -112,7 +112,7 @@ export default async function globalTeardown() {
             console.log('♻️ 本次运行复用了现有单 worker E2E 服务，teardown 不会停止共享服务。');
         }
         cleanupAllWorkerPortFiles();
-        releaseReservedPortsForScope(getRuntimeScope());
+        await releaseReservedPortsForScope(getRuntimeScope());
         removeRuntime(getRuntimeScope());
         return;
     }
@@ -127,7 +127,7 @@ export default async function globalTeardown() {
         }
     } else {
         for (let workerIndex = 0; workerIndex < workers; workerIndex++) {
-            cleanupWorkerPorts(workerIndex);
+            await cleanupWorkerPorts(workerIndex);
         }
     }
 
@@ -142,6 +142,6 @@ export default async function globalTeardown() {
     }
 
     cleanupAllWorkerPortFiles();
-    releaseReservedPortsForScope(getRuntimeScope());
+    await releaseReservedPortsForScope(getRuntimeScope());
     removeRuntime(getRuntimeScope());
 }

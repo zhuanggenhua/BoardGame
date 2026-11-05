@@ -15,8 +15,14 @@ export type GameShellTarget = 'pwa' | 'app-webview' | 'mini-program-webview';
 export type GameMobileDeliveryMode = 'builtin' | 'package-managed';
 
 export interface GameMobileBoardShellLayout {
+    /** 显式按PC参考画布适配；contain完整显示，单轴模式可能裁切。未指定时保留旧行为。 */
+    fit?: 'contain' | 'width' | 'height';
+    /** 旧模式的外层画布尺寸；显式fit使用reference画布，不将设备采样尺寸当PC坐标。 */
     designWidth?: number;
     designHeight?: number;
+    /** 壳内布局单位来源；未配置时沿用 design 尺寸，避免破坏旧游戏。 */
+    referenceWidth?: number;
+    referenceHeight?: number;
     minLogicalHeight?: number;
     minReadableScale?: number;
 }
@@ -114,6 +120,8 @@ export interface GameManifestAiSupport {
     trainingMinCompletedDurationMs?: number;
     localAi: boolean;
     remoteAi: boolean;
+    /** 是否存在可由真人替 AI 完成的开局派系 / 角色选择。 */
+    manualSetupSelection?: boolean;
     defaultLocalAiSeats?: 'first-opponent' | 'all-opponents';
 }
 
@@ -155,6 +163,8 @@ export interface GameManifestEntry {
     preferredOrientation?: GameOrientationPreference;
     mobileLayoutPreset?: GameMobileLayoutPreset;
     mobileBattlefieldZoom?: GameMobileBattlefieldZoom;
+    /** 通用运行时 HUD 的坐标归属；固定牌桌可显式脱离 board-shell。 */
+    mobileHudPlacement?: 'in-shell' | 'portal';
     shellTargets?: GameShellTarget[];
     mobileDelivery?: GameManifestMobileDelivery;
     mobileBoardShellLayout?: GameMobileBoardShellLayout;

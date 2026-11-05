@@ -260,24 +260,25 @@ export const DeckDiscardZone: React.FC<Props> = ({
     const displayCardsData = useMemo(() => {
         if (!showDiscard || discard.length === 0) return undefined;
 
-        return {
+        const displayData = {
             title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
             panelKind: 'discard' as const,
             // 反转顺序：最新弃掉的卡在左边
             cards: [...discard].reverse().map(c => ({ uid: c.uid, defId: c.defId })),
             onClose: handleCloseDiscard,
-            // 有可打出的卡牌时，传递选择相关 props
-            ...(playableCards && playableCards.length > 0 && {
-                selectedUid,
-                selectedUids,
-                onSelect: onSelectCard,
-                selectHint: selectHint || t('ui.click_base_to_deploy'),
-                playableUids: new Set(playableCards.map(c => c.uid)),
-                onConfirmSelection,
-                confirmDisabled,
-                minSelections,
-                maxSelections,
-            }),
+        };
+        if (!playableCards?.length || !onSelectCard) return displayData;
+        return {
+            ...displayData,
+            selectedUid,
+            selectedUids,
+            onSelect: onSelectCard,
+            selectHint: selectHint || t('ui.click_base_to_deploy'),
+            playableUids: new Set(playableCards.map(c => c.uid)),
+            onConfirmSelection,
+            confirmDisabled,
+            minSelections,
+            maxSelections,
         };
     }, [showDiscard, discard, playableCards, selectedUid, selectedUids, onSelectCard, selectHint, onConfirmSelection, confirmDisabled, minSelections, maxSelections, t, handleCloseDiscard]);
 
@@ -286,19 +287,21 @@ export const DeckDiscardZone: React.FC<Props> = ({
         const hasPlayableDeckCards = playableDeckCards !== undefined && playableDeckCards.length > 0;
         if (!hasPlayableDeckCards && (!deckQueryEnabled || aggregatedDeckCards.length === 0)) return undefined;
 
-        return {
+        const displayData = {
             title: `${t('ui.deck', { defaultValue: '牌库' })} (${deckCount})`,
             panelKind: 'deck' as const,
             cards: hasPlayableDeckCards
                 ? playableDeckCards.map(card => ({ uid: card.uid, defId: card.defId }))
                 : aggregatedDeckCards,
             onClose: handleCloseDeck,
-            ...(hasPlayableDeckCards && {
-                selectedUid: selectedDeckUid,
-                onSelect: onSelectDeckCard,
-                selectHint: deckSelectHint || t('ui.click_base_to_deploy'),
-                playableUids: new Set(playableDeckCards.map(card => card.uid)),
-            }),
+        };
+        if (!playableDeckCards?.length || !onSelectDeckCard) return displayData;
+        return {
+            ...displayData,
+            selectedUid: selectedDeckUid,
+            onSelect: onSelectDeckCard,
+            selectHint: deckSelectHint || t('ui.click_base_to_deploy'),
+            playableUids: new Set(playableDeckCards.map(card => card.uid)),
         };
     }, [showDeck, playableDeckCards, deckQueryEnabled, aggregatedDeckCards, t, deckCount, handleCloseDeck, selectedDeckUid, onSelectDeckCard, deckSelectHint]);
 
@@ -443,7 +446,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                         ? 'absolute top-1 right-1 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 text-white opacity-100 pointer-events-auto shadow-lg hover:bg-amber-500/80 cursor-zoom-in'
                                         : 'absolute top-1 right-1 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
                                 >
-                                    <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
+                                    <svg className="board-shell-fixed-icon h-3 w-3 fill-current" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </span>
@@ -625,7 +628,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                         event.stopPropagation();
                                     }}
                                 >
-                                    <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20">
+                                    <svg className="board-shell-fixed-icon h-3 w-3 fill-current" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </button>

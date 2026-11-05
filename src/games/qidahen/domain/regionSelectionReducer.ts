@@ -1,3 +1,4 @@
+import { getQidahenRaidSourceCandidateIds } from './pendingTargetActionBuilder';
 import { getCurrentFactionId } from './factionTurnAccessors';
 import { type QidahenMovementProfileId } from './movement';
 import { resolveQidahenPrimaryRuntimeRegionId } from './regionConfig';
@@ -27,6 +28,7 @@ import {
     resolveQidahenInternalDispatchInteractionChoice,
     resolveQidahenWheelDispatchInteractionChoice,
 } from './actionWindowDispatch';
+import { resolveQidahenGrantPardonInteractionChoice } from './actionWindowChoices';
 import { applyQidahenCharacterActionWindowEffectsWithFocus } from './characterActionWindow';
 import {
     buildQidahenRegionFocusState,
@@ -84,6 +86,12 @@ interface QidahenRegionSelectedDependencies {
         timestamp: number,
         interactionSelection?: ReturnType<typeof getQidahenInternalDispatchSelectionForCore>,
     ) => QidahenCore;
+    resolveQidahenGrantPardonInteractionChoice: (
+        state: QidahenCore,
+        choiceId: string,
+        timestamp: number,
+        interactionSelection?: QidahenCore['grantPardonSelection'],
+    ) => QidahenCore;
 }
 
 export const reduceQidahenRegionSelected = (
@@ -93,14 +101,26 @@ export const reduceQidahenRegionSelected = (
     diplomacySelectionCarry: ReturnType<typeof getQidahenCurrentDiplomacySelectionForCore> = null,
     internalDispatchSelectionCarry: ReturnType<typeof getQidahenInternalDispatchSelectionForCore> = null,
     wheelDispatchSelectionCarry: ReturnType<typeof getQidahenCurrentWheelDispatchSelectionForCore> = null,
+    sourceTokenId: string | null = null,
     dependencies: QidahenRegionSelectedDependencies = {
         applyCharacterActionWindowEffectsWithFocus: applyQidahenCharacterActionWindowEffectsWithFocus,
         updateTurnLabel: updateQidahenTurnLabel,
         resolveQidahenWheelDispatchInteractionChoice,
         resolveQidahenGaoDiDispatchChoice,
         resolveQidahenInternalDispatchInteractionChoice,
+        resolveQidahenGrantPardonInteractionChoice,
     },
 ): QidahenCore => {
+    if (state.turnPhase === 'action-window' && state.confirmedActionId === 'raid' && !state.factionActionUsed && !state.pendingTargetAction) {
+        const sourceId = getQidahenRaidSourceCandidateIds(state).find(id => id === regionId);
+        if (sourceId) return dependencies.updateTurnLabel({
+            ...state, explicitRegionId: null,
+            regionFocusState: buildQidahenRegionFocusState(state.regionFocusState.defaultFocusRegionId, {
+                lockedSourceRegionId: sourceId, currentTargetRegionId: null, displayAnchorRegionId: sourceId,
+            }),
+        });
+        if (!state.regionFocusState.lockedSourceRegionId) return state;
+    }
     const actionWindowEffect = state.turnPhase === 'action-window'
         ? dependencies.applyCharacterActionWindowEffectsWithFocus(state)
         : { state, forcedSelectedRegionId: null };
@@ -122,6 +142,41 @@ export const reduceQidahenRegionSelected = (
         { ...nextState, explicitRegionId },
         selectedRegionId,
     );
+    if (nextState.turnPhase === 'grant-pardon-choice' && nextState.grantPardonSelection) {
+        const grantPardonSelection = nextState.grantPardonSelection;
+        if (grantPardonSelection.targetRegionId == null) {
+            const targetChoice = grantPardonSelection.choices.find((choice) => (
+                choice.targetRegionId === selectedRegionId
+            ));
+            if (targetChoice) {
+                return dependencies.resolveQidahenGrantPardonInteractionChoice(
+                    nextState,
+                    `region:${targetChoice.targetRegionId}`,
+                    timestamp,
+                    grantPardonSelection,
+                );
+            }
+        } else if (grantPardonSelection.opponentFactionId != null && sourceTokenId != null) {
+            const sourceChoice = grantPardonSelection.choices.find((choice) => (
+                choice.sourceRegionId === selectedRegionId
+                && choice.sourceTokenId === sourceTokenId
+            ));
+            if (sourceChoice) {
+                return dependencies.resolveQidahenGrantPardonInteractionChoice(
+                    nextState,
+                    sourceChoice.id,
+                    timestamp,
+                    grantPardonSelection,
+                );
+            }
+        }
+        return dependencies.updateTurnLabel({
+            ...nextState,
+            selectedRegionId: grantPardonSelection.targetRegionId ?? nextState.selectedRegionId,
+            explicitRegionId,
+            turnPhase: 'grant-pardon-choice',
+        });
+    }
     const recruitSelection = getQidahenRecruitSelectionForCore(nextState);
     if (recruitSelection) {
         const rebuiltRecruitSelection = buildRecruitSelectionFromRegionSemantics(
@@ -273,14 +328,6 @@ export const reduceQidahenRegionSelected = (
             selectedRegionId: nextState.selectedRegionId,
             explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
             turnPhase: 'sun-yuanhua-tech-choice',
-        });
-    }
-    if (nextState.turnPhase === 'season-resolution') {
-        return dependencies.updateTurnLabel({
-            ...nextState,
-            selectedRegionId: nextState.selectedRegionId,
-            explicitRegionId: nextState.explicitRegionId ?? explicitRegionId,
-            turnPhase: nextState.turnPhase,
         });
     }
     if (nextState.pendingTargetAction) {

@@ -12,6 +12,8 @@ import { AdminInitService } from '../src/modules/auth/admin-init.service';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { AdminAuditLog, type AdminAuditLogDocument } from '../src/modules/auth/schemas/admin-audit-log.schema';
 import { User, type UserDocument } from '../src/modules/auth/schemas/user.schema';
+import { RefreshSession, type RefreshSessionDocument } from '../src/modules/auth/schemas/refresh-session.schema';
+import { MatchRecord, type MatchRecordDocument } from '../src/modules/admin/schemas/match-record.schema';
 import { GlobalHttpExceptionFilter } from '../src/shared/filters/http-exception.filter';
 
 describe('AuthModule (e2e)', () => {
@@ -19,9 +21,11 @@ describe('AuthModule (e2e)', () => {
     let mongo: MongoMemoryServer | null;
     let app: import('@nestjs/common').INestApplication;
     let userModel: Model<UserDocument>;
+    let refreshSessionModel: Model<RefreshSessionDocument>;
     let authService: AuthService;
     let adminInitService: AdminInitService;
     let adminAuditModel: Model<AdminAuditLogDocument>;
+    let matchRecordModel: Model<MatchRecordDocument>;
     const ADMIN_EMAIL = 'admin@example.com';
     const ADMIN_PASSWORD = 'admin-pass-1234';
     const ADMIN_USERNAME = '管理员';
@@ -43,9 +47,11 @@ describe('AuthModule (e2e)', () => {
 
         app = moduleRef.createNestApplication();
         userModel = moduleRef.get<Model<UserDocument>>(getModelToken(User.name));
+        refreshSessionModel = moduleRef.get<Model<RefreshSessionDocument>>(getModelToken(RefreshSession.name));
         authService = moduleRef.get<AuthService>(AuthService);
         adminInitService = moduleRef.get<AdminInitService>(AdminInitService);
         adminAuditModel = moduleRef.get<Model<AdminAuditLogDocument>>(getModelToken(AdminAuditLog.name));
+        matchRecordModel = moduleRef.get<Model<MatchRecordDocument>>(getModelToken(MatchRecord.name));
         app.useGlobalPipes(
             new ValidationPipe({
                 whitelist: true,
@@ -59,7 +65,9 @@ describe('AuthModule (e2e)', () => {
     beforeEach(async () => {
         await Promise.all([
             userModel.deleteMany({}),
+            refreshSessionModel.deleteMany({}),
             adminAuditModel.deleteMany({}),
+            matchRecordModel.deleteMany({}),
         ]);
     });
 
@@ -120,6 +128,9 @@ describe('AuthModule (e2e)', () => {
             .post('/auth/register')
             .send({ username: 'test-user', email, code, password: 'pass1234' })
             .expect(201);
+        const registerCookie = (registerRes.headers['set-cookie'] as string[])
+            .find(cookie => cookie.startsWith('refresh_token='))!
+            .split(';')[0];
 
         expect(registerRes.body.token).toBeDefined();
         expect(registerRes.body.user.username).toBe('test-user');
@@ -131,6 +142,9 @@ describe('AuthModule (e2e)', () => {
 
         expect(loginRes.body.success).toBe(true);
         const token = loginRes.body.data.token as string;
+        const loginCookie = (loginRes.headers['set-cookie'] as string[])
+            .find(cookie => cookie.startsWith('refresh_token='))!
+            .split(';')[0];
         expect(token).toBeDefined();
 
         await request(app.getHttpServer())
@@ -141,12 +155,108 @@ describe('AuthModule (e2e)', () => {
         await request(app.getHttpServer())
             .post('/auth/logout')
             .set('Authorization', `Bearer ${token}`)
+            .set('Cookie', loginCookie)
             .expect(200);
 
         await request(app.getHttpServer())
             .get('/auth/me')
             .set('Authorization', `Bearer ${token}`)
             .expect(401);
+
+        const loggedOutSessionRefresh = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', loginCookie)
+            .expect(200);
+        expect(loggedOutSessionRefresh.body.success).toBe(false);
+
+        await request(app.getHttpServer())
+            .post('/auth/logout')
+            .set('Cookie', registerCookie)
+            .expect(200);
+        const loggedOutWithoutAccessRefresh = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', registerCookie)
+            .expect(200);
+        expect(loggedOutWithoutAccessRefresh.body.success).toBe(false);
+
+        const otherDeviceLogin = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ account: email, password: 'pass1234' })
+            .expect(200);
+        const otherDeviceCookie = (otherDeviceLogin.headers['set-cookie'] as string[])
+            .find(cookie => cookie.startsWith('refresh_token='))!
+            .split(';')[0];
+        const otherDeviceRefresh = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', otherDeviceCookie)
+            .expect(200);
+        expect(otherDeviceRefresh.body.success).toBe(true);
+    });
+
+    it('登录后把同一浏览器的游客对局归并到用户排行榜身份', async () => {
+        const guestId = 'guest-claim-e2e';
+        const email = 'claim-user@example.com';
+        const code = '123456';
+
+        await matchRecordModel.create({
+            matchID: 'guest-history-1',
+            gameName: 'tictactoe',
+            players: [
+                { id: `guest:${guestId}`, ownerKey: `guest:${guestId}`, name: '游客 1234', result: 'win' },
+                { id: 'AI-1', name: 'AI-1', isAi: true, result: 'loss' },
+            ],
+            winnerID: `guest:${guestId}`,
+        });
+        await matchRecordModel.create({
+            matchID: 'other-history-1',
+            gameName: 'tictactoe',
+            players: [
+                { id: 'guest:someone-else', ownerKey: 'guest:someone-else', name: '其他游客', result: 'win' },
+                { id: 'AI-2', name: 'AI-2', isAi: true, result: 'loss' },
+            ],
+            winnerID: 'guest:someone-else',
+        });
+        await matchRecordModel.create({
+            matchID: 'guest-loss-history-1',
+            gameName: 'tictactoe',
+            players: [
+                { id: `guest:${guestId}`, ownerKey: `guest:${guestId}`, name: '游客 1234', result: 'loss' },
+                { id: 'guest:other-player', ownerKey: 'guest:other-player', name: '其他玩家', result: 'win' },
+            ],
+            winnerID: 'guest:other-player',
+        });
+
+        await authService.storeEmailCode(email, code);
+        const registerRes = await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ username: '登录后用户', email, code, password: 'pass1234' })
+            .expect(201);
+
+        const userId = registerRes.body.user.id as string;
+        const loginRes = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ account: email, password: 'pass1234', guestId })
+            .expect(200);
+
+        expect(loginRes.body.success).toBe(true);
+        const claimed = await matchRecordModel.findOne({ matchID: 'guest-history-1' }).lean();
+        expect(claimed?.players[0]).toMatchObject({
+            id: `user:${userId}`,
+            ownerKey: `user:${userId}`,
+            name: '登录后用户',
+        });
+        expect(claimed?.winnerID).toBe(`user:${userId}`);
+
+        const claimedLoss = await matchRecordModel.findOne({ matchID: 'guest-loss-history-1' }).lean();
+        expect(claimedLoss?.players[0]).toMatchObject({
+            id: `user:${userId}`,
+            ownerKey: `user:${userId}`,
+            name: '登录后用户',
+        });
+        expect(claimedLoss?.winnerID).toBe('guest:other-player');
+
+        const untouched = await matchRecordModel.findOne({ matchID: 'other-history-1' }).lean();
+        expect(untouched?.players[0]?.ownerKey).toBe('guest:someone-else');
     });
 
     it('登录后应下发长期 refresh cookie，并可在 access token 失效后续签', async () => {
@@ -172,7 +282,7 @@ describe('AuthModule (e2e)', () => {
         const expiresMatch = refreshSetCookie?.match(/Expires=([^;]+)/);
         expect(expiresMatch?.[1]).toBeDefined();
         const refreshExpiresAt = new Date(expiresMatch![1]).getTime();
-        expect(refreshExpiresAt - Date.now()).toBeGreaterThan(1000 * 60 * 60 * 24 * 150);
+        expect(refreshExpiresAt - Date.now()).toBeGreaterThan(1000 * 60 * 60 * 24 * 390);
 
         const refreshCookie = refreshSetCookie!.split(';')[0];
         const refreshRes = await request(app.getHttpServer())
@@ -195,8 +305,24 @@ describe('AuthModule (e2e)', () => {
             .set('Cookie', refreshCookie)
             .expect(200);
 
-        expect(reusedOldRefreshRes.body.success).toBe(false);
-        expect(reusedOldRefreshRes.body.code).toBe('AUTH_INVALID_TOKEN');
+        expect(reusedOldRefreshRes.body.success).toBe(true);
+        expect(reusedOldRefreshRes.body.data.token).toBeDefined();
+        const raceRefreshCookie = (reusedOldRefreshRes.headers['set-cookie'] as string[])
+            .find(cookie => cookie.startsWith('refresh_token='));
+        expect(raceRefreshCookie?.split(';')[0]).toBe(rotatedRefreshCookie!.split(';')[0]);
+
+        const latestRefreshRes = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', rotatedRefreshCookie!.split(';')[0])
+            .expect(200);
+        expect(latestRefreshRes.body.success).toBe(true);
+
+        const staleOldRefreshRes = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', refreshCookie)
+            .expect(200);
+        expect(staleOldRefreshRes.body.success).toBe(false);
+        expect(staleOldRefreshRes.headers['set-cookie']).toBeUndefined();
     });
 
     it('登录失败触发账号锁定', async () => {
@@ -287,6 +413,9 @@ describe('AuthModule (e2e)', () => {
             .expect(201);
 
         const token = registerRes.body.token;
+        const registerCookie = (registerRes.headers['set-cookie'] as string[])
+            .find(cookie => cookie.startsWith('refresh_token='))!
+            .split(';')[0];
 
         // 正常修改密码
         await request(app.getHttpServer())
@@ -294,6 +423,12 @@ describe('AuthModule (e2e)', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({ currentPassword: 'pass1234', newPassword: 'newpass5678' })
             .expect(201);
+
+        const revokedRefresh = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', registerCookie)
+            .expect(200);
+        expect(revokedRefresh.body.success).toBe(false);
 
         // 用新密码登录
         const loginRes = await request(app.getHttpServer())
@@ -310,6 +445,44 @@ describe('AuthModule (e2e)', () => {
             .expect(200);
 
         expect(failRes.body.success).toBe(false);
+    });
+
+    it('重置密码后撤销该用户所有设备的 Refresh 会话', async () => {
+        const email = 'reset-session-user@example.com';
+        const code = 'reset-code-123';
+        await authService.storeEmailCode(email, 'register-code-123');
+        await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ username: 'reset-session', email, code: 'register-code-123', password: 'pass1234' })
+            .expect(201);
+
+        const deviceCookies = await Promise.all([1, 2].map(async () => {
+            const login = await request(app.getHttpServer())
+                .post('/auth/login')
+                .send({ account: email, password: 'pass1234' })
+                .expect(200);
+            return (login.headers['set-cookie'] as string[])
+                .find(cookie => cookie.startsWith('refresh_token='))!
+                .split(';')[0];
+        }));
+        await authService.storeResetCode(email, code);
+
+        await request(app.getHttpServer())
+            .post('/auth/reset-password')
+            .send({ email, code, newPassword: 'newpass5678' })
+            .expect(201);
+
+        const refreshResults = await Promise.all(deviceCookies.map(cookie => request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', cookie)
+            .expect(200)));
+        expect(refreshResults.every(result => result.body.success === false)).toBe(true);
+
+        const loginAfterReset = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ account: email, password: 'newpass5678' })
+            .expect(200);
+        expect(loginAfterReset.body.success).toBe(true);
     });
 
     it('更新头像流程', async () => {

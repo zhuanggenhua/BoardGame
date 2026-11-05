@@ -14,8 +14,9 @@ import type {
     PendingDamage,
     DamageDealtEvent,
     StatusAppliedEvent,
+    DtResponseWindowType,
 } from './types';
-import { getPendingBonusSettlementDice, getPlayerDieFace, getRollerId, getTokenStackLimit } from './rules';
+import { getPendingBonusSettlementDice, getPlayerDieFace, getTokenStackLimit, isNyraCompanionActive } from './rules';
 import { reduce } from './reducer';
 import { RESOURCE_IDS } from './resources';
 import { DICETHRONE_COMMANDS, STATUS_IDS, TOKEN_IDS } from './ids';
@@ -23,7 +24,7 @@ import {
     processTokenUsage,
     finalizeTokenResponse,
     hasDefensiveTokens,
-    hasBeforeDamageReceivedCard,
+    hasBeforeDamageReceivedCardForTarget,
     createTokenResponseRequestedEvent,
     getUsableTokenAmountForTiming,
     maybeCreateDamageResponseEvent,
@@ -36,19 +37,21 @@ import { applyEvents } from './utils';
 import { findCurrentRollDie, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { rollDieValue } from './reroll';
 import type { DiceThroneTokenResponseChoiceCommandSource } from './tokenResponseChoiceContract';
+import { getUsableActiveRollToken } from './activeRollTokens';
+import { applyCurrentAttackDamageModifiers } from './attackDamageModifiers';
 
 const normalizeBonusDiceFollowupEvents = (
     state: DiceThroneCore,
     settlement: NonNullable<DiceThroneCore['pendingBonusDiceSettlement']>,
     events: DiceThroneEvent[],
-): DiceThroneEvent[] => events.flatMap((event) => {
+): DiceThroneEvent[] => events.flatMap<DiceThroneEvent>((event): DiceThroneEvent[] => {
     if (event.type !== 'DAMAGE_DEALT') {
         return [event];
     }
 
     // 奖励骰处理器产生的伤害仍属于当前临时骰的来源玩家；
     // 统一补齐归属，避免 ActionLog、响应窗口和攻击归账各自猜来源。
-    const damageEvent = event.payload.sourcePlayerId
+    const attributedEvent = event.payload.sourcePlayerId
         ? event
         : {
             ...event,
@@ -58,8 +61,9 @@ const normalizeBonusDiceFollowupEvents = (
             },
         };
 
-    const damageScope = damageEvent.payload.damageScope
+    const damageScope = attributedEvent.payload.damageScope
         ?? (state.pendingAttack ? 'attack' : 'direct');
+    const damageEvent = applyCurrentAttackDamageModifiers(state, attributedEvent, settlement.attackerId);
     const responseEvent = maybeCreateDamageResponseEvent({
         state,
         damageEvent,
@@ -260,6 +264,7 @@ export function executeTokenCommand(
     timestamp: number,
     phase: TurnPhase = 'setup',
     choiceSource?: DiceThroneTokenResponseChoiceCommandSource | null,
+    responseWindowType?: DtResponseWindowType,
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
 
@@ -290,7 +295,13 @@ export function executeTokenCommand(
                 } as DiceThroneEvent);
                 events.push({
                     type: 'COMPANION_HEALTH_CHANGED',
-                    payload: { playerId: command.playerId, companionId: 'nyra', delta: 2, sourceAbilityId: TOKEN_IDS.NYRAS_BOND },
+                    payload: {
+                        playerId: command.playerId,
+                        companionId: 'nyra',
+                        delta: 2,
+                        active: player.companion?.active === true,
+                        sourceAbilityId: TOKEN_IDS.NYRAS_BOND,
+                    },
                     sourceCommandType: command.type,
                     timestamp: timestamp + 0.001,
                 } as DiceThroneEvent);
@@ -303,12 +314,18 @@ export function executeTokenCommand(
                     command.playerId !== pendingDamage.responderId
                     || state.pendingAttack?.isUltimate
                     || player?.characterId !== 'lieren'
-                    || (player.companion?.hp ?? 0) <= 0
+                    || !isNyraCompanionActive(player)
                     || amount !== pendingDamage.currentDamage
                 ) break;
                 events.push({
                     type: 'COMPANION_HEALTH_CHANGED',
-                    payload: { playerId: command.playerId, companionId: 'nyra', delta: -pendingDamage.currentDamage, sourceAbilityId: pendingDamage.sourceAbilityId },
+                    payload: {
+                        playerId: command.playerId,
+                        companionId: 'nyra',
+                        delta: -pendingDamage.currentDamage,
+                        active: player.companion?.active === true,
+                        sourceAbilityId: pendingDamage.sourceAbilityId,
+                    },
                     sourceCommandType: command.type,
                     timestamp,
                 } as DiceThroneEvent);
@@ -339,7 +356,7 @@ export function executeTokenCommand(
                 const canAssignDamage = command.playerId === pendingDamage.responderId
                     && !state.pendingAttack?.isUltimate
                     && player?.characterId === 'lieren'
-                    && (player.companion?.hp ?? 0) > 0
+                    && isNyraCompanionActive(player)
                     && (player.tokens[TOKEN_IDS.NYRAS_BOND] ?? 0) >= 1
                     && Number.isInteger(amount)
                     && amount >= 1
@@ -356,7 +373,13 @@ export function executeTokenCommand(
                 } as DiceThroneEvent);
                 events.push({
                     type: 'COMPANION_HEALTH_CHANGED',
-                    payload: { playerId: command.playerId, companionId: 'nyra', delta: -amount, sourceAbilityId: pendingDamage.sourceAbilityId },
+                    payload: {
+                        playerId: command.playerId,
+                        companionId: 'nyra',
+                        delta: -amount,
+                        active: player.companion?.active === true,
+                        sourceAbilityId: pendingDamage.sourceAbilityId,
+                    },
                     sourceCommandType: command.type,
                     timestamp: timestamp + 0.001,
                 } as DiceThroneEvent);
@@ -399,14 +422,13 @@ export function executeTokenCommand(
             }
 
             if (!pendingDamage) {
-                const tokenDef = state.tokenDefinitions.find(t => t.id === tokenId);
-                const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
+                const activeRollToken = getUsableActiveRollToken(state, command.playerId, phase, tokenId, {
+                    responseWindowType,
+                });
+                const tokenDef = activeRollToken?.tokenDef;
                 if (
-                    !tokenDef
-                    || !isRollPhase
-                    || !tokenDef.activeUse?.timing?.includes('duringRoll')
-                    || getRollerId(state, phase) !== command.playerId
-                    || !state.pendingAttack
+                    !activeRollToken
+                    || !tokenDef
                     || !Number.isInteger(amount)
                     || amount <= 0
                 ) {
@@ -414,9 +436,13 @@ export function executeTokenCommand(
                     break;
                 }
 
-                const availableAmount = state.players[command.playerId]?.tokens[tokenId] ?? 0;
-                if (!getTokenUseOptions(tokenDef, availableAmount).includes(amount)) {
+                if (!activeRollToken.allowedAmounts.includes(amount)) {
                     console.warn('[DiceThrone] USE_TOKEN: invalid roll token amount');
+                    break;
+                }
+                const pendingAttack = state.pendingAttack;
+                if (!pendingAttack && !activeRollToken.requiresOpponentRollDice) {
+                    console.warn('[DiceThrone] USE_TOKEN: missing pending attack for roll token');
                     break;
                 }
 
@@ -431,11 +457,14 @@ export function executeTokenCommand(
                 );
                 events.push(...tokenEvents);
 
-                if (result.success && tokenDef.activeUse.customActionId) {
-                    const targetId = phase === 'defensiveRoll'
-                        ? state.pendingAttack.attackerId
-                        : (state.pendingAttack.defenderId ?? state.pendingAttack.attackerId);
-                    const handler = getCustomActionHandler(tokenDef.activeUse.customActionId);
+                const activeUse = tokenDef.activeUse;
+                if (result.success && activeUse?.customActionId) {
+                    const targetId = activeRollToken.requiresOpponentRollDice
+                        ? activeRollToken.currentRollContext.ownerPlayerId
+                        : phase === 'defensiveRoll'
+                            ? pendingAttack!.attackerId
+                            : (pendingAttack!.defenderId ?? pendingAttack!.attackerId);
+                    const handler = getCustomActionHandler(activeUse.customActionId);
                     if (handler) {
                         events.push(...handler({
                             ctx: {
@@ -455,7 +484,7 @@ export function executeTokenCommand(
                             action: {
                                 type: 'custom',
                                 target: 'self',
-                                customActionId: tokenDef.activeUse.customActionId,
+                                customActionId: activeUse.customActionId,
                                 params: { phase },
                             },
                         }));
@@ -488,6 +517,10 @@ export function executeTokenCommand(
                 console.warn('[DiceThrone] USE_TOKEN: missing attack context');
                 break;
             }
+            if (tokenDef.activeUse.requiresUnblockable && pendingDamage.unblockable !== true) {
+                console.warn('[DiceThrone] USE_TOKEN: token requires unblockable damage');
+                break;
+            }
             if (
                 typeof tokenDef.activeUse.minimumAttackDamage === 'number'
                 && pendingDamage.originalDamage < tokenDef.activeUse.minimumAttackDamage
@@ -500,7 +533,7 @@ export function executeTokenCommand(
                 playerId,
                 tokenId,
                 pendingDamage.responseType,
-                { damageScope: pendingDamage.damageScope },
+                { damageScope: pendingDamage.damageScope, unblockable: pendingDamage.unblockable },
             );
             const allowedConsumeAmounts = getTokenUseOptions(tokenDef, availableAmount);
             if (!allowedConsumeAmounts.includes(amount)) {
@@ -538,6 +571,8 @@ export function executeTokenCommand(
                     actualDamage: 0,
                     sourceAbilityId: 'retribution-reflect',
                     sourcePlayerId: pendingDamage.targetPlayerId,
+                    damageScope: 'direct',
+                    damageOrigin: 'token',
                     reflectFromPendingDamage: true,
                     sourceCommandType: command.type,
                 });
@@ -608,6 +643,7 @@ export function executeTokenCommand(
                             sourceAbilityId: payload.sourceAbilityId,
                             sourcePlayerId: payload.sourcePlayerId,
                             damageScope: payload.damageScope,
+                            damageOrigin: payload.damageOrigin ?? 'token',
                             unblockable: payload.unblockable,
                             sourceCommandType: customEvent.sourceCommandType,
                         });
@@ -698,12 +734,14 @@ export function executeTokenCommand(
             ) {
                 // 攻击方结束增伤后，普通不可防御伤害仍允许符合条件的卡牌与状态 Token 响应。
                 const defender = state.players[pendingDamage.targetPlayerId];
-                const hasNyraRedirect = defender?.characterId === 'lieren' && (defender.companion?.hp ?? 0) > 0;
+                const hasNyraRedirect = isNyraCompanionActive(defender);
                 const hasDefenderResponse = hasDefensiveTokens(
                     state,
                     pendingDamage.targetPlayerId,
                     pendingDamage.damageScope,
-                ) || hasBeforeDamageReceivedCard(state, pendingDamage.targetPlayerId) || hasNyraRedirect;
+                    undefined,
+                    pendingDamage.unblockable,
+                ) || hasBeforeDamageReceivedCardForTarget(state, pendingDamage.targetPlayerId) || hasNyraRedirect;
                 if (hasDefenderResponse) {
                     // 切换到防御方响应
                     const newPendingDamage: PendingDamage = applyExistingDamagePreventionToPendingDamage(state, {
@@ -712,7 +750,7 @@ export function executeTokenCommand(
                         responderId: pendingDamage.targetPlayerId,
                     }, {
                         bypassShields: pendingDamage.unblockable,
-                        isUltimateDamage: state.pendingAttack?.isUltimate === true,
+                        isUltimateDamage: false,
                     });
                     const tokenResponseEvent = createTokenResponseRequestedEvent(newPendingDamage, timestamp);
                     events.push(tokenResponseEvent);
@@ -830,7 +868,7 @@ export function executeTokenCommand(
         }
 
         case 'REROLL_BONUS_DIE': {
-            const { dieIndex } = command.payload as { dieIndex: number };
+            const { dieIndex, dieIndices } = command.payload as { dieIndex: number; dieIndices?: number[] };
             const playerId = command.playerId;
             const settlement = state.pendingBonusDiceSettlement;
             const currentRollContext = resolveCurrentRollContext(state, phase);
@@ -848,6 +886,13 @@ export function executeTokenCommand(
             // 重掷骰子
             const newValue = rollDieValue(random);
             const newFace = getPlayerDieFace(state, settlement.attackerId, newValue) ?? '';
+            const groupResults = settlement.groupReroll ? [
+                { dieIndex, newValue, newFace },
+                ...(dieIndices ?? [dieIndex]).slice(1).map(index => {
+                    const value = rollDieValue(random);
+                    return { dieIndex: index, newValue: value, newFace: getPlayerDieFace(state, settlement.attackerId, value) ?? '' };
+                }),
+            ] : undefined;
             
             // 发出 BONUS_DIE_REROLLED 事件（包含 UI 展示字段，避免 reducer 从 core 派生）
             const rerollEffectKey = settlement.rerollEffectKey ?? 'bonusDie.effect.thunderStrike2Reroll';
@@ -858,6 +903,7 @@ export function executeTokenCommand(
             events.push({
                 type: 'BONUS_DIE_REROLLED',
                 payload: {
+                    dice: groupResults,
                     dieIndex,
                     oldValue: currentDie.value,
                     newValue,

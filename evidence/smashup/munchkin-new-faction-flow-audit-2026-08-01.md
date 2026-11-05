@@ -2,6 +2,7 @@
 
 ## 旧结论失效 / 当前复审口径
 
+- **2026-09-18 当前批次回写**：半身人 `munchkin_halflings` 与盗贼 `munchkin_thieves` 已分别完成对象级复核并从 `SMASHUP_FACTION_IMPLEMENTATION_STATUS` 摘牌；本轮没有把法师、兽人或勇士的代表链通过外推为整派系完成。法师仍因真实弃牌成本入口有 10 条失败而保持 `in_progress`；兽人与勇士仍有逐对象负向 / 清理 / 移动端残余。
 - **2026-09-01 单派系摘牌回写**：矮人 `munchkin_dwarves` 的单派系对象级审计已由 `evidence/smashup/2026-09-01-munchkin-dwarves-closeout.md` 收口；`src/games/smashup/domain/ids.ts` 已不再把矮人放入“实施中”列表。本文旧段落里的矮人 `in_progress` 只保留为历史推进记录。
 - **2026-09-08 单派系摘牌回写**：牧师 `munchkin_clerics` 的单派系对象级审计已由 `evidence/smashup/2026-09-08-munchkin-clerics-closeout.md` 收口；`src/games/smashup/domain/ids.ts` 已不再把牧师放入“实施中”列表。本文旧段落里的牧师 `in_progress` 只保留为历史推进记录。
 - **2026-09-08 单派系摘牌回写**：木精灵 `munchkin_elves` 的单派系对象级审计已由 `evidence/smashup/2026-09-08-munchkin-elves-closeout.md` 收口；`src/games/smashup/domain/ids.ts` 已不再把木精灵放入“实施中”列表。本文旧段落里的木精灵 `in_progress` 只保留为历史推进记录。
@@ -1677,3 +1678,14 @@
 | 同类移动端扩审 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "麻痹药水移动端横屏可手动选择计分前响应并收口" --project=chromium` | `passed`：1/1，37.5 秒；响应窗口同样居中，公共小牌断言继续使用“至少一个真实可见本体 + 数量”以匹配玩家可见对象，避免隐藏副本误判。 |
 | PC 对照 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "麻痹药水可从计分前响应窗口取消正在计分基地上的牌能力" --project=chromium` | `passed`：1/1，33.1 秒；撤销移动端左侧停靠没有改变桌面响应窗口。 |
 | 规范判断 | `.spec/skills/ui-audit-loop/SKILL.md`、`.spec/knowledge/standards/regression-closeout.md`、`.spec/skills/show-image-to-user/SKILL.md` | `no_new_rule_needed`：已有规范已经要求先找历史基线、回归优先恢复、当前真实截图 AI 审计 PASS 后主动给用户打开图；本次问题主要是执行没遵守，不是规范缺失。 |
+
+## 2026-09-18 续审记录：兽人 14 个对象完成对象级审计
+
+| 项目 | 证据 | 结论 |
+| --- | --- | --- |
+| 对象范围 | `src/games/smashup/data/factions/munchkin.ts` 的兽人 4 张随从、8 张行动、2 张基地；`evidence/smashup/2026-09-18-munchkin-faction-audit.md` 的“兽人 14 个对象逐项映射” | `passed`：14 个对象逐项登记，未用代表链替代对象行。 |
+| 领域行为 | `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/abilities/munchkin-orcs.test.ts --configLoader native` | `passed`：22/22；覆盖力量修正、保护、三段选择、附着转移、响应窗口、计分阈值和无目标分支。 |
+| 真实入口 | `node scripts/infra/run-e2e-single.mjs default e2e/smashup/smashup-munchkin-monster-treasure-ui.e2e.ts "兽人" --project=chromium` | `passed`：45/45，其中 44 条为兽人对象链，1 条为牧师跨派系联动；覆盖桌面、移动端、响应、保护、计分、无合法目标和生命周期收口。 |
+| 当前唯一修复 | `e2e/framework/GameTestContext.ts` 的 `playCard` 入口 | `confirmed_test_harness_gap -> fixed`：卡牌特写遮罩存在时，原公共打牌入口没有调用已有关闭逻辑，导致手牌可见但真实点击被遮罩拦截；修复后坑洞离场后的《死亡之息》链从真实手牌进入目标交互并收口。 |
+| 规则源码裁定 | `src/games/smashup/abilities/munchkin_orcs.ts`、`src/games/smashup/abilities/ongoing_modifiers.ts` | `no_rule_change_needed`：本轮没有发现能被当前证据证明的兽人规则根因，未修改规则实现。 |
+| 当前范围裁定 | 兽人派系自身 14 对象 | `object_closeout_passed`：旧文档此前“代表性 / 实施中”的兽人结论由本轮对象矩阵和 45/45 真实入口证据替代；勇士、公共怪物 / 宝藏牌堆和 Munchkin 整扩展仍不在本条收口内。 |

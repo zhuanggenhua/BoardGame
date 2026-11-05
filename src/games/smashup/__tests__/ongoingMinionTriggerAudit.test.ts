@@ -73,6 +73,23 @@ function makeState(bases: BaseInPlay[]): SmashUpCore {
 }
 
 function buildMinionAuditOverrides(cardDefId: string, cardUid: string, timing: TriggerTiming, state: SmashUpCore): Partial<MinionOnBase> {
+    if (cardDefId === 'shapeshifters_cellular_bonding' && timing === 'onTurnEnd') {
+        return {
+            metadata: {
+                cellularBondingCardUid: cardUid,
+                cellularBondingCopiedActionDefId: 'cyborg_apes_missing_uplink',
+            },
+        };
+    }
+
+    if (cardDefId === 'diy_killers_machete' && timing === 'onTurnEnd') {
+        return {
+            metadata: {
+                diyKillersMacheteHostDestroyedTurn: state.turnNumber,
+            },
+        };
+    }
+
     if (cardDefId === 'musketeers_all_for_one' && timing === 'onTurnEnd') {
         return {
             metadata: {

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
+import { createDevRuntimeEnv } from './dev-port-runtime.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
 import { isPortInUse } from './port-allocator.js';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
@@ -27,7 +28,7 @@ function getScopedBundleRoot(runtimeScope) {
   return path.join('temp', 'dev-bundles', 'e2e-single', normalizeScopeSegment(runtimeScope));
 }
 
-function createRuntimeLogWriter(logFile, logger) {
+export function createRuntimeLogWriter(logFile, logger) {
   if (!logFile) {
     return {
       writeLine(message = '') {
@@ -40,20 +41,27 @@ function createRuntimeLogWriter(logFile, logger) {
 
   fs.mkdirSync(path.dirname(logFile), { recursive: true });
   const stream = fs.createWriteStream(logFile, { flags: 'a' });
+  let closed = false;
+  const write = (chunk) => {
+    if (closed || stream.destroyed || stream.writableEnded) return;
+    stream.write(chunk);
+  };
 
   return {
     writeLine(message = '') {
-      stream.write(`${message}\n`);
+      write(`${message}\n`);
     },
     pipeChildOutput(child) {
       child.stdout?.on('data', chunk => {
-        stream.write(chunk);
+        write(chunk);
       });
       child.stderr?.on('data', chunk => {
-        stream.write(chunk);
+        write(chunk);
       });
     },
     close() {
+      if (closed) return;
+      closed = true;
       stream.end();
     },
   };
@@ -175,12 +183,12 @@ export async function startSingleWorkerRuntime(options = {}) {
     );
   }
 
-  const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', {
+  const runtimeEnv = createDevRuntimeEnv(ports, {
     ...env,
     E2E_PROXY_QUIET: 'true',
-    GAME_SERVER_PORT: String(ports.gameServer),
-    API_SERVER_PORT: String(ports.apiServer),
-  }, [
+  });
+
+  const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', runtimeEnv, [
     '--host',
     '127.0.0.1',
     '--port',
@@ -192,10 +200,9 @@ export async function startSingleWorkerRuntime(options = {}) {
   });
 
   const gameServerEnv = {
-    ...env,
+    ...runtimeEnv,
     NODE_ENV: 'test',
-    GAME_SERVER_PORT: String(ports.gameServer),
-    USE_PERSISTENT_STORAGE: 'false',
+    USE_PERSISTENT_STORAGE: env.USE_PERSISTENT_STORAGE === 'true' ? 'true' : 'false',
   };
 
   const gameServer = useTsxRuntime
@@ -227,9 +234,8 @@ export async function startSingleWorkerRuntime(options = {}) {
         });
 
   const apiServerEnv = {
-    ...env,
+    ...runtimeEnv,
     NODE_ENV: 'test',
-    API_SERVER_PORT: String(ports.apiServer),
   };
 
   const apiServer = useTsxRuntime

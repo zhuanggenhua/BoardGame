@@ -5,7 +5,13 @@ import {
     detectGameIdsFromPaths,
     filterPublishableGameIds,
     parsePublishOptions,
+    publishChangelogDrafts,
 } from './publish-game-changelog.mjs';
+import {
+    formatDeploymentOtaNotes,
+    prepareDeploymentGameChangelog,
+    resolveDeploymentChangelogApiBaseUrl,
+} from './deployment-game-changelog.mjs';
 
 test('从常见改动路径识别受影响游戏', () => {
     assert.deepEqual(detectGameIdsFromPaths([
@@ -65,6 +71,252 @@ test('生成按 Steam 风格分组的更新日志草稿', () => {
     assert.doesNotMatch(draft.content, /验证|回归覆盖|测试/);
     assert.equal(draft.versionLabel, '0.6.12');
     assert.equal(draft.published, true);
+});
+
+test('部署日志只保留可公开游戏并将同一标题和正文格式化为 OTA 文案', () => {
+    const prepared = prepareDeploymentGameChangelog({
+        payload: {
+            entries: [
+                {
+                    gameId: 'dicethrone',
+                    title: '王权骰铸 0.6.48：响应提示修复',
+                    content: '本次更新修复伤害响应提示。\r\n\r\n## 修复\r\n- 修复不可防御伤害错误打开防御窗口',
+                },
+                {
+                    gameId: 'betrayal',
+                    title: '山屋惊魂：调查日志修复',
+                    content: '本次更新修复调查流程。',
+                },
+            ],
+        },
+        gameNames: { dicethrone: '王权骰铸', betrayal: '山屋惊魂' },
+        underConstructionGameIds: ['betrayal'],
+        defaultVersionLabel: '0.6.48',
+    });
+
+    assert.deepEqual(prepared.skippedGameIds, ['betrayal']);
+    assert.deepEqual(prepared.drafts, [{
+        gameId: 'dicethrone',
+        title: '王权骰铸 0.6.48：响应提示修复',
+        versionLabel: '0.6.48',
+        content: '本次更新修复伤害响应提示。\n\n## 修复\n- 修复不可防御伤害错误打开防御窗口',
+        published: true,
+        pinned: false,
+    }]);
+    assert.equal(
+        formatDeploymentOtaNotes(prepared.drafts),
+        '王权骰铸 0.6.48：响应提示修复\n\n本次更新修复伤害响应提示。\n\n## 修复\n- 修复不可防御伤害错误打开防御窗口',
+    );
+});
+
+test('部署日志空条目可跳过，重复游戏或未知游戏拒绝发布', () => {
+    const base = {
+        gameNames: { dicethrone: '王权骰铸' },
+        underConstructionGameIds: [],
+    };
+    assert.deepEqual(prepareDeploymentGameChangelog({ payload: { entries: [] }, ...base }), {
+        drafts: [],
+        skippedGameIds: [],
+    });
+
+    const entry = {
+        gameId: 'dicethrone',
+        title: '王权骰铸：修复',
+        content: '修复了玩家可见问题。',
+    };
+    assert.throws(() => prepareDeploymentGameChangelog({
+        payload: { entries: [entry, entry] },
+        ...base,
+    }), /不能为 dicethrone 提供多条/);
+    assert.throws(() => prepareDeploymentGameChangelog({
+        payload: { entries: [{ ...entry, gameId: 'unknown-game' }] },
+        ...base,
+    }), /未知游戏/);
+    assert.throws(() => prepareDeploymentGameChangelog({
+        payload: { entries: [{ ...entry, versionLabel: 123 }] },
+        ...base,
+    }), /versionLabel 必须是字符串/);
+    assert.throws(() => prepareDeploymentGameChangelog({
+        payload: { entries: [{ ...entry, published: 'false' }] },
+        ...base,
+    }), /published 必须是布尔值/);
+    assert.throws(() => prepareDeploymentGameChangelog({
+        payload: { entries: [{ ...entry, pinned: 'true' }] },
+        ...base,
+    }), /pinned 必须是布尔值/);
+});
+
+test('部署日志 API 必须显式配置且只接受 HTTP(S) 地址', () => {
+    assert.throws(() => resolveDeploymentChangelogApiBaseUrl({ env: {} }), /不会默认写入 localhost/);
+    assert.equal(resolveDeploymentChangelogApiBaseUrl({
+        env: { VITE_BACKEND_URL: 'https://api.example.com/' },
+    }), 'https://api.example.com');
+    assert.equal(resolveDeploymentChangelogApiBaseUrl({
+        explicitUrl: 'http://127.0.0.1:18001/',
+        env: {},
+    }), 'http://127.0.0.1:18001');
+    assert.throws(() => resolveDeploymentChangelogApiBaseUrl({
+        explicitUrl: 'ftp://api.example.com',
+        env: {},
+    }), /HTTP\(S\) URL/);
+});
+
+test('已存在相同发布日志时跳过创建', async () => {
+    const draft = {
+        gameId: 'dicethrone',
+        title: '王权骰铸：修复',
+        versionLabel: '0.6.48',
+        content: '修复了玩家可见问题。',
+        published: true,
+        pinned: false,
+    };
+    const originalFetch = globalThis.fetch;
+    const requests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        requests.push({ url: String(url), method: options.method || 'GET' });
+        if (String(url).endsWith('/auth/login')) {
+            return new Response(JSON.stringify({ success: true, data: { token: 'test-token' } }), { status: 200 });
+        }
+        if (options.method === 'GET') {
+            return new Response(JSON.stringify({ items: [draft] }), { status: 200 });
+        }
+        return new Response(JSON.stringify({ success: true }), { status: 201 });
+    };
+
+    try {
+        const result = await publishChangelogDrafts({
+            drafts: [draft],
+            options: {
+                apiBaseUrl: 'https://changelog.test',
+                account: 'publisher@test.invalid',
+                password: 'test-only',
+                noPrompt: true,
+                skipDuplicateCheck: false,
+            },
+        });
+        assert.deepEqual(result, { createdCount: 0, duplicateCount: 1 });
+        assert.equal(requests.some(({ url, method }) => (
+            method === 'POST' && url.endsWith('/admin-api/game-changelogs')
+        )), false);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('相同的未发布草稿不阻止创建公开日志', async () => {
+    const draft = {
+        gameId: 'dicethrone',
+        title: '王权骰铸：修复',
+        versionLabel: '0.6.48',
+        content: '修复了玩家可见问题。',
+        published: true,
+        pinned: false,
+    };
+    const originalFetch = globalThis.fetch;
+    const createRequests = [];
+    globalThis.fetch = async (url, options = {}) => {
+        if (String(url).endsWith('/auth/login')) {
+            return new Response(JSON.stringify({ success: true, data: { token: 'test-token' } }), { status: 200 });
+        }
+        if (options.method === 'GET') {
+            return new Response(JSON.stringify({ items: [{ ...draft, published: false }] }), { status: 200 });
+        }
+        createRequests.push(JSON.parse(options.body));
+        return new Response(JSON.stringify({ success: true, changelog: { id: 'published-1' } }), { status: 201 });
+    };
+
+    try {
+        const result = await publishChangelogDrafts({
+            drafts: [draft],
+            options: {
+                apiBaseUrl: 'https://changelog.test',
+                account: 'publisher@test.invalid',
+                password: 'test-only',
+                noPrompt: true,
+                skipDuplicateCheck: false,
+            },
+        });
+        assert.deepEqual(result, { createdCount: 1, duplicateCount: 0 });
+        assert.deepEqual(createRequests, [draft]);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('新日志发布成功后记录创建结果', async () => {
+    const draft = {
+        gameId: 'dicethrone',
+        title: '王权骰铸：修复',
+        versionLabel: '0.6.48',
+        content: '修复了玩家可见问题。',
+        published: true,
+        pinned: false,
+    };
+    const originalFetch = globalThis.fetch;
+    const publishedDrafts = [];
+    globalThis.fetch = async (url, options = {}) => {
+        if (String(url).endsWith('/auth/login')) {
+            return new Response(JSON.stringify({ success: true, data: { token: 'test-token' } }), { status: 200 });
+        }
+        if (options.method === 'GET') {
+            return new Response(JSON.stringify({ items: [] }), { status: 200 });
+        }
+        publishedDrafts.push(JSON.parse(options.body));
+        return new Response(JSON.stringify({ success: true, changelog: { id: 'created-1' } }), { status: 201 });
+    };
+
+    try {
+        const result = await publishChangelogDrafts({
+            drafts: [draft],
+            options: {
+                apiBaseUrl: 'https://changelog.test',
+                account: 'publisher@test.invalid',
+                password: 'test-only',
+                noPrompt: true,
+                skipDuplicateCheck: false,
+            },
+        });
+        assert.deepEqual(result, { createdCount: 1, duplicateCount: 0 });
+        assert.deepEqual(publishedDrafts, [draft]);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
+});
+
+test('后台更新日志 API 写入失败会向部署流程抛出错误', async () => {
+    const draft = {
+        gameId: 'dicethrone',
+        title: '王权骰铸：修复',
+        versionLabel: '0.6.48',
+        content: '修复了玩家可见问题。',
+        published: true,
+        pinned: false,
+    };
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url, options = {}) => {
+        if (String(url).endsWith('/auth/login')) {
+            return new Response(JSON.stringify({ success: true, data: { token: 'test-token' } }), { status: 200 });
+        }
+        if (options.method === 'GET') {
+            return new Response(JSON.stringify({ items: [] }), { status: 200 });
+        }
+        return new Response(JSON.stringify({ error: 'write unavailable' }), { status: 503 });
+    };
+
+    try {
+        await assert.rejects(publishChangelogDrafts({
+            drafts: [draft],
+            options: {
+                apiBaseUrl: 'https://changelog.test',
+                account: 'publisher@test.invalid',
+                password: 'test-only',
+                noPrompt: true,
+                skipDuplicateCheck: false,
+            },
+        }), /创建更新日志 失败: HTTP 503 write unavailable/);
+    } finally {
+        globalThis.fetch = originalFetch;
+    }
 });
 
 test('玩家日志过滤其他游戏和纯内部提交说明', () => {

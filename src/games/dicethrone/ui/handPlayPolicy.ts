@@ -2,7 +2,6 @@ import type { PlayerId } from '../../../engine/types';
 import type { TurnPhase } from '../domain/types';
 
 export interface CanPlayHandCardsForCurrentBoardParams {
-    isSpectator: boolean;
     isActivePlayer: boolean;
     isResponder: boolean;
     isDirectDiceActor: boolean;
@@ -11,25 +10,22 @@ export interface CanPlayHandCardsForCurrentBoardParams {
     rollerId?: PlayerId;
 }
 
-export interface CanInteractHandForCurrentBoardParams {
+export interface CanSellHandCardsForCurrentBoardParams {
     isSpectator: boolean;
+    isActivePlayer: boolean;
 }
 
-export const canInteractHandForCurrentBoard = ({
-    isSpectator,
-}: CanInteractHandForCurrentBoardParams): boolean => !isSpectator;
+export const canInteractHandForCurrentBoard = (): boolean => true;
 
-export const canPlayHandCardsForCurrentBoard = ({
-    isSpectator,
-}: CanPlayHandCardsForCurrentBoardParams): boolean => {
-    // 即时牌可以在任意时机尝试打出；实际时机、目标和响应者资格统一由领域层
-    // checkPlayCard 裁定。这里不能因“不是当前回合”把整只手牌提前封死。
-    return !isSpectator;
+export const canPlayHandCardsForCurrentBoard = (_params: CanPlayHandCardsForCurrentBoardParams): boolean => {
+    // 所有视角都保留同一套拖拽/点击交互。观战端的 moves 由引擎层统一变成 no-op，
+    // 因而不会产生实际命令或效果，不在每个游戏的 UI policy 里重复实现 spectator 规则。
+    return true;
 };
 
 export const canSellHandCardsForCurrentBoard = ({
     isSpectator,
     isActivePlayer,
-}: Pick<CanPlayHandCardsForCurrentBoardParams, 'isSpectator' | 'isActivePlayer'>): boolean => (
-    !isSpectator && isActivePlayer
+}: CanSellHandCardsForCurrentBoardParams): boolean => (
+    isSpectator || isActivePlayer
 );

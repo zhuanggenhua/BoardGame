@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CSSProperties } from 'react';
 import { MageWarsMageSelectionGate } from '../ui/MageSelectionGate';
+import { resolveMageSelectionStageScale } from '../ui/selectionStageScale';
 import { resolveMageWarsLocalSetup } from '../runtimeAdapter';
 import {
     MAGE_WARS_SAVED_SPELLBOOK_LIMIT,
@@ -26,7 +27,6 @@ vi.mock('react-i18next', () => ({
                 'setup.mageSelection.activeSpellbookAria': '可选法术书库',
                 'setup.mageSelection.activeSpellbookTitle': '选中法术书',
                 'setup.mageSelection.editCurrentSpellbook': '编辑选中书',
-                'setup.mageSelection.spellbookLibraryHelp': '标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。',
                 'setup.mageSelection.standardSpellbook': '标准起始书',
                 'setup.mageSelection.newSpellbook': '新建法术书',
                 'setup.mageSelection.newSpellbookAria': '选择绑定法师后新建法术书',
@@ -85,7 +85,7 @@ vi.mock('react-i18next', () => ({
                 'spellbookBuilder.back': '返回',
                 'spellbookBuilder.confirm': '确认法术书',
                 'spellbookBuilder.mageDetailAria': '法师规则卡',
-                'spellbookBuilder.mageDetailDescription': '这份构筑按这张法师能力牌的训练方向计算。需要更换法师时，返回选书页选择另一本绑定对应法师的法术书。',
+                'spellbookBuilder.builderConstraints': '构筑限制',
                 'spellbookBuilder.trainedDirection': '受训方向',
                 'spellbookBuilder.opposedDirection': '相斥方向',
                 'spellbookBuilder.currentListLabel': '法术书清单',
@@ -306,9 +306,18 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
 
         const detail = within(builder).getByTestId('mage-wars-spellbook-builder-mage-detail');
         expect(detail).toBeVisible();
+        const detailPanel = within(detail).getByTestId('mage-wars-spellbook-builder-mage-detail-panel');
+        const closeButton = within(detailPanel).getByTestId('mage-wars-spellbook-builder-mage-detail-close');
         expect(within(detail).getByTestId('mock-card-preview')).toHaveAttribute('data-card-title', '兽王');
         expect(detail).toHaveTextContent('受训方向');
         expect(detail).toHaveTextContent('相斥方向');
+        expect(detail).toHaveTextContent('构筑限制');
+        expect(detail).not.toHaveTextContent('这份构筑按这张法师能力牌的训练方向计算');
+        expect(closeButton).toHaveClass('absolute');
+        expect(closeButton).toHaveClass('right-3');
+        expect(closeButton).toHaveClass('top-3');
+        expect(closeButton).toHaveClass('h-11');
+        expect(closeButton).toHaveClass('w-11');
     });
 
     it('opens a new named spellbook draft from the selection-page plus entry', () => {
@@ -579,5 +588,12 @@ describe('MageWarsMageSelectionGate spellbook builder', () => {
         expect(savedList).not.toHaveTextContent('暂无命名副本');
         expect(within(savedList).getByTestId('mage-wars-mage-selection-new-spellbook-entry')).toHaveTextContent('新建法术书');
         expect(JSON.parse(window.localStorage.getItem(MAGE_WARS_SAVED_SPELLBOOKS_STORAGE_KEY) ?? '[]')).toEqual([]);
+    });
+});
+
+describe('MageWarsMageSelectionGate mobile scaling', () => {
+    it('board-shell 手机横屏不再对 1920x1080 设计舞台重复 contain-scale', () => {
+        expect(resolveMageSelectionStageScale(936, 432, true)).toBe(1);
+        expect(resolveMageSelectionStageScale(936, 432, false)).toBeCloseTo(0.4, 6);
     });
 });

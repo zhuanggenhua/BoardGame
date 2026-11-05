@@ -14,6 +14,10 @@ import artificerAtlasConfigData from '../../../assets/atlas-configs/dicethrone/a
 import tianshiAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-tianshi.atlas.json';
 import lierenAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-lieren.atlas.json';
 import vampireLordAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-vampire_lord.atlas.json';
+import zhizhuxiaAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-zhizhuxia.atlas.json';
+import paladinAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-paladin.atlas.json';
+import thorAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-thor.atlas.json';
+import doctorStrangeAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-doctor_strange.atlas.json';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -51,8 +55,14 @@ const ARTIFICER_CARD_ATLAS_CONFIG = parseAtlasConfig(artificerAtlasConfigData, '
 const TIANSHI_CARD_ATLAS_CONFIG = parseAtlasConfig(tianshiAtlasConfigData, 'ability-cards-tianshi.atlas.json');
 const LIEREN_CARD_ATLAS_CONFIG = parseAtlasConfig(lierenAtlasConfigData, 'ability-cards-lieren.atlas.json');
 const VAMPIRE_LORD_CARD_ATLAS_CONFIG = parseAtlasConfig(vampireLordAtlasConfigData, 'ability-cards-vampire_lord.atlas.json');
+const ZHIZHUXIA_CARD_ATLAS_CONFIG = parseAtlasConfig(zhizhuxiaAtlasConfigData, 'ability-cards-zhizhuxia.atlas.json');
+const PALADIN_CARD_ATLAS_CONFIG = parseAtlasConfig(paladinAtlasConfigData, 'ability-cards-paladin.atlas.json');
+const DOCTOR_STRANGE_CARD_ATLAS_CONFIG = parseAtlasConfig(doctorStrangeAtlasConfigData, 'ability-cards-doctor_strange.atlas.json');
 
 const getHeroAtlasConfig = (charId: string) => {
+    if (charId === 'doctor_strange') return DOCTOR_STRANGE_CARD_ATLAS_CONFIG;
+    if (charId === 'thor') return parseAtlasConfig(thorAtlasConfigData, 'ability-cards-thor.atlas.json');
+    if (charId === 'paladin') return PALADIN_CARD_ATLAS_CONFIG;
     if (charId === 'gunslinger') return GUNSLINGER_CARD_ATLAS_CONFIG;
     if (charId === 'samurai') return SAMURAI_CARD_ATLAS_CONFIG;
     if (charId === 'treant') return TREANT_CARD_ATLAS_CONFIG;
@@ -63,6 +73,7 @@ const getHeroAtlasConfig = (charId: string) => {
     if (charId === 'tianshi') return TIANSHI_CARD_ATLAS_CONFIG;
     if (charId === 'lieren') return LIEREN_CARD_ATLAS_CONFIG;
     if (charId === 'vampire_lord') return VAMPIRE_LORD_CARD_ATLAS_CONFIG;
+    if (charId === 'zhizhuxia') return ZHIZHUXIA_CARD_ATLAS_CONFIG;
     return COMMON_CARD_ATLAS_CONFIG;
 };
 /**

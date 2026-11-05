@@ -1,4 +1,13 @@
-import type { TutorialManifest } from '../../contexts/TutorialContext';
+import type { TutorialHiddenAutomationContract, TutorialManifest } from '../../engine/types';
+
+const compressedRepeat = (
+    equivalentStepIds: string[],
+    reason: string,
+): TutorialHiddenAutomationContract => ({
+    kind: 'compressed-repeat',
+    equivalentStepIds,
+    reason,
+});
 
 export const TicTacToeTutorial: TutorialManifest = {
     id: 'tictactoe-basic',
@@ -22,6 +31,10 @@ export const TicTacToeTutorial: TutorialManifest = {
             id: 'opponent-turn',
             content: '', // 隐藏步骤 - AI 自动移动
             aiActions: [{ commandType: 'CLICK_CELL', payload: { cellId: 0 } }], // AI 点击左上角格子
+            hiddenAutomation: compressedRepeat(
+                ['center-strategy'],
+                'Opponent repeats the same formal cell-claim action after the player has placed a mark.',
+            ),
             advanceOnEvents: [{ type: 'CELL_OCCUPIED', match: { cellId: 0 } }]
         },
         {

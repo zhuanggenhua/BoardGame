@@ -1,0 +1,104 @@
+{
+  "title": "仲裁派系真实入口：全交互流程与效果原文",
+  "source": {
+    "abilityText": "public/locales/zh-CN/game-summonerwars.json:1484-1518",
+    "eventText": "src/games/summonerwars/config/factions/zhongcai.ts:81-104"
+  },
+  "items": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/真实派系选择入口进入对局并落地起始部署/仲裁派系真实入口开局.jpg",
+      "label": "仲裁派系真实入口开局",
+      "effect": ""
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/服从真实双步交互：选择士兵后放到召唤师相邻空格/仲裁服从触发前.jpg",
+      "label": "服从：触发前",
+      "effect": "指定你的召唤师3个区格以内一个士兵，将其放置到召唤师相邻空格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/服从真实双步交互：选择士兵后放到召唤师相邻空格/仲裁服从选择士兵.jpg",
+      "label": "服从：选择士兵",
+      "effect": "指定你的召唤师3个区格以内一个士兵，将其放置到召唤师相邻空格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/服从真实双步交互：选择士兵后放到召唤师相邻空格/仲裁服从选择相邻空格.jpg",
+      "label": "服从：选择召唤师相邻空格",
+      "effect": "指定你的召唤师3个区格以内一个士兵，将其放置到召唤师相邻空格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/服从真实双步交互：选择士兵后放到召唤师相邻空格/仲裁服从结算完成.jpg",
+      "label": "服从：结算完成",
+      "effect": "指定你的召唤师3个区格以内一个士兵，将其放置到召唤师相邻空格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁圣言触发前.jpg",
+      "label": "圣言：触发前",
+      "effect": "本单位移动或攻击后，可以指定其 2 个区格以内的一个友方士兵，将其推拉 1 个区格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁圣言选择移动目标.jpg",
+      "label": "圣言：选择移动目标",
+      "effect": "本单位移动或攻击后，可以指定其 2 个区格以内的一个友方士兵，将其推拉 1 个区格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁圣言选择友方士兵.jpg",
+      "label": "圣言：选择友方士兵",
+      "effect": "本单位移动或攻击后，可以指定其 2 个区格以内的一个友方士兵，将其推拉 1 个区格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁圣言选择推拉落点.jpg",
+      "label": "圣言：选择推拉落点",
+      "effect": "本单位移动或攻击后，可以指定其 2 个区格以内的一个友方士兵，将其推拉 1 个区格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁圣言结算完成.jpg",
+      "label": "圣言：结算完成",
+      "effect": "本单位移动或攻击后，可以指定其 2 个区格以内的一个友方士兵，将其推拉 1 个区格。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁抹消触发前.jpg",
+      "label": "抹消：触发前",
+      "effect": "在你的移动阶段开始时，可以指定本单位 3 个区格以内的一个友方士兵；直到回合结束，该单位失去所有技能。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁抹消选择目标.jpg",
+      "label": "抹消：选择目标",
+      "effect": "在你的移动阶段开始时，可以指定本单位 3 个区格以内的一个友方士兵；直到回合结束，该单位失去所有技能。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁抹消结算完成.jpg",
+      "label": "抹消：结算完成",
+      "effect": "在你的移动阶段开始时，可以指定本单位 3 个区格以内的一个友方士兵；直到回合结束，该单位失去所有技能。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁鼓舞触发前.jpg",
+      "label": "鼓舞：触发前",
+      "effect": "召唤本单位后，可以移除一个相邻友方士兵的 1 点伤害。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁鼓舞选择受伤士兵.jpg",
+      "label": "鼓舞：选择受伤士兵",
+      "effect": "召唤本单位后，可以移除一个相邻友方士兵的 1 点伤害。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/圣言、抹消与鼓舞均从真实棋盘入口进入目标选择并结算/仲裁鼓舞结算完成.jpg",
+      "label": "鼓舞：结算完成",
+      "effect": "召唤本单位后，可以移除一个相邻友方士兵的 1 点伤害。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/律令在真实回合开始提示消耗充能或保留持续效果/仲裁律令触发前.jpg",
+      "label": "圣戒律令：触发前",
+      "effect": "放置1点充能。持续：召唤师将受到1点或更多伤害时，伤害至多为1。自己的回合开始时，可以消耗1点充能弃置本事件。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/律令在真实回合开始提示消耗充能或保留持续效果/仲裁律令回合开始提示.jpg",
+      "label": "圣戒律令：回合开始处置提示",
+      "effect": "放置1点充能。持续：召唤师将受到1点或更多伤害时，伤害至多为1。自己的回合开始时，可以消耗1点充能弃置本事件。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/summonerwars/summonerwars-zhongcai.e2e/律令在真实回合开始提示消耗充能或保留持续效果/仲裁律令保留持续效果后.jpg",
+      "label": "圣戒律令：保留持续效果后",
+      "effect": "放置1点充能。持续：召唤师将受到1点或更多伤害时，伤害至多为1。自己的回合开始时，可以消耗1点充能弃置本事件。"
+    }
+  ]
+}

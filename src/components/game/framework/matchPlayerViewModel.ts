@@ -202,14 +202,15 @@ export function buildMatchPlayerViewModel<TCore>(
         }
         return playerOrderLabels[normalizedPlayerId] ?? defaultFallbackPlayerOrderLabel(normalizedPlayerId);
     };
-    const selfPlayerId = normalizePlayerId(
-        options.resolveSelfPlayerId?.(resolverContext)
-        ?? playerID
-        ?? orderedPlayerIds[0],
-    );
     const turnPlayerId = normalizePlayerId(
         options.resolveTurnPlayerId?.(resolverContext)
         ?? inferTurnPlayerId(core),
+    );
+    const selfPlayerId = normalizePlayerId(
+        options.resolveSelfPlayerId?.(resolverContext)
+        ?? playerID
+        ?? (playerID === null ? turnPlayerId : undefined)
+        ?? orderedPlayerIds[0],
     );
     const activeActorId = normalizePlayerId(
         options.resolveActiveActorId?.({

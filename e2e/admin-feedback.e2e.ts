@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
 
 type StoredUser = {
     id: string;
@@ -13,6 +14,7 @@ const ADMIN_PAGE_READY_TIMEOUT_MS = 90_000;
 const HTML_NAVIGATION_HEADERS = {
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
 };
+const FEEDBACK_PACKET_CHAIN_DIR = 'test-results/evidence-screenshots/feedback-packet-chain-20261006';
 
 const setStoredAuth = async (page: Page, user: StoredUser) => {
     await page.addInitScript((storedUser) => {
@@ -112,6 +114,7 @@ test.describe('后台反馈管理 E2E', () => {
     });
 
     test('反馈页可展示分诊上下文并复制 AI 诊断包', async ({ page }) => {
+        mkdirSync(FEEDBACK_PACKET_CHAIN_DIR, { recursive: true });
         await setStoredAuth(page, {
             id: 'admin_1',
             username: 'Admin',
@@ -142,6 +145,23 @@ test.describe('后台反馈管理 E2E', () => {
                 currentPlayer: 'P1',
                 field: [{ id: 'minion-77', owner: 'P1' }],
             }),
+            diagnosticPacket: {
+                schemaVersion: 1,
+                captureId: 'capture-feedback-001',
+                chainId: 'chain-feedback-001',
+                capturedAt: '2026-10-06T10:00:00.000Z',
+                source: 'user',
+                collectionStatus: 'complete',
+                replayability: 'partial',
+                missingFields: ['correlation.roomId', 'snapshots.before'],
+                correlation: {
+                    matchId: 'abc',
+                    requestId: 'request-feedback-001',
+                },
+                snapshots: {
+                    at: { gameId: 'smashup', phase: 'scoreBases' },
+                },
+            },
             clientContext: {
                 route: '/play/smashup/match/abc',
                 mode: 'online',
@@ -182,13 +202,25 @@ test.describe('后台反馈管理 E2E', () => {
 
         const row = page.locator('[data-testid="feedback-row"][data-feedback-id="feedback_001"]');
         await expect(row).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
+        await page.screenshot({
+            path: `${FEEDBACK_PACKET_CHAIN_DIR}/01-前态-反馈列表显示目标反馈.png`,
+            fullPage: true,
+        });
         await row.click();
 
         await expect(page.getByTestId('feedback-action-log-toggle')).toBeVisible();
         await expect(page.getByTestId('feedback-state-snapshot-toggle')).toBeVisible();
+        await expect(page.getByText('反馈现场包')).toBeVisible();
+        await expect(page.getByText('capture-feedback-001')).toBeVisible();
+        await expect(page.getByText('correlation.roomId、snapshots.before')).toBeVisible();
         await expect(page.getByTestId('feedback-copy-ai-payload')).toBeVisible();
         await expect(row.locator('div').filter({ hasText: /^\/play\/smashup\/match\/abc$/ })).toBeVisible();
         await expect(row.getByTestId('feedback-error-context-panel').getByText('TypeError', { exact: true })).toBeVisible();
+
+        await page.screenshot({
+            path: `${FEEDBACK_PACKET_CHAIN_DIR}/02-中态-详情显示现场包关联键.png`,
+            fullPage: true,
+        });
 
         await page.getByTestId('feedback-copy-ai-payload').click();
 
@@ -230,6 +262,10 @@ test.describe('后台反馈管理 E2E', () => {
 
         await page.screenshot({
             path: 'test-results/evidence-screenshots/admin-feedback-ai-diagnostic-packet.png',
+            fullPage: true,
+        });
+        await page.screenshot({
+            path: `${FEEDBACK_PACKET_CHAIN_DIR}/03-后态-复制诊断包完成.png`,
             fullPage: true,
         });
     });

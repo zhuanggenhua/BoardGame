@@ -29,12 +29,12 @@ interface QidahenPreviewActionConfirmedDependencies {
     ) => QidahenCore;
 }
 
-const reduceQidahenPreviewActionConfirmed = (
+export const applyQidahenPreviewAction = (
     state: QidahenCore,
     actionId: string,
     sourceHandCardId: string | null | undefined,
     _timestamp: number,
-    dependencies: QidahenPreviewActionConfirmedDependencies,
+    dependencies: QidahenPreviewActionConfirmedDependencies = { updateTurnLabel: updateQidahenTurnLabel },
 ): QidahenCore => {
     const sourceCard = sourceHandCardId
         ? state.handCards.find((card) => (
@@ -49,6 +49,8 @@ const reduceQidahenPreviewActionConfirmed = (
         ...state,
         selectedActionId: actionId,
         confirmedActionId: actionId,
+        explicitRegionId: actionId === 'raid' ? null : state.explicitRegionId,
+        regionFocusState: actionId === 'raid' ? { ...state.regionFocusState, lockedSourceRegionId: null, currentTargetRegionId: null } : state.regionFocusState,
         selectedPaymentCardIds,
         selectedHandActionCardId: sourceCard?.id ?? null,
         grantPardonSelection: null,
@@ -71,7 +73,9 @@ const reduceQidahenPreviewActionCancelled = (
     dependencies: QidahenPreviewActionConfirmedDependencies,
 ): QidahenCore => dependencies.updateTurnLabel({
     ...state,
+    regionFocusState: state.confirmedActionId === 'raid' ? { ...state.regionFocusState, lockedSourceRegionId: null, currentTargetRegionId: null } : state.regionFocusState,
     confirmedActionId: null,
+    explicitRegionId: state.confirmedActionId === 'raid' ? null : state.explicitRegionId,
     selectedPaymentCardIds: [],
     selectedHandActionCardId: null,
     payment: buildPaymentState(state.selectedActionId, 0),
@@ -84,7 +88,7 @@ export const resolveQidahenPreviewActionConfirmedEvent = (
         updateTurnLabel: updateQidahenTurnLabel,
     },
 ): QidahenCore => getActionChoiceById(event.payload.actionId)
-    ? reduceQidahenPreviewActionConfirmed(
+    ? applyQidahenPreviewAction(
         state,
         event.payload.actionId,
         event.payload.sourceHandCardId,

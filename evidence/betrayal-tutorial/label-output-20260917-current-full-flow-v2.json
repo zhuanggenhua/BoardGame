@@ -1,0 +1,402 @@
+{
+  "title": "山屋惊魂教程当前全流程截图顺序（主线 + 独立自然作祟验证）",
+  "out_dir": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2",
+  "index": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\00-sequence-index.png",
+  "images": [
+    {
+      "sequence": 1,
+      "label": "主线 01：回合目标与行动区",
+      "transition": "主线起点：当前玩家进入基础教程牌桌。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\01-回合目标与行动区.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\01-labeled-01-回合目标与行动区.png"
+    },
+    {
+      "sequence": 2,
+      "label": "主线 02：速度决定本回合移动力",
+      "transition": "承接上一主线步骤的真实点击或系统结算：速度决定本回合移动力。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\02-速度决定本回合移动力.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\02-labeled-02-速度决定本回合移动力.png"
+    },
+    {
+      "sequence": 3,
+      "label": "主线 03：属性轨读法",
+      "transition": "承接上一主线步骤的真实点击或系统结算：属性轨读法。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\03-属性轨读法.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\03-labeled-03-属性轨读法.png"
+    },
+    {
+      "sequence": 4,
+      "label": "主线 04：剩余移动力",
+      "transition": "承接上一主线步骤的真实点击或系统结算：剩余移动力。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\04-剩余移动力.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\04-labeled-04-剩余移动力.png"
+    },
+    {
+      "sequence": 5,
+      "label": "主线 05：房间主视区",
+      "transition": "承接上一主线步骤的真实点击或系统结算：房间主视区。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\05-房间主视区.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\05-labeled-05-房间主视区.png"
+    },
+    {
+      "sequence": 6,
+      "label": "主线 06：观察队友一视角",
+      "transition": "承接上一主线步骤的真实点击或系统结算：观察队友一视角。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\06-观察队友一视角.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\06-labeled-06-观察队友一视角.png"
+    },
+    {
+      "sequence": 7,
+      "label": "主线 07：观察队友二视角",
+      "transition": "承接上一主线步骤的真实点击或系统结算：观察队友二视角。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\07-观察队友二视角.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\07-labeled-07-观察队友二视角.png"
+    },
+    {
+      "sequence": 8,
+      "label": "主线 08：再次点击队友返回观察前位置",
+      "transition": "承接上一主线步骤的真实点击或系统结算：再次点击队友返回观察前位置。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\08-再次点击队友返回观察前位置.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\08-labeled-08-再次点击队友返回观察前位置.png"
+    },
+    {
+      "sequence": 9,
+      "label": "主线 09：聚焦回自己房间",
+      "transition": "承接上一主线步骤的真实点击或系统结算：聚焦回自己房间。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\09-聚焦回自己房间.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\09-labeled-09-聚焦回自己房间.png"
+    },
+    {
+      "sequence": 10,
+      "label": "主线 10：预兆作祟进度条",
+      "transition": "承接上一主线步骤的真实点击或系统结算：预兆作祟进度条。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\10-预兆作祟进度条.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\10-labeled-10-预兆作祟进度条.png"
+    },
+    {
+      "sequence": 11,
+      "label": "主线 11：持有区与帮助牌读法",
+      "transition": "承接上一主线步骤的真实点击或系统结算：持有区与帮助牌读法。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\11-持有区与帮助牌读法.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\11-labeled-11-持有区与帮助牌读法.png"
+    },
+    {
+      "sequence": 12,
+      "label": "主线 12：打开移动目标",
+      "transition": "承接上一主线步骤的真实点击或系统结算：打开移动目标。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\12-打开移动目标.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\12-labeled-12-打开移动目标.png"
+    },
+    {
+      "sequence": 13,
+      "label": "主线 13：移动目标门厅",
+      "transition": "承接上一主线步骤的真实点击或系统结算：移动目标门厅。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\13-移动目标门厅.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\13-labeled-13-移动目标门厅.png"
+    },
+    {
+      "sequence": 14,
+      "label": "主线 14：移动到门厅后准备探索",
+      "transition": "承接上一主线步骤的真实点击或系统结算：移动到门厅后准备探索。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\14-移动到门厅后准备探索.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\14-labeled-14-移动到门厅后准备探索.png"
+    },
+    {
+      "sequence": 15,
+      "label": "主线 15：探索目标房间",
+      "transition": "承接上一主线步骤的真实点击或系统结算：探索目标房间。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\15-探索目标房间.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\15-labeled-15-探索目标房间.png"
+    },
+    {
+      "sequence": 16,
+      "label": "主线 16：旋转新房间朝向",
+      "transition": "承接上一主线步骤的真实点击或系统结算：旋转新房间朝向。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\16-旋转新房间朝向.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\16-labeled-16-旋转新房间朝向.png"
+    },
+    {
+      "sequence": 17,
+      "label": "主线 17：确认放置新房间",
+      "transition": "承接上一主线步骤的真实点击或系统结算：确认放置新房间。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\17-确认放置新房间.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\17-labeled-17-确认放置新房间.png"
+    },
+    {
+      "sequence": 18,
+      "label": "主线 18：事件牌公开与投掷入口",
+      "transition": "承接上一主线步骤的真实点击或系统结算：事件牌公开与投掷入口。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\18-事件牌公开与投掷入口.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\18-labeled-18-事件牌公开与投掷入口.png"
+    },
+    {
+      "sequence": 19,
+      "label": "主线 19：投掷事件",
+      "transition": "承接上一主线步骤的真实点击或系统结算：投掷事件。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\19-投掷事件.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\19-labeled-19-投掷事件.png"
+    },
+    {
+      "sequence": 20,
+      "label": "主线 20：事件骰出现与书本可查看",
+      "transition": "承接上一主线步骤的真实点击或系统结算：事件骰出现与书本可查看。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\20-事件骰出现与书本可查看.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\20-labeled-20-事件骰出现与书本可查看.png"
+    },
+    {
+      "sequence": 21,
+      "label": "主线 21：使用书本改用知识检定",
+      "transition": "承接上一主线步骤的真实点击或系统结算：使用书本改用知识检定。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\21-使用书本改用知识检定.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\21-labeled-21-使用书本改用知识检定.png"
+    },
+    {
+      "sequence": 22,
+      "label": "主线 22：选择兔脚重掷",
+      "transition": "承接上一主线步骤的真实点击或系统结算：选择兔脚重掷。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\22-选择兔脚重掷.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\22-labeled-22-选择兔脚重掷.png"
+    },
+    {
+      "sequence": 23,
+      "label": "主线 23：兔脚重投后确认新骰面",
+      "transition": "承接上一主线步骤的真实点击或系统结算：兔脚重投后确认新骰面。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\23-兔脚重投后确认新骰面.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\23-labeled-23-兔脚重投后确认新骰面.png"
+    },
+    {
+      "sequence": 24,
+      "label": "主线 24：伤害分配面板可操作",
+      "transition": "承接上一主线步骤的真实点击或系统结算：伤害分配面板可操作。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\24-伤害分配面板可操作.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\24-labeled-24-伤害分配面板可操作.png"
+    },
+    {
+      "sequence": 25,
+      "label": "主线 25：伤害分配完成后回到牌桌",
+      "transition": "承接上一主线步骤的真实点击或系统结算：伤害分配完成后回到牌桌。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\25-伤害分配完成后回到牌桌.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\25-labeled-25-伤害分配完成后回到牌桌.png"
+    },
+    {
+      "sequence": 26,
+      "label": "主线 26：回到你的回合后移动到大阶梯",
+      "transition": "承接上一主线步骤的真实点击或系统结算：回到你的回合后移动到大阶梯。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\26-回到你的回合后移动到大阶梯.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\26-labeled-26-回到你的回合后移动到大阶梯.png"
+    },
+    {
+      "sequence": 27,
+      "label": "主线 27：切到上层地图",
+      "transition": "承接上一主线步骤的真实点击或系统结算：切到上层地图。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\27-切到上层地图.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\27-labeled-27-切到上层地图.png"
+    },
+    {
+      "sequence": 28,
+      "label": "主线 28：上层平台移动目标",
+      "transition": "承接上一主线步骤的真实点击或系统结算：上层平台移动目标。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\28-上层平台移动目标.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\28-labeled-28-上层平台移动目标.png"
+    },
+    {
+      "sequence": 29,
+      "label": "主线 29：上层平台结束回合",
+      "transition": "承接上一主线步骤的真实点击或系统结算：上层平台结束回合。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\29-上层平台结束回合.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\29-labeled-29-上层平台结束回合.png"
+    },
+    {
+      "sequence": 30,
+      "label": "主线 30：英雄开场过场",
+      "transition": "承接上一主线步骤的真实点击或系统结算：英雄开场过场。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\30-英雄开场过场.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\30-labeled-30-英雄开场过场.png"
+    },
+    {
+      "sequence": 31,
+      "label": "主线 31：过场继续进入英雄剧本书",
+      "transition": "承接上一主线步骤的真实点击或系统结算：过场继续进入英雄剧本书。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\31-过场继续进入英雄剧本书.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\31-labeled-31-过场继续进入英雄剧本书.png"
+    },
+    {
+      "sequence": 32,
+      "label": "主线 32：英雄剧本书目标页说明图书馆原因",
+      "transition": "承接上一主线步骤的真实点击或系统结算：英雄剧本书目标页说明图书馆原因。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\32-英雄剧本书目标页说明图书馆原因.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\32-labeled-32-英雄剧本书目标页说明图书馆原因.png"
+    },
+    {
+      "sequence": 33,
+      "label": "主线 33：读完目标关闭剧本书",
+      "transition": "承接上一主线步骤的真实点击或系统结算：读完目标关闭剧本书。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\33-读完目标关闭剧本书.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\33-labeled-33-读完目标关闭剧本书.png"
+    },
+    {
+      "sequence": 34,
+      "label": "主线 34：读完目标后准备打开移动",
+      "transition": "承接上一主线步骤的真实点击或系统结算：读完目标后准备打开移动。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\34-读完目标后准备打开移动.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\34-labeled-34-读完目标后准备打开移动.png"
+    },
+    {
+      "sequence": 35,
+      "label": "主线 35：图书馆成为可点击移动目标",
+      "transition": "承接上一主线步骤的真实点击或系统结算：图书馆成为可点击移动目标。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\35-图书馆成为可点击移动目标.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\35-labeled-35-图书馆成为可点击移动目标.png"
+    },
+    {
+      "sequence": 36,
+      "label": "主线 36：英雄寻找木乃伊真名入口",
+      "transition": "承接上一主线步骤的真实点击或系统结算：英雄寻找木乃伊真名入口。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\36-英雄寻找木乃伊真名入口.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\36-labeled-36-英雄寻找木乃伊真名入口.png"
+    },
+    {
+      "sequence": 37,
+      "label": "主线 37：寻找真名知识检定成功",
+      "transition": "承接上一主线步骤的真实点击或系统结算：寻找真名知识检定成功。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\37-寻找真名知识检定成功.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\37-labeled-37-寻找真名知识检定成功.png"
+    },
+    {
+      "sequence": 38,
+      "label": "主线 38：确认后回到牌桌可结束回合",
+      "transition": "承接上一主线步骤的真实点击或系统结算：确认后回到牌桌可结束回合。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\38-确认后回到牌桌可结束回合.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\38-labeled-38-确认后回到牌桌可结束回合.png"
+    },
+    {
+      "sequence": 39,
+      "label": "独立自然作祟验证 01：当前玩家结束回合前",
+      "transition": "独立对照起点：只验证作祟自然触发链，不接成主线第 38 张之后的连续步骤。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\01-当前玩家结束回合前.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\39-labeled-01-当前玩家结束回合前.png"
+    },
+    {
+      "sequence": 40,
+      "label": "独立自然作祟验证 02：回到你的回合继续行动",
+      "transition": "承接自然作祟验证上一帧：回到你的回合继续行动。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\02-回到你的回合继续行动.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\40-labeled-02-回到你的回合继续行动.png"
+    },
+    {
+      "sequence": 41,
+      "label": "独立自然作祟验证 03：当前玩家看到英雄开场过场",
+      "transition": "承接自然作祟验证上一帧：当前玩家看到英雄开场过场。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\03-当前玩家看到英雄开场过场.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\41-labeled-03-当前玩家看到英雄开场过场.png"
+    },
+    {
+      "sequence": 42,
+      "label": "独立自然作祟验证 04：开场过场继续进入英雄剧本书",
+      "transition": "承接自然作祟验证上一帧：开场过场继续进入英雄剧本书。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\04-开场过场继续进入英雄剧本书.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\42-labeled-04-开场过场继续进入英雄剧本书.png"
+    },
+    {
+      "sequence": 43,
+      "label": "独立自然作祟验证 05：英雄剧本书目标页与图书馆原因",
+      "transition": "承接自然作祟验证上一帧：英雄剧本书目标页与图书馆原因。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\05-英雄剧本书目标页与图书馆原因.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\43-labeled-05-英雄剧本书目标页与图书馆原因.png"
+    },
+    {
+      "sequence": 44,
+      "label": "独立自然作祟验证 06：读完剧本书目标准备关闭",
+      "transition": "承接自然作祟验证上一帧：读完剧本书目标准备关闭。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\06-读完剧本书目标准备关闭.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\44-labeled-06-读完剧本书目标准备关闭.png"
+    },
+    {
+      "sequence": 45,
+      "label": "独立自然作祟验证 07：读完目标后回到英雄回合",
+      "transition": "承接自然作祟验证上一帧：读完目标后回到英雄回合。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\07-读完目标后回到英雄回合.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\45-labeled-07-读完目标后回到英雄回合.png"
+    },
+    {
+      "sequence": 46,
+      "label": "独立自然作祟验证 08：图书馆成为可点击移动目标",
+      "transition": "承接自然作祟验证上一帧：图书馆成为可点击移动目标。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\08-图书馆成为可点击移动目标.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\46-labeled-08-图书馆成为可点击移动目标.png"
+    },
+    {
+      "sequence": 47,
+      "label": "独立自然作祟验证 09：轮到英雄寻找木乃伊真名",
+      "transition": "承接自然作祟验证上一帧：轮到英雄寻找木乃伊真名。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\09-轮到英雄寻找木乃伊真名.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\47-labeled-09-轮到英雄寻找木乃伊真名.png"
+    },
+    {
+      "sequence": 48,
+      "label": "独立自然作祟验证 10：寻找真名知识检定成功",
+      "transition": "承接自然作祟验证上一帧：寻找真名知识检定成功。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\10-寻找真名知识检定成功.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\48-labeled-10-寻找真名知识检定成功.png"
+    },
+    {
+      "sequence": 49,
+      "label": "独立自然作祟验证 11：确认后回到牌桌可结束回合",
+      "transition": "承接自然作祟验证上一帧：确认后回到牌桌可结束回合。",
+      "original": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\11-确认后回到牌桌可结束回合.jpg",
+      "labeled": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\49-labeled-11-确认后回到牌桌可结束回合.png"
+    }
+  ],
+  "pureref_order": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\01-labeled-01-回合目标与行动区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\02-labeled-02-速度决定本回合移动力.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\03-labeled-03-属性轨读法.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\04-labeled-04-剩余移动力.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\05-labeled-05-房间主视区.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\06-labeled-06-观察队友一视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\07-labeled-07-观察队友二视角.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\08-labeled-08-再次点击队友返回观察前位置.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\09-labeled-09-聚焦回自己房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\10-labeled-10-预兆作祟进度条.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\11-labeled-11-持有区与帮助牌读法.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\12-labeled-12-打开移动目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\13-labeled-13-移动目标门厅.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\14-labeled-14-移动到门厅后准备探索.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\15-labeled-15-探索目标房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\16-labeled-16-旋转新房间朝向.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\17-labeled-17-确认放置新房间.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\18-labeled-18-事件牌公开与投掷入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\19-labeled-19-投掷事件.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\20-labeled-20-事件骰出现与书本可查看.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\21-labeled-21-使用书本改用知识检定.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\22-labeled-22-选择兔脚重掷.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\23-labeled-23-兔脚重投后确认新骰面.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\24-labeled-24-伤害分配面板可操作.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\25-labeled-25-伤害分配完成后回到牌桌.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\26-labeled-26-回到你的回合后移动到大阶梯.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\27-labeled-27-切到上层地图.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\28-labeled-28-上层平台移动目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\29-labeled-29-上层平台结束回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\30-labeled-30-英雄开场过场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\31-labeled-31-过场继续进入英雄剧本书.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\32-labeled-32-英雄剧本书目标页说明图书馆原因.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\33-labeled-33-读完目标关闭剧本书.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\34-labeled-34-读完目标后准备打开移动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\35-labeled-35-图书馆成为可点击移动目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\36-labeled-36-英雄寻找木乃伊真名入口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\37-labeled-37-寻找真名知识检定成功.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\38-labeled-38-确认后回到牌桌可结束回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\39-labeled-01-当前玩家结束回合前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\40-labeled-02-回到你的回合继续行动.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\41-labeled-03-当前玩家看到英雄开场过场.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\42-labeled-04-开场过场继续进入英雄剧本书.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\43-labeled-05-英雄剧本书目标页与图书馆原因.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\44-labeled-06-读完剧本书目标准备关闭.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\45-labeled-07-读完目标后回到英雄回合.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\46-labeled-08-图书馆成为可点击移动目标.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\47-labeled-09-轮到英雄寻找木乃伊真名.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\48-labeled-10-寻找真名知识检定成功.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\_labeled-for-pureref\\20260917-current-full-flow-v2\\49-labeled-11-确认后回到牌桌可结束回合.png"
+  ]
+}

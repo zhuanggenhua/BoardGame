@@ -93,12 +93,12 @@ registerCardAtlasSource(QIDAHEN_KOREA_ATLAS_ID, {
     config: {
         imageW: 4795,
         imageH: 4623,
-        frames: buildFrames(
-            [0, 476, 952, 1428, 1904, 2380, 2856, 3332, 3808],
-            [660, 1320, 1980, 2640, 3300],
-            476,
-            660,
-        ),
+        frames: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 20, 30, 40, 50, 60].map(slot => ({
+            x: (slot % 10) * (4795 / 10),
+            y: Math.floor(slot / 10) * (4623 / 7),
+            width: 4795 / 10,
+            height: 4623 / 7,
+        })),
     },
 });
 

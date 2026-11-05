@@ -517,13 +517,13 @@ function resolveHauntSpecialActionDisabledReason(
   return t("board.status.hauntSpecialActionUnavailable");
 }
 
-function resolveHighestTraitChoice(
+function resolveHighestTraitChoice<TTrait extends BetrayalTraitKey>(
   traits: BetrayalExplorerSummary["traits"],
-  choices: readonly BetrayalTraitKey[],
-): BetrayalTraitKey {
-  return choices.reduce(
+  choices: readonly [TTrait, ...TTrait[]],
+): TTrait {
+  return choices.slice(1).reduce<TTrait>(
     (highestTrait, trait) =>
       traits[trait] > traits[highestTrait] ? trait : highestTrait,
-    choices[0] ?? "might",
+    choices[0],
   );
 }

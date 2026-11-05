@@ -10,7 +10,7 @@ import { CARDIA_EVENTS } from '../events';
 import { abilityExecutorRegistry } from '../abilityExecutor';
 import { getCardiaStoredOngoingAbilitiesOnCard, hasCardiaStoredOngoingAbilitiesOnCard } from '../effectHost';
 import { getPlayerFieldCards, calculateCurrentInfluence, getCardModifiers } from '../utils';
-import { createCardSelectionInteraction, filterCards, createModifierSelectionInteraction, createFactionSelectionInteraction } from '../interactionHandlers';
+import { createCardSelectionInteraction, filterCards, createModifierSelectionInteraction, createFactionSelectionInteraction, type CardiaChoiceInteraction } from '../interactionHandlers';
 import { registerInteractionHandler } from '../abilityInteractionHandlers';
 import type { CardiaAbilityContext } from '../abilityExecutor';
 import type { CardiaEvent } from '../events';
@@ -183,6 +183,8 @@ abilityExecutorRegistry.register(ABILITY_IDS.MESSENGER, (ctx: CardiaAbilityConte
             interaction,
         };
     }
+
+    if (!ctx.selectedCardId) return { events: [] };
     
     // 玩家选择了场上卡牌
     return {
@@ -388,6 +390,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.LIBRARIAN, (ctx: CardiaAbilityConte
     if (ctx.selectedModifierValue === undefined) {
         const interaction = createModifierSelectionInteraction(
             `${ctx.abilityId}_${ctx.timestamp}`,
+            ctx.abilityId,
             ctx.playerId,
             '选择修正值',
             '为你下一张打出的牌添加+2或-2影响力',
@@ -574,7 +577,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.MERCENARY_SWORDSMAN, (ctx: CardiaAb
                 payload: {
                     playerId: ctx.playerId,
                     cardIds: [currentCard.uid],
-                    from: 'field',
+                    from: 'field' as const,
                 },
                 timestamp: ctx.timestamp,
             },
@@ -583,7 +586,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.MERCENARY_SWORDSMAN, (ctx: CardiaAb
                 payload: {
                     playerId: ctx.opponentId,
                     cardIds: [oppositeCard.uid],
-                    from: 'field',
+                    from: 'field' as const,
                 },
                 timestamp: ctx.timestamp,
             }] : []),
@@ -796,7 +799,7 @@ export function registerModifierInteractionHandlers(): void {
             
             // 对手有该派系手牌，创建对手的选择交互
             console.log('[CourtGuard] Creating opponent choice interaction');
-            const opponentInteraction: any = {
+            const opponentInteraction: CardiaChoiceInteraction = {
                 type: 'choice',
                 interactionId: `${ABILITY_IDS.COURT_GUARD}_opponent_${timestamp}`,
                 playerId: opponentId,

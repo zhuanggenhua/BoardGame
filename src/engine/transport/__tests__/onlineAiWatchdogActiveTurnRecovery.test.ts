@@ -641,10 +641,17 @@ describe('online AI watchdog active-turn recovery', () => {
         expect(actionLog.blockerFingerprint).toContain('4|main2|1|0');
         expect(actionLog.trackerKey).toBe(payload?.trackerKey);
     });
-    it('online AI watchdog 在 summonerwars 应使用 END_PHASE 推进阶段', async () => {
+    it('online AI watchdog 在 summonerwars 显式允许强制推进时应使用 END_PHASE 推进阶段', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const feedbackReporter = vi.fn(async () => undefined);
+        const summonerWarsForceAdvanceConfig = {
+            ...createEngineConfigWithId('summonerwars'),
+            onlineAiRecovery: {
+                ...createEngineConfigWithId('summonerwars').onlineAiRecovery,
+                disableFallbackAdvancePhase: false,
+            },
+        };
 
         await storage.createMatch('match-watchdog-sw-end-phase', {
             initialState: createOnlineAiRecoveryState(),
@@ -657,7 +664,7 @@ describe('online AI watchdog active-turn recovery', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId('summonerwars')],
+            games: [summonerWarsForceAdvanceConfig],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiRecoveryMaxAdvanceSteps: 1,
@@ -697,7 +704,7 @@ describe('online AI watchdog active-turn recovery', () => {
             };
             return true;
         });
-        // 本用例只验证阶段推进命令的映射，不把不完整的 SummonerWars 开局夹具交给真实 AI 决策。
+        // 本用例只验证显式强制推进时的阶段命令映射，不把不完整的 SummonerWars 开局夹具交给真实 AI 决策。
         const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
             kind: 'idle',
             idleReason: 'no-action',

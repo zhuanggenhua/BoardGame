@@ -6,6 +6,7 @@ import {
     type RegisteredAbility,
 } from './abilityRegistry';
 import {
+    createAbilityRuntimeContinuation,
     createEffectProgram,
     createSequenceProgram,
     executeAbilityProgram,
@@ -106,6 +107,7 @@ const emitExternalActionEventsThenContinueProgram = createEffectProgram<
     SmashUpEvent
 >((context) => {
     const nextContext = {
+        ...context,
         matchState: context.matchState,
         random: context.random,
         playerId: context.playerId,
@@ -127,8 +129,7 @@ const emitExternalActionEventsThenContinueProgram = createEffectProgram<
     }
     return {
         events: context.actionEvents,
-        context: nextContext,
-        nextProgram: context.nextProgram,
+        continuation: createAbilityRuntimeContinuation(nextContext, context.nextProgram),
     };
 });
 

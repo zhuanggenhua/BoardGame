@@ -46,12 +46,31 @@ export interface ModifierSelectionInteraction {
 }
 
 /**
+ * 通用选项交互
+ */
+export interface CardiaChoiceInteraction {
+    type: 'choice';
+    interactionId: string;
+    abilityId: string;
+    playerId: PlayerId;
+    title: string;
+    description: string;
+    options: Array<{
+        id: string;
+        label: string;
+        description?: string;
+    }>;
+    context?: Record<string, unknown>;
+}
+
+/**
  * Cardia 交互联合类型
  */
 export type CardiaInteraction = 
     | CardSelectionInteraction
     | FactionSelectionInteraction
-    | ModifierSelectionInteraction;
+    | ModifierSelectionInteraction
+    | CardiaChoiceInteraction;
 
 /**
  * 卡牌过滤器

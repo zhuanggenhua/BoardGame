@@ -31,6 +31,10 @@ import type {
     SmashUpEvent,
 } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
+import {
+    SIGNS_IN_THE_STARS_FACE_DOWN_UNTIL_TURN_META,
+    SIGNS_IN_THE_STARS_SOURCE_UID_META,
+} from '../domain/effectiveBaseAbilities';
 
 type CardZone = 'hand' | 'deck' | 'discard';
 
@@ -524,13 +528,58 @@ function signsInTheStars(ctx: AbilityContext): AbilityResult {
             ctx.state,
             ctx.baseIndex,
             {
+                [SIGNS_IN_THE_STARS_SOURCE_UID_META]: ctx.cardUid,
                 signsInTheStarsFaceUpBaseDefId: topBaseDefId,
                 signsInTheStarsRevealedTurn: ctx.state.turnNumber,
+                [SIGNS_IN_THE_STARS_FACE_DOWN_UNTIL_TURN_META]: null,
             },
             'ancient_incas_signs_in_the_stars',
             ctx.now,
         )],
     };
+}
+
+function canSignsInTheStarsTurnStart(ctx: TriggerContext): boolean {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return false;
+    const base = ctx.state.bases[ctx.sourceBaseIndex];
+    if (!base) return false;
+    const source = base.ongoingActions.find(action => (
+        action.uid === ctx.sourceCardUid
+        && action.defId === 'ancient_incas_signs_in_the_stars'
+    ));
+    return Boolean(source)
+        && base.metadata?.[SIGNS_IN_THE_STARS_FACE_DOWN_UNTIL_TURN_META] !== ctx.state.turnNumber;
+}
+
+function signsInTheStarsTurnStart(ctx: TriggerContext): TriggerResult {
+    if (!ctx.matchState || ctx.sourceBaseIndex === undefined || !ctx.sourceCardUid) return { events: [] };
+    const interaction = createSimpleChoice(
+        `ancient_incas_signs_in_the_stars_turn_start_${ctx.sourceCardUid}_${ctx.now}`,
+        ctx.playerId,
+        '星星上的征兆：你可以将这张牌翻面朝下直到本回合结束',
+        [
+            createSkipOption('保持正面', 'ui.ancient_incas_signs_in_the_stars_turn_start_keep_face_up'),
+            {
+                id: 'face-down',
+                label: '翻面朝下直到本回合结束',
+                labelKey: 'ui.ancient_incas_signs_in_the_stars_turn_start_face_down',
+                value: { faceDown: true },
+                displayMode: 'button' as const,
+            },
+        ],
+        {
+            sourceId: 'ancient_incas_signs_in_the_stars_turn_start',
+            targetType: 'generic',
+            titleKey: 'ui.ancient_incas_signs_in_the_stars_turn_start_title',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    (interaction.data as { continuationContext?: unknown }).continuationContext = {
+        baseIndex: ctx.sourceBaseIndex,
+        sourceCardUid: ctx.sourceCardUid,
+    };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function signsInTheStarsTalent(ctx: AbilityContext): AbilityResult {
@@ -732,6 +781,11 @@ export function registerAncientIncasAbilities(): void {
         sourceScope: 'triggerBase',
         canTrigger: canSamePlayerOtherActionOnSourceBase,
     });
+    registerTrigger('ancient_incas_signs_in_the_stars', 'onTurnStart', signsInTheStarsTurnStart, {
+        optional: true,
+        perInstance: true,
+        canTrigger: canSignsInTheStarsTurnStart,
+    });
     registerTrigger('ancient_incas_fortress_walls', 'onActionPlayed', fortressWallsTrigger, {
         optional: true,
         perInstance: true,
@@ -828,6 +882,7 @@ export function registerAncientIncasInteractionHandlers(): void {
         const choices = (Array.isArray(value) ? value : [value]) as CardChoice[];
         const selected = choices.filter(choice => !choice?.skip && choice?.cardUid && choice.sourceBaseIndex !== undefined);
         const seen = new Set<string>();
+        const selectedOngoing: Array<{ uid: string; defId: string; ownerId: PlayerId }> = [];
         const events: SmashUpEvent[] = [];
         for (const choice of selected) {
             if (!choice.cardUid || !choice.defId || choice.sourceBaseIndex === undefined || seen.has(choice.cardUid)) continue;
@@ -837,6 +892,7 @@ export function registerAncientIncasInteractionHandlers(): void {
                 && getOngoingController(action) === playerId);
             if (!ongoing) continue;
             seen.add(ongoing.uid);
+            selectedOngoing.push({ uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId });
             events.push(cardTransferredToSelf(
                 { uid: ongoing.uid, defId: ongoing.defId, owner: ongoing.ownerId },
                 playerId,
@@ -844,8 +900,17 @@ export function registerAncientIncasInteractionHandlers(): void {
                 timestamp,
             ));
         }
-        for (let index = 0; index < seen.size; index += 1) {
-            events.push(grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'ancient_incas_golden_condor'));
+        for (const ongoing of selectedOngoing) {
+            events.push(grantContextualExtraAction(
+                { playerId, now: timestamp, matchState: state },
+                'ancient_incas_golden_condor',
+                {
+                    playTiming: 'immediate',
+                    restrictToCardUid: ongoing.uid,
+                    restrictToCardDefId: ongoing.defId,
+                    allowSkip: false,
+                },
+            ));
         }
         return { state, events };
     });
@@ -950,4 +1015,27 @@ export function registerAncientIncasInteractionHandlers(): void {
     };
     registerInteractionHandler('ancient_incas_royal_highway', royalHighwayHandler);
     registerInteractionHandler('ancient_incas_royal_highway_move', royalHighwayHandler);
+    registerInteractionHandler('ancient_incas_signs_in_the_stars_turn_start', (state, _playerId, value, data, _random, timestamp) => {
+        const selected = value as { faceDown?: boolean } | undefined;
+        if (!selected?.faceDown) return { state, events: [] };
+        const context = (data as { continuationContext?: { baseIndex?: number; sourceCardUid?: string } } | undefined)?.continuationContext;
+        if (context?.baseIndex === undefined || !context.sourceCardUid) return { state, events: [] };
+        const base = state.core.bases[context.baseIndex];
+        if (!base?.ongoingActions.some(action => (
+            action.uid === context.sourceCardUid
+            && action.defId === 'ancient_incas_signs_in_the_stars'
+        ))) {
+            return { state, events: [] };
+        }
+        return {
+            state,
+            events: [baseMetadataUpdated(
+                state.core,
+                context.baseIndex,
+                { [SIGNS_IN_THE_STARS_FACE_DOWN_UNTIL_TURN_META]: state.core.turnNumber },
+                'ancient_incas_signs_in_the_stars_turn_start',
+                timestamp,
+            )],
+        };
+    });
 }

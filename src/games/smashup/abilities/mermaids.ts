@@ -1,4 +1,5 @@
-import type { PlayerId } from '../../../engine/types';
+import type {
+ PlayerId } from '../../../engine/types';
 import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerTrigger } from '../domain/ongoingEffects';
@@ -28,6 +29,8 @@ import type {
 } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -331,13 +334,12 @@ function advanceUltimateSongHandPrompt(
         }
         return {
             events,
-            context: createMermaidsPromptContext(matchState, forcedPlayerId, now, {
+            continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(matchState, forcedPlayerId, now, {
                 casterPlayerId,
                 targetBaseIndex,
                 remainingPlayerIds: pending,
                 forcedPlayerId,
-            }) satisfies MermaidsUltimateSongHandPromptContext,
-            nextProgram: mermaidsUltimateSongHandPromptProgram,
+            }) satisfies MermaidsUltimateSongHandPromptContext, mermaidsUltimateSongHandPromptProgram),
         };
     }
 
@@ -377,20 +379,19 @@ function advanceSirenSongTargetPrompt(
 
         return {
             events: [],
-            context: createMermaidsPromptContext(matchState, playerId, now, {
+            continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(matchState, playerId, now, {
                 fromBaseIndex,
                 toBaseIndex,
                 targetPlayerId,
                 remainingPlayerIds: pending,
-            }) satisfies MermaidsSirenSongTargetPromptContext,
-            nextProgram: mermaidsSirenSongTargetPromptProgram,
+            }) satisfies MermaidsSirenSongTargetPromptContext, mermaidsSirenSongTargetPromptProgram),
         };
     }
 
     return { events: [] };
 }
 
-const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTargetPromptContext>({
     sourceId: 'mermaids_charmer_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_charmer_target_${context.now}`,
@@ -431,7 +432,7 @@ const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTa
     },
 });
 
-const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMovePromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMovePromptContext>({
     sourceId: 'mermaids_charmer_move',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_charmer_move_${context.now}`,
@@ -470,10 +471,9 @@ const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMove
 
         return {
             events: moveEvents,
-            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(state, context.playerId, timestamp, {
                 targetBaseIndex,
-            }) satisfies MermaidsCharmerTargetPromptContext,
-            nextProgram: mermaidsCharmerTargetPromptProgram,
+            }) satisfies MermaidsCharmerTargetPromptContext, mermaidsCharmerTargetPromptProgram),
         };
     },
 });
@@ -488,7 +488,7 @@ const mermaidsMermaidQueenMovePromptProgram = createPromptDslProgram<MermaidsMer
             reads: [
                 { kind: 'base', index: context.targetBaseIndex },
                 ...targets.flatMap(target => [
-                    { kind: 'minion' as const, uid: target.minion.uid },
+                    { kind: 'minion' as const, uid: target.uid },
                     { kind: 'base' as const, index: target.baseIndex },
                 ]),
             ],
@@ -496,7 +496,7 @@ const mermaidsMermaidQueenMovePromptProgram = createPromptDslProgram<MermaidsMer
                 { kind: 'base', index: context.targetBaseIndex },
                 { kind: 'targetAvailability', baseIndex: context.targetBaseIndex },
                 ...targets.flatMap(target => [
-                    { kind: 'minion' as const, uid: target.minion.uid },
+                    { kind: 'minion' as const, uid: target.uid },
                     { kind: 'base' as const, index: target.baseIndex },
                     { kind: 'targetAvailability' as const, baseIndex: target.baseIndex },
                 ]),
@@ -540,7 +540,7 @@ const mermaidsMermaidQueenMovePromptProgram = createPromptDslProgram<MermaidsMer
     },
 });
 
-const mermaidsMermaidQueenControlPromptProgram = createPromptProgram<MermaidsMermaidQueenTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsMermaidQueenControlPromptProgram = createPromptProgram<MermaidsMermaidQueenTargetPromptContext>({
     sourceId: 'mermaids_mermaid_queen_control',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_mermaid_queen_control_${context.now}`,
@@ -596,7 +596,7 @@ const mermaidsMermaidQueenControlPromptProgram = createPromptProgram<MermaidsMer
     },
 });
 
-const mermaidsMermaidQueenModePromptProgram = createPromptProgram<MermaidsMermaidQueenModePromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsMermaidQueenModePromptProgram = createPromptProgram<MermaidsMermaidQueenModePromptContext>({
     sourceId: 'mermaids_mermaid_queen_mode',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_mermaid_queen_mode_${context.now}`,
@@ -621,10 +621,9 @@ const mermaidsMermaidQueenModePromptProgram = createPromptProgram<MermaidsMermai
             }
             return {
                 events: [],
-                context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+                continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(state, context.playerId, timestamp, {
                     targetBaseIndex: context.targetBaseIndex,
-                }) satisfies MermaidsMermaidQueenTargetPromptContext,
-                nextProgram: mermaidsMermaidQueenMovePromptProgram,
+                }) satisfies MermaidsMermaidQueenTargetPromptContext, mermaidsMermaidQueenMovePromptProgram),
             };
         }
 
@@ -639,15 +638,14 @@ const mermaidsMermaidQueenModePromptProgram = createPromptProgram<MermaidsMermai
         }
         return {
             events: [],
-            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(state, context.playerId, timestamp, {
                 targetBaseIndex: context.targetBaseIndex,
-            }) satisfies MermaidsMermaidQueenTargetPromptContext,
-            nextProgram: mermaidsMermaidQueenControlPromptProgram,
+            }) satisfies MermaidsMermaidQueenTargetPromptContext, mermaidsMermaidQueenControlPromptProgram),
         };
     },
 });
 
-const mermaidsCaptiveAudiencePromptProgram = createPromptProgram<MermaidsCaptiveAudiencePromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsCaptiveAudiencePromptProgram = createPromptProgram<MermaidsCaptiveAudiencePromptContext>({
     sourceId: 'mermaids_captive_audience',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_captive_audience_${context.now}`,
@@ -679,7 +677,7 @@ const mermaidsCaptiveAudiencePromptProgram = createPromptProgram<MermaidsCaptive
     },
 });
 
-const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMovePromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMovePromptContext>({
     sourceId: 'mermaids_becalmed_shores',
     interactionSourceIds: ['mermaids_shipwreck_cove_after_scoring'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -731,7 +729,7 @@ const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMove
     },
 });
 
-const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltimateSongHandPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsUltimateSongHandPromptProgram: AbilityProgram<MermaidsUltimateSongHandPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<MermaidsUltimateSongHandPromptContext>({
     sourceId: 'mermaids_ultimate_song_hand',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_ultimate_song_hand_${context.forcedPlayerId}_${context.now}`,
@@ -762,7 +760,6 @@ const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltima
                 power: selected.power ?? 0,
                 consumesNormalLimit: false,
                 skipOnPlayAbility: true,
-                reason: 'mermaids_ultimate_song',
             },
             timestamp,
         };
@@ -779,7 +776,7 @@ const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltima
     },
 });
 
-const mermaidsUltimateSongBasePromptProgram = createPromptProgram<MermaidsPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsUltimateSongBasePromptProgram = createPromptProgram<MermaidsPromptContext>({
     sourceId: 'mermaids_ultimate_song_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_ultimate_song_base_${context.now}`,
@@ -802,7 +799,7 @@ const mermaidsUltimateSongBasePromptProgram = createPromptProgram<MermaidsPrompt
     },
 });
 
-const mermaidsSirenSongTargetPromptProgram = createPromptProgram<MermaidsSirenSongTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsSirenSongTargetPromptProgram: AbilityProgram<MermaidsSirenSongTargetPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<MermaidsSirenSongTargetPromptContext>({
     sourceId: 'mermaids_siren_song_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_siren_song_target_${context.targetPlayerId}_${context.now}`,
@@ -855,7 +852,7 @@ const mermaidsSirenSongTargetPromptProgram = createPromptProgram<MermaidsSirenSo
     },
 });
 
-const mermaidsSirenSongDestinationPromptProgram = createPromptProgram<MermaidsSirenSongDestinationPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsSirenSongDestinationPromptProgram = createPromptProgram<MermaidsSirenSongDestinationPromptContext>({
     sourceId: 'mermaids_siren_song_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_siren_song_destination_${context.now}`,
@@ -879,7 +876,7 @@ const mermaidsSirenSongDestinationPromptProgram = createPromptProgram<MermaidsSi
     },
 });
 
-const mermaidsSirenSongBasePromptProgram = createPromptProgram<MermaidsPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsSirenSongBasePromptProgram = createPromptProgram<MermaidsPromptContext>({
     sourceId: 'mermaids_siren_song_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_siren_song_base_${context.now}`,
@@ -907,16 +904,15 @@ const mermaidsSirenSongBasePromptProgram = createPromptProgram<MermaidsPromptCon
         }
         return {
             events: [],
-            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(state, context.playerId, timestamp, {
                 fromBaseIndex: selected.baseIndex,
                 remainingPlayerIds: getOtherPlayers(state.core, context.playerId),
-            }) satisfies MermaidsSirenSongDestinationPromptContext,
-            nextProgram: mermaidsSirenSongDestinationPromptProgram,
+            }) satisfies MermaidsSirenSongDestinationPromptContext, mermaidsSirenSongDestinationPromptProgram),
         };
     },
 });
 
-const mermaidsCharmedDestinationPromptProgram = createPromptProgram<MermaidsCharmedDestinationPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsCharmedDestinationPromptProgram = createPromptProgram<MermaidsCharmedDestinationPromptContext>({
     sourceId: 'mermaids_charmed_destination',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_charmed_destination_${context.now}`,
@@ -968,7 +964,7 @@ const mermaidsCharmedDestinationPromptProgram = createPromptProgram<MermaidsChar
     },
 });
 
-const mermaidsCharmedPromptProgram = createPromptProgram<MermaidsPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsCharmedPromptProgram = createPromptProgram<MermaidsPromptContext>({
     sourceId: 'mermaids_charmed',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_charmed_${context.now}`,
@@ -1007,12 +1003,11 @@ const mermaidsCharmedPromptProgram = createPromptProgram<MermaidsPromptContext, 
         }
         return {
             events: [],
-            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createMermaidsPromptContext(state, context.playerId, timestamp, {
                 minionUid: selected.minionUid,
                 minionDefId: minion.defId,
                 fromBaseIndex: selected.baseIndex,
-            }) satisfies MermaidsCharmedDestinationPromptContext,
-            nextProgram: mermaidsCharmedDestinationPromptProgram,
+            }) satisfies MermaidsCharmedDestinationPromptContext, mermaidsCharmedDestinationPromptProgram),
         };
     },
 });

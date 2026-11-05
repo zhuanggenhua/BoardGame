@@ -9,6 +9,7 @@
  */
 
 import type { Command, GameEvent, GameOverResult, PlayerId } from '../../../engine/types';
+import type { PhaseChangedEvent } from '../../../engine/systems/FlowSystem';
 import type { CardPreviewRef } from '../../../core';
 import { SMASHUP_FACTION_IDS } from './ids';
 // ✅ 重要：这里将 SU_EVENT_TYPES 重命名为 SU_EVENTS 导入
@@ -217,6 +218,8 @@ export interface TitanCardDef {
     id: string;
     type: 'titan';
     name: string;
+    /** @deprecated 历史英文名，已由 i18n 接管，待清理 */
+    nameEn?: string;
     faction: FactionId;
     abilityTags?: AbilityTag[];
     /** 显式声明哪些能力会作为玩家可点击入口暴露在 UI 上。 */
@@ -555,6 +558,15 @@ export interface PlayerState {
         sameNameOnly?: boolean;
         sameNameDefId?: string;
     }>;
+    /** 当前出牌阶段暂存的“只能打出指定这张行动”的额外行动机会。 */
+    specificExtraActionPlays?: Array<{
+        cardUid: string;
+        reason: string;
+        restrictToBase?: number;
+        restrictToMinionUid?: string;
+        restrictToCardDefId?: string;
+        destroyAttachedActionAtTurnEnd?: boolean;
+    }>;
     /** 额外出牌的力量上限（如家园给的额外出牌只能打力量≤2的随从），回合结束清零 */
     extraMinionPowerMax?: number;
     /** 带力量上限的全局额外随从额度集合（每个元素代表 1 次受限额度），回合结束清零 */
@@ -704,6 +716,7 @@ export type SmashUpReactionResourceRef =
     | { kind: 'turnFlag'; key: string; playerId?: PlayerId }
     | { kind: 'baseDeck' }
     | { kind: 'madnessDeck' }
+    | { kind: 'monsterDeck' }
     | { kind: 'scoring'; baseIndex?: number }
     | { kind: 'targetAvailability'; baseIndex?: number }
     | { kind: 'global'; key: string };
@@ -713,6 +726,8 @@ export interface SmashUpReactionResourceFootprint {
     writes: SmashUpReactionResourceRef[];
     opensInteraction?: boolean;
     fallbackReason?: string;
+    /** 独立持续行动同时进入同一弃牌区时，写入顺序不影响结果。 */
+    commutativeOperation?: 'ongoing_detach_discard';
 }
 
 /**
@@ -800,6 +815,7 @@ export interface TriggerInstance {
     actionTargetBaseIndex?: number;
     actionTargetType?: 'base' | 'minion';
     actionTargetMinionUid?: string;
+    actionDestinationOverride?: 'hand';
     buriedCardUid?: string;
     buriedCardDefId?: string;
     buriedCardControllerId?: PlayerId;
@@ -1172,7 +1188,7 @@ export interface FactionSelectionState {
     completedPlayers: PlayerId[];
 }
 
-export type PlayerTurnRestrictionType = 'play_action' | 'move_minion';
+export type PlayerTurnRestrictionType = 'play_action' | 'play_minion' | 'move_minion';
 
 export interface PlayerTurnRestriction {
     targetPlayerId: PlayerId;
@@ -1475,14 +1491,12 @@ export interface ActionPlayedEvent extends GameEvent<'su:action_played'> {
         discardPlaySourceId?: string;
         /** false 表示不消耗常规行动额度。 */
         consumesNormalLimit?: boolean;
+        /** 行动本身已声明的替代去向；例如蜘蛛阿南西结算后改放其他玩家手牌。 */
+        destinationOverride?: 'hand';
         /** 行动目标基地（持续行动、特殊行动、目标随从行动均可携带） */
         targetBaseIndex?: number;
         targetType?: 'base' | 'minion';
         /** 行动目标随从 */
-        /** 从弃牌堆打出的能力来源，用于 once/turn 与替代去向结算。 */
-        discardPlaySourceId?: string;
-        targetBaseIndex?: number;
-        targetType?: 'base' | 'minion';
         targetMinionUid?: string;
     };
 }
@@ -1791,6 +1805,8 @@ export interface MinionReturnedEvent extends GameEvent<'su:minion_returned'> {
         skipReturnReplacement?: boolean;
         /** 只把列出的附着行动随宿主一起回手，其它附着行动按原规则离场。 */
         returnAttachedActionUids?: string[];
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -1809,10 +1825,12 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         restrictToMinionUid?: string;
         /** 仅 immediate 额外行动：按计分窗口特殊行动处理，用于保留基地限定和计分窗口限制。 */
         specialActionWindow?: 'meFirst' | 'afterScoring';
-        /** 立即额外行动限定只能打出指定卡牌实例 */
+        /** 额外行动限定只能打出指定卡牌实例；immediate 直接校验，banked 写入指定额外行动机会 */
         restrictToCardUid?: string;
-        /** 立即额外行动限定只能打出指定卡牌定义 */
+        /** 额外行动限定只能打出指定卡牌定义 */
         restrictToCardDefId?: string;
+        /** 回合结束时销毁本次指定的附着行动卡。 */
+        destroyAttachedActionAtTurnEnd?: boolean;
         /** 立即额外行动限定只能打出基地修正（持续行动且目标为基地） */
         restrictToBaseModifier?: boolean;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */
@@ -1827,6 +1845,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         specificCardUid?: string;
         /** 仅 immediate：允许本次受限额外出牌从弃牌堆选择指定卡牌。 */
         allowFromDiscard?: boolean;
+        /** 仅 immediate：是否允许玩家放弃这次额外出牌；默认允许。 */
+        allowSkip?: boolean;
         /**
          * 仅 immediate 额外随从：若玩家选择“放弃这次额外随从”，是否需要消费掉 pendingMinionPlayEffects 的队列首项。
          * 用于避免“本应绑定本次额外随从的效果”泄漏到后续普通随从。
@@ -1839,6 +1859,7 @@ export type SmashUpEvent =
     | MinionPlayedEvent
     | ActionPlayedEvent
     | ActionCounteredEvent
+    | PhaseChangedEvent
     | TitanPlayedEvent
     | TitanMovedEvent
     | TitanRemovedFromPlayEvent
@@ -1882,6 +1903,7 @@ export type SmashUpEvent =
     | PowerCounterRemovedEvent
     | OngoingAttachedEvent
     | OngoingDetachedEvent
+    | OngoingCardCounterChangedEvent
     | TalentUsedEvent
     | DiscardAbilityUsedEvent
     | TitanMetadataUpdatedEvent
@@ -1903,6 +1925,7 @@ export type SmashUpEvent =
     | MadnessReturnedEvent
     | MunchkinMonsterDefeatedEvent
     | MunchkinMonsterPlayedEvent
+    | MunchkinMonsterToDeckBottomEvent
     | MunchkinMonsterControlChangedEvent
     | MunchkinTreasuresDrawnEvent
     | MunchkinTreasuresMilledEvent
@@ -1930,9 +1953,28 @@ export type SmashUpEvent =
     | AbilityFeedbackEvent
     | AbilityTriggeredEvent
     | BaseAbilitySuppressedEvent
+    | BaseAbilityUsedEvent
     | CardSuppressedEvent
     | CardsSuppressedUntilTurnEndEvent
     | ReactionPassRequestedEvent
+    | MinionPlayEffectQueuedEvent
+    | MinionPlayEffectConsumedEvent
+    | ScoringEligibleBasesLockedEvent
+    | BeforeScoringTriggeredEvent
+    | BeforeScoringClearedEvent
+    | WhenScoringTriggeredEvent
+    | WhenScoringClearedEvent
+    | AfterScoringTriggeredEvent
+    | AfterScoringClearedEvent
+    | GameEvent<'SYS_SMASHUP_ABILITY_RUNTIME_CONTINUE', {
+        sourceId?: string;
+        continuation: {
+            context?: unknown;
+            contextHasMatchState?: boolean;
+            contextHasRandom?: boolean;
+            nextProgramId: string;
+        };
+    }>
     | BaseClearedEvent;
 
 // ============================================================================
@@ -2020,6 +2062,8 @@ export interface MinionDestroyedEvent extends GameEvent<typeof SU_EVENTS.MINION_
         sourceBaseIndex?: number;
         sourceKind?: 'action' | 'nonAction';
         reason: string;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2040,6 +2084,8 @@ export interface MinionMovedEvent extends GameEvent<typeof SU_EVENTS.MINION_MOVE
         /** 同批移动标记；同一批内的随从不应互相见证彼此的移动。 */
         batchId?: string;
         reason: string;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2109,6 +2155,8 @@ export interface PowerCounterAddedEvent extends GameEvent<typeof SU_EVENTS.POWER
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2123,6 +2171,8 @@ export interface PowerCounterRemovedEvent extends GameEvent<typeof SU_EVENTS.POW
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2141,6 +2191,8 @@ export interface OngoingAttachedEvent extends GameEvent<typeof SU_EVENTS.ONGOING
         metadata?: Record<string, unknown>;
         /** 某些“发动天赋后立即转移自身”的持续行动需要保留本回合已用状态 */
         talentUsed?: boolean;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2150,9 +2202,13 @@ export interface OngoingDetachedEvent extends GameEvent<typeof SU_EVENTS.ONGOING
         defId: string;
         ownerId: PlayerId;
         reason: string;
+        /** false means the card is being transferred and must not trigger onCardDestroyed. */
+        isDestruction?: boolean;
         /** Clyde 2.0 replacement choice: true = put into Clyde controller's hand, false/absent = normal discard. */
         clydeReturnToHand?: boolean;
         destination?: 'discard' | 'hand';
+        targetBaseIndex?: number;
+        targetKind?: 'ongoing' | 'attached_action';
         sourcePlayerId?: PlayerId;
         sourceCardUid?: string;
         sourceDefId?: string;
@@ -2611,6 +2667,8 @@ export interface TempPowerAddedEvent extends GameEvent<typeof SU_EVENTS.TEMP_POW
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2639,6 +2697,8 @@ export interface PermanentPowerAddedEvent extends GameEvent<typeof SU_EVENTS.PER
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
+        /** 少尉重定向时阻止同一替换效果再次处理该事件。 */
+        skipEnsignRedirect?: boolean;
     };
 }
 
@@ -2700,6 +2760,47 @@ export interface BaseAbilityUsedEvent extends GameEvent<typeof SU_EVENTS.BASE_AB
         baseIndex: number;
         baseDefId: string;
     };
+}
+
+export interface MinionPlayEffectQueuedEvent extends GameEvent<typeof SU_EVENTS.MINION_PLAY_EFFECT_QUEUED> {
+    payload: {
+        playerId: PlayerId;
+        effect: 'addPowerCounter' | 'addTempPower' | 'grantExtraActionForPlayedMinion';
+        amount: number;
+        reason?: string;
+    };
+}
+
+export interface MinionPlayEffectConsumedEvent extends GameEvent<typeof SU_EVENTS.MINION_PLAY_EFFECT_CONSUMED> {
+    payload: { playerId: PlayerId };
+}
+
+export interface ScoringEligibleBasesLockedEvent extends GameEvent<typeof SU_EVENTS.SCORING_ELIGIBLE_BASES_LOCKED> {
+    payload: { baseIndices: number[] };
+}
+
+export interface BeforeScoringTriggeredEvent extends GameEvent<typeof SU_EVENTS.BEFORE_SCORING_TRIGGERED> {
+    payload: { baseIndex: number; baseDefId?: string };
+}
+
+export interface BeforeScoringClearedEvent extends GameEvent<typeof SU_EVENTS.BEFORE_SCORING_CLEARED> {
+    payload: Record<string, never>;
+}
+
+export interface WhenScoringTriggeredEvent extends GameEvent<typeof SU_EVENTS.WHEN_SCORING_TRIGGERED> {
+    payload: { baseIndex: number; baseDefId?: string };
+}
+
+export interface WhenScoringClearedEvent extends GameEvent<typeof SU_EVENTS.WHEN_SCORING_CLEARED> {
+    payload: Record<string, never>;
+}
+
+export interface AfterScoringTriggeredEvent extends GameEvent<typeof SU_EVENTS.AFTER_SCORING_TRIGGERED> {
+    payload: { baseIndex: number; baseDefId?: string };
+}
+
+export interface AfterScoringClearedEvent extends GameEvent<typeof SU_EVENTS.AFTER_SCORING_CLEARED> {
+    payload: Record<string, never>;
 }
 
 /** 卡牌能力压制事件（直到压制者的下个回合开始） */

@@ -10,6 +10,12 @@ import { MAGE_WARS_COMMANDS } from '../domain';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { resolveMageWarsObjectAttackEvents } from '../domain/execute';
 import {
+    isMageWarsElusiveArenaObject,
+    isMageWarsLimitedLifeArenaObject,
+    isMageWarsSwiftArenaObject,
+    resolveMageWarsObjectEffectiveLife,
+} from '../domain/spellRules';
+import {
     ARENA_ZONE_IDS,
     MAGE_IDS,
     STATUS_TOKEN_IDS,
@@ -23,6 +29,7 @@ import {
     getPromptSourceId,
     getSimpleChoicePrompt,
     makeArenaObject,
+    makeVisibleEnchantmentObject,
     PLAYER_ZERO_START_ZONE,
     runCommand,
     setupState,
@@ -292,6 +299,80 @@ describe('mage-wars object enchantments', () => {
             zoneId: ARENA_ZONE_IDS.A2,
             actionReady: false,
         });
+    });
+
+    it('applies 1807 direct damage after normal movement, including free swift movement, but excludes teleport movement', () => {
+        const normalTarget = makeArenaObject('agony-chain-normal-target-0', '0', PLAYER_ZERO_START_ZONE, {
+            life: 10,
+            attackOrTraitLine: '利爪：快速近战 2 骰；迅捷',
+        });
+        const normalState: MatchState<MageWarsCore> = {
+            core: withArenaObject(
+                withPreparedPlayerMage(setupState('creatureAction').core, '0', MAGE_IDS.WARLOCK_APPRENTICE, [1807]),
+                normalTarget,
+            ),
+            sys: setupState('creatureAction').sys,
+        };
+        const normalCast = runCommand(normalState, castObjectSpellCommand(1807, 3, normalTarget.id));
+        const normalMove = runCommand({
+            core: normalCast.state.core,
+            sys: { ...normalCast.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: normalTarget.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+        const normalDamage = normalMove.events.find((event) => (
+            event.type === 'DAMAGE_DEALT'
+            && event.payload.targetId === normalTarget.id
+        ));
+
+        expect(normalCast.success).toBe(true);
+        expect(normalMove.events.find((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED)?.payload)
+            .toMatchObject({ actionCost: 'none', movementMode: 'normal' });
+        const normalEnchantment = Object.values(normalMove.state.core.objects)
+            .find((object) => object.sourceSpellCardId === 1807);
+        expect(normalEnchantment).toMatchObject({
+            revealed: true,
+            anchoredToObjectId: normalTarget.id,
+            zoneId: ARENA_ZONE_IDS.A2,
+        });
+        expect(normalDamage?.payload).toMatchObject({
+            amount: 1,
+            actualDamage: 1,
+            sourceAbilityId: 'mw.spell.1807.movement',
+        });
+        expect(normalMove.state.core.objects[normalTarget.id].damage).toBe(1);
+
+        const teleportTarget = makeArenaObject('agony-chain-teleport-target-0', '0', PLAYER_ZERO_START_ZONE, {
+            life: 10,
+            temporaryTraits: { teleportMovement: true },
+        });
+        const teleportState: MatchState<MageWarsCore> = {
+            core: withArenaObject(
+                withPreparedPlayerMage(setupState('creatureAction').core, '0', MAGE_IDS.WARLOCK_APPRENTICE, [1807]),
+                teleportTarget,
+            ),
+            sys: setupState('creatureAction').sys,
+        };
+        const teleportCast = runCommand(teleportState, castObjectSpellCommand(1807, 3, teleportTarget.id));
+        const teleportMove = runCommand({
+            core: teleportCast.state.core,
+            sys: { ...teleportCast.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '0',
+            payload: { objectId: teleportTarget.id, toZoneId: ARENA_ZONE_IDS.A2 },
+        });
+
+        expect(teleportCast.success).toBe(true);
+        expect(teleportMove.events.find((event) => event.type === MAGE_WARS_EVENTS.ARENA_OBJECT_MOVED)?.payload)
+            .toMatchObject({ movementMode: 'teleport' });
+        expect(teleportMove.events.some((event) => (
+            event.type === 'DAMAGE_DEALT'
+            && event.payload.targetId === teleportTarget.id
+        ))).toBe(false);
+        expect(teleportMove.state.core.objects[teleportTarget.id].damage).toBe(0);
     });
 
     it('uses structured death mark for each creature first attack per round', () => {
@@ -1315,5 +1396,393 @@ describe('mage-wars object enchantments', () => {
             .toBe('invalidTargetObject');
         expect(validateCommand(state, castObjectSpellCommand(bearStrengthId, 4, makeArenaObject('missing', '1', PLAYER_ZERO_START_ZONE).id)))
             .toBe('invalidTargetObject');
+    });
+
+    it('casts the configured swift, elusive, and limited-life enchantments through the real spell entry', () => {
+        const cases = [
+            { spellCardId: 1900, mageId: MAGE_IDS.BEASTMASTER_APPRENTICE, timestamp: 1 },
+            { spellCardId: 1902, mageId: MAGE_IDS.WARLOCK_APPRENTICE, timestamp: 2 },
+            { spellCardId: 1915, mageId: MAGE_IDS.BEASTMASTER_APPRENTICE, timestamp: 3 },
+        ] as const;
+
+        for (const testCase of cases) {
+            const target = makeArenaObject(`configured-entry-target-${testCase.spellCardId}`, '0', PLAYER_ZERO_START_ZONE, {
+                attackOrTraitLine: '利爪：快速近战 2 骰',
+            });
+            const state: MatchState<MageWarsCore> = {
+                core: withArenaObject(
+                    withPreparedPlayerMage(
+                        setupState('creatureAction').core,
+                        '0',
+                        testCase.mageId,
+                        [testCase.spellCardId],
+                    ),
+                    target,
+                ),
+                sys: setupState('creatureAction').sys,
+            };
+
+            const cast = runCommand(state, {
+                ...castObjectSpellCommand(testCase.spellCardId, 5, target.id),
+                timestamp: testCase.timestamp,
+            });
+            const enchantment = Object.values(cast.state.core.objects)
+                .find((object) => object.sourceSpellCardId === testCase.spellCardId);
+
+            expect(cast.success).toBe(true);
+            expect(enchantment).toMatchObject({
+                kind: 'enchantment',
+                revealed: true,
+                anchoredToObjectId: target.id,
+                createdAtTimestamp: testCase.timestamp,
+            });
+        }
+    });
+
+    it('triggers teleport trap when an enemy creature enters the trapped zone', () => {
+        const target = makeArenaObject('teleport-trap-target-1', '1', PLAYER_ZERO_START_ZONE, {
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const initialState: MatchState<MageWarsCore> = {
+            core: {
+                ...withArenaObject(
+                    withPreparedPlayerMage(
+                        setupState('creatureAction').core,
+                        '0',
+                        MAGE_IDS.WIZARD_APPRENTICE,
+                        [1907],
+                    ),
+                    target,
+                ),
+                phaseActorId: '0',
+            },
+            sys: setupState('creatureAction').sys,
+        };
+        const trapped = runCommand(initialState, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            timestamp: 1,
+            payload: {
+                spellCardId: 1907,
+                manaCost: 4,
+                targetZoneId: ARENA_ZONE_IDS.A2,
+            },
+        });
+
+        expect(trapped.success).toBe(true);
+        const trap = Object.values(trapped.state.core.objects)
+            .find((object) => object.sourceSpellCardId === 1907);
+        expect(trap).toMatchObject({
+            kind: 'enchantment',
+            revealed: true,
+            anchoredToZoneId: ARENA_ZONE_IDS.A2,
+        });
+
+        const movingState: MatchState<MageWarsCore> = {
+            ...trapped.state,
+            core: {
+                ...trapped.state.core,
+                phaseActorId: '1',
+            },
+        };
+        const entered = runCommand(movingState, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '1',
+            timestamp: 2,
+            payload: {
+                objectId: target.id,
+                toZoneId: ARENA_ZONE_IDS.A2,
+            },
+        });
+
+        expect(entered.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(entered.state, 'mw.teleport-trap.choice');
+        const destinationOption = getPromptOptions(entered.state)
+            .find((option) => option.id === 'zone-a1');
+        expect(destinationOption).toBeDefined();
+
+        const resolved = runCommand(entered.state, {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                interactionId: prompt.id,
+                optionId: destinationOption!.id,
+            },
+        });
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.state.core.objects[target.id]?.zoneId).toBe(ARENA_ZONE_IDS.A1);
+        expect(resolved.state.core.objects[trap!.id]).toBeUndefined();
+        expect(resolved.events.map((event) => event.type)).toEqual(expect.arrayContaining([
+            MAGE_WARS_EVENTS.SPELL_TELEPORT_RESOLVED,
+            MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+        ]));
+    });
+
+    it('triggers Inferno Trap attack and destroys the trap when an enemy creature enters', () => {
+        const target = makeArenaObject('inferno-trap-target-1', '1', PLAYER_ZERO_START_ZONE, {
+            life: 20,
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const initialState: MatchState<MageWarsCore> = {
+            core: {
+                ...withArenaObject(
+                    withPreparedPlayerMage(
+                        setupState('creatureAction').core,
+                        '0',
+                        MAGE_IDS.WARLOCK_APPRENTICE,
+                        [1823],
+                    ),
+                    target,
+                ),
+                phaseActorId: '0',
+            },
+            sys: setupState('creatureAction').sys,
+        };
+        const trapped = runCommand(initialState, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            timestamp: 1,
+            payload: {
+                spellCardId: 1823,
+                manaCost: 4,
+                targetZoneId: ARENA_ZONE_IDS.A2,
+            },
+        });
+        const trap = Object.values(trapped.state.core.objects)
+            .find((object) => object.sourceSpellCardId === 1823);
+
+        const entered = runCommand({
+            ...trapped.state,
+            core: {
+                ...trapped.state.core,
+                phaseActorId: '1',
+            },
+        }, {
+            type: MAGE_WARS_COMMANDS.MOVE_ARENA_OBJECT,
+            playerId: '1',
+            timestamp: 2,
+            payload: {
+                objectId: target.id,
+                toZoneId: ARENA_ZONE_IDS.A2,
+            },
+        });
+
+        expect(trapped.success).toBe(true);
+        expect(entered.success).toBe(true);
+        expect(entered.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+                payload: expect.objectContaining({
+                    spellCardId: 1823,
+                    targetObjectId: target.id,
+                    diceResults: [3, 3, 3, 3],
+                }),
+            }),
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({
+                    targetId: target.id,
+                    sourceAbilityId: 'mw.spell.1823',
+                    actualDamage: 12,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: trap?.id,
+                    sourceAbilityId: 'mw.spell.1823.inferno-trap',
+                    spellCardId: 1823,
+                }),
+            }),
+        ]));
+        expect(entered.state.core.objects[trap!.id]).toBeUndefined();
+        expect(entered.state.core.objects[target.id]?.damage).toBe(12);
+    });
+
+    it('consumes configured swift/elusive grants and applies limited life in effect order', () => {
+        const target = makeArenaObject('configured-grant-target-0', '0', PLAYER_ZERO_START_ZONE, {
+            life: 10,
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const makeConfiguredEnchantment = (
+            objectId: string,
+            sourceSpellCardId: number,
+            createdAtSequence: number,
+            createdAtTimestamp: number,
+        ) => makeVisibleEnchantmentObject(objectId, '0', PLAYER_ZERO_START_ZONE, {
+            sourceSpellCardId,
+            sourceObjectId: `spell-card-${sourceSpellCardId}`,
+            anchoredToObjectId: target.id,
+            createdAtSequence,
+            createdAtTimestamp,
+        });
+        const configuredEnchantments = [
+            makeConfiguredEnchantment('configured-bull-early', 1808, 1, 1),
+            makeConfiguredEnchantment('configured-limited-life', 1902, 2, 2),
+            makeConfiguredEnchantment('configured-bull-late', 1808, 3, 3),
+            makeConfiguredEnchantment('configured-swift', 1915, 4, 4),
+            makeConfiguredEnchantment('configured-elusive', 1900, 5, 5),
+        ];
+        const core = [target, ...configuredEnchantments].reduce(
+            (nextCore, object) => withArenaObject(nextCore, object),
+            setupState('creatureAction').core,
+        );
+
+        expect(resolveMageWarsObjectEffectiveLife(core, target)).toBe(14);
+        expect(isMageWarsLimitedLifeArenaObject(core, target)).toBe(true);
+        expect(isMageWarsSwiftArenaObject(target, core)).toBe(true);
+        expect(isMageWarsElusiveArenaObject(target, core)).toBe(true);
+
+        const limitedFirstTarget = makeArenaObject('configured-limited-first-target-0', '0', PLAYER_ZERO_START_ZONE, {
+            life: 10,
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const limitedFirstCore = [
+            limitedFirstTarget,
+            makeVisibleEnchantmentObject('configured-limited-first', '0', PLAYER_ZERO_START_ZONE, {
+                sourceSpellCardId: 1902,
+                sourceObjectId: 'spell-card-1902',
+                anchoredToObjectId: limitedFirstTarget.id,
+                createdAtSequence: 1,
+                createdAtTimestamp: 1,
+            }),
+            makeVisibleEnchantmentObject('configured-life-after-limited', '0', PLAYER_ZERO_START_ZONE, {
+                sourceSpellCardId: 1808,
+                sourceObjectId: 'spell-card-1808',
+                anchoredToObjectId: limitedFirstTarget.id,
+                createdAtSequence: 2,
+                createdAtTimestamp: 2,
+            }),
+        ].reduce(
+            (nextCore, object) => withArenaObject(nextCore, object),
+            setupState('creatureAction').core,
+        );
+
+        expect(resolveMageWarsObjectEffectiveLife(limitedFirstCore, limitedFirstTarget)).toBe(10);
+    });
+
+    it('applies Lightning Ring damage barrier from an attached creature enchantment', () => {
+        const attacker = makeArenaObject('lightning-ring-attacker-0', '0', PLAYER_ZERO_START_ZONE, {
+            attackOrTraitLine: '利爪：快速近战 2 骰',
+        });
+        const target = makeArenaObject('lightning-ring-target-1', '1', PLAYER_ZERO_START_ZONE, {
+            life: 20,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: [attacker, target].reduce(
+                (core, object) => withArenaObject(core, object),
+                withPreparedPlayerMage(
+                    setupState('creatureAction').core,
+                    '0',
+                    MAGE_IDS.WIZARD_APPRENTICE,
+                    [1810],
+                ),
+            ),
+            sys: setupState('creatureAction').sys,
+        };
+
+        const cast = runCommand(state, castObjectSpellCommand(1810, 6, target.id));
+        const ring = Object.values(cast.state.core.objects)
+            .find((object) => object.sourceSpellCardId === 1810);
+        const attack = runCommand(cast.state, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: {
+                attackerObjectId: attacker.id,
+                attackProfileId: 'attack-0',
+                targetObjectId: target.id,
+            },
+        });
+
+        expect(cast.success).toBe(true);
+        expect(ring).toMatchObject({
+            kind: 'enchantment',
+            revealed: true,
+            anchoredToObjectId: target.id,
+            combatTraitsSource: 'config',
+        });
+        expect(attack.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.DAMAGE_BARRIER_TRIGGERED,
+                payload: expect.objectContaining({
+                    sourceObjectId: ring?.id,
+                    sourceSpellCardId: 1810,
+                    attackerObjectId: attacker.id,
+                    diceResults: [3, 3],
+                    damageTypes: ['闪电'],
+                    unavoidable: true,
+                    lethal: false,
+                }),
+            }),
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({
+                    targetId: attacker.id,
+                    sourceAbilityId: 'mw.spell.1810.damage-barrier',
+                    actualDamage: 3,
+                }),
+            }),
+        ]));
+        expect(attack.state.core.objects[attacker.id]?.damage).toBe(3);
+    });
+
+    it('adds Mana Fusion channeling to a configured spawn point during channel phase', () => {
+        const spawnPoint = makeArenaObject('mana-fusion-spawn-point-0', '0', PLAYER_ZERO_START_ZONE, {
+            kind: 'conjuration',
+            sourceSpellCardId: 2218,
+            sourceObjectId: 'spell-card-2218',
+            name: '召唤点',
+            typeLine: '魔物 / 生成点',
+            spellcastingSource: {
+                abilityId: 'mw.source.2218.spawn-point',
+                kind: 'spawn-point',
+                phase: 'deployment',
+                allowedSpellTypes: ['生物'],
+                channeling: 4,
+            },
+            mana: 0,
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject(
+                withPreparedPlayerMage(
+                    setupState('creatureAction').core,
+                    '0',
+                    MAGE_IDS.WIZARD_APPRENTICE,
+                    [1821],
+                ),
+                spawnPoint,
+            ),
+            sys: setupState('creatureAction').sys,
+        };
+
+        const cast = runCommand(state, castObjectSpellCommand(1821, 4, spawnPoint.id));
+        const fusion = Object.values(cast.state.core.objects)
+            .find((object) => object.sourceSpellCardId === 1821);
+        const channel = runCommand({
+            ...cast.state,
+            sys: { ...cast.state.sys, phase: 'reset' },
+        }, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(cast.success).toBe(true);
+        expect(fusion).toMatchObject({
+            kind: 'enchantment',
+            revealed: true,
+            anchoredToObjectId: spawnPoint.id,
+        });
+        expect(channel.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.OBJECT_MANA_CHANNELED,
+                payload: expect.objectContaining({
+                    objectId: spawnPoint.id,
+                    amount: 5,
+                }),
+            }),
+        ]));
+        expect(channel.state.core.objects[spawnPoint.id]?.mana).toBe(5);
     });
 });

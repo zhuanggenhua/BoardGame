@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { INTERACTION_COMMANDS } from '../../systems/InteractionSystem';
+import { gunzipSync } from 'node:zlib';
 import type { MatchState } from '../../types';
 import type { ForceEndTurnStalledAiResolution } from '../onlineAiRecovery';
 import type { OnlineAiCircuitSnapshot } from '../onlineAiCircuitBreaker';
@@ -193,5 +194,40 @@ describe('OnlineAiRepeatedRecoveryCoordinator', () => {
             actionLog: 'action-log:repeated_recovery_force_unblocked',
         }));
         expect(match.executing).toBe(false);
+    });
+
+    it('自动解卡反馈必须保留取消前的交互和状态版本', async () => {
+        const match = createMatch();
+        match.stateID = 17;
+        match.randomSeed = 'before-secret-seed';
+        match.getRandomCursor = () => match.stateID === 17 ? 7 : 99;
+        const hooks = createHooks(match, {
+            buildRecoveryStateSnapshot: vi.fn(async ({ match: current }) => JSON.stringify({
+                phase: current.state.sys.phase,
+                interactionId: current.state.sys.interaction.current?.id,
+                stateId: current.stateID,
+            })),
+            buildRecoveryActionLog: vi.fn(({ match: current }) => JSON.stringify({
+                phase: current.state.sys.phase,
+                interactionId: current.state.sys.interaction.current?.id,
+            })),
+        });
+        const coordinator = new OnlineAiRepeatedRecoveryCoordinator({ repeatedAttemptLimit: 3, hooks });
+        await coordinator.tryForceUnblock({
+            match, candidate: createCandidate(), trackerKey: '1:visible-interaction:marker',
+            progressMarker: 'marker-before', repeatedAttemptKey: 'match-repeat-unblock:1:marker',
+            repeatedAttempt: { count: 3, lastAttemptAt: 500, reported: false },
+            seatControllers: { '1': { type: 'local-ai' } },
+        });
+        const payload = vi.mocked(hooks.reportRecoveryFeedback).mock.calls[0][0];
+        expect(JSON.parse(payload.stateSnapshot)).toMatchObject({
+            phase: 'main', interactionId: 'repeat-choice', stateId: 17,
+        });
+        expect(JSON.parse(payload.actionLog!)).toMatchObject({ phase: 'main', interactionId: 'repeat-choice' });
+        expect(payload.stateId).toBe(17);
+        expect(payload.requestId).toBe('repeat-choice');
+        const replay = JSON.parse(gunzipSync(Buffer.from(payload.privateReplay!, 'base64')).toString('utf8'));
+        expect(replay).toMatchObject({ stateId: 17, randomSeed: 'before-secret-seed', randomCursor: 7,
+            state: { sys: { phase: 'main', interaction: { current: { id: 'repeat-choice' } } } } });
     });
 });

@@ -1060,29 +1060,33 @@ test.describe('DiceThrone Treant 升级技能对象级真实收口', () => {
         await game.screenshot('treant-forest-awakens-after-closeout', testInfo);
     });
 
-    test('野蛮生长 II 主路线应从真实槽位收口到 10 点伤害 + 生命源泉 + 2 次养成', async ({ page, game }, testInfo) => {
+    test('图集31野蛮生长 II 上排弃生命源泉后应造成4点不可防御伤害且不触发额外骰结算', async ({ page, game }, testInfo) => {
         await setupTreantAbilityScene(page, game, {
             abilityId: 'wild-growth',
             upgradeCardId: 'upgrade-wild-growth-2',
             abilityDef: WILD_GROWTH_2,
-            attackDiceValues: [1, 2, 3, 4, 5],
-            randomValues: [1, 4, 6, 6, 2],
+            attackDiceValues: [1, 2, 4, 4, 5],
             player0Tokens: {
                 [TOKEN_IDS.TREANT_SEEDLING]: 0,
                 [TOKEN_IDS.TREANT_SAPLING]: 0,
                 [TOKEN_IDS.TREANT_DIVINE]: 0,
-                [TOKEN_IDS.LIFE_SAP]: 0,
+                [TOKEN_IDS.LIFE_SAP]: 1,
             },
             player1Resources: {
                 [RESOURCE_IDS.HP]: 30,
             },
         });
 
-        await game.screenshot('treant-wild-growth-2-main-before-click', testInfo);
+        await game.screenshot('treant-wild-growth-2-upper-before-click', testInfo);
         await clickResolvedAbilitySlot(page, 'lotus', 'wild-growth-2-main');
+        await chooseVariantByLabelIfVisible(page, /野蛮生长 II（2个树枝 \+ 3个树叶）/i);
         await dismissAttackShowcaseIfVisible(page);
         await clickAdvancePhase(page, '0');
-        await chooseButtonByName(page, /自然之触：选择养成后的树灵/i, /结算后：幼种 2/i);
+        await chooseButtonByName(
+            page,
+            /野蛮生长：选择树灵与生命源泉/i,
+            /弃掉生命源泉：不可防御/i,
+        );
         await settleAfterChoice(page);
 
         await expect.poll(async () => {
@@ -1101,33 +1105,38 @@ test.describe('DiceThrone Treant 升级技能对象级真实收口', () => {
             pendingAttack: null,
             pendingDamage: null,
             pendingBonus: null,
-            defenderHp: 20,
-            lifeSap: 1,
-            seedling: 2,
+            defenderHp: 26,
+            lifeSap: 0,
+            seedling: 0,
             sapling: 0,
             divine: 0,
         });
-        await game.screenshot('treant-wild-growth-2-main-after-closeout', testInfo);
+        await game.screenshot('treant-wild-growth-2-upper-after-closeout', testInfo);
     });
 
-    test('野蛮生长 II 的乱花迷眼分支应从真实槽位收口到 4 点不可防御伤害 + 1 刺藤', async ({ page, game }, testInfo) => {
+    test('图集31野蛮生长 II 下排应在真实槽位养成3个树灵且不攻击', async ({ page, game }, testInfo) => {
         await setupTreantAbilityScene(page, game, {
             abilityId: 'wild-growth',
             upgradeCardId: 'upgrade-wild-growth-2',
             abilityDef: WILD_GROWTH_2,
-            attackDiceValues: [1, 1, 4, 6, 6],
+            attackDiceValues: [1, 4, 5, 4, 6],
+            player0Tokens: {
+                [TOKEN_IDS.TREANT_SEEDLING]: 0,
+                [TOKEN_IDS.TREANT_SAPLING]: 0,
+                [TOKEN_IDS.TREANT_DIVINE]: 0,
+                [TOKEN_IDS.LIFE_SAP]: 0,
+            },
             player1Resources: {
                 [RESOURCE_IDS.HP]: 30,
             },
-            player1Tokens: {
-                [TOKEN_IDS.THORN]: 0,
-            },
         });
 
-        await game.screenshot('treant-wild-growth-2-dazzle-before-click', testInfo);
-        await clickResolvedAbilitySlot(page, 'lotus', 'wild-growth-2-dazzle');
+        await game.screenshot('treant-wild-growth-2-lower-before-click', testInfo);
+        await clickResolvedAbilitySlot(page, 'lotus', 'wild-growth-2-planting');
         await dismissAttackShowcaseIfVisible(page);
         await clickAdvancePhase(page, '0');
+        await chooseVariantByLabelIfVisible(page, /野蛮生长 II（1个树枝 \+ 2个树叶）/i);
+        await chooseButtonByName(page, /自然之触：选择养成后的树灵/i, /结算后：幼种 3/i);
         await settleAfterChoice(page);
 
         await expect.poll(async () => {
@@ -1136,14 +1145,18 @@ test.describe('DiceThrone Treant 升级技能对象级真实收口', () => {
                 pendingAttack: state?.core?.pendingAttack ?? null,
                 pendingDamage: state?.core?.pendingDamage ?? null,
                 defenderHp: state?.core?.players?.['1']?.resources?.hp ?? null,
-                thorn: state?.core?.players?.['1']?.tokens?.[TOKEN_IDS.THORN] ?? 0,
+                seedling: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                sapling: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TREANT_SAPLING] ?? 0,
+                divine: state?.core?.players?.['0']?.tokens?.[TOKEN_IDS.TREANT_DIVINE] ?? 0,
             };
         }, { timeout: 10000 }).toEqual({
             pendingAttack: null,
             pendingDamage: null,
-            defenderHp: 26,
-            thorn: 1,
+            defenderHp: 30,
+            seedling: 3,
+            sapling: 0,
+            divine: 0,
         });
-        await game.screenshot('treant-wild-growth-2-dazzle-after-closeout', testInfo);
+        await game.screenshot('treant-wild-growth-2-lower-after-closeout', testInfo);
     });
 });

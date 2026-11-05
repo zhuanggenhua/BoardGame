@@ -53,10 +53,11 @@ import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
 import { findPlayerAbility, getPlayerAbilityRuleDamageEstimate, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable, isPassiveRerollTargetAllowed } from './domain/passiveAbility';
-import { areTeammates, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
+import { areTeammates, canOwnerRerollPendingBonusDiceSettlement, getDieFaceByDefinition, getOpponents, getPendingBonusSettlementDice, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
+import { canUseDejaVuCore } from './domain/doctorStrange/rules';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
-import { canRemoveStatusFromPlayer } from './domain/statusRemoval';
+import { canReceiveTransferredStatus, canRemoveStatusFromPlayer, canTransferStatus } from './domain/statusRemoval';
 import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
 import { getDieFaceByValue } from './domain/diceRegistry';
 import { getCustomActionMeta } from './domain/effects';
@@ -83,14 +84,20 @@ import { readDiceThroneTokenResponseChoiceContract } from './domain/tokenRespons
 
 type DiceThroneState = MatchState<DiceThroneCore>;
 
-const getDiceThronePhaseFromState = (state: DiceThroneState): TurnPhase => (
-    state.sys.phase ?? state.sys.flow?.phase ?? 'setup'
-) as TurnPhase;
+const DICE_THRONE_PHASES: readonly TurnPhase[] = [
+    'setup', 'upkeep', 'income', 'main1', 'offensiveRoll', 'targetingRoll',
+    'defensiveRoll', 'main2', 'discard',
+];
+
+const getDiceThronePhaseFromState = (state: DiceThroneState): TurnPhase => {
+    const phase = state.sys.phase;
+    return DICE_THRONE_PHASES.find(candidate => candidate === phase) ?? 'setup';
+};
 
 const getAiActiveDice = (
     state: DiceThroneState,
     phase: TurnPhase = getDiceThronePhaseFromState(state),
-): DiceThroneCore['dice'] => getActiveDice(state.core, phase);
+): DiceThroneCore['dice'] => resolveCurrentRollContext(state.core, phase)?.dice ?? getActiveDice(state.core, phase);
 
 type DiceThroneStrategyTag =
     | 'damage-race'
@@ -116,7 +123,7 @@ const resolveDiceThroneCurrentDecisionPlayerId = (args: {
             : args.fallbackPlayerId ?? undefined;
     }
     const settlement = diceThroneState?.core?.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
-    if (!responseWindowCurrent && settlement && isCurrentBonusRollSettlement(diceThroneState.core, settlement)) {
+    if (!responseWindowCurrent && diceThroneState && settlement && isCurrentBonusRollSettlement(diceThroneState.core, settlement)) {
         return typeof settlement.attackerId === 'string' && settlement.attackerId.length > 0
             ? settlement.attackerId
             : args.fallbackPlayerId ?? undefined;
@@ -145,6 +152,7 @@ const resolveDiceThroneOnlineDecisionVisibility = (args: {
         && sharedInteraction?.kind === 'dt:bonus-dice'
         && sharedInteraction.playerId === args.playerId
         && settlement?.attackerId === args.playerId
+        && sharedState
         && isCurrentBonusRollSettlement(sharedState.core, settlement)
     ) {
         return 'shared';
@@ -202,6 +210,7 @@ type DiceInteractionData = MultistepChoiceData<unknown, unknown> & {
         dieModifyConfig?: {
             mode?: 'set' | 'adjust' | 'copy' | 'any';
             targetValue?: number;
+            allowedValues?: number[];
         };
         diceOwnerId?: PlayerId;
         targetOpponentDice?: boolean;
@@ -331,6 +340,31 @@ const appendAction = (
     const isValid = commandSpecs.every((command) => isCommandValid(state, playerId, command.type, command.payload));
     if (!isValid) return;
     actions.push(action);
+};
+
+const appendDejaVuAction = (
+    actions: AiLegalAction[],
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+): void => {
+    const responseWindowType = state.sys.responseWindow?.current?.windowType as DtResponseWindowType | undefined;
+    if (!canUseDejaVuCore(
+        state.core,
+        phase,
+        playerId,
+        responseWindowType,
+        Boolean(state.sys.interaction?.current),
+        Boolean(state.sys.gameover),
+    )) return;
+
+    appendAction(actions, state, playerId, {
+        actionId: createAiLegalActionId('tactical', 'deja-vu'),
+        kind: 'use-deja-vu',
+        label: '使用即视感重开进攻投掷',
+        commands: [{ type: 'USE_DEJA_VU', payload: {} }],
+        metadata: withAiActionStrategyTags({}, ['dice-setup']),
+    });
 };
 
 const asRecord = (value: unknown): Record<string, unknown> | null => (
@@ -942,6 +976,11 @@ const getBestAvailableDiceTargetPlan = (
     if (plans.length === 0) return null;
 
     return [...plans].sort((left, right) => {
+        const leftIsUltimate = isUltimateDiceTargetPlan(state, playerId, left);
+        const rightIsUltimate = isUltimateDiceTargetPlan(state, playerId, right);
+        if (leftIsUltimate !== rightIsUltimate) {
+            return Number(rightIsUltimate) - Number(leftIsUltimate);
+        }
         const leftScore = scoreDiceTargetPlan(state, phase, left);
         const rightScore = scoreDiceTargetPlan(state, phase, right);
         if (rightScore !== leftScore) return rightScore - leftScore;
@@ -989,6 +1028,25 @@ const getBestStableDiceTargetPlan = (
         return right.strategicScore - left.strategicScore;
     })[0] ?? null;
 };
+
+const isUltimateAbilityId = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    abilityId: string | null | undefined,
+): boolean => {
+    if (!abilityId) return false;
+    const match = findPlayerAbility(state.core, playerId, abilityId);
+    return Boolean(
+        match?.ability.tags?.includes('ultimate')
+        || match?.variant?.tags?.includes('ultimate'),
+    );
+};
+
+const isUltimateDiceTargetPlan = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    plan: DiceTargetPlan | null | undefined,
+): boolean => isUltimateAbilityId(state, playerId, plan?.abilityId);
 
 const estimateDiceChaseProbability = (
     plan: DiceTargetPlan,
@@ -1452,12 +1510,13 @@ const buildSelectPlayerDecisionFromInteraction = (
         const data = current.data as {
             options?: Array<{ playerId?: PlayerId; customId?: string; disabled?: boolean }>;
             targetRollValue?: number;
+            sourceId?: unknown;
         };
         return {
             kind: 'select-player',
             interactionId: current.id,
             actorPlayerId: playerId,
-            sourceId: current.sourceId,
+            sourceId: typeof data.sourceId === 'string' ? data.sourceId : undefined,
             selection: { min: 1, max: 1 },
             metadata: {
                 targetRollValue: data.targetRollValue,
@@ -1488,7 +1547,7 @@ const buildSelectPlayerDecisionFromInteraction = (
     }
 
     if (current.kind === 'dt:card-interaction') {
-        const data = current.data as CardInteractionData;
+        const data = current.data as CardInteractionData & { sourceId?: unknown };
         if (data.type !== 'selectPlayer') {
             return null;
         }
@@ -1501,7 +1560,7 @@ const buildSelectPlayerDecisionFromInteraction = (
             kind: 'select-player',
             interactionId: current.id,
             actorPlayerId: playerId,
-            sourceId: current.sourceId,
+            sourceId: typeof data.sourceId === 'string' ? data.sourceId : undefined,
             selection: { min: selectCount, max: selectCount },
             candidates: targetPlayerIds.map((targetPlayerId) => ({
                 id: targetPlayerId,
@@ -1551,9 +1610,12 @@ const buildSelectPlayerInteractionActions = (
         return buildSelectPlayerDecisionActions({
             descriptor: decision,
             emptyAction: (descriptor) => buildEmergencyInteractionCancelAction(descriptor.interactionId, 'empty-options'),
-            buildCommands: (selection) => [{
+            buildCommands: (selection, descriptor) => [{
                 type: 'RESOLVE_INTERACTION',
-                payload: { selectedPlayerIds: selection.map((candidate) => candidate.playerId) },
+                payload: {
+                    selectedPlayerIds: selection.map((candidate) => candidate.playerId),
+                    interactionId: descriptor.interactionId,
+                },
             }],
             buildActionKeyParts: (selection) => ['select-player', ...selection.map((candidate) => candidate.playerId)],
             buildLabel: (selection) => `选择玩家 ${selection.map((candidate) => candidate.playerId).join(', ')}`,
@@ -1840,6 +1902,25 @@ const buildInteractionActions = (
         if (!pendingDamage || pendingDamage.responderId !== playerId) {
             return [];
         }
+
+        // 使用飞行 / 伏击等 Token 后，Token 响应交互仍是当前 live 交互，
+        // 但奖励骰确认必须先完成；否则投 token 的 AI 会拿到一个被
+        // pendingBonusDiceSettlement 拒绝的紧急取消动作，反复重试而卡死。
+        const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+        if (
+            !state.sys.responseWindow?.current
+            && settlement
+            && settlement.attackerId === playerId
+            && isCurrentBonusRollSettlement(state.core, settlement)
+        ) {
+            const bonusDiceActions = [
+                ...buildBonusDicePlayableCardActions(state, playerId, phase),
+                ...buildPassiveActions(state, playerId, phase, { rerollOnly: true }),
+                ...buildBonusDiceActions(state, playerId),
+            ];
+            if (bonusDiceActions.length > 0) return bonusDiceActions;
+        }
+
         const choiceRequestActions = buildTokenResponseChoiceRequestActions(state, playerId, current);
         if (choiceRequestActions !== null) {
             return choiceRequestActions;
@@ -2026,17 +2107,21 @@ const buildInteractionActions = (
     if (current.kind === 'dt:card-interaction') {
         const data = current.data as CardInteractionData;
 
-        if (data.type === 'selectHandCard') {
+        if (data.type === 'selectHandCard' || data.type === 'selectDeckCard') {
             const player = state.core.players[playerId];
-            const selectedCardId = player?.hand[0]?.id;
+            const sourceCards = data.type === 'selectDeckCard' ? player?.deck : player?.hand;
+            const selectedCardId = sourceCards?.[0]?.id;
+            const actionKind = data.type === 'selectDeckCard' ? 'select-deck-card' : 'select-hand-card';
             return selectedCardId
                 ? [{
-                    actionId: createAiLegalActionId('interaction', current.id, 'select-hand-card', selectedCardId),
+                    actionId: createAiLegalActionId('interaction', current.id, actionKind, selectedCardId),
                     kind: 'interaction-choice',
-                    label: `弃置手牌 ${selectedCardId}`,
+                    label: data.type === 'selectDeckCard'
+                        ? `选择牌库卡牌 ${selectedCardId}`
+                        : `弃置手牌 ${selectedCardId}`,
                     commands: [{
                         type: 'RESOLVE_INTERACTION',
-                        payload: { selectedCardIds: [selectedCardId] },
+                        payload: { selectedCardIds: [selectedCardId], interactionId: current.id },
                     }],
                     metadata: {
                         interactionId: current.id,
@@ -2052,10 +2137,18 @@ const buildInteractionActions = (
 
             if (data.transferConfig) {
                 const transferableActions = targetPlayerIds.flatMap((sourcePlayerId) => {
-                    return getSelectableStatusIds(state, sourcePlayerId).flatMap((statusId) => {
-                        return targetPlayerIds
-                            .filter((targetPlayerId) => targetPlayerId !== sourcePlayerId)
-                            .map((targetPlayerId, index) => ({
+                    return getSelectableStatusIds(state, sourcePlayerId)
+                        .filter((statusId) => canTransferStatus(state.core, playerId, sourcePlayerId, statusId))
+                        .flatMap((statusId) => {
+                            return targetPlayerIds
+                                .filter((targetPlayerId) => targetPlayerId !== sourcePlayerId)
+                                .filter((targetPlayerId) => canReceiveTransferredStatus(
+                                    state.core,
+                                    sourcePlayerId,
+                                    targetPlayerId,
+                                    statusId,
+                                ))
+                                .map((targetPlayerId, index) => ({
                                 actionId: createAiLegalActionId(
                                     'interaction',
                                     current.id,
@@ -2069,7 +2162,7 @@ const buildInteractionActions = (
                                 label: `转移 ${statusId} 到 ${targetPlayerId}`,
                                 commands: [{
                                     type: 'TRANSFER_STATUS',
-                                    payload: { fromPlayerId: sourcePlayerId, toPlayerId: targetPlayerId, statusId },
+                                    payload: { fromPlayerId: sourcePlayerId, toPlayerId: targetPlayerId, statusId, interactionId: current.id },
                                 }],
                                 aiHints: buildTransferStatusAiHints(
                                     state,
@@ -2084,7 +2177,7 @@ const buildInteractionActions = (
                                     toPlayerId: targetPlayerId,
                                     statusId,
                                 }, buildStatusInteractionStrategyTags(state, statusId)),
-                            }));
+                                }));
                     });
                 });
 
@@ -2100,7 +2193,7 @@ const buildInteractionActions = (
                     label: `移除 ${targetPlayerId} 的 ${statusId}`,
                     commands: [{
                         type: 'REMOVE_STATUS',
-                        payload: { targetPlayerId, statusId },
+                        payload: { targetPlayerId, statusId, interactionId: current.id },
                     }],
                     aiHints: buildRemoveStatusAiHints(state, playerId, targetPlayerId, statusId),
                     metadata: withVisibleStepDelayPolicy(withAiActionStrategyTags({
@@ -2118,37 +2211,44 @@ const buildInteractionActions = (
         if (data.type === 'selectTargetStatus' && data.transferConfig?.sourcePlayerId && data.transferConfig?.statusId) {
             const sourcePlayerId = data.transferConfig.sourcePlayerId;
             const statusId = data.transferConfig.statusId;
-            if (!isRemovableStatusId(state, statusId)) {
+            if (!canTransferStatus(state.core, playerId, sourcePlayerId, statusId)) {
                 return [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
             }
             const targetPlayerIds = (data.targetPlayerIds ?? Object.keys(state.core.players) as PlayerId[])
                 .filter((targetId) => !!state.core.players[targetId])
                 .filter((targetId) => targetId !== sourcePlayerId);
 
-            const actions = targetPlayerIds.map((targetPlayerId, index) => ({
-                actionId: createAiLegalActionId(
-                    'interaction',
-                    current.id,
-                    'transfer-target-status',
+            const actions = targetPlayerIds
+                .filter((targetPlayerId) => canReceiveTransferredStatus(
+                    state.core,
                     sourcePlayerId,
-                    statusId,
                     targetPlayerId,
-                    index,
-                ),
-                kind: 'interaction-transfer-status',
-                label: `转移 ${statusId} 到 ${targetPlayerId}`,
-                commands: [{
-                    type: 'TRANSFER_STATUS',
-                    payload: { fromPlayerId: sourcePlayerId, toPlayerId: targetPlayerId, statusId },
-                }],
-                aiHints: buildTransferStatusAiHints(state, playerId, sourcePlayerId, targetPlayerId, statusId),
-                metadata: withAiActionStrategyTags({
-                    interactionId: current.id,
-                    fromPlayerId: sourcePlayerId,
-                    toPlayerId: targetPlayerId,
                     statusId,
-                }, buildStatusInteractionStrategyTags(state, statusId)),
-            }));
+                ))
+                .map((targetPlayerId, index) => ({
+                    actionId: createAiLegalActionId(
+                        'interaction',
+                        current.id,
+                        'transfer-target-status',
+                        sourcePlayerId,
+                        statusId,
+                        targetPlayerId,
+                        index,
+                    ),
+                    kind: 'interaction-transfer-status',
+                    label: `转移 ${statusId} 到 ${targetPlayerId}`,
+                    commands: [{
+                        type: 'TRANSFER_STATUS',
+                        payload: { fromPlayerId: sourcePlayerId, toPlayerId: targetPlayerId, statusId, interactionId: current.id },
+                    }],
+                    aiHints: buildTransferStatusAiHints(state, playerId, sourcePlayerId, targetPlayerId, statusId),
+                    metadata: withAiActionStrategyTags({
+                        interactionId: current.id,
+                        fromPlayerId: sourcePlayerId,
+                        toPlayerId: targetPlayerId,
+                        statusId,
+                    }, buildStatusInteractionStrategyTags(state, statusId)),
+                }));
             return actions.length > 0
                 ? actions
                 : [buildEmergencyInteractionCancelAction(current.id, 'empty-options')];
@@ -2282,9 +2382,13 @@ const buildInteractionActions = (
 
         const selections = enumerateArrayCombinations(selectableDice, minSelectionCount, selectCount);
         const actions = selections.flatMap((selection) => {
-            const valueAssignments = mode === 'any'
+            const valueAssignments = mode === 'set' && meta.dieModifyConfig?.allowedValues?.length
+                ? enumeratePerItemValueAssignments(selection, () => meta.dieModifyConfig!.allowedValues!)
+                : mode === 'any'
                 ? enumeratePerItemValueAssignments(selection, (die) =>
-                    [1, 2, 3, 4, 5, 6].filter((value) => value !== die.value))
+                    (meta.dieModifyConfig?.allowedValues?.length
+                        ? meta.dieModifyConfig.allowedValues
+                        : [1, 2, 3, 4, 5, 6]).filter((value) => value !== die.value))
                 : mode === 'adjust'
                     ? enumeratePerItemValueAssignments(selection, (die) =>
                         [die.value - 1, die.value + 1].filter((value) => value >= 1 && value <= 6))
@@ -2437,6 +2541,19 @@ const hasPendingTokenResponseForPlayer = (
     return Boolean(pendingDamage && pendingDamage.responderId === playerId);
 };
 
+const hasBlockingDisplayOnlyBonusSettlementForPlayer = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+): boolean => {
+    const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
+    return Boolean(
+        settlement
+        && settlement.displayOnly === true
+        && settlement.attackerId === playerId
+        && isCurrentBonusRollSettlement(state.core, settlement),
+    );
+};
+
 const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase: TurnPhase): AiLegalAction[] => {
     const actions: AiLegalAction[] = [];
     const responseWindow = state.sys.responseWindow?.current;
@@ -2453,6 +2570,8 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
     const canDirectInterfere = responseWindow
         && !isCurrentResponder
         && isDirectDiceInterferenceActor(state.core, responseWindow, playerId);
+
+    appendDejaVuAction(actions, state, playerId, phase);
 
     if (responseWindow && !isCurrentResponder && !canDirectInterfere && !hasPendingTokenResponse) {
         return actions;
@@ -2593,7 +2712,19 @@ const buildBonusDiceActions = (state: DiceThroneState, playerId: PlayerId): AiLe
     const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
     if (!settlement || settlement.attackerId !== playerId || !isCurrentBonusRollSettlement(state.core, settlement)) return actions;
 
-    if (settlement.displayOnly === true) {
+    if (settlement.groupReroll && canOwnerRerollPendingBonusDiceSettlement(state.core, settlement)) {
+        const dice = getPendingBonusSettlementDice(settlement);
+        for (let mask = 1; mask < (1 << dice.length); mask++) {
+            const indices = dice.filter((_, index) => mask & (1 << index)).map(die => die.index);
+            appendAction(actions, state, playerId, {
+                actionId: createAiLegalActionId('bonus-die', 'group-reroll', mask),
+                kind: 'bonus-die-reroll', label: `重掷奖励骰 ${indices.join(',')}`,
+                commands: [{ type: 'REROLL_BONUS_DIE', payload: { dieIndex: indices[0], dieIndices: indices } }],
+                metadata: withAiActionStrategyTags({}, ['dice-setup']),
+            });
+        }
+    }
+    if (settlement.displayOnly === true || settlement.groupReroll) {
         appendAction(actions, state, playerId, {
             actionId: createAiLegalActionId('bonus-die', 'confirm'),
             kind: 'confirm-roll',
@@ -3069,7 +3200,7 @@ export function buildDiceThroneAiLegalActions(args: {
     const player = state.core.players[args.playerId];
     if (!player) return [];
 
-    const phase = (state.sys.phase ?? state.sys.flow?.phase ?? 'setup') as TurnPhase;
+    const phase = getDiceThronePhaseFromState(state);
 
     const interactionActions = buildInteractionActions(state, args.playerId, phase);
     if (interactionActions !== null) {
@@ -3092,14 +3223,25 @@ export function buildDiceThroneAiLegalActions(args: {
         return buildSetupActions(state, args.playerId);
     }
 
-    if (state.sys.responseWindow?.current || hasPendingTokenResponseForPlayer(state, args.playerId)) {
-        return buildResponseActions(state, args.playerId, phase);
-    }
-
     const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
     const hasActiveBonusDiceSettlement = Boolean(
         settlement && isCurrentBonusRollSettlement(state.core, settlement),
     );
+    const shouldConfirmBlockingDisplayOnlyBonusSettlement =
+        hasPendingTokenResponseForPlayer(state, args.playerId)
+        && !state.sys.responseWindow?.current
+        && hasBlockingDisplayOnlyBonusSettlementForPlayer(state, args.playerId);
+    if (shouldConfirmBlockingDisplayOnlyBonusSettlement) {
+        const bonusDiceActions = buildBonusDiceActions(state, args.playerId);
+        if (bonusDiceActions.length > 0) {
+            return bonusDiceActions;
+        }
+    }
+
+    if (state.sys.responseWindow?.current || hasPendingTokenResponseForPlayer(state, args.playerId)) {
+        return buildResponseActions(state, args.playerId, phase);
+    }
+
     if (hasActiveBonusDiceSettlement) {
         const bonusDiceActions = [
             ...buildBonusDicePlayableCardActions(state, args.playerId, phase),
@@ -3112,11 +3254,13 @@ export function buildDiceThroneAiLegalActions(args: {
         return [];
     }
 
-    return [
+    const actions = [
         ...buildPurifyActions(state, args.playerId),
         ...buildPassiveActions(state, args.playerId, phase),
         ...buildPhaseActions(state, args.playerId, phase),
     ];
+    appendDejaVuAction(actions, state, args.playerId, phase);
+    return actions;
 }
 
 const getContextPhase = (context: AiDecisionContext): TurnPhase => {
@@ -3361,6 +3505,49 @@ const abilityValueScorer: LocalAiActionScorer = {
     },
 };
 
+const ultimateCommitmentScorer: LocalAiActionScorer = {
+    id: 'ultimate-commitment',
+    score(context, action) {
+        const phase = getContextPhase(context);
+        if (phase !== 'offensiveRoll') return null;
+
+        const state = context.visibleState as DiceThroneState;
+        const readyPlan = getBestAvailableDiceTargetPlan(state, context.playerId, phase);
+        if (!isUltimateDiceTargetPlan(state, context.playerId, readyPlan)) return null;
+
+        if (action.kind === 'select-ability') {
+            const abilityId = typeof action.metadata?.abilityId === 'string'
+                ? action.metadata.abilityId
+                : null;
+            if (!abilityId) return null;
+
+            return abilityId === readyPlan?.abilityId
+                ? {
+                    score: 900,
+                    reason: `当前骰面已经成终极 ${readyPlan.abilityId}，应立即选择终极而不是继续玩其它路线`,
+                }
+                : {
+                    score: -900,
+                    reason: `当前骰面已经成终极 ${readyPlan?.abilityId}，不应改选其它技能`,
+                };
+        }
+
+        if (
+            action.kind === 'play-card'
+            || action.kind === 'play-upgrade-card'
+            || action.kind === 'toggle-die-lock'
+            || action.kind === 'roll-dice'
+        ) {
+            return {
+                score: -900,
+                reason: `当前骰面已经成终极 ${readyPlan?.abilityId}，不应继续出牌、锁骰或重投`,
+            };
+        }
+
+        return null;
+    },
+};
+
 const cardValueScorer: LocalAiActionScorer = {
     id: 'card-value',
     score(context, action) {
@@ -3397,6 +3584,16 @@ const cardValueScorer: LocalAiActionScorer = {
             if (diceInteractionValue) {
                 score += diceInteractionValue.score;
                 reason = diceInteractionValue.reason;
+                if (
+                    phase === 'offensiveRoll'
+                    && context.playerId === getRollerId(state.core, phase)
+                    && diceInteractionValue.projectedPlanId
+                    && diceInteractionValue.projectedPlanAvailable === true
+                    && isUltimateAbilityId(state, context.playerId, diceInteractionValue.projectedPlanId)
+                ) {
+                    score += 760;
+                    reason = `这张牌能把当前骰面直接推成终极 ${diceInteractionValue.projectedPlanId}，应优先完成终极路线`;
+                }
             }
 
             if (drawCount > 0) {
@@ -3515,11 +3712,19 @@ const interactionValueScorer: LocalAiActionScorer = {
             ? currentInteraction.data as DiceInteractionData | undefined
             : undefined;
         const currentDice = getAiActiveDice(state, phase);
-        const targetOpponentDice = currentInteraction?.kind === 'multistep-choice'
+        const targetForeignDice = currentInteraction?.kind === 'multistep-choice'
             && (!interactionId || currentInteraction.id === interactionId)
             && currentInteractionData?.meta?.targetOpponentDice === true;
-        const scoreForTargetValue = (value: number) => (targetOpponentDice ? (7 - value) : value);
-        const scoreForDieValue = (value: number) => (targetOpponentDice ? value : (7 - value));
+        const targetDiceOwnerId = targetForeignDice
+            ? (typeof currentInteractionData?.meta?.diceOwnerId === 'string'
+                ? currentInteractionData.meta.diceOwnerId
+                : getRollerId(state.core, phase))
+            : undefined;
+        const isEnemyDiceTarget = targetForeignDice
+            && !!targetDiceOwnerId
+            && !areTeammates(state.core, context.playerId, targetDiceOwnerId);
+        const scoreForTargetValue = (value: number) => (isEnemyDiceTarget ? (7 - value) : value);
+        const scoreForDieValue = (value: number) => (isEnemyDiceTarget ? value : (7 - value));
 
         if (action.kind === 'interaction-multistep') {
             const dieIds = Array.isArray(action.metadata?.dieIds)
@@ -3542,7 +3747,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                         : currentDice.find((item) => item.id === dieId) ?? null;
                     if (!die) return sum;
                     const delta = value - die.value;
-                    const normalized = targetOpponentDice ? -delta : delta;
+                    const normalized = isEnemyDiceTarget ? -delta : delta;
                     return sum + normalized * 12;
                 }, 0);
             };
@@ -3553,11 +3758,12 @@ const interactionValueScorer: LocalAiActionScorer = {
                         state,
                         context.playerId,
                         phase,
-                        targetOpponentDice,
+                        isEnemyDiceTarget,
                         buildProjectedDice(
                             currentDice,
                             dieIds.map((currentDieId, index) => ({ dieId: currentDieId, newValue: newValues[index] })),
                         ),
+                        targetDiceOwnerId,
                     )
                     : null;
                 const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
@@ -3569,10 +3775,10 @@ const interactionValueScorer: LocalAiActionScorer = {
                             + deltaScore
                             + (projection?.score ?? 0),
                     reason: projection && projection.planDelta > 0
-                        ? (targetOpponentDice
+                        ? (isEnemyDiceTarget
                             ? `优先把对手从 ${projection.currentPlanId ?? '当前技能线'} 拉离，目标点数 ${newValues.join(', ')}`
                             : `优先把骰面调整到更接近 ${projection.projectedPlanId ?? '目标技能'} 的路线`)
-                        : (targetOpponentDice
+                        : (isEnemyDiceTarget
                             ? `优先让对手骰面更低，目标点数 ${newValues.join(', ')}`
                             : `优先完成更多骰子调整，累计目标点数 ${newValues.join(', ')}`),
                 };
@@ -3584,8 +3790,9 @@ const interactionValueScorer: LocalAiActionScorer = {
                         state,
                         context.playerId,
                         phase,
-                        targetOpponentDice,
+                        isEnemyDiceTarget,
                         buildProjectedDice(currentDice, [{ dieId, newValue }]),
+                        targetDiceOwnerId,
                     )
                     : null;
                 const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
@@ -3594,10 +3801,10 @@ const interactionValueScorer: LocalAiActionScorer = {
                         ? (projection?.score ?? 0) + 14
                         : scoreForTargetValue(newValue) * 18 + deltaScore + (projection?.score ?? 0),
                     reason: projection && projection.planDelta > 0
-                        ? (targetOpponentDice
+                        ? (isEnemyDiceTarget
                             ? `优先把对手从 ${projection.currentPlanId ?? '当前技能线'} 拉开`
                             : `优先把骰子改到更接近 ${projection.projectedPlanId ?? '目标技能'} 的值`)
-                        : (targetOpponentDice
+                        : (isEnemyDiceTarget
                             ? `优先把对手骰面压到更低点数 ${newValue}`
                             : `优先把骰子调整到更高点数 ${newValue}`),
                 };
@@ -3615,16 +3822,17 @@ const interactionValueScorer: LocalAiActionScorer = {
                                 state,
                                 context.playerId,
                                 phase,
-                                targetOpponentDice,
+                                isEnemyDiceTarget,
                                 currentDice.filter((die) => dieIds.includes(die.id)),
+                                targetDiceOwnerId,
                             )?.score ?? 0)
                             : 0
                     ),
                     reason: currentInteractionData?.meta?.dtType === 'selectDie'
-                        ? (targetOpponentDice
+                        ? (isEnemyDiceTarget
                             ? `优先重掷最能打断对手技能线的骰子 ${dieIds.join(', ')}`
                             : `优先重掷最能改善当前技能线的骰子 ${dieIds.join(', ')}`)
-                        : (targetOpponentDice
+                        : (isEnemyDiceTarget
                             ? `优先处理对手高点骰子 ${dieIds.join(', ')}`
                             : `优先一次处理更多低点骰子 ${dieIds.join(', ')}`),
                 };
@@ -3634,7 +3842,7 @@ const interactionValueScorer: LocalAiActionScorer = {
                 if (die) {
                     return {
                         score: scoreForDieValue(die.value) * 12,
-                        reason: targetOpponentDice
+                        reason: isEnemyDiceTarget
                             ? `优先重掷对手高点骰子 ${die.value}`
                             : `优先重掷较低点数的骰子 ${die.value}`,
                     };
@@ -4399,7 +4607,7 @@ const estimateCustomActionStrategicValue = (args: {
     if (!meta) return 0;
 
     let score = 0;
-    const estimatedDamage = meta.estimateDamage?.(args.state.core as unknown as Record<string, unknown>, args.playerId) ?? 0;
+    const estimatedDamage = meta.estimateDamage?.(args.state.core, args.playerId) ?? 0;
     if (estimatedDamage > 0) {
         score += estimatedDamage * 24;
     } else if (meta.categories.includes('damage')) {
@@ -4559,7 +4767,7 @@ const getBestStatusActionUtility = (
     if (customActionId === 'transfer-status') {
         const candidates = playerIds.flatMap((fromPlayerId) => (
             getSelectableStatusIds(state, fromPlayerId)
-                .filter((statusId) => canRemoveStatusFromPlayer(state.core, playerId, fromPlayerId, statusId))
+                .filter((statusId) => canTransferStatus(state.core, playerId, fromPlayerId, statusId))
                 .flatMap((statusId) => playerIds
                     .filter((toPlayerId) => toPlayerId !== fromPlayerId)
                     .map((toPlayerId) => scoreTransferStatusTarget(
@@ -4685,6 +4893,8 @@ type DiceProjectionSummary = {
     planDelta: number;
     currentPlanId: string | null;
     projectedPlanId: string | null;
+    projectedPlanAvailable?: boolean;
+    projectedUltimatePlanId?: string | null;
 };
 
 const buildProjectedDice = (
@@ -4707,7 +4917,8 @@ const buildProjectedDice = (
         return {
             ...die,
             value: nextValue,
-            symbol: face?.symbols[0] ?? die.symbol,
+            symbol: getDieFaceByDefinition(die.definitionId, nextValue) ?? die.symbol,
+            symbols: face?.symbols ?? die.symbols,
         };
     });
 };
@@ -4731,8 +4942,9 @@ const getDicePlanAnchorPlayerId = (
     playerId: PlayerId,
     phase: TurnPhase,
     targetOpponentDice: boolean,
+    targetDiceOwnerId?: PlayerId,
 ): PlayerId => {
-    return targetOpponentDice ? getRollerId(state.core, phase) : playerId;
+    return targetDiceOwnerId ?? (targetOpponentDice ? getRollerId(state.core, phase) : playerId);
 };
 
 const evaluateDiceProjection = (
@@ -4741,9 +4953,10 @@ const evaluateDiceProjection = (
     phase: TurnPhase,
     targetOpponentDice: boolean,
     projectedDice: DiceThroneCore['dice'],
+    targetDiceOwnerId?: PlayerId,
 ): DiceProjectionSummary => {
     const currentDice = getAiActiveDice(state, phase);
-    const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice);
+    const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice, targetDiceOwnerId);
     const useConfirmedOpponentThreat = targetOpponentDice
         && state.core.rollConfirmed
         && state.sys.responseWindow?.current?.windowType === 'afterRollConfirmed';
@@ -4753,6 +4966,19 @@ const evaluateDiceProjection = (
     const projectedPlan = useConfirmedOpponentThreat
         ? getBestAvailableDiceTargetPlan(state, anchorPlayerId, phase, projectedDice)
         : getBestDiceTargetPlan(state, anchorPlayerId, phase, projectedDice);
+    const projectedAvailablePlan = getBestAvailableDiceTargetPlan(
+        state,
+        anchorPlayerId,
+        phase,
+        projectedDice,
+    );
+    const projectedUltimatePlan = isUltimateDiceTargetPlan(
+        state,
+        anchorPlayerId,
+        projectedAvailablePlan,
+    )
+        ? projectedAvailablePlan
+        : null;
     const currentPlanScore = currentPlan ? scoreDiceTargetPlan(state, phase, currentPlan) : 0;
     const projectedPlanScore = projectedPlan ? scoreDiceTargetPlan(state, phase, projectedPlan) : 0;
     const rawDelta = getDiceProjectionRawDelta(currentDice, projectedDice, targetOpponentDice);
@@ -4766,6 +4992,8 @@ const evaluateDiceProjection = (
         planDelta,
         currentPlanId: currentPlan?.abilityId ?? null,
         projectedPlanId: projectedPlan?.abilityId ?? null,
+        projectedPlanAvailable: projectedPlan?.available ?? false,
+        projectedUltimatePlanId: projectedUltimatePlan?.abilityId ?? null,
     };
 };
 
@@ -4779,6 +5007,12 @@ const evaluateBestProjectedDice = (
     let best: DiceProjectionSummary | null = null;
     for (const projectedDice of projectedDiceList) {
         const candidate = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice);
+        const candidateHasUltimate = !targetOpponentDice && Boolean(candidate.projectedUltimatePlanId);
+        const bestHasUltimate = !targetOpponentDice && Boolean(best?.projectedUltimatePlanId);
+        if (candidateHasUltimate !== bestHasUltimate) {
+            if (candidateHasUltimate) best = candidate;
+            continue;
+        }
         if (!best || candidate.score > best.score) {
             best = candidate;
         }
@@ -4840,7 +5074,7 @@ const enumerateModifyProjectedDice = (
 const enumerateRerollSelectionsForAction = (
     dice: DiceThroneCore['dice'],
     customActionId: string,
-): DiceThroneCore['dice'][][] => {
+): DiceThroneCore['dice'][] => {
     if (dice.length === 0) return [];
 
     switch (customActionId) {
@@ -4861,6 +5095,7 @@ const evaluateExpectedRerollSelection = (
     phase: TurnPhase,
     targetOpponentDice: boolean,
     selectedDice: DiceThroneCore['dice'],
+    targetDiceOwnerId?: PlayerId,
 ): DiceProjectionSummary | null => {
     if (selectedDice.length === 0) return null;
     const outcomeCount = 6 ** selectedDice.length;
@@ -4883,7 +5118,7 @@ const evaluateExpectedRerollSelection = (
             dieId: die.id,
             newValue: outcomeValues[index],
         })));
-        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice);
+        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice, targetDiceOwnerId);
         totals.score += summary.score;
         totals.rawDelta += summary.rawDelta;
         totals.planDelta += summary.planDelta;
@@ -5020,12 +5255,19 @@ const mergeDiceInterferenceResponseGate = (
     };
 };
 
+type DiceInterferenceCardValue = {
+    score: number;
+    reason: string;
+    projectedPlanId?: string | null;
+    projectedPlanAvailable?: boolean;
+};
+
 const estimateDiceInterferenceCardValue = (
     state: DiceThroneState,
     playerId: PlayerId,
     card: AbilityCard,
     phase: TurnPhase,
-): { score: number; reason: string } | null => {
+): DiceInterferenceCardValue | null => {
     const activeDice = getAiActiveDice(state, phase);
     const diceValues = activeDice.map((die) => die.value);
     if (diceValues.length === 0) return null;
@@ -5060,13 +5302,14 @@ const estimateDiceInterferenceCardValue = (
             case 'modify-die-any-1':
             case 'modify-die-any-2':
             case 'modify-die-adjust-1':
+            {
                 if ((modifyProjection?.score ?? Number.NEGATIVE_INFINITY) <= 0 && delta <= 0) {
                     return {
                         score: -260,
                         reason: '当前没有可产生实际变化的改骰收益，不该白白浪费这张牌',
                     };
                 }
-                return mergeDiceInterferenceResponseGate(
+                const modifyResult = mergeDiceInterferenceResponseGate(
                     Math.max(delta * 32 + (targetOpponentDice ? 24 : 18), modifyProjection?.score ?? 0),
                     modifyProjection && modifyProjection.planDelta > 0
                         ? (targetOpponentDice
@@ -5085,16 +5328,27 @@ const estimateDiceInterferenceCardValue = (
                         cardCpCost: card.cpCost,
                     }),
                 );
+                return {
+                    ...modifyResult,
+                    projectedPlanId: modifyProjection?.projectedUltimatePlanId
+                        ?? modifyProjection?.projectedPlanId
+                        ?? null,
+                    projectedPlanAvailable: modifyProjection?.projectedUltimatePlanId
+                        ? true
+                        : (modifyProjection?.projectedPlanAvailable ?? false),
+                };
+            }
             case 'reroll-opponent-die-1':
             case 'reroll-die-2':
             case 'reroll-die-5':
+            {
                 if ((rerollProjection?.score ?? Number.NEGATIVE_INFINITY) <= 0 && rerollDelta <= 0) {
                     return {
                         score: -220,
                         reason: '当前重掷预期没有正收益，不该为了出牌而出牌',
                     };
                 }
-                return mergeDiceInterferenceResponseGate(
+                const rerollResult = mergeDiceInterferenceResponseGate(
                     Math.max(rerollDelta * 28 + (targetOpponentDice ? 20 : 12), rerollProjection?.score ?? 0),
                     rerollProjection && rerollProjection.planDelta > 0
                         ? (targetOpponentDice
@@ -5113,6 +5367,12 @@ const estimateDiceInterferenceCardValue = (
                         cardCpCost: card.cpCost,
                     }),
                 );
+                return {
+                    ...rerollResult,
+                    projectedPlanId: rerollProjection?.projectedPlanId ?? null,
+                    projectedPlanAvailable: rerollProjection?.projectedPlanAvailable ?? false,
+                };
+            }
             default:
                 break;
         }
@@ -5333,6 +5593,7 @@ const diceThroneLocalPolicyScorers: LocalAiActionScorer[] = [
     setupCharacterProfileScorer,
     setupCharacterRandomScorer,
     abilityValueScorer,
+    ultimateCommitmentScorer,
     cardValueScorer,
     statusCardOutcomeScorer,
     interactionValueScorer,

@@ -47,7 +47,6 @@ export function BetrayalTableActionCueSurface({
   hidden,
   forceVisible,
   phase,
-  isPhoneLandscapeLayout,
   roomFocusLabel,
   tradeStatusCueLabel,
   dustHauntTraitSelector,
@@ -80,7 +79,6 @@ export function BetrayalTableActionCueSurface({
   hidden: boolean;
   forceVisible: boolean;
   phase: BetrayalCore["phase"];
-  isPhoneLandscapeLayout: boolean;
   roomFocusLabel: string | null;
   tradeStatusCueLabel: string | null;
   dustHauntTraitSelector: DustHauntTraitSelectorState | null;
@@ -130,6 +128,11 @@ export function BetrayalTableActionCueSurface({
     Boolean(selectedCorpseLootTarget) ||
     hasExploreDeclarationOptions ||
     shouldShowMaskTargetSelector;
+  const isPortal = hasExploreDeclarationOptions;
+  const portalTop = phase === "haunt" ? (isPortal ? 88 : 204) : 86;
+  const widthClassName = isPortal
+    ? "w-[min(880px,calc(100vw-2rem))]"
+    : "w-[880px]";
 
   if (hidden || !hasVisibleCue) {
     return null;
@@ -141,19 +144,15 @@ export function BetrayalTableActionCueSurface({
         hasExploreDeclarationOptions
           ? "pointer-events-none"
           : "pointer-events-auto absolute left-1/2 z-50 -translate-x-1/2"
-      } flex w-[min(880px,calc(100vw-2rem))] flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1 ${
-        phase === "haunt"
-          ? isPhoneLandscapeLayout
-            ? "top-[88px]"
-            : "top-[204px]"
-          : "top-[86px]"
+      } flex ${widthClassName} flex-wrap items-center justify-center gap-1.5 px-2 pb-1 pt-1 ${
+        phase === "haunt" ? (isPortal ? "top-[88px]" : "top-[204px]") : "top-[86px]"
       }`}
       style={
         hasExploreDeclarationOptions
           ? {
               position: "fixed",
               left: "50%",
-              top: phase === "haunt" ? (isPhoneLandscapeLayout ? 88 : 204) : 86,
+              top: portalTop,
               transform: "translateX(-50%)",
               zIndex: UI_Z_INDEX.hud + 20,
             }
@@ -213,7 +212,9 @@ export function BetrayalTableActionCueSurface({
       {inventoryTargetRooms.length > 0 ? (
         <div
           data-testid="betrayal-inventory-target-room-selector"
-          className="inline-flex max-w-[min(720px,calc(100vw-2rem))] flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+          className={`inline-flex flex-wrap items-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none ${
+            isPortal ? "max-w-[min(720px,calc(100vw-2rem))]" : "max-w-[720px]"
+          }`}
         >
           <span className="px-0 text-[11px] font-semibold text-[#d9c68f]">
             {t("board.inventory.map")}
@@ -260,7 +261,9 @@ export function BetrayalTableActionCueSurface({
       {rollTotalReplacementOptions.length > 0 ? (
         <div
           data-testid="betrayal-inventory-roll-total-selector"
-          className="inline-grid max-w-[min(360px,calc(100vw-2rem))] grid-cols-[auto_repeat(9,1.5rem)] items-center justify-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+          className={`inline-grid grid-cols-[auto_repeat(9,1.5rem)] items-center justify-center gap-1 rounded-none border-0 bg-transparent px-0 py-0 shadow-none ${
+            isPortal ? "max-w-[min(360px,calc(100vw-2rem))]" : "max-w-[360px]"
+          }`}
         >
           <span className="whitespace-nowrap px-0 pr-1 text-[11px] font-semibold text-[#d9c68f]">
             {t("board.inventory.rollTotalReplacement")}
@@ -290,7 +293,9 @@ export function BetrayalTableActionCueSurface({
         <div
           data-testid="betrayal-inventory-heal-preview"
           data-player-id={selectedInventoryHealPreviewExplorer.playerId}
-          className="grid max-w-[min(620px,calc(100vw-2rem))] grid-cols-2 gap-1.5 rounded-[9px] border border-[rgba(211,179,109,0.22)] bg-[rgba(12,14,12,0.58)] p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)]"
+          className={`grid grid-cols-2 gap-1.5 rounded-[9px] border border-[rgba(211,179,109,0.22)] bg-[rgba(12,14,12,0.58)] p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.22)] ${
+            isPortal ? "max-w-[min(620px,calc(100vw-2rem))]" : "max-w-[620px]"
+          }`}
         >
           {selectedInventoryHealPreviewTraits.map((trait) => (
             <ExplorerTraitOutcomePreview
@@ -459,7 +464,9 @@ export function BetrayalTableActionCueSurface({
       {shouldShowMaskTargetSelector ? (
         <div
           data-testid="betrayal-mask-target-selector"
-          className="inline-flex max-w-[min(720px,calc(100vw-2rem))] flex-wrap items-center gap-2 rounded-none border-0 bg-transparent px-0 py-0 shadow-none"
+          className={`inline-flex flex-wrap items-center gap-2 rounded-none border-0 bg-transparent px-0 py-0 shadow-none ${
+            isPortal ? "max-w-[min(720px,calc(100vw-2rem))]" : "max-w-[720px]"
+          }`}
         >
           <span className="px-1 text-[11px] font-semibold text-[#d9c68f]">
             {t("board.inventory.mask")}

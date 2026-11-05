@@ -38,11 +38,15 @@ export const MAGE_WARS_MAGE_ABILITY_IDS = {
 } as const;
 
 export const MAGE_WARS_OBJECT_ABILITY_IDS = {
+    ASYRAN_TEMPLE_PLACE_MANA: 'mw.object.2203.place-mana',
     BLUE_GREMLIN_SWIFT_TELEPORT: 'mw.object.2822.swift-teleport',
     ASYRAN_CLERIC_HEALING_LIGHT: 'mw.object.2811.healing-light',
     GREY_ANGEL_REDEMPTION_SACRIFICE: 'mw.object.2907.redemption-sacrifice',
+    BINSARA_HAND: 'mw.object.2219.binsara-hand',
+    DECOY_REVEAL: 'mw.enchantment.1811.reveal',
     BEAST_STAFF: 'mw.equipment.3710.beast-staff',
     ELEMENTAL_STAFF_BIND: 'mw.equipment.3716.elemental-staff-bind',
+    MAGE_STAFF_BIND: 'mw.equipment.3725.mage-staff-bind',
 } as const;
 
 export type MageId = typeof MAGE_IDS[keyof typeof MAGE_IDS];

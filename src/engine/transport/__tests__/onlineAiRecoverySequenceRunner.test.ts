@@ -154,6 +154,131 @@ function createHarness(options: {
 }
 
 describe('OnlineAiRecoverySequenceRunner', () => {
+    it('手动强制模式直接执行候选恢复命令，不调用 AI 合法动作生成', async () => {
+        const match = createMatch({
+            state: createState({ phase: 'defensiveRoll' }),
+            engineConfig: {
+                gameId: 'test-game',
+                onlineAiRecovery: {
+                    allowForceCommandAfterLegalActionExhausted: () => true,
+                },
+            } as GameEngineConfig,
+        });
+        const candidate = createCandidate({
+            reason: 'seat-legal-only',
+            legalActionOnly: true,
+            resolution: {
+                playerId: '1',
+                attemptKey: 'manual-force-confirm-roll',
+                source: 'local-ai',
+                action: {
+                    actionId: 'manual-force-confirm-roll',
+                    kind: 'force-confirm-roll',
+                    label: '强制确认当前骰面',
+                    commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+                },
+            },
+        });
+        const tracker = createTracker(match, candidate);
+        const progressMarkerBeforeRecovery = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
+        let clearLiveCandidate: () => void = () => {};
+        const executeRecoveryCommand = vi.fn(async ({ match }) => {
+            advanceState(match, 'after-manual-force-command');
+            clearLiveCandidate();
+            return true;
+        });
+        const recoverWithLegalAction = vi.fn(async (): Promise<OnlineAiLegalActionRecoveryResult> => {
+            throw new Error('manual force must not ask AI for a legal action');
+        });
+        const harness = createHarness({
+            match,
+            candidate,
+            recoverWithLegalAction,
+            onExecuteRecoveryCommand: executeRecoveryCommand,
+        });
+        clearLiveCandidate = harness.clearLiveCandidate;
+
+        await harness.runner.run({
+            match,
+            tracker,
+            candidate,
+            progressMarkerBeforeRecovery,
+            seatControllers,
+            options: { forceManualCommandExecution: true },
+        });
+
+        expect(recoverWithLegalAction).not.toHaveBeenCalled();
+        expect(executeRecoveryCommand).toHaveBeenCalledWith(expect.objectContaining({
+            match,
+            playerId: '1',
+            commandType: 'CONFIRM_ROLL',
+            commandPayload: {},
+        }));
+        expect(harness.hooks.reportRecoverySuccessFeedback).toHaveBeenCalledWith(expect.objectContaining({
+            metadata: expect.objectContaining({
+                incidentKind: 'force-end-turn-success',
+            }),
+        }));
+    });
+
+    it('手动强制模式在合法动作为空时直接推进阶段', async () => {
+        const match = createMatch({
+            state: createState({ phase: 'defensiveRoll' }),
+            engineConfig: {
+                gameId: 'test-game',
+                onlineAiRecovery: {
+                    allowForceCommandAfterLegalActionExhausted: () => true,
+                },
+            } as GameEngineConfig,
+        });
+        const candidate = createCandidate({
+            reason: 'active-turn-legal-only',
+            legalActionOnly: true,
+        });
+        const tracker = createTracker(match, candidate);
+        const progressMarkerBeforeRecovery = buildAiProgressMarker(match.state, {
+            engineConfig: match.engineConfig,
+            gameId: match.gameId,
+        });
+        let clearLiveCandidate: () => void = () => {};
+        const executeRecoveryCommand = vi.fn(async ({ match, commandType }) => {
+            expect(commandType).toBe('ADVANCE_PHASE');
+            advanceState(match, 'after-manual-force-advance');
+            clearLiveCandidate();
+            return true;
+        });
+        const recoverWithLegalAction = vi.fn(async (): Promise<OnlineAiLegalActionRecoveryResult> => {
+            throw new Error('manual force must not ask AI for a legal action');
+        });
+        const harness = createHarness({
+            match,
+            candidate,
+            recoverWithLegalAction,
+            onExecuteRecoveryCommand: executeRecoveryCommand,
+        });
+        clearLiveCandidate = harness.clearLiveCandidate;
+
+        await harness.runner.run({
+            match,
+            tracker,
+            candidate,
+            progressMarkerBeforeRecovery,
+            seatControllers,
+            options: { forceManualCommandExecution: true },
+        });
+
+        expect(recoverWithLegalAction).not.toHaveBeenCalled();
+        expect(executeRecoveryCommand).toHaveBeenCalledTimes(1);
+        expect(harness.hooks.reportRecoverySuccessFeedback).toHaveBeenCalledWith(expect.objectContaining({
+            metadata: expect.objectContaining({
+                incidentKind: 'force-end-turn-success',
+            }),
+        }));
+    });
+
     it('合法动作恢复成功时清理 tracker 并通过成功反馈 hook 上报', async () => {
         const match = createMatch();
         const candidate = createCandidate();

@@ -4,6 +4,54 @@ import { SU_EVENTS } from './types';
 import { advanceSmashUpReactionSession } from './reactionSession';
 import type { AdvanceSmashUpReactionOptions } from './reactionSession';
 import { applyTriggerQueueFactEvent } from './triggerQueueFacts';
+import { resolveInteraction } from '../../../engine/systems/InteractionSystem';
+
+function getInteractionSourceId(interaction: unknown): string | undefined {
+    const sourceId = (interaction as { data?: { sourceId?: unknown } } | undefined)?.data?.sourceId;
+    return typeof sourceId === 'string' ? sourceId : undefined;
+}
+
+function suspendCurrentInteractionForMandatoryReaction(
+    state: MatchState<SmashUpCore>,
+    options?: AdvanceSmashUpReactionOptions,
+): { state: MatchState<SmashUpCore>; suspendedId?: string } {
+    const current = state.sys.interaction?.current;
+    if (!options?.suspendCurrentInteraction || !current) return { state };
+    if (getInteractionSourceId(current) === 'smashup_reaction_choose') return { state };
+
+    const interactionState = state.sys.interaction;
+    const suspendedId = current.id;
+    return {
+        state: {
+            ...state,
+            sys: {
+                ...state.sys,
+                interaction: {
+                    ...interactionState,
+                    current: undefined,
+                    queue: [current, ...(interactionState.queue ?? [])],
+                },
+            },
+        },
+        suspendedId,
+    };
+}
+
+function promoteQueuedFollowupAfterConsumedTrigger(
+    state: MatchState<SmashUpCore>,
+    events: readonly SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (!events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)) return state;
+    if (state.sys.interaction?.current) return state;
+
+    const queuedFollowup = state.sys.interaction?.queue?.[0];
+    const queuedFollowupSourceId = getInteractionSourceId(queuedFollowup);
+    if (!queuedFollowup || !queuedFollowupSourceId || queuedFollowupSourceId === 'smashup_reaction_choose') {
+        return state;
+    }
+
+    return resolveInteraction(state);
+}
 
 function materializeTriggerQueueFacts(
     state: MatchState<SmashUpCore>,
@@ -27,10 +75,21 @@ export function maybeResolveReactionQueue(
     now: number,
     options?: AdvanceSmashUpReactionOptions,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } | undefined {
-    const result = advanceSmashUpReactionSession(state, random, now, options);
+    const suspended = suspendCurrentInteractionForMandatoryReaction(state, options);
+    const result = advanceSmashUpReactionSession(suspended.state, random, now, options);
     if (!result) return undefined;
+    let nextState = result.state;
+    if (
+        suspended.suspendedId
+        && !nextState.sys.interaction?.current
+        && nextState.sys.interaction?.queue?.[0]?.id === suspended.suspendedId
+    ) {
+        nextState = resolveInteraction(nextState);
+    } else {
+        nextState = promoteQueuedFollowupAfterConsumedTrigger(nextState, result.events);
+    }
     return {
         ...result,
-        state: materializeTriggerQueueFacts(result.state, result.events, options),
+        state: materializeTriggerQueueFacts(nextState, result.events, options),
     };
 }

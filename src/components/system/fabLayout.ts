@@ -42,10 +42,13 @@ export const resolveExpandedFabLayout = ({
     const topInset = Number.isFinite(safeAreaTop) ? safeAreaTop : 0;
     const bottomInset = Number.isFinite(safeAreaBottom) ? safeAreaBottom : 0;
     const offset = resolvedButtonSize + resolvedButtonGap;
+    // 每列只能使用主球展开方向上的空间，不能把列表挤回固定主球。
     const availableHeight = resolvedViewportHeight > 0
-        ? Math.max(resolvedButtonSize, resolvedViewportHeight - topInset - bottomInset - offset)
+        ? Math.max(0, alignment.v === 'bottom'
+            ? resolvedPosition.top - topInset
+            : resolvedViewportHeight - bottomInset - resolvedPosition.top - resolvedButtonSize)
         : 0;
-    const maxItemsPerColumn = availableHeight > 0 && offset > 0
+    const maxItemsPerColumn = resolvedViewportHeight > 0 && offset > 0
         ? Math.max(1, Math.floor(availableHeight / offset))
         : Math.max(1, resolvedSatelliteCount);
     const itemsPerColumn = resolvedSatelliteCount > 0
@@ -65,7 +68,7 @@ export const resolveExpandedFabLayout = ({
                 offsetY = topInset - listTop;
             }
         } else {
-            const listBottom = resolvedPosition.top + visibleColumnHeight + offset + resolvedButtonSize;
+            const listBottom = resolvedPosition.top + visibleColumnHeight + resolvedButtonSize;
             const maxBottom = resolvedViewportHeight - bottomInset;
             if (listBottom > maxBottom) {
                 offsetY = maxBottom - listBottom;

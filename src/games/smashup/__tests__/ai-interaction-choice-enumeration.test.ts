@@ -624,7 +624,7 @@ describe('Smash Up AI 交互候选枚举', () => {
             currentPlayerIndex: 0,
             bases: [makeBase('base_training_camp', [
                 makeMinion('yellow-trooper-ai', 'mega_troopers_yellow_trooper', '0', 4),
-                makeMinion('chien-po-opponent', 'mulan_chien_po', '1', 3),
+                makeMinion('kaijookey-opponent', 'kaiju_kaijookey', '1', 3),
             ])],
         }));
 
@@ -635,7 +635,7 @@ describe('Smash Up AI 交互候选枚举', () => {
         const validMegaAttack = legalActions.find(action =>
             action.kind === 'play-action'
             && action.metadata?.defId === 'mega_troopers_mega_attack'
-            && action.metadata?.targetMinionUid === 'chien-po-opponent',
+            && action.metadata?.targetMinionUid === 'kaijookey-opponent',
         );
 
         expect(validMegaAttack).toBeDefined();

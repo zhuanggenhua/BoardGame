@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import * as matchApi from '../../../../services/matchApi';
@@ -11,6 +11,8 @@ import { matchSocket } from '../../../../services/matchSocket';
 import { destroyMatch, persistMatchCredentials } from '../../../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../../../../hooks/match/ownerIdentity';
 import { UI_Z_INDEX } from '../../../../core';
+import { GameClientContext } from '../../../../engine/transport/reactContext';
+import { confirmDestructiveRoomReset, shouldShowDebugPanel } from './debugPanelAccess';
 import { useToast } from '../../../../contexts/ToastContext';
 import { copyToClipboard } from '../../../../lib/utils';
 import {
@@ -55,6 +57,17 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
     const currentPlayerID = searchParams.get('playerID');
     const gameMode = useGameMode();
     const { user, token } = useAuth();
+    const clientContext = useContext(GameClientContext);
+    const adminDebugAvailable = clientContext?.adminDebugAvailable === true
+        && typeof clientContext.adminDebugDispatch === 'function';
+    const panelDispatch = adminDebugAvailable ? clientContext!.adminDebugDispatch! : dispatch;
+    const debugChildren = React.Children.map(children, child => {
+        if (!React.isValidElement(child)) return child;
+        const props = child.props as { dispatch?: unknown };
+        return typeof props.dispatch === 'function'
+            ? React.cloneElement(child, { dispatch: panelDispatch } as never)
+            : child;
+    });
     const [isOpen, setIsOpen] = React.useState(false);
     const [activeTab, setActiveTab] = React.useState<'state' | 'actions' | 'controls'>('controls');
     const [isCreatingRoom, setIsCreatingRoom] = React.useState(false);
@@ -174,7 +187,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
     const handleApplyState = useCallback(() => {
         try {
             const newState = JSON.parse(stateInput);
-            dispatch('SYS_CHEAT_SET_STATE', { state: newState });
+            panelDispatch('SYS_CHEAT_SET_STATE', { state: newState });
             setStateInput('');
             setShowStateInput(false);
             setApplyError(null);
@@ -182,7 +195,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
             setApplyError(t('debug.state.errorInvalidJson'));
             setTimeout(() => setApplyError(null), 3000);
         }
-    }, [stateInput, dispatch, t]);
+    }, [stateInput, panelDispatch, t]);
 
     // 监听当前玩家变化，实现自动切换视角
     // 从领域内核读取当前玩家字段（G.core.currentPlayer）
@@ -264,7 +277,11 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
         && (window as Window & { __BG_E2E_DEBUG__?: boolean }).__BG_E2E_DEBUG__ === true;
     const isDebugHiddenForEvidence = typeof window !== 'undefined'
         && (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ === true;
-    if (!import.meta.env.DEV && !isE2EDebug) return null;
+    if (!shouldShowDebugPanel({
+        isDevelopment: import.meta.env.DEV,
+        isE2EDebug,
+        adminDebugAvailable,
+    })) return null;
     if (isDebugHiddenForEvidence) return null;
     if (!buttonPosition) return null;
 
@@ -275,15 +292,15 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
     const executeMove = (moveName: string) => {
         const rawArg = moveArgs['__commandArgs'];
         if (!rawArg) {
-            dispatch(moveName);
+            panelDispatch(moveName);
             return;
         }
 
         try {
             const arg = JSON.parse(rawArg);
-            dispatch(moveName, arg);
+            panelDispatch(moveName, arg);
         } catch {
-            dispatch(moveName, rawArg);
+            panelDispatch(moveName, rawArg);
         }
     };
 
@@ -547,7 +564,11 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                 {/* 游戏专属调试工具 */}
                                 {children && (
                                     <div className="space-y-3">
-                                        {children}
+                                        {clientContext && adminDebugAvailable ? (
+                                            <GameClientContext.Provider value={{ ...clientContext, dispatch: panelDispatch }}>
+                                                {debugChildren}
+                                            </GameClientContext.Provider>
+                                        ) : debugChildren}
                                     </div>
                                 )}
 
@@ -612,6 +633,26 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                     disabled={isCreatingRoom}
                                     onClick={async () => {
                                         const isOnline = gameMode?.mode === 'online';
+                                        let hasCurrentSeatCredentials = false;
+                                        if (isOnline && currentMatchId && currentPlayerID) {
+                                            try {
+                                                const storedCreds = localStorage.getItem(`match_creds_${currentMatchId}`);
+                                                if (storedCreds) {
+                                                    const parsed = JSON.parse(storedCreds) as { credentials?: string } | null;
+                                                    hasCurrentSeatCredentials = typeof parsed?.credentials === 'string'
+                                                        && parsed.credentials.length > 0;
+                                                }
+                                            } catch {
+                                                hasCurrentSeatCredentials = false;
+                                            }
+                                        }
+                                        if (!confirmDestructiveRoomReset({
+                                            isOnline,
+                                            currentMatchId: currentMatchId ?? null,
+                                            currentPlayerID,
+                                            hasCurrentSeatCredentials,
+                                            confirm: () => window.confirm(t('debug.reset.confirmDestroyCurrentRoom')),
+                                        })) return;
                                         
                                         if (isOnline && gameId) {
                                             // 联机模式：先广播新房间，然后创建并跳转

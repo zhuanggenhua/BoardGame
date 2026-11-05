@@ -69,6 +69,7 @@ function makePlagueZombie(id: string): UnitCard {
     id, cardType: 'unit', name: '亡灵疫病体', unitClass: 'common',
     faction: 'necromancer', strength: 2, life: 3, cost: 1,
     attackType: 'melee', attackRange: 1,
+    unitTags: ['undead', 'carrier'],
     abilities: ['soulless', 'infection'], deckSymbols: [],
   };
 }
@@ -79,6 +80,7 @@ function makeUndeadArcher(id: string): UnitCard {
     id, cardType: 'unit', name: '亡灵弓箭手', unitClass: 'common',
     faction: 'necromancer', strength: 3, life: 2, cost: 2,
     attackType: 'ranged', attackRange: 3,
+    unitTags: ['undead'],
     abilities: ['soul_transfer'], deckSymbols: [],
   };
 }

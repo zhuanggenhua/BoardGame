@@ -1,0 +1,50 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-19T00:00:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "英雄剧本书使用书内关闭、翻页和页码控件，不显示重复标题。",
+      "status": "PASS",
+      "evidence": [
+        "主线教程真实浏览器 E2E 通过。",
+        "自然触发作祟真实浏览器 E2E 通过。",
+        "四张最新截图显示书内控件可见，教程卡位于书外且不遮挡书页。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\32-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\33-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\05-英雄剧本书目标页与图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\06-读完剧本书目标准备关闭.jpg"
+  ],
+  "validation": [
+    {
+      "check": "主线教程真实浏览器端到端",
+      "result": "passed"
+    },
+    {
+      "check": "自然触发作祟真实浏览器端到端",
+      "result": "passed"
+    },
+    {
+      "check": "手机横屏与 PC 布局",
+      "result": "passed"
+    },
+    {
+      "check": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "check": "git diff --check",
+      "result": "passed"
+    }
+  ]
+}

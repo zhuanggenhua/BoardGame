@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, PendingBonusDiceSettlement } from '../domain/types';
-import { getCurrentDamageSummary, getCurrentDamageSummaryDetails } from '../domain/damageSummary';
+import { getCurrentDamageSummary, getCurrentDamageSummaryDetails, isPendingDamageResponseBonusSettlement } from '../domain/damageSummary';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 import { RESOURCE_IDS } from '../domain/resources';
 
@@ -33,6 +33,15 @@ const attackSettlement = (patch: Partial<PendingBonusDiceSettlement>): PendingBo
 });
 
 describe('DiceThrone 当前总伤害摘要', () => {
+    it('不屈意志的受伤响应骰必须先确认，不能改变总伤害摘要或允许其他玩家接管', () => {
+        const pendingDamage = { id: 'pd-undaunted', sourcePlayerId: '1', targetPlayerId: '0', responderId: '0', originalDamage: 8, currentDamage: 8, responseType: 'beforeDamageReceived' } as DiceThroneCore['pendingDamage'];
+        const settlement = attackSettlement({ sourceAbilityId: 'card-thor-undaunted', attackerId: '0', targetId: '0', displayOnly: true,
+            dice: [{ index: 0, value: 4, face: 'thor_worthy', effectKey: 'bonusDie.effect.thor.die' }], customResolutionId: 'thor-undaunted-settle', continuation: { kind: 'complete' } });
+        const core = baseCore({ pendingDamage, pendingBonusDiceSettlement: settlement });
+        expect(isPendingDamageResponseBonusSettlement(core, settlement)).toBe(true);
+        expect(isPendingDamageResponseBonusSettlement(core, { ...settlement, attackerId: '1' })).toBe(false);
+        expect(getCurrentDamageSummary(core)).toEqual({ currentDamage: 8, originalDamage: 8 });
+    });
     it('没有临时改动时显示当前攻击基础伤害', () => {
         expect(getCurrentDamageSummary(baseCore())).toEqual({
             currentDamage: 5,

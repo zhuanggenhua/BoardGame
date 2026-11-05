@@ -74,7 +74,7 @@ function makeFortressArcher(id: string): UnitCard {
     id, cardType: 'unit', name: '城塞弓箭手', unitClass: 'common',
     faction: 'paladin', strength: 2, life: 2, cost: 1,
     attackType: 'ranged', attackRange: 3,
-    abilities: ['holy_arrow'], deckSymbols: [],
+    abilities: ['holy_arrow'], unitTags: ['citadel'], deckSymbols: [],
   };
 }
 

@@ -1,6 +1,6 @@
 {
   "title": "Mage Wars",
-  "description": "A 2-player spell tactics game. This foundation locks the formal arena, mage state, spellbook zones, and event-driven spell FX contract.",
+  "description": "A 2-player spell tactics game. This foundation locks the formal arena, mage state, spellbook zones, walls, guarding, and event-driven spell FX contract.",
   "players": "2 players",
   "arena": {
     "actionStage": "Action phase",
@@ -48,7 +48,6 @@
       "activeSpellbookAria": "Available spellbook library",
       "activeSpellbookTitle": "Selected Spellbook",
       "editCurrentSpellbook": "Edit Selected Book",
-      "spellbookLibraryHelp": "Standard starts and named copies appear together; clicking a book also binds its mage.",
       "standardSpellbook": "Standard Start",
       "spellbookCardSummary": "{{count}} cards",
       "newSpellbook": "New Spellbook",
@@ -115,7 +114,9 @@
     "inspectCardAria": "Magnify {{name}}",
     "observeOpponentPublicView": "Observe opponent public area",
     "opponentPublicView": "Opponent public view",
-    "backToSelfView": "Back to your view"
+    "backToSelfView": "Back to your view",
+    "phaseProgressTitle": "Turn Flow",
+    "cardOriginalText": "Card text"
   },
   "zonesPanel": {
     "title": "Private And Attached Zones",
@@ -150,7 +151,6 @@
     "hiddenInfo": "Hidden information",
     "spellbook": "Spellbook",
     "preparedSpells": "Prepared spells",
-    "preparedSpellsWithCount": "Your prepared {{count}} / {{total}}",
     "preparedSpell": "Prepared spell",
     "discardPile": "Discard pile",
     "discardPileWithCount": "Discard {{count}}",
@@ -162,7 +162,17 @@
     "attack": "Attack die",
     "effect": "12-sided effect die",
     "effectShort": "d12",
+    "effectResult": "D12 · {{result}}",
+    "effectNativeAssetNote": "Blue twelve-sided effect die",
     "settlement": "Dice ready"
+  },
+  "diceResult": {
+    "meleeAttack": "Melee Attack",
+    "rangedAttack": "Ranged Attack",
+    "heal": "Heal",
+    "damage": "{{count}} Damage",
+    "miss": "Miss",
+    "healed": "+{{count}}"
   },
   "actionDock": {
     "title": "Current Action",
@@ -179,14 +189,16 @@
     "guardCreature": "Guard",
     "attack": "Basic attack",
     "attackCreature": "Creature attack",
-    "advanceReset": "Continue reset",
-    "advanceChannel": "Continue channeling",
-    "advanceUpkeep": "Continue upkeep",
-    "passPlanning": "Confirm no prep",
     "passDeployment": "End deployment",
     "passQuickcast": "Pass quickcast",
     "endAction": "End action",
     "endTurn": "End Turn",
+    "activateAbility": "Use ability",
+    "rebindSpell": "Rebind spell",
+    "castBoundSpell": "Cast {{name}}",
+    "meleeBonus": "Melee bonus",
+    "healMode": "Heal",
+    "meleeBonusMarker": "Melee +{{amount}}",
     "close": "Close"
   },
   "interaction": {
@@ -195,10 +207,32 @@
       "manaCost": "Mana {{manaCost}}",
       "cancel": "Cancel"
     },
+    "battleFury": {
+      "title": "{{attackerObjectId}} may make one additional quick melee attack",
+      "options": {
+        "attack": "Make extra attack",
+        "pass": "Pass extra attack"
+      }
+    },
+    "fearHelmet": {
+      "title": "{{attackerObjectId}}'s attack was canceled by Fear Helmet",
+      "options": {
+        "retarget": "Attack a different target",
+        "guard": "Guard instead",
+        "cancel": "Cancel attack"
+      }
+    },
     "counterstrike": {
       "title": "{{defenderObjectId}} may counterstrike {{attackerObjectId}}",
       "options": {
         "counterstrike": "Counterstrike",
+        "pass": "Pass"
+      }
+    },
+    "battleFury": {
+      "title": "{{attackerObjectId}} may make a Battle Fury extra attack",
+      "options": {
+        "attack": "Make extra attack",
         "pass": "Pass"
       }
     },
@@ -216,6 +250,13 @@
         "destroy": "Destroy enchantment"
       }
     },
+    "upkeepEquipmentDirectDamage": {
+      "title": "{{targetObjectId}} may take {{amount}} damage from Moloch's Torment",
+      "options": {
+        "pay": "Pay mana and deal damage",
+        "skip": "Do not deal damage"
+      }
+    },
     "upkeepHealTransfer": {
       "title": "Death Link on {{targetObjectId}} may heal up to {{availableHealing}} damage",
       "options": {
@@ -224,9 +265,11 @@
       }
     },
     "enchantmentResponse": {
-      "title": "Reveal response enchantment {{responseObjectId}}",
+      "title": "Reveal response enchantment: {{responseCardName}}",
       "options": {
-        "reveal": "Reveal and resolve"
+        "reveal": "Reveal and resolve",
+        "redirect": "Reveal and redirect the spell",
+        "teleport": "Teleport to {{targetZoneId}}"
       }
     },
     "spellCastChoice": {
@@ -237,13 +280,43 @@
     }
   },
   "error": {
-    "unsupportedCommand": "This command is not in the foundation implementation scope yet."
+    "unsupportedCommand": "This command is not in the foundation implementation scope yet.",
+    "actionUnavailable": "You cannot do that right now.",
+    "wrongPhase": "You cannot do that during the current phase.",
+    "tutorialBlocked": "The tutorial step does not allow that action yet. Follow the current prompt first.",
+    "invalidSpellTarget": "That target cannot receive the selected spell.",
+    "invalidMoveTarget": "You cannot move to that zone.",
+    "invalidAttackTarget": "You cannot attack that target right now.",
+    "invalidAbilityTarget": "That target cannot receive the selected ability.",
+    "invalidArenaObjectAbility": "That object ability cannot be used that way right now.",
+    "invalidMageAbility": "That mage ability cannot be used that way right now.",
+    "insufficientMana": "Not enough mana to cast that spell.",
+    "insufficientSourceMana": "That source object does not have enough mana to cast through this spellcasting point.",
+    "manaCostMismatch": "The mana cost does not match the selected spell.",
+    "spellNotPrepared": "That spell has not been prepared, so it cannot be cast.",
+    "spellNotQuick": "That spell is not a quick spell, so it cannot be used in a quickcast window.",
+    "quickcastSpent": "The quickcast marker is spent, so you cannot quickcast again.",
+    "actionSpent": "The action marker is spent, so you cannot act again.",
+    "objectActionSpent": "That unit's action marker is spent, so it cannot act again.",
+    "notYourObject": "You do not control that object.",
+    "invalidTargetObject": "That target object is invalid.",
+    "spellSchoolLineNotAllowed": "That spellcasting point does not allow that school.",
+    "targetOutOfRange": "The target is out of range.",
+    "wallEdgeOccupied": "That edge already has a wall.",
+    "missingTarget": "Choose a legal target first.",
+    "spellRequiresCodeSupport": "That spell is not in the current playable scope yet.",
+    "resurrectionTargetNotLivingCreature": "Resurrection can only choose a defeated living creature from your discard pile.",
+    "resurrectionTargetNotInSpellbook": "That creature is not in your spellbook.",
+    "resurrectionTargetNotDefeated": "That creature is not in your defeated living-creature pool.",
+    "resurrectionTargetNotDiscarded": "That creature is not currently in your discard pile.",
+    "resurrectionTargetMissingCost": "The target creature is missing mana-cost or spell-level data.",
+    "resurrectionTargetMissingStats": "The target creature is missing life or armor data."
   },
   "spellbook": {
     "previousPage": "Previous page",
     "nextPage": "Next page",
     "pageSummary": "{{page}} / {{total}}",
-    "planSelected": "Confirm prep {{count}}/{{total}}",
+    "planSelected": "Confirm plan {{count}}/{{total}}",
     "selected": "Selected",
     "selectedCount": "Selected {{count}}",
     "categories": {
@@ -326,7 +399,7 @@
     "back": "Back",
     "confirm": "Confirm Spellbook",
     "mageDetailAria": "Mage rules card",
-    "mageDetailDescription": "This build calculates training from the mage ability card. To change mage, return to spellbook selection and choose another spellbook bound to that mage.",
+    "builderConstraints": "Build constraints",
     "trainedDirection": "Trained schools",
     "opposedDirection": "Opposed schools",
     "currentListLabel": "Spellbook list",
@@ -378,7 +451,7 @@
     "catalog": {
       "basic": {
         "title": "First Game Flow: Read, Prepare, Resolve",
-        "description": "Start with the win condition, mage readouts, channeling, and planning, then continue through summoning, public discard, the quickcast window, and movement."
+        "description": "Start with the win condition, mage readouts, channeling, and planning, then continue through summoning, public discard, the quickcast window, movement, walls, and guarding."
       }
     },
     "visuals": {
@@ -391,25 +464,27 @@
       "intro": "Mage Wars lasts several rounds, until one mage has taken enough damage to be destroyed. The last mage standing wins the game.",
       "selfHud": "Your mage panel shows life, damage, mana, channeling, action marker, and quickcast marker. Apprentice mages start with Life 24, Mana 10, and Channeling 10; your goal is to deal enough damage to defeat the opposing mage.",
       "opponentHud": "The opponent panel shows the same readouts. Opponent prepared spells use card backs and a count, so card names stay hidden until revealed.",
-      "stage": "Each game round has two stages: the Ready Stage and the Action Stage. The Action Stage begins after the Ready Stage is complete.",
+      "stage": "The rules split a round into the Ready Stage and Action Stage. Ready includes Initiative, Reset, Channel, Upkeep, Planning, and Deployment; Action includes Initiative Quickcast, Creature Action, and Final Quickcast. The tutorial stops only when you need to decide.",
       "prepareChannelResult": "The ready stage is resolving.",
       "channelResult": "The Beastmaster currently has Channeling 10; after channeling, the mana supply gains 10 mana.",
       "prepareUpkeep": "Upkeep is resolving.",
       "preparePlanning": "Upkeep is resolving before planning begins.",
       "spellCardReading": "Use this spell-card legend first: cost, action, range, target, type, school, and level determine how you prepare and cast.",
-      "attackBarReading": "Jungle Wolf is in your prepared spells and is about to be cast. Read its attack bar first: the left icons tell quick or full action and melee or ranged attack; the right side shows range, damage type, attack dice, extra effects, and traits. Click Next when done.",
+      "planningSkip": "During Planning, prepare up to 2 spells each round; if you prepare none, submit with “Confirm plan”. This round, prepare two.",
+      "attackBarReading": "Jungle Wolf is in your prepared spells and is about to be cast. Its attack bar shows a quick melee attack with 4 attack dice.",
       "planOpenCreatureCategory": "Click the Creature category.",
       "planCreatureNextPage": "Click the next page to find Jungle Wolf.",
       "planSelectWolf": "Jungle Wolf is a Creature spell: it summons a creature into the arena to keep fighting. Click the Jungle Wolf card body to put it into the first prepared slot.",
       "planOpenIncantationCategory": "Click the Incantation category.",
       "planIncantationNextPage": "Click the next page to find Rouse the Beast.",
       "planSelectRouse": "Rouse the Beast is an Incantation spell: it resolves a one-time text effect, then goes to your discard pile. Click the Rouse the Beast card body to put it into the second prepared slot.",
-      "planConfirm": "Click “Confirm prep 2/2” to submit this round's plan.",
+      "planConfirm": "Click “Confirm plan 2/2” to submit this round's plan.",
       "prepareOpponentSpells": "The opponent prepares spells through the formal flow; they stay card backs until revealed.",
       "preparedAndHidden": "Both players choose their own spells at the same time. Your chosen spells are kept hidden from the opponent so they cannot know your plan.",
       "deploySelectWolf": "Click Jungle Wolf in your prepared spells.",
       "deployTargetZone": "Click the Beastmaster's zone.",
-      "wolfSummoned": "Jungle Wolf has been summoned into the Beastmaster's zone. It enters without a ready action, so the spent action marker means it cannot act yet. This is a reading step: do not click the wolf yet, click Next to continue.",
+      "wolfSummoned": "After Jungle Wolf enters play, its action marker is on the spent side, so it cannot act yet. Next, Rouse the Beast turns it ready.",
+      "armorReading": "Read the armor field on the wolf card. Armor cancels the matching amount of damage during damage resolution; “Piercing +N” on an attack bar cancels that many points of armor.",
       "rouseSelectSpell": "Click Rouse the Beast in your prepared spells.",
       "rouseTargetWolf": "Click the Jungle Wolf card body in the arena so Rouse the Beast targets it.",
       "passYourDeployment": "Jungle Wolf's action marker is ready, but this is still the deployment phase. Click “End deployment” first; after the action phase begins, click the Jungle Wolf card body to move it.",
@@ -422,7 +497,31 @@
       "opponentPassInitiativeQuickcast": "The opponent also passes initiative quickcast, so your creature action begins. Next, use Jungle Wolf to move.",
       "moveSelectWolf": "Click the Jungle Wolf card body in the arena to choose it as the moving creature.",
       "moveTargetZone": "Click an adjacent zone to move.",
-      "finish": "You have now read the board and spell cards, channeled, prepared spells, summoned Jungle Wolf, read its attack bar, roused it, checked public discard, passed the quickcast window, and moved a creature. The basic tutorial is complete."
+      "endCreatureAction": "Moving has used the wolf's action. Click “End action” so both players finish Creature Action and enter Final Quickcast.",
+      "opponentPassCreatureAction": "The opponent's Creature Action resolves through the formal flow.",
+      "skipFinalQuickcast": "This is your Final Quickcast window. You are not casting a quick spell now, so click “Pass quickcast”.",
+      "roundTwoPlanning": "The new round's Reset, Channel, and Upkeep have resolved automatically; Jungle Wolf's action marker is ready again. Prepare Wall of Thorns this round and see how a wall occupies the edge between two zones.",
+      "planOpenAllCategory": "Click the All category.",
+      "planWallNextPage": "Click the next page to find Wall of Thorns.",
+      "planSelectThornsWall": "Wall of Thorns is a Wall spell: it is placed on the edge between two adjacent zones. Click the Wall of Thorns card body to put it into the prepared slot.",
+      "planConfirmThornsWall": "Click “Confirm plan 1/2” to submit this round's plan.",
+      "prepareOpponentEmptyPlan": "The opponent prepares no spells this round, so both players enter Deployment.",
+      "opponentPassSecondDeployment": "The opponent passes Deployment first, so it is your turn to cast the prepared Wall spell.",
+      "wallPrepared": "Wall of Thorns is in your prepared spells. A Wall spell does not summon into a zone; it targets the edge between two zones.",
+      "wallSelectSpell": "Click Wall of Thorns in your prepared spells.",
+      "wallTargetEdge": "Click the edge between the Beastmaster's zone and the zone to its right.",
+      "wallCardResult": "Wall of Thorns is now attached to that edge, shown by its own spell card rather than a normal creature slot.",
+      "wallEffectReading": "This wall blocks movement and line of sight across the edge; later attacks or spells must check whether the wall lies between source and target.",
+      "endSecondDeployment": "The wall has been deployed. Click “End deployment” to enter the initiative quickcast window.",
+      "opponentPassSecondInitiativeQuickcast": "The opponent passes initiative quickcast, so now you decide whether to quickcast.",
+      "skipSecondInitiativeQuickcast": "You are still not using quickcast this round, so click “Pass quickcast”.",
+      "opponentPassSecondCreatureAction": "The opponent passes Creature Action, so Jungle Wolf can act now.",
+      "guardSelectWolf": "Click the Jungle Wolf card body in the arena to choose it as this action's source.",
+      "guardAction": "Click “Guard” in the action dock. Guard is the action; the guard marker appears on the unit after it resolves.",
+      "guardTokenResult": "Jungle Wolf gains the guard marker and spends its action for the round. The marker stays on the unit to show it protects friendly objects in the same zone.",
+      "endSecondCreatureAction": "Guarding has spent Jungle Wolf's action. Click “End action” to enter Final Quickcast.",
+      "opponentPassSecondFinalQuickcast": "The opponent passes Final Quickcast, so it is your turn to close the round.",
+      "finish": "Tutorial complete. You have gone through a normal round flow and seen the wall and guard results."
     }
   },
   "actionLog": {
@@ -477,6 +576,7 @@
     "spellPushTarget": ", target {{targetId}}, {{from}} → {{to}}",
     "spellTeleportResolved": "Spell teleport",
     "spellTeleportTarget": ", target {{targetId}}, {{from}} → {{to}}, distance {{distance}}",
-    "arenaObjectRegenerated": "{{objectId}} regenerated {{healing}} damage"
+    "arenaObjectRegenerated": "{{objectId}} regenerated {{healing}} damage",
+    "mageRegenerated": "Mage regenerated {{healing}} damage"
   }
 }

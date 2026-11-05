@@ -36,6 +36,10 @@ export interface MageWarsCastSpellCommand extends Command<typeof MAGE_WARS_COMMA
         newTargetZoneId?: ArenaZoneId;
         pushToZoneId?: ArenaZoneId;
         boundSpellCardId?: number;
+        targetSpellCardId?: number;
+        statusTokenIds?: StatusTokenId[];
+        statusTokenAmounts?: Partial<Record<StatusTokenId, number>>;
+        selectedEnchantmentObjectIds?: string[];
         chainLightningTargets?: Array<{
             targetObjectId: string;
         }>;
@@ -66,7 +70,7 @@ export interface MageWarsUseArenaObjectAbilityCommand extends Command<typeof MAG
         abilityId: MageWarsObjectAbilityId;
         manaCost: number;
         targetObjectId?: string;
-        mode?: 'melee-bonus' | 'heal';
+        mode?: 'melee-bonus' | 'armor-bonus' | 'heal';
         boundSpellCardId?: number;
     };
 }

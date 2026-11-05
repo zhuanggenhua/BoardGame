@@ -16,7 +16,7 @@ vi.mock('react-i18next', () => ({
 
 function makeLierenPlayer() {
     const player = initHeroState('0', 'lieren', createQueuedRandom([1]));
-    player.companion = { id: 'nyra', hp: 5, maxHp: 7 };
+    player.companion = { id: 'nyra', hp: 5, maxHp: 7, active: true };
     player.tokens[TOKEN_IDS.NYRAS_BOND] = 1;
     return player;
 }

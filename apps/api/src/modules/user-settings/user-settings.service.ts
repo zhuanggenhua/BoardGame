@@ -40,6 +40,23 @@ export class UserSettingsService {
         );
     }
 
+    async getFavoriteGames(userId: string): Promise<string[]> {
+        const doc = await this.uiSettingsModel.findOne({ userId });
+        return doc?.favoriteGameIds ?? [];
+    }
+
+    async setFavoriteGame(userId: string, gameId: string, favorite: boolean): Promise<string[]> {
+        const doc = await this.uiSettingsModel.findOneAndUpdate(
+            { userId },
+            {
+                ...(favorite ? { $addToSet: { favoriteGameIds: gameId } } : { $pull: { favoriteGameIds: gameId } }),
+                $setOnInsert: { userId },
+            },
+            { upsert: true, new: true },
+        );
+        return doc!.favoriteGameIds;
+    }
+
     async getSeenHints(userId: string): Promise<string[]> {
         const doc = await this.uiSettingsModel.findOne({ userId });
         return doc?.seenHints ?? [];

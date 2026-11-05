@@ -1,0 +1,33 @@
+/* Platform appearance uses the existing auth state, validation and API handlers. */
+.platform-auth { width: min(440px, calc(100vw - 32px)); max-width: 440px; margin: 0; color: #111; background: #fff; border: 3px solid #111; border-radius: 0; box-shadow: 8px 8px #d5ff00; font-family: Arial, 'Microsoft YaHei', sans-serif; }
+.platform-auth-header { position: relative; padding: 28px 28px 0; flex-shrink: 0; }
+.platform-auth-brand { display: block; margin-bottom: 18px; color: #666; font-size: 13px; font-weight: 700; letter-spacing: .1em; }
+.platform-auth-header h2 { margin: 0 48px 24px 0; font-size: 28px; font-weight: 800; line-height: 1.25; }
+.platform-auth-close { position: absolute; right: 20px; top: 20px; width: 44px; height: 44px; display: grid; place-items: center; background: #f1f1f1; }
+.platform-auth-tabs { display: flex; gap: 24px; border-bottom: 1px solid #ccc; margin-bottom: 24px; }
+.platform-auth-tabs button { position: relative; min-height: 44px; padding: 8px 2px; color: #666; font-size: 15px; font-weight: 700; }
+.platform-auth-tabs button[aria-current] { color: #111; border-bottom: 4px solid #111; }
+.platform-auth-back { min-height: 44px; margin-bottom: 16px; font-size: 14px; text-decoration: underline; }
+.platform-auth form { font-family: inherit; }
+.platform-auth form > div { padding-left: 28px; padding-right: 28px; }
+.platform-auth form label { color: #333; font: 700 13px/1.5 Arial, 'Microsoft YaHei', sans-serif; letter-spacing: 0; }
+.platform-auth .auth-form-input { min-height: 48px; padding: 10px 12px; color: #111; background: #f4f4f4; border: 2px solid #ccc; border-radius: 0; font: 400 16px/1.5 Arial, 'Microsoft YaHei', sans-serif; caret-color: #111; }
+.platform-auth .auth-form-input::placeholder { color: #767676; opacity: 1; }
+.platform-auth .auth-form-input:focus { border-color: #111; background: #fff; outline: 2px solid #d5ff00; outline-offset: 1px; }
+.platform-auth input[type="password"] { padding-right: 44px; }
+.platform-auth [data-testid="auth-submit-button"] { min-height: 48px; border: 2px solid #111; border-radius: 0; background: #d5ff00; color: #111; font: 800 16px/1.5 Arial, 'Microsoft YaHei', sans-serif; letter-spacing: 0; box-shadow: 3px 3px #111; }
+.platform-auth [data-testid="auth-submit-button"]:hover { background: #c4ed00; }
+.platform-auth [data-testid="auth-login-forgot-button"] { min-height: 44px; color: #333; font-size: 14px; text-decoration: underline; }
+.platform-auth button:focus-visible { outline: 3px solid #ff008a; outline-offset: 2px; }
+@media (max-width: 600px) {
+ .platform-auth-container { align-items: flex-end !important; padding: 0 !important; }
+ .platform-auth { width: 100%; max-width: none; margin: 0; border-width: 3px 0 0; box-shadow: none; max-height: calc(var(--runtime-viewport-height, 100dvh) - 24px); }
+ .platform-auth-header { padding: 24px 24px 0; }
+ .platform-auth-header h2 { font-size: 26px; }
+ .platform-auth form > div { padding-left: 24px; padding-right: 24px; }
+ .platform-auth form > div:last-child { padding-bottom: max(28px, env(safe-area-inset-bottom)); }
+}
+
+.platform-auth [data-testid="auth-register-send-code"], .platform-auth [data-testid="auth-reset-send-code"] { min-height: 48px; padding: 10px 12px; border: 2px solid #111; background: #fff; color: #111; font: 700 13px/1.5 Arial, 'Microsoft YaHei', sans-serif; border-radius: 0; white-space: nowrap; }
+.platform-auth [data-testid="auth-register-send-code"]:disabled, .platform-auth [data-testid="auth-reset-send-code"]:disabled { color: #666; border-color: #bbb; background: #eee; }
+.platform-auth form button:has(svg) { color: #444; }

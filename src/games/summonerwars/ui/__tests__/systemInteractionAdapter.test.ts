@@ -165,3 +165,100 @@ describe('暗影能力棋盘直选适配', () => {
     expect(getSystemAbilityUiRoute(mode)).toBe(route);
   });
 });
+
+describe('仲裁律令按钮交互适配', () => {
+  it('没有来源单位字段时仍派生状态横幅选择', () => {
+    const interaction: SwSimpleChoiceInteraction = {
+      id: 'test-zhongcai-decree',
+      type: 'zhongcai_decree_discard',
+      meta: { cardId: 'zhongcai-holy-decree-1-0', charges: 1 },
+      options: [
+        {
+          id: 'discard',
+          labelKey: 'actions.zhongcaiDecreeDiscard',
+          value: { action: 'zhongcai_decree_discard' },
+        },
+        {
+          id: 'keep',
+          labelKey: 'actions.zhongcaiDecreeKeep',
+          value: { action: 'zhongcai_decree_keep' },
+        },
+      ],
+    };
+
+    const mode = deriveSystemAbilityMode(interaction, null);
+    expect(mode).toMatchObject({ abilityId: 'zhongcai_decree', step: 'selectChoice' });
+    expect(getSystemAbilityUiRoute(mode)).toBe('status-banner-choice');
+    expect(mode?.systemChoiceOptions).toEqual([
+      { id: 'discard', label: undefined, labelKey: 'actions.zhongcaiDecreeDiscard' },
+      { id: 'keep', label: undefined, labelKey: 'actions.zhongcaiDecreeKeep' },
+    ]);
+  });
+
+  it('圣言第二步把推拉落点暴露为棋盘位置', () => {
+    const interaction: SwSimpleChoiceInteraction = {
+      id: 'test-zhongcai-word-position',
+      type: 'activated_ability_target',
+      meta: {
+        abilityId: 'zhongcai_word',
+        sourceUnitId: 'zhongcai-summoner-0',
+        sourcePosition: { row: 3, col: 3 },
+        step: 'selectPosition',
+        targetPosition: { row: 3, col: 4 },
+      },
+      options: [
+        {
+          id: 'pos:3,5',
+          label: '(3,5)',
+          value: {
+            action: 'activated_ability_target',
+            abilityId: 'zhongcai_word',
+            targetPosition: { row: 3, col: 4 },
+            newPosition: { row: 3, col: 5 },
+          },
+        },
+        { id: 'skip', label: '跳过', value: { skip: true } },
+      ],
+    };
+
+    const mode = deriveSystemAbilityMode(interaction, null);
+    expect(mode).toMatchObject({ abilityId: 'zhongcai_word', step: 'selectPosition' });
+    expect(getSystemAbilityUiRoute(mode)).toBe('board-cell-position');
+    expect(listSystemAbilityPositionTargets(interaction, mode)).toEqual([{ row: 3, col: 5 }]);
+    expect(findSystemAbilityPositionOption(interaction, mode, { row: 3, col: 5 })?.id).toBe('pos:3,5');
+  });
+
+  it.each(['zhongcai_erase', 'zhongcai_inspire', 'zhongcai_word'] as const)(
+    '%s 第一阶段把棋盘单位点击映射回原始目标 option',
+    (abilityId) => {
+      const interaction: SwSimpleChoiceInteraction = {
+        id: `test-${abilityId}-target`,
+        type: 'activated_ability_target',
+        meta: {
+          abilityId,
+          sourceUnitId: 'zhongcai-source-0',
+          sourcePosition: { row: 3, col: 3 },
+          step: 'selectUnit',
+        },
+        options: [
+          {
+            id: 'pos:3,4',
+            label: '(3,4)',
+            value: {
+              action: 'activated_ability_target',
+              abilityId,
+              targetPosition: { row: 3, col: 4 },
+            },
+          },
+          { id: 'skip', label: '跳过', value: { skip: true } },
+        ],
+      };
+
+      const mode = deriveSystemAbilityMode(interaction, null);
+      expect(mode).toMatchObject({ abilityId, step: 'selectUnit' });
+      expect(getSystemAbilityUiRoute(mode)).toBe('board-cell-unit');
+      expect(findSystemAbilityUnitOptionByPosition(interaction, mode, { row: 3, col: 4 })?.id).toBe('pos:3,4');
+      expect(findSystemAbilityUnitOptionByPosition(interaction, mode, { row: 2, col: 4 })).toBeNull();
+    },
+  );
+});

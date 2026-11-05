@@ -1,3 +1,5 @@
+import type { ModifierType } from '../../../engine/primitives/modifier';
+
 /**
  * TokenSystem - 统一的 Token 系统类型定义（DiceThrone 本地副本）
  */
@@ -10,9 +12,11 @@
  * Token 类型/分类
  */
 export type TokenCategory =
+    | 'companion'     // 独一同伴的位置标记，不属于可移除/转移的状态
     | 'buff'          // 正面效果
     | 'debuff'        // 负面效果（脑震荡、眩晕、击倒等）
-    | 'consumable';   // 可消耗道具（太极、闪避、净化等）
+    | 'consumable'    // 可消耗道具（太极、闪避、净化等）
+    | 'unique';       // 特殊触发的唯一标记
 
 // ============================================================================
 // 被动触发时机（原StatusEffect）
@@ -58,7 +62,11 @@ export type TokenUseEffectType =
     | 'modifyDamageDealt'     // 修改造成的伤害
     | 'modifyDamageReceived'  // 修改受到的伤害
     | 'rollToNegate'          // 掷骰尝试免伤（闪避）
-    | 'removeDebuff';         // 移除负面状态（净化）
+    | 'removeDebuff'          // 移除负面状态（净化）
+    | 'custom';               // 只消耗 Token 并交给 customActionId 处理
+
+/** 伤害的现实来源，用于区分技能区、手牌、Token/状态和系统伤害。 */
+export type DamageOrigin = 'ability' | 'card' | 'token' | 'status' | 'companion' | 'system';
 
 /**
  * Token 使用效果
@@ -74,7 +82,6 @@ export interface TokenUseEffect {
         range: [number, number];
     };
 }
-
 // ============================================================================
 // Token 效果处理器（可扩展）
 // ============================================================================
@@ -100,7 +107,7 @@ export interface TokenEffectContext<TState = unknown> {
         currentDamage: number;
         responseType: 'beforeDamageDealt' | 'beforeDamageReceived';
         modifiers?: Array<{
-            type: 'defense' | 'token' | 'shield' | 'status';
+            type: 'defense' | 'token' | 'shield' | 'status' | ModifierType;
             value: number;
             sourceId?: string;
             sourceName?: string;
@@ -236,8 +243,8 @@ export interface EffectAction {
     conditionalEffects?: RollDieConditionalEffect[];
     /** rollDie 的"否则/默认"分支：当所有 conditionalEffects 都不匹配时触发 */
     defaultEffect?: RollDieDefaultEffect;
-    /** rollDie 中 bonusDamage 的结算去向；attackBonus 表示写入当前攻击加伤而不是直接造成伤害 */
-    resolutionMode?: 'damage' | 'attackBonus';
+    /** rollDie 中 bonusDamage 的结算去向；none 表示只结算条件/默认分支，不把骰点当伤害 */
+    resolutionMode?: 'damage' | 'attackBonus' | 'none';
     /** attackBonus 模式下计入攻击修正汇总的来源卡牌 ID */
     attackBonusSourceCardId?: string;
     damageMode?: 'sumValues' | 'conditional';
@@ -249,12 +256,16 @@ export interface EffectAction {
     newAbilityLevel?: number;
     // grantDamageShield 相关
     shieldValue?: number;
+    /** 护盾授予当前待处理伤害的目标；仅用于受伤前响应，不跟随出牌者或默认对手。 */
+    pendingDamageTarget?: boolean;
     /** 是否用于防止本次攻击的状态效果（grantDamageShield） */
     preventStatus?: boolean;
     // damage 相关
     unblockable?: boolean;
     /** 伤害来源范围（用于区分攻击伤害与直接伤害） */
     damageScope?: 'attack' | 'direct';
+    /** 伤害现实来源（用于派系规则按技能/卡牌/Token/状态分流） */
+    damageOrigin?: DamageOrigin;
     // 其他可选参数
     [key: string]: unknown;
 }
@@ -282,6 +293,8 @@ export interface PassiveTriggerConfig {
     duration?: number;
     /** 是否可被净化/移除类效果移除 */
     removable: boolean;
+    /** 是否可被转移类效果移动；未声明时默认可转移 */
+    transferable?: boolean;
     /** 移除此效果需要的代价（如 CP） */
     removalCost?: { resource: string; amount: number };
 }
@@ -315,8 +328,14 @@ export interface ActiveUseConfig {
     requiresAttackDamage?: boolean;
     /** 仅允许原始攻击伤害至少达到该值时使用 */
     minimumAttackDamage?: number;
+    /** 仅允许在不可防御伤害窗口使用（蜘蛛侠“隐形”） */
+    requiresUnblockable?: boolean;
+    /** 仅允许在指定防御技能已选中时，于防御掷骰阶段使用。 */
+    requiresDefenseAbilityId?: string;
     /** 主动使用时需要额外触发的 custom action */
     customActionId?: string;
+    /** 是否要求当前可操作骰区里存在对手骰子 */
+    requiresOpponentRollDice?: boolean;
     /** 使用效果 */
     effect: TokenUseEffect;
 }
@@ -362,6 +381,8 @@ export interface TokenDef {
     name: string;
     /** 图标（已废弃，精灵图优先） */
     icon?: string;
+    /** 静态资源路径；当前尚未迁移到精灵图的角色 Token 使用。 */
+    iconPath?: string;
     /** 颜色主题（Tailwind gradient class） */
     colorTheme: string;
     /** 描述文本（供 UI 展示） */

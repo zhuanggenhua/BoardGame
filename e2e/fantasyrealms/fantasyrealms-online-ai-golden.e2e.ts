@@ -28,6 +28,74 @@ async function clickFantasyRealmsDeckDrawButtonIfVisible(page: Page) {
     }
 }
 
+async function hasHostDiscardApplied(args: {
+    matchId: string;
+    page: Page;
+    hostPlayerId: string;
+    beforeDiscardCount: number;
+    beforeTurn: number;
+    afterDrawHandCount: number;
+}): Promise<boolean> {
+    const summary = await readOnlineAiStateSummary(args.matchId, args.page);
+    const hostHandDecreased = (summary.handCounts[args.hostPlayerId] ?? Number.POSITIVE_INFINITY) <= args.afterDrawHandCount - 1;
+    const hostTurnAdvancedOrLeftDiscard = summary.currentPlayer !== args.hostPlayerId
+        || summary.stage !== 'discard'
+        || (summary.turn ?? 0) > args.beforeTurn;
+    const discardPileChanged = summary.discardCount !== args.beforeDiscardCount;
+
+    return hostHandDecreased
+        && (summary.turn ?? 0) >= args.beforeTurn
+        && (hostTurnAdvancedOrLeftDiscard || discardPileChanged);
+}
+
+async function waitForHostDiscardApplied(args: {
+    matchId: string;
+    page: Page;
+    hostPlayerId: string;
+    beforeDiscardCount: number;
+    beforeTurn: number;
+    afterDrawHandCount: number;
+    timeoutMs: number;
+}): Promise<boolean> {
+    const deadline = Date.now() + args.timeoutMs;
+    do {
+        if (await hasHostDiscardApplied(args)) return true;
+        await args.page.waitForTimeout(250);
+    } while (Date.now() < deadline);
+    return false;
+}
+
+async function clickFirstVisibleFantasyRealmsHandDiscardButton(args: {
+    matchId: string;
+    page: Page;
+    hostPlayerId: string;
+    beforeDiscardCount: number;
+    beforeTurn: number;
+    afterDrawHandCount: number;
+    roundLabel: string;
+}) {
+    const handDiscardButtons = args.page
+        .getByTestId('fantasyrealms-hand-row')
+        .locator('button[data-action-state="discard"]');
+
+    await expect(handDiscardButtons.first()).toBeVisible({ timeout: 10000 });
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+        await handDiscardButtons.first().click();
+        const applied = await waitForHostDiscardApplied({
+            matchId: args.matchId,
+            page: args.page,
+            hostPlayerId: args.hostPlayerId,
+            beforeDiscardCount: args.beforeDiscardCount,
+            beforeTurn: args.beforeTurn,
+            afterDrawHandCount: args.afterDrawHandCount,
+            timeoutMs: attempt === 1 ? 1500 : 8000,
+        });
+        if (applied) return;
+    }
+
+    throw new Error(`${args.roundLabel}: 点击手牌弃置后服务端没有记录 host 手牌减少，可能只完成了聚焦而未提交弃牌`);
+}
+
 type OnlineAiSummary = {
     currentPlayer: string | null;
     turn: number | null;
@@ -49,6 +117,7 @@ type OnlineAiRoomSetup = {
     context: BrowserContext;
     page: Page;
     matchId: string;
+    hostPlayerId: string;
     hostPlayerName: string;
     aiPlayerName: string;
     aiPlayerNames: Record<string, string>;
@@ -309,6 +378,7 @@ async function openFantasyRealmsOnlineAiRoom(
         context,
         page,
         matchId: room.matchId,
+        hostPlayerId: room.ownerPlayerId,
         hostPlayerName,
         aiPlayerName: aiPlayerNames[aiSeatIds[0]!] ?? '',
         aiPlayerNames,
@@ -318,15 +388,16 @@ async function openFantasyRealmsOnlineAiRoom(
 async function completeHostDeckTurnUntilAiOrGameOver(args: {
     matchId: string;
     page: Page;
+    hostPlayerId: string;
     aiSeatIds: string[];
     roundLabel: string;
     afterHostTurnTimeoutMs: number;
 }) {
     const beforeSummary = await readOnlineAiStateSummary(args.matchId, args.page);
-    const beforeHandCount = beforeSummary.handCounts['0'] ?? 0;
+    const beforeHandCount = beforeSummary.handCounts[args.hostPlayerId] ?? 0;
     const beforeDiscardCount = beforeSummary.discardCount;
     const beforeTurn = beforeSummary.turn ?? 0;
-    const alreadyInDiscardStage = beforeSummary.currentPlayer === '0' && beforeSummary.stage === 'discard';
+    const alreadyInDiscardStage = beforeSummary.currentPlayer === args.hostPlayerId && beforeSummary.stage === 'discard';
 
     await expect(args.page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
     await clickFantasyRealmsDeckDrawButtonIfVisible(args.page);
@@ -334,10 +405,10 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
     if (!alreadyInDiscardStage) {
         await expect.poll(async () => {
             const summary = await readOnlineAiStateSummary(args.matchId, args.page);
-            return summary.currentPlayer === '0'
+            return summary.currentPlayer === args.hostPlayerId
                 && summary.stage === 'discard'
                 && (summary.turn ?? 0) === beforeTurn
-                && (summary.handCounts['0'] ?? 0) > beforeHandCount;
+                && (summary.handCounts[args.hostPlayerId] ?? 0) > beforeHandCount;
         }, {
             timeout: 10000,
             message: `${args.roundLabel}: 等待 host 从真实开局链进入 discard`,
@@ -345,41 +416,78 @@ async function completeHostDeckTurnUntilAiOrGameOver(args: {
     }
 
     const afterDrawSummary = await readOnlineAiStateSummary(args.matchId, args.page);
-    const discardHandButton = args.page.getByRole('button', { name: /弃置手牌/ }).first();
-    await discardHandButton.click();
+    await clickFirstVisibleFantasyRealmsHandDiscardButton({
+        matchId: args.matchId,
+        page: args.page,
+        hostPlayerId: args.hostPlayerId,
+        beforeDiscardCount,
+        beforeTurn,
+        afterDrawHandCount: afterDrawSummary.handCounts[args.hostPlayerId] ?? 0,
+        roundLabel: args.roundLabel,
+    });
 
     await expect.poll(async () => {
         const state = await readOnlineAiMatchState(args.matchId, args.page);
         const record = state as { core?: FantasyRealmsCore; G?: { core?: FantasyRealmsCore }; sys?: { gameover?: unknown } };
         const core = record.core ?? record.G?.core;
         if (!core) return false;
-        return Boolean(record.sys?.gameover)
-            || (
-                args.aiSeatIds.includes(core.currentPlayer ?? '')
-                && (core.stage === 'draw' || core.stage === 'discard')
-                && core.discardPile.length >= beforeDiscardCount + 1
-                && (core.players['0']?.hand.length ?? 0) === (afterDrawSummary.handCounts['0'] ?? 0) - 1
-                && core.turn >= beforeTurn
+        const hostDiscardApplied = (core.players[args.hostPlayerId]?.hand.length ?? Number.POSITIVE_INFINITY) <= (afterDrawSummary.handCounts[args.hostPlayerId] ?? 0) - 1
+            && core.turn >= beforeTurn
+            && (
+                core.discardPile.length !== beforeDiscardCount
+                || core.currentPlayer !== args.hostPlayerId
+                || core.stage !== 'discard'
+                || core.turn > beforeTurn
             );
+        const aiTurnStarted = args.aiSeatIds.includes(core.currentPlayer ?? '')
+            && (core.stage === 'draw' || core.stage === 'discard')
+            && hostDiscardApplied;
+        const aiRoundtripAlreadyCompleted = core.currentPlayer === args.hostPlayerId
+            && core.stage === 'draw'
+            && core.turn > beforeTurn
+            && hostDiscardApplied
+            && args.aiSeatIds.every((seatId) => (core.players[seatId]?.hand.length ?? 0) === 7)
+            && (
+                beforeSummary.eventStreamNextId === null
+                || (
+                    typeof record.sys?.eventStream?.nextId === 'number'
+                    && record.sys.eventStream.nextId > beforeSummary.eventStreamNextId
+                )
+            );
+        return Boolean(record.sys?.gameover)
+            || aiTurnStarted
+            || aiRoundtripAlreadyCompleted;
     }, {
         timeout: args.afterHostTurnTimeoutMs,
-        message: `${args.roundLabel}: 等待 host 结束回合后要么轮到 ${args.aiSeatIds.map((seatId) => `seat${seatId}`).join('/')} local AI，要么直接触发终局`,
+        message: `${args.roundLabel}: 等待 host 结束回合后轮到 ${args.aiSeatIds.map((seatId) => `seat${seatId}`).join('/')} local AI、AI 已完成一整圈回到 host，或直接触发终局`,
     }).toBe(true);
 
     const afterHostState = await readOnlineAiMatchState(args.matchId, args.page);
     if (afterHostState.sys?.gameover) {
         return { kind: 'gameover' as const };
     }
+    const afterHostSummary = await readOnlineAiStateSummary(args.matchId, args.page);
+    if (
+        afterHostSummary.currentPlayer === args.hostPlayerId
+        && afterHostSummary.stage === 'draw'
+        && (afterHostSummary.turn ?? 0) > beforeTurn
+    ) {
+        return {
+            kind: 'human-turn' as const,
+            summary: afterHostSummary,
+        };
+    }
 
     return {
         kind: 'ai-turn' as const,
-        summary: await readOnlineAiStateSummary(args.matchId, args.page),
+        summary: afterHostSummary,
     };
 }
 
 async function waitForMultiSeatAiRoundtripOrGameOver(args: {
     matchId: string;
     page: Page;
+    hostPlayerId: string;
     aiTurnSummary: OnlineAiSummary;
     roundLabel: string;
     aiRoundtripTimeoutMs: number;
@@ -392,10 +500,10 @@ async function waitForMultiSeatAiRoundtripOrGameOver(args: {
         if (!core) return false;
         return Boolean(record.sys?.gameover)
             || (
-                core.currentPlayer === '0'
+                core.currentPlayer === args.hostPlayerId
                 && core.stage === 'draw'
                 && core.turn > (args.aiTurnSummary.turn ?? 0)
-                && (core.players['0']?.hand.length ?? 0) === (args.aiTurnSummary.handCounts['0'] ?? 0)
+                && (core.players[args.hostPlayerId]?.hand.length ?? 0) === (args.aiTurnSummary.handCounts[args.hostPlayerId] ?? 0)
                 && (args.settledAiSeatIds ?? []).every((seatId) => (core.players[seatId]?.hand.length ?? 0) === 7)
             );
     }, {
@@ -429,7 +537,7 @@ async function runMultiSeatNaturalOnlineAiScenario(
     testInfo: TestInfo,
     options: MultiSeatNaturalOnlineAiOptions,
 ) {
-    const { context, page, matchId, hostPlayerName, aiPlayerName, aiPlayerNames } = match;
+    const { context, page, matchId, hostPlayerId, hostPlayerName, aiPlayerName, aiPlayerNames } = match;
     const diagnostics = attachPageDiagnostics(page);
 
     try {
@@ -442,6 +550,7 @@ async function runMultiSeatNaturalOnlineAiScenario(
             const afterHost = await completeHostDeckTurnUntilAiOrGameOver({
                 matchId,
                 page,
+                hostPlayerId,
                 aiSeatIds: options.aiSeatIds,
                 roundLabel,
                 afterHostTurnTimeoutMs: options.afterHostTurnTimeoutMs,
@@ -449,10 +558,15 @@ async function runMultiSeatNaturalOnlineAiScenario(
             if (afterHost.kind === 'gameover') {
                 break;
             }
+            if (afterHost.kind === 'human-turn') {
+                completedAiRoundtrips += 1;
+                continue;
+            }
 
             const afterAi = await waitForMultiSeatAiRoundtripOrGameOver({
                 matchId,
                 page,
+                hostPlayerId,
                 aiTurnSummary: afterHost.summary,
                 roundLabel,
                 aiRoundtripTimeoutMs: options.aiRoundtripTimeoutMs,
@@ -469,7 +583,7 @@ async function runMultiSeatNaturalOnlineAiScenario(
 
         if (!options.expectGameOver) {
             const currentSummary = await readOnlineAiStateSummary(matchId, page);
-            expect(currentSummary.currentPlayer).toBe('0');
+            expect(currentSummary.currentPlayer).toBe(hostPlayerId);
             expect(currentSummary.stage).toBe('draw');
             await expect(page.getByText('你的回合')).toBeVisible({ timeout: 10000 });
             await expect(page.getByRole('button', { name: FANTASY_REALMS_DECK_DRAW_BUTTON_NAME })).toBeVisible({ timeout: 10000 });
@@ -498,7 +612,7 @@ async function runMultiSeatNaturalOnlineAiScenario(
             .sort((left, right) => right[1] - left[1])
             .map(([playerId, score], index) => ({
                 rank: index + 1,
-                playerName: playerId === '0'
+                playerName: playerId === hostPlayerId
                     ? hostPlayerName
                     : playerId === '1'
                         ? aiPlayerName

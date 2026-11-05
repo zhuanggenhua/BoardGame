@@ -1,4 +1,6 @@
-import { registerSimpleAbility } from '../domain/abilityRegistry';
+import {
+ registerSimpleAbility } from '../domain/abilityRegistry';
+import type { PlayerId } from '../../../engine/types';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter,
@@ -17,6 +19,8 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createPromptProgram,
     executeAbilityProgram,
@@ -183,7 +187,7 @@ function buildAthenaRevealEvents(
     return { events, revealed };
 }
 
-const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext>({
     sourceId: 'mythic_greeks_minion_prompt',
     interactionSourceIds: ['mythic_greeks_odysseus', 'mythic_greeks_favor_of_ares', 'mythic_greeks_favor_of_dionysus', 'mythic_greeks_favor_of_hera'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -206,13 +210,12 @@ const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, S
             if (!context.nextBasePrompt) return { events };
             return {
                 events,
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     ...context.nextBasePrompt,
                     matchState: state,
                     playerId: context.playerId,
                     now: timestamp,
-                } satisfies GreekBasePromptContext,
-                nextProgram: greekBasePromptProgram,
+                } satisfies GreekBasePromptContext, greekBasePromptProgram),
             };
         };
         const choices = Array.isArray(value) ? value as MinionChoice[] : undefined;
@@ -234,7 +237,7 @@ const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, S
     },
 });
 
-const spartanCounterPromptProgram = createPromptProgram<SpartanPromptContext, SmashUpCore, SmashUpEvent>({
+const spartanCounterPromptProgram = createPromptProgram<SpartanPromptContext>({
     sourceId: 'mythic_greeks_spartan',
     interactionSourceIds: ['mythic_greeks_spartan', 'mythic_greeks_spartan_pod'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -299,7 +302,7 @@ function runGreekMinionPrompt(
     }));
 }
 
-const greekBasePromptProgram = createPromptProgram<GreekBasePromptContext, SmashUpCore, SmashUpEvent>({
+const greekBasePromptProgram = createPromptProgram<GreekBasePromptContext>({
     sourceId: 'mythic_greeks_jason_base',
     interactionSourceIds: ['mythic_greeks_jason', 'mythic_greeks_favor_of_zeus'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -334,7 +337,7 @@ const greekBasePromptProgram = createPromptProgram<GreekBasePromptContext, Smash
     },
 });
 
-const hadesPromptProgram = createPromptProgram<HadesContext, SmashUpCore, SmashUpEvent>({
+const hadesPromptProgram = createPromptProgram<HadesContext>({
     sourceId: 'mythic_greeks_favor_of_hades',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mythic_greeks_favor_of_hades_${context.now}`,
@@ -390,7 +393,7 @@ function favorOfDionysus(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const dionysusMinionPromptProgram = createPromptProgram<DionysusMinionContext, SmashUpCore, SmashUpEvent>({
+const dionysusMinionPromptProgram = createPromptProgram<DionysusMinionContext>({
     sourceId: 'mythic_greeks_favor_of_dionysus_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mythic_greeks_favor_of_dionysus_minion_${context.now}`,
@@ -420,17 +423,16 @@ const dionysusMinionPromptProgram = createPromptProgram<DionysusMinionContext, S
                     now: timestamp,
                 }, 'mythic_greeks_favor_of_dionysus'),
             ],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
-            },
-            nextProgram: dionysusTopPromptProgram,
+            }, dionysusTopPromptProgram),
         };
     },
 });
 
-const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext, SmashUpCore, SmashUpEvent>({
+const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext>({
     sourceId: 'mythic_greeks_favor_of_dionysus_top',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mythic_greeks_favor_of_dionysus_top_${context.now}`,
@@ -485,7 +487,7 @@ function favorOfHera(ctx: AbilityContext): AbilityResult {
     );
 }
 
-const athenaOrderPromptProgram = createPromptProgram<AthenaOrderContext, SmashUpCore, SmashUpEvent>({
+const athenaOrderPromptProgram: AbilityProgram<AthenaOrderContext, SmashUpCore, SmashUpEvent> = createPromptProgram<AthenaOrderContext>({
     sourceId: 'mythic_greeks_favor_of_athena_order',
     buildInteraction: (context) => {
         const title = context.ordered.length === 0
@@ -526,18 +528,17 @@ const athenaOrderPromptProgram = createPromptProgram<AthenaOrderContext, SmashUp
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 now: timestamp,
                 ordered,
                 remaining,
-            },
-            nextProgram: athenaOrderPromptProgram,
+            }, athenaOrderPromptProgram),
         };
     },
 });
 
-const athenaPickPromptProgram = createPromptProgram<AthenaPickContext, SmashUpCore, SmashUpEvent>({
+const athenaPickPromptProgram = createPromptProgram<AthenaPickContext>({
     sourceId: 'mythic_greeks_favor_of_athena_pick',
     buildInteraction: (context) => {
         const actionCards = context.revealed.filter(card => card.type === 'action');
@@ -578,13 +579,12 @@ const athenaPickPromptProgram = createPromptProgram<AthenaPickContext, SmashUpCo
         if (remaining.length <= 1) return { events };
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 now: timestamp,
                 remaining,
                 ordered: [],
-            } as AthenaOrderContext,
-            nextProgram: athenaOrderPromptProgram,
+            } as AthenaOrderContext, athenaOrderPromptProgram),
         };
     },
 });
@@ -647,7 +647,7 @@ function favorOfPoseidon(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const poseidonPromptProgram = createPromptProgram<PoseidonContext, SmashUpCore, SmashUpEvent>({
+const poseidonPromptProgram = createPromptProgram<PoseidonContext>({
     sourceId: 'mythic_greeks_favor_of_poseidon',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mythic_greeks_favor_of_poseidon_${context.now}`,

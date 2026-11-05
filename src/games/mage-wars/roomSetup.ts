@@ -89,7 +89,13 @@ export function normalizeMageWarsSpellbookEntries(
         const entry = asRecord(rawEntry);
         const spellCardId = entry?.spellCardId;
         const count = entry?.count;
-        if (!Number.isInteger(spellCardId) || !Number.isInteger(count) || count <= 0) {
+        if (
+            typeof spellCardId !== 'number'
+            || !Number.isInteger(spellCardId)
+            || typeof count !== 'number'
+            || !Number.isInteger(count)
+            || count <= 0
+        ) {
             continue;
         }
         const limit = getMageWarsSpellbookCopyLimit(spellCardId);

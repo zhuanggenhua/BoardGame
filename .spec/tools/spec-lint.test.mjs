@@ -39,9 +39,11 @@ function fixture(overrides = {}) {
   }
   mkdirSync(join(root, '.claude'), { recursive: true })
   mkdirSync(join(root, '.agents'), { recursive: true })
+  mkdirSync(join(root, '.codex'), { recursive: true })
   symlinkSync('../.spec/agents', join(root, '.claude/agents'), process.platform === 'win32' ? 'junction' : 'dir')
   symlinkSync('../.spec/skills', join(root, '.claude/skills'), process.platform === 'win32' ? 'junction' : 'dir')
   symlinkSync('../.spec/skills', join(root, '.agents/skills'), process.platform === 'win32' ? 'junction' : 'dir')
+  symlinkSync('../.spec/skills', join(root, '.codex/skill'), process.platform === 'win32' ? 'junction' : 'dir')
   return root
 }
 

@@ -3,11 +3,11 @@
  * 从 reducer.ts 提取
  */
 
-import type { DiceThroneCore, DiceThroneEvent } from './types';
+import type { AttackBonusDamageSource, DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
-import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
+import { getFaceCounts, getActiveDice, getPlayerHealthCap, getTeamId, isTeamMode } from './rules';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import { getPendingAttackSettlementStage, updatePendingAttackSettlementStage } from './utils';
 import { buildArtificerBotStateAfterActivation, isArtificerBotTokenId } from './artificerBots';
@@ -18,6 +18,7 @@ import {
     replaceCurrentRollContext,
 } from './rollContext';
 import {
+    applyDiceThroneGrantedShieldToPendingDamage,
     applyDiceThroneCommittedDamageShieldConsumption,
     commitDiceThroneDamagePrevention,
 } from './damagePreventionCommit';
@@ -26,6 +27,30 @@ type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
     event: E
 ) => DiceThroneCore;
+
+const buildAttackBonusDamageSource = (
+    amount: number,
+    sourceId?: string,
+): AttackBonusDamageSource | undefined => (
+    sourceId ? { amount, sourceId } : undefined
+);
+
+const appendAttackBonusDamageSource = (
+    sources: AttackBonusDamageSource[] | undefined,
+    source: AttackBonusDamageSource | undefined,
+): AttackBonusDamageSource[] | undefined => {
+    if (!source || source.amount === 0) return sources;
+    const current = sources ?? [];
+    const existingIndex = current.findIndex(entry =>
+        entry.sourceId === source.sourceId
+        && entry.sourceName === source.sourceName
+    );
+    if (existingIndex < 0) return [...current, source];
+    return current.map((entry, index) => index === existingIndex
+        ? { ...entry, amount: entry.amount + source.amount }
+        : entry
+    );
+};
 
 const buildPlayersWithSyncedHp = (
     state: DiceThroneCore,
@@ -210,8 +235,8 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         return {
             ...state,
             pendingAttack: state.pendingAttack
-                ? updatePendingAttackSettlementStage(state.pendingAttack, 'postDamagePending')
-                : state.pendingAttack,
+                ? updatePendingAttackSettlementStage(state.pendingAttack, 'postDamagePending') ?? null
+                : state.pendingAttack ?? null,
             lastEffectSourceByPlayerId: sourceAbilityId
                 ? { ...(state.lastEffectSourceByPlayerId || {}), [targetId]: sourceAbilityId }
                 : state.lastEffectSourceByPlayerId,
@@ -248,6 +273,13 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
     if (shieldsConsumed.length > 0) {
         event.payload.shieldsConsumed = shieldsConsumed;
     }
+    const mainAttackShieldPreventions = isCurrentAttackDamage
+        && typeof event.payload.attackDamageBeforePercent === 'number'
+        && state.pendingAttack?.damageResolved !== true
+        && state.pendingAttack?.mainAttackShieldPreventions === undefined
+        && shieldsConsumed.length > 0
+        ? shieldsConsumed.map(({ reductionPercent, absorbed }) => ({ reductionPercent, absorbed }))
+        : undefined;
 
     const hpBefore = target.resources[RESOURCE_IDS.HP] ?? 0;
     let newResources = target.resources;
@@ -284,6 +316,13 @@ export const handleDamageDealt: EventHandler<Extract<DiceThroneEvent, { type: 'D
         pendingAttack = updatePendingAttackSettlementStage({
             ...pendingAttack,
             resolvedDamage: (pendingAttack.resolvedDamage ?? 0) + netHpLoss,
+            ...(mainAttackShieldPreventions ? { mainAttackShieldPreventions } : {}),
+            ...(typeof event.payload.attackDamageBeforePercent === 'number'
+                ? {
+                    attackDamageBeforePercent: (pendingAttack.attackDamageBeforePercent ?? 0)
+                        + event.payload.attackDamageBeforePercent,
+                }
+                : {}),
         }, nextStage)!;
     }
 
@@ -329,7 +368,11 @@ export const handleHealApplied: EventHandler<Extract<DiceThroneEvent, { type: 'H
         newResources = { ...target.resources, [RESOURCE_IDS.HP]: currentHp + amount };
     } else {
         const result = resourceSystem.modify(target.resources, RESOURCE_IDS.HP, amount);
-        newResources = result.pool;
+        const healthCap = getPlayerHealthCap(state, targetId);
+        const healedHp = Math.min(healthCap, result.pool[RESOURCE_IDS.HP] ?? 0);
+        newResources = healedHp === (result.pool[RESOURCE_IDS.HP] ?? 0)
+            ? result.pool
+            : { ...result.pool, [RESOURCE_IDS.HP]: healedHp };
     }
 
     const syncedPlayers = buildPlayersWithSyncedHp(state, targetId, newResources[RESOURCE_IDS.HP] ?? 0);
@@ -353,13 +396,17 @@ export const handleCompanionHealthChanged: EventHandler<Extract<DiceThroneEvent,
     if (!player || !companion || companion.id !== event.payload.companionId) return state;
 
     const hp = Math.max(0, Math.min(companion.maxHp, companion.hp + event.payload.delta));
+    // 新事件必须显式携带 active；旧事件回放时保留当时已存在的正式状态。
+    const active = hp <= 0
+        ? false
+        : event.payload.active ?? companion.active;
     return {
         ...state,
         players: {
             ...state.players,
             [event.payload.playerId]: {
                 ...player,
-                companion: { ...companion, hp },
+                companion: { ...companion, hp, active },
             },
         },
         lastEffectSourceByPlayerId: event.payload.sourceAbilityId
@@ -375,7 +422,14 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
     state,
     event
 ) => {
-    const { attackerId, defenderId, sourceAbilityId, isDefendable, isUltimate } = event.payload;
+    const {
+        attackerId,
+        defenderId,
+        sourceAbilityId,
+        isDefendable,
+        isUltimate,
+        countsAsOffensiveAttackMade = true,
+    } = event.payload;
     const activeAttackDice = getActiveDice(state);
     const attackFaceCounts = getFaceCounts(activeAttackDice);
     const attackDiceValues = activeAttackDice
@@ -386,12 +440,22 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
         ? state.pendingAttack.attackModifierBonusDamage ?? 0
         : 0;
     const queuedAttackModifierBonusDamage = previousAttackModifierBonusDamage + (attacker?.pendingBonusDamage ?? 0);
-    const players = attacker?.pendingBonusDamage !== undefined
+    const previousBonusDamageSources = state.pendingAttack?.attackerId === attackerId
+        ? state.pendingAttack.bonusDamageSources ?? []
+        : [];
+    const queuedBonusDamageSources = [
+        ...previousBonusDamageSources,
+        ...(attacker?.pendingBonusDamageSources ?? []),
+    ];
+    const hasQueuedPendingBonusDamage = attacker?.pendingBonusDamage !== undefined
+        || (attacker?.pendingBonusDamageSources?.length ?? 0) > 0;
+    const players = hasQueuedPendingBonusDamage && attacker
         ? {
             ...state.players,
             [attackerId]: {
                 ...attacker,
                 pendingBonusDamage: undefined,
+                pendingBonusDamageSources: undefined,
             },
         }
         : state.players;
@@ -408,6 +472,7 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             isDefendable,
             sourceAbilityId,
             isUltimate,
+            ...(countsAsOffensiveAttackMade ? {} : { countsAsOffensiveAttackMade: false }),
             damageResolved: false,
             resolvedDamage: 0,
             statusEffectsAppliedThisAttack: {},
@@ -415,12 +480,14 @@ export const handleAttackInitiated: EventHandler<Extract<DiceThroneEvent, { type
             attackDiceValues,
             bonusDamage: queuedAttackModifierBonusDamage,
             attackModifierBonusDamage: queuedAttackModifierBonusDamage,
+            bonusDamageSources: queuedBonusDamageSources.length > 0 ? queuedBonusDamageSources : undefined,
         },
-        lastResolvedAttackDamage: undefined,
-        offensiveRollAttackMadeThisTurn: {
-            ...(state.offensiveRollAttackMadeThisTurn ?? {}),
-            [attackerId]: true,
-        },
+        offensiveRollAttackMadeThisTurn: countsAsOffensiveAttackMade
+            ? {
+                ...(state.offensiveRollAttackMadeThisTurn ?? {}),
+                [attackerId]: true,
+            }
+            : state.offensiveRollAttackMadeThisTurn,
     };
 };
 
@@ -438,6 +505,7 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
 ) => {
     const { playerId, amount, sourceCardId } = event.payload;
     if (amount === 0) return state;
+    const bonusDamageSource = buildAttackBonusDamageSource(amount, sourceCardId);
 
     if (state.pendingAttack && state.pendingAttack.attackerId === playerId) {
         const pendingDamage = state.pendingDamage?.sourcePlayerId === playerId
@@ -462,9 +530,17 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
             pendingAttack: {
                 ...state.pendingAttack,
                 bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + amount,
+                ...(event.payload.applyToResolvedAttack
+                    && typeof state.pendingAttack.attackDamageBeforePercent === 'number'
+                    ? { attackDamageBeforePercent: state.pendingAttack.attackDamageBeforePercent + amount }
+                    : {}),
                 attackModifierBonusDamage: sourceCardId
                     ? (state.pendingAttack.attackModifierBonusDamage ?? 0) + amount
                     : state.pendingAttack.attackModifierBonusDamage,
+                bonusDamageSources: appendAttackBonusDamageSource(
+                    state.pendingAttack.bonusDamageSources,
+                    bonusDamageSource,
+                ),
             },
             pendingDamage,
         };
@@ -480,6 +556,10 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
             [playerId]: {
                 ...player,
                 pendingBonusDamage: (player.pendingBonusDamage ?? 0) + amount,
+                pendingBonusDamageSources: appendAttackBonusDamageSource(
+                    player.pendingBonusDamageSources,
+                    bonusDamageSource,
+                ),
             },
         },
     };
@@ -510,14 +590,16 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
 
     // 同时结算收尾：将防御方 HP 钳制回上限
     const currentDefender = defenderId ? players[defenderId] : undefined;
-    if (currentDefender) {
+    if (defenderId && currentDefender) {
+        const healthCap = getPlayerHealthCap(state, defenderId);
+        const currentHp = currentDefender.resources[RESOURCE_IDS.HP] ?? 0;
+        const cappedHp = Math.min(healthCap, Math.max(0, currentHp));
         const result = resourceSystem.setValue(
             currentDefender.resources,
             RESOURCE_IDS.HP,
-            currentDefender.resources[RESOURCE_IDS.HP] ?? 0
+            cappedHp,
         );
-        if (result.capped) {
-            const cappedHp = result.pool[RESOURCE_IDS.HP] ?? 0;
+        if (cappedHp !== currentHp || result.capped) {
             const syncedPlayers = buildPlayersWithSyncedHp({ ...state, players }, defenderId, cappedHp);
             players = {
                 ...syncedPlayers,
@@ -562,10 +644,11 @@ export const handleAttackResolved: EventHandler<Extract<DiceThroneEvent, { type:
             }
             : state.vampireLordBloodPowerEndTurnPending,
     };
-    if (isSettledReplayOnlyRollContext(nextState.currentRollContext)) {
+    const nextRollContext = nextState.currentRollContext;
+    if (nextRollContext && isSettledReplayOnlyRollContext(nextRollContext)) {
         return state.pendingAttack?.tokenResponseFullyEvaded === true
-            && nextState.currentRollContext.kind === 'bonus'
-            ? clearCurrentRollContext(nextState, nextState.currentRollContext.id)
+            && nextRollContext.kind === 'bonus'
+            ? clearCurrentRollContext(nextState, nextRollContext.id)
             : nextState;
     }
     return clearCurrentRollContext(nextState, nextState.currentRollContext?.id);
@@ -587,7 +670,7 @@ export const handleAttackMadeUndefendable = (
         pendingAttack: updatePendingAttackSettlementStage(
             { ...state.pendingAttack, isDefendable: false },
             nextStage,
-        ),
+        ) ?? state.pendingAttack ?? null,
     };
 };
 
@@ -625,8 +708,20 @@ export const handleDamageShieldGranted: EventHandler<Extract<DiceThroneEvent, { 
         ? { value: 0, sourceId, preventStatus, reductionPercent }
         : { value, sourceId, preventStatus };
 
+    const shieldIndex = target.damageShields?.length ?? 0;
+    const pendingDamageResult = state.pendingDamage?.targetPlayerId === targetId
+        ? applyDiceThroneGrantedShieldToPendingDamage({
+            pendingDamage: state.pendingDamage,
+            targetId,
+            shield,
+            shieldIndex,
+            isUltimateDamage: state.pendingAttack?.isUltimate === true,
+        })
+        : undefined;
+
     return {
         ...state,
+        pendingDamage: pendingDamageResult?.pendingDamage ?? state.pendingDamage,
         players: {
             ...state.players,
             [targetId]: {
@@ -656,7 +751,8 @@ export const handleAbilityReselectionRequired: EventHandler<Extract<DiceThroneEv
     }
 
     const attackModifierBonusDamage = pendingAttack.attackModifierBonusDamage ?? 0;
-    if (attackModifierBonusDamage <= 0) {
+    const attackModifierBonusDamageSources = pendingAttack.bonusDamageSources ?? [];
+    if (attackModifierBonusDamage <= 0 && attackModifierBonusDamageSources.length === 0) {
         return { ...state, pendingAttack: null, rollConfirmed: false };
     }
 
@@ -675,6 +771,10 @@ export const handleAbilityReselectionRequired: EventHandler<Extract<DiceThroneEv
             [attackerId]: {
                 ...attacker,
                 pendingBonusDamage: (attacker.pendingBonusDamage ?? 0) + attackModifierBonusDamage,
+                pendingBonusDamageSources: [
+                    ...(attacker.pendingBonusDamageSources ?? []),
+                    ...attackModifierBonusDamageSources,
+                ],
             },
         },
     };
@@ -707,6 +807,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         amount,
         effectType,
         damageModifier,
+        fullyEvaded,
         evasionRoll,
         deferredDamageEvents,
         appliesToCurrentAttack,
@@ -739,7 +840,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
             ...(state.treantSpiritSpentThisTurn ?? {}),
             [playerId]: {
                 ...(state.treantSpiritSpentThisTurn?.[playerId] ?? {}),
-                [tokenId]: true,
+                [tokenId]: true as const,
             },
         }
         : state.treantSpiritSpentThisTurn;
@@ -794,6 +895,9 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
             pendingDamage = { 
                 ...state.pendingDamage, 
                 currentDamage: Math.max(0, state.pendingDamage.currentDamage + damageModifier),
+                isFullyEvaded: fullyEvaded === true
+                    ? true
+                    : state.pendingDamage.isFullyEvaded,
                 modifiers,
                 tokenUsageTotals,
                 deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
@@ -872,16 +976,54 @@ export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { 
     state,
     event
 ) => {
-    const pendingAttack = state.pendingAttack
-        ? updatePendingAttackSettlementStage(
+    const pendingDamage = state.pendingDamage;
+    const currentAttack = state.pendingAttack;
+    const closesMainAttack = Boolean(
+        pendingDamage
+        && currentAttack
+        && pendingDamage.sourcePlayerId === currentAttack.attackerId
+        && pendingDamage.targetPlayerId === currentAttack.defenderId
+        && (
+            pendingDamage.damageScope === 'attack'
+            // 有些攻击技能把命中伤害标为 direct；来源技能仍可证明它属于当前攻击，
+            // 关闭响应后必须从已结算的攻击阶段继续，避免再次执行同一伤害。
+            || (
+                pendingDamage.sourceAbilityId !== undefined
+                && pendingDamage.sourceAbilityId === currentAttack.sourceAbilityId
+            )
+        )
+    );
+    const currentPendingAttack = state.pendingAttack ?? null;
+    const pendingAttack = currentPendingAttack
+        ? closesMainAttack
+            ? updatePendingAttackSettlementStage(
             {
-                ...state.pendingAttack,
+                ...currentPendingAttack,
                 damageResolved: true,
                 tokenResponseFullyEvaded: event.payload.fullyEvaded === true,
+                tokenResponseProtectUses: pendingDamage?.tokenUsageTotals?.[TOKEN_IDS.PROTECT] ?? 0,
+                tokenResponseDazzleHalfDamage: pendingDamage?.modifiers?.some(modifier => (
+                    modifier.sourceId === STATUS_IDS.DAZZLE
+                    && modifier.value === -50
+                )) === true,
+                ...(pendingDamage?.shieldsConsumed && pendingDamage.shieldsConsumed.length > 0
+                    ? {
+                        mainAttackShieldPreventions: pendingDamage.shieldsConsumed.map(({
+                            reductionPercent,
+                            absorbed,
+                        }) => ({ reductionPercent, absorbed })),
+                    }
+                    : {}),
+                ...(event.payload.fullyEvaded !== true
+                    && pendingDamage?.currentDamage === 0
+                    && typeof pendingDamage.attackDamageBeforePercent === 'number'
+                    ? { attackDamageBeforePercent: pendingDamage.attackDamageBeforePercent }
+                    : {}),
             },
             'postDamagePending',
-        )
-        : state.pendingAttack;
+        ) ?? null
+            : currentPendingAttack
+        : null;
     const suppressNextBonusDiceReplaySourceAbilityId = event.payload.fullyEvaded === true
         && event.payload.sourceAbilityId
         ? event.payload.sourceAbilityId
@@ -894,6 +1036,9 @@ export const handleTokenResponseClosed: EventHandler<Extract<DiceThroneEvent, { 
         suppressNextBonusDiceReplaySourceAbilityId,
     };
     return nextState.currentRollContext?.kind === 'evasion'
-        ? clearCurrentRollContext(nextState, nextState.currentRollContext.id)
+        ? clearCurrentRollContext(
+            { ...nextState, pendingAttack: nextState.pendingAttack ?? null },
+            nextState.currentRollContext.id,
+        )
         : nextState;
 };

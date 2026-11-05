@@ -1,6 +1,11 @@
 import type { CardPreviewRef } from '../../../core';
 
-type GetCardPreviewRefFn = (cardId: string) => CardPreviewRef | null;
+export interface CardPreviewLookupContext {
+    playerId?: string | number;
+    characterId?: string;
+}
+
+type GetCardPreviewRefFn = (cardId: string, context?: CardPreviewLookupContext) => CardPreviewRef | null;
 
 interface CardPreviewConfig {
     getter: GetCardPreviewRefFn;

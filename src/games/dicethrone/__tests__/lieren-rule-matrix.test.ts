@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import '../domain';
+import { DiceThroneDomain } from '../domain';
 import { diceThroneFlowHooks } from '../domain/flowHooks';
 import { resolveEffectsToEvents, type EffectContext } from '../domain/effects';
 import { execute } from '../domain/execute';
 import { buildBonusDiceSettlementEvents } from '../domain/executeTokens';
 import { reduce } from '../domain/reducer';
 import { getAvailableAbilityIds } from '../domain/rules';
+import { isNyraCompanionActive } from '../domain/rules';
 import { LIEREN_DICE_FACE_IDS as FACE, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { AbilityEffect, EffectTiming } from '../domain/combat';
 import type { DiceThroneCommand, DiceThroneCore, DiceThroneEvent } from '../domain/types';
@@ -491,9 +492,16 @@ describe('DiceThrone 女猎手规则矩阵', () => {
             payload: expect.objectContaining({ amount: 5 }),
         }));
 
-        activeState.core.players['0'].companion!.hp = 0;
+        activeState.core.players['0'].companion = { id: 'nyra', hp: 0, maxHp: 7, active: false };
         const inactiveEvents = resolve(activeState, 'nyra-inactive-test', [attackEffect], 'withDamage', []);
         expect(inactiveEvents).toContainEqual(expect.objectContaining({
+            type: 'DAMAGE_DEALT',
+            payload: expect.objectContaining({ amount: 3 }),
+        }));
+
+        activeState.core.players['0'].companion = { id: 'nyra', hp: 2, maxHp: 7, active: false };
+        const downedWithHpEvents = resolve(activeState, 'nyra-downed-with-hp-test', [attackEffect], 'withDamage', []);
+        expect(downedWithHpEvents).toContainEqual(expect.objectContaining({
             type: 'DAMAGE_DEALT',
             payload: expect.objectContaining({ amount: 3 }),
         }));
@@ -515,6 +523,150 @@ describe('DiceThrone 女猎手规则矩阵', () => {
         expect(next.players['0'].companion?.hp).toBe(6);
         expect(next.players['0'].resources.hp).toBe(heroHp);
         expect(next.players['0'].tokens[TOKEN_IDS.NYRAS_BOND]).toBe(0);
+    });
+
+    it('妮拉倒下后普通治疗 2 不会恢复承伤资格', () => {
+        const state = createLierenState();
+        state.core.players['0'].tokens[TOKEN_IDS.NYRAS_BOND] = 1;
+        state.core.players['0'].companion = { id: 'nyra', hp: 0, maxHp: 7, active: false };
+        const heroHp = state.core.players['0'].resources.hp;
+
+        const healEvents = execute(state, {
+            ...command('USE_TOKEN'),
+            payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 1 },
+        });
+        const healed = applyEvents(state.core, healEvents);
+
+        expect(healed.players['0'].companion).toMatchObject({ hp: 2, active: false });
+        expect(healed.players['0'].resources.hp).toBe(heroHp);
+
+        const responseCore: DiceThroneCore = {
+            ...healed,
+            pendingDamage: {
+                id: 'nyra-downed-response-test',
+                sourcePlayerId: '1',
+                targetPlayerId: '0',
+                originalDamage: 4,
+                currentDamage: 4,
+                sourceAbilityId: 'test-hit',
+                responseType: 'beforeDamageReceived',
+                responderId: '0',
+                isFullyEvaded: false,
+            },
+        };
+        const redirectEvents = execute({ core: responseCore, sys: state.sys }, {
+            ...command('USE_TOKEN'),
+            payload: { tokenId: TOKEN_IDS.NYRA_REDIRECT, amount: 4 },
+        });
+        expect(redirectEvents).toEqual([]);
+    });
+
+    it('旧存档事件流能证明妮拉曾倒下时，回血到 2 仍保持未激活', () => {
+        const state = createLierenState();
+        state.core.players['0'].companion = { id: 'nyra', hp: 2, maxHp: 7 };
+        state.sys.eventStream.entries = [
+            {
+                id: 1,
+                event: {
+                    type: 'COMPANION_HEALTH_CHANGED',
+                    payload: { playerId: '0', companionId: 'nyra', delta: -7 },
+                    timestamp: 1,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'COMPANION_HEALTH_CHANGED',
+                    payload: { playerId: '0', companionId: 'nyra', delta: 2 },
+                    timestamp: 2,
+                },
+            },
+        ];
+
+        const normalized = DiceThroneDomain.normalizeRuntimeState?.(state);
+        expect(normalized?.core.players['0'].companion).toMatchObject({ hp: 2, active: false });
+        expect(isNyraCompanionActive(normalized?.core.players['0'])).toBe(false);
+    });
+
+    it('旧存档只有受伤记录且未倒下时，仍保留妮拉承伤资格', () => {
+        const state = createLierenState();
+        state.core.players['0'].companion = { id: 'nyra', hp: 2, maxHp: 7 };
+        state.sys.eventStream.entries = [
+            {
+                id: 1,
+                event: {
+                    type: 'COMPANION_HEALTH_CHANGED',
+                    payload: { playerId: '0', companionId: 'nyra', delta: -5 },
+                    timestamp: 1,
+                },
+            },
+        ];
+
+        const normalized = DiceThroneDomain.normalizeRuntimeState?.(state);
+        expect(normalized?.core.players['0'].companion).toMatchObject({ hp: 2, active: true });
+        expect(isNyraCompanionActive(normalized?.core.players['0'])).toBe(true);
+    });
+
+    it('倒下的妮拉在维持阶段先回血，到 5 后下次维持阶段才恢复激活', () => {
+        const state = createLierenState();
+        state.core.players['0'].companion = { id: 'nyra', hp: 4, maxHp: 7, active: false };
+
+        const healEvents = enterUpkeep(state.core, []);
+        const healed = applyEvents(state.core, healEvents);
+        expect(healEvents).toContainEqual(expect.objectContaining({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: expect.objectContaining({
+                playerId: '0',
+                companionId: 'nyra',
+                delta: 1,
+                active: false,
+            }),
+        }));
+        expect(healed.players['0'].companion).toMatchObject({ hp: 5, active: false });
+
+        const reviveEvents = enterUpkeep(healed, []);
+        const revived = applyEvents(healed, reviveEvents);
+        expect(reviveEvents).toContainEqual(expect.objectContaining({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: expect.objectContaining({
+                playerId: '0',
+                companionId: 'nyra',
+                delta: 0,
+                active: true,
+            }),
+        }));
+        expect(revived.players['0'].companion).toMatchObject({ hp: 5, active: true });
+    });
+
+    it('妮拉倒下为 0 血时，只在女猎手自己的维持阶段恢复 1 血且保持倒下', () => {
+        const state = createLierenState();
+        state.core.players['0'].companion = { id: 'nyra', hp: 0, maxHp: 7, active: false };
+
+        const ownUpkeepEvents = enterUpkeep(state.core, []);
+        const afterOwnUpkeep = applyEvents(state.core, ownUpkeepEvents);
+        expect(ownUpkeepEvents).toContainEqual(expect.objectContaining({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: expect.objectContaining({
+                playerId: '0',
+                companionId: 'nyra',
+                delta: 1,
+                active: false,
+            }),
+        }));
+        expect(afterOwnUpkeep.players['0'].companion).toMatchObject({ hp: 1, active: false });
+
+        const opponentUpkeepCore = {
+            ...state.core,
+            activePlayerId: '1',
+        };
+        const opponentUpkeepEvents = enterUpkeep(opponentUpkeepCore, []);
+        expect(opponentUpkeepEvents).not.toContainEqual(expect.objectContaining({
+            type: 'COMPANION_HEALTH_CHANGED',
+            payload: expect.objectContaining({
+                playerId: '0',
+                companionId: 'nyra',
+            }),
+        }));
     });
 
     it('妮拉承伤只扣伙伴生命，终极攻击不允许转移', () => {

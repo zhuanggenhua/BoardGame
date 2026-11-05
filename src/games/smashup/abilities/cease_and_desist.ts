@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -22,6 +23,8 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -59,9 +62,9 @@ type ActionChoice = { cardUid: string; defId: string; ownerId?: PlayerId; baseIn
 type ReturnReplacementChoice = { replace?: boolean; targetBaseIndex?: number; skip?: boolean };
 type PlayerChoice = { playerId?: PlayerId; skip?: boolean };
 type GiveControlAfterGiveMode = 'draw2_extra_minion' | 'draw1_extra_action' | 'extra_minion' | 'none';
-type BaseAbilityPromptContext<T extends Record<string, unknown> = Record<string, never>> = PromptContext<T & { sourceId: string }>;
+type BaseAbilityPromptContext<T extends object = object> = PromptContext<T & { sourceId: string; baseIndex: number }>;
 
-type PromptContext<T extends Record<string, unknown> = Record<string, never>> = {
+type PromptContext<T extends object = object> = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
@@ -94,7 +97,7 @@ type DrawAfterCommittedEventsContext = PromptContext<{
     random: RandomFn;
 }>;
 type RecycleTheTrashChoice = { cardUid: string; defId: string };
-type RecycleTheTrashContext = PromptContext<Record<string, never>>;
+type RecycleTheTrashContext = PromptContext;
 type ShipsCaptainChoice = { cardUid: string; defId: string };
 type ShipsCaptainContext = PromptContext<{ baseIndex?: number }>;
 type StarReturnSourceId = 'star_roamers_port_me_up' | 'star_roamers_teleport_overflow';
@@ -105,7 +108,7 @@ type StarReturnMinionContext = SourceMinionPromptContext<{
     extraMinionAfterReturn?: boolean;
     restrictToBaseIndex?: number;
 }>;
-type SourceMinionPromptContext<T extends Record<string, unknown> = Record<string, never>> = PromptContext<T & {
+type SourceMinionPromptContext<T extends object = object> = PromptContext<T & {
     sourceId: string;
     candidates: ReturnType<typeof getAllMinionCandidates>;
 }>;
@@ -149,8 +152,8 @@ function getOwnedControlCandidates(
         && (!baseOnly || baseIndex === sourceBaseIndex));
 }
 
-function minionChoiceOptions(
-    context: SourceMinionPromptContext,
+function minionChoiceOptions<T extends object>(
+    context: SourceMinionPromptContext<T>,
     effectType: 'destroy' | 'return' | 'move' | 'affect' | 'action' | 'buff',
     sourceKind: 'action' | 'nonAction' = 'action',
 ) {
@@ -164,9 +167,9 @@ function minionChoiceOptions(
     });
 }
 
-function findPromptCandidate(
+function findPromptCandidate<T extends object>(
     state: SmashUpCore,
-    context: SourceMinionPromptContext,
+    context: SourceMinionPromptContext<T>,
     value: unknown,
 ): { minion: MinionOnBase; baseIndex: number } | undefined {
     const selected = value as MinionChoice | undefined;
@@ -323,7 +326,7 @@ function nextEachOwnerMinionContext(
     };
 }
 
-const eachOwnerMinionPrompt = createPromptProgram<EachOwnerMinionContext, SmashUpCore, SmashUpEvent>({
+const eachOwnerMinionPrompt: AbilityProgram<EachOwnerMinionContext, SmashUpCore, SmashUpEvent> = createPromptProgram<EachOwnerMinionContext>({
     sourceId: 'ignobles_each_owner_minion',
     interactionSourceIds: ['ignobles_fate_of_the_favorites', 'ignobles_out_of_sight'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -381,8 +384,7 @@ const eachOwnerMinionPrompt = createPromptProgram<EachOwnerMinionContext, SmashU
         return {
             events,
             matchState: state,
-            context: nextContext,
-            nextProgram: eachOwnerMinionPrompt,
+            continuation: createAbilityRuntimeContinuation(nextContext, eachOwnerMinionPrompt),
         };
     },
 });
@@ -451,9 +453,7 @@ function detachActionEvent(action: ActionChoice, reason: string, playerId: Playe
     })];
 }
 
-const chooseAnyMinionPowerPrompt = createPromptProgram<
-    PromptContext<{ sourceId: string; amount: number; candidates: ReturnType<typeof getAllMinionCandidates> }>
-, SmashUpCore, SmashUpEvent>({
+const chooseAnyMinionPowerPrompt = createPromptProgram<PromptContext<{ sourceId: string; amount: number; candidates: ReturnType<typeof getAllMinionCandidates> }>>({
     sourceId: 'cease_and_desist_choose_any_minion_power',
     interactionSourceIds: [
         'astroknights_block_the_probe',
@@ -470,7 +470,7 @@ const chooseAnyMinionPowerPrompt = createPromptProgram<
             sourcePlayerId: context.playerId,
             sourceDefId: context.sourceId,
             sourceKind: 'action',
-            effectType: 'power_change',
+            effectType: 'buff',
             respectActionProtection: true,
         }),
         {
@@ -488,7 +488,7 @@ const chooseAnyMinionPowerPrompt = createPromptProgram<
             sourcePlayerId: context.playerId,
             sourceDefId: context.sourceId,
             sourceKind: 'action',
-            effectType: 'power_change',
+            effectType: 'buff',
             respectActionProtection: true,
             now: timestamp,
             feedbackPlayerId: context.playerId,
@@ -556,7 +556,7 @@ function applyTheFoursLike(ctx: AbilityContext, sourceId: string, amount: number
     return promptForPower(ctx, sourceId, amount, true);
 }
 
-const recycleTheTrashPrompt = createPromptProgram<RecycleTheTrashContext, SmashUpCore, SmashUpEvent>({
+const recycleTheTrashPrompt = createPromptProgram<RecycleTheTrashContext>({
     sourceId: 'astroknights_recycle_the_trash',
     buildInteraction: context => {
         const actions = (context.matchState.core.players[context.playerId]?.discard ?? [])
@@ -605,7 +605,7 @@ const recycleTheTrashPrompt = createPromptProgram<RecycleTheTrashContext, SmashU
     },
 });
 
-const shipsCaptainPrompt = createPromptProgram<ShipsCaptainContext, SmashUpCore, SmashUpEvent>({
+const shipsCaptainPrompt = createPromptProgram<ShipsCaptainContext>({
     sourceId: 'star_roamers_ships_captain',
     buildInteraction: context => {
         const minions = (context.matchState.core.players[context.playerId]?.deck ?? [])
@@ -672,9 +672,7 @@ const shipsCaptainPrompt = createPromptProgram<ShipsCaptainContext, SmashUpCore,
     },
 });
 
-const scienceOfficerTargetPrompt = createPromptProgram<
-    SourceMinionPromptContext
-, SmashUpCore, SmashUpEvent>({
+const scienceOfficerTargetPrompt = createPromptProgram<SourceMinionPromptContext>({
     sourceId: 'star_roamers_science_officer',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `star_roamers_science_officer_${context.now}`,
@@ -722,7 +720,7 @@ function buildStarReturnEvents(
     });
 }
 
-const starRoamersReturnMinionPrompt = createPromptProgram<StarReturnMinionContext, SmashUpCore, SmashUpEvent>({
+const starRoamersReturnMinionPrompt = createPromptProgram<StarReturnMinionContext>({
     sourceId: 'star_roamers_return_minion',
     interactionSourceIds: ['star_roamers_port_me_up', 'star_roamers_teleport_overflow'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -763,9 +761,7 @@ const starRoamersReturnMinionPrompt = createPromptProgram<StarReturnMinionContex
     },
 });
 
-const redBirthdayPartyTargetPrompt = createPromptProgram<
-    SourceMinionPromptContext
-, SmashUpCore, SmashUpEvent>({
+const redBirthdayPartyTargetPrompt = createPromptProgram<SourceMinionPromptContext>({
     sourceId: 'ignobles_red_birthday_party',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `ignobles_red_birthday_party_${context.now}`,
@@ -787,9 +783,7 @@ const redBirthdayPartyTargetPrompt = createPromptProgram<
     },
 });
 
-const changeIntoAGunVictimPrompt = createPromptProgram<
-    SourceMinionPromptContext<{ hostUid: string; hostBaseIndex: number }>
-, SmashUpCore, SmashUpEvent>({
+const changeIntoAGunVictimPrompt = createPromptProgram<SourceMinionPromptContext<{ hostUid: string; hostBaseIndex: number }>>({
     sourceId: 'changerbots_change_into_a_gun',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `changerbots_change_into_a_gun_${context.hostUid}_${context.now}`,
@@ -843,9 +837,9 @@ function recycleTheTrash(ctx: AbilityContext): AbilityResult {
     return { events: [] };
 }
 
-const prepareForBattlePrompt = createPromptProgram<
+const prepareForBattlePrompt: AbilityProgram<
     PromptContext<{ topCards: Array<{ cardUid: string; defId: string }>; selected: string[] }>
-, SmashUpCore, SmashUpEvent>({
+, SmashUpCore, SmashUpEvent> = createPromptProgram<PromptContext<{ topCards: Array<{ cardUid: string; defId: string }>; selected: string[] }>>({
     sourceId: 'astroknights_prepare_for_battle',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `astroknights_prepare_for_battle_${context.now}_${context.selected.length}`,
@@ -873,8 +867,7 @@ const prepareForBattlePrompt = createPromptProgram<
         if (selected.length < Math.min(2, context.topCards.length)) {
             return {
                 events: [],
-                context: { ...context, matchState: state, selected },
-                nextProgram: prepareForBattlePrompt,
+                continuation: createAbilityRuntimeContinuation({ ...context, matchState: state, selected }, prepareForBattlePrompt),
             };
         }
         const selectedSet = new Set(selected);
@@ -949,9 +942,7 @@ function mannersbot(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const pickActionFromTopThreePrompt = createPromptProgram<
-    PromptContext<{ sourceId: string; topCards: Array<{ cardUid: string; defId: string }> }>
-, SmashUpCore, SmashUpEvent>({
+const pickActionFromTopThreePrompt = createPromptProgram<PromptContext<{ sourceId: string; topCards: Array<{ cardUid: string; defId: string }> }>>({
     sourceId: 'cease_and_desist_pick_action_from_top_three',
     interactionSourceIds: ['astroknights_space_knight', 'astroknights_its_a_trap'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -1054,15 +1045,13 @@ function pupoks(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const scoundrelChooseBasePrompt = createPromptProgram<
-    PromptContext<{
+const scoundrelChooseBasePrompt = createPromptProgram<PromptContext<{
         sourceBaseIndex: number;
         sourceMinionUid: string;
         sourceMinionDefId: string;
         companionUid: string;
         companionDefId: string;
-    }>
-, SmashUpCore, SmashUpEvent>({
+    }>>({
     sourceId: 'astroknights_scoundrel_choose_base',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `astroknights_scoundrel_choose_base_${context.sourceMinionUid}_${context.companionUid}_${context.now}`,
@@ -1137,14 +1126,12 @@ const scoundrelChooseBasePrompt = createPromptProgram<
     },
 });
 
-const scoundrelChooseMinionPrompt = createPromptProgram<
-    PromptContext<{
+const scoundrelChooseMinionPrompt = createPromptProgram<PromptContext<{
         sourceBaseIndex: number;
         sourceMinionUid: string;
         sourceMinionDefId: string;
         candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
-    }>
-, SmashUpCore, SmashUpEvent>({
+    }>>({
     sourceId: 'astroknights_scoundrel_choose_minion',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `astroknights_scoundrel_choose_minion_${context.sourceMinionUid}_${context.now}`,
@@ -1183,13 +1170,12 @@ const scoundrelChooseMinionPrompt = createPromptProgram<
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 companionUid: companion.uid,
                 companionDefId: companion.defId,
-            },
-            nextProgram: scoundrelChooseBasePrompt,
+            }, scoundrelChooseBasePrompt),
         };
     },
 });
@@ -1221,9 +1207,7 @@ function scoundrel(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const astroRobotPrompt = createPromptProgram<
-    PromptContext<{ baseIndex: number; actions: ActionChoice[] }>
-, SmashUpCore, SmashUpEvent>({
+const astroRobotPrompt = createPromptProgram<PromptContext<{ baseIndex: number; actions: ActionChoice[] }>>({
     sourceId: 'astroknights_astro_robot',
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
         `astroknights_astro_robot_${context.now}`,
@@ -1369,9 +1353,7 @@ const drawAfterCommittedEventsProgram = createEffectProgram<DrawAfterCommittedEv
     }),
 );
 
-const giveControlPrompt = createPromptProgram<
-    PromptContext<{ sourceId: string; minionUid: string; baseIndex: number; afterGive: GiveControlAfterGiveMode }>
-, SmashUpCore, SmashUpEvent>({
+const giveControlPrompt = createPromptProgram<PromptContext<{ sourceId: string; minionUid: string; baseIndex: number; afterGive: GiveControlAfterGiveMode }>>({
     sourceId: 'ignobles_give_control',
     interactionSourceIds: ['ignobles_repaying_debts', 'ignobles_aunt_of_drakes', 'ignobles_sneaky_squire', 'ignobles_betrothed'],
     buildInteraction: context => {
@@ -1416,20 +1398,19 @@ const giveControlPrompt = createPromptProgram<
         }
         return {
             events: [control],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: context.sourceId,
                 afterGive: context.afterGive,
                 random: args.random,
-            } satisfies AfterGiveControlContext,
-            nextProgram: afterGiveControlCommittedProgram,
+            } satisfies AfterGiveControlContext, afterGiveControlCommittedProgram),
         };
     },
 });
 
-const takeControlOwnedPrompt = createPromptProgram<TakeControlOwnedContext, SmashUpCore, SmashUpEvent>({
+const takeControlOwnedPrompt = createPromptProgram<TakeControlOwnedContext>({
     sourceId: 'ignobles_take_control_owned',
     interactionSourceIds: ['ignobles_activate_the_spy', 'ignobles_inevitable_betrayal', 'ignobles_foot_of_the_king'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -1738,9 +1719,7 @@ function teleportError(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const chooseDestBasePrompt = createPromptProgram<
-    PromptContext<{ sourceId: string; minions: Array<{ minionUid: string; minionDefId: string; fromBaseIndex: number }> }>
-, SmashUpCore, SmashUpEvent>({
+const chooseDestBasePrompt = createPromptProgram<PromptContext<{ sourceId: string; minions: Array<{ minionUid: string; minionDefId: string; fromBaseIndex: number }> }>>({
     sourceId: 'cease_and_desist_choose_dest_base',
     interactionSourceIds: ['star_roamers_hyperspeed_10', 'changerbots_huffie', 'changerbots_change_up_and_roll_on', 'changerbots_passengers'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -1783,8 +1762,7 @@ const chooseDestBasePrompt = createPromptProgram<
     },
 });
 
-const starRoamersReturnReplacementPrompt = createPromptProgram<
-    PromptContext<{
+const starRoamersReturnReplacementPrompt = createPromptProgram<PromptContext<{
         sourceId: 'star_roamers_whiplash_maneuver' | 'star_roamers_ships_engineer';
         sourceBaseIndex: number;
         sourceCardUid?: string;
@@ -1793,8 +1771,7 @@ const starRoamersReturnReplacementPrompt = createPromptProgram<
         minionDefId: string;
         fromBaseIndex: number;
         destinationBaseIndex?: number;
-    }>
-, SmashUpCore, SmashUpEvent>({
+    }>>({
     sourceId: 'star_roamers_return_replacement',
     interactionSourceIds: ['star_roamers_whiplash_maneuver', 'star_roamers_ships_engineer'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -2224,9 +2201,7 @@ function chooseOtherPlayerOptions(state: SmashUpCore, playerId: PlayerId) {
         .map(candidate => ({ id: candidate, label: candidate, value: { playerId: candidate }, _source: 'player' as const }));
 }
 
-const baseGiveControlPrompt = createPromptProgram<
-    BaseAbilityPromptContext<{ minionUid: string; baseIndex: number }>
-, SmashUpCore, SmashUpEvent>({
+const baseGiveControlPrompt = createPromptProgram<BaseAbilityPromptContext<{ minionUid: string; baseIndex: number }>>({
     sourceId: 'cease_and_desist_base_give_control',
     interactionSourceIds: ['base_wintersquashed'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -2260,9 +2235,7 @@ const baseGiveControlPrompt = createPromptProgram<
     },
 });
 
-const baseMoveMinionPrompt = createPromptProgram<
-    BaseAbilityPromptContext<{ minions: MinionChoice[]; fromBaseIndex?: number; toBaseIndex?: number }>
-, SmashUpCore, SmashUpEvent>({
+const baseMoveMinionPrompt = createPromptProgram<BaseAbilityPromptContext<{ minions: MinionChoice[]; fromBaseIndex?: number; toBaseIndex?: number }>>({
     sourceId: 'cease_and_desist_base_move_minion',
     interactionSourceIds: ['base_uss_undertaking'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -2332,9 +2305,7 @@ const baseMoveMinionPrompt = createPromptProgram<
     },
 });
 
-const baseDestroyForDrawPrompt = createPromptProgram<
-    BaseAbilityPromptContext<{ minions: MinionChoice[] }>
-, SmashUpCore, SmashUpEvent>({
+const baseDestroyForDrawPrompt = createPromptProgram<BaseAbilityPromptContext<{ minions: MinionChoice[] }>>({
     sourceId: 'cease_and_desist_base_destroy_for_draw',
     interactionSourceIds: ['base_spikey_chair_room'],
     buildInteraction: context => createAbilityRuntimeSimpleChoice(
@@ -2380,14 +2351,13 @@ const baseDestroyForDrawPrompt = createPromptProgram<
         if (destroyEvents.length === 0) return { events: [] };
         return {
             events: destroyEvents,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 drawCount: 1,
                 random: args.random,
-            } satisfies DrawAfterCommittedEventsContext,
-            nextProgram: drawAfterCommittedEventsProgram,
+            } satisfies DrawAfterCommittedEventsContext, drawAfterCommittedEventsProgram),
         };
     },
 });
@@ -2487,6 +2457,7 @@ function baseHiveOnActionPlayed(ctx: BaseAbilityContext) {
         && entry.baseIndex === ctx.baseIndex
         && entry.baseDefId === 'base_hive_of_scum_and_villainy',
     )) return { events: [] };
+    if (!ctx.random) throw new Error('Hive of Scum and Villainy draw trigger requires the command random source');
     return {
         events: [
             {
@@ -2516,6 +2487,7 @@ function registerCeaseAndDesistBaseAbilities(): void {
             playerId: ctx.playerId,
             now: ctx.now,
             sourceId: 'base_spikey_chair_room',
+            baseIndex: ctx.baseIndex,
             minions,
         }));
     });

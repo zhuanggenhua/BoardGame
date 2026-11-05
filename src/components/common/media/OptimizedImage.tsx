@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import {
     getResolvedImageCacheUrl,
     getRuntimeImageCandidateUrls,
-    isImagePreloaded,
     markImageCandidateFailed,
     markImageLoaded,
 } from '../../../core/AssetLoader';
@@ -84,6 +83,21 @@ const appendRetryParam = (url: string, retry: number) => {
     return `${url}${sep}retry=${retry}`;
 };
 
+const isImageBoundToSource = (image: HTMLImageElement, expectedSrc: string): boolean => {
+    if (!expectedSrc) return false;
+    const attributeSrc = image.getAttribute('src');
+    if (attributeSrc === expectedSrc) return true;
+
+    const actualSrc = image.currentSrc || image.src;
+    if (!actualSrc) return false;
+
+    try {
+        return actualSrc === new URL(expectedSrc, document.baseURI).href;
+    } catch {
+        return actualSrc === expectedSrc;
+    }
+};
+
 const getCandidateTimeoutMs = (url: string) => (
     isRemoteUrl(url) ? REMOTE_CANDIDATE_TIMEOUT_MS : LOCAL_CANDIDATE_TIMEOUT_MS
 );
@@ -105,8 +119,7 @@ export const OptimizedImage = ({
     const { i18n } = useTranslation();
     const effectiveLocale = locale || i18n.language || 'zh-CN';
     const [fallbackLevel, setFallbackLevel] = React.useState(0);
-    const preloaded = isImagePreloaded(src, effectiveLocale);
-    const [loaded, setLoaded] = React.useState(() => preloaded);
+    const [loaded, setLoaded] = React.useState(false);
     const [errored, setErrored] = React.useState(false);
     const [objectUrl, setObjectUrl] = React.useState<string | null>(null);
     const [localFetchDebug, setLocalFetchDebug] = React.useState('idle');
@@ -127,6 +140,10 @@ export const OptimizedImage = ({
         return getRuntimeImageCandidateUrls(src, effectiveLocale);
     }, [src, effectiveLocale]);
 
+    const restoredLoadedSrc = React.useMemo(
+        () => getResolvedImageCacheUrl(src, effectiveLocale),
+        [src, effectiveLocale],
+    );
     const fallbackCandidates = React.useMemo(() => {
         const candidates: Array<{ url: string; label: string }> = [];
         const pushCandidate = (url: string, label: string) => {
@@ -135,6 +152,8 @@ export const OptimizedImage = ({
             candidates.push({ url, label });
         };
 
+        // 已成功地址是首选候选，失败后仍必须沿同一候选链继续。
+        if (restoredLoadedSrc) pushCandidate(restoredLoadedSrc, 'cached-success');
         candidateUrls.forEach((url, index) => {
             if (index === 0) {
                 pushCandidate(url, 'primary');
@@ -160,21 +179,17 @@ export const OptimizedImage = ({
         }
 
         return candidates;
-    }, [candidateUrls]);
+    }, [candidateUrls, restoredLoadedSrc]);
 
     const currentCandidate = fallbackCandidates[Math.min(fallbackLevel, Math.max(fallbackCandidates.length - 1, 0))];
     const defaultCurrentSrc = currentCandidate?.url ?? candidateUrls[0] ?? '';
-    const restoredLoadedSrc = React.useMemo(
-        () => getResolvedImageCacheUrl(src, effectiveLocale),
-        [src, effectiveLocale],
-    );
-    const currentSrc = restoredLoadedSrc || defaultCurrentSrc;
+    const currentSrc = defaultCurrentSrc;
     const isLocalFallback = currentCandidate != null
         && currentCandidate.label !== 'primary'
         && !isRemoteUrl(currentCandidate.url);
     const isLocalPrimary = !isRemoteUrl(currentSrc);
     const renderedSrc = objectUrl ?? currentSrc;
-    const hasRestoredLoadedSrc = Boolean(restoredLoadedSrc);
+    const hasRestoredLoadedSrc = Boolean(restoredLoadedSrc) && currentSrc === restoredLoadedSrc;
 
     const isSvg = isSvgSource(renderedSrc);
     const rememberEarlierCandidateFailures = React.useCallback((successfulUrl: string) => {
@@ -185,9 +200,8 @@ export const OptimizedImage = ({
             .forEach((candidateUrl) => markImageCandidateFailed(src, effectiveLocale, candidateUrl));
     }, [candidateUrls, effectiveLocale, src]);
     
-    // 同步修正：如果 loaded 为 false 但缓存已就绪，立即同步为 true，
-    // 避免 useLayoutEffect 异步更新导致的一帧 shimmer 闪烁
-    const effectiveLoaded = loaded || preloaded;
+    // 资源缓存只决定候选 URL；当前 DOM 图片解码成功后才能显示。
+    const effectiveLoaded = loaded;
 
     // 只有逻辑资源或语言切换时才完全重置。
     // 不能把 currentSrc（候选 URL 切换）放进依赖里，否则切到 fallback 后会立刻
@@ -202,8 +216,6 @@ export const OptimizedImage = ({
         }
         if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
             setLoaded(true);
-        } else if (isImagePreloaded(src, effectiveLocale)) {
-            setLoaded(true);
         } else {
             setLoaded(false);
         }
@@ -217,8 +229,6 @@ export const OptimizedImage = ({
             setObjectUrl(null);
             setLocalFetchDebug('idle');
             if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-                setLoaded(true);
-            } else if (isImagePreloaded(src, effectiveLocale)) {
                 setLoaded(true);
             } else {
                 setLoaded(false);
@@ -295,7 +305,11 @@ export const OptimizedImage = ({
         const settleFromDom = () => {
             if (cancelled) return;
             const img = imgRef.current;
-            if (img?.complete && img.naturalWidth > 0) {
+            if (
+                img?.complete
+                && img.naturalWidth > 0
+                && isImageBoundToSource(img, renderedSrc)
+            ) {
                 rememberEarlierCandidateFailures(currentSrc);
                 markImageLoaded(currentSrc, undefined, img, currentSrc);
                 markImageLoaded(src, effectiveLocale, img, currentSrc);
@@ -315,6 +329,9 @@ export const OptimizedImage = ({
     }, [currentCandidate, currentSrc, effectiveLocale, errored, loaded, rememberEarlierCandidateFailures, renderedSrc, src]);
 
     const handleLoad: React.ReactEventHandler<HTMLImageElement> = (event) => {
+        if (!isImageBoundToSource(event.currentTarget, renderedSrc)) {
+            return;
+        }
         setLoaded(true);
         autoRetryRef.current = 0; // 加载成功，重置重试计数
         rememberEarlierCandidateFailures(currentSrc);
@@ -327,6 +344,7 @@ export const OptimizedImage = ({
     };
 
     const handleError: React.ReactEventHandler<HTMLImageElement> = (event) => {
+        setLoaded(false);
         markImageCandidateFailed(src, effectiveLocale, currentSrc);
         console.error('[OptimizedImage] ❌ 图片加载失败:', {
             src,
@@ -405,7 +423,8 @@ export const OptimizedImage = ({
             <img
                 ref={imgRef}
                 src={renderedSrc}
-                alt={alt ?? ''}
+                alt={effectiveLoaded && !errored ? (alt ?? '') : ''}
+                aria-label={alt || undefined}
                 draggable={draggable}
                 onDragStart={handleDragStart}
                 onError={handleError}
@@ -425,7 +444,8 @@ export const OptimizedImage = ({
         <img
             ref={imgRef}
             src={renderedSrc}
-            alt={alt ?? ''}
+            alt={effectiveLoaded && !errored ? (alt ?? '') : ''}
+            aria-label={alt || undefined}
             draggable={draggable}
             onDragStart={handleDragStart}
             onError={handleError}

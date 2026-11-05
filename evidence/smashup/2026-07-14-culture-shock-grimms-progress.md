@@ -1,10 +1,15 @@
 # 文化冲击四派系 - 格林童话阶段进展（2026-07-14）
 
+## 2026-09-19 当前审计回写
+
+- 格林童话当前证据仍是 `representative_only / in_progress`：20 条领域测试与 3/3 真实入口通过，覆盖持续力量、牌库检索、团队合作、基地能力等共享流程，但没有把代表链外推为全部对象 direct L3/L4。
+- 该结论只回写当前审计边界，不覆盖其它派系；四派系批次状态由 `2026-09-18-culture-shock-four-factions-audit.md` 汇总。
+
 ## 当前结论
 
 - 格林童话（`grimms_fairy_tales`）本轮已补齐 L2 领域行为闭环：持续力量配对、格林兄弟的祝福名字别名、牌库检索放顶、弃牌洗回牌库、随从移动、临时加力、额外行动 / 额外随从、樵夫的斧子、团队合作、大灰狼、青蛙王子，以及姜饼屋 / 林中小屋基地能力。
-- `grimms-fairy-tales.test.ts` 已扩展到 18 条定向 Vitest，覆盖新增的樵夫的斧子两种模式、团队合作打出 / 入手两种处理，以及格林兄弟的祝福作为缺失搭档名参与持续力量判断。
-- 本轮已新增并通过格林童话代表性 L3/L4 真实入口 E2E：派系选择图集可见、团队合作从真实打牌入口检索并额外打出格雷特；但仍不能把格林童话或文化冲击四派系声明为全面完成。
+- `grimms-fairy-tales.test.ts` 已扩展到 20 条定向 Vitest，覆盖新增的樵夫的斧子两种模式、团队合作打出 / 入手两种处理、格林兄弟的祝福作为缺失搭档名参与持续力量判断，以及一篮子好东西 / 侏儒怪各自的牌库顶最终状态。
+- 本轮已新增并通过格林童话 3/3 真实入口 E2E：派系选择图集可见、团队合作从真实打牌入口检索并额外打出格雷特、一篮子好东西从真实打牌入口把行动放到牌库顶；但仍不能把格林童话或文化冲击四派系声明为全面完成。
 - 文化冲击卡牌与复用基地资源仍沿用阿南西阶段 blocker：本地压缩产物和 manifest 已存在，但 R2/CDN 上传与 `HEAD 200` 仍 blocked。
 
 ## 本轮实现补齐
@@ -15,8 +20,8 @@
 | 另一个白雪公主 / 红玫瑰 | 同基地有对应搭档时自身 +2 | 新增基础版专属 power modifier；同样走名字别名 helper | 同上 |
 | 小红帽 | 大灰狼不在场时，你在此基地的每个随从 +1 | 新增光环型 power modifier；若任意基地有大灰狼则关闭 | `汉瑟/格雷特、另一个白雪公主/红玫瑰与小红帽持续力量按条件生效` |
 | 仙女教母的祝福 | 从牌库检索一个随从放到牌库顶 | 新增 deck search prompt、`DECK_INSPECTED` 见证和 `CARD_TO_DECK_TOP` 续算 | `仙女教母的祝福从牌库选择随从放到牌库顶` |
-| 一篮子好东西 | 从牌库检索一个行动放到牌库顶 | 复用 deck search to top 链路 | 注册合同测试 |
-| 侏儒怪 | 从牌库检索任意牌放到牌库顶 | 复用 deck search to top 链路 | 注册合同测试 |
+| 一篮子好东西 | 从牌库检索一个行动放到牌库顶 | 复用 deck search to top 链路 | `一篮子好东西只将牌库中的行动放到牌库顶` |
+| 侏儒怪 | 从牌库检索任意牌放到牌库顶 | 复用 deck search to top 链路 | `侏儒怪可以将牌库中的任意牌放到牌库顶` |
 | 另一个故事 | 至多三张弃牌洗回牌库 | 新增多选弃牌 prompt；支持合法候选存在时跳过；成功时发 `DECK_REORDERED` | `另一个故事在有合法弃牌时允许跳过，也能把至多三张弃牌洗回牌库` |
 | 面包屑 | 至多两个同一基地己方随从移动到另一基地 | 新增两段 prompt：选择同源随从 → 选择目的基地；用 `buildValidatedMoveEvents` 落权威状态 | `面包屑能把同一基地至多两个己方随从移动到另一个基地` |
 | 老鼠、鸟和香肠 | 同一基地同派系至多两个随从本回合各 +2 | 新增多选 prompt 与同基地/同派系校验；成功时发 `TEMP_POWER_ADDED` | `老鼠、鸟和香肠给同一基地同派系的至多两个随从临时 +2` |
@@ -39,7 +44,7 @@
 - `src/games/smashup/abilities/index.ts`
   - 接入 `registerGrimmsFairyTalesAbilities()` 与 `registerGrimmsFairyTalesInteractionHandlers()`。
 - `src/games/smashup/__tests__/abilities/grimms-fairy-tales.test.ts`
-  - 扩展格林童话 L2 行为测试到 18 条。
+  - 扩展格林童话 L2 行为测试到 20 条，补齐一篮子好东西与侏儒怪的最终状态断言。
 
 - `e2e/smashup/smashup-culture-shock-grimms.e2e.ts`
   - 新增格林童话派系选择与团队合作真实入口 L3/L4 E2E。
@@ -48,18 +53,21 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `npx vitest run src/games/smashup/__tests__/abilities/grimms-fairy-tales.test.ts --configLoader native` | PASS，18 tests |
+| `npx vitest run src/games/smashup/__tests__/abilities/grimms-fairy-tales.test.ts --configLoader native` | PASS，20 tests |
 | `npx vitest run src/games/smashup/__tests__/cultureShockFourFactionsIntegration.test.ts --configLoader native` | PASS，6 tests |
 | `npx openspec validate add-smashup-culture-shock-four-factions --strict --no-interactive` | PASS |
-| `npx tsc --noEmit --pretty false` | PASS |
-| `npm run test:e2e:file -- e2e/smashup/smashup-culture-shock-grimms.e2e.ts` | PASS，2 tests |
-| `git diff --check -- src/games/smashup/abilities/grimms_fairy_tales.ts src/games/smashup/__tests__/abilities/grimms-fairy-tales.test.ts e2e/smashup/smashup-culture-shock-grimms.e2e.ts evidence/smashup/2026-07-14-culture-shock-grimms-progress.md` | PASS |
+| `npx tsc --noEmit --pretty false --noErrorTruncation` | PASS |
+| `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-culture-shock-grimms.e2e.ts` | PASS，3 tests |
+| `npm run audit:evidence:selfcheck -- evidence/smashup/2026-07-14-culture-shock-grimms-progress.md` | PASS |
+| `git diff --check -- src/games/smashup/__tests__/abilities/grimms-fairy-tales.test.ts e2e/smashup/smashup-culture-shock-grimms.e2e.ts evidence/smashup/2026-07-14-culture-shock-grimms-progress.md evidence/smashup/2026-09-18-culture-shock-four-factions-audit.md` | PASS |
 
 ## 仍未实现 / 不得误报完成
 
 - 已补代表性 L3/L4 E2E 文件：`e2e/smashup/smashup-culture-shock-grimms.e2e.ts`。
-- 代表截图：`D:/GA/BoardGame-upstream-main-dev-20260601/test-results/evidence-screenshots/smashup/smashup-culture-shock-grimms.e2e/派系选择页能看到格林童话，并加载文化冲击图集/01-格林童话-派系选择页图集可见.jpg`。
-- 代表截图：`D:/GA/BoardGame-upstream-main-dev-20260601/test-results/evidence-screenshots/smashup/smashup-culture-shock-grimms.e2e/团队合作可从真实打牌入口检索并额外打出格雷特/05-团队合作-格雷特额外打出结算后.jpg`。
+- 代表截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-culture-shock-grimms.e2e/派系选择页能看到格林童话，并加载文化冲击图集/01-格林童话-派系选择页图集可见.jpg`。
+- 代表截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-culture-shock-grimms.e2e/团队合作可从真实打牌入口检索并额外打出格雷特/05-团队合作-格雷特额外打出结算后.jpg`。
+- 代表截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-culture-shock-grimms.e2e/一篮子好东西从真实打牌入口将行动放到牌库顶/07-一篮子好东西-选择行动.jpg`。
+- 代表截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-culture-shock-grimms.e2e/一篮子好东西从真实打牌入口将行动放到牌库顶/08-一篮子好东西-行动置顶结算后.jpg`。
 - 团队合作当前 L2 名字匹配覆盖格林童话自身命名互文；若后续要求跨派系完整泛文本解析，需要单独接入全卡牌能力文本索引。
 - 面包屑、老鼠鸟香肠、姜饼屋、林中小屋、青蛙王子仍可继续补更细对象级拒绝路径证据。
 - 文化冲击资源远端链路仍 blocked：R2 凭据不可用，代表 CDN URL 仍未取得 `HEAD 200`。

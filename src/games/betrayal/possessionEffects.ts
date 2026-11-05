@@ -19,7 +19,7 @@ export const BETRAYAL_TRAIT_LABEL: Record<BetrayalTraitKey, string> = {
     sanity: '神志',
 };
 
-export type PossessionUseEffectProfile = UseEffectProfile | {
+export type PossessionUseActionEffectProfile = {
     mode: 'nextNonCombatTraitReplacement';
     replacementTrait: BetrayalTraitKey;
     sanityCost: number;
@@ -51,7 +51,9 @@ export type PossessionUseEffectProfile = UseEffectProfile | {
     recommendedAction: BetrayalRecommendedAction;
 };
 
-export const POSSESSION_USE_EFFECTS: Record<string, PossessionUseEffectProfile> = {
+export type PossessionUseEffectProfile = UseEffectProfile | PossessionUseActionEffectProfile;
+
+export const POSSESSION_USE_EFFECTS: Record<string, PossessionUseActionEffectProfile> = {
     'omen-book': {
         mode: 'nextNonCombatTraitReplacement',
         replacementTrait: 'knowledge',
@@ -129,7 +131,7 @@ export function resolveInventoryEffectId(cardId: string): string {
         .replace(/-\d+$/, '');
 }
 
-export function resolveUseEffect(card: { id: string }): PossessionUseEffectProfile | null {
+export function resolveUseEffect(card: { id: string }): PossessionUseActionEffectProfile | null {
     return POSSESSION_USE_EFFECTS[resolveInventoryEffectId(card.id)] ?? null;
 }
 
@@ -332,9 +334,28 @@ export function eventEffectNeedsPendingEventChoice(effect: UseEffectProfile | un
         || effectNeedsRoomTargetChoice(effect)
         || (
             effect.mode === 'allTraitChecks'
-            && Boolean(effect.results?.every((result) => result.passed))
-            && effectHasUnresolvedTraitChoice(effect.allPassEffect)
+            && (
+                !effect.results
+                || effect.results.length < effect.traits.length
+                || (
+                    effect.results.every((result) => result.passed)
+                    && effectHasUnresolvedTraitChoice(effect.allPassEffect)
+                )
+            )
         );
+}
+
+export function effectIsTraitOnly(effect: UseEffectProfile | undefined): boolean {
+    if (!effect) {
+        return false;
+    }
+    if (effect.mode === 'trait' || effect.mode === 'chosenTrait' || effect.mode === 'healChosenTrait') {
+        return true;
+    }
+    if (effect.mode === 'compound') {
+        return effect.effects.length > 0 && effect.effects.every(effectIsTraitOnly);
+    }
+    return false;
 }
 
 export function effectAllowsChosenTrait(effect: UseEffectProfile, trait: BetrayalTraitKey): boolean {
@@ -374,9 +395,12 @@ export function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffe
     if (effect.mode === 'placeSecretPassageToken' && targetRoom.markerTokens?.includes('secretPassage')) {
         return false;
     }
-    const requiredRoom = effect.requiredIfDiscoveredVisualIds?.length
+    const requiredIfDiscoveredVisualIds = effect.mode === 'placeExplorerInDiscoveredRoomByFloor'
+        ? effect.requiredIfDiscoveredVisualIds
+        : undefined;
+    const requiredRoom = requiredIfDiscoveredVisualIds?.length
         ? core.rooms.find((room) => (
-            room.state === 'discovered' && effect.requiredIfDiscoveredVisualIds!.includes(room.visualId)
+            room.state === 'discovered' && requiredIfDiscoveredVisualIds.includes(room.visualId)
         ))
         : null;
     if (requiredRoom) {
@@ -384,6 +408,9 @@ export function effectAllowsRoomTargetChoice(core: BetrayalCore, effect: UseEffe
     }
     if (effect.targetRoomScope === 'anyDiscovered') {
         return true;
+    }
+    if (effect.targetRoomScope === 'upperDiscovered') {
+        return targetRoom.floor === 'upper';
     }
     if (effect.targetRoomScope === 'anyOtherDiscovered') {
         return targetRoom.id !== core.currentExplorer.roomId;
@@ -648,6 +675,7 @@ export function formatEffectLabel(effect: PossessionUseEffectProfile): string {
         }
         const scopeLabelByTarget = {
             anyDiscovered: '任意已发现板块',
+            upperDiscovered: '任意上层板块',
             groundDiscovered: '任意地面层板块',
             basementDiscovered: '任意地下室板块',
             groundOrBasementDiscovered: '任意地面层或地下室板块',
@@ -689,5 +717,11 @@ export function formatEffectLabel(effect: PossessionUseEffectProfile): string {
     if (effect.mode === 'compound') {
         return effect.effects.map(formatEffectLabel).join('；');
     }
-    return `${BETRAYAL_TRAIT_LABEL[effect.trait!]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
+    if (effect.mode === 'trait') {
+        return `${BETRAYAL_TRAIT_LABEL[effect.trait]} ${effect.amount > 0 ? '+' : ''}${effect.amount}`;
+    }
+    if (effect.mode === 'extraTurnAfterTurnEnd') {
+        return '本回合结束后额外行动一轮';
+    }
+    throw new Error('Unsupported Betrayal effect label mode');
 }

@@ -7,7 +7,7 @@ import {
 import { fireTriggers, getRegisteredOngoingEffectIds, isBaseAbilitySuppressed, isMinionProtected, isOperationRestricted } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getEffectivePower, getRegisteredModifierIds } from '../../domain/ongoingModifiers';
 import { validateActionPlaySemantics } from '../../domain/playLegality';
-import { SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { HYDRA_CARDS } from '../../data/factions/hydra';
 import { KREE_CARDS } from '../../data/factions/kree';
 import { MASTERS_OF_EVIL_CARDS } from '../../data/factions/masters_of_evil';
@@ -164,7 +164,7 @@ describe('漫威反派四派系代表性玩法行为', () => {
         expect(agentDestroyed.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toHaveLength(2);
         expect(agentDestroyed.events[0]).toMatchObject({
             type: SU_EVENTS.LIMIT_MODIFIED,
-            payload: { limitType: 'minion', restrictToBase: 0, powerMax: 2 },
+            payload: { limitType: 'minion', restrictToBase: 0, powerMax: 2, playTiming: 'immediate' },
         });
 
         const trigger = fireTriggers(core, 'onMinionDestroyed', {
@@ -185,6 +185,73 @@ describe('漫威反派四派系代表性玩法行为', () => {
             type: SU_EVENTS.CARDS_DRAWN,
             payload: { playerId: '0', count: 1, cardUids: ['draw-a'] },
         });
+    });
+
+    it('九头蛇特工在对手回合被摧毁后，控制者仍能立即选择并打出基地限定的额外角色', () => {
+        const core = makeState({
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('low-minion', 'hydra_hydra_agent', 'minion', '0'),
+                        makeCard('high-minion', 'hydra_red_skull', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_juice_bar', [
+                makeMinion('gnome', 'trickster_gnome', '1', 3),
+                makeMinion('ally-a', 'hydra_hydra_agent', '1', 2),
+                makeMinion('ally-b', 'hydra_hydra_agent', '1', 2),
+                makeMinion('agent', 'hydra_hydra_agent', '0', 2),
+            ])],
+        });
+        const state = makeMatchState(core);
+        const gnome = invokeRegisteredAbilityContract('trickster_gnome', 'onPlay', {
+            state: core,
+            matchState: state,
+            playerId: '1',
+            cardUid: 'gnome',
+            defId: 'trickster_gnome',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 120,
+        });
+        const gnomePrompt = getSimpleChoicePrompt(gnome.matchState!, 'trickster_gnome');
+        expect(getPromptOptions(gnomePrompt).map(option => option.value?.minionUid)).toContain('agent');
+        const destroyed = respondToPromptOption(
+            gnome.matchState!,
+            option => option.value?.minionUid === 'agent',
+            '对手回合用侏儒消灭九头蛇特工',
+            '1',
+            FIXED_RANDOM,
+        );
+
+        const prompt = getSimpleChoicePrompt(destroyed.finalState, 'smashup_immediate_extra_minion');
+        expect(prompt.playerId).toBe('0');
+        expect(getPromptOptions(prompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined)))
+            .toEqual(['low-minion', 'skip']);
+
+        const choseCard = respondToPromptOption(
+            destroyed.finalState,
+            option => option.value?.cardUid === 'low-minion',
+            '九头蛇特工控制者选择额外角色',
+            '0',
+            FIXED_RANDOM,
+        );
+        const basePrompt = getSimpleChoicePrompt(choseCard.finalState, 'smashup_immediate_extra_minion_base');
+        const played = respondToPromptOption(
+            choseCard.finalState,
+            option => option.value?.baseIndex === 0,
+            '九头蛇特工选择原基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(basePrompt).toBeTruthy();
+        expect(played.success, played.error).toBe(true);
+        expect(played.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('low-minion');
+        expect(played.finalState.core.players['0'].minionsPlayed).toBe(0);
     });
 
     it('克里抽牌、额外行动、行动回收和行动数力量修正生效', () => {

@@ -41,6 +41,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--no-index", action="store_true", help="Skip generating 00-sequence-index.png.")
+    parser.add_argument(
+        "--circle-effect",
+        action="store_true",
+        help="Draw a red rounded outline around the verbatim effect text block.",
+    )
+    parser.add_argument(
+        "--effect-only",
+        action="store_true",
+        help="Show only the sequence badge and verbatim effect text in the banner.",
+    )
     parser.add_argument("--overwrite", action="store_true", help="Overwrite existing labeled files.")
     return parser.parse_args()
 
@@ -72,7 +82,13 @@ def text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) 
     return box[2] - box[0]
 
 
-def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> list[str]:
+def wrap_text(
+    draw: ImageDraw.ImageDraw,
+    text: str,
+    font: ImageFont.ImageFont,
+    max_width: int,
+    max_lines: int | None = 2,
+) -> list[str]:
     if text_width(draw, text, font) <= max_width:
         return [text]
 
@@ -87,7 +103,7 @@ def wrap_text(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, m
             current = candidate
     if current:
         lines.append(current)
-    return lines[:2]
+    return lines if max_lines is None else lines[:max_lines]
 
 
 def truncate_to_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont, max_width: int) -> str:
@@ -115,13 +131,21 @@ def manifest_entries(manifest_path: Path) -> tuple[str | None, list[dict[str, st
     entries: list[dict[str, str]] = []
     for item in raw_items:
         if isinstance(item, str):
-            entries.append({"path": item, "label": "", "transition": ""})
+            entries.append({"path": item, "label": "", "transition": "", "effect": ""})
         elif isinstance(item, dict):
             path = item.get("path") or item.get("image") or item.get("file")
             if not path:
                 raise SystemExit(f"Manifest item is missing path: {item!r}")
             transition = item.get("transition") or item.get("relation") or item.get("note") or ""
-            entries.append({"path": str(path), "label": str(item.get("label", "")), "transition": str(transition)})
+            effect = item.get("effect") or item.get("ruleText") or item.get("originalText") or ""
+            entries.append(
+                {
+                    "path": str(path),
+                    "label": str(item.get("label", "")),
+                    "transition": str(transition),
+                    "effect": str(effect),
+                }
+            )
         else:
             raise SystemExit(f"Unsupported manifest item: {item!r}")
     return title, entries
@@ -143,7 +167,7 @@ def collect_entries(args: argparse.Namespace) -> list[dict[str, str]]:
         for index, image in enumerate(args.image):
             label = args.label[index] if index < len(args.label) else ""
             transition = args.transition[index] if index < len(args.transition) else ""
-            entries.append({"path": image, "label": label, "transition": transition})
+            entries.append({"path": image, "label": label, "transition": transition, "effect": ""})
 
     if not entries:
         raise SystemExit("Provide at least one --image or --manifest entry.")
@@ -157,6 +181,8 @@ def collect_entries(args: argparse.Namespace) -> list[dict[str, str]]:
             entry["label"] = path.stem
         if "transition" not in entry:
             entry["transition"] = ""
+        if "effect" not in entry:
+            entry["effect"] = ""
         entry["sequence"] = str(index)
     return entries
 
@@ -166,8 +192,11 @@ def draw_labeled_image(
     out_path: Path,
     label: str,
     transition: str,
+    effect: str,
     sequence: int,
     total: int,
+    circle_effect: bool,
+    effect_only: bool,
     overwrite: bool,
 ) -> None:
     if out_path.exists() and not overwrite:
@@ -177,26 +206,37 @@ def draw_labeled_image(
         image = source.convert("RGBA")
 
     width, height = image.size
-    banner_height = max(112, min(190, int(height * 0.16)))
+    base_banner_height = max(112, min(190, int(height * 0.16)))
     padding = max(18, int(width * 0.018))
-    badge_font = load_font(max(30, min(52, int(banner_height * 0.46))))
-    label_font = load_font(max(24, min(42, int(banner_height * 0.34))))
-    transition_font = load_font(max(20, min(30, int(banner_height * 0.22))))
-    small_font = load_font(max(14, min(21, int(banner_height * 0.15))))
+    badge_font = load_font(max(30, min(52, int(base_banner_height * 0.46))))
+    label_font = load_font(max(24, min(42, int(base_banner_height * 0.34))))
+    transition_font = load_font(max(20, min(30, int(base_banner_height * 0.22))))
+    effect_font = load_font(max(22, min(34, int(base_banner_height * 0.24))))
+    small_font = load_font(max(14, min(21, int(base_banner_height * 0.15))))
 
-    canvas = Image.new("RGBA", (width, height + banner_height), (17, 24, 39, 255))
-    canvas.alpha_composite(image, (0, banner_height))
-    draw = ImageDraw.Draw(canvas)
-    draw.rectangle((0, 0, width, banner_height), fill=(17, 24, 39, 220))
-    draw.rectangle((0, banner_height - 4, width, banner_height), fill=(37, 99, 235, 255))
-
+    measure = Image.new("RGB", (width, 1), (17, 24, 39))
+    measure_draw = ImageDraw.Draw(measure)
     badge = f"{sequence:02d} / {total:02d}"
-    badge_box = draw.textbbox((0, 0), badge, font=badge_font)
+    badge_box = measure_draw.textbbox((0, 0), badge, font=badge_font)
     badge_width = badge_box[2] - badge_box[0]
     badge_height = badge_box[3] - badge_box[1]
     badge_x = padding
-    badge_y = max(10, (banner_height - badge_height) // 2 - 4)
     badge_pad_x = 18
+    label_x = badge_x + badge_width + badge_pad_x * 2 + 28
+    max_label_width = max(120, width - label_x - padding)
+    effect_lines = wrap_text(measure_draw, effect, effect_font, max_label_width, max_lines=None) if effect else []
+    effect_line_height = int((effect_font.size if hasattr(effect_font, "size") else 28) * 1.2)
+    banner_height = base_banner_height + (effect_line_height * len(effect_lines) + 44 if effect_lines else 0)
+
+    canvas = Image.new("RGBA", (width, height + banner_height), (17, 24, 39, 255))
+    draw = ImageDraw.Draw(canvas)
+    draw.rectangle((0, 0, width, banner_height), fill=(17, 24, 39, 220))
+    draw.rectangle((0, banner_height - 4, width, banner_height - 1), fill=(37, 99, 235, 255))
+
+    badge_box = draw.textbbox((0, 0), badge, font=badge_font)
+    badge_width = badge_box[2] - badge_box[0]
+    badge_height = badge_box[3] - badge_box[1]
+    badge_y = max(10, (base_banner_height - badge_height) // 2 - 4)
     badge_pad_y = 8
     draw.rounded_rectangle(
         (
@@ -210,22 +250,48 @@ def draw_labeled_image(
     )
     draw.text((badge_x, badge_y), badge, fill=(255, 255, 255, 255), font=badge_font)
 
-    label_x = badge_x + badge_width + badge_pad_x * 2 + 28
-    max_label_width = max(120, width - label_x - padding)
-    label_lines = wrap_text(draw, label, label_font, max_label_width)
     label_y = max(8, int(banner_height * 0.12))
-    for line in label_lines:
-        draw.text((label_x, label_y), line, fill=(255, 255, 255, 255), font=label_font)
-        label_y += int(label_font.size * 1.15) if hasattr(label_font, "size") else 32
+    if not effect_only:
+        label_lines = wrap_text(draw, label, label_font, max_label_width)
+        for line in label_lines:
+            draw.text((label_x, label_y), line, fill=(255, 255, 255, 255), font=label_font)
+            label_y += int(label_font.size * 1.15) if hasattr(label_font, "size") else 32
 
-    if transition:
+    if transition and not effect_only:
         transition_text = truncate_to_width(draw, f"承接: {transition}", transition_font, max_label_width)
-        transition_y = max(label_y + 4, int(banner_height * 0.55))
+        transition_y = max(label_y + 4, int(base_banner_height * 0.55))
         draw.text((label_x, transition_y), transition_text, fill=(253, 230, 138, 255), font=transition_font)
+        effect_y = transition_y + int((transition_font.size if hasattr(transition_font, "size") else 24) * 1.2) + 8
+    elif effect_only:
+        effect_y = max(18, int(base_banner_height * 0.18))
+    else:
+        effect_y = label_y + 18
 
-    source_text = truncate_to_width(draw, f"原图: {image_path.name}", small_font, max_label_width)
-    draw.text((label_x, banner_height - 30), source_text, fill=(209, 213, 219, 255), font=small_font)
+    if effect_lines:
+        effect_box_top = effect_y - 12
+        effect_caption = "效果原文："
+        draw.text((label_x, effect_y), effect_caption, fill=(134, 239, 172, 255), font=effect_font)
+        effect_y += effect_line_height
+        for line in effect_lines:
+            draw.text((label_x, effect_y), line, fill=(255, 255, 255, 255), font=effect_font)
+            effect_y += effect_line_height
+        if circle_effect:
+            effect_widths = [text_width(draw, effect_caption, effect_font)] + [text_width(draw, line, effect_font) for line in effect_lines]
+            effect_box_left = label_x - 20
+            effect_box_right = min(width - padding, label_x + max(effect_widths) + 24)
+            effect_box_bottom = effect_y + 2
+            draw.rounded_rectangle(
+                (effect_box_left, effect_box_top, effect_box_right, effect_box_bottom),
+                radius=18,
+                outline=(239, 68, 68, 255),
+                width=6,
+            )
 
+    if not effect_only:
+        source_text = truncate_to_width(draw, f"原图: {image_path.name}", small_font, max_label_width)
+        draw.text((label_x, banner_height - 30), source_text, fill=(209, 213, 219, 255), font=small_font)
+
+    canvas.alpha_composite(image, (0, banner_height))
     labeled = canvas.convert("RGB")
     labeled.save(out_path, format="PNG", optimize=True)
 
@@ -279,12 +345,24 @@ def main() -> int:
         source_path = Path(entry["path"])
         safe_stem = sanitize_filename(source_path.stem, f"image-{index:02d}")
         out_path = out_dir / f"{index:02d}-labeled-{safe_stem}.png"
-        draw_labeled_image(source_path, out_path, entry["label"], entry.get("transition", ""), index, len(entries), args.overwrite)
+        draw_labeled_image(
+            source_path,
+            out_path,
+            entry["label"],
+            entry.get("transition", ""),
+            entry.get("effect", ""),
+            index,
+            len(entries),
+            args.circle_effect,
+            args.effect_only,
+            args.overwrite,
+        )
         output_entries.append(
             {
                 "sequence": index,
                 "label": entry["label"],
                 "transition": entry.get("transition", ""),
+                "effect": entry.get("effect", ""),
                 "original": str(source_path),
                 "labeled": str(out_path),
             }

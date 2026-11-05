@@ -93,6 +93,7 @@ function resourceKey(ref: SmashUpReactionResourceRef): string {
             return `${ref.kind}:${ref.baseIndex ?? 'global'}`;
         case 'baseDeck':
         case 'madnessDeck':
+        case 'monsterDeck':
             return ref.kind;
         case 'global':
             return `global:${ref.key}`;
@@ -200,7 +201,7 @@ export function createPromptDslProgram<TContext>(params: {
         args: AbilityRuntimePromptResolveArgs<TContext, SmashUpCore, SmashUpEvent>,
     ) => AbilityRuntimeEffectResult<TContext, SmashUpCore, SmashUpEvent>;
 }): SmashUpEffectDslProgram<TContext> {
-    return createPromptProgram<TContext, SmashUpCore, SmashUpEvent>({
+    return createPromptProgram<TContext>({
         sourceId: params.sourceId,
         interactionSourceIds: params.interactionSourceIds,
         deriveFootprint: params.footprint,
@@ -415,6 +416,9 @@ export function discardRandomCardsPrimitive<TContext>(params: {
         (context) => {
             const core = params.core(context);
             const random = params.random(context);
+            if (!random) {
+                throw new Error('随机弃牌效果缺少对局随机数生成器');
+            }
             const count = Math.max(0, resolveValue(params.count, context));
             const events: CardsDiscardedEvent[] = [];
             for (const playerId of resolveValue(params.playerIds, context)) {

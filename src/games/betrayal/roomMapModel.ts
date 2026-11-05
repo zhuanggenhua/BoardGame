@@ -44,6 +44,15 @@ export const ROOM_ORIENTATION_DEGREES: Record<RoomOrientationTurns, number> = {
   3: 270,
 };
 
+export function resolveRoomTileRotationDegrees(
+  room: Pick<BetrayalRoomNode, "orientationTurns">,
+  isDiscovered: boolean,
+): number | undefined {
+  return isDiscovered
+    ? ROOM_ORIENTATION_DEGREES[room.orientationTurns]
+    : undefined;
+}
+
 export const ROOM_EDGE_VECTOR: Record<BetrayalRoomEdge, { x: number; y: number }> = {
   north: { x: 0, y: -1 },
   east: { x: 1, y: 0 },

@@ -151,6 +151,8 @@
       "skip": "跳过"
     },
     "turn": "回合",
+    "current_player": "当前玩家",
+    "spectator_read_only": "旁观只读 · 仅供查看",
     "you": "你自己",
     "opp": "对手",
     "score_sheet": "记分板",
@@ -352,13 +354,15 @@
     "diy_clowns_banana_peel_title": "香蕉皮：选择来源基地",
     "diy_clowns_banana_peel_minions_title": "香蕉皮：选择至多两个要移动的己方随从",
     "diy_clowns_banana_peel_base_title": "香蕉皮：选择目标基地",
-    "diy_clowns_clown_car_title": "小丑车：选择要移动到此基地的己方随从",
-    "diy_clowns_clown_pyramid_title": "小丑金字塔：选择获得 +2 力量的己方随从",
-    "diy_clowns_colorful_scarf_title": "彩色围巾：选择要转移的行动",
-    "diy_clowns_confetti_bucket_title": "五彩纸屑桶：选择要返回手牌的仆从",
-    "diy_clowns_pie_in_the_face_title": "馅饼砸脸：选择一个对手弃置行动",
-    "diy_clowns_clown_girl_title": "小丑女：选择要打出的额外行动",
+    "diy_clowns_clown_car_title": "小丑车：选择要洗回牌库的弃牌",
+    "diy_clowns_clown_pyramid_title": "小丑金字塔：选择获得力量加成的己方随从",
+    "diy_clowns_colorful_scarf_title": "彩色围巾：选择要弃掉的手牌，或跳过",
+    "diy_clowns_confetti_bucket_title": "五彩纸屑桶：选择要弃置的手牌",
+    "diy_clowns_juggling_title": "杂耍：选择要弃置的行动牌",
+    "diy_clowns_pie_in_the_face_title": "馅饼砸脸：选择获得力量的己方随从",
+    "diy_clowns_clown_girl_title": "小丑女：选择从牌库弃置的行动牌",
     "diy_clowns_mcdonald_clown_title": "麦当劳小丑：选择一张展示的行动加入手牌",
+    "diy_clowns_dancing_clown_title": "跳舞小丑：是否打出随机选择的标准行动？",
     "base_diy_clowns_circus_tent_title": "马戏篷：是否弃掉展示的行动牌？",
     "base_diy_clowns_circus_tent_discard_option": "弃掉行动牌",
     "base_diy_clowns_circus_tent_keep_option": "放回牌库顶",
@@ -1044,6 +1048,8 @@
     "vikings_huscarl_skip_option": "跳过（不放牌）",
     "vikings_shield_maiden_title": "盾女：选择另一位玩家，展示其牌库顶的一张牌",
     "vikings_shield_maiden_skip_option": "跳过（不揭示）",
+    "vikings_reveal_eligible_draw_option": "加入手牌",
+    "vikings_reveal_eligible_skip_option": "放回牌库顶",
     "vikings_valkyrie_title": "女武神：选择另一位玩家弃牌堆中的一个随从",
     "vikings_valkyrie_skip_option": "跳过（不取回）",
     "vikings_ransack_title": "洗劫：选择一个打出的行动牌或一张埋葬牌，将其加入你的手牌",
@@ -1382,6 +1388,8 @@
     "munchkin_halitosis_move_title": "口臭药水：移动你的仆从",
     "munchkin_potion_of_duplication_choose_talent_title": "复制药水：选择另一个仆从的天赋",
     "munchkin_magic_missile_destroy_title": "魔法导弹：选择目标仆从",
+    "munchkin_tiger_steed_destroy_title": "虎骑士：选择要摧毁的仆从",
+    "munchkin_tiger_steed_skip_destroy_option": "跳过（不摧毁）",
     "munchkin_straight_line_running_away_choose_treasure_title": "直线跑路药水：选择已展示的宝藏",
     "munchkin_rocket_boots_move_title": "火箭靴：选择目标基地",
     "munchkin_mages_blaster_master_discard_title": "爆破大师：选择一张手牌作为弃牌成本",
@@ -1454,6 +1462,7 @@
     "munchkin_warriors_big_hero_monster_title": "大英雄：选择要摧毁的怪物",
     "munchkin_warriors_berserker_monster_title": "狂战士：选择力量不高于自身的怪物",
     "munchkin_warriors_taunter_mode_title": "嘲讽者：选择是否打出怪物",
+    "munchkin_warriors_taunter_play_monster_option": "打出一个怪物",
     "munchkin_warriors_dungeon_bait_mode_title": "地牢诱饵：选择效果",
     "munchkin_warriors_dungeon_bait_base_title": "地牢诱饵：选择打出怪物的基地",
     "munchkin_warriors_dungeon_bait_minion_title": "地牢诱饵：选择力量 2 或更少的仆从",
@@ -1462,6 +1471,9 @@
     "munchkin_warriors_ruckus_mode_title": "骚乱：选择效果",
     "munchkin_warriors_war_cry_monster_title": "战争怒吼：选择一个怪物",
     "munchkin_warriors_war_cry_minion_title": "战争怒吼：选择该基地上的一个仆从",
+    "ancient_incas_signs_in_the_stars_turn_start_title": "星星上的征兆：你可以将这张牌翻面朝下直到本回合结束",
+    "ancient_incas_signs_in_the_stars_turn_start_keep_face_up": "保持正面",
+    "ancient_incas_signs_in_the_stars_turn_start_face_down": "翻面朝下直到本回合结束",
     "base_treehouse_player_title": "树屋：选择另一位玩家",
     "base_treehouse_draw_title": "树屋：选择是否抽一张牌",
     "base_treehouse_draw_option": "抽一张牌",
@@ -1480,6 +1492,8 @@
     "avengers_modular_tech_destination_minion_title": "模块化技术：选择装备的新角色",
     "avengers_modular_tech_source_fallback_option": "持续行动",
     "avengers_modular_tech_source_title": "模块化技术：选择要移动的装备或基地神器",
+    "avengers_modular_tech_source_base_action_option": "基地行动",
+    "avengers_modular_tech_source_minion_action_option": "随从附加行动",
     "avengers_strategize_order_first_title": "战略部署：选择牌库顶第一张牌",
     "avengers_strategize_order_second_title": "战略部署：选择牌库顶第二张牌",
     "shield_reassignment_title": "调任：选择至多两个你的其他基地角色移动到目标基地",
@@ -1626,14 +1640,41 @@
     "explorers_dr_livingstone_i_presume_title": "利文斯通医生，想必是你？：选择唯一随从洗回其拥有者牌库",
     "explorers_forgotten_horrors_title": "被遗忘的恐怖：选择要转移到的另一个基地",
     "international_incident_move_destination_title": "选择目标基地",
+    "sumo_wrestlers_body_slam_player_title": "身体猛击：选择另一位玩家",
+    "sumo_wrestlers_body_slam_base_title": "身体猛击：选择一个你有随从且该玩家有随从的基地",
+    "sumo_wrestlers_body_slam_destination_title": "身体猛击：选择要移动到的另一个基地",
+    "sumo_wrestlers_yokozuna_move_title": "横纲：选择要移动的其他玩家随从",
+    "sumo_wrestlers_technique_prize_title": "技术奖：选择你的一个随从放置 3 个 +1 力量指示物",
+    "sumo_wrestlers_fighting_spirit_prize_title": "斗志奖：分配 2 个 +1 力量指示物",
+    "sumo_wrestlers_grasp_the_belt_title": "抓住腰带：选择要移动的随从",
+    "sumo_wrestlers_third_tier_title": "关胁：选择这里力量 3 或以下的其他玩家随从",
+    "musketeers_en_garde_title": "预备姿势：选择一个随从直到回合结束 +1 力量",
+    "musketeers_on_a_roll_title": "连连获胜：选择一个随从作为额外行动影响目标",
+    "musketeers_biding_time_title": "等待时机：选择一个随从直到回合结束 +2 力量",
+    "musketeers_make_way_title": "让路：选择你的一个随从移动",
+    "musketeers_one_for_all_title": "一为全：选择一个基地",
+    "musketeers_last_stand_title": "最后一搏：选择计分基地上你的一个随从",
+    "mounties_when_calls_the_badge_title": "呼叫警徽：选择一个基地给你的每个随从 +1 指示物",
+    "mounties_power_poutine_title": "力量肉汁薯条：选择至多两个你的随从 +2 力量",
+    "mounties_move_aboot_title": "挪过去：选择要移动的己方随从",
+    "mounties_eh_title": "嗯？：选择你的一个随从直到回合结束 +1 力量",
+    "luchadors_yellow_demon_title": "黄色恶魔：选择一张布置行动加入手牌",
+    "musketeers_token_of_affection_title": "情谊信物：选择一个直接影响随从的行动加入手牌",
+    "base_the_dohyo_title": "土俵：可以将这里另一位玩家的一个随从移动到另一个基地",
+    "base_strategic_syrup_reserve_title": "战略枫糖储备：可以将另一位玩家的一个随从移动到这里",
     "mounties_northern_mover_mode_title": "北方搬运者：选择效果",
     "mounties_northern_mover_target_title": "北方搬运者：选择另一个己方随从",
+    "mounties_always_get_our_man_source_title": "总能抓到目标：选择要移动的己方随从",
+    "mounties_always_get_our_man_target_title": "总能抓到目标：选择力量更低的对手随从",
     "sumo_wrestlers_chikara_mizu_discard_title": "力量满溢：弃 1 张牌，使所选随从直到回合结束 +4 力量",
     "sumo_wrestlers_chikara_mizu_mode_title": "力量满溢：选择 +2 或弃牌改为 +4",
     "sumo_wrestlers_chikara_mizu_target_title": "力量满溢：选择你的一个随从",
     "sumo_wrestlers_bulking_stew_target_title": "炖肉：选择一个己方随从放置力量指示物",
     "sumo_wrestlers_bulking_stew_discard_title": "炖肉：选择任意数量手牌弃掉",
     "sumo_wrestlers_yokozuna_mode_title": "横纲：选择天赋效果",
+    "sumo_wrestlers_body_slam_player_title": "身体猛击：选择另一位玩家",
+    "sumo_wrestlers_body_slam_base_title": "身体猛击：选择一个你有随从且该玩家有随从的基地",
+    "sumo_wrestlers_body_slam_destination_title": "身体猛击：选择要移动到的另一个基地",
     "mounties_haich_q_move_title": "H 骑警：选择一个己方随从移到此基地或从此基地移走",
     "luchadors_tag_team_base_title": "团队标记：选择额外随从要打出的基地",
     "luchadors_cheap_pop_title": "廉价欢呼：选择你的一个随从",
@@ -1836,6 +1877,7 @@
     "playerLabel": "玩家{{playerId}}",
     "baseIndex": "基地{{index}}",
     "baseUnknown": "未知基地",
+    "ability_not_implemented": "功能尚未实现",
     "limitType": {
       "minion": "随从",
       "action": "战术"
@@ -3499,7 +3541,7 @@
     },
     "ninja_seeing_stars": {
       "name": "手里剑",
-      "effectText": "对一个基地打出。持续：你在这里的随从不受其他玩家战术影响。"
+      "effectText": "消灭一个力量为 3 或更低的随从。"
     },
     "ninja_disguise": {
       "name": "伪装",
@@ -11041,27 +11083,27 @@
     },
     "frozen_snowgie": {
       "name": "迷你雪人",
-      "abilityText": "选择这里的一个角色。该角色直到回合结束获得 +1 力量。"
+      "abilityText": "如果你在这里的一个角色有 5 或更多力量，放置一枚 +1 力量指示物到这个角色身上。"
     },
     "frozen_marshmallow": {
       "name": "棉花糖",
-      "abilityText": "持续：这里的其他玩家角色获得 -1 力量。"
+      "abilityText": "持续：如果艾莎在这里，这个角色获得 +2 力量。"
     },
     "frozen_olaf": {
       "name": "雪宝",
-      "abilityText": "将一个你在这里的角色移动到另一个基地。抽 1 张牌。"
+      "abilityText": "天赋：查看你牌库顶的两张牌。你可以将它们以任意数量置入弃牌堆。其余的按任意顺序放回牌库顶。"
     },
     "frozen_sven": {
       "name": "斯文",
-      "abilityText": "你可以从你的弃牌堆将一张力量 4 或更低的角色置入手牌。"
+      "abilityText": "天赋：移动一个你的角色到这个基地，或搜索你的牌库和/或弃牌堆来寻找克里斯托弗，展示它，然后抽取它。如果你搜索了牌库，重洗它。"
     },
     "frozen_anna": {
       "name": "安娜",
-      "abilityText": "持续：如果克里斯托弗在这里，此角色不能被其他玩家的牌影响。"
+      "abilityText": "搜索你的牌库和/或弃牌堆来寻找艾莎或克里斯托弗，展示它，然后抽取它。如果你搜索了牌库，重洗它。持续：你在这里的其他角色不能被其他玩家的牌摧毁。"
     },
     "frozen_kristoff": {
       "name": "克里斯托弗",
-      "abilityText": "持续：如果安娜在这里，此角色获得 +2 力量。"
+      "abilityText": "持续：如果安娜和/或艾莎在这里，这个角色获得 +2 力量。天赋：从你的手上或弃牌堆打出一张力量为 5 或更少的角色作为额外的角色，或从你的弃牌堆将棉花糖置入手牌。"
     },
     "frozen_elsa": {
       "name": "艾莎",
@@ -11069,35 +11111,35 @@
     },
     "frozen_act_of_true_love": {
       "name": "真爱的行为",
-      "effectText": "选择你的一个角色。它直到回合结束不能被其他玩家的牌影响。抽 1 张牌。"
+      "effectText": "摧毁你的一个角色。从你的弃牌堆选择另一个角色，作为额外的角色打出。"
     },
     "frozen_big_summer_blowout": {
       "name": "夏天大盛宴",
-      "effectText": "选择一个基地。你在那里每有一个角色，便抽 1 张牌。"
+      "effectText": "丢弃一张牌。从弃牌堆将一个角色置入你的手牌。"
     },
     "frozen_do_you_want_to_build_a_snowman": {
       "name": "你想和我堆个雪人吗？",
-      "effectText": "从你的牌库和/或弃牌堆中寻找至多两张迷你雪人，将它们展示并置入手牌。然后洗牌。"
+      "effectText": "从你的弃牌堆打出棉花糖、雪宝或迷你雪人作为额外角色。"
     },
     "frozen_frozen_port": {
       "name": "冻结的港口",
-      "effectText": "对一个基地打出。持续：其他玩家不能将角色移入或移出这里。"
+      "effectText": "基地神器。持续：其他玩家如果可以在其他基地打出角色，他每回合的第一个角色就不能打出在这里。"
     },
     "frozen_hans_westergaard": {
       "name": "汉斯·韦斯特加德",
-      "effectText": "选择一个基地。摧毁那里一个力量 3 或更低的角色。"
+      "effectText": "每个玩家从手上展示一个角色或展示手中没有角色。所有展示的角色洗入拥有者的牌库。"
     },
     "frozen_let_it_go": {
       "name": "放手吧",
-      "effectText": "将你的一个角色返回手牌。打出一个额外行动。"
+      "effectText": "查看你牌库顶的三张牌。抽取一张，然后将剩下的以任意顺序置入你的弃牌堆和/或牌库顶。"
     },
     "frozen_lock_the_gates": {
       "name": "锁上大门",
-      "effectText": "对一个基地打出。持续：其他玩家不能在这里打出力量 3 或更低的角色。"
+      "effectText": "基地神器。持续：你在这里的角色不能被其他玩家的牌摧毁。天赋：查看你牌库顶的牌。弃掉它或放回牌库顶。"
     },
     "frozen_reindeers_are_better_than_people": {
       "name": "驯鹿的心地比人好",
-      "effectText": "选择你的一个角色。它直到回合结束获得 +2 力量；如果斯文在场，改为 +4 力量。"
+      "effectText": "搜索你的牌库和/或弃牌堆寻找一个角色。如果你搜索了牌库，重洗它。如果这张牌的力量为 3 或更少，打出它作为额外的角色；否则，弃掉它。"
     },
     "lion_king_lion_cub": {
       "name": "幼狮",
@@ -11229,11 +11271,11 @@
     },
     "base_ice_palace": {
       "name": "冰宫",
-      "abilityText": "其他玩家在这里的角色获得 -1 力量。"
+      "abilityText": "这里的角色不能被其他玩家的牌摧毁或移动。"
     },
     "base_arendelle": {
       "name": "阿伦黛尔",
-      "abilityText": "在这里拥有最多角色的玩家额外获得 1 VP。"
+      "abilityText": "你打出一个角色到这里后，你可以查看你牌库顶的两张牌，抽取其中一张，然后将剩下的到你的弃牌堆。"
     },
     "base_jungle_paradise": {
       "name": "丛林乐园",
@@ -12239,7 +12281,8 @@
       "abilityText": "当打出此仆从后，本回合你可以额外打出一个仆从。该额外仆从可以是一张宝藏仆从。"
     },
     "munchkin_treasure_tiger_steed": {
-      "name": "虎骑士"
+      "name": "虎骑士",
+      "abilityText": "你可以摧毁这里一个力量2或更少的仆从。"
     },
     "munchkin_treasure_bag_of_caltrops": {
       "name": "一袋铁蒺藜",
@@ -12662,7 +12705,7 @@
       "diy": "DIY"
     },
     "deckQuery": {
-      "label": "余牌查询",
+      "label": "牌堆可查",
       "off": "关闭",
       "on": "开启"
     },

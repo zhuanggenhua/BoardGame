@@ -3,8 +3,7 @@
     "finish": "Finish and return",
     "next": "Next",
     "previous": "Back",
-    "clickToContinue": "Complete the current action to continue",
-    "skipped": "{{count}} step(s) do not apply to this situation and were skipped."
+    "clickToContinue": "Complete the current action to continue"
   },
   "default": {
     "welcome": "Welcome to Tic-Tac-Toe! The goal is to align three marks.",

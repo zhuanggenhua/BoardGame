@@ -44,6 +44,9 @@ export interface EngineSystem<TCore = unknown> {
     /** 系统优先级（越小越先执行） */
     priority?: number;
 
+    /** 在线普通命令通道必须拒绝、仅允许管理员调试通道执行的命令类型。 */
+    adminDebugCommandTypes?: readonly string[];
+
     /**
      * 命令执行前 Hook
      * 可用于：验证、日志记录、撤销快照

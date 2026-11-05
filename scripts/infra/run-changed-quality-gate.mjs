@@ -100,7 +100,7 @@ const PRE_PUSH_GAME_E2E_FLOW_TARGETS = {
   },
   dicethrone: {
     target: 'e2e/dicethrone/dicethrone-golden-full-flow.e2e.ts',
-    testNamePattern: 'DiceThrone 黄金全流程：覆盖开局、卖牌换CP、攻骰改骰、攻击修正奖励骰、防御响应、伤害、弃牌和回合交接',
+    testNamePattern: 'DiceThrone 黄金全流程：覆盖开局、卖牌换CP、攻骰改骰、攻击修正奖励骰、防御响应、伤害、起开移除状态、弃牌和回合交接',
   },
   fantasyrealms: {
     target: 'e2e/fantasyrealms/fantasyrealms-online-ai-golden.e2e.ts',
@@ -1943,7 +1943,6 @@ mkdirSync(CACHE_DIR, { recursive: true });
 
 const taskGuard = acquireTaskGuard({
   name: 'quality-gate',
-  conflicts: ['e2e-run'],
   command: process.argv.join(' '),
   metadata: {
     mode,

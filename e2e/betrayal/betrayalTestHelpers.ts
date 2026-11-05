@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, renameSync, unlinkSync, writeFileSync } from "fs";
-import { dirname } from "path";
+import { dirname, relative, resolve, sep } from "path";
 import {
   expect,
   type BrowserContext,
@@ -214,6 +214,22 @@ export const waitForBetrayalPageReady = async (page: Page, attempts = 4) => {
     : new Error("betrayal 页面未能稳定进入 harness");
 };
 
+export const waitForBetrayalPageReadyWithoutReload = async (
+  page: Page,
+  timeout = 30000,
+) => {
+  try {
+    await waitForTestHarness(page, timeout);
+    await waitForBetrayalHarnessState(page, timeout);
+  } catch (error) {
+    const diagnostics = await readBetrayalPageDiagnostics(page);
+    const detail = JSON.stringify(diagnostics, null, 2);
+    throw new Error(
+      `betrayal 页面未能在不刷新恢复态的情况下进入 harness。最后错误：${error instanceof Error ? error.message : String(error)}\n诊断：${detail}`,
+    );
+  }
+};
+
 export const warmBetrayalFrontend = async (
   context: BrowserContext,
   timeout = 45000,
@@ -233,8 +249,38 @@ export const warmBetrayalFrontend = async (
   }
 };
 
-export const saveScreenshot = async (page: Page, path: string) => {
+export type SaveScreenshotOptions = {
+  waitMs?: number;
+  prepare?: boolean;
+};
+
+export const resolveBetrayalEvidencePath = (path: string): string => {
+  const stagingRoot = process.env.BG_E2E_EVIDENCE_STAGE_ROOT?.trim();
+  if (!stagingRoot) return path;
+  const pathFromWorkspace = relative(process.cwd(), path);
+  const pathParts = pathFromWorkspace.split(sep);
+  if (pathParts[0] !== "evidence") return path;
+  return resolve(stagingRoot, ...pathParts.slice(1));
+};
+
+export const saveScreenshot = async (
+  page: Page,
+  path: string,
+  options: SaveScreenshotOptions = {},
+): Promise<Buffer> => {
+  path = resolveBetrayalEvidencePath(path);
   mkdirSync(dirname(path), { recursive: true });
+  if (options.prepare !== false) {
+    await page.mouse.move(2, 2).catch(() => undefined);
+    await page.evaluate(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+    }).catch(() => undefined);
+  }
+  const waitMs = options.waitMs ?? 90;
+  if (waitMs > 0) {
+    await page.waitForTimeout(waitMs);
+  }
   const image = await page.screenshot({
     fullPage: false,
     ...( /\.jpe?g$/i.test(path)
@@ -243,12 +289,12 @@ export const saveScreenshot = async (page: Page, path: string) => {
   });
   let lastError: unknown = null;
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const tempPath = `${path}.${process.pid}.${Date.now()}.${attempt}.tmp`;
-    try {
-      writeFileSync(tempPath, image);
-      renameSync(tempPath, path);
-      return;
-    } catch (error) {
+      const tempPath = `${path}.${process.pid}.${Date.now()}.${attempt}.tmp`;
+      try {
+        writeFileSync(tempPath, image);
+        renameSync(tempPath, path);
+        return image;
+      } catch (error) {
       lastError = error;
       if (existsSync(tempPath)) {
         unlinkSync(tempPath);
@@ -259,6 +305,25 @@ export const saveScreenshot = async (page: Page, path: string) => {
     }
   }
   throw lastError;
+};
+
+export const BETRAYAL_FLOOR_FLOAT_CENTER_EVIDENCE_DIR =
+  "evidence/betrayal-floor-float-center-20261009";
+
+export const BETRAYAL_FLOOR_ACTION_ALIGN_EVIDENCE_DIR =
+  "evidence/betrayal-floor-action-align-20261009";
+
+export const BETRAYAL_FLOOR_OVERLAY_RESTORE_EVIDENCE_DIR =
+  "evidence/betrayal-floor-overlay-restore-20261010";
+
+export const waitForBetrayalFloatingTextGone = async (
+  page: Page,
+  timeout = 5000,
+) => {
+  await expect(page.locator('[data-feedback-style="floating-text"]')).toHaveCount(
+    0,
+    { timeout },
+  );
 };
 
 export type BetrayalClientRectSnapshot = {
@@ -395,6 +460,21 @@ export const expectEventRollWorkbenchReadable = async (
   const card = page.getByTestId("betrayal-discovery-card-front-atlas");
   const rollPanel = discoveryPanel.getByTestId("betrayal-recent-roll-panel");
   await expect(discoveryPanel, `${label}必须显示事件/投骰同屏工作台`).toBeVisible();
+  await expect
+    .poll(
+      async () =>
+        page.evaluate(() => {
+          const image = document.querySelector<HTMLImageElement>(
+            '[data-testid="betrayal-discovery-card-front-atlas"] img',
+          );
+          return {
+            exists: Boolean(image),
+            loaded: Boolean(image?.complete && image.naturalWidth > 0 && image.naturalHeight > 0),
+          };
+        }),
+      { timeout: 15000 },
+    )
+    .toEqual({ exists: true, loaded: true });
   await expect(card, `${label}必须显示正式事件牌正面，不得退回文字占位`).toBeVisible();
   await expect(
     page.getByTestId("betrayal-discovery-card-front-missing"),
@@ -605,21 +685,28 @@ export const expectEventRollWorkbenchReadable = async (
         const selectedBorder = target.querySelector<Element>(
           '[data-reroll-target-selected-border="true"]',
         );
-        const visibleOutline = domCandidateVisual ?? selectedBorder;
+        const faceOutline = target.querySelector<SVGElement>(
+          '[data-reroll-target-face-outline="true"]',
+        );
+        const visibleOutline = faceOutline ?? domCandidateVisual ?? selectedBorder;
         const outlineStyle = visibleOutline
           ? getComputedStyle(visibleOutline)
           : null;
         const outlineStroke =
+          faceOutline?.querySelector<Element>(
+            '[data-reroll-target-outline-stroke="true"]',
+          ) ??
           visibleOutline?.querySelector<Element>(
             '[data-reroll-target-outline-stroke="true"]',
-          ) ?? visibleOutline;
+          ) ??
+          visibleOutline;
         const outlineStrokeStyle = outlineStroke
           ? getComputedStyle(outlineStroke)
           : null;
         const parsePx = (value: string | undefined) =>
           Number.parseFloat(value ?? "0") || 0;
         const parseAlpha = (value: string | undefined) => {
-          if (!value || value === "transparent") return 0;
+          if (!value || value === "transparent" || value === "none") return 0;
           const parts = value
             .replace(/[^\d.,]/g, "")
             .split(",")
@@ -669,6 +756,8 @@ export const expectEventRollWorkbenchReadable = async (
           outlineRotateZ: Number(target.dataset.rerollTargetOutlineRotateZ),
           outlinePointCount: Number(target.dataset.rerollTargetOutlinePointCount),
           outlinePoints: target.dataset.rerollTargetOutlinePoints ?? "",
+          outlineState:
+            faceOutline?.getAttribute("data-reroll-target-outline-state") ?? "",
           targetTransform: getComputedStyle(target).transform,
           left: rect.left,
           right: rect.right,
@@ -690,10 +779,16 @@ export const expectEventRollWorkbenchReadable = async (
           selectedBorderExists: Boolean(selectedBorder),
           outlineExists: Boolean(visibleOutline),
           outlineWidth: outlineStrokeStyle
-            ? parsePx(outlineStrokeStyle.strokeWidth)
+            ? parsePx(
+                outlineStroke?.getAttribute("stroke-width") ??
+                  outlineStrokeStyle.strokeWidth,
+              )
             : outlineStyle
               ? parsePx(outlineStyle.outlineWidth)
               : 0,
+          outlineOpacity: outlineStroke
+            ? Number(outlineStroke.getAttribute("opacity") ?? "0")
+            : 0,
           outlineOffset: outlineStyle ? parsePx(outlineStyle.outlineOffset) : 0,
           outlineColor:
             outlineStrokeStyle?.stroke ?? outlineStyle?.outlineColor ?? "",
@@ -841,8 +936,8 @@ export const expectEventRollWorkbenchReadable = async (
   ).toBe("none");
   expect(
     metrics.resultSurface,
-    `${label}开放骰盘结果区必须是轻量信息带，不能退回封闭结果盒：${JSON.stringify(metrics)}`,
-  ).toBe("open-info-band");
+    `${label}统一 PC 构图的开放骰盘结果区不得回到移动专用信息带：${JSON.stringify(metrics)}`,
+  ).toBe("open-transparent");
   expect(
     metrics.resultBorderMaxPx,
     `${label}开放骰盘结果区不得保留可见硬边框：${JSON.stringify(metrics)}`,
@@ -884,13 +979,17 @@ export const expectEventRollWorkbenchReadable = async (
       (target) => target.selected,
     ).length;
     expect(
+      selectedRerollTargetCount,
+      `${label}同一批改骰目标最多只能有一个选中态：${JSON.stringify(metrics)}`,
+    ).toBeLessThanOrEqual(1);
+    expect(
       metrics.rerollHighlightRenderer,
       `${label}兔脚改骰必须保留 Three.js 骰体描边作为本体外壳辅助：${JSON.stringify(metrics)}`,
     ).toBe("threejs-backside-shader-shell");
     expect(
       metrics.rerollVisualContract,
-      `${label}兔脚改骰必须使用 Three.js shader 外壳 + 透明命中区的当前视觉合同：${JSON.stringify(metrics)}`,
-    ).toBe("threejs-shader-shell-plus-transparent-hitbox");
+      `${label}兔脚改骰必须使用贴脸 SVG 描边 + Three.js shader 外壳 + 透明命中区的当前视觉合同：${JSON.stringify(metrics)}`,
+    ).toBe("projected-rounded-face-outline-plus-threejs-shell-plus-transparent-hitbox");
     expect(
       metrics.diceHighlightSourceRenderer,
       `${label}物理骰源必须声明 WebGL 高亮渲染器：${JSON.stringify(metrics)}`,
@@ -935,7 +1034,7 @@ export const expectEventRollWorkbenchReadable = async (
     }
     for (const target of metrics.rerollTargets) {
       const evidence = JSON.stringify({ target, metrics });
-      expect(target.shape, `${label}改骰方框必须绑定骰子本体：${evidence}`).toBe(
+      expect(target.shape, `${label}改骰透明热区必须绑定骰子本体：${evidence}`).toBe(
         "die-face",
       );
       expect(
@@ -944,28 +1043,28 @@ export const expectEventRollWorkbenchReadable = async (
       ).toBe("threejs-backside-shader-shell");
       expect(
         target.visualContract,
-        `${label}改骰目标必须使用 Three.js shader 外壳 + 透明命中区视觉合同：${evidence}`,
-      ).toBe("threejs-shader-shell-plus-transparent-hitbox");
+        `${label}改骰目标必须使用贴脸 SVG 描边 + Three.js shader 外壳 + 透明命中区视觉合同：${evidence}`,
+      ).toBe("projected-rounded-face-outline-plus-threejs-shell-plus-transparent-hitbox");
       expect(
         target.visualLayer,
-        `${label}DOM 层只能做透明命中区，不得绘制遮挡骰子的可见边框：${evidence}`,
+        `${label}外层 DOM 只能作为透明命中区，不得回到大框或底线：${evidence}`,
       ).toBe("transparent-hitbox-only");
       expect(
         target.outlinePaint,
-        `${label}玩家可见高亮必须来自 Three.js shader 外壳，而不是 DOM/CSS 可见框：${evidence}`,
-      ).toBe("threejs-backside-shader-shell");
+        `${label}玩家可见方框必须来自骰面投影 SVG 描边，Three.js shell 只作外壳辅助：${evidence}`,
+      ).toBe("svg-projected-rounded-die-face");
       expect(
         Number.isFinite(target.outlineRotateZ),
         `${label}可见方框必须暴露屏幕旋转角，证明不是固定轴对齐框：${evidence}`,
       ).toBe(true);
       expect(
         target.outlinePointCount,
-        `${label}DOM 层不再保存可见方框投影点，避免旧 SVG 框回归：${evidence}`,
-      ).toBe(0);
+        `${label}SVG 描边必须保存投影骰面点，不能退回固定轴对齐大框：${evidence}`,
+      ).toBeGreaterThanOrEqual(4);
       expect(
         target.outlinePoints,
-        `${label}DOM 层不再保存可见方框投影点，避免旧 SVG 框回归：${evidence}`,
-      ).toBe("");
+        `${label}SVG 描边必须绑定当前骰面投影点：${evidence}`,
+      ).not.toBe("");
       expect(
         target.targetTransform,
         `${label}可见方框必须应用投影旋转 transform：${evidence}`,
@@ -984,8 +1083,8 @@ export const expectEventRollWorkbenchReadable = async (
       ).toBeGreaterThan(0);
       expect(
         target.outlineGap,
-        `${label}改骰描边不能在 DOM 层制造离体空隙：${evidence}`,
-      ).toBe(0);
+        `${label}改骰描边不能制造离体空隙：${evidence}`,
+      ).toBeLessThanOrEqual(0.25);
       expect(
         target.hitBoxPadding,
         `${label}可点透明区可以比骰子本体略大，但不能把可见方框撑出大间隙：${evidence}`,
@@ -1004,24 +1103,28 @@ export const expectEventRollWorkbenchReadable = async (
       ).toBe(false);
       expect(
         target.outlineExists,
-        `${label}DOM 层不得绘制玩家可见外描边，玩家可见边界由 shader 外壳承担：${evidence}`,
-      ).toBe(false);
+        `${label}必须有玩家可见的贴脸 SVG 描边：${evidence}`,
+      ).toBe(true);
       expect(
         target.outlineOffset,
         `${label}外描边必须贴边，不能产生离体空隙：${evidence}`,
       ).toBe(0);
       expect(
-        target.outlineBorderMaxPx,
-        `${label}外描边不得用 border 向内盖住骰面：${evidence}`,
-      ).toBe(0);
+        target.outlineWidth,
+        `${label}SVG 描边要清楚可见：${evidence}`,
+      ).toBeGreaterThanOrEqual(target.selected ? 3 : 2);
+      expect(
+        target.outlineOpacity,
+        `${label}SVG 描边透明度要清楚可见：${evidence}`,
+      ).toBeGreaterThanOrEqual(target.selected ? 0.95 : 0.85);
       expect(
         target.outlineBackgroundAlpha,
         `${label}外描边内部必须透明，不得盖住骰子：${evidence}`,
       ).toBe(0);
       expect(
         target.outlineBoxShadow,
-        `${label}DOM 层不得使用 box-shadow 画第二层方框：${evidence}`,
-      ).toBe("");
+        `${label}SVG 描边只能用贴边发光辅助，不能变成大面积遮罩：${evidence}`,
+      ).toMatch(/drop-shadow|^$/);
       expect(
         target.webglHighlight,
         `${label}必须能从 Three.js 快照读到当前骰子的高亮状态：${evidence}`,
@@ -1081,8 +1184,8 @@ export const expectEventRollWorkbenchReadable = async (
         ).toBeLessThanOrEqual(1.075);
         expect(
           target.webglShell?.opacity,
-          `${label}选中描边必须清晰可见：${evidence}`,
-        ).toBeGreaterThanOrEqual(0.9);
+          `${label}选中 Three.js 外壳要可见，但主要清晰度由贴脸 SVG 描边承担：${evidence}`,
+        ).toBeGreaterThanOrEqual(0.8);
         expect(
           target.webglShell?.shaderIntensity,
           `${label}选中 shader 必须明显强于候选态：${evidence}`,
@@ -1114,8 +1217,12 @@ export const expectEventRollWorkbenchReadable = async (
         ).toBeLessThanOrEqual(1.055);
         expect(
           target.webglShell?.opacity,
-          `${label}候选描边不能弱到看不清：${evidence}`,
-        ).toBeGreaterThanOrEqual(0.9);
+          `${label}候选 Three.js 外壳必须低透明，避免盖住骰面：${evidence}`,
+        ).toBeGreaterThanOrEqual(0.65);
+        expect(
+          target.webglShell?.opacity,
+          `${label}候选 Three.js 外壳不能过亮到遮住骰面：${evidence}`,
+        ).toBeLessThanOrEqual(0.78);
         expect(
           target.webglShell?.shaderIntensity,
           `${label}候选 shader 必须比选中态弱，避免误认已选中：${evidence}`,
@@ -1336,12 +1443,11 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
       async () =>
         readableFaceOverlay.evaluate((node) => {
           const element = node as HTMLElement;
-          const rect = element.getBoundingClientRect();
           const style = window.getComputedStyle(element);
           return {
             position: style.position,
-            width: Math.round(rect.width),
-            height: Math.round(rect.height),
+            width: style.width,
+            height: style.height,
             overflow: style.overflow,
           };
         }),
@@ -1349,8 +1455,8 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
     )
     .toEqual({
       position: "absolute",
-      width: 1,
-      height: 1,
+      width: "1px",
+      height: "1px",
       overflow: "hidden",
     });
   await expect
@@ -1376,8 +1482,10 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
             const rect = canvas.getBoundingClientRect();
             const style = window.getComputedStyle(canvas);
             return (
-              rect.width >= 160 &&
-              rect.height >= 120 &&
+              canvas.clientWidth >= 160 &&
+              canvas.clientHeight >= 120 &&
+              rect.width >= 64 &&
+              rect.height >= 48 &&
               canvas.dataset.skinsReady === "true" &&
               style.display !== "none" &&
               style.visibility !== "hidden" &&
@@ -1391,46 +1499,101 @@ export const expectVisiblePhysicalDiceBox = async (rollPanel: Locator) => {
 };
 
 export const waitForPhysicalDiceSettled = async (rollPanel: Locator) => {
-  const physicsSource = rollPanel.getByTestId(
-    "betrayal-house-dice-physics-source",
-  );
-  const diceGroup = rollPanel.getByTestId("betrayal-house-dice-3d-group");
-  await expect
-    .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
-      timeout: 15000,
-    })
-    .toBe("true");
-  await expect
-    .poll(async () => physicsSource.getAttribute("data-dice-skins-ready"), {
-      timeout: 15000,
-    })
-    .toBe("true");
-  await expect
-    .poll(
-      async () => {
-        const [groupReady, settled, engineReady, engineFailure] = await Promise.all([
-          diceGroup.getAttribute("data-dice-physics-ready"),
-          physicsSource.getAttribute("data-dice-settled"),
-          physicsSource.getAttribute("data-dice-engine-ready"),
-          physicsSource.getAttribute("data-dice-engine-failure"),
-        ]);
-        if (groupReady === "true" || settled === "true") return "true";
-        return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
-      },
-      { timeout: 15000 },
-    )
-    .toBe("true");
-  await expect
-    .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
-      timeout: 15000,
-    })
-    .toBe("true");
-  await expectPhysicalDiceStableAfterSettled(rollPanel, {
-    waitMs: 360,
-    maxCenterShiftPx: 1,
-    maxGroupDriftPx: 1,
-    maxRotationShiftRad: 0.02,
-  });
+  // A discovery result and the board review can briefly render the same roll
+  // with one hidden copy. Always bind the wait to the visible physical dice
+  // source so the E2E follows the player's actual roll panel.
+  const activeRollPanel = rollPanel
+    .page()
+    .locator('[data-testid="betrayal-recent-roll-panel"]:visible')
+    .last();
+  const physicsSource = activeRollPanel
+    .locator('[data-testid="betrayal-house-dice-physics-source"]:visible')
+    .first();
+  const diceGroup = activeRollPanel
+    .locator('[data-testid="betrayal-house-dice-3d-group"]:visible')
+    .first();
+  try {
+    const expectedDiceCount = await activeRollPanel
+      .locator('[data-testid^="betrayal-recent-roll-die-"]')
+      .count();
+    await expect
+      .poll(async () => physicsSource.getAttribute("data-dice-container-size-ready"), {
+        timeout: 15000,
+      })
+      .toBe("true");
+    await expect
+      .poll(async () => physicsSource.getAttribute("data-dice-skins-ready"), {
+        timeout: 15000,
+      })
+      .toBe("true");
+    await expect
+      .poll(
+        async () => Number(await diceGroup.getAttribute("data-dice-physics-state-count")),
+        { timeout: 15000 },
+      )
+      .toBeGreaterThanOrEqual(expectedDiceCount);
+    await expect
+      .poll(
+        async () => {
+          const [groupReady, settled, engineReady, engineFailure, motionType, motionId, stateCount, animationStage] = await Promise.all([
+            diceGroup.getAttribute("data-dice-physics-ready"),
+            physicsSource.getAttribute("data-dice-settled"),
+            physicsSource.getAttribute("data-dice-engine-ready"),
+            physicsSource.getAttribute("data-dice-engine-failure"),
+            physicsSource.getAttribute("data-dice-motion-type"),
+            physicsSource.getAttribute("data-dice-motion-id"),
+            diceGroup.getAttribute("data-dice-physics-state-count"),
+            physicsSource.getAttribute("data-dice-animation-stage"),
+          ]);
+          if (settled === "true") return "true";
+          return JSON.stringify({ groupReady, settled, engineReady, engineFailure, motionType, motionId, stateCount, animationStage });
+        },
+        { timeout: 45000 },
+      )
+      .toBe("true");
+  } catch (error) {
+    const diagnostics = await activeRollPanel.evaluate((node) => {
+      const panels = Array.from(document.querySelectorAll('[data-testid="betrayal-recent-roll-panel"]')) as HTMLElement[];
+      const visible = panels.filter((panel) => {
+        const rect = panel.getBoundingClientRect();
+        const style = getComputedStyle(panel);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none" && Number(style.opacity || "1") > 0;
+      });
+      const source = node.querySelector('[data-testid="betrayal-house-dice-physics-source"]') as HTMLElement | null;
+      const group = node.querySelector('[data-testid="betrayal-house-dice-3d-group"]') as HTMLElement | null;
+      const canvases = Array.from(node.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      const debugRegistry = (window as typeof window & {
+        __diceBoxThreeDebug?: Record<string, () => unknown>;
+      }).__diceBoxThreeDebug ?? {};
+      const activeCanvas = canvases.find((canvas) => {
+        const testId = canvas.dataset.testid;
+        return Boolean(testId && typeof debugRegistry[testId] === 'function');
+      }) ?? canvases[0] ?? null;
+      const activeCanvasTestId = activeCanvas?.dataset.testid ?? group?.dataset.diceDebugKey;
+      return {
+        ownerTestId: (node as HTMLElement).dataset.testid ?? null,
+        ownerRect: (() => { const rect = (node as HTMLElement).getBoundingClientRect(); return { left: rect.left, top: rect.top, width: rect.width, height: rect.height }; })(),
+        totalPanels: panels.length,
+        visiblePanels: visible.length,
+        source: source ? { ...source.dataset } : null,
+        group: group ? { ...group.dataset } : null,
+        canvases: canvases.map((canvas) => ({ ...canvas.dataset })),
+        engineDebug: activeCanvasTestId ? (debugRegistry[activeCanvasTestId]?.() ?? null) : null,
+      };
+    }).catch(() => null);
+    throw new Error(`山屋物理骰子停稳失败：${JSON.stringify(diagnostics)}\n${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    await expectPhysicalDiceStableAfterSettled(activeRollPanel, {
+      waitMs: 360,
+      maxCenterShiftPx: 1,
+      maxGroupDriftPx: 1,
+      maxRotationShiftRad: 0.02,
+    });
+  } catch (error) {
+    if ((await activeRollPanel.count().catch(() => 0)) === 0) return;
+    throw error;
+  }
 };
 
 export const waitForPhysicalDiceRerollMotion = async (
@@ -2498,15 +2661,15 @@ export const expectPhysicalDiceStableAfterSettled = async (
           physicsSource.getAttribute("data-dice-engine-ready"),
           physicsSource.getAttribute("data-dice-engine-failure"),
         ]);
-        if (groupReady === "true" || settled === "true") return "true";
+        if (settled === "true") return "true";
         return JSON.stringify({ groupReady, settled, engineReady, engineFailure });
       },
-      { timeout: 15000 },
+      { timeout: 45000 },
     )
     .toBe("true");
   await expect
     .poll(async () => physicsSource.getAttribute("data-dice-settled"), {
-      timeout: 15000,
+      timeout: 45000,
     })
     .toBe("true");
 

@@ -1,8 +1,15 @@
 import React from "react";
+import { AnimatePresence } from "framer-motion";
+import { BetrayalFloorScene } from "./floorSceneSurface";
+import { useReducedMotionPreference } from "../../hooks/ui/useReducedMotionPreference";
+import type { EventStreamEntry } from "../../engine/types";
+import { useSceneMovement } from "./useSceneMovement";
 import { Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { ZoomPanViewport } from "../../components/game/framework";
+import { BetrayalPixiRoomViewport } from "./pixiRoomViewportSurface";
+import { resolveBetrayalRoomSceneSprites, resolveBetrayalEntitySceneSprites } from "./roomSceneModel";
+import type { ZoomPanViewportFitInsets } from "../../components/game/framework/ZoomPanViewport";
 import type { EntityRelation } from "../../engine/primitives";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
 import type {
@@ -10,26 +17,30 @@ import type {
   BetrayalExplorerSummary,
   BetrayalMonsterStatusKind,
   BetrayalMonsterSummary,
+  BetrayalRoomEdge,
   BetrayalRoomNode,
   BetrayalRoomPlacementPreview,
   BetrayalRoomTileAdjustmentOption,
 } from "./game";
+import type { RoomOrientationTurns } from "./roomMapModel";
 import type { BetrayalAttackLineOfSightSegment } from "./attackLineOfSightPresentation";
 import { BetrayalAttackLineOfSightOverlay } from "./attackLineOfSightSurface";
 import {
   resolveAttackImpactByPlayerId,
   type BetrayalAttackImpactState,
 } from "./attackImpactPresentation";
+import type { BetrayalTraitDelta } from "./activityPresentation";
 import { getAllExplorers } from "./explorerReadModel";
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import type { BetrayalRoomTileVisual } from "./roomAtlas";
-import { resolveBetrayalRoomNodeTileVisual } from "./roomAtlas";
-import { RoomTileSprite } from "./roomTileSurface";
 import {
   FLOOR_TONE,
   resolveRoomTileStyle,
+  resolveRoomCenterPoint,
   type RoomCanvasLayout,
 } from "./roomMapModel";
+import type { BetrayalMapMoveKind } from "./movementReadModel";
+import { resolveBetrayalMapMoveReachSegments } from "./movementMapPresentation";
 import { resolveRoomIdentityPresentation } from "./roomPresentation";
 import { BetrayalRoomMarkerLayerSurface } from "./roomMarkerSurface";
 import { BetrayalRoomEntityLayerSurface } from "./roomEntityLayerSurface";
@@ -71,19 +82,36 @@ type RoomPlacementOrientationOption =
   BetrayalRoomPlacementPreview["orientationOptions"][number];
 
 export interface BetrayalRoomMapSurfaceProps {
+  eventEntries: EventStreamEntry[];
+  rollbackRevision: number;
+  onSceneMovementStart: () => void;
+  onSceneMovementEnd: () => void;
+  onRoomRevealActivity?: (active: boolean) => void;
+  onSceneMovementPresented: (roomId: string, entityId: string) => void;
   core: BetrayalCore;
   locale: string;
   matchData?: MatchPlayerInfo[];
   roomGridRef: React.Ref<HTMLDivElement>;
   selectedFloor: BetrayalRoomNode["floor"];
+  manualCameraOwned: boolean;
+  onManualCameraInteraction: () => void;
+  upperFloor: BetrayalRoomNode["floor"] | null;
+  lowerFloor: BetrayalRoomNode["floor"] | null;
+  upperFloorHasSelectionTarget: boolean;
+  lowerFloorHasSelectionTarget: boolean;
+  hasCrossFloorMoveTargets: boolean;
+  hasCrossFloorRoomSelectionTargets: boolean;
+  hiddenTableChrome: boolean;
   visibleRooms: readonly BetrayalRoomNode[];
   roomCanvasLayout: RoomCanvasLayout;
   roomCanvasTransformStyle: React.CSSProperties;
   roomCanvasWidth: number;
   roomCanvasHeight: number;
-  isPhoneLandscapeLayout: boolean;
+  roomMapFitInsets?: ZoomPanViewportFitInsets;
   isHauntTargetingMode: boolean;
   roomFocusPanTarget: string | null;
+  roomFocusPanInstructionKey?: number;
+  roomFocusPanMode?: 'automatic' | 'explicit';
   attackLineOfSightSegments: readonly BetrayalAttackLineOfSightSegment[];
   roomOccupants: Readonly<Record<string, readonly BetrayalExplorerSummary[]>>;
   roomMonsters: Readonly<Record<string, readonly BetrayalMonsterSummary[]>>;
@@ -99,6 +127,8 @@ export interface BetrayalRoomMapSurfaceProps {
   canPickUpMummyGirlRoomId: string | null;
   moveTargetRoomIds: ReadonlySet<string>;
   skeletonKeyMoveTargetRoomIds: ReadonlySet<string>;
+  moveCostByRoomId: ReadonlyMap<string, number>;
+  moveKindByRoomId: ReadonlyMap<string, BetrayalMapMoveKind>;
   explorableRoomSlotIds: ReadonlySet<string>;
   interactionMode: string;
   selectedInventoryUseEffectMode: string | null;
@@ -148,6 +178,10 @@ export interface BetrayalRoomMapSurfaceProps {
   selectedPreviewTradeTargetPlayerId: string | null;
   selectedDustTargetPlayerId: string | null;
   visibleFeedback: BetrayalRoomMapHealFeedback | null;
+  traitChangeFeedbackByPlayerId: ReadonlyMap<
+    string,
+    { presentationKey: string; deltas: readonly BetrayalTraitDelta[] }
+  >;
   helpingHandsMovableTrollHandIds: ReadonlySet<string>;
   monsterMovableIds: ReadonlySet<string>;
   isMonsterAttackMode: boolean;
@@ -165,18 +199,11 @@ export interface BetrayalRoomMapSurfaceProps {
   attackImpactPresentationKey: string | null;
   pendingRoomPlacementFailureText: string | null;
   selectedRoomOrientationOption: RoomPlacementOrientationOption | null;
-  selectedRoomOrientationTurns: number;
+  selectedRoomOrientationTurns: RoomOrientationTurns;
   pendingRoomPlacementVisual: BetrayalRoomTileVisual | null;
   pendingRoomPlacementAdjustmentText: string | null;
   pendingRoomTileAdjustmentOptions: readonly BetrayalRoomTileAdjustmentOption[];
   selectedRoomTileAdjustmentOption: BetrayalRoomTileAdjustmentOption | null;
-  upperFloor: BetrayalRoomNode["floor"] | null;
-  lowerFloor: BetrayalRoomNode["floor"] | null;
-  upperFloorHasSelectionTarget: boolean;
-  lowerFloorHasSelectionTarget: boolean;
-  hasCrossFloorMoveTargets: boolean;
-  hasCrossFloorRoomSelectionTargets: boolean;
-  hiddenTableChrome: boolean;
   onSelectEventTargetRoom: (roomId: string) => void;
   onSelectBloodFromStoneSetupPlacementRoom: (roomId: string) => void;
   onSelectInventoryTargetRoom: (roomId: string) => void;
@@ -190,9 +217,17 @@ export interface BetrayalRoomMapSurfaceProps {
   onOpenRoomPreview: (roomId: string) => void;
   onSelectExplorerTarget: (explorer: BetrayalExplorerSummary) => void;
   onOpenExplorerDetails: (playerId: string) => void;
+  movableExplorerPlayerId?: string | null;
+  onToggleExplorerMove?: () => void;
+  canDirectMove?: boolean;
+  canShowPassiveMoveTargets?: boolean;
+  canDirectExplore?: boolean;
   onSelectMonsterTarget: (monsterId: string) => void;
   onSelectHelpingHandsTrollHandMoveMonster: (monsterId: string) => void;
-  onSelectMonsterMoveMonster: (monsterId: string) => void;
+  onSelectMonsterMoveMonster: (
+    monsterId: string,
+    sourceElement?: HTMLElement,
+  ) => void;
   onSelectMonsterAttackMonster: (monsterId: string) => void;
   onOpenMonsterDetails: (monsterId: string) => void;
   onPickUpMummyGirl: () => void;
@@ -206,19 +241,36 @@ export interface BetrayalRoomMapSurfaceProps {
 }
 
 export function BetrayalRoomMapSurface({
+  eventEntries,
+  rollbackRevision,
+  onSceneMovementStart,
+  onSceneMovementEnd,
+  onRoomRevealActivity,
+  onSceneMovementPresented,
   core,
   locale,
   matchData,
   roomGridRef,
   selectedFloor,
+  manualCameraOwned,
+  onManualCameraInteraction,
+  upperFloor,
+  lowerFloor,
+  upperFloorHasSelectionTarget,
+  lowerFloorHasSelectionTarget,
+  hasCrossFloorMoveTargets,
+  hasCrossFloorRoomSelectionTargets,
+  hiddenTableChrome,
   visibleRooms,
   roomCanvasLayout,
-  roomCanvasTransformStyle,
+  roomCanvasTransformStyle: _roomCanvasTransformStyle,
   roomCanvasWidth,
   roomCanvasHeight,
-  isPhoneLandscapeLayout,
-  isHauntTargetingMode,
+  roomMapFitInsets,
+  isHauntTargetingMode: _isHauntTargetingMode,
   roomFocusPanTarget,
+  roomFocusPanInstructionKey,
+  roomFocusPanMode,
   attackLineOfSightSegments,
   roomOccupants,
   roomMonsters,
@@ -231,6 +283,8 @@ export function BetrayalRoomMapSurface({
   canPickUpMummyGirlRoomId,
   moveTargetRoomIds,
   skeletonKeyMoveTargetRoomIds,
+  moveCostByRoomId,
+  moveKindByRoomId,
   explorableRoomSlotIds,
   interactionMode,
   selectedInventoryUseEffectMode,
@@ -278,6 +332,7 @@ export function BetrayalRoomMapSurface({
   selectedPreviewTradeTargetPlayerId,
   selectedDustTargetPlayerId,
   visibleFeedback,
+  traitChangeFeedbackByPlayerId,
   helpingHandsMovableTrollHandIds,
   monsterMovableIds,
   isMonsterAttackMode,
@@ -297,13 +352,6 @@ export function BetrayalRoomMapSurface({
   pendingRoomPlacementAdjustmentText,
   pendingRoomTileAdjustmentOptions,
   selectedRoomTileAdjustmentOption,
-  upperFloor,
-  lowerFloor,
-  upperFloorHasSelectionTarget,
-  lowerFloorHasSelectionTarget,
-  hasCrossFloorMoveTargets,
-  hasCrossFloorRoomSelectionTargets,
-  hiddenTableChrome,
   onSelectEventTargetRoom,
   onSelectBloodFromStoneSetupPlacementRoom,
   onSelectInventoryTargetRoom,
@@ -317,6 +365,11 @@ export function BetrayalRoomMapSurface({
   onOpenRoomPreview,
   onSelectExplorerTarget,
   onOpenExplorerDetails,
+  movableExplorerPlayerId,
+  onToggleExplorerMove,
+  canDirectMove = false,
+  canShowPassiveMoveTargets = false,
+  canDirectExplore = false,
   onSelectMonsterTarget,
   onSelectHelpingHandsTrollHandMoveMonster,
   onSelectMonsterMoveMonster,
@@ -338,40 +391,92 @@ export function BetrayalRoomMapSurface({
     [attackImpactPresentationKey, core],
   );
 
+  const sceneSprites = React.useMemo(
+    () => [...resolveBetrayalRoomSceneSprites(visibleRooms, roomCanvasLayout, locale),
+      ...resolveBetrayalEntitySceneSprites(visibleRooms, roomOccupants, roomMonsters, roomCanvasLayout, locale, core.currentExplorer.playerId, movingExplorerPlayerId, movingMonsterId)],
+    [visibleRooms, roomCanvasLayout, locale, roomOccupants, roomMonsters, core.currentExplorer.playerId, movingExplorerPlayerId, movingMonsterId],
+  );
+  const sceneMovement = useSceneMovement({ core, entries: eventEntries, rollbackRevision,
+    rooms: visibleRooms, layout: roomCanvasLayout, locale, sprites: sceneSprites,
+    onStart: onSceneMovementStart, onEnd: onSceneMovementEnd, onPresented: onSceneMovementPresented, onApproach: onSceneMovementPresented, onRoomRevealActivity });
+  const lightingRooms = React.useMemo(() => {
+    const discovered = new Set(visibleRooms.filter(room => room.state === 'discovered').map(room => room.id));
+    return sceneSprites.filter(sprite => discovered.has(sprite.id));
+  }, [sceneSprites, visibleRooms]);
+  // Zoom is remembered only for a floor remount. Keeping it in React state
+  // rebuilt every room/marker subtree during each wheel frame.
+  const cameraZoomRef = React.useRef<number | undefined>(undefined);
+  const rememberCameraZoom = React.useCallback((zoom: number) => {
+    cameraZoomRef.current = zoom;
+  }, []);
+  const reducedSceneMotion = useReducedMotionPreference();
+  // Migration adapter for the existing Board focus contract; coordinates come only from roomMapModel.
+  const focusRoom = visibleRooms.find(room =>
+    roomFocusPanTarget === `betrayal-room-${room.id}`
+    || (roomOccupants[room.id] ?? []).some(explorer => roomFocusPanTarget === `betrayal-explorer-figure-token-${explorer.playerId}`)
+  );
+  const focusPoint = focusRoom ? resolveRoomCenterPoint(focusRoom, roomCanvasLayout) : null;
+  const shouldShowMoveReach = canDirectMove;
+  const moveReachSegments = React.useMemo(
+    () =>
+      shouldShowMoveReach
+        ? resolveBetrayalMapMoveReachSegments({
+            sourceRoomId: core.activeRoomId,
+            visibleRooms,
+            layout: roomCanvasLayout,
+            moveTargetRoomIds,
+            moveCostByRoomId,
+            moveKindByRoomId,
+          })
+        : [],
+    [
+      shouldShowMoveReach,
+      core.activeRoomId,
+      visibleRooms,
+      roomCanvasLayout,
+      moveTargetRoomIds,
+      moveCostByRoomId,
+      moveKindByRoomId,
+    ],
+  );
+  const moveReachDoorEdgesByRoomId = React.useMemo(() => {
+    const result = new Map<string, BetrayalRoomEdge[]>();
+    for (const segment of moveReachSegments) {
+      result.set(segment.sourceRoomId, [
+        ...(result.get(segment.sourceRoomId) ?? []),
+        segment.sourceEdge,
+      ]);
+      result.set(segment.targetRoomId, [
+        ...(result.get(segment.targetRoomId) ?? []),
+        segment.targetEdge,
+      ]);
+    }
+    return result;
+  }, [moveReachSegments]);
+
   return (
-    <div className="relative min-h-0 flex-1">
-      <ZoomPanViewport
-        key={selectedFloor}
+    <div className="relative min-h-0 flex-1" data-room-reveal-active={sceneMovement.roomRevealActive}>
+      <AnimatePresence initial={false} mode="wait">
+      <BetrayalFloorScene key={selectedFloor} reducedMotion={reducedSceneMotion}>
+      <BetrayalPixiRoomViewport
         ref={roomGridRef}
-        className={`relative h-full min-h-0 w-full bg-transparent ${
-          isPhoneLandscapeLayout
-            ? "mx-auto grid max-w-none place-items-center"
-            : "pt-[72px] pb-[72px]"
-        }`}
-        contentClassName={`relative ${
-          isPhoneLandscapeLayout ? "mx-auto" : "mx-auto"
-        }`}
-        containerTestId="betrayal-room-grid"
-        contentTestId="betrayal-room-canvas"
-        scaleTestId="betrayal-room-map-scale"
-        initialScale={1}
-        minScale={0.55}
-        maxScale={2.4}
-        panToTarget={
-          roomFocusPanTarget ??
-          (isPhoneLandscapeLayout
-            ? `betrayal-room-${core.currentExplorer.roomId}`
-            : null)
-        }
-        panToScale={isPhoneLandscapeLayout ? 1 : undefined}
-        panBoundsMode="free"
-        dragBoundsPaddingRatioY={0.18}
-        containerProps={{
-          "data-haunt-targeting-mode": isHauntTargetingMode ? "true" : "false",
-          "data-room-focus-pan-target": roomFocusPanTarget ?? "",
-        }}
-        interactionDisabled={isHauntTargetingMode}
-        contentStyle={roomCanvasTransformStyle}
+        sprites={sceneMovement.sprites}
+        lightingRooms={lightingRooms}
+        activeExplorerId={`player:${core.currentExplorer.playerId}`}
+        onMotionComplete={sceneMovement.complete}
+        onMotionPhase={sceneMovement.onMotionPhase}
+        onResourceError={sceneMovement.cancel}
+        width={roomCanvasWidth}
+        height={roomCanvasHeight}
+        initialZoom={cameraZoomRef.current}
+        fitInsets={roomMapFitInsets}
+        focusPoint={focusPoint}
+        focusKey={roomFocusPanInstructionKey}
+        focusTarget={roomFocusPanTarget}
+        focusMode={roomFocusPanMode}
+        manualCameraOwned={manualCameraOwned}
+        onZoomChange={rememberCameraZoom}
+        onManualCameraInteraction={onManualCameraInteraction}
         ariaLabel={t("board.sections.rooms")}
       >
         <BetrayalAttackLineOfSightOverlay
@@ -379,6 +484,40 @@ export function BetrayalRoomMapSurface({
           width={roomCanvasWidth}
           height={roomCanvasHeight}
         />
+        {moveReachSegments.length > 0 ? (
+          <svg
+            data-testid="betrayal-map-move-reach-overlay"
+            aria-hidden="true"
+            width={roomCanvasWidth}
+            height={roomCanvasHeight}
+            className="pointer-events-none absolute left-0 top-0 z-[32] overflow-visible"
+          >
+            {moveReachSegments.map((segment) => (
+              <g
+                key={`${segment.sourceRoomId}-${segment.targetRoomId}`}
+                data-source-room-id={segment.sourceRoomId}
+                data-target-room-id={segment.targetRoomId}
+                data-move-cost={segment.cost}
+                data-move-kind={segment.kind}
+                className="betrayal-map-move-reach"
+              >
+                <line
+                  x1={segment.x1}
+                  y1={segment.y1}
+                  x2={segment.x2}
+                  y2={segment.y2}
+                  className="betrayal-map-move-reach__path"
+                />
+                <circle
+                  cx={(segment.x1 + segment.x2) / 2}
+                  cy={(segment.y1 + segment.y2) / 2}
+                  r="3"
+                  className="betrayal-map-move-reach__pulse"
+                />
+              </g>
+            ))}
+          </svg>
+        ) : null}
         {visibleRooms.map((room) => {
           const tone = FLOOR_TONE[room.floor];
           const isActive = room.id === core.activeRoomId;
@@ -398,10 +537,32 @@ export function BetrayalRoomMapSurface({
             canPickUpMummyGirlRoomId === room.id;
           const isDiscovered = room.state === "discovered";
           const isReachableRoom = moveTargetRoomIds.has(room.id);
+          const shouldShowPassiveMoveTarget =
+            canShowPassiveMoveTargets &&
+            interactionMode === "default" &&
+            isReachableRoom;
           const isSkeletonKeyMoveTarget =
             skeletonKeyMoveTargetRoomIds.has(room.id);
+          const moveCost = moveCostByRoomId.get(room.id);
+          const moveKind = moveKindByRoomId.get(room.id);
+          const isExploreTarget =
+            canDirectExplore && explorableRoomSlotIds.has(room.id);
+          const note = isDiscovered
+            ? room.hint
+            : isExploreTarget
+              ? t("board.rooms.slotReady")
+              : t("board.rooms.slotUndiscovered");
+          const moveTargetTitle =
+            moveKind === "skeletonKey"
+              ? t("board.rooms.skeletonKeyMoveCostTitle", {
+                  count: moveCost ?? 1,
+                })
+              : moveCost !== undefined
+                ? t("board.rooms.moveCostTitle", { count: moveCost })
+                : note;
           const isMoveTarget =
-            interactionMode === "move" && moveTargetRoomIds.has(room.id);
+            canDirectMove &&
+            moveTargetRoomIds.has(room.id);
           const isHelpingHandsTrollMoveTarget = Boolean(
             isHelpingHandsTrollHandMoveMode &&
               helpingHandsTrollMoveTargetRoomIds?.has(room.id),
@@ -409,8 +570,6 @@ export function BetrayalRoomMapSurface({
           const isMonsterMoveTarget = Boolean(
             isMonsterMoveMode && monsterMoveTargetRoomIds?.has(room.id),
           );
-          const isExploreTarget =
-            interactionMode === "explore" && explorableRoomSlotIds.has(room.id);
           const isInventoryTargetRoom =
             selectedInventoryUseEffectMode === "placeExplorer" &&
             inventoryTargetRooms.some((targetRoom) => targetRoom.id === room.id);
@@ -437,7 +596,7 @@ export function BetrayalRoomMapSurface({
             isDynamiteRoomTargetingMode && dynamiteTargetRoomIds.has(room.id);
           const canSelectDynamiteRoom = isDynamiteTargetRoom;
           const canMoveToRoom =
-            interactionMode === "move" &&
+            canDirectMove &&
             isDiscovered &&
             !isActive &&
             core.movesRemaining > 0 &&
@@ -486,21 +645,11 @@ export function BetrayalRoomMapSurface({
             canSelectDynamiteRoom ||
             canMoveHelpingHandsTrollHandToRoom ||
             canMoveMonsterToRoom;
-          const roomTileVisual = resolveBetrayalRoomNodeTileVisual(
-            room,
-            isDiscovered,
-          );
           const identityPresentation = resolveRoomIdentityPresentation(room, {
             isDiscovered,
             isExploreTarget,
             t,
           });
-          const note = isDiscovered
-            ? room.hint
-            : isExploreTarget
-              ? t("board.rooms.slotReady")
-              : t("board.rooms.slotUndiscovered");
-
           return (
             <div
               key={room.id}
@@ -520,25 +669,15 @@ export function BetrayalRoomMapSurface({
                       isExploreTarget ||
                       isPendingRoomPlacementSlot
                     ? 30
-                    : isActive
-                      ? 25
-                      : isReachableRoom
-                        ? 20
-                        : 1,
+                      : isActive
+                        ? 25
+                        : shouldShowPassiveMoveTarget
+                          ? 20
+                          : 1,
               }}
             >
               <button
                 type="button"
-                onPointerDown={(event) => {
-                  if (canSelectRoom) {
-                    event.stopPropagation();
-                  }
-                }}
-                onPointerUp={(event) => {
-                  if (canSelectRoom) {
-                    event.stopPropagation();
-                  }
-                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   if (canSelectEventRoom) {
@@ -579,10 +718,16 @@ export function BetrayalRoomMapSurface({
                   }
                   if (canMoveToRoom) {
                     onMoveToRoom(room.id);
+                    return;
                   }
+                  onOpenRoomPreview(room.id);
                 }}
-                disabled={!canSelectRoom}
+                tabIndex={0}
                 data-testid={`betrayal-room-${room.id}`}
+                data-room-state={room.state}
+                data-room-visual-id={room.visualId}
+                data-move-cost={isReachableRoom ? moveCost : undefined}
+                data-move-kind={isReachableRoom ? moveKind : undefined}
                 data-haunt-target-room={isHauntTargetRoom ? "true" : undefined}
                 data-haunt-target-dimmed={
                   shouldDimForHauntTargetGuide ? "true" : undefined
@@ -591,6 +736,7 @@ export function BetrayalRoomMapSurface({
                   canSelectRoomFocusAction ||
                   canSelectBloodFromStoneSetupPlacementRoom ||
                   canSelectDynamiteRoom ||
+                  canMoveToRoom ||
                   canMoveHelpingHandsTrollHandToRoom ||
                   canMoveMonsterToRoom
                     ? "true"
@@ -609,15 +755,16 @@ export function BetrayalRoomMapSurface({
                             ? "monster-move"
                             : undefined
                 }
+                disabled={false}
                 data-tutorial-id={
                   tutorialMapTargetRoomId === room.id
                     ? tutorialHighlightTarget
                     : undefined
                 }
                 title={
-                  isDynamiteTargetRoom ? `炸药目标：${room.name}` : note
+                  isDynamiteTargetRoom ? `炸药目标：${room.name}` : moveTargetTitle
                 }
-                className="relative h-full w-full overflow-visible rounded-[4px] border p-0 text-left transition duration-200 disabled:cursor-default"
+                className="pointer-events-auto relative h-full w-full overflow-visible rounded-[4px] border p-0 text-left transition duration-200 disabled:cursor-default"
                 style={{
                   borderColor: isHelpingHandsTrollMoveTarget
                     ? "rgba(159, 225, 167, 0.96)"
@@ -641,7 +788,7 @@ export function BetrayalRoomMapSurface({
                                     ? "rgba(34, 197, 94, 0.96)"
                                     : isRoomSelectionTarget
                                       ? "rgba(34, 197, 94, 0.68)"
-                                      : isReachableRoom
+                                      : shouldShowPassiveMoveTarget
                                         ? "rgba(96, 155, 125, 0.42)"
                                         : isExploreTarget
                                           ? "rgba(34, 197, 94, 0.20)"
@@ -669,7 +816,7 @@ export function BetrayalRoomMapSurface({
                                     ? "0 0 0 3px rgba(74,222,128,0.62), 0 0 28px rgba(34,197,94,0.48), 0 8px 16px rgba(0,0,0,0.18)"
                                     : isRoomSelectionTarget
                                       ? "0 0 0 2px rgba(74,222,128,0.48), 0 0 22px rgba(34,197,94,0.34), 0 8px 16px rgba(0,0,0,0.16)"
-                                      : isReachableRoom
+                                      : shouldShowPassiveMoveTarget
                                         ? "0 0 0 2px rgba(96,155,125,0.46), 0 0 18px rgba(96,155,125,0.24), 0 8px 16px rgba(0,0,0,0.16)"
                                         : isPendingRoomPlacementSlot
                                           ? "0 0 0 3px rgba(74,222,128,0.62), 0 0 28px rgba(34,197,94,0.48), 0 8px 16px rgba(0,0,0,0.18)"
@@ -691,7 +838,7 @@ export function BetrayalRoomMapSurface({
                           isDynamiteTargetRoom ||
                           isMoveTarget ||
                           isRoomSelectionTarget ||
-                          isReachableRoom ||
+                          shouldShowPassiveMoveTarget ||
                           isExploreTarget
                         ? 1
                         : 0.92,
@@ -703,14 +850,6 @@ export function BetrayalRoomMapSurface({
                 }}
               >
                 <div className="pointer-events-none absolute -inset-0.5 -z-10 rounded-[6px] bg-[rgba(0,0,0,0.12)] blur-[1px]" />
-                <RoomTileSprite
-                  visual={roomTileVisual}
-                  locale={locale}
-                  alt=""
-                  className={`pointer-events-none absolute inset-0 rounded-[3px] bg-[#15110d] ${
-                    isDiscovered ? "opacity-95" : "opacity-82"
-                  }`}
-                />
                 <div
                   className={`pointer-events-none absolute inset-0 rounded-[3px] ${
                     isActive
@@ -723,7 +862,7 @@ export function BetrayalRoomMapSurface({
                             ? "bg-[radial-gradient(circle_at_50%_42%,rgba(34,197,94,0.14),transparent_58%)]"
                             : isMoveTarget
                               ? "bg-[radial-gradient(circle_at_50%_42%,rgba(118,189,153,0.10),transparent_58%)]"
-                              : isReachableRoom
+                              : shouldShowPassiveMoveTarget
                                 ? "bg-[radial-gradient(circle_at_50%_42%,rgba(96,155,125,0.07),transparent_58%)]"
                                 : "bg-[linear-gradient(180deg,rgba(3,6,5,0.02),rgba(3,5,5,0.16))]"
                   }`}
@@ -766,14 +905,6 @@ export function BetrayalRoomMapSurface({
                     className="pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] border-[#86efac] bg-[rgba(34,197,94,0.07)]"
                   />
                 ) : null}
-                {canExploreRoom ? (
-                  <span
-                    data-testid={`betrayal-room-explore-card-highlight-${room.id}`}
-                    data-highlight-layer-count="1"
-                    data-highlight-style="solid"
-                    className="pointer-events-none absolute inset-0 z-20 rounded-[4px] border-[3px] border-[#4ade80] bg-[rgba(34,197,94,0.07)]"
-                  />
-                ) : null}
                 {identityPresentation ? (
                   <div
                     data-testid={`betrayal-room-stripe-${room.id}`}
@@ -783,6 +914,33 @@ export function BetrayalRoomMapSurface({
                   />
                 ) : null}
                 <div className="pointer-events-none absolute inset-0 rounded-[3px] ring-1 ring-inset ring-[rgba(222,192,133,0.05)]" />
+                {(moveReachDoorEdgesByRoomId.get(room.id) ?? []).map((edge) => (
+                  <span
+                    key={`${room.id}-${edge}`}
+                    data-testid={`betrayal-room-move-door-breath-${room.id}-${edge}`}
+                    data-move-reach-doorway={edge}
+                    aria-hidden="true"
+                    className={`betrayal-map-move-door-breath betrayal-map-move-door-breath--${edge}`}
+                  />
+                ))}
+                {(isReachableRoom && (moveCost ?? 1) > 1) || isSkeletonKeyMoveTarget ? (
+                  <span
+                    data-testid={`betrayal-room-move-cost-${room.id}`}
+                    data-move-cost={moveCost ?? 1}
+                    data-move-kind={moveKind ?? "normal"}
+                    className="pointer-events-none absolute bottom-1 left-1 z-20 rounded border border-[rgba(184,219,194,0.5)] bg-[rgba(8,18,13,0.88)] px-1.5 py-1 text-[9px] font-bold leading-none text-[#d8f0df] shadow-[0_2px_7px_rgba(0,0,0,0.3)]"
+                    title={moveTargetTitle}
+                    aria-hidden="true"
+                  >
+                    {moveKind === "skeletonKey"
+                      ? t("board.rooms.skeletonKeyMoveCostBadge", {
+                          count: moveCost ?? 1,
+                        })
+                      : t("board.rooms.moveCostBadge", {
+                          count: moveCost ?? 1,
+                        })}
+                  </span>
+                ) : null}
                 <div className="sr-only">
                   <span>{room.name}</span>
                   <span>{tone.label}</span>
@@ -797,11 +955,13 @@ export function BetrayalRoomMapSurface({
                   roomId={room.id}
                   markerTokens={room.markerTokens}
                   hauntTokens={visibleRoomHauntTokens}
+                  discoveryReward={room.discoveryReward}
                   locale={locale}
                 />
               </button>
 
               <BetrayalRoomEntityLayerSurface
+                sceneArtwork
                 roomId={room.id}
                 occupants={occupants}
                 monsters={monsters}
@@ -809,6 +969,7 @@ export function BetrayalRoomMapSurface({
                 canSelectRoom={canSelectRoom}
                 canPickUpMummyGirl={canPickUpMummyGirl}
                 currentExplorerPlayerId={core.currentExplorer.playerId}
+                interactionMode={interactionMode}
                 traitorPlayerId={core.scenarioRuntime.traitorPlayerId}
                 mummyMonsterId={core.scenarioRuntime.mummy?.mummyMonsterId}
                 activeHauntTargetGuide={activeHauntTargetGuide}
@@ -844,6 +1005,7 @@ export function BetrayalRoomMapSurface({
                 }
                 selectedDustTargetPlayerId={selectedDustTargetPlayerId}
                 visibleFeedback={visibleFeedback}
+                traitChangeFeedbackByPlayerId={traitChangeFeedbackByPlayerId}
                 movingExplorerPlayerId={movingExplorerPlayerId}
                 isHauntTargetRoom={isHauntTargetRoom}
                 isHelpingHandsTrollHandMoveMode={
@@ -874,6 +1036,9 @@ export function BetrayalRoomMapSurface({
                 attackImpactByPlayerId={attackImpactByPlayerId}
                 onSelectExplorerTarget={onSelectExplorerTarget}
                 onOpenExplorerDetails={onOpenExplorerDetails}
+                movableExplorerPlayerId={movableExplorerPlayerId}
+                explorerMoveSelected={interactionMode === "move"}
+                onToggleExplorerMove={onToggleExplorerMove}
                 onSelectMonsterTarget={onSelectMonsterTarget}
                 onSelectHelpingHandsTrollHandMoveMonster={
                   onSelectHelpingHandsTrollHandMoveMonster
@@ -883,17 +1048,13 @@ export function BetrayalRoomMapSurface({
                 onOpenMonsterDetails={onOpenMonsterDetails}
                 onPickUpMummyGirl={onPickUpMummyGirl}
               />
-              {isReachableRoom && !isMoveTarget ? (
+              {shouldShowPassiveMoveTarget ? (
                 <span
                   data-testid={`betrayal-room-move-card-highlight-${room.id}`}
                   data-highlight-layer-count="1"
                   data-highlight-style="solid"
                   className="pointer-events-none absolute inset-0 z-20 rounded-[4px] border-[3px] border-[#6aa986] bg-[rgba(106,169,134,0.06)]"
-                  title={
-                    isSkeletonKeyMoveTarget
-                      ? t("board.rooms.skeletonKeyMoveTarget")
-                      : t("board.rooms.moveTarget")
-                  }
+                  title={moveTargetTitle}
                 />
               ) : null}
               {isHelpingHandsTrollMoveTarget ? (
@@ -964,13 +1125,15 @@ export function BetrayalRoomMapSurface({
                   }
                   data-highlight-layer-count="1"
                   data-highlight-style="solid"
-                  className={`pointer-events-none absolute inset-0 z-30 rounded-[4px] border-[3px] bg-[rgba(34,197,94,0.07)] ${
+                  className={`pointer-events-none absolute inset-0 z-30 grid place-items-center rounded-[4px] border-[3px] bg-[rgba(34,197,94,0.07)] ${
                     isPendingRoomPlacementSlot
                       ? "border-[#bbf7d0]"
                       : "border-[#4ade80]"
                   }`}
                   title={t("board.rooms.explorable")}
-                />
+                >
+                  {canExploreRoom ? <span className="betrayal-map-explore-mark" aria-hidden="true">?</span> : null}
+                </span>
               ) : null}
               {pendingEventFocusesMapTarget ? null : (
                 <button
@@ -983,7 +1146,7 @@ export function BetrayalRoomMapSurface({
                     onOpenRoomPreview(room.id);
                   }}
                   data-testid={`betrayal-room-preview-${room.id}`}
-                  className="absolute bottom-2 right-2 z-30 grid h-7 w-7 place-items-center rounded-[5px] border border-[rgba(222,192,133,0.34)] bg-[rgba(7,10,8,0.7)] text-[#f0d29a] opacity-0 shadow-[0_5px_10px_rgba(0,0,0,0.24)] transition group-hover:opacity-78 hover:bg-[rgba(36,28,19,0.88)] hover:opacity-100 focus:opacity-100"
+                  className="pointer-events-auto absolute bottom-2 right-2 z-30 grid h-7 w-7 place-items-center rounded-[5px] border border-[rgba(222,192,133,0.34)] bg-[rgba(7,10,8,0.7)] text-[#f0d29a] opacity-0 shadow-[0_5px_10px_rgba(0,0,0,0.24)] transition group-hover:opacity-78 hover:bg-[rgba(36,28,19,0.88)] hover:opacity-100 focus:opacity-100"
                   title={t("board.rooms.preview")}
                 >
                   <Search size={13} />
@@ -993,7 +1156,9 @@ export function BetrayalRoomMapSurface({
             </div>
           );
         })}
-      </ZoomPanViewport>
+      </BetrayalPixiRoomViewport>
+      </BetrayalFloorScene>
+      </AnimatePresence>
       {pendingRoomPlacementFailureText ? (
         <BetrayalRoomPlacementFailureBanner
           text={pendingRoomPlacementFailureText}
@@ -1026,7 +1191,6 @@ export function BetrayalRoomMapSurface({
         hasCrossFloorMoveTargets={hasCrossFloorMoveTargets}
         hasCrossFloorRoomSelectionTargets={hasCrossFloorRoomSelectionTargets}
         hidden={hiddenTableChrome}
-        isPhoneLandscapeLayout={isPhoneLandscapeLayout}
         onSelectFloor={onSelectFloor}
       />
     </div>

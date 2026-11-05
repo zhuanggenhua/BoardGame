@@ -227,7 +227,7 @@ it('征召军队选择现在会正式挂到交互提示，并通过提示响应�
         expect(state.core.selectedRegionId).toBe('song-jin');
         expect(state.core.turnPhase).toBe('action-window');
         expect(state.core.regions.find((region) => region.id === 'song-jin')).toMatchObject({
-            troops: 8,
+            troops: 6,
             specialTroops: expect.arrayContaining([
                 expect.objectContaining({
                     id: 'ming-recruit-regular-infantry-lv2',
@@ -239,7 +239,7 @@ it('征召军队选择现在会正式挂到交互提示，并通过提示响应�
                 }),
             ]),
         });
-        expect(state.core.pieces.filter((piece) => piece.regionId === 'song-jin' && piece.location === 'field')).toHaveLength(8);
+        expect(state.core.pieces.filter((piece) => piece.regionId === 'song-jin' && piece.location === 'field')).toHaveLength(6);
     });
 
 it('征召军队选择挂到 sys.interaction 后，仍可继续点地图切换建军目标区', () => {
@@ -357,7 +357,7 @@ it('征召军队 resolver 现在可以直接吃 interaction 快照，而不是�
             displayAnchorRegionId: 'song-jin',
         });
         expect(resolved.regions.find((region) => region.id === 'song-jin')).toMatchObject({
-            troops: 8,
+            troops: 6,
             specialTroops: expect.arrayContaining([
                 expect.objectContaining({
                     id: 'ming-recruit-regular-infantry-lv2',
@@ -1507,7 +1507,7 @@ it('马市贸易选择现在会正式挂到交互提示，并通过提示响应�
         expect(getPromptSummary(state).id).toBeUndefined();
         expect(state.core.maShiTradeSelection).toBeNull();
         expect(state.core.turnPhase).toBe('action-window');
-        expect(state.core.regions.find((region) => region.id === 'song-jin')).toMatchObject({ troops: 5 });
+        expect(state.core.regions.find((region) => region.id === 'song-jin')).toMatchObject({ troops: 3 });
         expect(state.core.factions.mongol.handCount).toBe(11);
     });
 
@@ -1554,7 +1554,7 @@ it('马市贸易 resolver 现在可以直接吃 interaction 快照，而不是�
             currentTargetRegionId: null,
             displayAnchorRegionId: 'song-jin',
         });
-        expect(resolved.regions.find((region) => region.id === 'song-jin')).toMatchObject({ troops: 5 });
+        expect(resolved.regions.find((region) => region.id === 'song-jin')).toMatchObject({ troops: 3 });
         expect(resolved.factions.mongol.handCount).toBe(11);
     });
 

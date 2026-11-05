@@ -1,0 +1,26 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-19T13:45:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "上一页、页码、下一页位于剧本书内底部操作带，且不压住正文。",
+      "status": "PASS",
+      "evidence": [
+        "真实剧本流程 E2E 通过。",
+        "PC 英雄与叛徒视角最新截图显示底部控件顺序为上一页、页码、下一页。",
+        "E2E 几何断言验证控件在书内、正文在底部操作带之前结束且三者不相交。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-flow-new-rules\\03-英雄视角-秘密阅读-英雄手册.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-scenario-flow-new-rules\\04-叛徒视角-秘密阅读-叛徒手册.jpg"
+  ]
+}

@@ -10,7 +10,8 @@ import { abilityExecutorRegistry } from '../abilityExecutor';
 import { createFactionSelectionInteraction } from '../interactionHandlers';
 import { registerInteractionHandler } from '../abilityInteractionHandlers';
 import type { CardiaAbilityContext } from '../abilityExecutor';
-import type { FactionType, CardiaEvent } from '../core-types';
+import type { FactionType } from '../core-types';
+import type { CardiaEvent } from '../events';
 
 /**
  * 伏击者（Ambusher）- 影响力 9

@@ -13,16 +13,23 @@ import { motion } from 'framer-motion';
 
 export const AbilityReadyIndicator: React.FC = () => {
   return (
-    <div className="absolute inset-0 pointer-events-none z-20">
+    <div className="absolute inset-0 pointer-events-none z-20" data-testid="sw-ability-ready-indicator" aria-hidden="true">
       {/* 三层向外扩散的边框波纹（用 scale 保持形状一致） */}
       {[0, 0.6, 1.2].map((delay, i) => (
         <motion.div
           key={i}
+          data-sw-ability-ready-ripple="true"
           className="absolute inset-0 rounded-lg border-[3px] border-cyan-300"
+          style={{
+            borderStyle: 'solid',
+            borderWidth: 3,
+            boxShadow: '0 0 8px 2px rgba(34,211,238,0.5)',
+            willChange: 'transform, opacity',
+          }}
           initial={{ opacity: 0, scale: 1 }}
           animate={{
             opacity: [0, 1, 0],
-            scale: [1, 1.15, 1.3],
+            scale: [1, 1.12, 1.24],
           }}
           transition={{
             duration: 1.8,

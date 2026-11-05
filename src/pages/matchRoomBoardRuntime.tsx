@@ -34,6 +34,7 @@ export function useMatchRoomBoardRuntime(args: {
     locale: string;
     loadingDescription: string;
     shouldBlockBoardOnImagePreload: boolean;
+    shouldPreloadBlockingAudio?: boolean;
     onInitialOnlinePreloadReady: () => void;
     onBoardPreloadBlockingChange: (blocking: boolean) => void;
 }) {
@@ -64,12 +65,12 @@ export function useMatchRoomBoardRuntime(args: {
     }), []);
 
     const blockingAudioKeys = useMemo<SoundKey[]>(() => {
-        if (!args.gameId || !args.gameImplReady) {
+        if (args.shouldPreloadBlockingAudio === false || !args.gameId || !args.gameImplReady) {
             return [];
         }
         const impl = getGameImplementation(args.gameId);
         return Array.from(new Set(impl?.audioConfig?.blockingSounds ?? []));
-    }, [args.gameId, args.gameImplReady]);
+    }, [args.gameId, args.gameImplReady, args.shouldPreloadBlockingAudio]);
 
     const createWrappedBoardWithGate = (
         Board: ComponentType<GameBoardProps>,

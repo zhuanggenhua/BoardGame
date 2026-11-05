@@ -20,6 +20,28 @@ type VariantEntityPair = {
     podId?: string;
 };
 
+type VariantProfileEntity = {
+    id: string;
+    faction?: string;
+};
+
+export function collectMissingSmashUpPodVariantProfileFactionIds(
+    entities: readonly VariantProfileEntity[],
+    profiles: readonly Pick<SmashUpFactionVariantProfile, 'podFactionId'>[],
+): string[] {
+    const registeredPodFactionIds = new Set(profiles.map((profile) => profile.podFactionId));
+    const podFactionIds = new Set<string>();
+
+    for (const entity of entities) {
+        if (!entity.faction?.endsWith('_pod')) continue;
+        podFactionIds.add(entity.faction);
+    }
+
+    return [...podFactionIds]
+        .filter((factionId) => !registeredPodFactionIds.has(factionId))
+        .sort((left, right) => left.localeCompare(right));
+}
+
 function collectAbilityTagsByDefId(): Map<string, Set<string>> {
     const tagsByDefId = new Map<string, Set<string>>();
     for (const key of getRegisteredAbilityKeys()) {
@@ -297,8 +319,19 @@ function validateBasePoolBindings(errors: string[], profile: SmashUpFactionVaria
 
 export function collectSmashUpVariantBindingErrors(): string[] {
     const errors: string[] = [];
+    const profiles = getAllSmashUpVariantProfiles();
+    const missingProfileFactionIds = collectMissingSmashUpPodVariantProfileFactionIds(
+        [...getAllCardDefs(), ...getAllBaseDefs()],
+        profiles,
+    );
 
-    for (const profile of getAllSmashUpVariantProfiles()) {
+    if (missingProfileFactionIds.length > 0) {
+        errors.push(
+            `POD 派系数据缺少变体绑定 profile：${missingProfileFactionIds.join(', ')}`,
+        );
+    }
+
+    for (const profile of profiles) {
         validateBasePoolBindings(errors, profile);
         validateSharedRuntimeBindings(errors, profile);
     }

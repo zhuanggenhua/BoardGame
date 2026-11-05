@@ -51,6 +51,7 @@ type HandCardChoice = { cardUid?: string; defId?: string };
 
 type MinionChoice = {
     minionUid?: string;
+    minionDefId?: string;
     baseIndex?: number;
     defId?: string;
 };
@@ -172,11 +173,16 @@ function buildDiscardCostInteraction(
     titleKey: string,
     sourceDefId: string,
     includeSourceBaseIndex = false,
+    allowSkip = false,
 ) {
-    const options = buildHandCardOptions(ctx.state, ctx.playerId);
+    const buildOptions = (state: SmashUpCore) => [
+        ...(allowSkip ? [createSkipOption('不使用效果', 'ui.skip')] : []),
+        ...buildHandCardOptions(state, ctx.playerId),
+    ];
+    const options = buildOptions(ctx.state);
     if (options.length === 0) return undefined;
 
-    const interaction = createSimpleChoice<HandCardChoice>(
+    const interaction = createSimpleChoice<HandCardChoice & { skip?: boolean }>(
         `${sourceId}_${ctx.cardUid}_${ctx.now}`,
         ctx.playerId,
         '法师：选择一张手牌作为弃牌成本',
@@ -192,8 +198,7 @@ function buildDiscardCostInteraction(
             displayCard: { defId: ctx.defId, cardUid: ctx.cardUid },
         },
     );
-    interaction.data.optionsGenerator = (latestState) =>
-        buildHandCardOptions(latestState.core as SmashUpCore, ctx.playerId);
+    interaction.data.optionsGenerator = (latestState) => buildOptions(latestState.core as SmashUpCore);
 
     return queueInteraction(ctx.matchState, {
         ...interaction,
@@ -285,6 +290,7 @@ function wandWhizOnPlay(ctx: AbilityContext): AbilityResult {
         WAND_WHIZ_DISCARD_SOURCE_ID,
         'ui.munchkin_mages_wand_whiz_discard_title',
         WAND_WHIZ,
+        true,
         true,
     );
     return matchState ? { events: [], matchState } : { events: [] };
@@ -532,7 +538,7 @@ function magesTowerOnMinionPlayed(ctx: BaseAbilityContext): BaseAbilityResult {
         '法师之塔：是否抽一张牌',
         [
             { id: 'draw', label: '抽一张牌', labelKey: 'ui.munchkin_mages_base_mages_tower_draw_option', value: { draw: true }, displayMode: 'button' },
-            createSkipOption('不抽牌', 'ui.munchkin_mages_base_mages_tower_skip'),
+            { ...createSkipOption('不抽牌', 'ui.munchkin_mages_base_mages_tower_skip'), value: { draw: false } },
         ],
         {
             sourceId: BASE_MAGES_TOWER_SOURCE_ID,
@@ -639,20 +645,21 @@ export function registerMunchkinMagesInteractionHandlers(): void {
         const data = interactionData as CostInteractionData | undefined;
         const cost = getSelectedHandCard(state.core, playerId, value);
         if (!data || !isSourceCardValid(state.core, data, playerId) || !cost) return { state, events: [] };
-        const source = data.sourceBaseIndex === undefined
+        const sourceBaseIndex = data.sourceBaseIndex;
+        const source = sourceBaseIndex === undefined
             ? undefined
-            : state.core.bases[data.sourceBaseIndex]?.minions.find(minion => minion.uid === data.sourceCardUid);
-        if (!source) return { state, events: [] };
+            : state.core.bases[sourceBaseIndex]?.minions.find(minion => minion.uid === data.sourceCardUid);
+        if (sourceBaseIndex === undefined || !source) return { state, events: [] };
         return {
             state,
             events: [
                 { type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId, cardUids: [cost.uid] }, timestamp },
-                addTempPower(source.uid, data.sourceBaseIndex, 2, HAPPY_ZAPPER, timestamp, {
+                addTempPower(source.uid, sourceBaseIndex, 2, HAPPY_ZAPPER, timestamp, {
                     sourcePlayerId: playerId,
                     sourceCardUid: data.sourceCardUid,
                     sourceDefId: HAPPY_ZAPPER,
                     sourceControllerId: playerId,
-                    sourceBaseIndex: data.sourceBaseIndex,
+                    sourceBaseIndex,
                 }),
             ],
         };
@@ -747,6 +754,8 @@ export function registerMunchkinMagesInteractionHandlers(): void {
 
     registerInteractionHandler(WAND_WHIZ_DISCARD_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
         const data = interactionData as CostInteractionData | undefined;
+        const choice = value as HandCardChoice & { skip?: boolean } | undefined;
+        if (choice?.skip) return { state, events: [] };
         const cost = getSelectedHandCard(state.core, playerId, value);
         if (!data || !isSourceCardValid(state.core, data, playerId) || !cost) return { state, events: [] };
         const interaction = createSimpleChoice<ExtraPlayModeChoice>(

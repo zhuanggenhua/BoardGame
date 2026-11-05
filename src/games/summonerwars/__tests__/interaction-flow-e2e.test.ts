@@ -325,7 +325,7 @@ describe('复活亡灵 E2E 流程', () => {
     const summonerUnit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
 
     // 在弃牌堆放一个亡灵战士（真实：STR 2, HP 4, melee）
-    const skeletonCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', unitClass: 'common', strength: 2, life: 4, attackType: 'melee', attackRange: 1, abilities: ['blood_rage', 'power_boost', 'blood_rage_decay'] });
+    const skeletonCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', unitClass: 'common', strength: 2, life: 4, attackType: 'melee', attackRange: 1, abilities: ['blood_rage', 'power_boost', 'blood_rage_decay'], unitTags: ['undead'] });
     const discardId = 'necro-undead-warrior-0-discard';
     core.players['0'].discard.push({ ...skeletonCard, id: discardId } as any);
 
@@ -731,6 +731,7 @@ describe('圣洁审判 E2E 流程', () => {
     const knightCard = mkUnit('paladin-fortress-knight', {
       faction: 'paladin', unitClass: 'common', abilities: ['entangle', 'guardian'],
       strength: 2, life: 5, attackType: 'melee', attackRange: 1,
+      unitTags: ['citadel'],
     });
     const knight = putUnit(core, { row: 4, col: 3 }, knightCard, '0');
 

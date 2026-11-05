@@ -1,4 +1,5 @@
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type {
+ MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerActiveBaseAbility, registerBaseAbility } from '../domain/baseAbilities';
@@ -24,6 +25,8 @@ import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { resolveLiveBaseIndex } from '../domain/utils';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -235,9 +238,7 @@ function ancientEgyptiansStarPortalOnActionPlayed(ctx: any): AbilityResult {
     return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, DEFAULT_RANDOM, ctx.now) };
 }
 
-const ancientEgyptiansPyramidEngineerUncoverPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansPyramidEngineerUncoverPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number }>({
     sourceId: 'ancient_egyptians_pyramid_engineer_uncover',
     buildInteraction: (context) => {
         const base = context.state.bases[context.baseIndex];
@@ -282,14 +283,11 @@ const ancientEgyptiansPyramidEngineerOnPlayProgram = createEffectProgram<Ability
     if (!base || options.length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { baseIndex: ctx.baseIndex }),
-        nextProgram: ancientEgyptiansPyramidEngineerUncoverPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { baseIndex: ctx.baseIndex }), ancientEgyptiansPyramidEngineerUncoverPromptProgram),
     };
 });
 
-const ancientEgyptiansPyramidEngineerTalentProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansPyramidEngineerTalentProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number }>({
     sourceId: 'ancient_egyptians_pyramid_engineer_talent',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -329,9 +327,7 @@ const ancientEgyptiansPyramidEngineerTalentProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansLostKnowledgeBuryBasePromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & HandCardChoice
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansLostKnowledgeBuryBasePromptProgram = createPromptProgram<AncientEgyptiansPromptContext & HandCardChoice>({
     sourceId: 'ancient_egyptians_lost_knowledge_bury_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -383,9 +379,7 @@ const ancientEgyptiansLostKnowledgeBuryBasePromptProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansLostKnowledgeBuryPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { playedCardUid: string }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansLostKnowledgeBuryPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { playedCardUid: string }>({
     sourceId: 'ancient_egyptians_lost_knowledge_bury',
     buildInteraction: (context) => {
         const buriableHand = (context.state.players[context.playerId]?.hand ?? [])
@@ -414,15 +408,12 @@ const ancientEgyptiansLostKnowledgeBuryPromptProgram = createPromptProgram<
         if (!selected?.cardUid) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, selected),
-            nextProgram: ancientEgyptiansLostKnowledgeBuryBasePromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, selected), ancientEgyptiansLostKnowledgeBuryBasePromptProgram),
         };
     },
 });
 
-const ancientEgyptiansLostKnowledgeUncoverPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansLostKnowledgeUncoverPromptProgram = createPromptProgram<AncientEgyptiansPromptContext>({
     sourceId: 'ancient_egyptians_lost_knowledge_uncover',
     buildInteraction: (context) => {
         const choices = getBuriedCardChoices(context.state, context.playerId);
@@ -462,9 +453,7 @@ const ancientEgyptiansLostKnowledgeUncoverPromptProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansLostKnowledgeModePromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { playedCardUid: string }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansLostKnowledgeModePromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { playedCardUid: string }>({
     sourceId: 'ancient_egyptians_lost_knowledge_mode',
     buildInteraction: (context) => {
         const player = context.state.players[context.playerId];
@@ -506,12 +495,21 @@ const ancientEgyptiansLostKnowledgeModePromptProgram = createPromptProgram<
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const mode = (value as any)?.mode as 'bury' | 'uncover' | undefined;
         if (!mode) return { events: [] };
+        if (mode === 'bury') {
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation(
+                    createPromptContext(state, playerId, timestamp, { playedCardUid: context.playedCardUid }),
+                    ancientEgyptiansLostKnowledgeBuryPromptProgram,
+                ),
+            };
+        }
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, { playedCardUid: context.playedCardUid }),
-            nextProgram: mode === 'bury'
-                ? ancientEgyptiansLostKnowledgeBuryPromptProgram
-                : ancientEgyptiansLostKnowledgeUncoverPromptProgram,
+            continuation: createAbilityRuntimeContinuation(
+                createPromptContext(state, playerId, timestamp),
+                ancientEgyptiansLostKnowledgeUncoverPromptProgram,
+            ),
         };
     },
 });
@@ -526,27 +524,22 @@ const ancientEgyptiansLostKnowledgeProgram = createEffectProgram<AbilityContext,
     if (canBury && !canUncover) {
         return {
             events: [],
-            context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { playedCardUid: ctx.cardUid }),
-            nextProgram: ancientEgyptiansLostKnowledgeBuryPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { playedCardUid: ctx.cardUid }), ancientEgyptiansLostKnowledgeBuryPromptProgram),
         };
     }
     if (!canBury && canUncover) {
         return {
             events: [],
-            context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-            nextProgram: ancientEgyptiansLostKnowledgeUncoverPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now), ancientEgyptiansLostKnowledgeUncoverPromptProgram),
         };
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { playedCardUid: ctx.cardUid }),
-        nextProgram: ancientEgyptiansLostKnowledgeModePromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { playedCardUid: ctx.cardUid }), ancientEgyptiansLostKnowledgeModePromptProgram),
     };
 });
 
-const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number }>({
     sourceId: 'ancient_egyptians_tomb_trap',
     buildInteraction: (context) => {
         const base = context.state.bases[context.baseIndex];
@@ -615,9 +608,7 @@ const ancientEgyptiansTombTrapOnUncoverProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansPlagueOfLocustsProgram = createPromptProgram<
-    AncientEgyptiansPromptContext
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansPlagueOfLocustsProgram = createPromptProgram<AncientEgyptiansPromptContext>({
     sourceId: 'ancient_egyptians_plague_of_locusts',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ancient_egyptians_plague_of_locusts_${context.now}`,
@@ -640,7 +631,7 @@ const ancientEgyptiansPlagueOfLocustsProgram = createPromptProgram<
     onResolve: ({ state, playerId, value, timestamp }) => {
         const baseIndex = (value as any)?.baseIndex as number | undefined;
         const base = baseIndex === undefined ? undefined : state.core.bases[baseIndex];
-        if (!base) return { events: [] };
+        if (baseIndex === undefined || !base) return { events: [] };
         return {
             events: base.minions
                 .filter(minion => minion.controller !== playerId)
@@ -649,9 +640,7 @@ const ancientEgyptiansPlagueOfLocustsProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansMummyStrengthTargetPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansMummyStrengthTargetPromptProgram = createPromptProgram<AncientEgyptiansPromptContext>({
     sourceId: 'ancient_egyptians_mummy_strength_target',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -691,14 +680,11 @@ const ancientEgyptiansMummyStrengthProgram = createEffectProgram<AbilityContext,
     if (getOwnMinions(ctx.state, ctx.playerId).length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-        nextProgram: ancientEgyptiansMummyStrengthTargetPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now), ancientEgyptiansMummyStrengthTargetPromptProgram),
     };
 });
 
-const ancientEgyptiansAncientCurseConfirmPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { targetMinionUid: string; baseIndex: number; baseDefId?: string }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansAncientCurseConfirmPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { targetMinionUid: string; baseIndex: number; baseDefId?: string }>({
     sourceId: 'ancient_egyptians_ancient_curse_confirm',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ancient_egyptians_ancient_curse_confirm_${context.now}_${context.targetMinionUid}`,
@@ -750,18 +736,15 @@ const ancientEgyptiansAncientCurseProgram = createEffectProgram<AbilityContext, 
     if (!ctx.matchState) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             targetMinionUid: target.uid,
             baseIndex: ctx.baseIndex,
             baseDefId: base?.defId,
-        }),
-        nextProgram: ancientEgyptiansAncientCurseConfirmPromptProgram,
+        }), ancientEgyptiansAncientCurseConfirmPromptProgram),
     };
 });
 
-const ancientEgyptiansSealTheTombBuryPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number; cardUid: string }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansSealTheTombBuryPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number; cardUid: string }>({
     sourceId: 'ancient_egyptians_seal_the_tomb_bury',
     buildInteraction: (context) => {
         const player = context.state.players[context.playerId];
@@ -807,7 +790,11 @@ const ancientEgyptiansSealTheTombBuryPromptProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansSealTheTombUncoverNextProgram = createEffectProgram<
+const ancientEgyptiansSealTheTombUncoverNextProgram: AbilityProgram<
+    SealTheTombUncoverContinuationContext,
+    SmashUpCore,
+    SmashUpEvent
+> = createEffectProgram<
     SealTheTombUncoverContinuationContext,
     SmashUpCore,
     SmashUpEvent
@@ -830,19 +817,16 @@ const ancientEgyptiansSealTheTombUncoverNextProgram = createEffectProgram<
         matchState: result.state,
         ...(remainingChoices.length > 0
             ? {
-                context: createPromptContext(result.state, context.playerId, context.now, {
+                continuation: createAbilityRuntimeContinuation(createPromptContext(result.state, context.playerId, context.now, {
                     pendingChoices: remainingChoices,
                     random: context.random,
-                }),
-                nextProgram: ancientEgyptiansSealTheTombUncoverNextProgram,
+                }), ancientEgyptiansSealTheTombUncoverNextProgram),
             }
             : {}),
     };
 });
 
-const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number }>({
     sourceId: 'ancient_egyptians_seal_the_tomb_uncover',
     buildInteraction: (context) => {
         const choices = getBuriedCardChoices(context.state, context.playerId, context.baseIndex);
@@ -870,18 +854,15 @@ const ancientEgyptiansSealTheTombUncoverPromptProgram = createPromptProgram<
         if (selected.length === 0) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 pendingChoices: selected,
                 random,
-            }),
-            nextProgram: ancientEgyptiansSealTheTombUncoverNextProgram,
+            }), ancientEgyptiansSealTheTombUncoverNextProgram),
         };
     },
 });
 
-const ancientEgyptiansSealTheTombModePromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number; cardUid: string }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansSealTheTombModePromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number; cardUid: string }>({
     sourceId: 'ancient_egyptians_seal_the_tomb_mode',
     buildInteraction: (context) => {
         const player = context.state.players[context.playerId];
@@ -922,15 +903,24 @@ const ancientEgyptiansSealTheTombModePromptProgram = createPromptProgram<
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const mode = (value as any)?.mode as 'bury' | 'uncover' | undefined;
         if (!mode) return { events: [] };
+        if (mode === 'bury') {
+            return {
+                events: [],
+                continuation: createAbilityRuntimeContinuation(
+                    createPromptContext(state, playerId, timestamp, {
+                        baseIndex: context.baseIndex,
+                        cardUid: context.cardUid,
+                    }),
+                    ancientEgyptiansSealTheTombBuryPromptProgram,
+                ),
+            };
+        }
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, {
-                baseIndex: context.baseIndex,
-                cardUid: context.cardUid,
-            }),
-            nextProgram: mode === 'bury'
-                ? ancientEgyptiansSealTheTombBuryPromptProgram
-                : ancientEgyptiansSealTheTombUncoverPromptProgram,
+            continuation: createAbilityRuntimeContinuation(
+                createPromptContext(state, playerId, timestamp, { baseIndex: context.baseIndex }),
+                ancientEgyptiansSealTheTombUncoverPromptProgram,
+            ),
         };
     },
 });
@@ -942,14 +932,11 @@ const ancientEgyptiansSealTheTombProgram = createEffectProgram<AbilityContext, S
     if (buriableHand.length === 0 && buriedChoices.length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { baseIndex: ctx.baseIndex, cardUid: ctx.cardUid }),
-        nextProgram: ancientEgyptiansSealTheTombModePromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { baseIndex: ctx.baseIndex, cardUid: ctx.cardUid }), ancientEgyptiansSealTheTombModePromptProgram),
     };
 });
 
-const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { cardUid: string; defId: string; sourceBaseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansMummyAfterScoringPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { cardUid: string; defId: string; sourceBaseIndex: number }>({
     sourceId: 'ancient_egyptians_mummy_after_scoring',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ancient_egyptians_mummy_after_scoring_${context.now}_${context.cardUid}`,
@@ -1016,18 +1003,15 @@ const ancientEgyptiansMummyAfterScoringProgram = createEffectProgram<any, SmashU
     if (baseOptions.length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, sourceControllerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, sourceControllerId, ctx.now, {
             cardUid: sourceCardUid,
             defId: sourceDefId,
             sourceBaseIndex,
-        }),
-        nextProgram: ancientEgyptiansMummyAfterScoringPromptProgram,
+        }), ancientEgyptiansMummyAfterScoringPromptProgram),
     };
 });
 
-const ancientEgyptiansPharaohBeforeScoringPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansPharaohBeforeScoringPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number }>({
     sourceId: 'ancient_egyptians_pharaoh_before_scoring',
     buildInteraction: (context) => {
         const base = context.state.bases[context.baseIndex];
@@ -1067,16 +1051,12 @@ const ancientEgyptiansPharaohBeforeScoringPromptProgram = createPromptProgram<
     },
 });
 
-const ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & {
+const ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram = createPromptProgram<AncientEgyptiansPromptContext & {
         baseIndex: number;
         sourceBaseIndex: number;
         sourceDefId: string;
         sourceMinionUid: string;
-    },
-    SmashUpCore,
-    SmashUpEvent
->({
+    }>({
     sourceId: 'ancient_egyptians_pharaoh_before_scoring_choose_source',
     buildInteraction: (context) => {
         const source = findMinionOnBases(context.matchState.core, context.sourceMinionUid);
@@ -1128,8 +1108,7 @@ const ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram = createProm
         if (!liveBase || options.length === 0) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, { baseIndex: context.baseIndex }),
-            nextProgram: ancientEgyptiansPharaohBeforeScoringPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, { baseIndex: context.baseIndex }), ancientEgyptiansPharaohBeforeScoringPromptProgram),
         };
     },
 });
@@ -1145,19 +1124,16 @@ const ancientEgyptiansPharaohBeforeScoringProgram = createEffectProgram<any, Sma
     if (!base || options.length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, sourceControllerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, sourceControllerId, ctx.now, {
             baseIndex: ctx.baseIndex,
             sourceBaseIndex: source.baseIndex,
             sourceDefId: source.minion.defId,
             sourceMinionUid: source.minion.uid,
-        }),
-        nextProgram: ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram,
+        }), ancientEgyptiansPharaohBeforeScoringChooseSourcePromptProgram),
     };
 });
 
-const ancientEgyptiansPyramidsDuringTurnPromptProgram = createPromptProgram<
-    AncientEgyptiansPromptContext & { baseIndex: number }
-, SmashUpCore, SmashUpEvent>({
+const ancientEgyptiansPyramidsDuringTurnPromptProgram = createPromptProgram<AncientEgyptiansPromptContext & { baseIndex: number }>({
     sourceId: 'base_pyramids',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1213,8 +1189,7 @@ const ancientEgyptiansPyramidsDuringTurnProgram = createEffectProgram<any, Smash
     if (!ctx.matchState || !player || player.hand.length === 0) return { events: [] };
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { baseIndex: ctx.baseIndex }),
-        nextProgram: ancientEgyptiansPyramidsDuringTurnPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { baseIndex: ctx.baseIndex }), ancientEgyptiansPyramidsDuringTurnPromptProgram),
     };
 });
 

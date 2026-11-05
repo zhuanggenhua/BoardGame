@@ -6,9 +6,11 @@ import {
     createSimpleChoiceSystem,
     createRematchSystem,
     createUndoSystem,
+    createTimingOpportunitySystem,
+    createResolutionFrameSystem,
 } from '../../engine';
 import type { ActionLogEntry, Command, GameEvent, MatchState } from '../../engine/types';
-import { registerGameAiRuntime } from '../../engine/ai';
+import { isManualSetupSelectionEnabledForSeat, registerGameAiRuntime } from '../../engine/ai';
 import { createGameEngine } from '../../engine/adapter';
 import { qidahenAiRuntime } from './ai';
 import { QIDAHEN_AUDIO_CONFIG } from './audio.config';
@@ -16,6 +18,12 @@ import { QidahenDomain } from './domain';
 import type { QidahenCore } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
 import { createQidahenInteractionSystem } from './domain/interactionSystem';
+import { createQidahenTurnResolutionSystem } from './domain/turnResolutionSystem';
+import { QIDAHEN_TURN_RESOLUTION_CHOICE } from './domain/turnResolutionTypes';
+import {
+    getInteractionSourceId,
+    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
+} from './domain/interactionSources';
 import { QIDAHEN_MAX_PLAYERS, QIDAHEN_MIN_PLAYERS } from './roomSetup';
 
 const ACTION_ALLOWLIST = Object.values(QIDAHEN_COMMANDS);
@@ -23,6 +31,87 @@ const ACTION_ALLOWLIST = Object.values(QIDAHEN_COMMANDS);
 const findFactionPlayerId = (core: QidahenCore, factionId?: string): string | undefined => {
     if (!factionId || !(factionId in core.factions)) return undefined;
     return core.factions[factionId as keyof QidahenCore['factions']]?.playerId;
+};
+
+const resolveQidahenLocalRuntimeControlledPlayerId = (args: {
+    state: MatchState<unknown>;
+    fallbackPlayerId: string | null;
+}): string | null => {
+    const interaction = args.state.sys?.interaction?.current;
+    return interaction && (getInteractionSourceId(interaction) === QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID || (interaction.data as { sourceId?: string }).sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE)
+        ? interaction.playerId
+        : args.fallbackPlayerId;
+};
+
+const resolveQidahenOnlineAiCurrentPlayerId = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+    fallbackPlayerId: string | null;
+}): string | null => {
+    const core = args.state.core as QidahenCore | undefined;
+    if (!core) {
+        return args.fallbackPlayerId;
+    }
+    const interaction = args.state.sys.interaction?.current;
+    if (interaction && (interaction.data as { sourceId?: string }).sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE) return interaction.playerId;
+
+    // 剧本前置选择是按势力归属的隐式决策窗口。历史线上房间可能已经把
+    // currentPlayer 推进到下一势力，但前一势力仍有待选人物/军备；watchdog
+    // 必须把恢复归属还原到真正拥有待选项的 seat，避免给下一位 AI 生成
+    // 通用 ADVANCE_PHASE（七大恨没有该命令）。
+    const pendingFactionId = core.pendingScenarioCharacterChoices[0]?.factionId
+        ?? core.pendingScenarioArmamentChoices[0]?.factionId;
+    const pendingPlayerId = pendingFactionId
+        ? core.factions[pendingFactionId]?.playerId
+        : undefined;
+
+    return pendingPlayerId ?? args.fallbackPlayerId;
+};
+
+const resolveQidahenManualSetupSelectionTakeoverPlayerId = (args: {
+    sharedState: MatchState<unknown>;
+    seatControllers: Record<string, unknown>;
+    hasManualDispatch: boolean;
+}): string | null => {
+    if (!args.hasManualDispatch) {
+        return null;
+    }
+    const core = args.sharedState.core as {
+        factionSelection?: {
+            selections?: Record<string, unknown>;
+        } | null;
+    } | undefined;
+    const selections = core?.factionSelection?.selections;
+    if (!selections || typeof selections !== 'object') {
+        return null;
+    }
+    return Object.entries(args.seatControllers)
+        .filter(([, controller]) => isManualSetupSelectionEnabledForSeat(
+            controller as { type?: unknown; manualSetupSelection?: unknown; manualFactionSelection?: unknown },
+        ))
+        .map(([playerId]) => playerId)
+        .find((playerId) => typeof selections[playerId] !== 'string' || selections[playerId] === 'unselected')
+        ?? null;
+};
+
+const shouldReleaseQidahenManualSetupSelection = (args: {
+    sharedState: MatchState<unknown>;
+    playerId: string;
+    actionKind: string;
+    selectionId: string;
+}): boolean | undefined => {
+    if (args.actionKind !== 'faction-selection') {
+        return undefined;
+    }
+    const core = args.sharedState.core as {
+        factionSelection?: {
+            selections?: Record<string, unknown>;
+        } | null;
+    } | undefined;
+    if (core && core.factionSelection === null) {
+        return true;
+    }
+    return core?.factionSelection?.selections?.[args.playerId] === args.selectionId;
 };
 
 const getPayloadValue = (command: Command, key: string): unknown => (
@@ -94,8 +183,7 @@ const formatQidahenFallbackLogText = (core: QidahenCore, command: Command): stri
             return '确认驱虎吞狼回应';
         case QIDAHEN_COMMANDS.RESOLVE_RECRUIT_CHOICE:
             return '确认征召军队';
-        case QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE:
-            return '确认城防维护';
+
         case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE:
             return '确认剧本人物';
         case QIDAHEN_COMMANDS.RESOLVE_SCENARIO_ARMAMENT_CHOICE:
@@ -147,16 +235,39 @@ const systems = [
     createEventStreamSystem(),
     createSimpleChoiceSystem(),
     createQidahenInteractionSystem(),
+    createQidahenTurnResolutionSystem(),
+    createTimingOpportunitySystem(QidahenDomain),
+    createResolutionFrameSystem(),
     createRematchSystem(),
 ];
 
-export const engineConfig = createGameEngine({
+export const engineConfig = {
+    ...createGameEngine({
     domain: QidahenDomain,
     systems,
     minPlayers: QIDAHEN_MIN_PLAYERS,
     maxPlayers: QIDAHEN_MAX_PLAYERS,
     commandTypes: Object.values(QIDAHEN_COMMANDS),
-});
+    }),
+    onlineAiRecovery: {
+        // 七大恨没有通用 ADVANCE_PHASE；预置选择/行动窗口必须由本游戏
+        // 的合法命令恢复，禁止 watchdog 发送未知命令污染线上房间。
+        disableFallbackAdvancePhase: true,
+        resolveCurrentPlayerId: resolveQidahenOnlineAiCurrentPlayerId,
+        resolveManualSetupSelectionTakeoverPlayerId: resolveQidahenManualSetupSelectionTakeoverPlayerId,
+        shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseQidahenManualSetupSelection,
+        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }: { type: string; payload: unknown }) => (
+            type === QIDAHEN_COMMANDS.SELECT_FACTION
+            && Boolean(payload)
+            && typeof payload === 'object'
+            && !Array.isArray(payload)
+            && typeof (payload as { factionId?: unknown }).factionId === 'string'
+                ? 'faction-selection'
+                : undefined
+        ),
+    },
+    resolveLocalRuntimeControlledPlayerId: resolveQidahenLocalRuntimeControlledPlayerId,
+};
 
 registerGameAiRuntime(qidahenAiRuntime);
 

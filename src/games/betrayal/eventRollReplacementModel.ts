@@ -1,8 +1,4 @@
 import type { RandomFn } from '../../engine/types';
-import {
-    eventRollResolutionNeedsAcknowledgement,
-    eventRollResolutionNeedsSharedAcknowledgement,
-} from './acknowledgementReadModel';
 import { findExplorerByPlayerId } from './explorerReadModel';
 import {
     cloneDustRuntimeState,
@@ -12,6 +8,11 @@ import {
     createDustRuntimeState,
     createUponReflectionRuntimeState,
 } from './hauntRuntimeSetupModel';
+import {
+    isIntermediateAllTraitCheckEventRollResolution,
+    resolveEventRollResolutionRequiresAcknowledgement,
+    resolveHumanAcknowledgementPlayerIds,
+} from './acknowledgementReadModel';
 import {
     cloneHauntTraitorResolution,
     resolveHauntTraitorResolutionForTrigger,
@@ -233,27 +234,17 @@ export function applyBetrayalEventRollReplacementState(
     const nextPendingEventChoice = replacement.nextPendingEventChoice
         ? cloneEventRollReplacementPendingChoice(replacement.nextPendingEventChoice)
         : undefined;
-    const acknowledgementContext = {
-        nextPendingEventChoice,
-        hauntRevealResolution: replacement.hauntRevealResolution,
-        hauntTraitorResolution: replacement.hauntTraitorResolution,
-        dustSetup: replacement.dustSetup,
-        magicCameraSetup: replacement.magicCameraSetup,
-        helpingHandsSetup: replacement.helpingHandsSetup,
-        uponReflectionSetup: replacement.uponReflectionSetup,
-    };
-    const requiresAcknowledgement = eventRollResolutionNeedsAcknowledgement(acknowledgementContext);
-    const needsSharedAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement(acknowledgementContext);
     core.pendingEventRollResolution = {
         ...pending,
-        requiredPlayerIds: needsSharedAcknowledgement && core.playerIds.length > 0
-            ? [...core.playerIds]
-            : [pending.playerId],
+        requiredPlayerIds: resolveHumanAcknowledgementPlayerIds(core, pending.playerId),
         acknowledgedPlayerIds: [],
         hauntRoll: replacement.hauntRoll ? { ...replacement.hauntRoll } : undefined,
         effect: cloneUseEffect(replacement.effect),
         nextPendingEventChoice,
         deathPrevention: cloneEventRollReplacementDeathPrevention(replacement.deathPrevention),
+        requiresPlayerAdvance: isIntermediateAllTraitCheckEventRollResolution({
+            nextPendingEventChoice,
+        }),
         hauntTriggered: replacement.hauntTriggered,
         hauntCardNumber: replacement.hauntCardNumber,
         hauntTriggerLabel: replacement.hauntTriggerLabel,
@@ -276,7 +267,17 @@ export function applyBetrayalEventRollReplacementState(
         uponReflectionSetup: replacement.uponReflectionSetup
             ? cloneUponReflectionRuntimeState(replacement.uponReflectionSetup)
             : undefined,
-        requiresAcknowledgement,
+        requiresAcknowledgement: pending.requiresAcknowledgement === true || resolveEventRollResolutionRequiresAcknowledgement({
+            effect: replacement.effect,
+            nextPendingEventChoice,
+            hauntRevealResolution: replacement.hauntRevealResolution,
+            hauntTraitorResolution: replacement.hauntTraitorResolution,
+            dustSetup: replacement.dustSetup,
+            magicCameraSetup: replacement.magicCameraSetup,
+            helpingHandsSetup: replacement.helpingHandsSetup,
+            uponReflectionSetup: replacement.uponReflectionSetup,
+            hauntRoll: replacement.hauntRoll,
+        }),
     };
     core.usedCardIdsThisTurn = Array.from(new Set([
         ...core.usedCardIdsThisTurn,

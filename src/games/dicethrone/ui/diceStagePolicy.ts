@@ -1,4 +1,6 @@
 import type { Die } from '../types';
+import type { CharacterId } from '../domain/core-types';
+import { createCharacterDice } from '../domain/characters';
 
 export interface DiceStagePolicyParams {
     isSpectator: boolean;
@@ -82,4 +84,13 @@ export function getReadOnlyNormalDicePool(dice: Die[]): Die[] {
 export function getRailDiceForCurrentBoard(dice: Die[], normalDicePool: Die[] = []): Die[] {
     if (dice.length > 0) return dice;
     return getReadOnlyNormalDicePool(normalDicePool);
+}
+
+/**
+ * 非投骰阶段的右侧骰盘仍显示当前角色的常态骰子。
+ * 测试代表态或旧存档可能暂时没有 core.dice，此时回到角色定义而不是空白。
+ */
+export function getDefaultDiceForCharacter(characterId?: CharacterId): Die[] {
+    if (!characterId || characterId === 'unselected') return [];
+    return getReadOnlyNormalDicePool(createCharacterDice(characterId));
 }

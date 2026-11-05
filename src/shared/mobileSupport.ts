@@ -43,6 +43,8 @@ export interface MobileLayoutEngineCapabilities {
 
 export interface RuntimeLayoutScaleMetrics {
     designWidth: number;
+    referenceWidth: number;
+    referenceHeight?: number;
     scale: number;
     inverseScale: number;
     logicalHeight: number;
@@ -59,7 +61,10 @@ const GAME_PAGE_DOCUMENT_ATTRIBUTE_KEYS = [
     'data-mobile-battlefield-zoom',
     'data-shell-targets',
     'data-mobile-board-shell-design-width',
+    'data-mobile-board-shell-fit',
     'data-mobile-board-shell-design-height',
+    'data-mobile-board-shell-reference-width',
+    'data-mobile-board-shell-reference-height',
     'data-mobile-board-shell-min-logical-height',
     'data-mobile-board-shell-min-readable-scale',
 ] as const;
@@ -137,6 +142,7 @@ export const resolveRuntimeLayoutScaleMetrics = (
 
     return {
         designWidth: safeDesignWidth,
+        referenceWidth: safeDesignWidth,
         scale,
         inverseScale,
         logicalHeight,
@@ -250,8 +256,13 @@ export const getGamePageDataAttributes = (
     }
 
     const boardShellLayout = support.mobileBoardShellLayout;
+    if (boardShellLayout?.fit) {
+        attributes['data-mobile-board-shell-fit'] = boardShellLayout.fit;
+    }
     const designWidth = stringifyPositiveNumber(boardShellLayout?.designWidth);
     const designHeight = stringifyPositiveNumber(boardShellLayout?.designHeight);
+    const referenceWidth = stringifyPositiveNumber(boardShellLayout?.referenceWidth);
+    const referenceHeight = stringifyPositiveNumber(boardShellLayout?.referenceHeight);
     const minLogicalHeight = stringifyPositiveNumber(boardShellLayout?.minLogicalHeight);
     const minReadableScale = stringifyPositiveNumber(boardShellLayout?.minReadableScale);
     if (designWidth) {
@@ -259,6 +270,12 @@ export const getGamePageDataAttributes = (
     }
     if (designHeight) {
         attributes['data-mobile-board-shell-design-height'] = designHeight;
+    }
+    if (referenceWidth) {
+        attributes['data-mobile-board-shell-reference-width'] = referenceWidth;
+    }
+    if (referenceHeight) {
+        attributes['data-mobile-board-shell-reference-height'] = referenceHeight;
     }
     if (minLogicalHeight) {
         attributes['data-mobile-board-shell-min-logical-height'] = minLogicalHeight;
@@ -349,10 +366,13 @@ export const shouldUseBoardShellScale = (
     height = 0,
 ) => {
     const support = resolveGameMobileSupport(entry);
+    const isPortrait = isPortraitViewport(width, height);
     return isMobileViewport(width)
-        && !isPortraitViewport(width, height)
-        && support.mobileProfile === 'landscape-adapted'
-        && support.mobileLayoutPreset === 'board-shell';
+        && support.mobileLayoutPreset === 'board-shell'
+        && (
+            (support.mobileProfile === 'landscape-adapted' && !isPortrait)
+            || (support.mobileProfile === 'portrait-adapted' && isPortrait)
+        );
 };
 
 export const resolveStableViewportSize = (

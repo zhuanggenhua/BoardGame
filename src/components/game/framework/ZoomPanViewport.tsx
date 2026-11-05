@@ -2,14 +2,23 @@ import React, {
     forwardRef,
     useCallback,
     useEffect,
+    useLayoutEffect,
     useRef,
     useState,
     type ReactNode,
 } from 'react';
+import { logMobileRuntimeCritical } from '../../../lib/mobile/mobileRuntimeDebug';
 
 const DRAG_THRESHOLD = 5;
 const SCALE_EPSILON = 0.02;
 const SCALE_BADGE_HIDE_DELAY_MS = 1200;
+const INERTIA_DAMPING = 11;
+const INERTIA_MIN_SPEED = 24;
+const INERTIA_MAX_FRAME_MS = 64;
+const INERTIA_VELOCITY_SMOOTHING = 0.65;
+
+export const ZOOM_PAN_CANCEL_INERTIA_EVENT = 'zoompan:cancel-inertia';
+export const ZOOM_PAN_RESET_CENTER_EVENT = 'zoompan:reset-center';
 
 interface TouchPoint {
     clientX: number;
@@ -73,6 +82,15 @@ const measureElementSize = (element: HTMLElement | null): ElementSize => {
     return { width, height };
 };
 
+const summarizeRect = (rect: DOMRect) => ({
+    left: Number(rect.left.toFixed(2)),
+    top: Number(rect.top.toFixed(2)),
+    width: Number(rect.width.toFixed(2)),
+    height: Number(rect.height.toFixed(2)),
+    right: Number(rect.right.toFixed(2)),
+    bottom: Number(rect.bottom.toFixed(2)),
+});
+
 const updateSizeState = (
     setSize: React.Dispatch<React.SetStateAction<ElementSize>>,
     nextSize: ElementSize,
@@ -93,12 +111,22 @@ export interface ZoomPanViewportProps {
     fitInsets?: ZoomPanViewportFitInsets;
     dragBoundsPaddingRatioY?: number;
     panBoundsMode?: 'content' | 'free';
+    /** 只挡住拖拽 / 缩放输入，不得把镜头写回初始机位。回中只走 zoompan:reset-center 或 panToTarget。 */
     interactionDisabled?: boolean;
     panToTarget?: string | null;
+    panToTargetKey?: string | number | null;
     panToScale?: number;
     controlledViewport?: ZoomPanViewportState;
     onControlledViewportChange?: (viewport: ZoomPanViewportState) => void;
+    controlledViewportSchedule?: 'sync' | 'animation-frame';
     onUserViewportChange?: () => void;
+    inertiaEnabled?: boolean;
+    /**
+     * Keep high-frequency drag/inertia transforms on the DOM node instead of
+     * committing React state for every pointer sample. Controlled viewports
+     * intentionally stay on the semantic React path.
+     */
+    imperativeRender?: boolean;
     coordinateSize?: ElementSize;
     clampViewport?: (viewport: ZoomPanViewportState) => ZoomPanViewportState;
     getZoomAnchorPosition?: (args: ZoomPanViewportZoomAnchorArgs) => ZoomPanViewportPosition;
@@ -131,10 +159,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     panBoundsMode = 'content',
     interactionDisabled = false,
     panToTarget,
+    panToTargetKey,
     panToScale,
     controlledViewport,
     onControlledViewportChange,
+    controlledViewportSchedule = 'sync',
     onUserViewportChange,
+    inertiaEnabled = true,
+    imperativeRender = false,
     coordinateSize,
     clampViewport,
     getZoomAnchorPosition,
@@ -160,6 +192,15 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
     const pointerStartRef = useRef({ x: 0, y: 0 });
     const positionStartRef = useRef({ x: 0, y: 0 });
+    const lastPointerSampleRef = useRef({
+        clientX: 0,
+        clientY: 0,
+        timestamp: 0,
+        position: { x: 0, y: 0 },
+    });
+    const dragStartedRef = useRef(false);
+    const velocityRef = useRef({ x: 0, y: 0 });
+    const inertiaFrameRef = useRef<number | null>(null);
     const isPointerDownRef = useRef(false);
     const pinchStartDistanceRef = useRef<number | null>(null);
     const pinchStartZoomRef = useRef<number | null>(null);
@@ -181,6 +222,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const isControlled = controlledViewport != null && onControlledViewportChange != null;
     const activeZoomLevel = controlledViewport?.zoomLevel ?? zoomLevel;
     const activePosition = controlledViewport?.position ?? position;
+    const prefersReducedMotion = typeof window !== 'undefined'
+        && typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const fitInsetTop = Math.max(0, fitInsets?.top ?? 0);
     const fitInsetRight = Math.max(0, fitInsets?.right ?? 0);
     const fitInsetBottom = Math.max(0, fitInsets?.bottom ?? 0);
@@ -233,7 +277,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     const shouldShowScaleBadge = scaleBadgeVisibility === 'interaction'
         ? isScaleBadgeVisible
         : isScaleBadgeVisible || !isAtDefaultZoom || scaleBadgeAddon != null;
-    const panInstructionKey = panToTarget ? `${panToTarget}:${panToScale ?? 'current'}` : null;
+    const panInstructionKey = panToTarget
+        ? `${panToTargetKey ?? panToTarget}:${panToScale ?? 'current'}`
+        : null;
     const panTargetState = panToTarget
         ? settledPanInstructionKey === panInstructionKey && !isAnimating
             ? 'settled'
@@ -252,6 +298,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             window.clearTimeout(animationTimerRef.current);
             animationTimerRef.current = null;
         }
+    }, []);
+
+    const cancelInertia = useCallback(() => {
+        if (inertiaFrameRef.current !== null) {
+            window.cancelAnimationFrame(inertiaFrameRef.current);
+            inertiaFrameRef.current = null;
+        }
+        velocityRef.current = { x: 0, y: 0 };
     }, []);
 
     const clearSuppressClickResetTimer = useCallback(() => {
@@ -302,8 +356,9 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             clearScaleBadgeTimer();
             clearAnimationTimer();
             clearSuppressClickResetTimer();
+            cancelInertia();
         };
-    }, [clearAnimationTimer, clearScaleBadgeTimer, clearSuppressClickResetTimer]);
+    }, [cancelInertia, clearAnimationTimer, clearScaleBadgeTimer, clearSuppressClickResetTimer]);
 
     const clampPosition = useCallback((x: number, y: number, nextScale = scale) => {
         if (panBoundsMode === 'free') {
@@ -344,50 +399,139 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         };
     }, [baseScale, clampPosition, clampViewport, clampZoomLevel]);
 
+    const latestViewportRef = useRef<ZoomPanViewportState>({
+        zoomLevel: activeZoomLevel,
+        position: activePosition,
+    });
+    const renderedViewportRef = useRef<ZoomPanViewportState>({
+        zoomLevel: activeZoomLevel,
+        position: activePosition,
+    });
+    const useImperativeRender = imperativeRender && renderContentTransform && !isControlled;
+    const useLatestViewportForInteraction = useImperativeRender
+        || (isControlled && controlledViewportSchedule === 'animation-frame');
+    const controlledViewportFrameRef = useRef<number | null>(null);
+    const pendingControlledViewportRef = useRef<ZoomPanViewportState | null>(null);
+
+    const scheduleControlledViewportChange = useCallback((nextViewport: ZoomPanViewportState) => {
+        if (!onControlledViewportChange) return;
+        if (controlledViewportSchedule === 'sync') {
+            onControlledViewportChange(nextViewport);
+            return;
+        }
+
+        pendingControlledViewportRef.current = nextViewport;
+        if (controlledViewportFrameRef.current !== null) return;
+        controlledViewportFrameRef.current = window.requestAnimationFrame(() => {
+            controlledViewportFrameRef.current = null;
+            const pendingViewport = pendingControlledViewportRef.current;
+            pendingControlledViewportRef.current = null;
+            if (pendingViewport) {
+                onControlledViewportChange(pendingViewport);
+            }
+        });
+    }, [controlledViewportSchedule, onControlledViewportChange]);
+
+    useEffect(() => () => {
+        if (controlledViewportFrameRef.current !== null) {
+            window.cancelAnimationFrame(controlledViewportFrameRef.current);
+        }
+        controlledViewportFrameRef.current = null;
+        pendingControlledViewportRef.current = null;
+    }, []);
+
+    const renderViewportImperatively = useCallback((
+        nextViewport: ZoomPanViewportState,
+        options?: { transition?: string; willChange?: React.CSSProperties['willChange'] },
+    ) => {
+        renderedViewportRef.current = nextViewport;
+        if (!useImperativeRender) return;
+
+        const content = contentRef.current;
+        if (!content) return;
+
+        const renderedPosition = panBoundsMode === 'free'
+            ? {
+                x: nextViewport.position.x + fitCenterOffset.x,
+                y: nextViewport.position.y + fitCenterOffset.y,
+            }
+            : nextViewport.position;
+        const renderedScale = baseScale * nextViewport.zoomLevel;
+        content.style.transition = options?.transition ?? 'none';
+        content.style.willChange = options?.willChange ?? 'transform';
+        content.style.transform = `translate(${renderedPosition.x}px, ${renderedPosition.y}px) scale(${renderedScale})`;
+    }, [baseScale, fitCenterOffset.x, fitCenterOffset.y, panBoundsMode, useImperativeRender]);
+
     const applyViewport = useCallback((nextViewport: ZoomPanViewportState) => {
         const clampedViewport = clampViewportState(nextViewport);
+        latestViewportRef.current = clampedViewport;
+        renderedViewportRef.current = clampedViewport;
         if (isControlled) {
-            onControlledViewportChange?.(clampedViewport);
+            scheduleControlledViewportChange(clampedViewport);
             return clampedViewport;
         }
         setZoomLevel(clampedViewport.zoomLevel);
         setPosition(clampedViewport.position);
         return clampedViewport;
-    }, [clampViewportState, isControlled, onControlledViewportChange]);
+    }, [clampViewportState, isControlled, scheduleControlledViewportChange]);
 
     const clampedPosition = clampViewport ? activePosition : clampPosition(activePosition.x, activePosition.y, scale);
+    const clampedPositionX = clampedPosition.x;
+    const clampedPositionY = clampedPosition.y;
+    const latestApplyViewportRef = useRef<typeof applyViewport | null>(null);
+
+    useEffect(() => {
+        if (!isPointerDownRef.current && inertiaFrameRef.current === null) {
+            const nextViewport = {
+                zoomLevel: activeZoomLevel,
+                position: { x: clampedPositionX, y: clampedPositionY },
+            };
+            latestViewportRef.current = nextViewport;
+            renderedViewportRef.current = nextViewport;
+        }
+        latestApplyViewportRef.current = applyViewport;
+    }, [activeZoomLevel, applyViewport, clampedPositionX, clampedPositionY, isControlled]);
 
     const convertDeltaToViewportUnits = useCallback((deltaX: number, deltaY: number) => {
-        if (!coordinateSize) {
+        const container = containerRef.current;
+        const rect = container?.getBoundingClientRect();
+        if (!container || !rect || rect.width <= 0 || rect.height <= 0) {
             return { x: deltaX, y: deltaY };
         }
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect || rect.width <= 0 || rect.height <= 0) {
-            return { x: deltaX, y: deltaY };
-        }
+        // 触摸 / 指针使用屏幕像素，position 使用未变换的画布坐标。
+        // 壳层缩放也需要换算，不能只处理显式 coordinateSize 的地图。
+        const width = coordinateSize?.width ?? container.offsetWidth;
+        const height = coordinateSize?.height ?? container.offsetHeight;
         return {
-            x: (deltaX / rect.width) * coordinateSize.width,
-            y: (deltaY / rect.height) * coordinateSize.height,
+            x: width > 0 ? (deltaX / rect.width) * width : deltaX,
+            y: height > 0 ? (deltaY / rect.height) * height : deltaY,
         };
     }, [coordinateSize]);
 
     const resolveZoomPosition = useCallback((nextZoomLevel: number, pointer?: TouchPoint) => {
+        const currentViewport = latestViewportRef.current;
+        const currentPosition = useLatestViewportForInteraction
+            ? currentViewport.position
+            : clampedPosition;
+        const currentZoomLevel = useLatestViewportForInteraction
+            ? currentViewport.zoomLevel
+            : activeZoomLevel;
         if (!pointer || !getZoomAnchorPosition) {
-            return clampedPosition;
+            return currentPosition;
         }
         const containerRect = containerRef.current?.getBoundingClientRect();
         if (!containerRect || containerRect.width <= 0 || containerRect.height <= 0) {
             return clampedPosition;
         }
         return getZoomAnchorPosition({
-            position: clampedPosition,
-            zoomLevel: activeZoomLevel,
+            position: currentPosition,
+            zoomLevel: currentZoomLevel,
             nextZoomLevel,
             pointer,
             containerRect,
             coordinateSize,
         });
-    }, [activeZoomLevel, clampedPosition, coordinateSize, getZoomAnchorPosition]);
+    }, [activeZoomLevel, clampedPosition, coordinateSize, getZoomAnchorPosition, useLatestViewportForInteraction]);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -459,34 +603,193 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         };
     }, [syncContentSize]);
 
+    const startPointerInteraction = useCallback((clientX: number, clientY: number) => {
+        cancelInertia();
+        clearAnimationTimer();
+        setIsAnimating(false);
+        dragStartedRef.current = false;
+        isPointerDownRef.current = true;
+        const currentPosition = latestViewportRef.current.position;
+        pointerStartRef.current = { x: clientX, y: clientY };
+        positionStartRef.current = { x: currentPosition.x, y: currentPosition.y };
+        lastPointerSampleRef.current = {
+            clientX,
+            clientY,
+            timestamp: Date.now(),
+            position: { x: currentPosition.x, y: currentPosition.y },
+        };
+    }, [cancelInertia, clearAnimationTimer]);
+
     const handleMouseDown = useCallback((event: React.MouseEvent) => {
         if (event.button !== 0 || interactionDisabled) return;
 
-        isPointerDownRef.current = true;
-        pointerStartRef.current = { x: event.clientX, y: event.clientY };
-        positionStartRef.current = { x: clampedPosition.x, y: clampedPosition.y };
-    }, [clampedPosition.x, clampedPosition.y, interactionDisabled]);
+        startPointerInteraction(event.clientX, event.clientY);
+    }, [interactionDisabled, startPointerInteraction]);
 
     const handleTouchStart = useCallback((event: React.TouchEvent) => {
         if (interactionDisabled) return;
 
         if (event.touches.length === 1) {
             const touch = event.touches[0];
-            isPointerDownRef.current = true;
             pinchStartDistanceRef.current = null;
             pinchStartZoomRef.current = null;
-            pointerStartRef.current = { x: touch.clientX, y: touch.clientY };
-            positionStartRef.current = { x: clampedPosition.x, y: clampedPosition.y };
+            startPointerInteraction(touch.clientX, touch.clientY);
             return;
         }
 
         if (event.touches.length === 2) {
+            cancelInertia();
+            clearAnimationTimer();
             isPointerDownRef.current = false;
+            dragStartedRef.current = false;
             setIsDragging(false);
             pinchStartDistanceRef.current = getTouchDistance(event.touches[0], event.touches[1]);
-            pinchStartZoomRef.current = activeZoomLevel;
+            pinchStartZoomRef.current = useLatestViewportForInteraction
+                ? latestViewportRef.current.zoomLevel
+                : activeZoomLevel;
         }
-    }, [activeZoomLevel, clampedPosition.x, clampedPosition.y, interactionDisabled]);
+    }, [activeZoomLevel, cancelInertia, clearAnimationTimer, interactionDisabled, startPointerInteraction, useLatestViewportForInteraction]);
+
+    const applyDragPosition = useCallback((clientX: number, clientY: number) => {
+        if (!isPointerDownRef.current) return false;
+
+        const dx = clientX - pointerStartRef.current.x;
+        const dy = clientY - pointerStartRef.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance <= DRAG_THRESHOLD) return false;
+
+        clearAnimationTimer();
+        suppressNextClickRef.current = true;
+        setIsDragging(true);
+        setIsAnimating(false);
+
+        const viewportDelta = convertDeltaToViewportUnits(dx, dy);
+        markUserViewportChanged();
+        const currentZoomLevel = useLatestViewportForInteraction
+            ? latestViewportRef.current.zoomLevel
+            : activeZoomLevel;
+        const nextViewport = clampViewportState({
+            zoomLevel: currentZoomLevel,
+            position: {
+                x: positionStartRef.current.x + viewportDelta.x,
+                y: positionStartRef.current.y + viewportDelta.y,
+            },
+        });
+        latestViewportRef.current = nextViewport;
+        if (useImperativeRender) {
+            renderViewportImperatively(nextViewport);
+        } else {
+            applyViewport(nextViewport);
+        }
+        const now = Date.now();
+        if (!dragStartedRef.current) {
+            dragStartedRef.current = true;
+            velocityRef.current = { x: 0, y: 0 };
+        } else {
+            const previousSample = lastPointerSampleRef.current;
+            const elapsedMs = Math.max(1, now - previousSample.timestamp);
+            const sampleVelocity = elapsedMs <= 160
+                ? {
+                    x: ((nextViewport.position.x - previousSample.position.x) / elapsedMs) * 1000,
+                    y: ((nextViewport.position.y - previousSample.position.y) / elapsedMs) * 1000,
+                }
+                : { x: 0, y: 0 };
+            velocityRef.current = {
+                x: sampleVelocity.x * INERTIA_VELOCITY_SMOOTHING
+                    + velocityRef.current.x * (1 - INERTIA_VELOCITY_SMOOTHING),
+                y: sampleVelocity.y * INERTIA_VELOCITY_SMOOTHING
+                    + velocityRef.current.y * (1 - INERTIA_VELOCITY_SMOOTHING),
+            };
+        }
+        lastPointerSampleRef.current = {
+            clientX,
+            clientY,
+            timestamp: now,
+            position: nextViewport.position,
+        };
+        return true;
+    }, [activeZoomLevel, applyViewport, clampViewportState, clearAnimationTimer, convertDeltaToViewportUnits, markUserViewportChanged, renderViewportImperatively, useImperativeRender, useLatestViewportForInteraction]);
+
+    const startInertia = useCallback(() => {
+        if (!inertiaEnabled || prefersReducedMotion) return false;
+
+        const initialVelocity = velocityRef.current;
+        if (Math.hypot(initialVelocity.x, initialVelocity.y) < INERTIA_MIN_SPEED) return false;
+
+        let previousTimestamp: number | null = null;
+        const advanceInertia = (timestamp: number) => {
+            const currentVelocity = velocityRef.current;
+            const speed = Math.hypot(currentVelocity.x, currentVelocity.y);
+            if (speed < INERTIA_MIN_SPEED) {
+                inertiaFrameRef.current = null;
+                velocityRef.current = { x: 0, y: 0 };
+                if (useImperativeRender) {
+                    applyViewport(latestViewportRef.current);
+                }
+                return;
+            }
+
+            const elapsedMs = previousTimestamp === null
+                ? 16.67
+                : Math.min(INERTIA_MAX_FRAME_MS, Math.max(1, timestamp - previousTimestamp));
+            previousTimestamp = timestamp;
+
+            const currentViewport = latestViewportRef.current;
+            const nextViewport = clampViewportState({
+                zoomLevel: currentViewport.zoomLevel,
+                position: {
+                    x: currentViewport.position.x + currentVelocity.x * elapsedMs / 1000,
+                    y: currentViewport.position.y + currentVelocity.y * elapsedMs / 1000,
+                },
+            });
+
+            latestViewportRef.current = nextViewport;
+            if (useImperativeRender) {
+                renderViewportImperatively(nextViewport);
+            } else {
+                latestApplyViewportRef.current?.(nextViewport);
+            }
+            const decay = Math.exp(-INERTIA_DAMPING * elapsedMs / 1000);
+            velocityRef.current = {
+                x: currentVelocity.x * decay,
+                y: currentVelocity.y * decay,
+            };
+
+            if (
+                Math.abs(nextViewport.position.x - currentViewport.position.x) < 0.01
+                && Math.abs(nextViewport.position.y - currentViewport.position.y) < 0.01
+            ) {
+                inertiaFrameRef.current = null;
+                velocityRef.current = { x: 0, y: 0 };
+                if (useImperativeRender) {
+                    applyViewport(nextViewport);
+                }
+                return;
+            }
+
+            inertiaFrameRef.current = window.requestAnimationFrame(advanceInertia);
+        };
+
+        inertiaFrameRef.current = window.requestAnimationFrame(advanceInertia);
+        return true;
+    }, [applyViewport, clampViewportState, inertiaEnabled, prefersReducedMotion, renderViewportImperatively, useImperativeRender]);
+
+    const finishPointerInteraction = useCallback(() => {
+        isPointerDownRef.current = false;
+        pinchStartDistanceRef.current = null;
+        pinchStartZoomRef.current = null;
+        armSuppressNextClickReset();
+        setIsDragging(false);
+        const shouldStartInertia = dragStartedRef.current;
+        dragStartedRef.current = false;
+        if (shouldStartInertia) {
+            if (!startInertia()) {
+                if (useImperativeRender) {
+                    applyViewport(latestViewportRef.current);
+                }
+            }
+        }
+    }, [applyViewport, armSuppressNextClickReset, startInertia, useImperativeRender]);
 
     const handleTouchMove = useCallback((event: React.TouchEvent) => {
         if (interactionDisabled) return;
@@ -513,35 +816,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         }
 
         if (event.touches.length !== 1 || !isPointerDownRef.current) return;
-
-        const touch = event.touches[0];
-        const dx = touch.clientX - pointerStartRef.current.x;
-        const dy = touch.clientY - pointerStartRef.current.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance <= DRAG_THRESHOLD) return;
-
-        event.preventDefault();
-        clearAnimationTimer();
-        suppressNextClickRef.current = true;
-        setIsDragging(true);
-        setIsAnimating(false);
-
-        const viewportDelta = convertDeltaToViewportUnits(dx, dy);
-        markUserViewportChanged();
-        applyViewport({
-            zoomLevel: activeZoomLevel,
-            position: {
-                x: positionStartRef.current.x + viewportDelta.x,
-                y: positionStartRef.current.y + viewportDelta.y,
-            },
-        });
+        if (applyDragPosition(event.touches[0].clientX, event.touches[0].clientY)) {
+            event.preventDefault();
+        }
     }, [
-        activeZoomLevel,
         applyViewport,
+        applyDragPosition,
         clampZoomLevel,
         clearAnimationTimer,
-        convertDeltaToViewportUnits,
         interactionDisabled,
         markUserViewportChanged,
         resolveZoomPosition,
@@ -553,51 +835,25 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
 
         if (event.touches.length === 1) {
             const touch = event.touches[0];
-            isPointerDownRef.current = true;
-            pointerStartRef.current = { x: touch.clientX, y: touch.clientY };
-            positionStartRef.current = { ...clampedPosition };
+            dragStartedRef.current = false;
+            startPointerInteraction(touch.clientX, touch.clientY);
             pinchStartDistanceRef.current = null;
             pinchStartZoomRef.current = null;
             return;
         }
 
-        isPointerDownRef.current = false;
-        pinchStartDistanceRef.current = null;
-        pinchStartZoomRef.current = null;
-        armSuppressNextClickReset();
-        setIsDragging(false);
-    }, [armSuppressNextClickReset, clampedPosition]);
+        finishPointerInteraction();
+    }, [finishPointerInteraction, startPointerInteraction]);
 
     useEffect(() => {
         const handleGlobalMouseMove = (event: MouseEvent) => {
             if (!isPointerDownRef.current) return;
 
-            const dx = event.clientX - pointerStartRef.current.x;
-            const dy = event.clientY - pointerStartRef.current.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance <= DRAG_THRESHOLD) return;
-
-            clearAnimationTimer();
-            suppressNextClickRef.current = true;
-            setIsDragging(true);
-            setIsAnimating(false);
-
-            const viewportDelta = convertDeltaToViewportUnits(dx, dy);
-            markUserViewportChanged();
-            applyViewport({
-                zoomLevel: activeZoomLevel,
-                position: {
-                    x: positionStartRef.current.x + viewportDelta.x,
-                    y: positionStartRef.current.y + viewportDelta.y,
-                },
-            });
+            applyDragPosition(event.clientX, event.clientY);
         };
 
         const handleGlobalMouseUp = () => {
-            isPointerDownRef.current = false;
-            armSuppressNextClickReset();
-            setIsDragging(false);
+            finishPointerInteraction();
         };
 
         window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -607,21 +863,25 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
             window.removeEventListener('mousemove', handleGlobalMouseMove);
             window.removeEventListener('mouseup', handleGlobalMouseUp);
         };
-    }, [activeZoomLevel, applyViewport, armSuppressNextClickReset, clearAnimationTimer, convertDeltaToViewportUnits, markUserViewportChanged]);
+    }, [applyDragPosition, finishPointerInteraction]);
 
     const handleWheel = useCallback((event: WheelEvent) => {
         if (interactionDisabled) return;
 
         event.preventDefault();
+        cancelInertia();
         clearAnimationTimer();
         setIsAnimating(false);
 
+        const currentZoomLevel = useLatestViewportForInteraction
+            ? latestViewportRef.current.zoomLevel
+            : activeZoomLevel;
         const nextZoomLevel = clampZoomLevel(
             wheelZoomFactor
-                ? activeZoomLevel * (event.deltaY < 0 ? wheelZoomFactor : 1 / wheelZoomFactor)
-                : activeZoomLevel + (event.deltaY > 0 ? -0.1 : 0.1),
+                ? currentZoomLevel * (event.deltaY < 0 ? wheelZoomFactor : 1 / wheelZoomFactor)
+                : currentZoomLevel + (event.deltaY > 0 ? -0.1 : 0.1),
         );
-        if (Math.abs(nextZoomLevel - activeZoomLevel) < 0.001) return;
+        if (Math.abs(nextZoomLevel - currentZoomLevel) < 0.001) return;
 
         const nextPosition = resolveZoomPosition(nextZoomLevel, {
             clientX: event.clientX,
@@ -636,12 +896,14 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     }, [
         activeZoomLevel,
         applyViewport,
+        cancelInertia,
         clampZoomLevel,
         clearAnimationTimer,
         interactionDisabled,
         markUserViewportChanged,
         resolveZoomPosition,
         revealScaleBadge,
+        useLatestViewportForInteraction,
         wheelZoomFactor,
     ]);
 
@@ -654,105 +916,235 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
     }, [handleWheel]);
 
     useEffect(() => {
-        if (!interactionDisabled || panToTarget) return undefined;
-        let frameId: number | null = window.requestAnimationFrame(() => {
+        const container = containerRef.current;
+        if (!container) return undefined;
+
+        const handleCancelInertia = () => {
+            cancelInertia();
+        };
+        const handleResetCenter = () => {
+            cancelInertia();
             clearAnimationTimer();
             hideScaleBadge();
-            setIsAnimating(true);
-            applyViewport({
+            setIsAnimating(false);
+            const nextViewport = applyViewport({
                 zoomLevel: initialScale,
                 position: { x: 0, y: 0 },
             });
-            animationTimerRef.current = window.setTimeout(() => {
-                setIsAnimating(false);
-                animationTimerRef.current = null;
-            }, 400);
-            frameId = null;
-        });
-
-        return () => {
-            if (frameId !== null) {
-                window.cancelAnimationFrame(frameId);
+            // Mage Wars 用 imperativeRender：transform 不走 React style。
+            // 只 setState 不会重跑 layout effect，镜头会停在拖拽后的偏移上。
+            if (useImperativeRender && nextViewport) {
+                renderViewportImperatively(nextViewport);
             }
-            clearAnimationTimer();
         };
-    }, [applyViewport, clearAnimationTimer, hideScaleBadge, initialScale, interactionDisabled, panToTarget]);
+
+        container.addEventListener(ZOOM_PAN_CANCEL_INERTIA_EVENT, handleCancelInertia);
+        container.addEventListener(ZOOM_PAN_RESET_CENTER_EVENT, handleResetCenter);
+        return () => {
+            container.removeEventListener(ZOOM_PAN_CANCEL_INERTIA_EVENT, handleCancelInertia);
+            container.removeEventListener(ZOOM_PAN_RESET_CENTER_EVENT, handleResetCenter);
+        };
+    }, [
+        applyViewport,
+        cancelInertia,
+        clearAnimationTimer,
+        hideScaleBadge,
+        initialScale,
+        renderViewportImperatively,
+        useImperativeRender,
+    ]);
 
     useEffect(() => {
         if (!panToTarget) {
             handledPanInstructionRef.current = null;
-            return undefined;
+            const clearFrameId = window.requestAnimationFrame(() => {
+                setSettledPanInstructionKey(null);
+            });
+            return () => window.cancelAnimationFrame(clearFrameId);
         }
         if (!contentRef.current || !containerRef.current) return undefined;
         if (!containerSize.width || !containerSize.height || !contentSize.width || !contentSize.height) return undefined;
 
         if (handledPanInstructionRef.current === panInstructionKey) return undefined;
 
-        const rafId = requestAnimationFrame(() => {
+        let cancelled = false;
+        let retryFrameId: number | null = null;
+        let retryCount = 0;
+
+        const resolveTargetAndPan = () => {
+            if (cancelled) return;
             const contentEl = contentRef.current;
             const containerEl = containerRef.current;
             const targetEl = contentEl?.querySelector(
                 `[data-zoom-pan-target="${panToTarget}"], [data-tutorial-id="${panToTarget}"]`,
             ) as HTMLElement | null;
-            if (!contentEl || !containerEl || !targetEl) return;
+            if (!contentEl || !containerEl || !targetEl) {
+                if (retryCount < 60) {
+                    retryCount += 1;
+                    retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+                }
+                return;
+            }
 
             const contentWidth = contentEl.offsetWidth;
             const contentHeight = contentEl.offsetHeight;
-            if (!contentWidth || !contentHeight) return;
+            const targetRect = targetEl.getBoundingClientRect();
+            if (!contentWidth || !contentHeight || targetRect.width <= 0 || targetRect.height <= 0) {
+                if (retryCount < 60) {
+                    retryCount += 1;
+                    retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+                }
+                return;
+            }
 
             const currentZoomLevel = activeZoomLevel;
             const targetZoomLevel = panToScale != null
                 ? clampZoomLevel(panToScale)
                 : currentZoomLevel;
-            const targetScale = baseScale * targetZoomLevel;
-
-            containerEl.scrollTop = 0;
-            containerEl.scrollLeft = 0;
-
-            const savedTransform = contentEl.style.transform;
-            const savedTransition = contentEl.style.transition;
-            contentEl.style.transition = 'none';
-            contentEl.style.transform = 'translate(0px, 0px) scale(1)';
-            contentEl.getBoundingClientRect();
-
-            const contentRect = contentEl.getBoundingClientRect();
             const containerRect = containerEl.getBoundingClientRect();
-            const elementRect = targetEl.getBoundingClientRect();
-            const targetCenterX = (elementRect.left + elementRect.right) / 2 - contentRect.left;
-            const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - contentRect.top;
-            const contentOffsetX = contentRect.left - containerRect.left;
-            const contentOffsetY = contentRect.top - containerRect.top;
+            const elementRect = targetRect;
+            // `containerSize` / `fitCenterOffset` are measured in the viewport's
+            // layout coordinate system. On mobile the whole board shell can be
+            // transformed, so focus math must first convert them to the current
+            // screen coordinate system represented by `getBoundingClientRect()`.
+            const shellScaleX = containerSize.width > 0
+                ? containerRect.width / containerSize.width
+                : 1;
+            const shellScaleY = containerSize.height > 0
+                ? containerRect.height / containerSize.height
+                : shellScaleX;
+            const viewportCenterX = containerRect.width / 2 + fitCenterOffset.x * shellScaleX;
+            const viewportCenterY = containerRect.height / 2 + fitCenterOffset.y * shellScaleY;
+            const targetCenterScreen = {
+                x: (elementRect.left + elementRect.right) / 2,
+                y: (elementRect.top + elementRect.bottom) / 2,
+            };
+            const viewportCenterScreen = {
+                x: containerRect.left + viewportCenterX,
+                y: containerRect.top + viewportCenterY,
+            };
+            const screenDelta = {
+                x: viewportCenterScreen.x - targetCenterScreen.x,
+                y: viewportCenterScreen.y - targetCenterScreen.y,
+            };
 
-            contentEl.style.transform = savedTransform;
-            contentEl.getBoundingClientRect();
-            contentEl.style.transition = savedTransition;
-
-            const contentCenterX = contentWidth / 2;
-            const contentCenterY = contentHeight / 2;
-            const viewportCenterX = containerSize.width / 2;
-            const viewportCenterY = containerSize.height / 2;
-            const targetTx =
-                viewportCenterX -
-                (contentOffsetX +
-                    contentCenterX +
-                    (targetCenterX - contentCenterX) * targetScale);
-            const targetTy =
-                viewportCenterY -
-                (contentOffsetY +
-                    contentCenterY +
-                    (targetCenterY - contentCenterY) * targetScale);
-            const targetPosition = panBoundsMode === 'free'
-                ? {
-                    x: targetTx - fitCenterOffset.x,
-                    y: targetTy - fitCenterOffset.y,
-                }
-                : {
-                    x: targetTx,
-                    y: targetTy,
+            let targetPosition;
+            if (panToScale == null) {
+                // The target is already rendered at the user's current zoom and pan.
+                // Move by the observed screen-space center delta so nested transforms
+                // and portal/layout offsets cannot be counted twice.
+                const targetCenterX = (elementRect.left + elementRect.right) / 2 - containerRect.left;
+                const targetCenterY = (elementRect.top + elementRect.bottom) / 2 - containerRect.top;
+                const deltaX = viewportCenterX - targetCenterX;
+                const deltaY = viewportCenterY - targetCenterY;
+                const renderedScale = Math.max(
+                    0.01,
+                    baseScale * currentZoomLevel * Math.max(0.01, shellScaleX),
+                );
+                const renderedTranslateMatch = contentEl.style.transform.match(
+                    /translate\(\s*(-?[\d.]+)px\s*,\s*(-?[\d.]+)px\s*\)/,
+                );
+                const currentRenderPosition = renderedTranslateMatch
+                    ? {
+                        x: Number.parseFloat(renderedTranslateMatch[1] ?? '0'),
+                        y: Number.parseFloat(renderedTranslateMatch[2] ?? '0'),
+                    }
+                    : {
+                        x: activePosition.x + (panBoundsMode === 'free' ? fitCenterOffset.x : 0),
+                        y: activePosition.y + (panBoundsMode === 'free' ? fitCenterOffset.y : 0),
+                    };
+                const currentPosition = panBoundsMode === 'free'
+                    ? {
+                        x: currentRenderPosition.x - fitCenterOffset.x,
+                        y: currentRenderPosition.y - fitCenterOffset.y,
+                    }
+                    : currentRenderPosition;
+                targetPosition = {
+                    // position is applied before scale(); convert the observed
+                    // screen-space correction back into pre-scale coordinates.
+                    x: currentPosition.x + deltaX / renderedScale,
+                    y: currentPosition.y + deltaY / renderedScale,
                 };
+            } else {
+                const savedTransform = contentEl.style.transform;
+                const savedTransition = contentEl.style.transition;
+                contentEl.style.transition = 'none';
+                contentEl.style.transform = 'translate(0px, 0px) scale(1)';
+                contentEl.getBoundingClientRect();
+
+                const contentRect = contentEl.getBoundingClientRect();
+                const resetElementRect = targetEl.getBoundingClientRect();
+                const targetCenterX = (resetElementRect.left + resetElementRect.right) / 2 - contentRect.left;
+                const targetCenterY = (resetElementRect.top + resetElementRect.bottom) / 2 - contentRect.top;
+                const contentOffsetX = contentRect.left - containerRect.left;
+                const contentOffsetY = contentRect.top - containerRect.top;
+
+                contentEl.style.transform = savedTransform;
+                contentEl.getBoundingClientRect();
+                contentEl.style.transition = savedTransition;
+
+                const contentCenterX = contentWidth / 2;
+                const contentCenterY = contentHeight / 2;
+                const targetTx =
+                    viewportCenterX -
+                    (contentOffsetX +
+                        contentCenterX +
+                        (targetCenterX - contentCenterX) * (baseScale * targetZoomLevel));
+                const targetTy =
+                    viewportCenterY -
+                    (contentOffsetY +
+                        contentCenterY +
+                        (targetCenterY - contentCenterY) * (baseScale * targetZoomLevel));
+                targetPosition = panBoundsMode === 'free'
+                    ? {
+                        x: targetTx - fitCenterOffset.x,
+                        y: targetTy - fitCenterOffset.y,
+                    }
+                    : {
+                        x: targetTx,
+                        y: targetTy,
+                    };
+            }
             const nextViewport = clampViewportState({
                 zoomLevel: targetZoomLevel,
                 position: targetPosition,
+            });
+
+            logMobileRuntimeCritical('ZoomPanViewport', 'focus-apply', {
+                panToTarget,
+                panInstructionKey,
+                panToScale: panToScale ?? null,
+                panBoundsMode,
+                targetTestId: targetEl.dataset.testid ?? null,
+                activeZoomLevel,
+                targetZoomLevel,
+                baseScale,
+                shellScaleX,
+                shellScaleY,
+                containerSize: {
+                    width: containerSize.width,
+                    height: containerSize.height,
+                },
+                contentSize: {
+                    width: contentSize.width,
+                    height: contentSize.height,
+                },
+                containerRect: summarizeRect(containerRect),
+                targetRect: summarizeRect(elementRect),
+                contentTransformBefore: contentEl.style.transform,
+                activePosition: {
+                    x: activePosition.x,
+                    y: activePosition.y,
+                },
+                fitCenterOffset: {
+                    x: fitCenterOffset.x,
+                    y: fitCenterOffset.y,
+                },
+                viewportCenterScreen,
+                targetCenterScreen,
+                screenDelta,
+                targetPosition,
+                nextViewport,
             });
 
             clearAnimationTimer();
@@ -766,12 +1158,53 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
                 setIsAnimating(false);
                 setSettledPanInstructionKey(panInstructionKey);
                 animationTimerRef.current = null;
+                if (!cancelled) {
+                    const settledContainerRect = containerEl.getBoundingClientRect();
+                    const settledTargetRect = targetEl.getBoundingClientRect();
+                    const settledViewportCenter = {
+                        x: settledContainerRect.left
+                            + settledContainerRect.width / 2
+                            + fitCenterOffset.x * shellScaleX,
+                        y: settledContainerRect.top
+                            + settledContainerRect.height / 2
+                            + fitCenterOffset.y * shellScaleY,
+                    };
+                    const settledTargetCenter = {
+                        x: (settledTargetRect.left + settledTargetRect.right) / 2,
+                        y: (settledTargetRect.top + settledTargetRect.bottom) / 2,
+                    };
+                    logMobileRuntimeCritical('ZoomPanViewport', 'focus-settled', {
+                        panToTarget,
+                        panInstructionKey,
+                        targetTestId: targetEl.dataset.testid ?? null,
+                        settledContainerRect: summarizeRect(settledContainerRect),
+                        settledTargetRect: summarizeRect(settledTargetRect),
+                        settledViewportCenter,
+                        settledTargetCenter,
+                        settledResidual: {
+                            x: settledTargetCenter.x - settledViewportCenter.x,
+                            y: settledTargetCenter.y - settledViewportCenter.y,
+                        },
+                        contentTransformAfter: contentEl.style.transform,
+                        activePositionAfter: nextViewport.position,
+                        activeZoomLevelAfter: nextViewport.zoomLevel,
+                    });
+                }
             }, 400);
-        });
+        };
 
-        return () => cancelAnimationFrame(rafId);
+        retryFrameId = requestAnimationFrame(resolveTargetAndPan);
+
+        return () => {
+            cancelled = true;
+            if (retryFrameId !== null) {
+                cancelAnimationFrame(retryFrameId);
+            }
+        };
     }, [
         activeZoomLevel,
+        activePosition.x,
+        activePosition.y,
         applyViewport,
         baseScale,
         clampViewportState,
@@ -787,21 +1220,50 @@ export const ZoomPanViewport = forwardRef<HTMLDivElement, ZoomPanViewportProps>(
         panInstructionKey,
         panToScale,
         panToTarget,
+        panToTargetKey,
         revealScaleBadge,
     ]);
 
+    const renderedViewport = {
+        zoomLevel: activeZoomLevel,
+        position: clampedPosition,
+    };
     const contentRenderPosition = panBoundsMode === 'free'
         ? {
-            x: clampedPosition.x + fitCenterOffset.x,
-            y: clampedPosition.y + fitCenterOffset.y,
+            x: renderedViewport.position.x + fitCenterOffset.x,
+            y: renderedViewport.position.y + fitCenterOffset.y,
         }
-        : clampedPosition;
+        : renderedViewport.position;
+    const renderedScale = baseScale * renderedViewport.zoomLevel;
+
+    useLayoutEffect(() => {
+        if (!useImperativeRender) return;
+        const transition = prefersReducedMotion
+            ? 'none'
+            : inertiaFrameRef.current !== null || isDragging
+                ? 'none'
+                : isAnimating
+                    ? 'transform 350ms ease-out'
+                    : 'transform 75ms';
+        renderViewportImperatively(latestViewportRef.current, {
+            transition,
+            willChange: isDragging || isAnimating || inertiaFrameRef.current !== null
+                ? 'transform'
+                : 'auto',
+        });
+    }, [activeZoomLevel, baseScale, clampedPositionX, clampedPositionY, fitCenterOffset.x, fitCenterOffset.y, isAnimating, isDragging, panBoundsMode, prefersReducedMotion, renderViewportImperatively, useImperativeRender]);
 
     const contentTransformStyle: React.CSSProperties = renderContentTransform
         ? {
-            transform: `translate(${contentRenderPosition.x}px, ${contentRenderPosition.y}px) scale(${scale})`,
-            transition: isDragging ? 'none' : isAnimating ? 'transform 350ms ease-out' : 'transform 75ms',
-            willChange: isDragging || isAnimating ? 'transform' : 'auto',
+            ...(useImperativeRender
+                ? {}
+                : {
+                    transform: `translate(${contentRenderPosition.x}px, ${contentRenderPosition.y}px) scale(${renderedScale})`,
+                    transition: prefersReducedMotion
+                        ? 'none'
+                        : isDragging ? 'none' : isAnimating ? 'transform 350ms ease-out' : 'transform 75ms',
+                    willChange: isDragging || isAnimating ? 'transform' : 'auto',
+                }),
         }
         : {};
 

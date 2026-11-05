@@ -7,7 +7,10 @@ import { createCheatSystem, CHEAT_COMMANDS, type CheatResourceModifier } from '.
 import type { Command, MatchState, RandomFn } from '../../types';
 import { DEFAULT_TUTORIAL_STATE } from '../../types';
 
-type TestPlayer = { statusEffects: Record<string, number> };
+type TestPlayer = {
+    statusEffects: Record<string, number>;
+    tokens?: Record<string, number>;
+};
 
 type TestCore = {
     players: Record<string, TestPlayer>;
@@ -39,6 +42,20 @@ const createTestState = (core: TestCore): MatchState<TestCore> => ({
 });
 
 describe('CheatSystem', () => {
+    it('声明所有内建与游戏扩展作弊命令的管理员调试保护名单', () => {
+        const customCommandType = 'GAME_DEBUG_CUSTOM_COMMAND';
+        const system = createCheatSystem<TestCore>({
+            getResource: () => 0,
+            setResource: (core) => core,
+            customCommands: { [customCommandType]: () => undefined },
+        });
+
+        expect(system.adminDebugCommandTypes).toEqual(expect.arrayContaining([
+            ...Object.values(CHEAT_COMMANDS),
+            customCommandType,
+        ]));
+    });
+
     it('SET_STATUS: modifier 存在时更新状态效果数量', () => {
         const modifier: CheatResourceModifier<TestCore> = {
             getResource: () => 0,
@@ -79,6 +96,55 @@ describe('CheatSystem', () => {
 
         expect(result?.halt).toBe(true);
         expect(result?.state?.core.players['0'].statusEffects.knockdown).toBe(2);
+    });
+
+    it('ADD_TOKEN: modifier 存在时按当前数量累加 Token', () => {
+        const modifier: CheatResourceModifier<TestCore> = {
+            getResource: () => 0,
+            setResource: (core) => core,
+            getToken: (core, playerId, tokenId) => core.players[playerId]?.tokens?.[tokenId],
+            setToken: (core, playerId, tokenId, amount) => {
+                const player = core.players[playerId];
+                if (!player) return core;
+                return {
+                    ...core,
+                    players: {
+                        ...core.players,
+                        [playerId]: {
+                            ...player,
+                            tokens: {
+                                ...player.tokens,
+                                [tokenId]: amount,
+                            },
+                        },
+                    },
+                };
+            },
+        };
+        const system = createCheatSystem(modifier);
+        const state = createTestState({
+            players: {
+                '0': { statusEffects: {}, tokens: { lotus: 2 } },
+                '1': { statusEffects: {}, tokens: { lotus: 5 } },
+            },
+        });
+        const command: Command = {
+            type: CHEAT_COMMANDS.ADD_TOKEN,
+            playerId: '0',
+            payload: { playerId: '0', tokenId: 'lotus', delta: 3 },
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.state?.core.players['0'].tokens?.lotus).toBe(5);
+        expect(result?.state?.core.players['1'].tokens?.lotus).toBe(5);
     });
 
     it('SET_STATUS: modifier 缺失时不处理命令', () => {

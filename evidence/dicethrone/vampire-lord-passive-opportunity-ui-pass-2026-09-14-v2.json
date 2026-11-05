@@ -1,0 +1,56 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "system",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "攻击造成伤害后，鲜血之力 4 档只通过当前弹窗承载暂停原因和主动作，右侧不再出现并列小按钮",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言弹窗标题、攻击后可选能力、本次攻击造成 7 点伤害、4 鲜血之力、发动吸血治疗按钮可见且可用，并断言 4 档常驻按钮数量为 0",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档应通过攻击后弹窗按已造成伤害治疗并收口\\吸血鬼领主-鲜血之力攻击后治疗弹窗-使用前.jpg"
+      ]
+    },
+    {
+      "requirement": "点击发动吸血治疗后，消耗 4 鲜血之力，按已造成 7 点伤害治疗，并进入主要阶段 2",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 phase=main2、pendingAttack 清空、鲜血之力 4->0、HP 38->45、治疗和消耗事件出现，且 4 档常驻按钮仍不存在",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档应通过攻击后弹窗按已造成伤害治疗并收口\\吸血鬼领主-鲜血之力治疗后收口.jpg"
+      ]
+    },
+    {
+      "requirement": "玩家不发动时必须能在同一窗口继续，不消耗资源也不治疗，并进入主要阶段 2",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言点击不发动继续后 phase=main2、pendingAttack 清空、鲜血之力仍为 4、HP 仍为 38、无治疗事件，且 4 档常驻按钮不存在",
+        "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档攻击后弹窗允许不发动并继续收口\\吸血鬼领主-鲜血之力不发动后进入主要阶段2.jpg"
+      ]
+    },
+    {
+      "requirement": "项目规范记录：一次性可选能力暂停不能让常驻小按钮成为并列主入口",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/rule-driven-interaction-design.md",
+        ".spec/knowledge/standards/ui-change-gates.md",
+        "npm run spec:lint: OK"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档应通过攻击后弹窗按已造成伤害治疗并收口\\吸血鬼领主-鲜血之力攻击后治疗弹窗-使用前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档应通过攻击后弹窗按已造成伤害治疗并收口\\吸血鬼领主-鲜血之力治疗后收口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档攻击后弹窗允许不发动并继续收口\\吸血鬼领主-鲜血之力不发动后进入主要阶段2.jpg"
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-passive-opportunity-ui-pass-2026-09-14-v2\\00-sequence-index.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-passive-opportunity-ui-pass-2026-09-14-v2\\01-labeled-吸血鬼领主-鲜血之力攻击后治疗弹窗-使用前.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-passive-opportunity-ui-pass-2026-09-14-v2\\02-labeled-吸血鬼领主-鲜血之力治疗后收口.png",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\vampire-lord-passive-opportunity-ui-pass-2026-09-14-v2\\03-labeled-吸血鬼领主-鲜血之力不发动后进入主要阶段2.png"
+  ]
+}

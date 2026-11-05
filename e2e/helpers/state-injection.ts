@@ -46,6 +46,17 @@ export interface TestMatchAccess {
     credentials: string;
 }
 
+export interface StateSyncExpectation {
+    phase?: string;
+    interactionId?: string;
+    responseWindowId?: string;
+}
+
+export interface StateInjectionReceipt {
+    stateID: number;
+    randomCursor: number;
+}
+
 async function resolveTestMatchAccess(
     matchId: string,
     page?: Page,
@@ -115,24 +126,35 @@ export async function injectMatchState(
     state: MatchState<unknown>,
     page?: Page,
     access?: TestMatchAccess,
-): Promise<void> {
+    options?: { randomCursor?: number },
+): Promise<StateInjectionReceipt> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
     const testApiBase = await resolveTestApiBase(page);
     const response = await fetch(`${testApiBase}/test/inject-state`, {
         method: 'POST',
         headers: buildTestHeaders(resolvedAccess),
-        body: JSON.stringify({ matchId, state }),
+        body: JSON.stringify({ matchId, state, randomCursor: options?.randomCursor }),
     });
 
     if (!response.ok) {
         const error = await response.json();
         throw new Error(`State injection failed: ${JSON.stringify(error)}`);
     }
+    const result = await response.json() as { _stateID?: unknown; randomCursor?: unknown };
+    if (typeof result._stateID !== 'number' || typeof result.randomCursor !== 'number') {
+        throw new Error(`State injection response missing authoritative metadata: ${JSON.stringify(result)}`);
+    }
 
     // 如果提供了 page，等待客户端同步完成
     if (page) {
-        await waitForStateSync(page, 5000);
+        await waitForStateSync(page, 5000, {
+            phase: state.sys?.phase,
+            interactionId: state.sys?.interaction?.current?.id,
+            responseWindowId: state.sys?.responseWindow?.current?.id,
+        });
     }
+
+    return { stateID: result._stateID, randomCursor: result.randomCursor };
 }
 
 /**
@@ -149,24 +171,31 @@ export async function patchMatchState(
     patch: Partial<MatchState<unknown>>,
     page?: Page,
     access?: TestMatchAccess,
-): Promise<void> {
+    options?: { randomCursor?: number },
+): Promise<StateInjectionReceipt> {
     const resolvedAccess = await resolveTestMatchAccess(matchId, page, access);
     const testApiBase = await resolveTestApiBase(page);
     const response = await fetch(`${testApiBase}/test/patch-state`, {
         method: 'PATCH',
         headers: buildTestHeaders(resolvedAccess),
-        body: JSON.stringify({ matchId, patch }),
+        body: JSON.stringify({ matchId, patch, randomCursor: options?.randomCursor }),
     });
 
     if (!response.ok) {
         const error = await response.json();
         throw new Error(`State patch failed: ${JSON.stringify(error)}`);
     }
+    const result = await response.json() as { _stateID?: unknown; randomCursor?: unknown };
+    if (typeof result._stateID !== 'number' || typeof result.randomCursor !== 'number') {
+        throw new Error(`State patch response missing authoritative metadata: ${JSON.stringify(result)}`);
+    }
 
     // 如果提供了 page，等待客户端同步完成
     if (page) {
         await waitForStateSync(page, 5000);
     }
+
+    return { stateID: result._stateID, randomCursor: result.randomCursor };
 }
 
 /**
@@ -203,17 +232,23 @@ export async function getMatchState(
  * @param page Playwright Page 对象
  * @param timeout 超时时间（毫秒）
  */
-export async function waitForStateSync(page: Page, timeout = 5000): Promise<void> {
-    // 方案 1：等待 state:update 事件（需要在客户端注入监听器）
-    // 方案 2：轮询状态变化
-    // 方案 3：等待固定时间（最简单但不可靠）
-
-    // 这里使用方案 3 作为初始实现，后续可以优化为方案 1
-    await page.waitForTimeout(500);
-
-    // TODO: 实现更可靠的同步检测机制
-    // 可以在客户端注入一个全局标志，当收到 state:update 时设置为 true
-    // 然后在这里轮询该标志
+export async function waitForStateSync(
+    page: Page,
+    timeout = 5000,
+    expectation?: StateSyncExpectation,
+): Promise<void> {
+    await page.waitForFunction(
+        (expected) => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            if (!state) return false;
+            if (expected?.phase && state.sys?.phase !== expected.phase) return false;
+            if (expected?.interactionId && state.sys?.interaction?.current?.id !== expected.interactionId) return false;
+            if (expected?.responseWindowId && state.sys?.responseWindow?.current?.id !== expected.responseWindowId) return false;
+            return true;
+        },
+        expectation,
+        { timeout, polling: 100 },
+    );
 }
 
 /**

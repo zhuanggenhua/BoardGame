@@ -1,0 +1,1077 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>命运支配开放设计当前工作稿</title>
+  <style>
+    :root {
+      --ink: #111516;
+      --ink-soft: #202729;
+      --paper: #f5efe5;
+      --muted: #b7ada0;
+      --gold: #e7b943;
+      --gold-soft: #ffe8a0;
+      --cyan: #75ddea;
+      --red: #bd635b;
+      --shadow: rgba(0, 0, 0, .7);
+      --card-w: 148px;
+      --card-h: 214px;
+      --card-gap: 12px;
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+      color: var(--paper);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #29241f; }
+    body { overflow: hidden; }
+    button { font: inherit; color: inherit; background: none; border: 0; padding: 0; }
+
+    .stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      min-height: 0;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 2px, transparent 2px 12px),
+        repeating-linear-gradient(-45deg, rgba(0,0,0,.09) 0 2px, transparent 2px 16px),
+        #51463a;
+    }
+    .stage::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; box-shadow: inset 0 0 180px rgba(0,0,0,.65); }
+
+    .map-stage { position: absolute; inset: 0; z-index: 1; }
+    .map-viewport {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .map-viewport.is-panning { cursor: grabbing; }
+    .map-content {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1927px;
+      height: 1179px;
+      overflow: visible;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+    .map-board { display: block; width: 1927px; height: 1179px; pointer-events: none; }
+    .map-objects { position: absolute; inset: 0; overflow: visible; }
+
+    .board-piece {
+      position: absolute;
+      z-index: 5;
+      width: 4.6%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      pointer-events: none;
+      border: 2px solid var(--gold);
+      border-radius: 50%;
+      box-shadow: 0 4px 10px rgba(0,0,0,.55);
+      transform: translate(-50%, -50%);
+    }
+    .piece-shirou { left: 59.99%; top: 14.03%; }
+    .piece-shinji { left: 70.52%; top: 46.14%; }
+    .piece-kirei { left: 70.47%; top: 78.03%; }
+    .piece-rin { left: 11.05%; top: 81.26%; }
+
+    .map-card {
+      position: absolute;
+      z-index: 4;
+      width: 8.2%;
+      aspect-ratio: 63 / 88;
+      padding: 0;
+      cursor: pointer;
+      overflow: hidden;
+      border: 1px solid rgba(231,185,67,.7);
+      background: #090b0b;
+      box-shadow: 0 8px 18px rgba(0,0,0,.55);
+      transform: translate(-50%, -50%);
+    }
+    .map-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .map-card .pile-tag {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      bottom: 4px;
+      padding: 2px 4px;
+      background: rgba(8,10,10,.82);
+      color: var(--gold-soft);
+      font-size: 10px;
+      text-align: center;
+    }
+    .slot-situation { left: 11.0%; top: 16.5%; width: 10.4%; }
+    .pile-events, .pile-miyama, .pile-shinto {
+      box-shadow:
+        7px 7px 0 -1px #090b0b,
+        7px 7px 0 0 rgba(231,185,67,.5),
+        14px 14px 0 -1px #090b0b,
+        14px 14px 0 0 rgba(231,185,67,.32),
+        0 8px 18px rgba(0,0,0,.55);
+    }
+    .pile-events { left: -6.4%; top: 16.5%; }
+    .pile-miyama { left: -6.4%; top: 49.5%; }
+    .pile-shinto { left: -6.4%; top: 80.8%; }
+    .event-slot { z-index: 5; }
+    .event-miyama-1 { left: 27.5%; top: 49.8%; width: 11.9%; }
+    .event-miyama-2 { left: 39.8%; top: 49.8%; width: 11.9%; }
+    .event-miyama-3 { left: 52.1%; top: 49.8%; width: 11.9%; }
+    .event-shinto-1 { left: 27.5%; top: 81.85%; width: 11.9%; }
+    .event-shinto-2 { left: 39.8%; top: 81.85%; width: 11.9%; }
+
+    .round-chip {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      z-index: 6;
+      padding: 8px 12px 8px 10px;
+      border-left: 3px solid var(--gold);
+      background: rgba(12,13,13,.72);
+      pointer-events: none;
+      text-shadow: 0 2px 6px #000;
+    }
+    .round-chip strong { display: block; color: var(--gold-soft); font-size: 15px; }
+    .round-chip span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+
+    .view-hud {
+      position: absolute;
+      top: 14px;
+      left: 220px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      background: rgba(12,13,13,.72);
+      color: var(--paper);
+      font-size: 11px;
+    }
+    .view-hud b { color: var(--gold-soft); min-width: 42px; }
+    .view-hud button {
+      padding: 2px 8px;
+      cursor: pointer;
+      border: 1px solid rgba(231,185,67,.45);
+      color: var(--gold-soft);
+      font-size: 11px;
+    }
+    .view-hud button:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .opp-rail {
+      position: absolute;
+      top: 12px;
+      right: 10px;
+      bottom: 236px;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 420px;
+    }
+    .opp-seat {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 8px;
+      align-items: center;
+      padding: 6px 8px;
+      cursor: pointer;
+      border: 1px solid rgba(231,185,67,.28);
+      background: rgba(12,13,13,.78);
+    }
+    .opp-seat:hover { border-color: var(--gold); }
+    .opp-avatars { display: flex; align-items: center; }
+    .opp-master-token {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+    }
+    .opp-servant-token {
+      width: 32px;
+      height: 32px;
+      margin-left: -14px;
+      object-fit: cover;
+      border: 1px solid var(--cyan);
+      border-radius: 50%;
+    }
+    .opp-copy {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .opp-copy b { display: inline; font-size: 13px; }
+    .opp-copy small { display: inline; margin: 0; color: var(--muted); font-size: 11px; line-height: 1; }
+    .opp-copy i { color: var(--gold-soft); font-style: normal; }
+
+    .dock-self {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      z-index: 8;
+      display: grid;
+      gap: 10px;
+      width: 210px;
+      pointer-events: none;
+    }
+    .dock-self > * { pointer-events: auto; }
+    .self-piles { display: flex; gap: 10px; }
+    .mini-pile {
+      position: relative;
+      width: 72px;
+      height: 64px;
+      cursor: pointer;
+      overflow: hidden;
+      border: 1px solid rgba(231,185,67,.55);
+      background: #090b0b;
+      box-shadow: 0 8px 16px rgba(0,0,0,.45);
+    }
+    .mini-pile svg { display: block; width: 28px; height: 28px; margin: 3px auto 17px; fill: none; stroke: var(--gold-soft); stroke-width: 1.6; }
+    .mini-pile span {
+      position: absolute;
+      right: 4px;
+      bottom: 4px;
+      left: 4px;
+      padding: 2px 0;
+      background: rgba(8,10,10,.82);
+      color: var(--gold-soft);
+      font-size: 10px;
+      text-align: center;
+    }
+
+    .command-seals {
+      position: relative;
+      width: 118px;
+      height: 108px;
+    }
+    .seal {
+      position: absolute;
+      width: 78px;
+      height: 108px;
+      cursor: pointer;
+      overflow: hidden;
+      border: 1px solid rgba(231,185,67,.55);
+      background: #090b0b;
+      box-shadow: 0 8px 16px rgba(0,0,0,.5);
+      transition: transform .15s ease, opacity .2s ease;
+    }
+    .seal img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .seal[data-seal="0"] { left: 0; top: 10px; z-index: 3; }
+    .seal[data-seal="1"] { left: 18px; top: 5px; z-index: 2; }
+    .seal[data-seal="2"] { left: 36px; top: 0; z-index: 1; }
+    .seal:hover { transform: translateY(-6px); z-index: 5; }
+    .seal.is-spent { display: none; }
+
+    .you-stamp { display: flex; align-items: center; gap: 8px; border-left: 3px solid var(--gold); padding: 4px 0 4px 8px; text-shadow: 0 2px 7px #000; }
+    .you-stamp img { width: 48px; height: 48px; object-fit: cover; cursor: pointer; border: 1px solid var(--gold); border-radius: 50%; }
+    .you-stamp .servant-avatar { width: 36px; height: 36px; margin-left: -16px; border-color: var(--cyan); }
+    .you-copy b { display: block; color: var(--gold-soft); font-size: 13px; }
+    .you-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
+    .stats { display: flex; gap: 10px; margin-top: 6px; color: var(--paper); font-size: 9px; }
+    .stats b { color: var(--gold); font-size: 12px; }
+
+    .attack-hand, .skill-hand, .attack-zone, .skill-zone {
+      display: flex;
+      align-items: flex-end;
+      gap: var(--card-gap);
+      height: 248px;
+      pointer-events: none;
+    }
+    .hand-zones { --card-w: clamp(112px, calc((100vw - 440px) / 6), 148px); --card-h: calc(var(--card-w) * 214 / 148); position: absolute; left: 220px; right: 120px; bottom: 16px; display: flex; justify-content: center; align-items: flex-end; gap: 40px; z-index: 7; }
+    .attack-hand, .skill-hand { position: relative; flex: 0 0 calc(3 * var(--card-w) + 2 * var(--card-gap)); width: calc(3 * var(--card-w) + 2 * var(--card-gap)); height: calc(var(--card-h) + 34px); }
+    .attack-hand { justify-content: flex-end; }
+    .attack-hand .hand-label { left: auto; right: 0; }
+    .hand-label {
+      position: absolute;
+      top: 8px;
+      left: 0;
+      color: var(--paper);
+      font-size: 11px;
+      pointer-events: none;
+      text-shadow: 0 2px 7px #000;
+    }
+    .hand-label b { color: var(--gold-soft); }
+    .hand-card {
+      position: relative;
+      flex: 0 0 var(--card-w);
+      width: var(--card-w);
+      height: var(--card-h);
+      cursor: pointer;
+      pointer-events: auto;
+      border: 3px solid var(--paper);
+      background: var(--ink);
+      box-shadow: 0 18px 28px var(--shadow);
+      transition: transform .17s ease, border-color .17s ease, filter .17s ease;
+    }
+    .hand-card:hover, .hand-card.is-selected { border-color: var(--gold-soft); filter: brightness(1.08); transform: translateY(-22px); z-index: 9; }
+    .hand-card.is-played { display: none; }
+    .hand-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+    .attack-zone {
+      position: absolute;
+      left: 236px;
+      bottom: 214px;
+      z-index: 6;
+      height: auto;
+      min-height: var(--card-h);
+      padding-left: 0;
+    }
+    .skill-zone {
+      position: absolute;
+      right: 10px;
+      bottom: 214px;
+      z-index: 6;
+      height: auto;
+      min-height: var(--card-h);
+      padding-left: 0;
+    }
+    .attack-zone-meta {
+      flex: 0 0 auto;
+      min-width: 118px;
+      margin-right: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid var(--gold);
+      background: rgba(12,13,13,.78);
+      color: var(--paper);
+      text-shadow: 0 2px 6px #000;
+      pointer-events: none;
+    }
+    .attack-zone-meta small { display: block; color: var(--muted); font-size: 10px; }
+    .attack-zone-meta b { display: block; margin-top: 4px; color: var(--gold-soft); font-size: 16px; }
+    .played-card {
+      flex: 0 0 var(--card-w);
+      width: var(--card-w);
+      height: var(--card-h);
+      margin-left: 0;
+      cursor: pointer;
+      pointer-events: auto;
+      overflow: hidden;
+      border: 3px solid var(--gold-soft);
+      background: var(--ink);
+      box-shadow: 0 18px 28px var(--shadow);
+    }
+    .played-card + .played-card { margin-left: 0; }
+    .played-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .played-card:hover { filter: brightness(1.08); z-index: 9; }
+
+    .phase-control { position: absolute; right: 0; bottom: -2px; z-index: 8; display: flex; align-items: center; gap: 10px; pointer-events: auto; }
+    .phase-copy { color: var(--paper); text-align: right; text-shadow: 0 2px 7px #000; }
+    .phase-copy small { display: block; color: var(--muted); font-size: 9px; }
+    .phase-copy b { display: block; margin-top: 3px; color: var(--paper); font-size: 15px; font-weight: 500; }
+    .phase-orb { display: grid; place-items: center; width: 79px; height: 79px; cursor: pointer; border: 3px solid var(--paper); border-radius: 50%; background: var(--red); box-shadow: 0 9px 18px rgba(0,0,0,.48); text-align: center; }
+    .phase-orb b { display: block; font-size: 15px; }
+    .phase-orb small { display: block; margin-top: 2px; font-size: 9px; }
+    .phase-orb svg { display: block; margin: 4px auto 0; width: 17px; height: 10px; fill: none; stroke: var(--paper); stroke-width: 2.5; }
+    .phase-orb:hover { border-color: var(--gold-soft); transform: translateY(-3px); }
+
+    .toast { position: fixed; top: 18px; left: 50%; z-index: 20; display: none; transform: translateX(-50%); padding: 8px 12px; border-left: 2px solid var(--gold); background: rgba(12,15,16,.92); color: var(--gold-soft); font-size: 11px; }
+    .toast.is-open { display: block; }
+
+    .side-inspect {
+      position: fixed;
+      right: 216px;
+      top: 50%;
+      z-index: 20;
+      display: none;
+      width: 252px;
+      pointer-events: none;
+      transform: translateY(-50%);
+      border: 1px solid var(--gold);
+      background: #090b0b;
+      box-shadow: 0 18px 40px rgba(0,0,0,.7);
+    }
+    .side-inspect.is-open { display: block; }
+    .side-inspect img { display: block; width: 252px; height: 352px; object-fit: cover; }
+
+    .overlay { position: fixed; inset: 0; z-index: 30; display: none; place-items: center; padding: 22px; background: rgba(5,7,7,.8); }
+    .overlay.is-open { display: grid; }
+    .close { position: absolute; top: 8px; right: 8px; width: 29px; height: 29px; cursor: pointer; border: 1px solid rgba(245,239,229,.32); background: var(--ink-soft); font-size: 20px; }
+
+    .opp-panel {
+      position: relative;
+      width: min(960px, 94vw);
+      max-height: calc(100vh - 44px);
+      overflow: hidden;
+      border: 1px solid var(--gold);
+      background: var(--ink);
+      box-shadow: 0 26px 80px rgba(0,0,0,.72);
+    }
+    .opp-panel-scroll {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-auto-flow: row;
+      gap: 14px;
+      max-height: calc(100vh - 46px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 22px 22px 18px;
+    }
+    .opp-panel > .close { z-index: 2; width: 44px; height: 44px; }
+    .opp-player-switch { display: flex; flex-wrap: wrap; gap: 8px; padding-right: 44px; }
+    .opp-player-switch button { min-height: 36px; padding: 6px 10px; border: 1px solid #7b6b42; background: #171d1e; color: var(--gold-soft); cursor: pointer; }
+    .opp-player-switch button[aria-pressed="true"] { border-color: var(--gold); background: #56471f; }
+    .opp-stats { display: flex; flex-wrap: wrap; gap: 18px; margin: 0; padding: 10px 12px; border-block: 1px solid #655a3b; background: #191f20; }
+    .opp-stats div { display: flex; align-items: baseline; gap: 8px; }
+    .opp-stats dt { color: var(--muted); font-size: 12px; }
+    .opp-stats dd { margin: 0; color: var(--gold-soft); font-size: 18px; font-weight: bold; }
+    .opp-ability { margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: #e9e0cc; }
+    .opp-power-note { color: var(--muted); font-size: 11px; margin: -6px 0 0; }
+    .opp-panel h2 { margin: 0 0 4px; color: var(--gold-soft); font-size: 20px; }
+    .opp-col span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11px; }
+    .opp-grid { display: grid; grid-template-columns: 216px 216px minmax(120px, 1fr); gap: 24px; }
+    .opp-col { min-width: 0; }
+    .opp-col img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; border: 1px solid rgba(231,185,67,.4); }
+    .opp-skill-row { }
+    .opp-skill-row span { display: block; margin: 10px 0 6px; color: var(--muted); font-size: 11px; }
+    .opp-skills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .opp-skills img { display: block; width: 100%; aspect-ratio: 63 / 88; object-fit: cover; border: 1px solid rgba(231,185,67,.4); }
+    .opp-seals { position: relative; width: 216px; height: 270px; }
+    .opp-seals img {
+      position: absolute;
+      width: 168px;
+      height: 234px;
+      object-fit: cover;
+      border: 1px solid rgba(231,185,67,.45);
+      background: #090b0b;
+    }
+    .opp-seals img:nth-child(1) { left: 0; top: 24px; z-index: 3; }
+    .opp-seals img:nth-child(2) { left: 24px; top: 12px; z-index: 2; }
+    .opp-seals img:nth-child(3) { left: 48px; top: 0; z-index: 1; }
+
+    .opp-inspect-card {
+      flex: 0 0 var(--card-w);
+      width: var(--card-w);
+      height: var(--card-h);
+      overflow: hidden;
+      cursor: pointer;
+      border: 3px solid var(--gold-soft);
+      background: var(--ink);
+      box-shadow: 0 18px 28px var(--shadow);
+    }
+    .opp-inspect-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+    .seal-choice {
+      width: min(520px, 94vw);
+      padding: 22px;
+      border: 1px solid var(--gold);
+      background: var(--ink);
+    }
+    .seal-choice h2 { margin: 0 0 8px; color: var(--gold-soft); font-size: 20px; }
+    .seal-choice p { margin: 0 0 14px; color: var(--muted); font-size: 12px; }
+    .seal-choice button {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      border: 1px solid rgba(231,185,67,.4);
+      background: var(--ink-soft);
+      color: var(--paper);
+      text-align: left;
+    }
+    .seal-choice button:hover { border-color: var(--gold-soft); color: var(--gold-soft); }
+    .seal-choice button[aria-pressed="true"] { border-color: var(--gold-soft); background: rgba(231,185,67,.2); box-shadow: inset 3px 0 var(--gold-soft); }
+    .seal-choice #confirm-seal-choice { margin-top: 18px; text-align: center; color: var(--ink); background: var(--gold-soft); font-weight: 800; }
+    .seal-choice #confirm-seal-choice:disabled { opacity: .4; cursor: not-allowed; }
+    .hand-zones .attack-zone { left: 0; bottom: calc(var(--card-h) + 60px); }
+    .opp-seat.is-selected { border-color: var(--gold); background: #29261b; }
+    .player-drawer { padding: 14px; background: #121718; border-left: 2px solid var(--gold); box-shadow: 0 12px 24px #0008; }
+    .player-drawer[hidden] { display: none; }
+    .player-drawer header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-size: 14px; }
+    .player-drawer header button { width: 44px; height: 44px; font-size: 24px; cursor: pointer; }
+    .player-drawer-cards { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+    .player-drawer-cards p { margin: 0; color: var(--muted); font-size: 14px; }
+    .player-drawer .opp-inspect-card { height: var(--card-h); }
+    @media (max-width: 1200px) { .hand-zones { gap: 24px; } .phase-control { flex-direction: column; align-items: flex-end; width: 100px; gap: 6px; } .phase-copy { font-size: 11px; } }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <main class="map-stage" data-od-id="open-fuyuki-board">
+      <div class="map-viewport" id="map-viewport">
+        <div class="map-content" id="map-content">
+          <img class="map-board" src="assets/fuyuki-city.webp" alt="冬木市地图" width="1927" height="1179">
+          <div class="map-objects">
+            <button class="map-card slot-situation" data-card="situation-turning" aria-label="局势 转机">
+              <img src="assets/situation-turning-point.webp" alt="局势：转机">
+            </button>
+            <button class="map-card pile-events" data-card="event-deck" aria-label="事件牌堆">
+              <img src="assets/event-back.webp" alt="事件牌堆">
+              <span class="pile-tag">事件 6</span>
+            </button>
+            <button class="map-card pile-miyama" data-card="event-deck-miyama" aria-label="深山事件牌堆">
+              <img src="assets/event-back.webp" alt="深山事件牌堆">
+              <span class="pile-tag">深山 2</span>
+            </button>
+            <button class="map-card pile-shinto" data-card="event-deck-shinto" aria-label="新都事件牌堆">
+              <img src="assets/event-back.webp" alt="新都事件牌堆">
+              <span class="pile-tag">新都 1</span>
+            </button>
+            <button class="map-card event-slot event-miyama-1" data-card="event-fate-battle" aria-label="深山町事件 命运之战">
+              <img src="assets/event-fate-battle.webp" alt="深山町事件：命运之战">
+            </button>
+            <button class="map-card event-slot event-shinto-2" data-card="event-sanctuary" aria-label="新都事件 圣地">
+              <img src="assets/event-sanctuary.png" alt="新都事件：圣地">
+            </button>
+            <img class="board-piece piece-shirou" src="assets/tokens/token-emiya-shirou.png" alt="卫宫士郎立牌">
+            <img class="board-piece piece-shinji" src="assets/tokens/token-matou-shinji.png" alt="间桐慎二立牌">
+            <img class="board-piece piece-kirei" src="assets/tokens/token-kotomine-kirei.png" alt="言峰绮礼立牌">
+            <img class="board-piece piece-rin" src="assets/tokens/token-tohsaka-rin.png" alt="远坂凛立牌">
+          </div>
+        </div>
+      </div>
+    </main>
+    <div class="round-chip"><strong>冬木市圣杯战争</strong><span>第 4 回合 · 行动阶段 · 你的回合</span></div>
+    <div class="view-hud"><b id="zoom-readout">100%</b><button type="button" id="zoom-reset">复位</button></div>
+
+    <aside class="opp-rail" data-od-id="opponent-rail" aria-label="其他御主">
+      <article class="opp-seat" data-player="shinji">
+        <div class="opp-avatars">
+          <img class="opp-master-token" src="assets/tokens/token-matou-shinji.png" alt="间桐慎二">
+          <img class="opp-servant-token" src="assets/back-servant-gold.png" alt="从者背面">
+        </div>
+        <div class="opp-copy"><b>间桐慎二</b><small>深山町 · 战果 <i>5</i> · 魔力 <i>3</i> · 手牌 <i>4</i></small></div>
+      </article>
+      <article class="opp-seat" data-player="kirei">
+        <div class="opp-avatars">
+          <img class="opp-master-token" src="assets/tokens/token-kotomine-kirei.png" alt="言峰绮礼">
+          <img class="opp-servant-token" src="assets/back-servant-gold.png" alt="从者背面">
+        </div>
+        <div class="opp-copy"><b>言峰绮礼</b><small>新都 · 战果 <i>4</i> · 魔力 <i>6</i> · 手牌 <i>3</i></small></div>
+      </article>
+      <article class="opp-seat" data-player="rin">
+        <div class="opp-avatars">
+          <img class="opp-master-token" src="assets/tokens/token-tohsaka-rin.png" alt="远坂凛">
+          <img class="opp-servant-token" src="assets/back-servant-gold.png" alt="从者背面">
+        </div>
+        <div class="opp-copy"><b>远坂凛</b><small>侦察 · 战果 <i>2</i> · 魔力 <i>8</i> · 手牌 <i>5</i></small></div>
+      </article>
+    </aside>
+
+    <div class="dock-self">
+      <div class="self-piles">
+        <button class="mini-pile" id="draw-pile" data-card="draw-back" aria-label="抽牌堆">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="13" height="17" rx="2"/><path d="M4 6H3v15h13v-1M11 9h5M11 13h5"/></svg>
+          <span>抽牌 8</span>
+        </button>
+        <button class="mini-pile" id="discard-pile" data-card="attack-magic-low" aria-label="弃牌堆">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="13" height="14" rx="2"/><path d="M8 7V3h12v14h-4M7 12l5 5m0-5-5 5"/></svg>
+          <span>弃牌 1</span>
+        </button>
+      </div>
+      <div class="command-seals" data-od-id="command-seals" aria-label="令咒">
+        <button class="seal" data-seal="0" aria-label="令咒一"><img src="assets/command-seal-shirou.png" alt="令咒"></button>
+        <button class="seal" data-seal="1" aria-label="令咒二"><img src="assets/command-seal-shirou.png" alt="令咒"></button>
+        <button class="seal" data-seal="2" aria-label="令咒三"><img src="assets/command-seal-shirou.png" alt="令咒"></button>
+      </div>
+      <section class="you-stamp" data-od-id="you-status">
+        <img id="you-master" src="assets/tokens/token-emiya-shirou.png" alt="卫宫士郎" data-hover-card="master-shirou">
+        <img class="servant-avatar" id="you-servant" src="assets/servant-saber.webp" alt="阿尔托莉雅" data-hover-card="servant-arturia">
+        <div class="you-copy"><b>卫宫士郎</b><small>Saber · 工房</small><div class="stats"><span>魔力 <b id="own-mana">4</b></span><span>战果 <b>6</b></span></div></div>
+      </section>
+    </div>
+
+    <div class="hand-zones">
+    <section class="attack-hand" data-od-id="attack-hand" aria-label="攻击牌">
+    <div class="attack-zone" id="attack-zone" aria-label="攻击区">
+      <div class="attack-zone-meta">
+        <small id="play-count">出牌 1/2</small>
+        <b id="total-power">合计威力 4</b>
+      </div>
+    </div>
+
+
+      <div class="hand-label">攻击 <b id="attack-count">2</b></div>
+      <article class="hand-card is-played" data-hand-card="attack-strength-high" data-card="attack-strength-high" data-power="4" data-cost="0" role="button" tabindex="0"><img src="assets/attack-strength-high.webp" alt="浑身の一撃"></article>
+      <article class="hand-card" data-hand-card="skill-moment" data-card="skill-moment" data-power="5" data-cost="1" role="button" tabindex="0"><img src="assets/skill-moment.webp" alt="刹那の一撃"></article>
+      <article class="hand-card" data-hand-card="skill-luck" data-card="skill-luck" data-power="4" data-cost="0" role="button" tabindex="0"><img src="assets/skill-luck.webp" alt="幸运"></article>
+    </section>
+    <section class="skill-hand" data-od-id="skill-hand" aria-label="技能牌">
+      <div class="hand-label">技能 <b>3</b></div>
+      <article class="hand-card" data-hand-card="skill-magic-resistance" data-card="skill-magic-resistance" role="button" tabindex="0"><img src="assets/skill-magic-resistance.png" alt="对魔力"></article>
+      <article class="hand-card" data-hand-card="skill-invisible-air" data-card="skill-invisible-air" role="button" tabindex="0"><img src="assets/skill-invisible-air.png" alt="风王结界"></article>
+      <article class="hand-card" data-hand-card="skill-excalibur-artoria" data-card="skill-excalibur-artoria" role="button" tabindex="0"><img src="assets/skill-excalibur-artoria.png" alt="誓约胜利之剑"></article>
+    </section>
+
+    </div>
+
+    <div class="phase-control" data-od-id="phase-control">
+      <div class="phase-copy"><small id="phase-progress">行动阶段 · 已编成 01 张</small><b id="phase-label">下一阶段</b></div>
+      <button class="phase-orb" id="next" aria-label="进入下一阶段"><span><b>行动</b><small>PHASE 04</small><svg viewBox="0 0 18 10" aria-hidden="true"><path d="M1 5h14M10 1l5 4-5 4"></path></svg></span></button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="side-inspect" id="side-inspect"><img id="side-image" src="assets/master-shirou.png" alt=""></div>
+
+  <div class="overlay" id="opp-overlay" role="dialog" aria-modal="true" aria-label="御主详情">
+    <div class="opp-panel">
+      <button class="close" id="close-opp" aria-label="关闭">×</button>
+      <div class="opp-panel-scroll">
+      <nav class="opp-player-switch" id="opp-player-switch" aria-label="切换玩家"></nav>
+      <h2 id="opp-title">间桐慎二</h2>
+      <dl class="opp-stats" id="opp-stats"></dl>
+      <p class="opp-power-note" id="opp-power-note"></p>
+      <div class="opp-grid">
+        <div class="opp-col"><span>御主</span><img id="opp-master" src="assets/master-shinji.png" alt="御主牌"><p class="opp-ability" id="opp-ability"></p></div>
+        <div class="opp-col"><span>从者</span><img id="opp-servant-card" src="assets/back-servant-gold.png" alt="从者牌背面"></div>
+        <div class="opp-col"><span>令咒</span><div class="opp-seals" id="opp-seals"></div></div>
+      </div>
+      <div class="opp-skill-row">
+        <span>技能</span>
+        <div class="opp-skills" id="opp-skills"></div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="overlay" id="seal-overlay" role="dialog" aria-modal="true" aria-label="使用令咒">
+    <div class="seal-choice">
+      <h2>使用令咒</h2>
+      <p>每枚令咒整局使用一次，使用时三选一。</p>
+      <button type="button" aria-pressed="false" data-seal-choice="move">移动至深山町或新都</button>
+      <button type="button" aria-pressed="false" data-seal-choice="mana">获得 4 魔力</button>
+      <button type="button" aria-pressed="false" data-seal-choice="power">合计威力 +2；若本场获胜再 +2 战果</button>
+      <button type="button" id="confirm-seal-choice" disabled>确认使用</button>
+    </div>
+  </div>
+
+  <script>
+    const BOARD_W = 1927;
+    const BOARD_H = 1179;
+    const PILE_GUTTER = 214;
+    const TERRAIN_POWER = 0; // 工房印刷数字用于获得魔力，不是战场地利威力。
+    const cards = {
+      'attack-strength-high': ['assets/attack-strength-high.webp', '浑身の一撃', '力量基础攻击。消耗 0 魔力，基本威力 4。数值以卡面印刷为准。'],
+      'skill-moment': ['assets/skill-moment.webp', '刹那の一撃', '敏捷攻击。消耗 1 魔力，基本威力 5。'],
+      'skill-luck': ['assets/skill-luck.webp', '幸运', '特殊攻击。消耗 0 魔力，基本威力 4。战斗阶段可无视直接败北。'],
+      'attack-magic-low': ['assets/attack-magic-low.webp', '低位魔术', '魔术攻击。消耗 0 魔力，基本威力 2。现位于弃牌堆顶。'],
+      'attack-magic-mid': ['assets/attack-magic-mid.webp', '中位魔术', '魔术攻击。消耗 0 魔力，基本威力 3。'],
+      'attack-magic-high': ['assets/attack-magic-high.webp', '高位魔术', '魔术攻击。消耗 0 魔力，基本威力 4。'],
+      'skill-magic-resistance': ['assets/skill-magic-resistance.png', '对魔力', 'Saber 职阶技能。消耗 3 魔力，基本威力 3。战斗阶段将同战场对手的魔术攻击威力设为 0。'],
+      'skill-invisible-air': ['assets/skill-invisible-air.png', '风王结界', '宝具。消耗 4 魔力，基本威力 4。真名隐藏时消耗 -2。战斗阶段将对手力量攻击威力设为 0。'],
+      'skill-excalibur-artoria': ['assets/skill-excalibur-artoria.png', '誓约胜利之剑', '宝具。消耗 8 魔力，基本威力 12。高潮回合合计威力 +4；若赢得第 11 回合则获得胜利。'],
+      'situation-turning': ['assets/situation-turning-point.webp', '转机', '于深山町和新都各增加一张正面事件牌。'],
+      'event-fate-battle': ['assets/event-fate-battle.webp', '命运之战', '深山町明置事件。此战场上基本威力 1 和 2 的攻击基本威力增加至 5。'],
+      'event-sanctuary': ['assets/event-sanctuary.png', '圣地', '新都事件。魔术攻击于此战场获得威力 +3。'],
+      'event-deck': ['assets/event-back.webp', '事件牌堆', '地图左侧事件牌堆。抽出的事件放到地点白色格子。'],
+      'event-deck-miyama': ['assets/event-back.webp', '深山事件牌堆', '深山町未揭示事件牌堆，放在地图左侧。'],
+      'event-deck-shinto': ['assets/event-back.webp', '新都事件牌堆', '新都未揭示事件牌堆，放在地图左侧。'],
+      'draw-back': ['assets/back-attack-blue.png', '抽牌堆', '自己的攻击抽牌堆。牌背为攻击蓝背。规则允许从弃牌堆取牌，故弃牌与抽牌分列。'],
+      'master-shirou': ['assets/master-shirou.png', '卫宫士郎', '未熟：魔力初始为 2。投影：将干将·莫邪加入技能区。'],
+      'servant-arturia': ['assets/servant-arturia.png', '阿尔托莉雅·潘德拉贡', '真名已公开。坦蛋世界、辉白之钢、花之旅途。'],
+      'servant-back': ['assets/back-servant-gold.png', '从者背面', '真名隐藏，只显示从者金背。'],
+      'skill-back': ['assets/back-skill-red.png', '技能背面', '技能区未公开时显示红背。']
+    };
+    const players = {
+      shirou: {
+        name: '卫宫士郎（你）', mana: 4, victory: 6,
+        get power() { return played.reduce((sum, id) => sum + Number(document.querySelector(`[data-hand-card="${id}"]`)?.dataset.power || 0), TERRAIN_POWER); },
+        powerNote: '公开牌与场地：当前攻击牌威力合计；工房没有战场地利加成。',
+        ability: '未熟：魔力初始值为 2。投影：将干将·莫邪加入技能区。远离尘世的理想乡：首次被淘汰时失去所有魔力来继续游戏。',
+        master: 'assets/master-shirou.png', hidden: false,
+        servant: 'assets/servant-arturia.png', servantAlt: '阿尔托莉雅能力卡（本人可见）',
+        skills: [['assets/skill-magic-resistance.png', '对魔力'], ['assets/skill-invisible-air.png', '风王结界'], ['assets/skill-excalibur-artoria.png', '誓约胜利之剑']],
+        get seals() { return document.querySelectorAll('.seal:not(.is-spent)').length; },
+        get played() { return played.map(id => [cards[id][0], cards[id][1], id]); }
+      },
+      shinji: {
+        name: '间桐慎二', mana: 3, victory: 5, power: 8, powerNote: '公开牌与场地：低位魔术受命运之战修正为 5，地利 +3。', ability: '吸魔命令：进入深山町时获得 1 点魔力。无用之人：游戏开始时获得伪臣之书。小丑：战败时失去一枚令咒。',
+        master: 'assets/master-shinji.png',
+        hidden: true,
+        servant: 'assets/back-servant-gold.png',
+        servantAlt: '从者牌背面',
+        skills: [],
+        seals: 3,
+        played: [['assets/attack-magic-low.webp', '低位魔术', 'attack-magic-low']]
+      },
+      kirei: {
+        name: '言峰绮礼', mana: 6, victory: 4, power: 16, powerNote: '公开牌与场地：中位魔术 3、高位魔术 4、圣地分别 +3、地利 +3；未计未展示的效果。', ability: '两幅面孔：从者真名隐藏时是监督者；其他情况下是执行者，包括没有从者时。',
+        master: 'assets/master-kirei.png',
+        hidden: true,
+        servant: 'assets/back-servant-gold.png',
+        servantAlt: '从者牌背面',
+        skills: [],
+        seals: 2,
+        played: [['assets/attack-magic-mid.webp', '中位魔术', 'attack-magic-mid'], ['assets/attack-magic-high.webp', '高位魔术', 'attack-magic-high']]
+      },
+      rin: {
+        name: '远坂凛', mana: 8, victory: 2, power: 0, powerNote: '公开牌与场地：未打出攻击，侦察没有地利威力。', ability: '宝石魔术：开局获得 10 枚宝石；高潮阶段可在宝石上选择相同选项，每个选项至多 3 次，共计 9 次。绝对服从的命令：第一回合须使用一枚令咒，否则回合结束失去一枚；若用它获得魔力，战斗阶段结束失去 4 点魔力。',
+        master: 'assets/master-rin.png',
+        hidden: true,
+        servant: 'assets/back-servant-gold.png',
+        servantAlt: '从者牌背面',
+        skills: [],
+        seals: 3,
+        played: []
+      }
+    };
+
+    const viewport = document.querySelector('#map-viewport');
+    const content = document.querySelector('#map-content');
+    const oppOverlay = document.querySelector('#opp-overlay');
+    const playerDrawer = document.createElement('section');
+    playerDrawer.id = 'player-drawer';
+    playerDrawer.className = 'player-drawer';
+    playerDrawer.hidden = true;
+    let selectedPlayer = null;
+    const sealOverlay = document.querySelector('#seal-overlay');
+    const sideInspect = document.querySelector('#side-inspect');
+    const attackZone = document.querySelector('#attack-zone');
+    let scale = 1, tx = 0, ty = 0, pendingSeal = null, selectedSealChoice = null, inspectId = null, inspectDismissed = false;
+    const played = ['attack-strength-high'];
+
+    const showToast = (message) => {
+      const toast = document.querySelector('#toast');
+      toast.textContent = message;
+      toast.classList.add('is-open');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => toast.classList.remove('is-open'), 1700);
+    };
+    const applyView = () => {
+      content.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      document.querySelector('#zoom-readout').textContent = `${Math.round(scale * 100)}%`;
+    };
+    const fitMap = () => {
+      const rect = viewport.getBoundingClientRect();
+      const inset = { top: 8, right: 10, bottom: 8, left: 8 };
+      const availW = rect.width - inset.left - inset.right;
+      const availH = rect.height - inset.top - inset.bottom;
+      scale = Math.min(availW / (BOARD_W + PILE_GUTTER), availH / BOARD_H);
+      const usedW = (BOARD_W + PILE_GUTTER) * scale;
+      const usedH = BOARD_H * scale;
+      tx = inset.left + (availW - usedW) / 2 + PILE_GUTTER * scale;
+      ty = inset.top + (availH - usedH) / 2;
+      applyView();
+    };
+    const showInspect = (id) => {
+      const data = cards[id];
+      if (!data) return;
+      if (id !== inspectId) inspectDismissed = false;
+      inspectId = id;
+      if (inspectDismissed) return;
+      document.querySelector('#side-image').src = data[0];
+      document.querySelector('#side-image').alt = data[1];
+      sideInspect.classList.add('is-open');
+    };
+    const hideInspect = () => sideInspect.classList.remove('is-open');
+    const dismissInspect = () => {
+      inspectDismissed = true;
+      hideInspect();
+    };
+    const leaveInspectSource = () => {
+      inspectDismissed = false;
+      inspectId = null;
+      hideInspect();
+    };
+    const bindInspect = (el, getId, onClick) => {
+      el.addEventListener('pointerenter', () => showInspect(getId()));
+      el.addEventListener('pointerleave', leaveInspectSource);
+      el.addEventListener('click', (event) => {
+        dismissInspect();
+        if (onClick) onClick(event);
+      });
+    };
+    const replaceDetailImage = (selector, src, alt) => {
+      const current = document.querySelector(selector);
+      if (current.getAttribute('src') === src) {
+        current.alt = alt;
+        return;
+      }
+      // A reused image can retain the previous player's decoded pixels while
+      // its new source loads. A new node keeps image identity with the player.
+      const next = current.cloneNode(false);
+      next.src = src;
+      next.alt = alt;
+      current.replaceWith(next);
+    };
+    const renderOppSkills = (player) => {
+      const box = document.querySelector('#opp-skills');
+      box.innerHTML = '';
+      if (player.hidden) {
+        replaceDetailImage('#opp-servant-card', 'assets/back-servant-gold.png', '从者牌背面');
+        for (let i = 0; i < 3; i += 1) {
+          const img = document.createElement('img');
+          img.src = 'assets/back-skill-red.png';
+          img.alt = '技能背面';
+          box.appendChild(img);
+        }
+        return;
+      }
+      replaceDetailImage('#opp-servant-card', player.servant, player.servantAlt);
+      (player.skills || []).forEach(([src, alt]) => {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = alt;
+        box.appendChild(img);
+      });
+    };
+    const closePlayerDrawer = () => {
+      playerDrawer.hidden = true;
+      selectedPlayer = null;
+      document.querySelectorAll('.opp-seat').forEach(seat => seat.classList.remove('is-selected'));
+    };
+    const selectPlayer = (id) => {
+      const player = players[id];
+      const seat = document.querySelector(`.opp-seat[data-player="${id}"]`);
+      if (!player || !seat || oppOverlay.classList.contains('is-open')) return;
+      selectedPlayer = id;
+      document.querySelectorAll('.opp-seat').forEach(node => node.classList.toggle('is-selected', node === seat));
+      playerDrawer.replaceChildren();
+      const heading = document.createElement('header');
+      const title = document.createElement('strong'); title.textContent = `${player.name} · 已打出 ${(player.played || []).length}`;
+      const close = document.createElement('button'); close.type = 'button'; close.textContent = '×'; close.setAttribute('aria-label', '收起已打出'); close.addEventListener('click', closePlayerDrawer);
+      heading.append(title, close); playerDrawer.append(heading);
+      const cards = document.createElement('div'); cards.className = 'player-drawer-cards';
+      (player.played || []).forEach(([src, alt, cardId]) => {
+        const button = document.createElement('button'); button.className = 'opp-inspect-card'; button.type = 'button'; button.setAttribute('aria-label', alt);
+        const img = document.createElement('img'); img.src = src; img.alt = alt; button.append(img); cards.append(button);
+        bindInspect(button, () => cardId || 'attack-magic-low');
+      });
+      if (!cards.children.length) { const empty = document.createElement('p'); empty.textContent = '本轮尚未出牌'; cards.append(empty); }
+      playerDrawer.append(cards); seat.after(playerDrawer); playerDrawer.hidden = false;
+    };
+    const resetSealChoice = () => {
+      selectedSealChoice = null;
+      document.querySelectorAll('[data-seal-choice]').forEach(button => button.setAttribute('aria-pressed', 'false'));
+      document.querySelector('#confirm-seal-choice').disabled = true;
+    };
+    const closeSeal = () => {
+      resetSealChoice();
+      pendingSeal = null;
+      sealOverlay.classList.remove('is-open');
+    };
+    const closeOpp = () => {
+      oppOverlay.classList.remove('is-open');
+      if (selectedPlayer) selectPlayer(selectedPlayer);
+    };
+    const openOpp = (id) => {
+      const player = players[id];
+      if (!player) return;
+      hideInspect();
+      document.querySelector('.opp-panel-scroll').scrollTop = 0;
+      document.querySelector('#opp-title').textContent = player.name;
+      replaceDetailImage('#opp-master', player.master, `${player.name}能力卡`);
+      document.querySelector('#opp-ability').textContent = player.ability;
+      document.querySelector('#opp-power-note').textContent = player.powerNote;
+      const stats = document.querySelector('#opp-stats');
+      stats.replaceChildren();
+      for (const [label, value] of [['魔力', player.mana], ['令咒', player.seals], ['当前威力', player.power], ['战果', player.victory]]) {
+        const row = document.createElement('div');
+        const term = document.createElement('dt'); term.textContent = label;
+        const amount = document.createElement('dd'); amount.textContent = String(value);
+        row.append(term, amount); stats.append(row);
+      }
+      document.querySelectorAll('#opp-player-switch button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.player === id)));
+      renderOppSkills(player);
+      const seals = document.querySelector('#opp-seals');
+      seals.innerHTML = '';
+      for (let i = 0; i < player.seals; i += 1) {
+        const img = document.createElement('img');
+        img.src = 'assets/command-seal-shirou.png';
+        img.alt = '令咒';
+        seals.appendChild(img);
+      }
+      oppOverlay.classList.add('is-open');
+      playerDrawer.hidden = true;
+    };
+    const renderPlayed = () => {
+      attackZone.querySelectorAll('.played-card').forEach((node) => node.remove());
+      let power = TERRAIN_POWER;
+      played.forEach((id) => {
+        const source = document.querySelector(`[data-hand-card="${id}"]`);
+        if (!source) return;
+        power += Number(source.dataset.power || 0);
+        const button = document.createElement('button');
+        button.className = 'played-card';
+        button.type = 'button';
+        button.dataset.withdraw = id;
+        button.setAttribute('aria-label', `撤回${source.querySelector('img').alt}`);
+        const img = document.createElement('img');
+        img.src = source.querySelector('img').src;
+        img.alt = source.querySelector('img').alt;
+        button.appendChild(img);
+        attackZone.appendChild(button);
+      });
+      const n = String(played.length).padStart(2, '0');
+      document.querySelector('#play-count').textContent = `出牌 ${played.length}/2`;
+      document.querySelector('#total-power').textContent = `合计威力 ${power}`;
+      document.querySelector('#attack-count').textContent = String(3 - played.length);
+      document.querySelector('#phase-progress').textContent = `行动阶段 · 已编成 ${n} 张`;
+    };
+    const playAttack = (id) => {
+      if (played.includes(id) || played.length >= 2) {
+        showToast(played.length >= 2 ? '行动阶段只能打出 2 张攻击' : '这张已经在攻击区');
+        return;
+      }
+      played.push(id);
+      document.querySelector(`[data-hand-card="${id}"]`).classList.add('is-played');
+      renderPlayed();
+    };
+    const withdrawAttack = (id) => {
+      const index = played.indexOf(id);
+      if (index < 0) return;
+      played.splice(index, 1);
+      document.querySelector(`[data-hand-card="${id}"]`).classList.remove('is-played');
+      renderPlayed();
+    };
+
+    fitMap();
+    renderPlayed();
+    window.addEventListener('resize', () => {
+      fitMap();
+    });
+    document.querySelector('#zoom-reset').addEventListener('click', fitMap);
+
+    viewport.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      const rect = viewport.getBoundingClientRect();
+      const px = event.clientX - rect.left;
+      const py = event.clientY - rect.top;
+      const next = Math.min(2.4, Math.max(0.45, scale * (event.deltaY < 0 ? 1.12 : 1 / 1.12)));
+      const k = next / scale;
+      tx = px - (px - tx) * k;
+      ty = py - (py - ty) * k;
+      scale = next;
+      applyView();
+    }, { passive: false });
+
+    let drag = null;
+    viewport.addEventListener('dragstart', event => event.preventDefault());
+    viewport.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, tx, ty, moved: false, target: event.target };
+      viewport.setPointerCapture(event.pointerId);
+    });
+    viewport.addEventListener('pointermove', (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+      drag.moved = true;
+      viewport.classList.add('is-panning');
+      tx = drag.tx + dx;
+      ty = drag.ty + dy;
+      applyView();
+    });
+    const endDrag = (event) => {
+      if (!drag || event.pointerId !== drag.id) return;
+      const clicked = !drag.moved;
+      const target = drag.target;
+      viewport.classList.remove('is-panning');
+      drag = null;
+      if (clicked && target && target.closest('[data-card]')) dismissInspect();
+    };
+    viewport.addEventListener('pointerup', endDrag);
+    viewport.addEventListener('pointercancel', endDrag);
+
+    document.querySelectorAll('.attack-hand [data-hand-card]').forEach((card) => {
+      bindInspect(card, () => card.dataset.card, () => playAttack(card.dataset.handCard));
+    });
+    document.querySelectorAll('.skill-hand [data-hand-card]').forEach((card) => {
+      bindInspect(card, () => card.dataset.card);
+    });
+    document.querySelectorAll('.map-card[data-card]').forEach((card) => {
+      card.addEventListener('pointerenter', () => showInspect(card.dataset.card));
+      card.addEventListener('pointerleave', leaveInspectSource);
+    });
+    attackZone.addEventListener('click', (event) => {
+      const card = event.target.closest('[data-withdraw]');
+      if (!card) return;
+      dismissInspect();
+      withdrawAttack(card.dataset.withdraw);
+    });
+    attackZone.addEventListener('pointerover', (event) => {
+      const card = event.target.closest('[data-withdraw]');
+      if (card) showInspect(card.dataset.withdraw);
+    });
+    attackZone.addEventListener('pointerout', (event) => {
+      if (event.target.closest('[data-withdraw]')) leaveInspectSource();
+    });
+    document.querySelectorAll('#you-master, #you-servant').forEach((el) => {
+      bindInspect(el, () => el.dataset.hoverCard, () => openOpp('shirou'));
+      el.tabIndex = 0; el.setAttribute('role', 'button');
+      el.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openOpp('shirou'); } });
+    });
+    bindInspect(document.querySelector('#draw-pile'), () => 'draw-back');
+    bindInspect(document.querySelector('#discard-pile'), () => 'attack-magic-low');
+
+    const playerSwitch = document.querySelector('#opp-player-switch');
+    Object.entries(players).forEach(([id, player]) => {
+      const button = document.createElement('button'); button.type = 'button';
+      button.dataset.player = id; button.textContent = player.name;
+      button.setAttribute('aria-pressed', 'false');
+      button.addEventListener('click', () => openOpp(id)); playerSwitch.append(button);
+    });
+    document.querySelectorAll('.opp-seat').forEach((seat) => {
+      seat.tabIndex = 0; seat.setAttribute('role', 'button'); seat.setAttribute('aria-label', `查看${players[seat.dataset.player].name}详情`);
+      seat.addEventListener('pointerenter', () => selectPlayer(seat.dataset.player));
+      seat.addEventListener('focus', () => selectPlayer(seat.dataset.player));
+      seat.addEventListener('click', () => openOpp(seat.dataset.player));
+      seat.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openOpp(seat.dataset.player); }
+      });
+    });
+
+    document.querySelectorAll('.seal').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (button.classList.contains('is-spent')) return;
+        resetSealChoice();
+        pendingSeal = button;
+        sealOverlay.classList.add('is-open');
+      });
+    });
+    document.querySelectorAll('[data-seal-choice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (!pendingSeal) return;
+        selectedSealChoice = button.dataset.sealChoice;
+        document.querySelectorAll('[data-seal-choice]').forEach(option => option.setAttribute('aria-pressed', String(option === button)));
+        document.querySelector('#confirm-seal-choice').disabled = false;
+      });
+    });
+    document.querySelector('#confirm-seal-choice').addEventListener('click', () => {
+      if (!pendingSeal || !selectedSealChoice) return;
+      const effect = selectedSealChoice;
+      if (effect === 'mana') {
+        players.shirou.mana += 4;
+        document.querySelector('#own-mana').textContent = String(players.shirou.mana);
+      }
+      pendingSeal.classList.add('is-spent');
+      const left = document.querySelectorAll('.seal:not(.is-spent)').length;
+      closeSeal();
+      showToast(`${effect === 'mana' ? '获得 4 魔力 · ' : ''}令咒已使用 · 剩余 ${left}`);
+    });
+
+    document.querySelector('#next').addEventListener('click', () => {
+      if (played.length !== 2) {
+        showToast('行动阶段须打出恰好 2 张攻击，可随时撤回调整');
+        return;
+      }
+      document.querySelector('#phase-label').textContent = '等待响应';
+      showToast('攻击已确认 · 等待对手响应');
+    });
+    document.querySelector('#close-opp').addEventListener('click', closeOpp);
+    oppOverlay.addEventListener('click', (event) => { if (event.target === oppOverlay) closeOpp(); });
+    sealOverlay.addEventListener('click', (event) => { if (event.target === sealOverlay) closeSeal(); });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (sideInspect.classList.contains('is-open')) dismissInspect();
+      else if (sealOverlay.classList.contains('is-open')) closeSeal();
+      else if (oppOverlay.classList.contains('is-open')) closeOpp();
+      else if (!playerDrawer.hidden) closePlayerDrawer();
+      else return;
+      event.preventDefault();
+      event.stopPropagation();
+    });
+  </script>
+</body>
+</html>

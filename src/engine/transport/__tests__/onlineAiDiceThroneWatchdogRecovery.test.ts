@@ -18,6 +18,7 @@ import { createHeroMatchup, createQueuedRandom } from '../../../games/dicethrone
 import {
     InMemoryStorage,
     MockIO,
+    MockSocket,
     createEngineConfig,
     createEngineConfigWithId,
     createOnlineAiRecoveryMetadata,
@@ -26,6 +27,231 @@ import {
 } from './helpers/serverTestHarness';
 
 describe('online AI watchdog DiceThrone recovery', () => {
+    it('dicethrone: 4 人 2v2 中 AI 攻击者的展示态奖励骰，手动强制结束应继续收口 AI Token 响应', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const matchID = 'match-watchdog-dicethrone-4p-displayonly-token-chain';
+        const pendingDamageId = 'damage-4p-displayonly-token-chain';
+        const metadata = createOnlineAiRecoveryMetadata({
+            gameName: 'dicethrone',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+                '2': { type: 'local-ai', difficulty: 'expert' },
+                '3': { type: 'human' },
+            },
+        });
+        metadata.setupData = {
+            ...(metadata.setupData as Record<string, unknown>),
+            ownerKey: 'user:owner',
+        };
+        metadata.players['0'].ownerKey = 'user:owner';
+        metadata.players['1'] = { name: '玩家1', credentials: 'cred-1', isConnected: false };
+        metadata.players['2'] = { name: 'AI 2', credentials: 'cred-2', isConnected: false };
+        metadata.players['3'] = { name: '玩家3', credentials: 'cred-3', isConnected: false };
+
+        await storage.createMatch(matchID, {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '2',
+                        currentPlayerIndex: 2,
+                        turnOrder: ['0', '1', '2', '3'],
+                        selectedCharacters: {
+                            '0': 'shadow_thief',
+                            '1': 'paladin',
+                            '2': 'tianshi',
+                            '3': 'zhanshujia',
+                        },
+                        players: {
+                            '0': {
+                                id: '0',
+                                characterId: 'shadow_thief',
+                                resources: { hp: 24, cp: 5 },
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                            '1': {
+                                id: '1',
+                                characterId: 'paladin',
+                                resources: { hp: 42, cp: 3 },
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                            '2': {
+                                id: '2',
+                                characterId: 'tianshi',
+                                resources: { hp: 24, cp: 0 },
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                            '3': {
+                                id: '3',
+                                characterId: 'zhanshujia',
+                                resources: { hp: 42, cp: 0 },
+                                hand: [],
+                                deck: [],
+                                discard: [],
+                                statusEffects: {},
+                                tokens: {},
+                                tokenStackLimits: {},
+                                damageShields: [],
+                                abilities: [],
+                                abilityLevels: {},
+                                upgradeCardByAbilityId: {},
+                            },
+                        },
+                        pendingAttack: {
+                            attackerId: '2',
+                            defenderId: '1',
+                            isDefendable: true,
+                            sourceAbilityId: 'holy-radiance',
+                            defenseAbilityId: 'holy-defense',
+                        },
+                        pendingDamage: {
+                            id: pendingDamageId,
+                            sourcePlayerId: '2',
+                            targetPlayerId: '1',
+                            originalDamage: 6,
+                            currentDamage: 6,
+                            sourceAbilityId: 'holy-radiance',
+                            damageScope: 'attack',
+                            responseType: 'beforeDamageDealt',
+                            responderId: '2',
+                            isFullyEvaded: false,
+                        },
+                        pendingBonusDiceSettlement: {
+                            id: 'flight-display-4p',
+                            sourceAbilityId: 'flight',
+                            attackerId: '2',
+                            targetId: '1',
+                            displayOnly: true,
+                            dice: [{ index: 0, value: 2, face: 'blade' }, { index: 1, value: 3, face: 'blade' }],
+                        },
+                        currentRollContext: {
+                            id: 'bonus:flight-display-4p',
+                            kind: 'bonus',
+                            ownerPlayerId: '2',
+                            targetPlayerId: '1',
+                            sourceAbilityId: 'flight',
+                            dice: [],
+                            status: 'open',
+                            policy: { blocksPhaseFlow: true },
+                            display: { replayOnly: false },
+                        },
+                        rollConfirmed: true,
+                        rollCount: 1,
+                        rollLimit: 1,
+                        rollDiceCount: 3,
+                        dice: [],
+                    },
+                    sys: {
+                        phase: 'defensiveRoll',
+                        turnNumber: 0,
+                        eventStream: { entries: [], maxEntries: 200, nextId: 1 },
+                        interaction: { current: undefined, queue: [], isBlocked: true },
+                        responseWindow: { current: undefined },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata,
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [diceThroneEngineConfig],
+            onlineAiRecoveryTickMs: 1000,
+        });
+        const serverInternal = server as unknown as {
+            loadMatch: (id: string) => Promise<any>;
+            handleManualForceEndAiPhase: (match: any, requesterPlayerId: string) => Promise<unknown>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+        server.start();
+
+        const socket = new MockSocket('socket-4p-displayonly-token-chain');
+        io.gameNamespace.connectSocket(socket);
+        socket.sent.length = 0;
+
+        const match = await serverInternal.loadMatch(matchID);
+        const executed: string[] = [];
+        const executeCommandInternal = serverInternal.executeCommandInternal.bind(server);
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (
+            activeMatch,
+            playerID,
+            commandType,
+            payload,
+            options,
+        ) => {
+            executed.push(commandType);
+            const succeeded = await executeCommandInternal(
+                activeMatch,
+                playerID,
+                commandType,
+                payload,
+                options,
+            );
+            if (!succeeded) {
+                throw new Error(`Command rejected: ${commandType}:${activeMatch.lastCommandFailureReason ?? 'unknown'}`);
+            }
+            return succeeded;
+        });
+
+        try {
+            const ack = await serverInternal.handleManualForceEndAiPhase(match, '0');
+
+            expect(ack).toEqual({ accepted: true });
+            expect(executed.slice(0, 2)).toEqual(['CONFIRM_ROLL', 'SKIP_TOKEN_RESPONSE']);
+            expect(executed).toContain('ADVANCE_PHASE');
+            expect(match.state.sys.phase).not.toBe('defensiveRoll');
+            expect(match.state.sys.interaction?.current).toBeUndefined();
+            expect(match.state.core.pendingDamage).toBeUndefined();
+            expect(match.state.core.pendingBonusDiceSettlement).toBeUndefined();
+            expect(match.state.core.currentRollContext).toMatchObject({
+                kind: 'bonus',
+                status: 'settled',
+                policy: { blocksPhaseFlow: false },
+                display: { replayOnly: true },
+            });
+            expect(socket.sent.some((entry) => entry.event === 'error')).toBe(false);
+        } finally {
+            executeSpy.mockRestore();
+        }
+    });
+
     it('dicethrone: defensiveRoll 存在 displayOnly pendingBonusDiceSettlement 时，watchdog 仍应按防御合法动作推进，而不是误打 bonus-die 命令', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -171,6 +397,7 @@ describe('online AI watchdog DiceThrone recovery', () => {
             commandType,
         ) => {
             expect(playerID).toBe('1');
+            activeMatch.stateID += 1;
 
             if (commandType === 'ROLL_DICE') {
                 activeMatch.state = {
@@ -196,10 +423,14 @@ describe('online AI watchdog DiceThrone recovery', () => {
             }
 
             if (commandType === 'CONFIRM_ROLL') {
+                const isDisplayOnlyBonusConfirmation = Boolean(activeMatch.state.core.pendingBonusDiceSettlement);
                 activeMatch.state = {
                     ...activeMatch.state,
                     core: {
                         ...activeMatch.state.core,
+                        ...(isDisplayOnlyBonusConfirmation
+                            ? { pendingBonusDiceSettlement: undefined }
+                            : {}),
                         rollConfirmed: true,
                     },
                     sys: {
@@ -228,6 +459,8 @@ describe('online AI watchdog DiceThrone recovery', () => {
         try {
             await serverInternal.runOnlineAiRecoveryTick();
             await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
             await nextTick();
             await nextTick();
 
@@ -236,7 +469,13 @@ describe('online AI watchdog DiceThrone recovery', () => {
             expect(executed).not.toContain('REROLL_BONUS_DIE');
             expect(executed).not.toContain('SKIP_BONUS_DICE_REROLL');
             expect(match.state.sys.phase).toBe('main2');
-            expect(feedbackReporter).not.toHaveBeenCalled();
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-dicethrone-displayonly-bonus-settlement',
+                gameId,
+                playerId: '1',
+                incidentKind: 'legal-action-recovered',
+                status: 'resolved',
+            }));
         } finally {
             executeSpy.mockRestore();
             resolutionSpy.mockRestore();
@@ -661,6 +900,100 @@ describe('online AI watchdog DiceThrone recovery', () => {
 
         expect(candidate?.reason).toBe('seat-legal-only');
         expect(candidate?.playerId).toBe('1');
+        expect(candidate?.resolution.action.commands).toEqual([{ type: 'CONFIRM_ROLL', payload: {} }]);
+    });
+    it('dicethrone: shared interaction 被阻塞且 AI 私有 Token 交互残留时，应优先确认 displayOnly 飞行骰', () => {
+        const sharedState = {
+            core: {
+                activePlayerId: '0',
+                currentPlayerIndex: 0,
+                turnOrder: ['0', '1', '2', '3'],
+                pendingDamage: {
+                    id: 'damage-flight-token-chain',
+                    sourcePlayerId: '2',
+                    targetPlayerId: '1',
+                    currentDamage: 6,
+                    responseType: 'beforeDamageDealt',
+                    responderId: '2',
+                },
+                pendingBonusDiceSettlement: {
+                    id: 'flight-display-token-chain',
+                    sourceAbilityId: 'flight',
+                    attackerId: '2',
+                    targetId: '1',
+                    displayOnly: true,
+                    continuation: { kind: 'complete' },
+                    customResolutionId: 'tianshi-flight',
+                },
+                currentRollContext: {
+                    id: 'bonus:flight-display-token-chain',
+                    kind: 'bonus',
+                    ownerPlayerId: '2',
+                    targetPlayerId: '1',
+                    sourceAbilityId: 'flight',
+                    status: 'open',
+                    policy: { blocksPhaseFlow: true },
+                    display: { replayOnly: false },
+                },
+            },
+            sys: {
+                phase: 'defensiveRoll',
+                interaction: { current: undefined, queue: [], isBlocked: true },
+                responseWindow: { current: undefined },
+            },
+        } as any;
+
+        const aiSeatState = {
+            ...sharedState,
+            sys: {
+                ...sharedState.sys,
+                interaction: {
+                    current: {
+                        id: 'dt-token-response-damage-flight-token-chain',
+                        playerId: '2',
+                        kind: 'dt:token-response',
+                        data: {
+                            sourceId: 'dicethrone-token-response',
+                            choiceRequestContract: {
+                                requestId: 'token-request-flight-token-chain',
+                                playerId: '2',
+                                kind: 'token-response',
+                                metadata: {
+                                    pendingDamageId: 'damage-flight-token-chain',
+                                },
+                                candidates: [{
+                                    id: 'skip-token',
+                                    commands: [{
+                                        type: 'SKIP_TOKEN_RESPONSE',
+                                        payload: { pendingDamageId: 'damage-flight-token-chain' },
+                                    }],
+                                }],
+                                selection: { mode: 'single' },
+                                resolution: { mode: 'command' },
+                            },
+                        },
+                    },
+                    queue: [],
+                    isBlocked: true,
+                },
+            },
+        } as any;
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'human' },
+                '2': { type: 'local-ai' },
+                '3': { type: 'human' },
+            },
+            seatStates: { '2': aiSeatState },
+            engineConfig: createEngineConfigWithId('dicethrone'),
+            gameId: 'dicethrone',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('2');
         expect(candidate?.resolution.action.commands).toEqual([{ type: 'CONFIRM_ROLL', payload: {} }]);
     });
     it('dicethrone: human main1 遗留 AI displayOnly pendingBonusDiceSettlement 时，watchdog 应直接替 AI 确认收口', async () => {

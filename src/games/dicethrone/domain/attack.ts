@@ -11,9 +11,123 @@ import { getPlayerAbilityEffects } from './abilityLookup';
 import { applyEvents, getPendingAttackExpectedDamage } from './utils';
 import { reduce } from './reducer';
 import { hasPendingBonusDiceSettlement } from './rules';
+import { STATUS_IDS } from './ids';
+import { getCustomActionMeta } from './effects';
+import type { PendingAttackUpdatedEvent, StatusRemovedEvent } from './types';
+
+export const orderPowderKegExplosionBeforeAttackDamage = (
+    events: DiceThroneEvent[],
+): DiceThroneEvent[] => {
+    const ordered = [...events];
+
+    while (true) {
+        let movedExplosion = false;
+
+        for (let index = 0; index + 2 < ordered.length; index += 1) {
+            const removed = ordered[index];
+            const explosion = ordered[index + 1];
+            const reapplied = ordered[index + 2];
+            if (
+                removed.type !== 'STATUS_REMOVED'
+                || removed.payload.statusId !== STATUS_IDS.POWDER_KEG
+                || explosion.type !== 'DAMAGE_DEALT'
+                || explosion.payload.targetId !== removed.payload.targetId
+                || explosion.payload.sourceAbilityId === undefined
+                || explosion.payload.damageScope !== 'direct'
+                || reapplied.type !== 'STATUS_APPLIED'
+                || reapplied.payload.statusId !== STATUS_IDS.POWDER_KEG
+                || reapplied.payload.targetId !== removed.payload.targetId
+                || reapplied.payload.sourceAbilityId !== explosion.payload.sourceAbilityId
+            ) {
+                continue;
+            }
+
+            const attackDamageIndex = ordered.findIndex(event => (
+                event.type === 'DAMAGE_DEALT'
+                && event.payload.targetId === removed.payload.targetId
+                && event.payload.sourceAbilityId === explosion.payload.sourceAbilityId
+                && event.payload.damageScope === 'attack'
+            ));
+            if (attackDamageIndex < 0 || attackDamageIndex >= index) continue;
+
+            const [removedEvent, explosionEvent, reappliedEvent] = ordered.splice(index, 3);
+            ordered.splice(attackDamageIndex, 0, removedEvent, explosionEvent, reappliedEvent);
+            movedExplosion = true;
+            break;
+        }
+
+        if (!movedExplosion) return ordered;
+    }
+};
+
+const pendingAttackHasAttackScopedDamage = (state: DiceThroneCore): boolean => {
+    const pending = state.pendingAttack;
+    if (!pending?.sourceAbilityId) return false;
+    const effects = getPlayerAbilityEffects(state, pending.attackerId, pending.sourceAbilityId);
+    return effects.some(effect => {
+        const action = effect.action;
+        if (!action) return false;
+        if (action.type === 'damage') {
+            return (action.damageScope ?? 'attack') === 'attack'
+                && (action.damageOrigin ?? 'ability') === 'ability';
+        }
+        if (action.type === 'custom' && action.customActionId) {
+            return (action.damageOrigin ?? 'ability') === 'ability'
+                && (getCustomActionMeta(action.customActionId)?.categories.includes('damage') ?? false);
+        }
+        return false;
+    });
+};
+
+const buildZhizhuxiaWebbedTriggerEvents = (
+    state: DiceThroneCore,
+    timestamp: number,
+): DiceThroneEvent[] => {
+    const pending = state.pendingAttack;
+    if (
+        !pending
+        || !pending.defenderId
+        || pending.zhizhuxiaWebbedTriggeredThisAttack
+        || !pendingAttackHasAttackScopedDamage(state)
+    ) {
+        return [];
+    }
+
+    const defender = state.players[pending.defenderId];
+    const webbedStacks = defender?.statusEffects[STATUS_IDS.WEBBED] ?? 0;
+    if (webbedStacks <= 0) return [];
+
+    return [
+        {
+            type: 'PENDING_ATTACK_UPDATED',
+            payload: {
+                attackerId: pending.attackerId,
+                patch: {
+                    isDefendable: false,
+                    zhizhuxiaWebbedTriggeredThisAttack: true,
+                    zhizhuxiaWebbedWasPresentAtStart: true,
+                },
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as PendingAttackUpdatedEvent,
+        {
+            type: 'STATUS_REMOVED',
+            payload: {
+                targetId: pending.defenderId,
+                statusId: STATUS_IDS.WEBBED,
+                stacks: webbedStacks,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 0.001,
+        } as StatusRemovedEvent,
+    ];
+};
 
 const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'CHOICE_REQUESTED'
+    || event.type === 'STRANGE_OPERATION_REQUESTED'
+    || event.type === 'TOKEN_RESPONSE_REQUESTED'
     || event.type === 'COMPARE_ROLL_REQUESTED'
     || event.type === 'INTERACTION_REQUESTED';
 
@@ -55,7 +169,8 @@ const createDefenseResolvedEvent = (
 export const resolveOffensivePreDefenseEffects = (
     state: DiceThroneCore,
     random?: RandomFn,
-    timestamp: number = 0
+    timestamp: number = 0,
+    startEffectIndex = 0,
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
     if (!pending || pending.preDefenseResolved) return [];
@@ -79,7 +194,16 @@ export const resolveOffensivePreDefenseEffects = (
     };
 
     const events: DiceThroneEvent[] = [];
-    events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, { random }));
+    events.push(...buildZhizhuxiaWebbedTriggerEvents(state, timestamp));
+    let suspended = false;
+    events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, {
+        random, startEffectIndex,
+        onInteractionSuspended: (nextEffectIndex, event) => {
+            event.payload.preDefenseContinuation = { nextEffectIndex, sourceAbilityId };
+            suspended = true;
+        },
+    }));
+    if (suspended) return events;
     if (events.some(isBlockingInteractionEvent) || events.some(isInteractiveBonusDiceRerollEvent)) {
         // 记录已完成的前置位置，但不能继续进入防御或主伤害。
         // 奖励骰确认后从这个位置恢复，既不会重掷，也不会提前结算父攻击。
@@ -239,13 +363,13 @@ export const resolveAttack = (
         const hasTokenResponseInPostDamage = postDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
         const hasBonusDiceRerollInPostDamage = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
         if (hasChoiceInPostDamage || hasTokenResponseInPostDamage || hasBonusDiceRerollInPostDamage) {
-            events.push(...attackEvents);
+            events.push(...orderPowderKegExplosionBeforeAttackDamage(attackEvents));
             return events;
         }
 
         totalDamage = attackCtx.damageDealt;
     }
-    events.push(...attackEvents);
+    events.push(...orderPowderKegExplosionBeforeAttackDamage(attackEvents));
 
     const resolvedEvent: AttackResolvedEvent = {
         type: 'ATTACK_RESOLVED',
@@ -326,7 +450,9 @@ export const resolveAttackWithSneakImmunityAfterDefense = (
         });
         const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random });
         events.push(...[...withDamageEvents, ...postDamageEvents].filter((event) => (
-            event.type !== 'DAMAGE_DEALT' || event.payload.targetId !== defenderId
+            event.type !== 'DAMAGE_DEALT'
+            || event.payload.targetId !== defenderId
+            || event.payload.damageScope === 'direct'
         )));
     }
 

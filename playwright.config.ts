@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { buildSync } from 'esbuild';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './scripts/infra/e2e-port-config.js';
 import { assertSafeE2EServerMode, resolveUseDevServers } from './scripts/infra/e2e-mode-config.js';
 import { loadWorkerPorts, reserveAvailablePorts, reservePorts, saveWorkerPorts } from './scripts/infra/port-allocator.js';
@@ -36,6 +37,7 @@ const desktopBrowserDevice = browserChannel?.startsWith('msedge')
 const allowFullRun = process.env.PW_ALLOW_FULL_RUN === 'true';
 const shouldDisableChromiumGpu = process.platform === 'win32' && !headedMode;
 const shouldUseJpegScreenshotReporter = process.env.PW_DISABLE_JPEG_REPORTER !== 'true';
+const shouldRecordVideo = process.env.PW_RECORD_VIDEO === 'true';
 // 每次 Playwright 启动链都分配独立 scope，供 globalSetup/globalTeardown 和端口文件隔离。
 const runtimeScope = process.env.PW_RUNTIME_SCOPE
     || `pw-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -79,7 +81,10 @@ async function resolveSingleWorkerPorts() {
     return allocated;
 }
 
-const resolvedSingleWorkerPorts = !isMultiWorker && !useDevServers
+// 托管 runtime 的端口已由 supervisor 预留并启动；Playwright 再次 reserve 会把测试
+// 分配到另一组端口，导致真实联机用例探测到错误的游戏服务器。
+const isManagedRuntime = Boolean(process.env.PW_MANAGED_RUNTIME_ID?.trim());
+const resolvedSingleWorkerPorts = !isMultiWorker && !useDevServers && !isManagedRuntime
     ? await resolveSingleWorkerPorts()
     : SINGLE_WORKER_PORTS;
 const ports = useDevServers ? DEV_PORTS : resolvedSingleWorkerPorts;
@@ -122,6 +127,14 @@ function collectFrameworkBackedTests(rootDir: string): string[] {
 function collectForbiddenLocalModeSpecs(rootDir: string): string[] {
     const matches: string[] = [];
     const forbiddenPattern = /\/play\/[^/\s'"]+\/local\b/;
+    // 标准单文件入口只检查该用例的实际导入闭包，其他任务的诊断文件不属于本次执行。
+    const explicitTarget = process.env.PW_TEST_TARGET?.trim();
+    if (explicitTarget && fs.existsSync(explicitTarget) && fs.statSync(explicitTarget).isFile()) {
+        const result = buildSync({ entryPoints: [explicitTarget], bundle: true, write: false,
+            metafile: true, platform: 'node', format: 'esm', packages: 'external', logLevel: 'silent' });
+        return Object.keys(result.metafile!.inputs).filter(file => /\.[cm]?[jt]sx?$/.test(file)
+            && forbiddenPattern.test(fs.readFileSync(file, 'utf8')));
+    }
 
     const walk = (currentDir: string) => {
         for (const entry of fs.readdirSync(currentDir, { withFileTypes: true })) {
@@ -263,8 +276,8 @@ export default defineConfig({
             ['list'],
         ]
         : 'list',
-    outputDir: './test-results/playwright-artifacts',
-    preserveOutput: 'failures-only',
+    outputDir: process.env.PW_E2E_OUTPUT_DIR || './test-results/playwright-artifacts',
+    preserveOutput: shouldRecordVideo ? 'always' : 'failures-only',
     globalSetup: shouldStartServers ? './e2e/global-setup.ts' : undefined,
     globalTeardown: shouldStartServers ? './e2e/global-teardown.ts' : undefined,
     use: {
@@ -272,6 +285,7 @@ export default defineConfig({
         headless: !headedMode,
         trace: 'on-first-retry',
         screenshot: 'only-on-failure',
+        ...(shouldRecordVideo ? { video: 'on' as const } : {}),
     },
     projects: [
         {

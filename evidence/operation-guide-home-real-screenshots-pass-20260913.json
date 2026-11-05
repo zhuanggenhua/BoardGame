@@ -1,0 +1,147 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-13T22:38:38+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "操作指南入口只在首页出现，不放在游戏页任务栏、HUD 或任何悬浮球里。",
+      "status": "PASS",
+      "evidence": [
+        "src/pages/Home.tsx renders home-operation-guide-entry in the home top action area before the account controls.",
+        "src/components/home-v2/LobbyDirectory.tsx renders home-v2-operation-guide-entry in the home-v2 account area.",
+        "e2e/_shared/operation-guide-hud.e2e.ts verifies DiceThrone game pages expose neither game-operation-guide-entry nor data-fab-id=\"operation-guide\".",
+        "Playwright run 2026-09-13 18:59 Asia/Shanghai: 3 passed."
+      ]
+    },
+    {
+      "requirement": "未登录网页和 App 首页，操作指南按钮位于登录/注册入口左侧；登录后代码顺序仍在用户按钮左侧。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/01-web-home-right-top-entry.png shows the web home entry beside login/register.",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/07-app-home-right-top-entry.png shows the App/mobile home entry beside login/register.",
+        "src/pages/Home.tsx renders OperationGuideButton before UserMenu or login/register controls."
+      ]
+    },
+    {
+      "requirement": "点击操作指南后，打开屏幕正中的可滚动弹窗。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/02-web-home-centered-guide-modal-top.png shows the centered web modal.",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/08-app-home-centered-guide-modal-top.png shows the centered App/mobile modal.",
+        "e2e/_shared/operation-guide-hud.e2e.ts asserts modal center geometry and scroll-body scrollability."
+      ]
+    },
+    {
+      "requirement": "操作指南只用真实截图说明，不显示目录、优先级引导、大图提示、悬浮球功能说明卡或手绘 callout UI。",
+      "status": "PASS",
+      "evidence": [
+        "src/components/system/OperationGuidePanel.tsx renders only zoomable screenshot figures in the modal body.",
+        "src/components/system/__tests__/OperationGuidePanel.test.tsx asserts old priority copy, visible zoom hint, function lists, callouts and zoom title text are absent.",
+        "e2e/_shared/operation-guide-hud.e2e.ts asserts the same unwanted UI is absent in the real home modal and zoom viewer."
+      ]
+    },
+    {
+      "requirement": "移动端长按放大、点击对手头像查看公开信息、局外悬浮球和局内悬浮球都统一使用 DiceThrone 真实截图，图内只写短功能名。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/mobile-long-press-annotated.png is generated from D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-mobile-long-press-dicethrone.png with the short label 长按放大.",
+        "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/opponent-public-info-annotated.png is generated from D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-opponent-public-info-dicethrone.png with short labels 对手头像 and 公开信息.",
+        "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/home-web-fab-annotated.png and D:/gongzuo/webgame/BoardGame/public/images/operation-guide/home-app-fab-annotated.png are generated from DiceThrone home screenshots with expanded home FAB controls.",
+        "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/game-fab-annotated.png is generated from a DiceThrone in-game screenshot with expanded GameHUD FAB controls.",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/operation-guide-annotation-audit.json records the DiceThrone source paths and generated label positions."
+      ]
+    },
+    {
+      "requirement": "悬浮球说明使用醒目的大箭头；不能画圈，标注不能遮挡悬浮球；指出位置时离悬浮球远一点。",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/operation-guide-annotation-audit.json records annotationStyle large-arrow for the home web, home App and in-game FAB images; no circle annotation is generated.",
+        "The annotation audit checked label rectangles against each target FAB rectangle with padding and found no collisions.",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/05-web-home-guide-home-fab-zoom.png and D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/06-web-home-guide-game-fab-zoom.png show the expanded annotated screenshots in the viewer.",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/09-app-home-guide-app-fab-zoom.png and D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/10-app-home-guide-game-fab-zoom.png show the App and in-game FAB annotations in the viewer."
+      ]
+    },
+    {
+      "requirement": "指南里的真实截图可打开大图，方便手机端看清标注内容，但不额外显示可见提示文案或截图标题。",
+      "status": "PASS",
+      "evidence": [
+        "src/components/system/OperationGuidePanel.tsx wraps each screenshot in a zoom trigger without rendering visible zoom instruction text or alt-title text in the viewer.",
+        "src/components/system/__tests__/OperationGuidePanel.test.tsx clicks long-press, opponent-public-info, home FAB and game FAB triggers.",
+        "e2e/_shared/operation-guide-hud.e2e.ts opens zoom viewer for the web screenshots and the App home/game screenshots, and checks the close control is touch-sized.",
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/03-web-home-guide-long-press-zoom.png and D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/04-web-home-guide-opponent-public-info-zoom.png show the first two guide images in zoom view."
+      ]
+    },
+    {
+      "requirement": "项目 UI 规范补上“非必要不新增 UI”，避免操作指南再恢复目录、说明卡或点击查看提示。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/ui-ux.md contains the 非必要不新增 UI rule under 组件来源.",
+        "npm run spec:lint passed after the rule update."
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/01-web-home-right-top-entry.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/02-web-home-centered-guide-modal-top.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/03-web-home-guide-long-press-zoom.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/04-web-home-guide-opponent-public-info-zoom.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/05-web-home-guide-home-fab-zoom.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/06-web-home-guide-game-fab-zoom.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/07-app-home-right-top-entry.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/08-app-home-centered-guide-modal-top.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/09-app-home-guide-app-fab-zoom.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-home-real-screenshots-20260913/10-app-home-guide-game-fab-zoom.png"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-mobile-long-press-dicethrone.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-opponent-public-info-dicethrone.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-home-web-dicethrone-expanded-fab.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-home-app-dicethrone-expanded-fab.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/source-game-dicethrone-expanded-fab.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/home-web-dicethrone-fab-rects.json",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/home-app-dicethrone-fab-rects.json",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/opponent-public-info-dicethrone-rects.json",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/game-dicethrone-fab-rects.json",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/mobile-long-press-dicethrone-rects.json",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/_shared/operation-guide-dicethrone-source-real-screenshots-20260913/operation-guide-annotation-audit.json"
+  ],
+  "generatedAssets": [
+    "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/mobile-long-press-annotated.png",
+    "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/opponent-public-info-annotated.png",
+    "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/home-web-fab-annotated.png",
+    "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/home-app-fab-annotated.png",
+    "D:/gongzuo/webgame/BoardGame/public/images/operation-guide/game-fab-annotated.png"
+  ],
+  "tests": [
+    {
+      "command": "npm run spec:lint",
+      "status": "PASS",
+      "completedAt": "2026-09-13T18:58:00+08:00"
+    },
+    {
+      "command": "node scripts/verify/build-operation-guide-fab-annotations.mjs",
+      "status": "PASS",
+      "completedAt": "2026-09-13T22:32:00+08:00",
+      "outputs": 3
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/components/system/__tests__/OperationGuidePanel.test.tsx src/components/__tests__/GameHUDChatPreview.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "status": "PASS",
+      "completedAt": "2026-09-13T18:58:18+08:00",
+      "testFiles": 2,
+      "tests": 25
+    },
+    {
+      "command": "PW_E2E_FRONTEND_PORT=6674 node scripts/infra/run-e2e-single.mjs default e2e/_shared/operation-guide-hud.e2e.ts",
+      "status": "PASS",
+      "completedAt": "2026-09-13T22:38:02+08:00",
+      "tests": 3
+    }
+  ]
+}

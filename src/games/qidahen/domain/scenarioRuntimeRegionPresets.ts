@@ -5,6 +5,7 @@ import {
     buildRegularTroopStack,
 } from './troopStacks';
 import { cloneSpecialTroopStacksAsPieces } from './troopCompat';
+import { QIDAHEN_RUNTIME_REGION_BY_ID } from '../ui/mapGraph';
 import type { QidahenCore, QidahenScenarioId, QidahenSpecialTroopStack } from './types';
 
 type QidahenScenarioRuntimeRegionPreset = Partial<Pick<QidahenCore['regions'][number], 'controller' | 'troops' | 'population' | 'note'>> & {
@@ -13,6 +14,12 @@ type QidahenScenarioRuntimeRegionPreset = Partial<Pick<QidahenCore['regions'][nu
 
 const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId, Partial<Record<string, QidahenScenarioRuntimeRegionPreset>>>> = {
     'post-sarhu-1619': {
+        duoyan: {
+            controller: 'ming',
+            troops: 1,
+            population: 1,
+            specialTroops: [buildMercenaryTroopStack('ming', 'post-sarhu-1619-duoyan', 1, 2, 'cavalry')],
+        },
         'city-region-1': {
             controller: 'ming',
             troops: 1,
@@ -168,7 +175,7 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
             population: 2,
             specialTroops: [buildRegularTroopStack('ming', 'post-sarhu-1619-dongjiang', 1, 1)],
         },
-        'city-region-24': {
+        'xuan-fu': {
             controller: 'ming',
             troops: 1,
             population: 2,
@@ -232,6 +239,12 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
         },
     },
     'shanhaiguan-1622': {
+        duoyan: {
+            controller: 'ming',
+            troops: 1,
+            population: 1,
+            specialTroops: [buildMercenaryTroopStack('ming', 'shanhaiguan-1622-duoyan', 1, 2, 'cavalry')],
+        },
         'city-region-1': {
             controller: 'ming',
             troops: 2,
@@ -381,7 +394,7 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
             population: 2,
             specialTroops: [buildRegularTroopStack('ming', 'shanhaiguan-1622-dongjiang', 2, 2)],
         },
-        'city-region-24': {
+        'xuan-fu': {
             controller: 'ming',
             troops: 2,
             population: 2,
@@ -597,7 +610,7 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
             troops: 1,
             population: 1,
             specialTroops: [buildFactionTroopStack('mongol', 'dingmao-1627-kalaqin', 'cavalry', 1, 2)],
-            note: '剧本三起始反面控制标记：喀喇沁部承接 1 个蒙古 Lv2 骑兵与 1 人口；朵颜部尚无已确认独立运行时区域。',
+            note: '剧本三起始反面控制标记：喀喇沁部承接 1 个蒙古 Lv2 骑兵与 1 人口。',
         },
         'city-region-22': {
             controller: 'ming',
@@ -608,7 +621,7 @@ const QIDAHEN_SCENARIO_RUNTIME_REGION_PRESETS: Partial<Record<QidahenScenarioId,
                 buildArtilleryTroopStack('ming', 'dingmao-1627-dongjiang', 1, 2),
             ],
         },
-        'city-region-24': {
+        'xuan-fu': {
             controller: 'ming',
             troops: 1,
             population: 2,
@@ -687,7 +700,7 @@ export const applyQidahenScenarioRuntimeRegionPreset = (
         return regions;
     }
 
-    return regions.map((region) => {
+    const placedRegions = regions.map((region) => {
         const override = preset[region.id];
         if (!override || region.isLogicalRegion) {
             return region;
@@ -702,5 +715,13 @@ export const applyQidahenScenarioRuntimeRegionPreset = (
                 ? cloneSpecialTroopStacksAsPieces(override.specialTroops)
                 : region.specialTroops,
         };
+    });
+    // 剧本兵力按土地列出；城名子对象不得复制父地域部队或沿用旧样本兵力。
+    const regionById = new Map(placedRegions.map(region => [region.id, region]));
+    return placedRegions.map(region => {
+        const definition = QIDAHEN_RUNTIME_REGION_BY_ID.get(region.id);
+        if (definition?.mapRole !== 'city' || !definition.parentRegionId) return region;
+        const parent = regionById.get(definition.parentRegionId)!;
+        return { ...region, controller: parent.controller, troops: 0, population: 0, specialTroops: [] };
     });
 };

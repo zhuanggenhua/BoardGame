@@ -130,7 +130,7 @@ export const buildPendingTargetChoiceOptions = (
         return [];
     }
 
-    const options: QidahenPendingTargetChoiceOption[] = [
+    const retreatOptions: QidahenPendingTargetChoiceOption[] = [
         {
             id: 'rear-guard',
             label: '断后',
@@ -145,7 +145,16 @@ export const buildPendingTargetChoiceOptions = (
         },
     ];
 
-    if (canUseCityDefenderChoice(pending)) {
+    if (pending.battleStep === 'retreat') return retreatOptions;
+    const defenderDeclaration = pending.battleStep === 'defender-declaration';
+    const options: QidahenPendingTargetChoiceOption[] = [{
+        id: defenderDeclaration ? 'defender-fight' : 'fight',
+        label: defenderDeclaration ? '应战' : '开始战斗',
+        labelKey: defenderDeclaration ? 'battle.pendingTargetChoice.defenderFight' : 'battle.pendingTargetChoice.fight',
+        value: { choiceId: defenderDeclaration ? 'defender-fight' : 'fight' },
+    }];
+
+    if (defenderDeclaration && canUseCityDefenderChoice(pending)) {
         options.unshift(
             {
                 id: 'defender-sortie',
@@ -162,7 +171,7 @@ export const buildPendingTargetChoiceOptions = (
         );
     }
 
-    if (canUseAttackerCavalryPlunder(core, pending)) {
+    if (!defenderDeclaration && canUseAttackerCavalryPlunder(core, pending)) {
         options.unshift(buildPendingTargetCavalryPlunderChoiceOption(
             'cavalry-plunder-attacker',
             '骑兵劫掠己方牌堆',
@@ -179,7 +188,7 @@ export const buildPendingTargetChoiceOptions = (
         }
     }
 
-    for (const choice of getDefenderCavalryEvasionRetreatChoices(core, pending)) {
+    for (const choice of defenderDeclaration ? getDefenderCavalryEvasionRetreatChoices(core, pending) : []) {
         options.unshift({
             id: `cavalry-evasion:${choice.id}`,
             label: `骑兵避战至${choice.name}`,

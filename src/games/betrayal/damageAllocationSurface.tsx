@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { HudPortal, UI_Z_INDEX } from "../../core";
+import { UI_Z_INDEX } from "../../core";
 import type {
   BetrayalCore,
   BetrayalExplorerSummary,
@@ -33,7 +33,6 @@ export interface BetrayalDamageAllocationSurfaceProps {
   canAct: boolean;
   ready: boolean;
   locale: string;
-  isPhoneLandscapeLayout: boolean;
   onToggleBrooch: () => void;
   onAdjustTrait: (trait: BetrayalTraitKey, delta: -1 | 1) => void;
   canIncrementTrait: (trait: BetrayalTraitKey) => boolean;
@@ -69,7 +68,6 @@ export function BetrayalDamageAllocationSurface({
   canAct,
   ready,
   locale,
-  isPhoneLandscapeLayout,
   onToggleBrooch,
   onAdjustTrait,
   canIncrementTrait,
@@ -83,21 +81,16 @@ export function BetrayalDamageAllocationSurface({
   );
 
   return (
-    <HudPortal>
-      <div
-        data-testid="betrayal-damage-allocation-backdrop"
-        className={`pointer-events-auto flex items-center justify-center ${
-          isPhoneLandscapeLayout
-            ? "fixed inset-0 px-3 pb-[74px] pt-6"
-            : "fixed bottom-[96px] left-[248px] right-[232px] top-[92px] px-4 py-8"
-        }`}
-        style={{ zIndex: UI_Z_INDEX.overlayRaised + 170 }}
-      >
+    <div
+      data-testid="betrayal-damage-allocation-backdrop"
+      className="pointer-events-auto absolute inset-0 flex items-center justify-center px-[320px] pb-[118px] pt-[112px]"
+      style={{ zIndex: UI_Z_INDEX.overlayRaised + 170 }}
+    >
         <div
           data-testid="betrayal-damage-allocation-panel"
           data-player-id={allocation.playerId}
-          className={`grid w-full max-w-[720px] gap-4 border border-[rgba(214,181,109,0.38)] bg-[rgba(12,14,12,0.94)] p-5 text-[#f3e0a6] shadow-[0_26px_54px_rgba(0,0,0,0.58)] ${
-            isPhoneLandscapeLayout ? "max-h-full overflow-y-auto" : ""
+          className={`grid w-full max-w-[860px] gap-4 border border-[rgba(214,181,109,0.38)] bg-[rgba(12,14,12,0.96)] p-5 text-[#f3e0a6] shadow-[0_26px_54px_rgba(0,0,0,0.58)] ${
+            ""
           }`}
         >
           <div className="flex items-start justify-between gap-4">
@@ -239,7 +232,10 @@ export function BetrayalDamageAllocationSurface({
             })}
           </div>
 
-          <div className="flex justify-end">
+          <div
+            data-ui-role="shared-action-dock"
+            className="flex justify-center border-t border-[rgba(214,191,129,0.18)] pt-3"
+          >
             <BetrayalConfirmButton
               type="button"
               data-testid="betrayal-damage-allocation-confirm"
@@ -256,6 +252,5 @@ export function BetrayalDamageAllocationSurface({
           </div>
         </div>
       </div>
-    </HudPortal>
   );
 }

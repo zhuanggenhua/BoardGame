@@ -103,14 +103,14 @@ const getDeckSearchSelection = (value: unknown): { cardUid: string; defId: strin
     return { cardUid: record.cardUid, defId: record.defId };
 };
 
-function attachOptionsGenerator<T>(
+function attachOptionsGenerator<T extends object>(
     interaction: InteractionDescriptor<T>,
     optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
-): InteractionDescriptor<T> {
+): InteractionDescriptor<T & { optionsGenerator: typeof optionsGenerator }> {
     return {
         ...interaction,
         data: {
-            ...(interaction.data ?? {}),
+            ...interaction.data,
             optionsGenerator,
         },
     };
@@ -522,11 +522,7 @@ function createKillerPlantBuddingContext(ctx: AbilityContext): KillerPlantBuddin
     };
 }
 
-const killerPlantVenusManTrapPromptProgram = createPromptProgram<
-    KillerPlantDeckSearchContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const killerPlantVenusManTrapPromptProgram = createPromptProgram<KillerPlantDeckSearchContext>({
     sourceId: 'killer_plant_venus_man_trap_search',
     buildInteraction: (context) => {
         if (!context.matchState) {
@@ -588,11 +584,7 @@ const killerPlantVenusManTrapProgram = createBranchProgram<
     }),
 });
 
-const killerPlantSproutPromptProgram = createPromptProgram<
-    KillerPlantDeckSearchContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const killerPlantSproutPromptProgram = createPromptProgram<KillerPlantDeckSearchContext>({
     sourceId: 'killer_plant_sprout_search',
     buildInteraction: (context) => {
         if (!context.matchState) {
@@ -663,11 +655,7 @@ const killerPlantSproutProgram = createBranchProgram<
     }),
 });
 
-const killerPlantBuddingPromptProgram = createPromptProgram<
-    KillerPlantBuddingContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const killerPlantBuddingPromptProgram = createPromptProgram<KillerPlantBuddingContext>({
     sourceId: 'killer_plant_budding_choose',
     buildInteraction: (context) => {
         if (!context.matchState) {

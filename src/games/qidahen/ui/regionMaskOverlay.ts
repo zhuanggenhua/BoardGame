@@ -3,9 +3,14 @@ import { QIDAHEN_REGION_ID_BY_MASK_COLOR, qidahenRegionColorKey } from './mapGra
 type OverlayRgba = readonly [number, number, number, number];
 
 export type RegionMaskOverlayToneKey =
+    | 'result'
     | 'selected'
     | 'source'
     | 'dispatch'
+    | 'candidate'
+    | 'tutorialSource'
+    | 'tutorialCandidate'
+    | 'tutorialPrimary'
     | 'activeDispatch'
     | 'hovered'
     | 'pending'
@@ -27,21 +32,30 @@ type RegionMaskOverlayToneConfig = {
 };
 
 export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionMaskOverlayToneConfig> = {
+    result: {
+        fill: [239, 188, 74, 112],
+        stroke: [255, 239, 169, 255],
+        innerStrokeRadius: 2,
+    },
     ming: {
-        fill: [159, 52, 38, 28],
-        stroke: [159, 52, 38, 74],
+        fill: [159, 52, 38, 18],
+        stroke: [42, 22, 16, 228],
+        innerStrokeRadius: 1,
     },
     mongol: {
-        fill: [105, 88, 44, 28],
-        stroke: [125, 107, 58, 70],
+        fill: [105, 88, 44, 18],
+        stroke: [40, 30, 16, 224],
+        innerStrokeRadius: 1,
     },
     jin: {
-        fill: [71, 88, 128, 26],
-        stroke: [86, 103, 146, 68],
+        fill: [71, 88, 128, 18],
+        stroke: [28, 32, 48, 224],
+        innerStrokeRadius: 1,
     },
     neutral: {
-        fill: [116, 100, 76, 22],
-        stroke: [126, 111, 92, 56],
+        fill: [116, 100, 76, 14],
+        stroke: [38, 30, 22, 216],
+        innerStrokeRadius: 1,
     },
     selected: {
         fill: [182, 53, 39, 86],
@@ -73,6 +87,34 @@ export const REGION_MASK_OVERLAY_TONES: Record<RegionMaskOverlayToneKey, RegionM
         outerStrokeRadius: 5,
         outerGlow: [86, 214, 118, 92],
         outerGlowRadius: 9,
+    },
+    tutorialSource: {
+        fill: [225, 157, 61, 84],
+        stroke: [255, 237, 172, 255],
+        innerStrokeRadius: 2,
+        outerFill: [225, 157, 61, 44],
+        outerFillRadius: 3,
+        outerStroke: [255, 225, 142, 250],
+        outerStrokeRadius: 6,
+        outerGlow: [255, 209, 108, 132],
+        outerGlowRadius: 11,
+    },
+    candidate: {
+        fill: [46, 166, 82, 60],
+        stroke: [109, 235, 145, 255],
+        innerStrokeRadius: 2,
+    },
+    tutorialCandidate: {
+        fill: [46, 166, 82, 24],
+        stroke: [187, 222, 191, 142],
+        innerStrokeRadius: 1,
+    },
+    tutorialPrimary: {
+        fill: [61, 196, 96, 86],
+        stroke: [255, 255, 236, 255],
+        innerStrokeRadius: 2,
+        outerGlow: [126, 255, 140, 96],
+        outerGlowRadius: 3,
     },
     activeDispatch: {
         fill: [80, 206, 105, 76],

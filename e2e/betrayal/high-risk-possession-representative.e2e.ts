@@ -76,6 +76,17 @@ type ItemDiscoveryCard = BetrayalCore['possessionOrderByKind']['item'][number];
 const CURRENT_ITEM_DISCOVERY_CARDS: ItemDiscoveryCard[] =
     BETRAYAL_DISCOVERY_POOLS.possessions.item.map((item) => ({ ...item }));
 
+const resolveOrdinaryItemDiscoveryCards = (
+    itemCard: ItemDiscoveryCard =
+        CURRENT_ITEM_DISCOVERY_CARDS.find((card) => card.id === 'flashlight') ??
+        ({ id: 'flashlight', name: '手电筒', kind: 'item' } satisfies ItemDiscoveryCard),
+) => {
+    const secondCard =
+        CURRENT_ITEM_DISCOVERY_CARDS.find((card) => card.id !== itemCard.id) ??
+        ({ id: `${itemCard.id}-backup`, name: `${itemCard.name}（备用）`, kind: 'item' } satisfies ItemDiscoveryCard);
+    return [{ ...itemCard }, { ...secondCard }] as const;
+};
+
 const openBetrayalPage = async (
     page: Page,
     context: Parameters<typeof initBetrayalContext>[0],
@@ -124,13 +135,15 @@ const createOrdinaryItemDiscoveryCore = (
         CURRENT_ITEM_DISCOVERY_CARDS.find((card) => card.id === 'flashlight') ??
         ({ id: 'flashlight', name: '手电筒', kind: 'item' } satisfies ItemDiscoveryCard),
 ) => {
+    const [firstItemCard, secondItemCard] = resolveOrdinaryItemDiscoveryCards(itemCard);
     const core = createStartedFirstScenarioCore(['0', '1', '2']);
     core.drawOrder = ['item'];
     core.roomDiscoveryOrderByFloor.ground = [
         BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'vault')!,
     ];
     core.possessionOrderByKind.item = [
-        { ...itemCard },
+        firstItemCard,
+        secondItemCard,
     ];
     core.deckCounts.item = core.possessionOrderByKind.item.length;
     core.currentExplorer = {
@@ -559,9 +572,10 @@ const exerciseSkullDeathProtectionFromRealAttack = async (
 };
 
 test.describe('山屋惊魂高风险持有物代表链', () => {
-    test('普通物品符号房间发现抽牌：真实页面显示单步获得物品确认', async ({ page, context }) => {
+    test('金库双物品符号房间发现抽牌：真实页面完成两步获得物品确认', async ({ page, context }) => {
         test.setTimeout(120000);
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-ordinary-item-discovery');
+        const [firstItemCard, secondItemCard] = resolveOrdinaryItemDiscoveryCards();
 
         await injectCore(page, createOrdinaryItemDiscoveryCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
@@ -578,27 +592,40 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
 
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
-        await expect(discoveryPanel).toHaveAttribute('aria-label', /物品牌 手电筒/);
+        await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`物品牌 ${firstItemCard.name}`));
         await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('已加入持有区');
-        await expect(discoveryPanel).toContainText('手电筒');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(1);
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('已加入持有区');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText('手电筒');
+        await expect(discoveryPanel).toContainText(firstItemCard.name);
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(firstItemCard.name);
+        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(secondItemCard.name);
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(2);
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(0)).toContainText(firstItemCard.name);
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText('已加入持有区');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step').nth(1)).toContainText(secondItemCard.name);
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-card-resolution-confirmed-count', '0');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-card-resolution-required-count', '3');
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到金库');
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('拿到了手电筒');
-        await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(`拿到了${firstItemCard.name}、${secondItemCard.name}`);
         await saveScreenshot(page, ORDINARY_ITEM_DISCOVERY_SCREENSHOT);
 
-        const ordinaryResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
-        if (!ordinaryResolutionId) {
-            throw new Error('普通物品发现缺少待确认结算');
+        const firstResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+        if (!firstResolutionId) {
+            throw new Error('金库第一张物品缺少待确认结算');
         }
         await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
-        await acknowledgeOtherPlayersForResolution(page, ordinaryResolutionId);
+        await acknowledgeOtherPlayersForResolution(page, firstResolutionId);
+        await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`物品牌 ${secondItemCard.name}`));
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '2/2');
+        const secondResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+        if (!secondResolutionId) {
+            throw new Error('金库第二张物品缺少待确认结算');
+        }
+        await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+        await acknowledgeOtherPlayersForResolution(page, secondResolutionId);
         await expect(discoveryPanel).toHaveCount(0);
-        await expect(page.locator('[data-testid="betrayal-inventory-flashlight-0"]')).toBeVisible();
+        await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(firstItemCard.name);
+        await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(secondItemCard.name);
         await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(0);
         await saveScreenshot(page, ORDINARY_ITEM_INVENTORY_SCREENSHOT);
@@ -606,11 +633,12 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         assertNoFatalFrontendErrors([{ label: 'betrayal-ordinary-item-discovery', diagnostics }]);
     });
 
-    test('当前22张物品在普通物品符号房间发现时均显示单步确认并进入持有区', async ({ page, context }) => {
+    test('当前22张物品在金库双物品符号房间发现时均完成两步确认并进入持有区', async ({ page, context }) => {
         test.setTimeout(300000);
         const diagnostics = await openBetrayalPage(page, context, 'betrayal-ordinary-item-discovery-matrix');
 
         for (const [index, itemCard] of CURRENT_ITEM_DISCOVERY_CARDS.entries()) {
+            const [firstItemCard, secondItemCard] = resolveOrdinaryItemDiscoveryCards(itemCard);
             await injectCore(page, createOrdinaryItemDiscoveryCore(itemCard));
             await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
             await page.getByTestId('betrayal-action-explore').click();
@@ -625,20 +653,29 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
             await expect(discoveryPanel, `物品「${itemCard.name}」应显示发现确认面板`).toBeVisible({
                 timeout: 30000,
             });
-            await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`物品牌 ${itemCard.name}`));
-            await expect(discoveryPanel).toContainText(itemCard.name);
+            await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`物品牌 ${firstItemCard.name}`));
+            await expect(discoveryPanel).toContainText(firstItemCard.name);
+            await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(secondItemCard.name);
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(2);
             await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认');
-            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
-                'data-pending-card-resolution-step',
-                '1/1',
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-card-resolution-required-count', '3');
+            const firstCardResolutionConfirmedCount = Number(
+                await discoveryPanel.getByTestId('betrayal-discovery-continue')
+                    .getAttribute('data-card-resolution-confirmed-count'),
             );
+            expect(firstCardResolutionConfirmedCount).toBeGreaterThanOrEqual(0);
+            expect(firstCardResolutionConfirmedCount).toBeLessThan(3);
             await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到金库');
-            await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(`拿到了${itemCard.name}`);
+            await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText(
+                `拿到了${firstItemCard.name}、${secondItemCard.name}`,
+            );
             await expect.poll(() => readOrdinaryItemDiscoveryState(page)).toMatchObject({
-                latestDiscoveryTitle: itemCard.name,
+                latestDiscoveryTitle: secondItemCard.name,
                 latestDiscoveryKind: 'item',
                 pendingSteps: [
-                    { stepKind: 'drawn-card', index: 1, total: 1, cardName: itemCard.name },
+                    { stepKind: 'room-discovery-card', index: 1, total: 2, cardName: firstItemCard.name },
+                    { stepKind: 'drawn-card', index: 2, total: 2, cardName: secondItemCard.name },
                 ],
                 rejected: null,
             });
@@ -649,12 +686,21 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
 
             const matrixResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
             if (!matrixResolutionId) {
-                throw new Error(`物品「${itemCard.name}」缺少待确认结算`);
+                throw new Error(`物品「${firstItemCard.name}」缺少第一步待确认结算`);
             }
             await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
             await acknowledgeOtherPlayersForResolution(page, matrixResolutionId);
+            await expect(discoveryPanel).toHaveAttribute('aria-label', new RegExp(`物品牌 ${secondItemCard.name}`));
+            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '2/2');
+            const secondMatrixResolutionId = (await readCurrentCore(page)).pendingCardResolutionQueue?.[0]?.id;
+            if (!secondMatrixResolutionId) {
+                throw new Error(`物品「${secondItemCard.name}」缺少第二步待确认结算`);
+            }
+            await discoveryPanel.getByTestId('betrayal-discovery-continue').click();
+            await acknowledgeOtherPlayersForResolution(page, secondMatrixResolutionId);
             await expect(discoveryPanel).toHaveCount(0);
-            await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(itemCard.name);
+            await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(firstItemCard.name);
+            await expect(page.getByTestId('betrayal-inventory-row-item')).toContainText(secondItemCard.name);
             await expect(page.getByTestId('betrayal-deck-resolution-ledger')).toHaveCount(0);
             await expect(page.getByTestId('betrayal-deck-resolution-ledger-step')).toHaveCount(0);
             await expect.poll(async () => {
@@ -662,8 +708,18 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
                 return Boolean(
                     state.currentInventory?.some((card) => (
                         card.kind === 'item' &&
-                        card.id?.startsWith(itemCard.id) &&
-                        card.name === itemCard.name
+                        card.id?.startsWith(firstItemCard.id) &&
+                        card.name === firstItemCard.name
+                    )),
+                );
+            }).toBe(true);
+            await expect.poll(async () => {
+                const state = await readOrdinaryItemDiscoveryState(page);
+                return Boolean(
+                    state.currentInventory?.some((card) => (
+                        card.kind === 'item' &&
+                        card.id?.startsWith(secondItemCard.id) &&
+                        card.name === secondItemCard.name
                     )),
                 );
             }).toBe(true);
@@ -712,11 +768,16 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await expect(discoveryPanel).not.toContainText('无发现牌');
         await expect(discoveryPanel).not.toContainText('没有事件、物品或预兆发现牌');
         await expect(discoveryPanel).not.toContainText('军械库');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(0);
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-resolution-step')).toHaveCount(2);
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('探索到器械库');
         await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="betrayal-inventory-medical-kit-0"]')).toHaveCount(0);
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-search-step')).toHaveCount(0);
+        const firstSearchStep = discoveryPanel.getByTestId('betrayal-discovery-search-step');
+        await expect(firstSearchStep).toHaveCount(1);
+        await expect(firstSearchStep).toContainText('展示后埋葬急救包');
+        await expect(firstSearchStep).toHaveAttribute('data-room-discovery-search-index', '1');
+        await expect(firstSearchStep).toHaveAttribute('data-room-discovery-search-total', '2');
+        await expect(firstSearchStep).toHaveAttribute('data-room-discovery-search-outcome', 'buried');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-final-effect')).toHaveCount(0);
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('下一张');
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
@@ -730,11 +791,19 @@ test.describe('山屋惊魂高风险持有物代表链', () => {
         await expect(discoveryPanel).not.toContainText('无发现牌');
         await expect(discoveryPanel).not.toContainText('没有事件、物品或预兆发现牌');
         await expect(discoveryPanel).not.toContainText('军械库');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-search-step')).toHaveCount(0);
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-final-effect')).toHaveCount(0);
+        const secondSearchStep = discoveryPanel.getByTestId('betrayal-discovery-search-step');
+        await expect(secondSearchStep).toHaveCount(1);
+        await expect(secondSearchStep).toContainText('器械库获得砍刀');
+        await expect(secondSearchStep).toHaveAttribute('data-room-discovery-search-index', '2');
+        await expect(secondSearchStep).toHaveAttribute('data-room-discovery-search-total', '2');
+        await expect(secondSearchStep).toHaveAttribute('data-room-discovery-search-outcome', 'gained');
+        const hiddenFinalEffect = discoveryPanel.getByTestId('betrayal-discovery-final-effect');
+        await expect(hiddenFinalEffect).toHaveCount(1);
+        await expect(hiddenFinalEffect).toHaveClass(/sr-only/);
+        await expect(hiddenFinalEffect).toContainText('展示后埋葬急救包；器械库获得砍刀');
         await expect(page.locator('[data-testid="betrayal-inventory-hunting-knife-armory-0-1"]')).toHaveCount(0);
         await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toContainText('确认');
-        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute('data-pending-card-resolution-step', '1/1');
+        await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).not.toHaveAttribute('data-pending-card-resolution-step');
         await expect(discoveryPanel).not.toContainText('确认本步');
         await saveScreenshot(page, ARMORY_DISCOVERY_WEAPON_READY_SCREENSHOT);
 

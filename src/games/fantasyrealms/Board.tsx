@@ -561,7 +561,7 @@ function renderCardMagnifyButton(
             data-testid={`fantasyrealms-card-magnify-button-${zone}-${card.id}`}
             aria-label={t('actions.openMagnifyAria', { name: getFantasyRealmsCardDisplayName(card) })}
         >
-            <Search aria-hidden="true" className="fr-card-magnify-icon" strokeWidth={2.2} />
+            <Search aria-hidden="true" className="board-shell-fixed-icon fr-card-magnify-icon" strokeWidth={2.2} />
         </span>
     );
 }
@@ -696,7 +696,7 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
     }, [core.players, defaultReviewPlayerId, isGameOver]);
     const displayedPlayerId = isGameOver
         ? (reviewPlayerId && core.players[reviewPlayerId] ? reviewPlayerId : defaultReviewPlayerId)
-        : viewerPlayerId;
+        : (viewerPlayerId ?? core.currentPlayer);
     const displayedPlayer = displayedPlayerId ? core.players[displayedPlayerId] : undefined;
     const rawDisplayedHandCards = React.useMemo(() => displayedPlayer?.hand ?? [], [displayedPlayer?.hand]);
     const displayedHandCards = React.useMemo(() => {
@@ -1133,10 +1133,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
             return;
         }
         if (canDiscard && isTutorialCommandAllowed('DISCARD_CARD') && isTutorialTargetAllowed(card.id)) {
-            handleFocusCard(card.id);
-            if (isCoarsePointer && core.focusCardId !== card.id) {
-                return;
-            }
             dispatch('DISCARD_CARD', { cardId: card.id });
             return;
         }
@@ -1146,7 +1142,6 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
         }
     }, [
         canDiscard,
-        core.focusCardId,
         dispatch,
         handleFocusCard,
         isGameOver,
@@ -1785,6 +1780,24 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                         max-width: none;
                         height: 100%;
                         min-height: 0;
+                    }
+                    /* 壳内内容必须继续使用 1920×1080 设计坐标，不能被真实手机 vw/vh 二次缩放。 */
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live {
+                        width: 100%;
+                        height: 100%;
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-hand-zone .fr-card-row--live-hand-zone,
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--early-draw .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                        width: min(1320px, calc(var(--fr-board-shell-reference-width) - 520px));
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--opening .fr-live-hand-zone .fr-card-row--live-hand-zone {
+                        width: min(1520px, calc(var(--fr-board-shell-reference-width) - 260px));
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-table--opening .fr-zone-empty--silent {
+                        width: min(780px, calc(var(--fr-board-shell-reference-width) * 0.52));
+                    }
+                    ${FANTASY_REALMS_BOARD_SHELL_SCOPE} .fr-board--minimal-live .fr-live-action-zone {
+                        right: 44px;
                     }
                 }
                 .fr-board--minimal-live {
@@ -4671,6 +4684,19 @@ export default function FantasyRealmsBoard({ G, dispatch, matchData, playerID, i
                     .fr-combo-item {
                         padding: 8px 10px;
                         font-size: 12px;
+                    }
+                    /* 点击放大属于 portal，移动横屏必须按真实视口限高，不能让卡牌按桌面宽度溢出。 */
+                    .fr-magnify-shell {
+                        width: min(
+                            430px,
+                            calc((var(--runtime-viewport-height, 100vh) - 64px) * 0.72),
+                            calc(var(--runtime-viewport-width, 100vw) - 64px)
+                        );
+                        max-height: calc(var(--runtime-viewport-height, 100vh) - 64px);
+                    }
+                    .fr-magnify-card-wrap,
+                    .fr-magnify-card-wrap .fr-card {
+                        max-height: calc(var(--runtime-viewport-height, 100vh) - 64px);
                     }
                 }
             `}</style>

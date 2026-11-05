@@ -20,6 +20,7 @@ export const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'select-faction',
     'setup-select-faction',
     'setup-select-character',
+    'faction-selection',
 ]);
 const aiRunnerLogger = createScopedLogger('AI_RUNNER_PERF');
 function emitAiRunnerPerf(stage: string, payload: Record<string, unknown>): void {

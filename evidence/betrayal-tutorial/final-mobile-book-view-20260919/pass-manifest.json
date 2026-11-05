@@ -1,0 +1,33 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "触屏长按书本本体可以打开牌面放大查看，且长按后的合成点击不会触发使用或选择。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Playwright E2E：pointerType=touch 长按书本打开牌面；随后合成 click 后 aria-pressed 仍不是 true。",
+        "01-触屏长按书本前-本体仍是主操作.jpg",
+        "02-触屏长按书本后-牌面放大可读.jpg"
+      ]
+    },
+    {
+      "requirement": "关闭放大牌面后，普通点击仍保留书本本体的正式主操作。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Playwright E2E：关闭牌面后普通点击书本，aria-pressed 变为 true。",
+        "02-触屏长按书本后-牌面放大可读.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/final-mobile-book-view-20260919/01-触屏长按书本前-本体仍是主操作.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/final-mobile-book-view-20260919/02-触屏长按书本后-牌面放大可读.jpg"
+  ]
+}

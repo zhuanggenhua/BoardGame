@@ -1,5 +1,7 @@
+import { resolveBetrayalLocalRuntimeControlledPlayerId } from './localRuntimeControl';
 import { createBaseSystems, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
+import type { AiSeatController } from '../../engine/ai/types';
 import { registerCriticalImageResolver } from '../../core';
 import type {
     DomainCore,
@@ -69,6 +71,7 @@ import { applyBetrayalScenarioCompletedState } from './scenarioCompletionStateMo
 import { applyBetrayalHauntTriggeredState } from './hauntTriggeredStateModel';
 import { betrayalCriticalImageResolver } from './criticalImageResolver';
 import { createBetrayalAiRuntime } from './ai';
+import './cardPreview';
 import { BETRAYAL_COMMANDS } from './commands';
 import type { BetrayalCommand, BetrayalCommandMap } from './commandTypes';
 import { EVENTS, type BetrayalEvent } from './events';
@@ -282,6 +285,7 @@ import {
     type BetrayalRoomEdge,
     type BetrayalRoomFloor,
     type BetrayalRoomVisualId,
+    type BetrayalExplorerTraitTrackSeed,
     type BetrayalEventSeed,
     type BetrayalInventoryKind as ConfigInventoryKind,
     type BetrayalInventorySeed,
@@ -784,6 +788,8 @@ export interface BetrayalPendingEventRollResolutionState {
         successHauntTriggerLabel?: string;
         successTraitorSelection?: 'current-explorer' | 'magic-camera-owner';
     };
+    /** 多项独立检定停稳后，必须由触发玩家明确承接到下一规则阶段。 */
+    requiresPlayerAdvance?: boolean;
     requiresAcknowledgement?: boolean;
 }
 
@@ -850,6 +856,9 @@ export interface BetrayalPendingEventChoiceState {
     itemResolution?: 'tooth-necklace-end-turn';
     itemCardId?: string;
     deferredTurnEnd?: BetrayalTurnEndedPayload;
+    allTraitCheckProgress?: {
+        results: BetrayalAllTraitCheckResult[];
+    };
 }
 
 export type BetrayalPendingCardResolutionStepKind = Extract<
@@ -1094,9 +1103,11 @@ export interface BetrayalCore {
     scenarioCardConfirmations: Record<string, BetrayalScenarioCardId>;
     phase: BetrayalPhase;
     playerIds: string[];
+    seatControllers?: Record<string, AiSeatController>;
     selectedExplorerByPlayerId: Record<string, string>;
     readyPlayerIds: string[];
     currentPlayer: string;
+    turnNumber: number;
     activePlayerId: string | null;
     turnStartSpeed: number;
     movesRemaining: number;
@@ -1177,7 +1188,7 @@ function createShuffledDiscoveryState(random: RandomFn) {
     };
 }
 
-const DEFAULT_BETRAYAL_RANDOM: RandomFn = {
+export const DEFAULT_BETRAYAL_RANDOM: RandomFn = {
     random: () => 0.5,
     d: (max) => Math.max(1, Math.min(max, 1)),
     range: (min) => min,
@@ -1227,6 +1238,14 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
     return {
         ...core,
         playerIds: [...core.playerIds],
+        seatControllers: core.seatControllers
+            ? Object.fromEntries(
+                Object.entries(core.seatControllers).map(([playerId, controller]) => [
+                    playerId,
+                    { ...controller },
+                ]),
+            )
+            : undefined,
         scenarioCandidateIds: [...core.scenarioCandidateIds],
         scenarioCardConfirmations: { ...core.scenarioCardConfirmations },
         selectedExplorerByPlayerId: { ...core.selectedExplorerByPlayerId },
@@ -1491,6 +1510,7 @@ function makeBaseCore(
         selectedExplorerByPlayerId: {},
         readyPlayerIds: [],
         currentPlayer: currentExplorer.playerId,
+        turnNumber: 1,
         activePlayerId: null,
         turnStartSpeed: currentExplorer.traits.speed,
         movesRemaining: currentExplorer.traits.speed,
@@ -1741,21 +1761,6 @@ function createBetrayalPlayerView(state: BetrayalCore, viewingPlayerId: PlayerId
     return view;
 }
 
-function ensureLibraryPresent(core: BetrayalCore): void {
-    const existingLibrary = core.rooms.find((room) => room.name === '图书馆');
-    if (existingLibrary) {
-        return;
-    }
-    const upperWest = core.rooms.find((room) => room.id === 'upper-west');
-    if (upperWest) {
-        upperWest.name = '图书馆';
-        upperWest.hint = '翻找旧案、了解 Crimson Jack 的最佳地点';
-        upperWest.tags = ['知识', '调查', '图书馆'];
-        upperWest.state = 'discovered';
-        upperWest.discoveryReward = null;
-    }
-}
-
 function createInitialRoomLayout(seeds: BetrayalRoomSeed[]): BetrayalRoomNode[] {
     const discoveredSeedIds = new Set(seeds.filter((room) => room.state === 'discovered').map((room) => room.id));
     const discoveredRooms = seeds
@@ -1812,7 +1817,7 @@ function validateEventRollFinalization(core: BetrayalCore, command: BetrayalComm
             return { valid: true };
         }
         if (
-            pending.requiresAcknowledgement === false
+            (pending.requiresAcknowledgement === false || pending.requiresPlayerAdvance)
             && (command.type === BETRAYAL_COMMANDS.USE_RABBIT_FOOT
                 || command.type === BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM)
         ) {
@@ -1820,9 +1825,9 @@ function validateEventRollFinalization(core: BetrayalCore, command: BetrayalComm
         }
         return { valid: false, error: '请先处理当前事件投掷结果。' };
     }
-    if (pending.requiresAcknowledgement === false) {
+    if (pending.requiresAcknowledgement === false || pending.requiresPlayerAdvance) {
         if (command.playerId !== pending.playerId) {
-            return { valid: false, error: '只有触发事件的玩家可以继续处理当前投掷。' };
+            return { valid: false, error: '只有触发事件的玩家可以处理当前检定结果。' };
         }
         if (command.payload.rollId && command.payload.rollId !== pending.rollId) {
             return { valid: false, error: '当前投掷结果已经改变。' };
@@ -1944,6 +1949,14 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         }
         return { valid: true };
     }
+    if (core.pendingEventRollStart) {
+        return {
+            valid: false,
+            error: core.pendingEventRollStart.playerId === command.playerId
+                ? '请先投掷当前事件。'
+                : '请等待触发事件的玩家投掷。',
+        };
+    }
     const recentRollAcknowledgement = validateRecentRollAcknowledgement(core, command);
     if (recentRollAcknowledgement?.valid) {
         return recentRollAcknowledgement;
@@ -1977,10 +1990,6 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
         && command.type !== BETRAYAL_COMMANDS.USE_RABBIT_FOOT
         && command.type !== BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM
         && !(command.type === BETRAYAL_COMMANDS.USE_POSSESSION && canUseBookForPendingEventRoll(core, command.playerId, command.payload.cardId))
-        && command.type !== BETRAYAL_COMMANDS.ROLL_EVENT
-        && command.type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
-        && command.type !== BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
-        && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_CARD_RESOLUTION
         && command.type !== BETRAYAL_COMMANDS.ACKNOWLEDGE_RECENT_ROLL
     ) {
         return { valid: false, error: '探索新房间后回合已经结束。' };
@@ -2080,7 +2089,13 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             return { valid: true };
         }
         case BETRAYAL_COMMANDS.USE_POSSESSION: {
-            return validateBetrayalPossessionSpecialActionCommand(core, command.playerId, command.payload);
+            if (!command.payload.cardId) {
+                return { valid: false, error: '必须选择要使用的持有物。' };
+            }
+            return validateBetrayalPossessionSpecialActionCommand(core, command.playerId, {
+                ...command.payload,
+                cardId: command.payload.cardId,
+            });
         }
         case BETRAYAL_COMMANDS.USE_ROOM_EFFECT: {
             const actionStatus = resolveBetrayalRoomSpecialActionStatus(core);
@@ -2325,7 +2340,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         && (
             command.type === BETRAYAL_COMMANDS.USE_POSSESSION
             || command.type === BETRAYAL_COMMANDS.TRADE_POSSESSION
-            || command.type === BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT
             || command.type === BETRAYAL_COMMANDS.LOOT_CORPSE
         )
     ) {
@@ -2346,7 +2360,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                     }
                     const targetRoom = core.rooms.find((room) => room.id === command.payload.roomId);
                     const currentRoom = core.rooms.find((room) => room.id === actorRoomId);
-                    if (!targetRoom || targetRoom.state !== 'discovered') {
+                    if (!targetRoom || targetRoom.state !== 'discovered' || !currentRoom) {
                         return { valid: false, error: '目标房间不可移动。' };
                     }
                     if (targetRoom.id === actorRoomId || roomDistanceByLayout(currentRoom, targetRoom) !== 1) {
@@ -2365,6 +2379,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                     return { valid: false, error: '目标房间不可移动。' };
                 }
                 const currentRoom = core.rooms.find((room) => room.id === actorRoomId);
+                if (!currentRoom) {
+                    return { valid: false, error: '当前房间不存在。' };
+                }
                 if (targetRoom.id === actorRoomId) {
                     return { valid: false, error: '杰克之灵必须移动到相邻房间。' };
                 }
@@ -2408,7 +2425,6 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
         case BETRAYAL_COMMANDS.USE_RABBIT_FOOT:
         case BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM:
         case BETRAYAL_COMMANDS.TRADE_POSSESSION:
-        case BETRAYAL_COMMANDS.RESOLVE_TRADE_AGREEMENT:
         case BETRAYAL_COMMANDS.LOOT_CORPSE:
             return validatePreHauntAction({ ...state, core: { ...core, phase: 'preHaunt' } }, command);
         case BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE:
@@ -3417,7 +3433,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 return [nowEvent(EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED, {
                     attackerPlayerId: attacker.playerId,
                     defenderPlayerId: defender.playerId,
-                    choice: 'steal',
+                    choice: 'steal' as const,
                     stolenCardId: card.id,
                     stolenCardName: card.name,
                     logText: `${attacker.displayName}没有造成伤害，改为从${defender.displayName}手中偷走${card.name}`,
@@ -3440,7 +3456,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
             return [nowEvent(EVENTS.HELPING_HANDS_ATTACK_REWARD_RESOLVED, {
                 attackerPlayerId: attacker.playerId,
                 defenderPlayerId: defender.playerId,
-                choice: 'damage',
+                choice: 'damage' as const,
                 damageToDefender: pending.damageToDefender,
                 damageKind: pending.damageKind,
                 defeatedPlayerId: defenderDefeated ? defender.playerId : undefined,
@@ -3467,7 +3483,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                     monsterId: pending.monsterId,
                     monsterName: pending.monsterName,
                     defenderPlayerId: defender.playerId,
-                    choice: 'steal',
+                    choice: 'steal' as const,
                     stolenCardId: stolenCard.id,
                     stolenCardName: stolenCard.name,
                     logText: `${pending.monsterName}没有造成伤害，改为从${defender.displayName}手中夺走${stolenCard.name}`,
@@ -3478,9 +3494,9 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 monsterId: pending.monsterId,
                 monsterName: pending.monsterName,
                 defenderPlayerId: defender.playerId,
-                choice: 'damage',
+                choice: 'damage' as const,
                 damageToHero: pending.damageToHero,
-                damageKind: 'physical',
+                damageKind: 'physical' as const,
                 logText: `${pending.monsterName}选择造成 ${pending.damageToHero} 点 physical damage`,
             }, timestamp)];
         }
@@ -3758,7 +3774,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 revealerPlayerId: revealer.playerId,
                 targetPlayerId: target.playerId,
                 eventName: eventCard.name,
-                eventText: eventCard.text,
+                eventText: eventCard.description ?? eventCard.name,
                 turnNumber: core.turnNumber,
                 logText: `作祟揭秘者用事件牌「${eventCard.name}」给${target.displayName}作镜中提示；该事件不结算并放到一边`,
             }, timestamp)];
@@ -3993,7 +4009,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
                     ...core.scenarioCardConfirmations,
                     [event.payload.playerId]: event.payload.candidateId,
                 },
-                activityLog: appendActivity(core, event.payload.logText, 'accent'),
             };
         case EVENTS.SCENARIO_STARTED: {
             core.scenarioId = event.payload.scenarioId;
@@ -4001,7 +4016,6 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             const explorers = buildScenarioExplorers(core);
             const firstPlayerId = explorers[0]?.playerId ?? core.currentPlayer;
             core.scenarioRuntime = createInitialScenarioRuntimeStatus();
-            ensureLibraryPresent(core);
             const startedCore = replaceExplorers({
                 ...core,
                 phase: 'preHaunt',
@@ -4508,7 +4522,10 @@ const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
 }) => {
-    const core = args.state.core as Partial<Pick<BetrayalCore, 'pendingEventRollResolution' | 'playerIds'>> | undefined;
+    const core = args.state.core as Partial<Pick<
+        BetrayalCore,
+        'pendingEventRollResolution' | 'playerIds' | 'seatControllers'
+    >> | undefined;
     const pendingResolution = core?.pendingEventRollResolution;
     if (!pendingResolution) {
         return null;
@@ -4518,7 +4535,10 @@ const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
     }
 
     const requiredPlayerIds = resolvePendingEventRollResolutionRequiredPlayerIds(
-        { playerIds: core?.playerIds ?? [] },
+        {
+            playerIds: core?.playerIds ?? [],
+            seatControllers: core?.seatControllers,
+        },
         pendingResolution,
     );
     const acknowledgedPlayerIds = new Set(resolvePendingEventRollResolutionAcknowledgedPlayerIds(pendingResolution));
@@ -4534,6 +4554,36 @@ const resolveBetrayalPendingEventRollResolutionRecovery = (args: {
         command: {
             type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
             payload: { rollId: pendingResolution.rollId },
+        },
+    };
+};
+
+const resolveBetrayalPendingTurnEndRollRecovery = (args: {
+    state: MatchState<unknown>;
+    phase: string;
+}) => {
+    const core = args.state.core as Partial<Pick<BetrayalCore, 'currentPlayer' | 'recentRoll'>> | undefined;
+    if (!core?.currentPlayer || !core.recentRoll) {
+        return null;
+    }
+
+    const pendingRoll = resolvePendingTurnEndRoll(core as Pick<BetrayalCore, 'currentPlayer' | 'recentRoll'>);
+    if (!pendingRoll) {
+        return null;
+    }
+
+    const nextPlayerId = pendingRoll.roomEndTurn?.nextPlayerId
+        ?? pendingRoll.deathPrevention?.nextPlayerId
+        ?? 'unknown-next-player';
+    const fingerprintHint = `turn-end-roll:${pendingRoll.playerId}:${args.phase}:${pendingRoll.id}:${nextPlayerId}`;
+
+    return {
+        playerId: pendingRoll.playerId,
+        fingerprintHint,
+        attemptSuffix: fingerprintHint,
+        command: {
+            type: BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
+            payload: {},
         },
     };
 };
@@ -4563,7 +4613,8 @@ const resolveBetrayalSeatLegalOnlyRecovery = (args: {
     state: MatchState<unknown>;
     phase: string;
 }) => (
-    resolveBetrayalPendingEventRollStartRecovery(args)
+    resolveBetrayalPendingTurnEndRollRecovery(args)
+    ?? resolveBetrayalPendingEventRollStartRecovery(args)
     ?? resolveBetrayalPendingEventRollResolutionRecovery(args)
     ?? resolveBetrayalPendingCardResolutionRecovery(args)
 );
@@ -4602,6 +4653,7 @@ const baseEngineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betraya
 
 export const engineConfig = {
     ...baseEngineConfig,
+    resolveLocalRuntimeControlledPlayerId: resolveBetrayalLocalRuntimeControlledPlayerId,
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['characterSelect'],
         resolveSeatLegalOnlyRecovery: resolveBetrayalSeatLegalOnlyRecovery,

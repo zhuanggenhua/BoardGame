@@ -203,11 +203,13 @@ export function acknowledgePendingEventRollResolution(
       throw new Error("山屋测试夹具确认事件骰超过安全上限");
     }
     const pendingResolution = nextCore.pendingEventRollResolution;
-    const requiredPlayerIds = pendingResolution.requiredPlayerIds?.length
-      ? pendingResolution.requiredPlayerIds
-      : nextCore.playerIds.length > 0
-        ? nextCore.playerIds
-        : [pendingResolution.playerId];
+    const requiredPlayerIds = pendingResolution.requiresAcknowledgement === false
+      ? [pendingResolution.playerId]
+      : pendingResolution.requiredPlayerIds?.length
+        ? pendingResolution.requiredPlayerIds
+        : nextCore.playerIds.length > 0
+          ? nextCore.playerIds
+          : [pendingResolution.playerId];
     const acknowledgedPlayerIds = new Set(pendingResolution.acknowledgedPlayerIds ?? []);
     const nextPlayerId = requiredPlayerIds.find((playerId) => !acknowledgedPlayerIds.has(playerId));
     if (!nextPlayerId) {
@@ -571,6 +573,14 @@ export function createStartedFirstScenarioTutorialCore(
   playerIds: string[] = ["0", "1", "2"],
 ): BetrayalCore {
   const core = createStartedFirstScenarioCore(playerIds);
+  core.seatControllers = Object.fromEntries(
+    core.playerIds.map((playerId, index) => [
+      playerId,
+      index === 0
+        ? { type: "human" as const }
+        : { type: "local-ai" as const, minimumActionDelayMs: 0 },
+    ]),
+  );
   setFixtureExplorerInventory(core, "0", [
     { id: "rope", name: "兔脚", kind: "item" },
     { id: "omen-book", name: "书本", kind: "omen" },
@@ -630,12 +640,19 @@ export function createSafeOmenPendingResolutionTutorialCore(): BetrayalCore {
   }
   const [pendingResolution] = core.pendingCardResolutionQueue;
   if (!pendingResolution || pendingResolution.playerId !== "0") {
-    throw new Error("山屋教程预兆确认夹具必须由触发玩家确认");
+    throw new Error("山屋教程预兆确认夹具必须保留触发玩家作为发现者");
   }
-  if (pendingResolution.requiredPlayerIds.length !== 1 || pendingResolution.requiredPlayerIds[0] !== "0") {
-    throw new Error("山屋教程预兆确认夹具必须使用真实触发玩家单人确认");
+  const requiredPlayerIds = pendingResolution.requiredPlayerIds;
+  if (
+    !requiredPlayerIds
+    || requiredPlayerIds.length !== core.playerIds.length
+    || requiredPlayerIds.some(
+      (playerId, index) => playerId !== core.playerIds[index],
+    )
+  ) {
+    throw new Error("山屋教程预兆确认夹具必须等待所有玩家确认");
   }
-  if (pendingResolution.acknowledgedPlayerIds.length !== 0) {
+  if ((pendingResolution.acknowledgedPlayerIds ?? []).length !== 0) {
     throw new Error("山屋教程预兆确认夹具不能提前确认");
   }
 
@@ -735,7 +752,7 @@ export function createNaturalHauntTriggerPendingResolutionTutorialCore(): Betray
     hauntTriggerRandom,
     false,
   );
-  core = acknowledgePendingCardResolution(core, "1");
+  core = acknowledgePendingCardResolutions(core);
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.END_TURN,
@@ -763,7 +780,7 @@ export function createNaturalHauntTriggerPendingResolutionTutorialCore(): Betray
     hauntTriggerRandom,
     false,
   );
-  core = acknowledgePendingCardResolution(core, "2");
+  core = acknowledgePendingCardResolutions(core);
   core = applyBetrayalCommand(
     core,
     BETRAYAL_COMMANDS.END_TURN,
@@ -812,12 +829,19 @@ export function createNaturalHauntTriggerPendingResolutionTutorialCore(): Betray
   }
   const [pendingResolution] = core.pendingCardResolutionQueue;
   if (!pendingResolution || pendingResolution.playerId !== "1") {
-    throw new Error("山屋教程自然作祟流程必须由触发玩家确认");
+    throw new Error("山屋教程自然作祟流程必须保留触发玩家作为发现者");
   }
-  if (pendingResolution.requiredPlayerIds.length !== 1 || pendingResolution.requiredPlayerIds[0] !== "1") {
-    throw new Error("山屋教程自然作祟流程必须使用真实触发玩家单人确认");
+  const requiredPlayerIds = pendingResolution.requiredPlayerIds;
+  if (
+    !requiredPlayerIds
+    || requiredPlayerIds.length !== core.playerIds.length
+    || requiredPlayerIds.some(
+      (playerId, index) => playerId !== core.playerIds[index],
+    )
+  ) {
+    throw new Error("山屋教程自然作祟流程必须等待所有玩家确认");
   }
-  if (pendingResolution.acknowledgedPlayerIds.length !== 0) {
+  if ((pendingResolution.acknowledgedPlayerIds ?? []).length !== 0) {
     throw new Error("山屋教程自然作祟流程不能提前确认");
   }
 
@@ -929,8 +953,8 @@ function createScenarioHauntCore(
   core = acknowledgePendingCardResolutions(core);
 
   setScenarioTestTurnMovement(core, 6);
+  setFixtureDiscoveredRoomVisual(core, "upper-west", "upper", "library");
   if (scenarioCardId === "crimson-jack-returns") {
-    setFixtureDiscoveredRoomVisual(core, "upper-west", "upper", "library");
     setFixtureDiscoveredRoomVisual(core, "ground-north", "ground", "kitchen");
     setFixtureDiscoveredRoomVisual(core, "basement-east", "basement", "chasm");
   }
@@ -1029,6 +1053,7 @@ function completeMummyMonsterPreparationForAttackSlot(
 
 export function createMummyReadyToBanishCore(): BetrayalCore {
   let core = createFirstScenarioHauntCore();
+  setFixtureDiscoveredRoomVisual(core, "upper-west", "upper", "library");
   const heroId = "0";
   const studyRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
   const learnRandom = createBetrayalScriptedRandom(3, 3, 3, 3);
@@ -1108,7 +1133,7 @@ export function createMummyTraitorVictoryReadyTutorialCore(): BetrayalCore {
   };
   core.currentPlayer = traitorId;
   core.activeRoomId = traitorRoomId;
-  core.currentExplorerRoomId = traitorRoomId;
+  core.currentExplorer.roomId = traitorRoomId;
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
   core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
   core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
@@ -1175,7 +1200,7 @@ export function createMummyMonsterMoveReadyTutorialCore(): BetrayalCore {
   };
   core.currentPlayer = traitorId;
   core.activeRoomId = mummyRoomId;
-  core.currentExplorerRoomId = mummyRoomId;
+  core.currentExplorer.roomId = mummyRoomId;
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
   core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
   core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
@@ -1221,7 +1246,7 @@ export function createMummyMonsterAttackRewardReadyTutorialCore(): BetrayalCore 
   };
   core.currentPlayer = traitorId;
   core.activeRoomId = mummyRoomId;
-  core.currentExplorerRoomId = mummyRoomId;
+  core.currentExplorer.roomId = mummyRoomId;
   core.currentExplorerTraits = { ...core.currentExplorer.traits };
   core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({ ...card }));
   core.turnStartInventoryCardIds = core.currentExplorer.inventory.map((card) => card.id);
@@ -1368,6 +1393,7 @@ export function createDustHauntCore(
   if (core.phase !== "haunt" || !core.scenarioRuntime.dust) {
     throw new Error("山屋灰尘作祟夹具未生成事件选择或 dust 运行态");
   }
+  setFixtureDiscoveredRoomVisual(core, "upper-west", "upper", "library");
   return core;
 }
 
@@ -1531,7 +1557,7 @@ export function createDustFeverishControlReadyCore(
     roomId: explorer.playerId === "1" ? feverishRoomId : "grand-staircase",
   }));
   core.activeRoomId = feverishRoomId;
-  core.currentExplorerRoomId = feverishRoomId;
+  core.currentExplorer.roomId = feverishRoomId;
   core.currentExplorerInventory = core.currentExplorer.inventory.map((card) => ({
     ...card,
   }));

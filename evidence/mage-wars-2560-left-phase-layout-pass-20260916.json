@@ -1,0 +1,32 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "Mage Wars 回合流程必须按 DiceThrone 同类职责作为左侧竖排阶段回看轨道，而不是顶部横向主提示条。",
+      "status": "PASS",
+      "evidence": [
+        "真实浏览器 E2E 2560x1304 用例通过：Mage Wars foundation runtime board / 2560x1304 真实入口验证放大镜悬浮、宽屏布局和地图自由查看。",
+        "同一 E2E 断言阶段进度 role=phase-progress-reference-rail、axis=vertical、placement=left-reference-rail，8 个阶段逐项自上而下排列且只有 1 个当前阶段。",
+        "截图左侧可见竖排“回合流程”阶段轨道，右侧“确认计划 2/2”仍是独立主操作按钮；两者不再混成顶部横条。"
+      ]
+    },
+    {
+      "requirement": "阶段轨道不能遮挡生命显示开关、右上对手 HUD / 对手计划、底部法术书 / 计划区或右侧主操作列。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 几何断言覆盖 phase-progress-life-toggle、phase-progress-scale-badge、phase-progress-self-hud、phase-progress-opponent-hud、phase-progress-opponent-prepared、phase-progress-bottom-grid 均不相交。",
+        "弃牌堆仍在右侧主按钮上方，同列对齐，不被主按钮遮挡。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\mage-wars\\foundation-board-runtime\\e2e-desktop-2560x1304-board.png"
+  ]
+}

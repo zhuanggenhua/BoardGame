@@ -23,6 +23,7 @@ vi.mock('../../../../core', async () => {
 
 vi.mock('../../../../components/common/media/CardPreview', () => ({
     CardPreview: () => <div data-testid="mock-card-preview" />,
+    getCardAtlasSource: () => undefined,
 }));
 
 vi.mock('framer-motion', () => {
@@ -47,11 +48,11 @@ afterEach(() => {
 });
 
 describe('CardSpotlightOverlay', () => {
-    it('卡牌特写不会自动关闭，点击空白背景才关闭', () => {
+    it('卡牌阅读超过原三秒及同项重渲染后仍可见，内容点击不会关闭', () => {
         vi.useFakeTimers();
         const onClose = vi.fn();
 
-        render(
+        const renderCard = () => (
             <CardSpotlightOverlay
                 queue={[{
                     id: 'watch-out-1000',
@@ -66,19 +67,54 @@ describe('CardSpotlightOverlay', () => {
                     },
                 }]}
                 onClose={onClose}
-            />,
+            />
         );
+        const { rerender } = render(renderCard());
 
         fireEvent.click(document.querySelector('[data-testid="card-spotlight-overlay"]') as Element);
         expect(onClose).not.toHaveBeenCalled();
 
         act(() => {
-            vi.advanceTimersByTime(5000);
+            vi.advanceTimersByTime(2999);
         });
         expect(onClose).not.toHaveBeenCalled();
 
+        act(() => {
+            vi.advanceTimersByTime(7001);
+        });
+        expect(onClose).not.toHaveBeenCalled();
+        rerender(renderCard());
+        act(() => { vi.advanceTimersByTime(10000); });
+        expect(onClose).not.toHaveBeenCalled();
+        expect(screen.getByTestId('card-spotlight-overlay')).toBeInTheDocument();
+    });
+
+    it('点击特写外的空白背景会立即关闭', () => {
+        vi.useFakeTimers();
+        const onClose = vi.fn();
+
+        render(
+            <CardSpotlightOverlay
+                queue={[{
+                    id: 'watch-out-1500',
+                    cardId: 'watch-out',
+                    timestamp: 1500,
+                    playerId: '1',
+                    previewRef: {
+                        type: 'atlas',
+                        atlasId: 'dicethrone-moon-elf-cards',
+                        index: 1,
+                    },
+                }]}
+                onClose={onClose}
+            />,
+        );
+
+        act(() => {
+            vi.advanceTimersByTime(200);
+        });
         fireEvent.click(screen.getByTestId('spotlight-container-root'));
-        expect(onClose).toHaveBeenCalledWith('watch-out-1000');
+        expect(onClose).toHaveBeenCalledWith('watch-out-1500');
     });
 
     it('旧队列项即便带有奖励骰字段，也不在中央卡牌特写渲染骰子或汇总文本', () => {

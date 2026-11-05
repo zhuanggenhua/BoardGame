@@ -82,7 +82,7 @@ export interface DamageLogPayload {
     modifiers?: Array<{
         type: string;
         value: number;
-        sourceId: string;
+        sourceId?: string;
         sourceName?: string;
     }>;
     /** 防护/减免来源的消耗记录 */
@@ -103,6 +103,34 @@ export interface DamageLogPayload {
  */
 function extractSourceId(payload: DamageLogPayload): string | undefined {
     return payload.sourceAbilityId ?? payload.reason ?? undefined;
+}
+
+function resolveBreakdownLineLabel(
+    sourceId: string,
+    sourceName: string | undefined,
+    sourceNameIsI18n: boolean | undefined,
+    resolver: DamageSourceResolver,
+    fallbackNs?: string,
+): Pick<BreakdownLine, 'label' | 'labelIsI18n' | 'labelNs'> {
+    const resolvedSource = resolver.resolve(sourceId);
+    const hasSpecificResolvedSource = !!resolvedSource
+        && (resolvedSource.isI18n || resolvedSource.label !== sourceId);
+    const shouldUseResolvedSource = hasSpecificResolvedSource
+        && (
+            !sourceName
+            || sourceName === sourceId
+            || sourceName === 'actionLog.damageSource.attackModifier'
+        );
+    const label = shouldUseResolvedSource
+        ? resolvedSource.label
+        : (sourceName || sourceId);
+    const labelIsI18n = shouldUseResolvedSource
+        ? resolvedSource.isI18n
+        : (sourceNameIsI18n ?? false);
+    const labelNs = labelIsI18n
+        ? (shouldUseResolvedSource ? resolvedSource.ns ?? fallbackNs : fallbackNs)
+        : undefined;
+    return { label, labelIsI18n, labelNs };
 }
 
 /**
@@ -127,6 +155,8 @@ export function buildDamageBreakdownSegment(
         baseLabel?: string;
         baseLabelIsI18n?: boolean;
         baseLabelNs?: string;
+        /** 自定义护盾吸收行；不传时使用来源解析器的通用渲染。 */
+        renderShields?: (shields: NonNullable<DamageLogPayload['shieldsConsumed']>) => BreakdownLine[];
     },
 ): ActionLogSegment {
     const lines: BreakdownLine[] = [];
@@ -155,10 +185,15 @@ export function buildDamageBreakdownSegment(
         });
 
         breakdown.steps.forEach(step => {
+            const labelParts = resolveBreakdownLineLabel(
+                step.sourceId,
+                step.sourceName,
+                step.sourceNameIsI18n,
+                resolver,
+                fallbackNs,
+            );
             lines.push({
-                label: step.sourceName || step.sourceId,
-                labelIsI18n: step.sourceNameIsI18n ?? false,
-                labelNs: step.sourceNameIsI18n ? fallbackNs : undefined,
+                ...labelParts,
                 value: step.value,
                 color: step.value > 0 ? 'positive' : 'negative',
             });
@@ -181,11 +216,21 @@ export function buildDamageBreakdownSegment(
             color: 'neutral',
         });
         payload.modifiers.forEach(mod => {
-            const isI18n = !!mod.sourceName?.includes('.');
+            const labelParts = mod.sourceId
+                ? resolveBreakdownLineLabel(
+                    mod.sourceId,
+                    mod.sourceName,
+                    !!mod.sourceName?.includes('.'),
+                    resolver,
+                    fallbackNs,
+                )
+                : {
+                    label: mod.sourceName ?? `actionLog.damageSource.${mod.type}`,
+                    labelIsI18n: !mod.sourceName,
+                    labelNs: mod.sourceName ? undefined : fallbackNs,
+                };
             lines.push({
-                label: mod.sourceName || mod.sourceId || mod.type,
-                labelIsI18n: isI18n,
-                labelNs: isI18n ? fallbackNs : undefined,
+                ...labelParts,
                 value: mod.value,
                 color: mod.value > 0 ? 'positive' : 'negative',
             });
@@ -221,22 +266,24 @@ export function buildDamageBreakdownSegment(
                 color: 'neutral',
             });
         }
-        
         // 添加护盾消耗行（负值）
-        payload.shieldsConsumed.forEach(shield => {
-            const shieldSource = resolver.resolve(shield.sourceId);
-            const shieldLabel = shieldSource?.label || shield.sourceId;
-            const shieldLabelIsI18n = shieldSource?.isI18n ?? false;
-            const shieldLabelNs = shieldSource?.ns ?? fallbackNs;
-            
-            lines.push({
-                label: shieldLabel,
-                labelIsI18n: shieldLabelIsI18n,
-                labelNs: shieldLabelNs,
-                value: -shield.absorbed,
-                color: 'negative',
+        if (options?.renderShields) {
+            lines.push(...options.renderShields(payload.shieldsConsumed));
+        } else {
+            payload.shieldsConsumed.forEach(shield => {
+                const shieldSource = resolver.resolve(shield.sourceId);
+                const shieldLabel = shieldSource?.label || shield.sourceId;
+                const shieldLabelIsI18n = shieldSource?.isI18n ?? false;
+                const shieldLabelNs = shieldSource?.ns ?? fallbackNs;
+                lines.push({
+                    label: shieldLabel,
+                    labelIsI18n: shieldLabelIsI18n,
+                    labelNs: shieldLabelNs,
+                    value: -shield.absorbed,
+                    color: 'negative',
+                });
             });
-        });
+        }
     }
 
     return {

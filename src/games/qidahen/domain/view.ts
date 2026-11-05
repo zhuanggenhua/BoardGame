@@ -42,6 +42,13 @@ export function playerView(state: QidahenCore, viewingPlayerId: PlayerId): Parti
     const visibleHandCardIdSet = new Set(visibleHandCards.map((card) => card.id));
 
     return {
+        factions: {
+            ming: { ...state.factions.ming, drawPile: [], discardPile: [] },
+            mongol: { ...state.factions.mongol, drawPile: [], discardPile: [] },
+            jin: { ...state.factions.jin, drawPile: [], discardPile: [] },
+        },
+        koreaDrawPile: [],
+        chronology: { ...state.chronology, drawPile: state.chronology.drawPile.slice(0, 1) },
         handCards: visibleHandCards,
         selectedPaymentCardIds: state.selectedPaymentCardIds.filter((cardId) => visibleHandCardIdSet.has(cardId)),
         selectedHandActionCardId: state.selectedHandActionCardId && visibleHandCardIdSet.has(state.selectedHandActionCardId)

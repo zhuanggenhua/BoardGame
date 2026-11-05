@@ -1,0 +1,12 @@
+{
+  "frames": {
+    "combo": { "frame": { "x": 0, "y": 0, "w": 128, "h": 128 }, "rotated": false, "trimmed": false },
+    "webbed": { "frame": { "x": 128, "y": 0, "w": 128, "h": 128 }, "rotated": false, "trimmed": false },
+    "invisible": { "frame": { "x": 256, "y": 0, "w": 128, "h": 128 }, "rotated": false, "trimmed": false }
+  },
+  "meta": {
+    "image": "compressed/status-icons-atlas.webp",
+    "size": { "w": 384, "h": 128 },
+    "scale": "1"
+  }
+}

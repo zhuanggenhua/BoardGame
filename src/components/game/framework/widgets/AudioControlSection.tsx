@@ -186,8 +186,8 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
             </div>
 
             {/* 正在播放 + 控制按钮 */}
-            <div className={clsx('flex items-center justify-between p-2 rounded-xl border', cardBgClass)}>
-                <div className="flex items-center gap-2 overflow-hidden">
+            <div className={clsx('audio-now-playing flex items-center justify-between p-2 rounded-xl border', cardBgClass)}>
+                <div className="audio-track-summary flex items-center gap-2 overflow-hidden">
                     <motion.div
                         animate={{ rotate: currentBgm ? 360 : 0 }}
                         transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
@@ -205,7 +205,7 @@ export const AudioControlSection = ({ isDark = true }: AudioControlSectionProps)
                     </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="audio-transport-controls flex items-center gap-1">
                     <button
                         onClick={toggleMute}
                         className={clsx('p-1.5 rounded-lg transition-all', muted ? 'bg-red-500/20 text-red-400' : iconMutedClass)}

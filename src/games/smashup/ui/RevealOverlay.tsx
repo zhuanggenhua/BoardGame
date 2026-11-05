@@ -189,7 +189,7 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
 
         const newItems: RevealItem[] = [];
         for (const entry of newEntries) {
-            if (!TRIGGER_EVENTS.has(entry.event.type)) {
+            if (entry.event.type !== SU_EVENTS.REVEAL_HAND && entry.event.type !== SU_EVENTS.REVEAL_DECK_TOP) {
                 continue;
             }
             const p = entry.event.payload as {
@@ -214,7 +214,7 @@ export function RevealOverlay({ entries, currentPlayerId, playerNames, suppressi
             }
 
             const revealType = entry.event.type === SU_EVENTS.REVEAL_HAND ? 'hand' : 'deck_top';
-            const item = {
+            const item: RevealItem = {
                 id: `reveal-${entry.id}`,
                 type: revealType,
                 targetPlayerIds: targetIds,

@@ -28,7 +28,7 @@ import {
 } from '../domain/abilityHelpers';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, MinionOnBase, MinionPlayedEvent } from '../domain/types';
+import type { SmashUpCore, SmashUpEvent, MinionOnBase, MinionPlayedEvent } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { partitionMinionTargetsBySemantics } from '../domain/effectSemantics';
@@ -49,7 +49,7 @@ function matchesDefId(defId: string | undefined | null, baseDefId: string): bool
 }
 
 type BearCavalryPromptContext = {
-    matchState: MatchState<any>;
+    matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     cardUid?: string;
     defId?: string;
@@ -168,6 +168,7 @@ export function registerBearCavalryAbilities(): void {
         canTrigger: canTriggerBearCavalryGeneralIvanPod,
     });
     // 极地突击队员 POD：天赋放置指示物
+    registerProtection('bear_cavalry_polar_commando_pod', 'destroy', bearCavalryPolarCommandoChecker);
     registerAbility('bear_cavalry_polar_commando_pod', 'talent', bearCavalryPolarCommandoPodTalent);
     // 黑熊骑兵 POD: 入场移动
     registerAbility('bear_cavalry_bear_cavalry_pod', 'onPlay', bearCavalryBearCavalryPodAbility);
@@ -250,11 +251,11 @@ function collectBearNecessitiesTargets(state: AbilityContext['state'], playerId:
     return [...minionTargets, ...actionTargets];
 }
 
-const bearCavalryPolarCommandoPodPromptProgram = createPromptProgram<BearCavalryPolarCommandoPromptContext, AbilityContext['state'], SmashUpEvent>({
+const bearCavalryPolarCommandoPodPromptProgram = createPromptProgram<BearCavalryPolarCommandoPromptContext>({
     sourceId: 'bear_cavalry_polar_commando_pod',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
-        const commando = base?.minions.find(m => m.uid === context.cardUid);
+        const commando = base?.minions.find((minion: MinionOnBase) => minion.uid === context.cardUid);
         const commandoPower = commando ? getMinionPower(context.matchState.core, commando, context.baseIndex) : 0;
         const options: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
 
@@ -286,7 +287,7 @@ const bearCavalryPolarCommandoPodPromptProgram = createPromptProgram<BearCavalry
     },
 });
 
-const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySuperiorityPromptContext, AbilityContext['state'], SmashUpEvent>({
+const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySuperiorityPromptContext>({
     sourceId: 'bear_cavalry_superiority_pod_talent',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `bear_cavalry_superiority_pod_talent_${context.now}`,
@@ -329,7 +330,7 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
     },
 });
 
-const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGeneralIvanPromptContext, AbilityContext['state'], SmashUpEvent>({
+const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGeneralIvanPromptContext>({
     sourceId: 'bear_cavalry_general_ivan_pod_trigger',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `bear_cavalry_general_ivan_pod_trigger_${context.now}_${context.ivanController}`,
@@ -370,7 +371,7 @@ const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGe
     },
 });
 
-const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHighGroundPromptContext, AbilityContext['state'], SmashUpEvent>({
+const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHighGroundPromptContext>({
     sourceId: 'bear_cavalry_high_ground_pod_trigger',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `bear_cavalry_high_ground_pod_trigger_${context.now}_${context.ongoingUid}`,
@@ -421,7 +422,7 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
     },
 });
 
-const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryPromptContext, AbilityContext['state'], SmashUpEvent>({
+const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryPromptContext>({
     sourceId: 'bear_cavalry_bear_necessities',
     buildInteraction: (context) => {
         const allTargets = collectBearNecessitiesTargets(context.matchState.core, context.playerId);
@@ -1594,7 +1595,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         if (opponentMinions.length === 0) {
             return { state, events: [playedEvt] };
         }
-        const moveOptions = buildMinionTargetOptions(
+        const targetOptions = buildMinionTargetOptions(
             opponentMinions.map(m => {
                 const mDef = getCardDef(m.defId) as MinionCardDef | undefined;
                 const name = mDef?.name ?? m.defId;
@@ -1607,12 +1608,12 @@ export function registerBearCavalryInteractionHandlers(): void {
                 effectType: 'affect',
             }
         );
-        if (moveOptions.length === 0) {
+        if (targetOptions.length === 0) {
             return { state, events: [playedEvt] };
         }
-        if (isPod) {
-            moveOptions.unshift(createSkipOption('跳过（不移动）', 'ui.bear_cavalry_skip_move_option'));
-        }
+        const moveOptions = isPod
+            ? [createSkipOption('跳过（不移动）', 'ui.bear_cavalry_skip_move_option'), ...targetOptions]
+            : targetOptions;
         const next = createSimpleChoice(
             `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
             '委任：选择要移动的对手随从', moveOptions,
@@ -2188,7 +2189,7 @@ export function registerBearCavalryInteractionHandlers(): void {
         const base = state.core.bases[toBase];
         if (!base) return { state, events };
 
-        const suppressOptions: Array<{ id: string; label: string; value: BearRidesYouPodSuppressTarget; displayMode?: 'card' | 'button' }> = [];
+        const suppressOptions: Array<{ id: string; label: string; labelKey?: string; value: BearRidesYouPodSuppressTarget; displayMode?: 'card' | 'button' }> = [];
         const baseDef = getBaseDef(base.defId);
         suppressOptions.push({
             id: 'base',
@@ -2249,7 +2250,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             `bear_cavalry_bear_rides_you_pod_choose_suppress_${timestamp}`,
             playerId,
             '与熊同行：选择要压制能力的卡牌（到你下回合开始）',
-            suppressOptions as any[],
+            suppressOptions,
             { sourceId: 'bear_cavalry_bear_rides_you_pod_choose_suppress', targetType: 'generic', autoCancelOption: true, titleKey: 'ui.bear_cavalry_bear_rides_you_pod_choose_suppress_title' }
         );
         (next.data as any).continuationContext = { toBase };
@@ -2258,9 +2259,9 @@ export function registerBearCavalryInteractionHandlers(): void {
     });
 
     registerInteractionHandler('bear_cavalry_bear_rides_you_pod_choose_suppress', (state, playerId, value, iData, _random, timestamp) => {
-        const chosen = value as BearRidesYouPodSuppressTarget | { __cancel__?: true };
-        if ((chosen as any)?.__cancel__) return { state, events: [] };
-        if (!chosen || (chosen as any).kind === 'skip') return { state, events: [] };
+        if (!value || typeof value !== 'object') return { state, events: [] };
+        const chosen = value as BearRidesYouPodSuppressTarget | { __cancel__: true };
+        if ('__cancel__' in chosen || !('kind' in chosen) || chosen.kind === 'skip') return { state, events: [] };
 
         if (chosen.kind === 'base') {
             return {

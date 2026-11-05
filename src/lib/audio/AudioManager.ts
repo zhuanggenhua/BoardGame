@@ -197,6 +197,7 @@ class AudioManagerClass {
     private sounds: Map<SoundKey, Howl> = new Map();
     private soundDefinitions: Map<SoundKey, SoundDefinition> = new Map();
     private bgms: Map<string, Howl> = new Map();
+    private scopedLoops = new Map<symbol, { stop: () => void; setVolume: () => void }>();
     private bgmDefinitions: Map<string, BgmDefinition> = new Map();
     private registryEntries: Map<string, AudioRegistryEntry> = new Map();
     private registryBasePath: string = '';
@@ -726,6 +727,47 @@ class AudioManagerClass {
         this.setupLimiterIfNeeded();
     }
 
+    /** Independent SFX loop instance. Its disposer never stops one-shots or BGM. */
+    playLoop(key: SoundKey, gain = 1): () => void {
+        if (this.isAudioDisabled()) return () => {};
+        const definition = this.soundDefinitions.get(key) ?? this.resolveRegistrySoundDefinition(key);
+        if (!definition) {
+            console.warn(`[Audio] missing_loop key=${key}`);
+            return () => {};
+        }
+        const id = Symbol(key);
+        const level = Math.max(0, Math.min(1, gain)) * (definition.volume ?? 1);
+        let active = true;
+        let current: Howl | null = null;
+        const stop = () => {
+            if (!active) return;
+            active = false;
+            current?.stop();
+            current?.unload();
+            this.scopedLoops.delete(id);
+        };
+        this.scopedLoops.set(id, { stop, setVolume: () => current?.volume(level * this._sfxVolume) });
+        current = this.createHowlWithFallback(definition.src, {
+            loop: true,
+            preload: true,
+            volume: level * this._sfxVolume,
+            onReplace: next => {
+                current = next;
+                if (!active) next.unload();
+            },
+            onload: () => {
+                if (!active) return;
+                current?.volume(level * this._sfxVolume);
+                current?.play();
+            },
+            onloaderror: (_id, error) => {
+                console.warn(`[Audio] loop_load_failed key=${key}`, error);
+                stop();
+            },
+        });
+        return stop;
+    }
+
     /**
      * 播放音效
      */
@@ -986,6 +1028,7 @@ class AudioManagerClass {
         for (const howl of this.sounds.values()) {
             howl.volume(this._sfxVolume);
         }
+        for (const loop of this.scopedLoops.values()) loop.setVolume();
         if (persist) {
             localStorage.setItem('audio_sfx_volume', String(this._sfxVolume));
         }
@@ -1239,6 +1282,7 @@ class AudioManagerClass {
 
 
     unloadAll(): void {
+        for (const loop of [...this.scopedLoops.values()]) loop.stop();
         for (const key of this.bgms.keys()) {
             this.clearBgmLoopState(key);
         }

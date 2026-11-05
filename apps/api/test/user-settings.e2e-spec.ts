@@ -24,8 +24,11 @@ describe('UserSettings Module (e2e)', () => {
     let authService: AuthService;
 
     beforeAll(async () => {
-        const externalMongoUri = process.env.MONGO_URI;
-        mongo = externalMongoUri ? null : await MongoMemoryServer.create();
+        const externalMongoUri = process.env.MONGO_URI?.trim() || undefined;
+        // Tests use the returned loopback TCP URI; no UNIX socket is needed.
+        mongo = externalMongoUri ? null : await MongoMemoryServer.create({
+            instance: { args: process.platform === 'win32' ? [] : ['--nounixsocket'] },
+        });
         const mongoUri = externalMongoUri ?? mongo?.getUri();
         if (!mongoUri) {
             throw new Error('缺少 MongoDB 连接地址，请配置 MONGO_URI 或启用内存 MongoDB');
@@ -208,4 +211,72 @@ describe('UserSettings Module (e2e)', () => {
         const saved = await uiSettingsModel.findOne({ userId }).lean();
         expect(saved?.localAiMatchPreferences?.smashup).toMatchObject(payload);
     });
+
+    async function registerLibraryUser(suffix: string) {
+        const email = `library-${suffix}@example.com`;
+        const code = '246810';
+        await authService.storeEmailCode(email, code);
+        const response = await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ username: `library-${suffix}`, email, code, password: 'pass1234' })
+            .expect(201);
+        return { token: response.body.token as string, userId: response.body.user.id as string };
+    }
+
+    it('收藏接口拒绝未登录读取与写入', async () => {
+        await request(app.getHttpServer()).get('/auth/user-settings/library').expect(401);
+        await request(app.getHttpServer()).put('/auth/user-settings/library')
+            .send({ gameId: 'betrayal', favorite: true }).expect(401);
+        expect(await uiSettingsModel.countDocuments()).toBe(0);
+    });
+
+    it('收藏增删去重后持久化，账户隔离且不覆盖其他设置', async () => {
+        const alice = await registerLibraryUser('alice');
+        const bob = await registerLibraryUser('bob');
+        const read = (token: string) => request(app.getHttpServer())
+            .get('/auth/user-settings/library').set('Authorization', `Bearer ${token}`);
+        const write = (token: string, gameId: string, favorite: boolean) => request(app.getHttpServer())
+            .put('/auth/user-settings/library').set('Authorization', `Bearer ${token}`)
+            .send({ gameId, favorite });
+        expect((await read(alice.token).expect(200)).body.gameIds).toEqual([]);
+        const preferences = { numPlayers: 3, seatControllers: { '1': { type: 'local-ai', policyId: 'opening-v1' } } };
+        await request(app.getHttpServer()).put('/auth/user-settings/local-ai/smashup')
+            .set('Authorization', `Bearer ${alice.token}`).send(preferences).expect(201);
+        await write(alice.token, 'betrayal', true).expect(200);
+        await write(alice.token, 'fate-domination', true).expect(200);
+        const duplicate = await write(alice.token, 'betrayal', true).expect(200);
+        expect(duplicate.body.gameIds).toHaveLength(2);
+        expect(duplicate.body.gameIds).toEqual(expect.arrayContaining(['betrayal', 'fate-domination']));
+        await write(alice.token, 'betrayal', false).expect(200);
+        expect((await read(alice.token).expect(200)).body.gameIds).toEqual(['fate-domination']);
+        expect((await read(bob.token).expect(200)).body.gameIds).toEqual([]);
+        await write(bob.token, 'betrayal', true).expect(200);
+        expect((await read(bob.token).expect(200)).body.gameIds).toEqual(['betrayal']);
+        expect((await read(alice.token).expect(200)).body.gameIds).toEqual(['fate-domination']);
+        const saved = await uiSettingsModel.findOne({ userId: alice.userId }).lean();
+        expect(saved?.favoriteGameIds).toEqual(['fate-domination']);
+        expect(saved?.localAiMatchPreferences?.smashup).toMatchObject(preferences);
+        const settings = await request(app.getHttpServer()).get('/auth/user-settings/local-ai/smashup')
+            .set('Authorization', `Bearer ${alice.token}`).expect(200);
+        expect(settings.body.settings).toMatchObject(preferences);
+    });
+
+    it('收藏拒绝非法参数且不污染已保存集合', async () => {
+        const { token } = await registerLibraryUser('validation');
+        const write = (body: Record<string, unknown>) => request(app.getHttpServer())
+            .put('/auth/user-settings/library').set('Authorization', `Bearer ${token}`).send(body);
+        await write({ gameId: 'betrayal', favorite: true }).expect(200);
+        for (const body of [
+            { gameId: '', favorite: true },
+            { gameId: '../betrayal', favorite: true },
+            { gameId: 'x'.repeat(129), favorite: true },
+            { gameId: 'betrayal', favorite: 'false' },
+            { gameId: 'betrayal', favorite: 1 },
+            { gameId: 'betrayal' },
+        ]) await write(body).expect(400);
+        const result = await request(app.getHttpServer()).get('/auth/user-settings/library')
+            .set('Authorization', `Bearer ${token}`).expect(200);
+        expect(result.body.gameIds).toEqual(['betrayal']);
+    });
+
 });

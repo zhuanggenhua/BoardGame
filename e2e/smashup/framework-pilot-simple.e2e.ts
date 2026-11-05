@@ -23,36 +23,6 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 };
 void __ensureThreeAxesMarker;
 
-async function expectActionSpotlightClosesOnBlankClick(page: Page, defId: string): Promise<void> {
-    const fxCard = page.getByTestId('smashup-action-fx-card');
-    const spotlightQueue = page.getByTestId('card-spotlight-queue');
-    const spotlightCard = page.getByTestId('smashup-action-spotlight-card');
-
-    await expect(fxCard).toHaveCount(0);
-    await expect(spotlightQueue).toBeVisible({ timeout: 5000 });
-    await expect(spotlightCard).toHaveAttribute('data-card-def-id', defId);
-    const cardBox = await spotlightCard.boundingBox();
-    expect(cardBox, '行动卡特写卡牌本体必须可测量').not.toBeNull();
-    const viewport = page.viewportSize() ?? await page.evaluate(() => ({
-        width: window.innerWidth,
-        height: window.innerHeight,
-    }));
-    expect(
-        Math.abs((cardBox!.x + cardBox!.width / 2) - viewport.width / 2),
-        '行动卡特写卡牌本体应保持水平居中',
-    ).toBeLessThanOrEqual(24);
-    expect(
-        Math.abs((cardBox!.y + cardBox!.height / 2) - viewport.height / 2),
-        '行动卡特写卡牌本体应保持垂直居中',
-    ).toBeLessThanOrEqual(24);
-
-    await page.waitForTimeout(2200);
-    await expect(spotlightCard, '行动卡特写不应在旧 FX 超时时间内自动关闭').toBeVisible();
-
-    await spotlightQueue.click({ position: { x: 12, y: 12 } });
-    await expect(spotlightQueue).toHaveCount(0);
-}
-
 async function expectNoActionSpotlightForOwnPlay(page: Page): Promise<void> {
     const fxCard = page.getByTestId('smashup-action-fx-card');
     const spotlightQueue = page.getByTestId('card-spotlight-queue');

@@ -21,6 +21,7 @@ import { validateCommand } from '../domain/commandValidation';
 import { resolveEffectsToEvents, type EffectContext } from '../domain/effects';
 import { resolveOffensivePreDefenseEffects } from '../domain/attack';
 import { shouldOpenTokenResponse } from '../domain/tokenResponse';
+import { createMainRollContext } from '../domain/rollContext';
 import { VENGEANCE_2 } from '../heroes/paladin/abilities';
 import { METEOR_2, PYROMANCER_ABILITIES } from '../heroes/pyromancer/abilities';
 import { CORNUCOPIA_2 } from '../heroes/shadow_thief/abilities';
@@ -340,8 +341,8 @@ describe('Property 7: 伤害类型处理', () => {
         // 当前实现用 pendingAttack.isUltimate 表示这段伤害按 Ultimate Damage 结算，应跳过防御方。
         const mockState = {
             players: {
-                '0': { tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
-                '1': { tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
+                '0': { statusEffects: {}, tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
+                '1': { statusEffects: {}, tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
             },
             tokenDefinitions: ALL_TOKEN_DEFINITIONS,
             pendingDamage: undefined,
@@ -356,8 +357,8 @@ describe('Property 7: 伤害类型处理', () => {
         const mockStateNoAttackerTokens = {
             ...mockState,
             players: {
-                '0': { tokens: {}, resources: { [RESOURCE_IDS.HP]: 50 } },
-                '1': { tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
+                '0': { statusEffects: {}, tokens: {}, resources: { [RESOURCE_IDS.HP]: 50 } },
+                '1': { statusEffects: {}, tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
             },
         } as any;
         // 防御方不能减伤（Ultimate Damage）
@@ -368,8 +369,8 @@ describe('Property 7: 伤害类型处理', () => {
     it('非 Ultimate Damage 的普通伤害允许防御方 Token 响应', () => {
         const mockState = {
             players: {
-                '0': { tokens: {}, resources: { [RESOURCE_IDS.HP]: 50 } },
-                '1': { tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
+                '0': { statusEffects: {}, tokens: {}, resources: { [RESOURCE_IDS.HP]: 50 } },
+                '1': { statusEffects: {}, tokens: { [TOKEN_IDS.TAIJI]: 3 }, resources: { [RESOURCE_IDS.HP]: 50 } },
             },
             tokenDefinitions: ALL_TOKEN_DEFINITIONS,
             pendingDamage: undefined,
@@ -420,6 +421,8 @@ describe('Property 8: 状态效果叠加', () => {
     const NON_REMOVABLE_SPECIAL_TOKEN_WHITELIST = [
         TOKEN_IDS.BLESSING_OF_DIVINITY,
         TOKEN_IDS.HEAL_BOT,
+        // Thor's Mjolnir is a unique companion/location object, not a removable status stack.
+        TOKEN_IDS.MJOLNIR,
         TOKEN_IDS.NANOBOT,
         TOKEN_IDS.SHOCK_BOT,
         TOKEN_IDS.TREANT_DIVINE,
@@ -569,6 +572,38 @@ describe('Property 9: 4 人玩家目标交互验证', () => {
         );
         expect(result.valid).toBe(false);
         expect(result.error).toBe('invalid_target_player');
+    });
+
+    it('限定目标值的 modifyDie 只接受交互声明的骰面', () => {
+        const dice = [{ id: 0, value: 1, isKept: false, definitionId: 'thor-dice', ownerId: '0' }];
+        const core = createFourPlayerCore({ dice, rollCount: 1 });
+        core.currentRollContext = createMainRollContext(core, {
+            phase: 'offensiveRoll',
+            ownerPlayerId: '0',
+            dice,
+        });
+        const interaction = {
+            id: 'thor-worthy',
+            playerId: '0',
+            sourceCardId: 'card-thor-worthy',
+            type: 'modifyDie' as const,
+            titleKey: 'interaction.selectDieToChange',
+            selectCount: 1,
+            selected: [],
+            allowedDieIds: [0],
+            diceOwnerId: '0',
+            dieModifyConfig: { mode: 'set' as const, allowedValues: [4, 5] as [number, number] },
+        };
+        const validate = (newValue: number) => validateCommand(
+            core,
+            { type: 'MODIFY_DIE', playerId: '0', payload: { dieId: 0, newValue } } as any,
+            'offensiveRoll',
+            interaction,
+        );
+
+        expect(validate(3)).toMatchObject({ valid: false, error: 'invalid_die_value' });
+        expect(validate(4)).toEqual({ valid: true });
+        expect(validate(5)).toEqual({ valid: true });
     });
 
     it('REMOVE_STATUS 在 self-only selectStatus 交互下拒绝其他玩家', () => {

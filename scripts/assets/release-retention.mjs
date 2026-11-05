@@ -27,3 +27,18 @@ export const selectRetainedReleaseIds = (
         currentReleaseId,
     ]);
 };
+
+export const selectExpiredReleaseIds = (
+    releaseIds,
+    currentReleaseId,
+    retentionCount = DEFAULT_RELEASE_RETENTION_COUNT,
+) => {
+    const retainedReleaseIds = selectRetainedReleaseIds(
+        releaseIds,
+        currentReleaseId,
+        retentionCount,
+    );
+    return [...new Set(releaseIds)]
+        .filter((releaseId) => !retainedReleaseIds.has(releaseId))
+        .sort();
+};

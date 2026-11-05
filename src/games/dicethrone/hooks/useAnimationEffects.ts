@@ -13,7 +13,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import type { EventStreamEntry } from '../../../engine/types';
-import type { DamageDealtEvent, HealAppliedEvent, HeroState, AbilityDef } from '../domain/types';
+import type { DamageDealtEvent, HealAppliedEvent, HeroState } from '../domain/types';
+import type { AbilityDef } from '../domain/combat/types';
 import type { CompanionHealthChangedEvent, CpChangedEvent } from '../domain/events';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusAtlases } from '../ui/statusEffects';

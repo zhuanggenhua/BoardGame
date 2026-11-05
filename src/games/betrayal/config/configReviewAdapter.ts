@@ -48,6 +48,7 @@ export const BETRAYAL_CONFIG_REVIEW_FIELD_KEYS = [
     'visualId',
     'atlasFrame',
     'discoverySymbol',
+    'discoveryCardCount',
     'doorways',
     'orientationTurns',
     'rotatedDoorways',
@@ -160,7 +161,7 @@ function formatEdges(edges: readonly BetrayalRoomEdge[]): string[] {
     return edges.map((edge) => EDGE_LABELS[edge]);
 }
 
-function formatDoorwayConnections(doorways: readonly BetrayalRoomSeed['doorways']): string[] {
+function formatDoorwayConnections(doorways: Readonly<BetrayalRoomSeed['doorways']>): string[] {
     return doorways.map((doorway) => {
         const target = doorway.connectsToRoomId ? `→ ${doorway.connectsToRoomId}` : '未连接';
         const floor = doorway.leadsToFloor ? ` / 通向${FLOOR_LABELS[doorway.leadsToFloor]}` : '';
@@ -325,6 +326,7 @@ function buildRoomTemplateRow(floor: BetrayalRoomFloor, room: BetrayalRoomDiscov
             visualId: room.visualId,
             atlasFrame: resolveAtlasFrame(room.visualId),
             discoverySymbol,
+            discoveryCardCount: room.discoveryCardCount ?? 1,
             doorways: formatEdges(room.doorways),
             orientationTurns: '运行时选择',
             rotatedDoorways: formatOrientationOptions(room.doorways),
@@ -582,6 +584,16 @@ export const BETRAYAL_CONFIG_REVIEW_FIELD_DEFINITIONS: readonly BetrayalConfigRe
         meaning: '房间正面发现符号',
         evidence: [FIELD_EVIDENCE.scenarioConfig, FIELD_EVIDENCE.roomContract],
         getValue: (row) => row.values.discoverySymbol,
+    },
+    {
+        key: 'discoveryCardCount',
+        valueKind: 'number',
+        applicability: 'room',
+        editable: true,
+        requiredForAudit: true,
+        meaning: '房间正面发现符号对应的牌数',
+        evidence: [FIELD_EVIDENCE.scenarioConfig, FIELD_EVIDENCE.roomContract],
+        getValue: (row) => row.values.discoveryCardCount,
     },
     {
         key: 'doorways',

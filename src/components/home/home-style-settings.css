@@ -1,0 +1,6 @@
+.home-style-options { border-bottom: 1px solid currentColor; padding-bottom: 16px; margin-bottom: 16px; }
+.home-style-options p { font-size: 12px; font-weight: 700; margin: 0 0 8px; }
+.home-style-options-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.home-style-options-row button { min-height: 44px; padding: 8px 12px; border: 1px solid currentColor; border-radius: 10px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.home-style-options-row button[aria-checked="true"] { background: #eed6a4; border-color: #b98741; color: #5b391f; font-weight: 700; }
+.home-style-options-row button:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }

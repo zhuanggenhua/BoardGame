@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+remote=admin@8.148.71.102
+key=/home/zhanggenhua/.ssh/boardgame-sync
+state_dir=/var/lib/boardgame-replica
+archive="$state_dir/boardgame-latest.archive.gz"
+remote_archive=/home/admin/boardgame-replica/boardgame-latest.archive.gz
+remote_hash=/home/admin/boardgame-replica/boardgame-latest.archive.gz.sha256
+container=boardgame-preview-mongodb
+
+install -d -o root -g root -m 0700 "$state_dir"
+remote_sha=$(ssh -i "$key" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$remote" "cut -d' ' -f1 '$remote_hash'")
+local_sha=$(test -f "$archive.sha256" && cut -d' ' -f1 "$archive.sha256" || true)
+if [[ -n "$local_sha" && "$local_sha" == "$remote_sha" ]]; then
+  printf '%s  %s\n' "$local_sha" "$archive" | sha256sum -c - >/dev/null
+  gzip -t "$archive"
+  printf 'unchanged sha256=%s\n' "$remote_sha"
+  exit 0
+fi
+
+tmp="$state_dir/.boardgame-latest.$$.archive.gz"
+container_tmp="/tmp/boardgame-replica.$$.archive.gz"
+container_rollback="/tmp/boardgame-replica-rollback.$$.archive.gz"
+restore_log="$state_dir/.boardgame-restore.$$.log"
+rollback_log="$state_dir/.boardgame-rollback.$$.log"
+cleanup() {
+  rm -f "$tmp" "$restore_log" "$rollback_log"
+  docker exec "$container" rm -f "$container_tmp" "$container_rollback" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+scp -q -i "$key" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 "$remote:$remote_archive" "$tmp"
+printf '%s  %s\n' "$remote_sha" "$tmp" | sha256sum -c -
+gzip -t "$tmp"
+chmod 0600 "$tmp"
+docker cp "$tmp" "$container:$container_tmp"
+docker stop boardgame-preview-web boardgame-preview-game-server >/dev/null
+restore_ok=0
+if docker exec "$container" mongorestore --archive="$container_tmp" --gzip --drop --nsInclude='boardgame.*' >"$restore_log" 2>&1; then
+  restore_ok=1
+fi
+if [[ "$restore_ok" != 1 ]]; then
+  cat "$restore_log" >&2
+  rollback_ok=0
+  if [[ -f "$archive" && -f "$archive.sha256" ]]; then
+    previous_sha=$(cut -d' ' -f1 "$archive.sha256")
+    if printf '%s  %s\n' "$previous_sha" "$archive" | sha256sum -c - >/dev/null && gzip -t "$archive"; then
+      docker cp "$archive" "$container:$container_rollback"
+      if docker exec "$container" mongorestore --archive="$container_rollback" --gzip --drop --nsInclude='boardgame.*' >"$rollback_log" 2>&1; then
+        rollback_ok=1
+      else
+        cat "$rollback_log" >&2
+      fi
+    fi
+  fi
+  if [[ "$rollback_ok" == 1 ]]; then
+    docker start boardgame-preview-game-server boardgame-preview-web >/dev/null
+    printf 'restore failed; previous snapshot restored sha256=%s\n' "$previous_sha" >&2
+  else
+    printf 'restore and rollback failed; preview web/game services remain stopped\n' >&2
+  fi
+  exit 1
+fi
+
+mv -- "$tmp" "$archive"
+printf '%s  %s\n' "$remote_sha" "$archive" > "$archive.sha256"
+docker start boardgame-preview-game-server boardgame-preview-web >/dev/null
+printf 'restored sha256=%s\n' "$remote_sha"

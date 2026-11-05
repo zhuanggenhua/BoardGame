@@ -5,6 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { executePipeline } from '../../../engine/pipeline';
 import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState } from '../../../engine/types';
 import type {
     AbilityActivatedEvent,
@@ -12,17 +13,22 @@ import type {
     ChoiceResolvedEvent,
     DamageDealtEvent,
     DiceThroneCore,
+    DiceThroneCommand,
     PendingBonusDiceSettlement,
     HealAppliedEvent,
     StatusAppliedEvent,
     StatusRemovedEvent,
+    TokenConsumedEvent,
     TokenGrantedEvent,
     TokenUsedEvent,
     BonusDieRolledEvent,
 } from '../domain/types';
-import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
-import { createInitializedState, fixedRandom, fistAttackAbilityId, getCardById } from './test-utils';
+import { DICETHRONE_CARD_ATLAS_IDS, STATUS_IDS, TOKEN_IDS } from '../domain/ids';
+import { RESOURCE_IDS } from '../domain/resources';
+import { advanceTo, createHeroMatchup, createInitializedState, createQueuedRandom, createSetupWithHand, fixedRandom, fistAttackAbilityId, getCardById, cmd, testSystems } from './test-utils';
+import type { CommandInput } from './test-utils';
 import { formatDiceThroneActionEntry } from '../game';
+import { DiceThroneDomain } from '../domain';
 import { createBonusRollContextFromSettlement } from '../domain/rollContext';
 
 const normalizeEntries = (result: ActionLogEntry | ActionLogEntry[] | null): ActionLogEntry[] => {
@@ -131,6 +137,92 @@ describe('formatDiceThroneActionEntry', () => {
             expect(breakdownSeg.lines[0].value).toBe(4);
             // source fallback 为 'test-ability'（技能表中找不到）
             expect(breakdownSeg.lines[0].label).toBe('test-ability');
+        }
+    });
+
+    it('breakdown 中的被动和卡牌加伤来源应显示可读名称', () => {
+        const state = createState();
+        const cardId = 'card-vampire-lord-total-demise';
+        const card = getCardById(cardId);
+        state.core.players['0'].passiveAbilities = [{
+            id: 'vampire-lord-blood-power',
+            nameKey: 'passive.vampireLordBloodPower.name',
+            actions: [],
+        }];
+        state.core.players['0'].discard = [card];
+        const command: Command = {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: {},
+            timestamp: 10,
+        };
+        const damageEvent: DamageDealtEvent = {
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: '1',
+                amount: 9,
+                actualDamage: 9,
+                sourceAbilityId: 'test-ability',
+                breakdown: {
+                    base: {
+                        value: 5,
+                        sourceId: 'test-ability',
+                        sourceName: 'test-ability',
+                        sourceNameIsI18n: false,
+                    },
+                    steps: [
+                        {
+                            type: 'flat',
+                            value: 3,
+                            sourceId: 'vampire-lord-blood-power',
+                            runningTotal: 8,
+                        },
+                        {
+                            type: 'flat',
+                            value: 1,
+                            sourceId: cardId,
+                            sourceName: cardId,
+                            sourceNameIsI18n: false,
+                            runningTotal: 9,
+                        },
+                    ],
+                },
+            },
+            timestamp: 10,
+        };
+        const resolvedEvent: AttackResolvedEvent = {
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId: '0',
+                defenderId: '1',
+                sourceAbilityId: 'test-ability',
+                defenseAbilityId: undefined,
+                totalDamage: 9,
+            },
+            timestamp: 11,
+        };
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [damageEvent, resolvedEvent] as GameEvent[],
+        }));
+
+        const damageEntry = entries.find(entry => entry.kind === 'DAMAGE_DEALT');
+        expect(damageEntry).toBeTruthy();
+        const breakdownSeg = damageEntry?.segments.find(s => s.type === 'breakdown');
+        expect(breakdownSeg).toBeTruthy();
+        if (breakdownSeg?.type === 'breakdown') {
+            expect(breakdownSeg.lines[1]).toMatchObject({
+                label: 'passive.vampireLordBloodPower.name',
+                labelIsI18n: true,
+                value: 3,
+            });
+            expect(breakdownSeg.lines[2]).toMatchObject({
+                label: card.name,
+                labelIsI18n: true,
+                value: 1,
+            });
         }
     });
 
@@ -332,6 +424,33 @@ describe('formatDiceThroneActionEntry', () => {
         expect(seg).toBeTruthy();
         expect(seg?.params?.phase).toBe('phase.offensiveRoll.label');
         expect(seg?.paramI18nKeys).toContain('phase');
+    });
+
+    it('后续 afterEvents 轮次触发的自动防御技能仍写入日志', () => {
+        const state = createState();
+        const command: Command = {
+            type: 'ADVANCE_PHASE',
+            playerId: '0',
+            payload: {},
+            timestamp: 31,
+        };
+        const autoDefenseEvent: AbilityActivatedEvent = {
+            type: 'ABILITY_ACTIVATED',
+            payload: { abilityId: 'angelic-cloak-2', playerId: '1', isDefense: true },
+            sourceCommandType: 'ADVANCE_PHASE',
+            timestamp: 31,
+        };
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [autoDefenseEvent],
+            afterEventsRound: 1,
+        }));
+
+        expect(entries).toHaveLength(1);
+        expect(entries[0].id).toBe('AUTO_DEFENSE-1-angelic-cloak-2-31');
+        expect(findI18nSegment(entries[0].segments, 'actionLog.abilityActivatedDefense')).toBeTruthy();
     });
 
     it('discard 后自动切人时 ADVANCE_PHASE 日志应归属下一位 activePlayer', () => {
@@ -650,6 +769,208 @@ describe('formatDiceThroneActionEntry', () => {
         expect(statusSeg?.paramI18nKeys).toContain('statusLabel');
     });
 
+    it('起开移除催眠时，日志应写清来源卡和被移除的 token', () => {
+        const state = createState();
+        state.core.players['1'].discard = [getCardById('card-get-away')];
+        const command: Command = {
+            type: 'REMOVE_STATUS',
+            playerId: '1',
+            payload: { targetPlayerId: '0', statusId: TOKEN_IDS.MESMERIZE },
+            timestamp: 41,
+        };
+        const tokenConsumedEvent: TokenConsumedEvent = {
+            type: 'TOKEN_CONSUMED',
+            payload: {
+                playerId: '0',
+                tokenId: TOKEN_IDS.MESMERIZE,
+                amount: 1,
+                newTotal: 0,
+            },
+            sourceCommandType: 'REMOVE_STATUS',
+            timestamp: 41,
+        };
+        const confirmedEvent = {
+            type: 'SYS_INTERACTION_CONFIRMED',
+            payload: {
+                interactionId: 'dt-interaction-card-get-away-40',
+                playerId: '1',
+                sourceId: 'card-get-away',
+            },
+            timestamp: 41,
+        } as GameEvent;
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [tokenConsumedEvent, confirmedEvent] as GameEvent[],
+            afterEventsRound: 1,
+        }));
+
+        const tokenEntry = entries.find(entry => entry.kind === 'TOKEN_CONSUMED');
+        expect(tokenEntry).toBeTruthy();
+        expect(tokenEntry?.actorId).toBe('1');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourcePrefix');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourceResult');
+        expect(tokenEntry?.segments).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'card',
+                cardId: 'card-get-away',
+                previewText: 'cards.card-get-away.name',
+                previewTextNs: 'game-dicethrone',
+                previewRef: expect.objectContaining({ type: 'atlas' }),
+            }),
+        ]));
+        const resultSeg = findI18nSegment(tokenEntry!.segments, 'actionLog.tokenRemovedBySourceResult');
+        expect(resultSeg?.params).toMatchObject({
+            targetPlayerId: '0',
+            tokenLabel: 'tokens.mesmerize.name',
+            amount: 1,
+        });
+        expect(resultSeg?.paramI18nKeys).toContain('tokenLabel');
+    });
+
+    it('吸血鬼通用牌日志在旧快照缺少内联预览时，仍按吸血鬼实际牌库补卡图', () => {
+        const state = createHeroMatchup('vampire_lord', 'monk')(['0', '1'], fixedRandom);
+        const staleGetAway = getCardById('card-get-away');
+        delete staleGetAway.previewRef;
+        state.core.players['0'].hand = [staleGetAway];
+        state.core.players['0'].deck = state.core.players['0'].deck.filter(card => card.id !== 'card-get-away');
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command: {
+                type: 'PLAY_CARD',
+                playerId: '0',
+                payload: { cardId: 'card-get-away' },
+                timestamp: 42,
+            },
+            state,
+            events: [],
+        }));
+
+        const playEntry = entries.find(entry => entry.kind === 'PLAY_CARD');
+        expect(playEntry).toBeTruthy();
+        expect(playEntry?.segments).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'card',
+                cardId: 'card-get-away',
+                previewText: 'cards.card-get-away.name',
+                previewTextNs: 'game-dicethrone',
+                previewRef: {
+                    type: 'atlas',
+                    atlasId: DICETHRONE_CARD_ATLAS_IDS.VAMPIRE_LORD,
+                    index: 11,
+                },
+            }),
+        ]));
+    });
+
+    it('起开移除催眠应通过正式日志系统写入玩家日志', () => {
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        let state = createSetupWithHand(['card-get-away'], {
+            playerId: '1',
+            cp: 1,
+            mutate: (core) => {
+                core.phase = 'main1';
+                core.activePlayerId = '1';
+                core.players['0'].tokens[TOKEN_IDS.MESMERIZE] = 1;
+                core.players['1'].resources[RESOURCE_IDS.CP] = 1;
+            },
+        })(['0', '1'], fixedRandom);
+
+        const played = executePipeline(
+            pipelineConfig,
+            state,
+            {
+                ...cmd('PLAY_CARD', '1', { cardId: 'card-get-away' }),
+                timestamp: 42,
+            } as DiceThroneCommand,
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(played.success).toBe(true);
+        state = played.state as MatchState<DiceThroneCore>;
+        expect(state.sys.interaction.current?.kind).toBe('dt:card-interaction');
+
+        const removed = executePipeline(
+            pipelineConfig,
+            state,
+            {
+                ...cmd('REMOVE_STATUS', '1', {
+                    targetPlayerId: '0',
+                    statusId: TOKEN_IDS.MESMERIZE,
+                }),
+                timestamp: 43,
+            } as DiceThroneCommand,
+            fixedRandom,
+            ['0', '1'],
+        );
+        expect(removed.success).toBe(true);
+        state = removed.state as MatchState<DiceThroneCore>;
+
+        const tokenEntry = state.sys.actionLog.entries.find(entry => entry.kind === 'TOKEN_CONSUMED');
+        expect(tokenEntry).toBeTruthy();
+        expect(tokenEntry?.actorId).toBe('1');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourcePrefix');
+        expect(getI18nKeys(tokenEntry!.segments)).toContain('actionLog.tokenRemovedBySourceResult');
+        expect(tokenEntry?.segments).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'card',
+                cardId: 'card-get-away',
+                previewText: 'cards.card-get-away.name',
+            }),
+        ]));
+        expect(findI18nSegment(
+            tokenEntry!.segments,
+            'actionLog.tokenRemovedBySourceResult',
+        )?.params).toMatchObject({
+            targetPlayerId: '0',
+            tokenLabel: 'tokens.mesmerize.name',
+            amount: 1,
+        });
+    });
+
+    it('同一毫秒内连续改骰和重投，每一步都应保留独立玩家日志', () => {
+        const pipelineConfig = { domain: DiceThroneDomain, systems: testSystems };
+        const playerIds: PlayerId[] = ['0', '1'];
+        const random = createQueuedRandom([4, 2, 3, 5, 6, 6, 1, 2]);
+        let state = createSetupWithHand(['card-me-too'], {
+            cp: 10,
+            mutate: (core) => {
+                core.players['1'].hand = [];
+                core.players['0'].deck = [];
+                core.players['1'].deck = [];
+            },
+        })(playerIds, random);
+
+        const run = (input: CommandInput, timestamp: number) => {
+            const result = executePipeline(
+                pipelineConfig,
+                state,
+                { ...input, timestamp } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+            expect(result.success).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+        };
+
+        for (const input of advanceTo('offensiveRoll')) {
+            run(input, 10);
+        }
+        run(cmd('ROLL_DICE', '0'), 11);
+        run(cmd('PLAY_CARD', '0', { cardId: 'card-me-too' }), 12);
+        run(cmd('MODIFY_DIE', '0', { dieId: 4, newValue: 6 }), 100);
+        run(cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 6 }), 100);
+
+        const modifiedEntries = state.sys.actionLog.entries.filter(entry => entry.kind === 'DIE_MODIFIED');
+        expect(modifiedEntries).toHaveLength(2);
+        expect(modifiedEntries.map(entry => entry.id)).toEqual([
+            expect.stringContaining('DIE_MODIFIED-0-event-'),
+            expect.stringContaining('DIE_MODIFIED-0-event-'),
+        ]);
+        expect(new Set(modifiedEntries.map(entry => entry.id)).size).toBe(2);
+    });
+
     it('奖励骰出现、修改和被动重投临时骰应写入可区分的操作日志', () => {
         const state = createState();
         const command: Command = {
@@ -856,6 +1177,53 @@ describe('formatDiceThroneActionEntry', () => {
         expect(getI18nKeys(settledEntry!.segments)).toContain('bonusDie.effect.volley.result');
         const finalDiceSegment = settledEntry!.segments.find(segment => segment.type === 'diceResult') as Extract<ActionLogSegment, { type: 'diceResult' }> | undefined;
         expect(finalDiceSegment?.dice.map(die => die.value)).toEqual([1, 2, 4, 4, 5]);
+    });
+
+    it('死无全尸结算日志按利爪数量显示攻击伤害加值，不把 2 个利爪记成 +1', () => {
+        const state = createHeroMatchup('vampire_lord', 'monk')(['0', '1'], fixedRandom);
+        const confirmCommand: Command = {
+            type: 'CONFIRM_ROLL',
+            playerId: '0',
+            payload: {},
+            timestamp: 90,
+        };
+        const settledEvent = {
+            type: 'BONUS_DICE_SETTLED',
+            payload: {
+                finalDice: [
+                    { index: 0, value: 1, face: 'claw' },
+                    { index: 1, value: 2, face: 'claw' },
+                    { index: 2, value: 4, face: 'mesmerize' },
+                    { index: 3, value: 5, face: 'mesmerize' },
+                    { index: 4, value: 6, face: 'blood_drop' },
+                ],
+                totalDamage: 2,
+                attackerId: '0',
+                targetId: '1',
+                sourceAbilityId: 'card-vampire-lord-total-demise',
+                displayOnly: true,
+                allowDiceModification: true,
+                effectKey: 'bonusDie.effect.vampireLordTotalDemiseResult',
+                effectParams: { clawCount: 2, bonusDamage: 2 },
+            },
+            timestamp: 91,
+        } as GameEvent;
+
+        const entries = normalizeEntries(formatDiceThroneActionEntry({
+            command: confirmCommand,
+            state,
+            events: [settledEvent],
+        }));
+        const settledEntry = entries.find(entry => entry.kind === 'BONUS_DICE_SETTLED');
+        expect(settledEntry).toBeTruthy();
+
+        const resultSeg = findI18nSegment(settledEntry!.segments, 'bonusDie.effect.vampireLordTotalDemiseResult');
+        expect(resultSeg?.params).toMatchObject({
+            clawCount: 2,
+            bonusDamage: 2,
+        });
+        const finalDiceSegment = settledEntry!.segments.find(segment => segment.type === 'diceResult') as Extract<ActionLogSegment, { type: 'diceResult' }> | undefined;
+        expect(finalDiceSegment?.dice.map(die => die.value)).toEqual([1, 2, 4, 5, 6]);
     });
 
     it('奖励骰确认不应复用正式防御骰和防御技能生成第二条确认日志', () => {

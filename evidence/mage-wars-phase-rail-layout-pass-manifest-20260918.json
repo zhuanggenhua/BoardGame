@@ -1,0 +1,47 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "阶段轨道在桌面视口按高度比例自然放大，1920 与 2560x1304 不再缩成小角标。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：阶段轨道宽度、字号、行高、圆点和间距改为以视口高度为基准的比例约束。",
+        "e2e/mage-wars/mage-wars-tutorial.e2e.ts：新增 1366、1920、2560x1304 阶段轨道实际像素比例断言。",
+        "1920x1080 阶段轨道测得宽 196.875px、字号 16.2px；2560x1304 阶段轨道测得宽 237.71875px、字号 19.56px。"
+      ]
+    },
+    {
+      "requirement": "阶段轨道与正式 HUD、生命显示、缩放读数、底部法术书和右侧主操作不重叠。",
+      "status": "PASS",
+      "evidence": [
+        "src/components/game/framework/widgets/GameHUD.tsx：全局悬浮入口按视口高度动态让位，避免宽屏阶段轨道放大后重叠。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：阶段轨道、生命显示、缩放读数、双方 HUD、底部主交互区和右侧主操作均有几何避让断言。",
+        "Mage Wars foundation runtime：5 passed；2560x1304 教程布局：1 passed；1920x1080 正式牌桌：1 passed。"
+      ]
+    },
+    {
+      "requirement": "最终展示图来自当前工作树真实浏览器截图，而不是旧图或诊断图。",
+      "status": "PASS",
+      "evidence": [
+        "三张截图均来自 test-results/evidence-screenshots/mage-wars/foundation-board-runtime。",
+        "截图时间为 2026-09-18 当前修复验证批次，展示范围覆盖 1920x1080、2560x1304 和移动横屏。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png"
+  ],
+  "notes": [
+    "本清单只覆盖本轮阶段轨道比例和 UI 避让修复，不代表 Mage Wars 全游戏完整验收。",
+    "网页查看器按截图目录和本次 files 参数复用；同目录覆盖同名截图时会自动刷新内容。"
+  ]
+}

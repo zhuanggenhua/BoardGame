@@ -187,6 +187,9 @@ describe('systemInteractionAdapter', () => {
       'vanish',
       'mogu_blood_infusion',
       'shadow_return_to_shadow',
+      'zhongcai_erase',
+      'zhongcai_inspire',
+      'zhongcai_word',
     ]);
   });
 

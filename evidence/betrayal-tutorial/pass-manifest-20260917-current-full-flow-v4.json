@@ -1,0 +1,192 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-17T08:07:03.246Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "教程必须按规则原文教学他人/系统动作：别人按规则移动、探索、获得公开预兆、进行作祟检定时，不能从教程里消失。",
+      "status": "PASS",
+      "evidence": [
+        ".spec/knowledge/standards/tutorial-design.md canonical rule updated to 规则原文里的他人 / 系统动作必须教学",
+        "public/locales/zh-CN/game-betrayal.json teaches 下一名/另一名探索者按自己的回合移动、探索、获得公开预兆和 5+ 作祟检定",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts asserts visible cards contain 两名探索者/公开预兆/另一名探索者/新的预兆/达到 5+"
+      ]
+    },
+    {
+      "requirement": "教程不能让当前玩家代操作其它席位：当前玩家只操作自己的回合，其它席位点击由正式 AI/系统命令执行。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/betrayal/__tests__/tutorial.test.ts expectNoCurrentPlayerDelegatesOtherSeat only blocks current-player delegation copy",
+        "e2e/betrayal/betrayal-tutorial.e2e.ts expectNoCurrentPlayerDelegatesOtherSeat used on visible teammate/haunt cards",
+        "docs/games/betrayal/records/betrayal-tutorial-coverage-matrix.md records hidden execution click vs visible rule teaching boundary"
+      ]
+    },
+    {
+      "requirement": "兔脚重投后必须保留确认，让玩家先看清新骰面；刷新恢复后也不能丢确认。",
+      "status": "PASS",
+      "evidence": [
+        "E2E log BETRAYAL_RABBIT_FOOT_CONFIRM_DIAGNOSTICS shows buttonText=确认 0/1 before and after refresh",
+        "evidence/betrayal-tutorial/main-flow-full-rerun/23-兔脚重投后确认新骰面.jpg",
+        "e2e/betrayal/betrayalTestHelpers.ts waitForBetrayalPageReadyWithoutReload avoids wiping resume state after 从上次继续"
+      ]
+    },
+    {
+      "requirement": "完整主线必须从基础回合跑到第一次英雄目标行动，并在确认后回到下一真实入口。",
+      "status": "PASS",
+      "evidence": [
+        "Playwright main tutorial E2E passed: 1 passed (2.4m)",
+        "evidence/betrayal-tutorial/main-flow-full-rerun contains 38 screenshots updated by the passing run",
+        "evidence/betrayal-tutorial/main-flow-full-rerun/38-确认后回到牌桌可结束回合.jpg"
+      ]
+    },
+    {
+      "requirement": "规范和回归测试必须防止旧错误口径复发：不能再用不出现队友/别人动作作为 PASS 标准。",
+      "status": "PASS",
+      "evidence": [
+        "rg scan found no stale 他人行动不做过程解说 / 不能出现队友 / 点“下一步”看 restrictions in current tutorial norm/test targets",
+        "npm run spec:lint -> spec-lint OK",
+        "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -> 21 passed"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\01-回合目标与行动区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\02-速度决定本回合移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\03-属性轨读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\04-剩余移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\05-房间主视区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\06-观察队友一视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\07-观察队友二视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\08-再次点击队友返回观察前位置.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\09-聚焦回自己房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\10-预兆作祟进度条.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\11-持有区与帮助牌读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\12-打开移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\13-移动目标门厅.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\14-移动到门厅后准备探索.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\15-探索目标房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\16-旋转新房间朝向.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\17-确认放置新房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\18-事件牌公开与投掷入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\19-投掷事件.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\20-事件骰出现与书本可查看.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\21-使用书本改用知识检定.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\22-选择兔脚重掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\23-兔脚重投后确认新骰面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\24-伤害分配面板可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\25-伤害分配完成后回到牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\26-回到你的回合后移动到大阶梯.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\27-切到上层地图.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\28-上层平台移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\29-上层平台结束回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\30-英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\31-过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\32-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\33-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\34-读完目标后准备打开移动.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\35-图书馆成为可点击移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\36-英雄寻找木乃伊真名入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\37-寻找真名知识检定成功.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\38-确认后回到牌桌可结束回合.jpg"
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\01-回合目标与行动区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\02-速度决定本回合移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\03-属性轨读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\04-剩余移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\05-房间主视区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\06-观察队友一视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\07-观察队友二视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\08-再次点击队友返回观察前位置.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\09-聚焦回自己房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\10-预兆作祟进度条.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\11-持有区与帮助牌读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\12-打开移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\13-移动目标门厅.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\14-移动到门厅后准备探索.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\15-探索目标房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\16-旋转新房间朝向.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\17-确认放置新房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\18-事件牌公开与投掷入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\19-投掷事件.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\20-事件骰出现与书本可查看.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\21-使用书本改用知识检定.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\22-选择兔脚重掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\23-兔脚重投后确认新骰面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\24-伤害分配面板可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\25-伤害分配完成后回到牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\26-回到你的回合后移动到大阶梯.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\27-切到上层地图.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\28-上层平台移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\29-上层平台结束回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\30-英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\31-过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\32-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\33-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\34-读完目标后准备打开移动.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\35-图书馆成为可点击移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\36-英雄寻找木乃伊真名入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\37-寻找真名知识检定成功.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\38-确认后回到牌桌可结束回合.jpg"
+  ],
+  "sourceImages": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\01-回合目标与行动区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\02-速度决定本回合移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\03-属性轨读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\04-剩余移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\05-房间主视区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\06-观察队友一视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\07-观察队友二视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\08-再次点击队友返回观察前位置.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\09-聚焦回自己房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\10-预兆作祟进度条.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\11-持有区与帮助牌读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\12-打开移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\13-移动目标门厅.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\14-移动到门厅后准备探索.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\15-探索目标房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\16-旋转新房间朝向.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\17-确认放置新房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\18-事件牌公开与投掷入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\19-投掷事件.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\20-事件骰出现与书本可查看.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\21-使用书本改用知识检定.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\22-选择兔脚重掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\23-兔脚重投后确认新骰面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\24-伤害分配面板可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\25-伤害分配完成后回到牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\26-回到你的回合后移动到大阶梯.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\27-切到上层地图.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\28-上层平台移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\29-上层平台结束回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\30-英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\31-过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\32-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\33-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\34-读完目标后准备打开移动.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\35-图书馆成为可点击移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\36-英雄寻找木乃伊真名入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\37-寻找真名知识检定成功.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\38-确认后回到牌桌可结束回合.jpg"
+  ],
+  "validation": [
+    {
+      "command": "npm run spec:lint",
+      "result": "passed: spec-lint OK"
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "result": "passed: 21 tests"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs default e2e/betrayal/betrayal-tutorial.e2e.ts 主线教程会从基础回合自然推进到第一次英雄目标行动",
+      "result": "passed: 1 test, 2.4m; isolated runtime after shared-port fallback"
+    }
+  ]
+}

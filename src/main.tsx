@@ -131,6 +131,14 @@ if (rootElement) {
       reportCaptureBootstrapStatus('capture-rendered');
     }
   }).catch((error) => {
+    if (isStaleChunkError(error)) {
+      const reloaded = reloadForStaleChunkOnce('bootstrap-app-load', window, {
+        shouldReload: shouldAutoReloadStaleChunk,
+      });
+      if (reloaded) {
+        return;
+      }
+    }
     console.error('[Bootstrap] 加载应用入口失败', error);
     reportCaptureBootstrapStatus('capture-app-load-failed', error instanceof Error ? error.message : String(error));
   });

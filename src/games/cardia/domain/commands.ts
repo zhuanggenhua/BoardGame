@@ -1,6 +1,7 @@
 import type { Command } from '../../../engine/types';
 import type { PlayerId } from '../../../engine/types';
 import type { FactionType } from './core-types';
+import type { AbilityId } from './ids';
 
 /**
  * 命令常量表
@@ -33,7 +34,7 @@ export interface PlayCardCommand extends Command<typeof CARDIA_COMMANDS.PLAY_CAR
  */
 export interface ActivateAbilityCommand extends Command<typeof CARDIA_COMMANDS.ACTIVATE_ABILITY> {
     payload: {
-        abilityId: string;
+        abilityId: AbilityId;
         sourceCardUid: string;
     };
 }

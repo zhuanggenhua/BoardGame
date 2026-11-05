@@ -1,4 +1,5 @@
 import type { MatchState } from '../types';
+import { decodeLocalMatchSnapshot, encodeLocalMatchSnapshot } from './localSessionCodec';
 
 const LOCAL_MATCH_SNAPSHOT_PREFIX = 'local_match_snapshot_v1:';
 const LOCAL_MATCH_SNAPSHOT_VERSION = 1;
@@ -62,7 +63,7 @@ export function readLocalMatchSnapshot(args: {
         const raw = storage.getItem(buildLocalMatchSnapshotKey(args.gameId, args.seed));
         if (!raw) return null;
 
-        const parsed = JSON.parse(raw) as LocalMatchSnapshot;
+        const parsed = decodeLocalMatchSnapshot(raw) as LocalMatchSnapshot;
         if (!isRecord(parsed)) return null;
         if (parsed.version !== LOCAL_MATCH_SNAPSHOT_VERSION) return null;
         if (parsed.gameId !== args.gameId || parsed.seed !== args.seed) return null;
@@ -102,7 +103,7 @@ export function persistLocalMatchSnapshot(args: {
             savedAt: Date.now(),
             state: args.state,
         };
-        storage.setItem(buildLocalMatchSnapshotKey(args.gameId, args.seed), JSON.stringify(payload));
+        storage.setItem(buildLocalMatchSnapshotKey(args.gameId, args.seed), encodeLocalMatchSnapshot(payload));
     } catch {
         // 忽略隐私模式或容量不足导致的持久化失败
     }

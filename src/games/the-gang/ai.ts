@@ -8,6 +8,7 @@ import {
     getCurrentRoundExitChipOwners,
     getMissingHandSlotsForPlayer,
     getRequiredExitChipCount,
+    hasCompleteCommunityCards,
     getUnoccupiedChipValues,
     resolveChipOwnerKey,
 } from './domain';
@@ -201,7 +202,7 @@ export function buildTheGangAiLegalActions(args: {
                 THE_GANG_COMMANDS.END_ROUND,
             ));
         } else if (
-            core.communityCards.length === 5
+            hasCompleteCommunityCards(core)
             && !isProgressAlreadyApprovedByPlayer(core, args.playerId, 'reveal-showdown')
         ) {
             actions.push(createProgressAction(

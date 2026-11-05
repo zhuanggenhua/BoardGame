@@ -398,12 +398,13 @@ export function executeCommand(
           const wasDist = 1; // 移动前一定相邻（因为 getEntangleUnits 只返回相邻的）
           const newDist = Math.abs(to.row - eu.position.row) + Math.abs(to.col - eu.position.col);
           if (newDist > wasDist) {
+            const highGate = getUnitAbilities(eu, core).includes('zhongcai_high_gate');
             events.push({
               type: SW_EVENTS.UNIT_DAMAGED,
               payload: {
                 position: to,
-                damage: 1,
-                reason: 'entangle',
+                damage: highGate ? 2 : 1,
+                reason: highGate ? 'zhongcai_high_gate' : 'entangle',
                 sourceUnitId: eu.instanceId,
                 sourcePlayerId: eu.owner,
               },
@@ -498,6 +499,7 @@ export function executeCommand(
           }
           // 需要玩家选择的 afterMove 技能 → 发射 ABILITY_TRIGGERED 供 UI 消费
           const afterMoveChoiceAbilities = [
+            'zhongcai_word',     // 圣言：移动后推拉2格内友方士兵
             'spirit_bond',       // 祖灵交流：充能自身 / 消耗充能转移
             'ancestral_bond',    // 祖灵羁绊：充能+转移给3格内友方
             'structure_shift',   // 结构变换：推拉3格内友方建筑
@@ -841,6 +843,46 @@ export function executeCommand(
           hits = dazzlingHits;
         }
 
+        // 仲裁“圣戒律令”：召唤师受到的攻击伤害至多为1。
+        if (targetCell?.unit?.card.unitClass === 'summoner' && hits > 1) {
+          const hasHolyDecree = workingCore.players[targetCell.unit.owner]?.activeEvents.some(ev =>
+            getBaseCardId(ev.id) === CARD_IDS.ZHONGCAI_HOLY_DECREE,
+          );
+          if (hasHolyDecree) {
+            events.push({
+              type: SW_EVENTS.DAMAGE_REDUCED,
+              payload: {
+                sourceUnitId: targetCell.unit.instanceId,
+                sourcePosition: target,
+                value: hits - 1,
+                sourceAbilityId: CARD_IDS.ZHONGCAI_HOLY_DECREE,
+                condition: 'zhongcai_holy_decree',
+              },
+              timestamp,
+            });
+            hits = 1;
+          }
+        }
+
+        // 和平仲裁官“刚硬”：每回合第一次被攻击时减伤1。
+        if (targetCell?.unit
+          && !targetCell.unit.wasAttackedThisTurn
+          && getUnitAbilities(targetCell.unit, workingCore).includes('zhongcai_sturdy')
+          && hits > 0) {
+          events.push({
+            type: SW_EVENTS.DAMAGE_REDUCED,
+            payload: {
+              sourceUnitId: targetCell.unit.instanceId,
+              sourcePosition: target,
+              value: 1,
+              sourceAbilityId: 'zhongcai_sturdy',
+              condition: 'first_attack',
+            },
+            timestamp,
+          });
+          hits = Math.max(0, hits - 1);
+        }
+
 
         events.push({
           type: SW_EVENTS.UNIT_ATTACKED,
@@ -972,6 +1014,22 @@ export function executeCommand(
                 timestamp,
               });
             }
+          }
+
+          if (attackerAbilities.includes('zhongcai_repentance')
+            && hits > 0
+            && targetCell?.unit?.owner !== attackerUnit.owner) {
+            events.push({
+              type: SW_EVENTS.UNIT_DAMAGED,
+              payload: {
+                position: attacker,
+                damage: 1,
+                reason: 'zhongcai_repentance',
+                sourceAbilityId: 'zhongcai_repentance',
+                sourcePlayerId: playerId,
+              },
+              timestamp,
+            });
           }
           if (attackerAbilities.includes('huijin_flame_breath')) {
             const pathUnitPositions = getStraightLinePath(attacker, target)
@@ -1602,12 +1660,13 @@ export function executeCommand(
       const oldDist = manhattanDistance(ppPayload.targetPosition, eu.position);
       const newDist = manhattanDistance(ppPayload.newPosition, eu.position);
       if (newDist > oldDist) {
+        const highGate = getUnitAbilities(eu, core).includes('zhongcai_high_gate');
         events.splice(ppIdx + 1, 0, {
           type: SW_EVENTS.UNIT_DAMAGED,
           payload: {
             position: ppPayload.newPosition,
-            damage: 1,
-            reason: 'entangle',
+            damage: highGate ? 2 : 1,
+            reason: highGate ? 'zhongcai_high_gate' : 'entangle',
             sourceUnitId: eu.instanceId,
             sourcePlayerId: eu.owner,
           },

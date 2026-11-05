@@ -9,6 +9,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { allocateAvailablePorts, loadWorkerPorts, saveWorkerPorts, isPortInUse } from './port-allocator.js';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
+import { createDevRuntimeEnv } from './dev-port-runtime.js';
 import { registerExitGuard, spawnBundleRunner, spawnNodeScript, spawnTsLoaderEntry, spawnTsxEntry } from './e2e-server-launcher.js';
 import { startRuntimeHeartbeat } from './e2e-runtime-registry.js';
 
@@ -75,12 +76,12 @@ if (usePrebuiltRuntime) {
   }
 }
 
-const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', {
+const runtimeEnv = createDevRuntimeEnv(ports, {
   ...process.env,
   E2E_PROXY_QUIET: 'true',
-  GAME_SERVER_PORT: String(ports.gameServer),
-  API_SERVER_PORT: String(ports.apiServer),
-}, [
+});
+
+const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', runtimeEnv, [
   '--host',
   '127.0.0.1',
   '--port',
@@ -90,9 +91,8 @@ const frontend = spawnNodeScript('scripts/infra/vite-with-logging.js', {
 ]);
 
 const gameServerEnv = {
-  ...process.env,
+  ...runtimeEnv,
   NODE_ENV: 'test',
-  GAME_SERVER_PORT: String(ports.gameServer),
   USE_PERSISTENT_STORAGE: 'false',
 };
 
@@ -123,9 +123,8 @@ const gameServer = useTsxRuntime
         });
 
 const apiServerEnv = {
-  ...process.env,
+  ...runtimeEnv,
   NODE_ENV: 'test',
-  API_SERVER_PORT: String(ports.apiServer),
 };
 
 const apiServer = useTsxRuntime

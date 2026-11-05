@@ -1,14 +1,17 @@
-import React, { useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
-    BoardBurstImpactPreset,
     BoardDamageImpactPreset,
     BoardHealingImpactPreset,
     BoardProjectileAttackPreset,
-    BoardProjectilePathPreset,
     BoardSummonEffectPreset,
+    BoardTeleportImpactPreset,
 } from '../../../components/common/animations/BoardFxPresets';
-import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+import { CardPreview } from '../../../components/common/media/CardPreview';
+import { AttackDie } from './AttackDie';
+import { EffectDie } from './EffectDie';
 import {
     resolveFxQuality,
     scheduleFxFrameCallback,
@@ -17,159 +20,163 @@ import {
     type FxBox,
     type FxQuality,
     type FxRendererProps,
-    createFxPathBox,
 } from '../../../engine/fx';
+import { percentBoxToViewport } from './fxGeometry';
+import type { MageId } from '../domain/ids';
+import { MAGE_IDS } from '../domain/ids';
+import {
+    getPreloadedImageElement,
+    getResolvedImageCacheUrl,
+    getResolvedImageCandidateUrl,
+    getRuntimeImageCandidateUrls,
+    UI_Z_INDEX,
+    type CardPreviewRef,
+} from '../../../core';
+import { getCardAtlasSource, getLazyRegistration } from '../../../components/common/media/cardAtlasRegistry';
+import {
+    computeSpriteImgStyle,
+    computeSpriteStyle,
+    generateUniformAtlasConfig,
+    type SpriteAtlasConfig,
+} from '../../../engine/primitives/spriteAtlas';
+import {
+    getMageWarsMagePreviewAspectRatio,
+    getMageWarsMagePreviewRef,
+    getMageWarsSpellCardAspectRatio,
+    getMageWarsSpellCardPreviewRef,
+} from './cardAtlas';
 import {
     MAGE_WARS_ATTACK_FX_TUNING,
     MAGE_WARS_DIRECT_DAMAGE_FX_TUNING,
     MAGE_WARS_FX_TIMING,
     MAGE_WARS_SUMMON_FX_TUNING,
-    MAGE_WARS_TRAVEL_FX_TUNING,
+    MAGE_WARS_SUMMON_HOST_STYLE,
+    MAGE_WARS_TELEPORT_FX_TUNING,
     mageWarsFxColors,
     resolveMageWarsSummonColor,
 } from './fxTuning';
 
-type AttackDieFaceId = 'burst' | 'hit2' | 'hit1' | 'blank';
+const MAGE_ID_VALUES = new Set<string>(Object.values(MAGE_IDS));
 
-const ATTACK_DIE_TEXTURE_SIZE = 1280;
-const ATTACK_DIE_FACES: Record<AttackDieFaceId, { x: number; y: number; rotate: string }> = {
-    burst: { x: 164, y: 318, rotate: '-7deg' },
-    hit2: { x: 480, y: 318, rotate: '5deg' },
-    hit1: { x: 480, y: 948, rotate: '-4deg' },
-    blank: { x: 794, y: 318, rotate: '4deg' },
-};
-
-function getAttackDieFace(result: number): AttackDieFaceId {
-    if (result >= 3) return 'burst';
-    if (result === 2) return 'hit2';
-    if (result === 1) return 'hit1';
-    return 'blank';
+function isMageId(value: unknown): value is MageId {
+    return typeof value === 'string' && MAGE_ID_VALUES.has(value);
 }
 
-function AttackDieResult({ result }: { result: number }) {
-    const crop = ATTACK_DIE_FACES[getAttackDieFace(result)];
-    const scale = ATTACK_DIE_TEXTURE_SIZE / 320;
-
-    return (
-        <span
-            className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-[0.18rem] bg-black/35 shadow-[0_6px_12px_rgba(0,0,0,0.46)]"
-            style={{ transform: `rotate(${crop.rotate})` }}
-            data-testid="mage-wars-fx-attack-die-face"
-            aria-label={`攻击骰 ${result}`}
-        >
-            <OptimizedImage
-                src="mage-wars/dice/attack-die-texture"
-                alt={`攻击骰 ${result}`}
-                className="absolute max-w-none select-none"
-                style={{
-                    width: `${scale * 100}%`,
-                    height: `${scale * 100}%`,
-                    left: `${-(crop.x / 320) * 100}%`,
-                    top: `${-(crop.y / 320) * 100}%`,
-                }}
-                placeholder={false}
-            />
-        </span>
-    );
-}
+type ViewportBox = { left: number; top: number; width: number; height: number };
 
 function AttackDiceFeedback({
-    source,
-    target,
-    sourceBox,
-    targetBox,
     diceResults,
     effectDieResult,
-    getCellPosition,
+    rawEffectDieResult,
+    visibleDurationMs,
+    kind,
+    resultAmount,
 }: {
-    source?: FxCellCoord;
-    target: FxCellCoord;
-    sourceBox?: FxBox | null;
-    targetBox?: FxBox | null;
     diceResults: number[];
     effectDieResult?: number;
-    getCellPosition: FxRendererProps['getCellPosition'];
+    rawEffectDieResult?: number;
+    visibleDurationMs: number;
+    kind: 'melee' | 'ranged' | 'heal';
+    resultAmount: number;
 }) {
-    if (diceResults.length === 0) return null;
+    const { t } = useTranslation('game-mage-wars');
+    if (diceResults.length === 0 && effectDieResult === undefined) return null;
 
-    const resolvedTargetBox = targetBox ?? getCellPosition(target.row, target.col);
-    const resolvedSourceBox = sourceBox ?? (source ? getCellPosition(source.row, source.col) : resolvedTargetBox);
-    const sourceCenter = {
-        x: resolvedSourceBox.left + resolvedSourceBox.width / 2,
-        y: resolvedSourceBox.top + resolvedSourceBox.height / 2,
-    };
-    const targetCenter = {
-        x: resolvedTargetBox.left + resolvedTargetBox.width / 2,
-        y: resolvedTargetBox.top + resolvedTargetBox.height / 2,
-    };
-    const pathCenter = {
-        x: (sourceCenter.x + targetCenter.x) / 2,
-        y: (sourceCenter.y + targetCenter.y) / 2,
-    };
-    const dx = targetCenter.x - sourceCenter.x;
-    const dy = targetCenter.y - sourceCenter.y;
-    const distance = Math.hypot(dx, dy);
-    const perpendicular = distance > 0.01
-        ? { x: -dy / distance, y: dx / distance }
-        : { x: 0, y: -1 };
-    const sideSign = Math.abs(dx) >= Math.abs(dy)
-        ? (pathCenter.y > 50 ? -1 : 1)
-        : (pathCenter.x > 50 ? -1 : 1);
-    const offset = Math.min(
-        19,
-        Math.max(13.5, Math.max(resolvedTargetBox.width, resolvedTargetBox.height) * 0.92 + 6),
-    );
-    const clampPercent = (value: number) => Math.min(94, Math.max(6, value));
-    const left = clampPercent(pathCenter.x + perpendicular.x * sideSign * offset);
-    const top = clampPercent(pathCenter.y + perpendicular.y * sideSign * offset);
+    const titleKey = kind === 'heal'
+        ? 'diceResult.heal'
+        : kind === 'ranged'
+            ? 'diceResult.rangedAttack'
+            : 'diceResult.meleeAttack';
+    const resultText = kind === 'heal'
+        ? String(resultAmount)
+        : resultAmount > 0
+            ? t('diceResult.damage', { count: resultAmount })
+            : t('diceResult.miss');
+    // Cobblestone stills captured mid-tumble; SW `text-red-400` + 0.8s fade
+    // reads as translucent. Keep the sum fully opaque with a dark outline.
+    const resultColor = kind === 'heal'
+        ? '#4ade80'
+        : resultAmount > 0
+            ? '#ff2d2d'
+            : '#f8fafc';
 
-    return (
+    const overlay = (
         <motion.div
-            className="absolute z-40 flex max-w-[11rem] items-center justify-center gap-1"
+            className="pointer-events-none fixed inset-0 flex items-center justify-center"
+            style={{
+                zIndex: UI_Z_INDEX.overlayRaised,
+                isolation: 'isolate',
+            }}
             data-testid="mage-wars-fx-attack-dice"
-            data-placement="path-side-avoid-target"
-            style={{ left: `${left}%`, top: `${top}%`, transform: 'translate(-50%, -50%)' }}
-            initial={{ opacity: 0, scale: 0.68, y: 10 }}
-            animate={{ opacity: [0, 1, 1, 1, 0], scale: [0.68, 1, 1, 1, 1.04], y: [10, 0, 0, 0, -6] }}
-            transition={{ duration: 1.35, ease: 'easeOut' }}
+            data-placement="screen-center"
+            data-overlay-layer="screen"
+            data-visual-role="attack-dice-result"
+            data-visible-duration-ms={visibleDurationMs}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
         >
-            {diceResults.slice(0, 6).map((result, index) => (
-                <AttackDieResult key={`${index}-${result}`} result={result} />
-            ))}
-            {effectDieResult !== undefined ? (
-                <span
-                    className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-black/42 shadow-[0_6px_12px_rgba(0,0,0,0.46)]"
-                    data-testid="mage-wars-fx-effect-die-face"
-                    aria-label={`效果骰 ${effectDieResult}`}
+            <div className="flex flex-col items-center gap-[0.8vw]">
+                <div
+                    className="text-center text-[1.3vw] font-black tracking-wider text-white"
+                    style={{ textShadow: '0 0 1vw rgba(255,255,255,0.3)' }}
+                    data-testid="mage-wars-fx-attack-dice-title"
                 >
-                    <OptimizedImage
-                        src="mage-wars/dice/effect-die-d12-face"
-                        alt={`效果骰 ${effectDieResult}`}
-                        className="h-full w-full object-contain"
-                        placeholder={false}
-                    />
-                </span>
-            ) : null}
+                    {t(titleKey)}
+                </div>
+                <div
+                    className="flex max-w-[34rem] items-center justify-center gap-[1.2vw]"
+                    data-testid="mage-wars-fx-attack-dice-content"
+                >
+                    {diceResults.slice(0, 6).map((result, index) => (
+                        <AttackDie key={`${index}-${result}`} result={result} index={index} />
+                    ))}
+                    {effectDieResult !== undefined ? (
+                        <EffectDie result={rawEffectDieResult ?? effectDieResult} resolvedResult={effectDieResult} />
+                    ) : null}
+                </div>
+                <motion.div
+                    initial={{ opacity: 1, y: 0 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0 }}
+                    className="text-center text-[1.6vw] font-black tracking-wide"
+                    style={{
+                        color: resultColor,
+                        opacity: 1,
+                        WebkitTextStroke: '0.06vw #111111',
+                        paintOrder: 'stroke fill',
+                        textShadow: '0 0.06vw 0 #111, 0 -0.06vw 0 #111, 0.06vw 0 0 #111, -0.06vw 0 0 #111, 0 0.18vw 0.24vw rgba(0,0,0,0.9)',
+                    }}
+                    data-testid="mage-wars-fx-attack-dice-summary"
+                    data-contrast="opaque"
+                >
+                    {resultText}
+                </motion.div>
+            </div>
         </motion.div>
     );
+    if (typeof document === 'undefined') return overlay;
+    return createPortal(overlay, document.body);
 }
 
-function useStableComplete(onComplete: () => void): () => void {
-    const ref = useRef(onComplete);
+function useStableComplete(onComplete?: () => void): () => void {
+    const ref = useRef(onComplete ?? (() => undefined));
     useLayoutEffect(() => {
-        ref.current = onComplete;
+        ref.current = onComplete ?? (() => undefined);
     }, [onComplete]);
     return React.useCallback(() => ref.current(), []);
 }
 
 function useTimedImpactAndComplete(
     cell: FxCellCoord | undefined,
-    onImpact: () => void,
-    onComplete: () => void,
+    onImpact: (() => void) | undefined,
+    onComplete: (() => void) | undefined,
     impactMs: number,
     completeMs: number,
 ): void {
     const impactRef = useRef(false);
+    const stableImpact = useStableComplete(onImpact);
     const stableComplete = useStableComplete(onComplete);
 
     useLayoutEffect(() => {
@@ -181,14 +188,14 @@ function useTimedImpactAndComplete(
         const cancelImpact = scheduleFxFrameCallback(impactMs, () => {
             if (impactRef.current) return;
             impactRef.current = true;
-            onImpact();
+            stableImpact();
         });
         const cancelComplete = scheduleFxFrameCallback(completeMs, stableComplete);
         return () => {
             cancelImpact();
             cancelComplete();
         };
-    }, [cell, completeMs, impactMs, onImpact, stableComplete]);
+    }, [cell, completeMs, impactMs, stableImpact, stableComplete]);
 }
 
 function cellBox(getCellPosition: FxRendererProps['getCellPosition'], cell: FxCellCoord) {
@@ -239,6 +246,507 @@ function readFxAnchorSnapshot(value: unknown): FxAnchorSnapshot | null {
     return candidate as FxAnchorSnapshot;
 }
 
+function centerEntityBoxInCell(cellBox: FxBox, sizeBox: FxBox): FxBox {
+    return {
+        left: cellBox.left + (cellBox.width - sizeBox.width) / 2,
+        top: cellBox.top + (cellBox.height - sizeBox.height) / 2,
+        width: sizeBox.width,
+        height: sizeBox.height,
+    };
+}
+
+function resolveEntitySlideBox(
+    cell: FxCellCoord | undefined,
+    sizeRef: FxAnchorSnapshot | null | undefined,
+    getCellPosition: FxRendererProps['getCellPosition'],
+    positionRef?: FxAnchorSnapshot | null,
+): FxBox | null {
+    if (!cell) return null;
+    const cellBox = getCellPosition(cell.row, cell.col);
+    if (positionRef?.box) {
+        const { box } = positionRef;
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        if (centerX >= cellBox.left && centerX <= cellBox.left + cellBox.width
+            && centerY >= cellBox.top && centerY <= cellBox.top + cellBox.height) {
+            return box;
+        }
+    }
+    // 快照可能已落在另一格；沿用原有的格子位置以避免将目标格误当起点。
+    if (sizeRef?.box) return centerEntityBoxInCell(cellBox, sizeRef.box);
+    return cellBox;
+}
+
+function readSlideHostRect(): DOMRect | null {
+    if (typeof document === 'undefined') return null;
+    const host = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]')
+        ?? document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+    if (!host) return null;
+    const rect = host.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return null;
+    return rect;
+}
+
+type LiveFieldCardSize = { width: number; height: number };
+type SlideArtKind = 'atlas-css' | 'preview' | 'fallback';
+type SlideAtlasPaint = {
+    url: string;
+    paintMode: 'canvas' | 'css';
+    backgroundSize: string;
+    backgroundPosition: string;
+    imgWidth: string;
+    imgHeight: string;
+    translateX: string;
+    translateY: string;
+};
+
+function queryLiveFieldCard(objectId?: string): HTMLElement | null {
+    if (!objectId || typeof document === 'undefined') return null;
+    return document.querySelector<HTMLElement>(
+        `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+    );
+}
+
+function queryLiveAtlasFrame(objectId?: string): HTMLElement | null {
+    const card = queryLiveFieldCard(objectId);
+    if (!card) return null;
+    return card.querySelector<HTMLElement>('[data-card-atlas-frame="true"]');
+}
+
+function readLiveFieldCardSize(objectId?: string): LiveFieldCardSize | null {
+    const frame = queryLiveAtlasFrame(objectId) ?? queryLiveFieldCard(objectId);
+    if (!frame) return null;
+    const rect = frame.getBoundingClientRect();
+    if (rect.width < 8 || rect.height < 8) return null;
+    return { width: rect.width, height: rect.height };
+}
+
+function applyLiveSize(box: ViewportBox, size: LiveFieldCardSize | null): ViewportBox {
+    if (!size) return box;
+    return {
+        left: box.left + (box.width - size.width) / 2,
+        top: box.top + (box.height - size.height) / 2,
+        width: size.width,
+        height: size.height,
+    };
+}
+
+function fitAspectInBox(box: ViewportBox, aspect: number): ViewportBox {
+    if (!(aspect > 0) || box.width < 8 || box.height < 8) return box;
+    const boxAspect = box.width / box.height;
+    if (boxAspect > aspect) {
+        const width = box.height * aspect;
+        return {
+            left: box.left + (box.width - width) / 2,
+            top: box.top,
+            width,
+            height: box.height,
+        };
+    }
+    const height = box.width / aspect;
+    return {
+        left: box.left,
+        top: box.top + (box.height - height) / 2,
+        width: box.width,
+        height,
+    };
+}
+
+function measureSlideViewportPath(
+    frozenPath: { fromBox: FxBox; toBox: FxBox },
+    objectId: string | undefined,
+    aspect: number | null,
+): { from: ViewportBox; to: ViewportBox } | null {
+    const host = readSlideHostRect();
+    if (!host) return null;
+    const liveSize = readLiveFieldCardSize(objectId);
+    const sizeBox = (box: ViewportBox): ViewportBox => {
+        if (liveSize) return applyLiveSize(box, liveSize);
+        if (aspect && aspect > 0) return fitAspectInBox(box, aspect);
+        return box;
+    };
+    return {
+        from: sizeBox(percentBoxToViewport(frozenPath.fromBox, host)),
+        to: sizeBox(percentBoxToViewport(frozenPath.toBox, host)),
+    };
+}
+
+function isDecodedAtlasImage(img: HTMLImageElement | null | undefined): img is HTMLImageElement {
+    return Boolean(img && img.naturalWidth >= 16 && img.naturalHeight >= 16);
+}
+
+function queryDecodedAtlasImage(atlasId: string, index: number, objectId?: string): HTMLImageElement | null {
+    const liveImg = queryLiveAtlasFrame(objectId)?.querySelector<HTMLImageElement>('img[data-card-atlas-img="true"]');
+    if (isDecodedAtlasImage(liveImg)) return liveImg;
+    const sameSlot = document.querySelectorAll<HTMLImageElement>(
+        `[data-card-atlas-id="${atlasId}"][data-card-atlas-index="${String(index)}"] img[data-card-atlas-img="true"]`,
+    );
+    for (const img of sameSlot) {
+        if (isDecodedAtlasImage(img)) return img;
+    }
+    const sameAtlas = document.querySelectorAll<HTMLImageElement>(
+        `[data-card-atlas-id="${atlasId}"] img[data-card-atlas-img="true"]`,
+    );
+    for (const img of sameAtlas) {
+        if (isDecodedAtlasImage(img)) return img;
+    }
+    return null;
+}
+
+function scaleSlideAtlasConfig(
+    atlas: SpriteAtlasConfig,
+    imageW: number,
+    imageH: number,
+): SpriteAtlasConfig {
+    if (imageW <= 0 || imageH <= 0) return atlas;
+    if (atlas.imageW === imageW && atlas.imageH === imageH) return atlas;
+    const scaleX = imageW / atlas.imageW;
+    const scaleY = imageH / atlas.imageH;
+    if ('frames' in atlas) {
+        return {
+            ...atlas,
+            imageW,
+            imageH,
+            frames: atlas.frames.map((frame) => ({
+                x: frame.x * scaleX,
+                y: frame.y * scaleY,
+                width: frame.width * scaleX,
+                height: frame.height * scaleY,
+            })),
+        };
+    }
+    return {
+        ...atlas,
+        imageW,
+        imageH,
+        colStarts: atlas.colStarts.map((value) => value * scaleX),
+        colWidths: atlas.colWidths.map((value) => value * scaleX),
+        rowStarts: atlas.rowStarts.map((value) => value * scaleY),
+        rowHeights: atlas.rowHeights.map((value) => value * scaleY),
+    };
+}
+
+function readSpriteFrame(index: number, atlas: SpriteAtlasConfig): {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+} {
+    if ('frames' in atlas) {
+        if (atlas.frames.length === 0) {
+            return { x: 0, y: 0, width: atlas.imageW, height: atlas.imageH };
+        }
+        const safeIndex = index % atlas.frames.length;
+        return atlas.frames[safeIndex] ?? atlas.frames[0];
+    }
+    const safeIndex = index % (atlas.cols * atlas.rows);
+    const col = safeIndex % atlas.cols;
+    const row = Math.floor(safeIndex / atlas.cols);
+    return {
+        x: atlas.colStarts[col] ?? atlas.colStarts[0],
+        y: atlas.rowStarts[row] ?? atlas.rowStarts[0],
+        width: atlas.colWidths[col] ?? atlas.colWidths[0],
+        height: atlas.rowHeights[row] ?? atlas.rowHeights[0],
+    };
+}
+
+function snapshotDecodedAtlasFrame(
+    img: HTMLImageElement,
+    config: SpriteAtlasConfig,
+    index: number,
+): string | null {
+    try {
+        const frame = readSpriteFrame(index, config);
+        const width = Math.max(1, Math.round(frame.width));
+        const height = Math.max(1, Math.round(frame.height));
+        if (width < 8 || height < 8) return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        ctx.drawImage(img, frame.x, frame.y, frame.width, frame.height, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/webp', 0.92);
+        return dataUrl.startsWith('data:image/') ? dataUrl : canvas.toDataURL();
+    } catch {
+        return null;
+    }
+}
+
+function resolveSlideAtlasPaint(
+    previewRef: CardPreviewRef | null,
+    objectId: string | undefined,
+): SlideAtlasPaint | null {
+    if (!previewRef || previewRef.type !== 'atlas' || typeof document === 'undefined') return null;
+    const locale = document.documentElement.lang || 'zh-CN';
+    const source = getCardAtlasSource(previewRef.atlasId, locale) ?? getCardAtlasSource(previewRef.atlasId);
+    const lazy = source ? undefined : getLazyRegistration(previewRef.atlasId);
+    const image = source?.image ?? lazy?.image;
+    const liveDecoded = queryDecodedAtlasImage(previewRef.atlasId, previewRef.index, objectId);
+    const preloaded = image
+        ? (getPreloadedImageElement(image, locale) ?? getPreloadedImageElement(image))
+        : null;
+    const decoded = isDecodedAtlasImage(liveDecoded)
+        ? liveDecoded
+        : (isDecodedAtlasImage(preloaded) ? preloaded : null);
+    const candidateUrls = image ? getRuntimeImageCandidateUrls(image, locale) : [];
+    const url = (decoded?.currentSrc || decoded?.src || '')
+        || (image ? getResolvedImageCandidateUrl(candidateUrls, image, locale) : '')
+        || (image ? getResolvedImageCacheUrl(image, locale) : '');
+    if (!url) return null;
+    const rawConfig = source?.config
+        ?? (decoded && lazy
+            ? generateUniformAtlasConfig(
+                decoded.naturalWidth,
+                decoded.naturalHeight,
+                lazy.grid.rows,
+                lazy.grid.cols,
+            )
+            : undefined);
+    if (!rawConfig) return null;
+    const config = decoded
+        ? scaleSlideAtlasConfig(rawConfig, decoded.naturalWidth, decoded.naturalHeight)
+        : rawConfig;
+    const style = computeSpriteStyle(previewRef.index, config);
+    const imgStyle = computeSpriteImgStyle(previewRef.index, config);
+    const snapshotUrl = decoded ? snapshotDecodedAtlasFrame(decoded, config, previewRef.index) : null;
+    return {
+        url: snapshotUrl ?? url,
+        paintMode: snapshotUrl ? 'canvas' : 'css',
+        backgroundSize: String(style.backgroundSize ?? '100% 100%'),
+        backgroundPosition: String(style.backgroundPosition ?? '0% 0%'),
+        imgWidth: imgStyle.imgWidth,
+        imgHeight: imgStyle.imgHeight,
+        translateX: imgStyle.translateX,
+        translateY: imgStyle.translateY,
+    };
+}
+
+function MageWarsEntitySlide({
+    source,
+    target,
+    sourceSnapshot,
+    targetSnapshot,
+    getCellPosition,
+    durationMs,
+    kind,
+    objectId,
+    sourceSpellCardId,
+    mageId,
+}: {
+    source?: FxCellCoord;
+    target: FxCellCoord;
+    sourceSnapshot?: FxAnchorSnapshot | null;
+    targetSnapshot?: FxAnchorSnapshot | null;
+    getCellPosition: FxRendererProps['getCellPosition'];
+    durationMs: number;
+    kind: 'push' | 'move';
+    objectId?: string;
+    sourceSpellCardId?: number;
+    mageId?: string;
+}) {
+    const sizeRef = sourceSnapshot ?? targetSnapshot;
+    const fromBox = resolveEntitySlideBox(source, sizeRef, getCellPosition, kind === 'push' ? sourceSnapshot : null);
+    const toBox = resolveEntitySlideBox(target, targetSnapshot ?? sourceSnapshot, getCellPosition, kind === 'push' ? targetSnapshot : null);
+    const fromLeft = fromBox?.left;
+    const fromTop = fromBox?.top;
+    const fromWidth = fromBox?.width;
+    const fromHeight = fromBox?.height;
+    const toLeft = toBox?.left;
+    const toTop = toBox?.top;
+    const toWidth = toBox?.width;
+    const toHeight = toBox?.height;
+    const frozenPath = useMemo(() => {
+        if (
+            fromLeft == null
+            || fromTop == null
+            || fromWidth == null
+            || fromHeight == null
+            || toLeft == null
+            || toTop == null
+            || toWidth == null
+            || toHeight == null
+        ) return null;
+        return {
+            fromBox: { left: fromLeft, top: fromTop, width: fromWidth, height: fromHeight },
+            toBox: { left: toLeft, top: toTop, width: toWidth, height: toHeight },
+        };
+    }, [
+        fromLeft,
+        fromTop,
+        fromWidth,
+        fromHeight,
+        toLeft,
+        toTop,
+        toWidth,
+        toHeight,
+    ]);
+    const slideRef = useRef<HTMLDivElement>(null);
+    const motionTokenRef = useRef('');
+    const previewRef = sourceSpellCardId != null
+        ? getMageWarsSpellCardPreviewRef(sourceSpellCardId)
+        : isMageId(mageId)
+            ? getMageWarsMagePreviewRef(mageId, 'portrait')
+            : null;
+    const cardAspect = sourceSpellCardId != null
+        ? getMageWarsSpellCardAspectRatio(sourceSpellCardId)
+        : isMageId(mageId)
+            ? getMageWarsMagePreviewAspectRatio()
+            : null;
+    const atlasPaint = useMemo(
+        () => resolveSlideAtlasPaint(previewRef, objectId),
+        [objectId, previewRef],
+    );
+    const slideArt: SlideArtKind = atlasPaint ? 'atlas-css' : previewRef ? 'preview' : 'fallback';
+    const viewportPath = useMemo(
+        () => (frozenPath ? measureSlideViewportPath(frozenPath, objectId, cardAspect) : null),
+        [cardAspect, frozenPath, objectId],
+    );
+    const useViewport = viewportPath != null;
+    useLayoutEffect(() => {
+        const el = slideRef.current;
+        if (!el || !frozenPath) return undefined;
+        const token = useViewport && viewportPath ? 'viewport' : 'arena';
+        if (motionTokenRef.current === token) return undefined;
+        motionTokenRef.current = token;
+        const releaseToken = () => {
+            if (motionTokenRef.current === token) motionTokenRef.current = '';
+        };
+        if (viewportPath) {
+            const dx = viewportPath.to.left - viewportPath.from.left;
+            const dy = viewportPath.to.top - viewportPath.from.top;
+            if (typeof el.animate === 'function') {
+                const animation = el.animate(
+                    [
+                        { transform: 'translate(0px, 0px)' },
+                        { transform: `translate(${dx}px, ${dy}px)` },
+                    ],
+                    { duration: durationMs, easing: 'linear', fill: 'forwards' },
+                );
+                return () => {
+                    animation.cancel();
+                    releaseToken();
+                };
+            }
+            const frame = requestAnimationFrame(() => {
+                el.style.transition = `transform ${durationMs}ms linear`;
+                el.style.transform = `translate(${dx}px, ${dy}px)`;
+            });
+            return () => {
+                cancelAnimationFrame(frame);
+                releaseToken();
+            };
+        }
+        const frame = requestAnimationFrame(() => {
+            el.style.transition = `left ${durationMs}ms linear, top ${durationMs}ms linear`;
+            el.style.left = `${frozenPath.toBox.left}%`;
+            el.style.top = `${frozenPath.toBox.top}%`;
+        });
+        return () => {
+            cancelAnimationFrame(frame);
+            releaseToken();
+        };
+    }, [durationMs, frozenPath, useViewport, viewportPath]);
+    if (!frozenPath) return null;
+    const { fromBox: frozenFromBox, toBox: frozenToBox } = frozenPath;
+    const fromViewport = viewportPath?.from;
+    const toViewport = viewportPath?.to;
+    const box = useViewport ? fromViewport! : frozenFromBox;
+    const slideBody = (
+        <div
+            className="relative h-full w-full overflow-hidden rounded-[0.16rem] bg-[#4a3424] shadow-[0_10px_18px_rgba(0,0,0,0.42)] ring-2 ring-amber-100/80"
+            data-testid={`mage-wars-fx-${kind}-slide-body`}
+            data-slide-paint="opaque"
+            data-slide-art={slideArt}
+        >
+            {atlasPaint?.paintMode === 'canvas' ? (
+                <img
+                    alt=""
+                    className="absolute inset-0 h-full w-full rounded-[0.16rem] object-fill"
+                    data-slide-atlas-paint="canvas"
+                    data-slide-atlas-url="canvas-snapshot"
+                    draggable={false}
+                    src={atlasPaint.url}
+                />
+            ) : atlasPaint ? (
+                <img
+                    alt=""
+                    data-slide-atlas-paint="css"
+                    data-slide-atlas-url="cached-url"
+                    draggable={false}
+                    src={atlasPaint.url}
+                    style={{
+                        height: atlasPaint.imgHeight,
+                        left: 0,
+                        maxWidth: 'none',
+                        pointerEvents: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        transform: `translate(${atlasPaint.translateX}, ${atlasPaint.translateY})`,
+                        transformOrigin: 'top left',
+                        userSelect: 'none',
+                        width: atlasPaint.imgWidth,
+                    }}
+                />
+            ) : previewRef ? (
+                <CardPreview
+                    previewRef={previewRef}
+                    className="h-full w-full rounded-[0.16rem]"
+                />
+            ) : null}
+        </div>
+    );
+    const slideNode = (
+        <div
+            ref={slideRef}
+            className={useViewport
+                ? 'pointer-events-none fixed overflow-visible'
+                : 'pointer-events-none absolute z-30 overflow-visible'}
+            style={useViewport
+                ? {
+                    left: box.left,
+                    top: box.top,
+                    width: box.width,
+                    height: box.height,
+                    zIndex: 80,
+                    willChange: 'transform',
+                }
+                : {
+                    left: `${box.left}%`,
+                    top: `${box.top}%`,
+                    width: `${box.width}%`,
+                    height: `${box.height}%`,
+                }}
+            data-testid={`mage-wars-fx-${kind}-slide`}
+            data-visual-role="entity-slide"
+            data-slide-ease="linear"
+            data-slide-layer={useViewport ? 'body-portal' : 'arena'}
+            data-slide-motion={useViewport ? 'waapi-transform' : 'css-position'}
+            data-object-id={objectId ?? ''}
+            data-source-spell-card-id={sourceSpellCardId ?? ''}
+            data-mage-id={mageId ?? ''}
+            data-source-row={source?.row}
+            data-source-col={source?.col}
+            data-target-row={target.row}
+            data-target-col={target.col}
+            data-from-left={String(frozenFromBox.left)}
+            data-from-top={String(frozenFromBox.top)}
+            data-to-left={String(frozenToBox.left)}
+            data-to-top={String(frozenToBox.top)}
+            data-from-px-left={fromViewport ? String(fromViewport.left) : undefined}
+            data-from-px-top={fromViewport ? String(fromViewport.top) : undefined}
+            data-to-px-left={toViewport ? String(toViewport.left) : undefined}
+            data-to-px-top={toViewport ? String(toViewport.top) : undefined}
+        >
+            {slideBody}
+        </div>
+    );
+    if (useViewport && typeof document !== 'undefined') {
+        return createPortal(slideNode, document.body);
+    }
+    return slideNode;
+}
+
 export const SummonRenderer: React.FC<FxRendererProps> = ({
     event,
     getCellPosition,
@@ -272,204 +780,17 @@ export const SummonRenderer: React.FC<FxRendererProps> = ({
             durationScale={MAGE_WARS_SUMMON_FX_TUNING.durationScale}
             visualScale={MAGE_WARS_SUMMON_FX_TUNING.visualScale}
             dimStrength={MAGE_WARS_SUMMON_FX_TUNING.dimStrength}
+            pillarWidthRatio={MAGE_WARS_SUMMON_FX_TUNING.pillarWidthRatio}
             hostTestId="mage-wars-fx-summon"
             objectKind={String(event.params?.objectKind ?? '')}
             objectId={objectId ?? ''}
+            className="z-0"
+            hostStyle={MAGE_WARS_SUMMON_HOST_STYLE}
             onImpact={onImpact}
             onComplete={stableComplete}
         />
     );
 };
-
-function MageWarsTravelPath({
-    source,
-    target,
-    sourceSnapshot,
-    targetSnapshot,
-    sourceBox,
-    targetBox,
-    sourceAnchorId,
-    targetAnchorId,
-    getCellPosition,
-    kind,
-    strong = false,
-    quality,
-    showSourceWake,
-    showMidBurst,
-}: {
-    source?: FxCellCoord;
-    target: FxCellCoord;
-    sourceSnapshot?: FxAnchorSnapshot | null;
-    targetSnapshot?: FxAnchorSnapshot | null;
-    sourceBox?: FxBox | null;
-    targetBox?: FxBox | null;
-    sourceAnchorId?: string;
-    targetAnchorId?: string;
-    getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push' | 'teleport' | 'move';
-    strong?: boolean;
-    quality: FxQuality;
-    showSourceWake?: boolean;
-    showMidBurst?: boolean;
-}) {
-    if (!source || sameCell(source, target)) return null;
-    const tuning = MAGE_WARS_TRAVEL_FX_TUNING[kind];
-    const color = mageWarsFxColors(kind, strong);
-    const midBurstPreset = strong && tuning.midBurstStrongPreset
-        ? tuning.midBurstStrongPreset
-        : tuning.midBurstPreset;
-
-    return (
-        <BoardProjectilePathPreset
-            source={source}
-            target={target}
-            getCellPosition={getCellPosition}
-            sourceSnapshot={sourceSnapshot}
-            targetSnapshot={targetSnapshot}
-            sourceBox={sourceBox}
-            targetBox={targetBox}
-            sourceAnchorId={sourceAnchorId}
-            targetAnchorId={targetAnchorId}
-            intensity={strong ? 'strong' : 'normal'}
-            quality={quality}
-            color={color}
-            travelDurationMs={kind === 'move' ? MAGE_WARS_FX_TIMING.moveTravelImpactMs : MAGE_WARS_FX_TIMING.projectileTravelMs}
-            showSourceWake={showSourceWake ?? true}
-            showMidBurst={showMidBurst ?? true}
-            sourceWakeTestId={`mage-wars-fx-${kind}-source-wake`}
-            sourceBurstTestId={`mage-wars-fx-${kind}-source-burst`}
-            travelTestId={`mage-wars-fx-${kind}-travel`}
-            travelMidBurstTestId={`mage-wars-fx-${kind}-travel-mid-burst`}
-            sourceWakePreset={tuning.sourceWakePreset}
-            midBurstPreset={midBurstPreset}
-            sourceWakeColors={color}
-            midBurstColors={color}
-            sourceWakeOverflow={tuning.sourceWakeOverflow}
-            midBurstOverflow={tuning.midBurstOverflow}
-            sourceWakeSizeClassName={tuning.sourceWakeSizeClassName}
-            pathPaddingCells={tuning.pathPaddingCells}
-            pathMinSizeCells={tuning.pathMinSizeCells}
-        />
-    );
-}
-
-function MageWarsTargetBurst({
-    cell,
-    targetSnapshot,
-    targetBox,
-    targetAnchorId,
-    getCellPosition,
-    kind,
-    strong = false,
-    delayMs,
-    quality,
-}: {
-    cell: FxCellCoord;
-    targetSnapshot?: FxAnchorSnapshot | null;
-    targetBox?: FxBox | null;
-    targetAnchorId?: string;
-    getCellPosition: FxRendererProps['getCellPosition'];
-    kind: 'push' | 'teleport';
-    strong?: boolean;
-    delayMs: number;
-    quality: FxQuality;
-}) {
-    const tuning = MAGE_WARS_TRAVEL_FX_TUNING[kind];
-    const preset = strong && tuning.targetBurstStrongPreset
-        ? tuning.targetBurstStrongPreset
-        : tuning.targetBurstPreset;
-    if (!preset) return null;
-
-    return (
-        <BoardBurstImpactPreset
-            cell={cell}
-            getCellPosition={getCellPosition}
-            targetSnapshot={targetSnapshot}
-            box={targetBox}
-            targetAnchorId={targetAnchorId}
-            quality={quality}
-            delayMs={delayMs}
-            hostTestId={`mage-wars-fx-spell-${kind}`}
-            burstTestId={`mage-wars-fx-spell-${kind}-burst`}
-            preset={preset}
-            color={mageWarsFxColors(kind, strong)}
-            overflow={tuning.targetBurstOverflow}
-            sizeClassName={tuning.targetBurstSizeClassName}
-        />
-    );
-}
-
-function MovementTrail({
-    source,
-    target,
-    sourceSnapshot,
-    targetSnapshot,
-    sourceAnchorId,
-    targetAnchorId,
-    getCellPosition,
-}: {
-    source?: FxCellCoord;
-    target: FxCellCoord;
-    sourceSnapshot?: FxAnchorSnapshot | null;
-    targetSnapshot?: FxAnchorSnapshot | null;
-    sourceAnchorId?: string;
-    targetAnchorId?: string;
-    getCellPosition: FxRendererProps['getCellPosition'];
-}) {
-    if (!source || sameCell(source, target)) return null;
-    const sourceBox = sourceSnapshot?.box ?? getCellPosition(source.row, source.col);
-    const targetBox = targetSnapshot?.box ?? getCellPosition(target.row, target.col);
-    const path = createFxPathBox(sourceBox, targetBox, {
-        paddingCells: 0.35,
-        minSizeCells: 1.05,
-        overflow: 'visible',
-    });
-    const dx = path.end.xPct - path.start.xPct;
-    const dy = path.end.yPct - path.start.yPct;
-    const distance = Math.hypot(dx, dy);
-    if (distance < 0.01) return null;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    const steps = [18, 34, 50, 66, 82];
-
-    return (
-        <div
-            className="absolute pointer-events-none z-30"
-            data-testid="mage-wars-fx-move-trail"
-            data-source-row={source.row}
-            data-source-col={source.col}
-            data-target-row={target.row}
-            data-target-col={target.col}
-            data-source-snapshot-anchor-id={sourceAnchorId ?? sourceSnapshot?.anchorId ?? ''}
-            data-target-snapshot-anchor-id={targetAnchorId ?? targetSnapshot?.anchorId ?? ''}
-            style={path.style}
-        >
-            <div
-                className="absolute left-0 top-0 h-0"
-                style={{
-                    left: `${path.start.xPct}%`,
-                    top: `${path.start.yPct}%`,
-                    width: `${distance}%`,
-                    transform: `rotate(${angle}deg)`,
-                    transformOrigin: '0 50%',
-                }}
-            >
-                {steps.map((left, index) => (
-                    <span
-                        key={left}
-                        className="absolute block h-2.5 w-1.5 rounded-full border border-cyan-50/70 bg-cyan-200/80 shadow-[0_0_10px_rgba(103,232,249,0.55)]"
-                        data-testid="mage-wars-fx-move-step"
-                        style={{
-                            left: `${left}%`,
-                            top: 0,
-                            opacity: 0.52 + index * 0.08,
-                            transform: `translate(-50%, -50%) rotate(${index % 2 === 0 ? '-14deg' : '14deg'})`,
-                        }}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
 
 export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     event,
@@ -482,13 +803,12 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId);
     const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
-    const hasTravel = Boolean(source && cell && !sameCell(source, cell));
     useTimedImpactAndComplete(
         cell,
         onImpact,
         onComplete,
-        hasTravel ? MAGE_WARS_FX_TIMING.teleportTravelImpactMs : MAGE_WARS_FX_TIMING.teleportSameCellImpactMs,
-        hasTravel ? MAGE_WARS_FX_TIMING.teleportTravelCompleteMs : MAGE_WARS_FX_TIMING.teleportSameCellCompleteMs,
+        MAGE_WARS_FX_TIMING.teleportArrivalImpactMs,
+        MAGE_WARS_FX_TIMING.teleportCompleteMs,
     );
 
     if (!cell) return null;
@@ -496,29 +816,31 @@ export const SpellTeleportRenderer: React.FC<FxRendererProps> = ({
     const quality = resolveEventQuality(event);
 
     return (
-        <>
-            <MageWarsTravelPath
-                source={source}
-                target={cell}
-                sourceSnapshot={sourceSnapshot}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="teleport"
-                strong={strong}
-                quality={quality}
-            />
-            <MageWarsTargetBurst
-                cell={cell}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="teleport"
-                strong={strong}
-                delayMs={hasTravel ? MAGE_WARS_FX_TIMING.teleportTravelImpactMs : 0}
-                quality={quality}
-            />
-        </>
+        <BoardTeleportImpactPreset
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            sourceAnchorId={stringifyAnchorId(event.params?.sourceObjectId ?? event.params?.targetObjectId)}
+            targetAnchorId={targetAnchorId}
+            getCellPosition={getCellPosition}
+            quality={quality}
+            arrivalDelayMs={MAGE_WARS_FX_TIMING.teleportArrivalImpactMs}
+            sourceHostTestId="mage-wars-fx-teleport-source-wake"
+            sourceBurstTestId="mage-wars-fx-teleport-source-burst"
+            arrivalHostTestId="mage-wars-fx-spell-teleport"
+            arrivalBurstTestId="mage-wars-fx-spell-teleport-burst"
+            sourcePreset={MAGE_WARS_TELEPORT_FX_TUNING.sourcePreset}
+            arrivalPreset={strong
+                ? MAGE_WARS_TELEPORT_FX_TUNING.arrivalStrongPreset
+                : MAGE_WARS_TELEPORT_FX_TUNING.arrivalPreset}
+            sourceColor={mageWarsFxColors('teleport', strong)}
+            arrivalColor={mageWarsFxColors('teleport', strong)}
+            sourceOverflow={MAGE_WARS_TELEPORT_FX_TUNING.sourceOverflow}
+            arrivalOverflow={MAGE_WARS_TELEPORT_FX_TUNING.arrivalOverflow}
+            sourceSizeClassName={MAGE_WARS_TELEPORT_FX_TUNING.sourceSizeClassName}
+            arrivalSizeClassName={MAGE_WARS_TELEPORT_FX_TUNING.arrivalSizeClassName}
+        />
     );
 };
 
@@ -543,33 +865,24 @@ export const SpellPushRenderer: React.FC<FxRendererProps> = ({
     );
 
     if (!cell) return null;
-    const strong = true;
-    const quality = resolveEventQuality(event);
+
+    if (!hasTravel) return null;
 
     return (
-        <>
-            <MageWarsTravelPath
-                source={source}
-                target={cell}
-                sourceSnapshot={sourceSnapshot}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="push"
-                strong
-                quality={quality}
-            />
-            <MageWarsTargetBurst
-                cell={cell}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-                kind="push"
-                strong={strong}
-                delayMs={hasTravel ? MAGE_WARS_FX_TIMING.pushTravelImpactMs : 0}
-                quality={quality}
-            />
-        </>
+        <MageWarsEntitySlide
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            getCellPosition={getCellPosition}
+            durationMs={MAGE_WARS_FX_TIMING.pushTravelImpactMs}
+            kind="push"
+            objectId={targetAnchorId}
+            sourceSpellCardId={typeof event.params?.sourceSpellCardId === 'number'
+                ? event.params.sourceSpellCardId
+                : undefined}
+            mageId={stringifyAnchorId(event.params?.mageId)}
+        />
     );
 };
 
@@ -586,7 +899,6 @@ export const MovementRenderer: React.FC<FxRendererProps> = ({
         ?? event.params?.targetPlayerId
         ?? event.params?.objectId,
     );
-    const sourceAnchorId = targetAnchorId;
     const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
     const hasTravel = Boolean(source && cell && !sameCell(source, cell));
@@ -599,34 +911,24 @@ export const MovementRenderer: React.FC<FxRendererProps> = ({
     );
 
     if (!cell) return null;
-    const quality = resolveEventQuality(event);
+
+    if (!hasTravel) return null;
 
     return (
-        <>
-            <MovementTrail
-                source={source}
-                target={cell}
-                sourceSnapshot={sourceSnapshot}
-                targetSnapshot={targetSnapshot}
-                sourceAnchorId={sourceAnchorId}
-                targetAnchorId={targetAnchorId}
-                getCellPosition={getCellPosition}
-            />
-            <BoardBurstImpactPreset
-                cell={cell}
-                getCellPosition={getCellPosition}
-                targetSnapshot={targetSnapshot}
-                targetAnchorId={targetAnchorId}
-                delayMs={hasTravel ? MAGE_WARS_FX_TIMING.moveTravelImpactMs : 0}
-                hostTestId="mage-wars-fx-move-arrival"
-                burstTestId="mage-wars-fx-move-arrival-burst"
-                preset={MAGE_WARS_TRAVEL_FX_TUNING.move.midBurstPreset}
-                color={mageWarsFxColors('move')}
-                overflow={MAGE_WARS_TRAVEL_FX_TUNING.move.midBurstOverflow}
-                sizeClassName={MAGE_WARS_TRAVEL_FX_TUNING.move.sourceWakeSizeClassName}
-                quality={quality}
-            />
-        </>
+        <MageWarsEntitySlide
+            source={source}
+            target={cell}
+            sourceSnapshot={sourceSnapshot}
+            targetSnapshot={targetSnapshot}
+            getCellPosition={getCellPosition}
+            durationMs={MAGE_WARS_FX_TIMING.moveTravelImpactMs}
+            kind="move"
+            objectId={targetAnchorId}
+            sourceSpellCardId={typeof event.params?.sourceSpellCardId === 'number'
+                ? event.params.sourceSpellCardId
+                : undefined}
+            mageId={stringifyAnchorId(event.params?.mageId)}
+        />
     );
 };
 
@@ -642,18 +944,118 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
     const targetAnchorId = stringifyAnchorId(event.params?.targetObjectId ?? event.params?.targetPlayerId ?? event.params?.defenderId);
     const sourceSnapshot = readFxAnchorSnapshot(event.params?.sourceSnapshot ?? event.ctx.sourceSnapshot);
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
+    const rangeKind = event.params?.rangeKind === 'melee' ? 'melee' : 'ranged';
 
-    if (!cell) return null;
+    useTimedImpactAndComplete(
+        rangeKind === 'melee' ? cell : undefined,
+        rangeKind === 'melee' ? onImpact : undefined,
+        rangeKind === 'melee' ? onComplete : undefined,
+        MAGE_WARS_FX_TIMING.meleeStrikeMs,
+        MAGE_WARS_FX_TIMING.meleeResultVisibleMs,
+    );
+
     const damage = (event.params?.damageAmount as number | undefined) ?? 1;
     const attackIntensity = event.ctx.intensity === 'strong' ? 'strong' : 'normal';
     const attackColors = mageWarsFxColors('attack', attackIntensity === 'strong');
-    const diceResults = Array.isArray(event.params?.diceResults)
-        ? event.params.diceResults.filter((result): result is number => typeof result === 'number')
-        : [];
+    const diceResults = useMemo(
+        () => Array.isArray(event.params?.diceResults)
+            ? event.params.diceResults.filter((result): result is number => typeof result === 'number')
+            : [],
+        [event.params],
+    );
     const effectDieResult = typeof event.params?.effectDieResult === 'number'
         ? event.params.effectDieResult
         : undefined;
+    const rawEffectDieResult = typeof event.params?.rawEffectDieResult === 'number'
+        ? event.params.rawEffectDieResult
+        : undefined;
     const quality = resolveEventQuality(event);
+
+    useEffect(() => {
+        if (!(globalThis as typeof globalThis & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__) return;
+        console.warn('[DEBUG-MAGE-WARS-ATTACK-RENDERER]', {
+            fxId: event.id,
+            rangeKind,
+            diceCount: diceResults.length,
+            diceResults,
+            effectDieResult: effectDieResult ?? null,
+            hasCell: Boolean(cell),
+            source: source ?? null,
+            target: cell ?? null,
+        });
+    }, [cell, diceResults, effectDieResult, event.id, rangeKind, source]);
+
+    if (!cell) return null;
+
+    if (rangeKind === 'melee') {
+        const targetBox = targetSnapshot?.box ?? getCellPosition(cell.row, cell.col);
+
+        return (
+            <>
+                <div
+                    className="absolute pointer-events-none z-30"
+                    data-testid="mage-wars-fx-attack-melee-strike"
+                    data-visual-role="melee-unified-impact"
+                    data-strike-style="shared-impact"
+                    data-source-row={source?.row}
+                    data-source-col={source?.col}
+                    data-target-row={cell.row}
+                    data-target-col={cell.col}
+                    style={{
+                        left: `${targetBox.left}%`,
+                        top: `${targetBox.top}%`,
+                        width: `${targetBox.width}%`,
+                        height: `${targetBox.height}%`,
+                        overflow: 'visible',
+                    }}
+                >
+                    <div
+                        className="grid h-full w-full place-items-center"
+                        data-testid="mage-wars-fx-attack-melee-impact"
+                    data-source-anchor-id={sourceAnchorId ?? undefined}
+                    data-target-anchor-id={targetAnchorId ?? undefined}
+                    data-source-snapshot-anchor-id={sourceSnapshot?.anchorId ?? ''}
+                    data-target-snapshot-anchor-id={targetSnapshot?.anchorId ?? ''}
+                    data-source-snapshot-surface-id={sourceSnapshot?.surfaceId ?? ''}
+                    data-target-snapshot-surface-id={targetSnapshot?.surfaceId ?? ''}
+                        style={{ overflow: 'visible' }}
+                    >
+                    <BoardDamageImpactPreset
+                        damage={damage}
+                        quality={quality}
+                        delayMs={MAGE_WARS_FX_TIMING.meleeStrikeMs}
+                        hostTestId="mage-wars-fx-attack-damage-host"
+                        burstTestId="mage-wars-fx-attack-impact-burst"
+                        numberTestId="mage-wars-fx-attack-damage-float"
+                        intensity={attackIntensity}
+                        showImpactBurst
+                        showRedPulse={false}
+                        impactBurstPreset={MAGE_WARS_ATTACK_FX_TUNING.impactBurstPreset}
+                        impactBurstColors={attackColors}
+                        impactBurstOverflow={MAGE_WARS_ATTACK_FX_TUNING.impactBurstOverflow}
+                        numberFontScale={MAGE_WARS_ATTACK_FX_TUNING.damageNumberFontScale}
+                        numberColorClass={MAGE_WARS_ATTACK_FX_TUNING.damageNumberColorClass}
+                        numberDurationSeconds={MAGE_WARS_ATTACK_FX_TUNING.damageNumberDurationSeconds}
+                        pulseColor={MAGE_WARS_ATTACK_FX_TUNING.pulseColor}
+                        shakeDuration={MAGE_WARS_ATTACK_FX_TUNING.shakeDuration}
+                        impactEffects={MAGE_WARS_ATTACK_FX_TUNING.impactEffects}
+                        damageFlashCompleteMs={MAGE_WARS_ATTACK_FX_TUNING.damageFlashCompleteMs}
+                        slashDurationMs={MAGE_WARS_ATTACK_FX_TUNING.meleeSlashDurationMs}
+                        slashActiveMs={MAGE_WARS_ATTACK_FX_TUNING.meleeSlashActiveMs}
+                    />
+                    </div>
+                </div>
+                <AttackDiceFeedback
+                    diceResults={diceResults}
+                    effectDieResult={effectDieResult}
+                    rawEffectDieResult={rawEffectDieResult}
+                    visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                    kind="melee"
+                    resultAmount={damage}
+                />
+            </>
+        );
+    }
 
     return (
         <>
@@ -669,13 +1071,14 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 quality={quality}
                 intensity={attackIntensity}
                 color={attackColors}
-                travelDurationMs={MAGE_WARS_FX_TIMING.projectileTravelMs}
+                travelDurationMs={MAGE_WARS_FX_TIMING.rangedAttackTravelMs}
                 travelMotionEasing={MAGE_WARS_ATTACK_FX_TUNING.projectileMotionEasing}
-                completeMs={
+                completeMs={Math.max(
+                    MAGE_WARS_FX_TIMING.meleeResultVisibleMs,
                     source && !sameCell(source, cell)
                         ? MAGE_WARS_FX_TIMING.projectileRangedCompleteMs
                         : MAGE_WARS_FX_TIMING.projectileSameCellCompleteMs
-                }
+                )}
                 hostTestId="mage-wars-fx-attack-impact"
                 travelTestId="mage-wars-fx-attack-travel"
                 damageHostTestId="mage-wars-fx-attack-damage-host"
@@ -699,13 +1102,12 @@ export const AttackImpactRenderer: React.FC<FxRendererProps> = ({
                 onComplete={onComplete}
             />
             <AttackDiceFeedback
-                source={source}
-                target={cell}
-                sourceBox={sourceSnapshot?.box ?? null}
-                targetBox={targetSnapshot?.box ?? null}
                 diceResults={diceResults}
                 effectDieResult={effectDieResult}
-                getCellPosition={getCellPosition}
+                rawEffectDieResult={rawEffectDieResult}
+                visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                kind="ranged"
+                resultAmount={damage}
             />
         </>
     );
@@ -718,11 +1120,20 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
     onImpact,
 }) => {
     const cell = event.ctx.cell;
-    const stableComplete = useStableComplete(onComplete);
-
-    useEffect(() => {
-        if (!cell) stableComplete();
-    }, [cell, stableComplete]);
+    const diceResults = useMemo(
+        () => Array.isArray(event.params?.diceResults)
+            ? event.params.diceResults.filter((result): result is number => typeof result === 'number')
+            : [],
+        [event.params],
+    );
+    const hasDice = diceResults.length > 0;
+    useTimedImpactAndComplete(
+        cell,
+        onImpact,
+        onComplete,
+        0,
+        hasDice ? MAGE_WARS_FX_TIMING.meleeResultVisibleMs : 1_100,
+    );
 
     if (!cell) return null;
 
@@ -739,19 +1150,28 @@ export const HealingImpactRenderer: React.FC<FxRendererProps> = ({
     const targetSnapshot = readFxAnchorSnapshot(event.params?.targetSnapshot ?? event.ctx.targetSnapshot);
 
     return (
-        <BoardHealingImpactPreset
-            cell={cell}
-            getCellPosition={getCellPosition}
-            targetSnapshot={targetSnapshot}
-            targetAnchorId={targetAnchorId}
-            amount={amount}
-            quality={resolveEventQuality(event)}
-            hostTestId="mage-wars-fx-healing-impact"
-            burstTestId="mage-wars-fx-healing-burst"
-            numberTestId="mage-wars-fx-healing-number"
-            onImpact={onImpact}
-            onComplete={stableComplete}
-        />
+        <>
+            <BoardHealingImpactPreset
+                cell={cell}
+                getCellPosition={getCellPosition}
+                targetSnapshot={targetSnapshot}
+                targetAnchorId={targetAnchorId}
+                amount={amount}
+                quality={resolveEventQuality(event)}
+                hostTestId="mage-wars-fx-healing-impact"
+                burstTestId="mage-wars-fx-healing-burst"
+                numberTestId="mage-wars-fx-healing-number"
+                numberClassName="-mt-16 text-emerald-100 drop-shadow-[0_0_12px_rgba(16,185,129,0.82)]"
+            />
+            {hasDice ? (
+                <AttackDiceFeedback
+                    diceResults={diceResults}
+                    visibleDurationMs={MAGE_WARS_FX_TIMING.meleeResultVisibleMs}
+                    kind="heal"
+                    resultAmount={diceResults.reduce((sum, result) => sum + result, 0)}
+                />
+            ) : null}
+        </>
     );
 };
 
@@ -782,6 +1202,7 @@ export const DamageImpactRenderer: React.FC<FxRendererProps> = ({
                 quality={resolveEventQuality(event)}
                 intensity={event.ctx.intensity ?? 'normal'}
                 hostTestId="mage-wars-fx-damage-impact-host"
+                numberTestId="mage-wars-fx-direct-damage-float"
                 showImpactBurst={MAGE_WARS_DIRECT_DAMAGE_FX_TUNING.showImpactBurst}
                 numberFontScale={MAGE_WARS_DIRECT_DAMAGE_FX_TUNING.numberFontScale}
                 numberColorClass={MAGE_WARS_DIRECT_DAMAGE_FX_TUNING.numberColorClass}

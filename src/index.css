@@ -7,6 +7,28 @@
 @source ".";
 
 /*
+ * Possession magnifiers stay out of the card face on real hover devices until
+ * the card is hovered or focused. Touch layouts keep them available.
+ */
+.betrayal-inventory-card-magnify {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .betrayal-inventory-card-magnify {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .group:hover > .betrayal-inventory-card-magnify,
+    .group:focus-within > .betrayal-inventory-card-magnify {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+}
+
+/*
  * Tailwind v4 当前没有稳定检测到 DiceThrone HUD 里一批通过常量复用的 arbitrary-value utilities，
  * 会导致血条高度塌陷、阶段按钮只剩文本壳。
  * 这里用官方 @source inline() 显式保留这些关键类，避免样式回退。
@@ -90,12 +112,12 @@
         --mobile-root-inverse-scale: 1;
         --mobile-layout-inline-unit: 1vw;
         --mobile-layout-block-unit: 1vh;
-        --mobile-board-shell-design-width: 1280px;
+        --mobile-board-shell-design-width: 2340px;
+        --mobile-board-shell-reference-width: 1920px;
         --mobile-board-shell-scale: 1;
         --mobile-board-shell-inverse-scale: 1;
         --mobile-board-shell-inline-unit: 1vw;
         --mobile-board-shell-block-unit: 1vh;
-        --mobile-orientation-banner-offset: 0px;
         --runtime-modal-max-height: calc(
             var(--runtime-viewport-height, 100vh)
             - max(1rem, var(--safe-area-top))
@@ -415,6 +437,7 @@ body[data-system-display-theme="night"] :is(input, textarea, select) {
 
 /* 娓告垙椤甸潰瑙嗗彛楂樺害鍏滃簳锛氭棫 WebView 鍥為€€ 100vh锛屾柊娴忚鍣ㄤ紭鍏?100dvh */
 .game-page-viewport {
+    position: relative;
     min-height: 100vh;
     min-height: var(--runtime-viewport-height, 100vh);
     height: 100vh;
@@ -422,6 +445,16 @@ body[data-system-display-theme="night"] :is(input, textarea, select) {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+}
+
+.game-page-viewport__background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 #modal-root {
@@ -527,6 +560,49 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         scrollbar-width: none;
     }
 
+    /* 小黑屋只收窄自身页面的滚动条，不改变其它游戏或全局默认样式。 */
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(214, 191, 129, 0.36) transparent;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"])::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"])::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"])::-webkit-scrollbar-thumb {
+        background: rgba(214, 191, 129, 0.36);
+        border-radius: 999px;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .custom-scrollbar,
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(214, 191, 129, 0.36) transparent;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .custom-scrollbar::-webkit-scrollbar,
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .scrollbar-thin::-webkit-scrollbar {
+        width: 3px;
+        height: 3px;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .custom-scrollbar::-webkit-scrollbar-track,
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .custom-scrollbar::-webkit-scrollbar-thumb,
+    :is(html[data-game-id="betrayal"], body[data-game-id="betrayal"]) .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: rgba(214, 191, 129, 0.36);
+        border-radius: 999px;
+    }
+
     /* 妯悜缁嗘粴鍔ㄦ潯锛堝崱鐗屽睍绀哄尯锛?*/
     .smashup-h-scrollbar {
         scrollbar-width: thin;
@@ -624,6 +700,13 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 
 /* 移动端响应式缩放（旧方案，仅保留给未接入 board-shell/map-shell 的游戏） */
 @media (max-width: 1023px) and (orientation: landscape) {
+    :root {
+        --mobile-board-shell-design-width: 2340px;
+        --mobile-board-shell-reference-width: 1920px;
+        --mobile-board-shell-inline-unit: 19.2px;
+        --mobile-board-shell-block-unit: 10.8px;
+    }
+
     .game-page-viewport {
         position: fixed;
         inset: 0;
@@ -681,6 +764,46 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     }
 }
 
+@media (max-width: 1023px) and (orientation: portrait) {
+    /* 竖屏 board-shell 使用自己的 portrait-adapted 参考画布，并由 runtime 计算同一等比变换。 */
+    .game-page-viewport[data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"] > .game-page-viewport__background {
+        background: #000 !important;
+        background-image: none !important;
+    }
+
+    html[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"],
+    html:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"]),
+    body[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"],
+    body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"]) {
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: #000 !important;
+        background-image: none !important;
+    }
+
+    body[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"] #root,
+    body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"]) #root {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+    }
+
+    [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="portrait-adapted"] .mobile-board-shell {
+        position: absolute;
+        top: var(--mobile-board-shell-offset-y, 0px);
+        left: var(--mobile-board-shell-offset-x, 0px);
+        right: auto;
+        bottom: auto;
+        transform-origin: top left;
+        transform: scale(var(--mobile-board-shell-scale));
+        width: var(--mobile-board-shell-canvas-width, var(--mobile-board-shell-design-width));
+        height: var(--mobile-board-shell-canvas-height, var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1))));
+        max-width: none;
+        padding: 0;
+    }
+}
+
 /* MobileBoardShell：保留 main 分支新增的通用能力 */
 .mobile-board-shell {
     position: relative;
@@ -689,6 +812,30 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     min-width: 0;
     min-height: 0;
     box-sizing: border-box;
+}
+
+/* 壳内固定控件图标：按钮命中区继续随设计坐标缩放，图标视觉层按 inverse scale 补偿。 */
+@media (max-width: 1023px) {
+    [data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .board-shell-fixed-icon,
+    .mobile-board-shell .board-shell-fixed-icon {
+        display: block;
+        flex: 0 0 auto;
+        transform: scale(var(--mobile-board-shell-inverse-scale, 1));
+        transform-origin: center;
+        transform-box: fill-box;
+    }
+}
+
+/* Betrayal 手机门户 HUD 使用独立缩放变量，固定检视图标沿用同一视觉补偿。 */
+@media (max-width: 1023px) and (orientation: landscape) {
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region .board-shell-fixed-icon,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region .board-shell-fixed-icon {
+        display: block;
+        flex: 0 0 auto;
+        transform: scale(var(--betrayal-hud-inverse-scale, 1));
+        transform-origin: center;
+        transform-box: fill-box;
+    }
 }
 
 .mobile-board-shell__canvas {
@@ -775,6 +922,158 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 .mobile-board-shell__side-dock > *,
 .mobile-board-shell__bottom-rail > * {
     pointer-events: auto;
+}
+
+.betrayal-hud-portal-region {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    width: var(--runtime-viewport-width, 100vw);
+    height: var(--runtime-viewport-height, 100vh);
+    max-width: var(--runtime-viewport-width, 100vw);
+    max-height: var(--runtime-viewport-height, 100vh);
+    pointer-events: none;
+    overflow: visible;
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > header,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > header {
+        /* Keep the top turn/status HUD scaled from its right rail anchor. */
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: top right;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"] {
+        max-height: none;
+        overflow: visible;
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: top left;
+        scrollbar-width: none;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"]::-webkit-scrollbar,
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-left-status-rail"]::-webkit-scrollbar {
+        display: none;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-inventory-section"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-inventory-section"] {
+        bottom: 0;
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: bottom left;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-status-rail"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-status-rail"] {
+        bottom: auto;
+        height: var(--betrayal-hud-expanded-rail-height);
+        overflow: visible;
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: top right;
+    }
+
+    html[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-action-rail"],
+    body[data-game-id="betrayal"] .betrayal-hud-portal-region > [data-testid="betrayal-action-rail"] {
+        transform: scale(var(--betrayal-hud-scale));
+        transform-origin: bottom center;
+    }
+
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-prev-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-prev-zone"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-reader-close"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-detail-toggle"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-detail-toggle"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-select-current"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-select-current"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-dialog-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-dialog-close"] {
+        min-height: calc(45px / var(--mobile-board-shell-scale, 1)) !important;
+        min-width: calc(45px / var(--mobile-board-shell-scale, 1)) !important;
+    }
+
+    /* 剧本阅读器由 portal 挂到视口，不在 board-shell 的缩放树内；这里不能再用
+       shell 逆缩放补偿，否则 45px 会在 Vivo 等效视口中膨胀成 135px。 */
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-book"] [data-testid="betrayal-scenario-reader-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-book"] [data-testid="betrayal-scenario-reader-prev-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-book"] [data-testid="betrayal-scenario-reader-next-zone"] {
+        box-sizing: border-box !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        max-height: 44px !important;
+        padding: 0 !important;
+        font-size: 16px !important;
+    }
+
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-opening-cinematic"] [data-testid="betrayal-scenario-reader-next-zone"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-start-scenario-opening-continue"] {
+        box-sizing: border-box !important;
+        width: auto !important;
+        max-width: none !important;
+        height: 56px !important;
+        min-height: 56px !important;
+        min-width: 176px !important;
+        max-height: 56px !important;
+        padding: 12px 24px !important;
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.04em !important;
+        text-transform: none !important;
+    }
+
+    /* 剧本候选弹窗同样属于 portal；三项底部操作保持真实视口按钮尺寸，不能套 board-shell 逆缩放。 */
+    html[data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-detail-toggle"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-detail-toggle"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-detail-toggle"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-detail-toggle"],
+    html[data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-select-current"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-select-current"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-select-current"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-select-current"],
+    html[data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-dialog-close"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-dialog-close"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-dialog-close"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-scenario-select-dialog"] [data-testid="betrayal-scenario-dialog-close"] {
+        box-sizing: border-box !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+        min-width: 0 !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+        font-size: 16px !important;
+    }
+
+    /* Portal 过场脱离 board-shell，直接按真实视口像素渲染，不再反缩放。 */
+    [data-cinematic-coordinate="portal"] .betrayal-cinematic-narration__line {
+        font-size: 16px !important;
+        line-height: 1.65 !important;
+    }
+
+    [data-cinematic-coordinate="portal"] .betrayal-cinematic-narration__label {
+        font-size: 18px !important;
+        line-height: 1.2 !important;
+    }
+
+    /* 选角页滚动框仍沿 board-shell 等比缩放；框内卡片、正文和条目保持稳定可读尺寸。 */
+    html[data-game-id="betrayal"] [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"],
+    body[data-game-id="betrayal"] [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"],
+    [data-game-page][data-game-id="betrayal"] [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"],
+    body:has([data-game-page][data-game-id="betrayal"]) [data-testid="betrayal-character-detail-scroll"] > [data-testid="betrayal-character-detail-content"] {
+        width: 100%;
+        min-width: 0;
+    }
+
+    html[data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-body-scroll"] p,
+    body[data-game-id="betrayal"] [data-testid="betrayal-scenario-reader-body-scroll"] p {
+        font-size: 16px !important;
+        line-height: 1.65 !important;
+    }
 }
 
 @keyframes the-gang-chip-transfer-line {
@@ -865,7 +1164,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 @media (max-width: 1023px) {
     [data-game-page][data-mobile-layout-preset="board-shell"] .mobile-board-shell {
         padding:
-            max(var(--safe-area-top), var(--mobile-orientation-banner-offset, 0px))
+            var(--safe-area-top)
             var(--safe-area-right)
             var(--safe-area-bottom)
             var(--safe-area-left);
@@ -873,14 +1172,11 @@ html[data-keyboard-visible="true"] .auth-modal-container {
 }
 
 @media (max-width: 1023px) and (orientation: landscape) {
-    html[data-game-id="betrayal"][data-mobile-layout-preset="map-shell"] .mobile-board-shell,
-    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="map-shell"] .mobile-board-shell {
-        height: 100vh;
-        height: 100dvh;
-        min-height: 100vh;
-        min-height: 100dvh;
-        max-height: 100vh;
-        max-height: 100dvh;
+    /* TestMatchRoom 的主题底图只用于整屏测试页；board-shell 横屏时实际游戏画布按参考比例居中，
+       其两侧应沿用正式对局入口的黑色承托底色，不能露出测试页默认蓝色渐变。 */
+    .game-page-viewport[data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] > .game-page-viewport__background {
+        background: #000 !important;
+        background-image: none !important;
     }
 
     html[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"],
@@ -889,7 +1185,8 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     body:has([data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"]) {
         overflow: hidden;
         overscroll-behavior: none;
-        background: #000;
+        background: #000 !important;
+        background-image: none !important;
     }
 
     body[data-game-page="true"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] #root,
@@ -897,6 +1194,7 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         width: 100%;
         height: 100%;
         overflow: hidden;
+        background: #000;
     }
 
     [data-game-page][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell {
@@ -907,10 +1205,17 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         bottom: auto;
         transform-origin: top left;
         transform: scale(var(--mobile-board-shell-scale));
-        width: var(--mobile-board-shell-design-width);
-        height: var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1)));
+        width: var(--mobile-board-shell-canvas-width, var(--mobile-board-shell-design-width));
+        height: var(--mobile-board-shell-canvas-height, var(--mobile-board-shell-design-height, calc(var(--runtime-viewport-height, 100vh) * var(--mobile-board-shell-inverse-scale, 1))));
         max-width: none;
         padding: 0;
+    }
+
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .game-page-viewport,
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__canvas,
+    [data-game-page][data-game-id="betrayal"][data-mobile-layout-preset="board-shell"][data-mobile-profile="landscape-adapted"] .mobile-board-shell__content {
+        background-color: transparent !important;
+        background-image: none !important;
     }
 
     html[data-game-id="fantasyrealms"][data-mobile-layout-preset="board-shell"] [data-testid="fab-menu"] {
@@ -967,12 +1272,17 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     html[data-game-id="betrayal"][data-betrayal-blocking-roll="true"] [data-testid="fab-menu"] {
         display: none !important;
     }
+
+    html[data-game-id="betrayal"]:has([data-testid="betrayal-scenario-reader-dialog"]) [data-testid="fab-menu"] {
+        display: none !important;
+    }
 }
 
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="fab-menu"],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid^="fab-sheet-"],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid^="fab-tooltip-"],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="debug-toggle-container"],
+html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-tutorial-step],
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="debug-panel"] {
     display: none !important;
 }
@@ -1600,6 +1910,21 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     animation: betrayal-attack-impact-float 720ms cubic-bezier(0.18, 0.88, 0.28, 1.05) 80ms both;
 }
 
+.betrayal-trait-change-floating {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 4px);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: max-content;
+    gap: 2px;
+    text-align: center;
+    white-space: nowrap;
+    transform: translate3d(-50%, 8px, 0);
+    animation: betrayal-attack-impact-float 720ms cubic-bezier(0.18, 0.88, 0.28, 1.05) 80ms both;
+}
+
 .betrayal-attack-impact-surface[data-density="panel"] .betrayal-attack-impact-floating {
     top: -14px;
     font-size: 10px;
@@ -1734,6 +2059,7 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     .betrayal-attack-impact-flash,
     .betrayal-attack-impact-slash,
     .betrayal-attack-impact-floating,
+    .betrayal-trait-change-floating,
     .betrayal-haunt-reveal-cue,
     .betrayal-haunt-reveal-cue__slash,
     .betrayal-cinematic-narration__line {
@@ -1755,8 +2081,159 @@ html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid
     }
 }
 
+@keyframes dicethrone-token-available-ripple-inner {
+    0% {
+        opacity: 0.46;
+        transform: translate(-50%, -50%) scale(1.08);
+    }
+
+    100% {
+        opacity: 0.32;
+        transform: translate(-50%, -50%) scale(1.24);
+    }
+}
+
+@keyframes dicethrone-token-available-ripple-outer {
+    0% {
+        opacity: 0.35;
+        transform: translate(-50%, -50%) scale(1.42);
+    }
+
+    100% {
+        opacity: 0.24;
+        transform: translate(-50%, -50%) scale(1.62);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     [data-dicethrone-token-halo="available"] {
         animation: none !important;
+    }
+
+    [data-dicethrone-token-ripple="available"][data-ripple-delay="0"] {
+        animation: none !important;
+        opacity: 0.37 !important;
+        transform: translate(-50%, -50%) scale(1.16) !important;
+    }
+
+    [data-dicethrone-token-ripple="available"][data-ripple-delay="1"] {
+        animation: none !important;
+        opacity: 0.27 !important;
+        transform: translate(-50%, -50%) scale(1.52) !important;
+    }
+}
+
+.betrayal-map-move-reach__path {
+    fill: none;
+    stroke: rgba(173, 225, 189, 0.88);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-dasharray: 5 6;
+    filter: drop-shadow(0 0 4px rgba(123, 194, 145, 0.8));
+    animation: betrayal-map-move-reach-flow 2.4s linear infinite;
+}
+
+.betrayal-map-move-reach__pulse {
+    fill: #d8f0df;
+    filter: drop-shadow(0 0 5px rgba(147, 220, 170, 0.96));
+    animation: betrayal-map-move-reach-pulse 1.8s ease-in-out infinite;
+}
+
+.betrayal-map-move-door-breath {
+    position: absolute;
+    z-index: 18;
+    display: block;
+    width: 30px;
+    height: 5px;
+    pointer-events: none;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, rgba(196, 238, 207, 0.96), transparent);
+    box-shadow: 0 0 8px rgba(133, 204, 153, 0.88);
+    animation: betrayal-map-move-door-breathe 1.9s ease-in-out infinite;
+}
+
+.betrayal-map-move-door-breath--north {
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.betrayal-map-move-door-breath--south {
+    bottom: 0;
+    left: 50%;
+    transform: translate(-50%, 50%);
+}
+
+.betrayal-map-move-door-breath--east {
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%) rotate(90deg);
+}
+
+.betrayal-map-move-door-breath--west {
+    top: 50%;
+    left: 0;
+    transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.betrayal-map-explore-mark {
+    display: grid;
+    place-items: center;
+    width: 58px;
+    height: 58px;
+    border: 1px solid rgba(216, 240, 223, 0.65);
+    border-radius: 50%;
+    background: rgba(5, 18, 12, 0.88);
+    color: #e3f7e9;
+    font: bold 42px/1 Georgia, serif;
+    text-shadow: 0 0 12px rgba(147, 220, 170, 0.65);
+    animation: betrayal-map-move-reach-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes betrayal-map-move-reach-flow {
+    to {
+        stroke-dashoffset: -22;
+    }
+}
+
+@keyframes betrayal-map-move-reach-pulse {
+    0%,
+    100% {
+        opacity: 0.58;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes betrayal-map-move-door-breathe {
+    0%,
+    100% {
+        opacity: 0.48;
+        box-shadow: 0 0 5px rgba(133, 204, 153, 0.55);
+    }
+
+    50% {
+        opacity: 0.98;
+        box-shadow: 0 0 11px rgba(156, 222, 174, 0.96);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .betrayal-map-move-reach__path,
+    .betrayal-map-move-reach__pulse,
+    .betrayal-map-explore-mark,
+    .betrayal-map-move-door-breath {
+        animation: none !important;
+    }
+
+    .betrayal-map-move-reach__path {
+        opacity: 0.7;
+    }
+
+    .betrayal-map-move-reach__pulse,
+    .betrayal-map-move-door-breath {
+        opacity: 0.76;
     }
 }

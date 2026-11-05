@@ -17,6 +17,7 @@ type MutableFootprint = {
     writes: Map<string, SmashUpReactionResourceRef>;
     opensInteraction?: boolean;
     fallbackReason?: string;
+    commutativeOperation?: 'ongoing_detach_discard' | 'mixed';
 };
 
 export interface ReactionFootprintFallbackAuditEntry {
@@ -68,6 +69,7 @@ export function reactionResourceKey(ref: SmashUpReactionResourceRef): string {
             return `turnFlag:${ref.playerId ?? 'global'}:${ref.key}`;
         case 'baseDeck':
         case 'madnessDeck':
+        case 'monsterDeck':
             return ref.kind;
         case 'scoring':
         case 'targetAvailability':
@@ -322,6 +324,9 @@ export function deriveFootprintFromEvent(event: SmashUpEvent): SmashUpReactionRe
                 playerId(payload.ownerId),
                 payload.destination === 'hand' ? ['hand'] : ['discard'],
             );
+            if (payload.destination !== 'hand' && typeof payload.cardUid === 'string') {
+                fp.commutativeOperation = 'ongoing_detach_discard';
+            }
             break;
         case SU_EVENTS.CARDS_DRAWN:
         case SU_EVENTS.CARD_RECOVERED_FROM_DISCARD:
@@ -567,6 +572,9 @@ function finalizeFootprint(fp: MutableFootprint): SmashUpReactionResourceFootpri
         writes: sanitize([...fp.writes.values()]),
         opensInteraction: fp.opensInteraction,
         fallbackReason: fp.fallbackReason,
+        ...(fp.commutativeOperation === 'ongoing_detach_discard'
+            ? { commutativeOperation: fp.commutativeOperation }
+            : {}),
     };
 }
 
@@ -576,6 +584,16 @@ function mergeFootprint(target: MutableFootprint, source: SmashUpReactionResourc
     for (const ref of source.writes) add(target.writes, ref);
     target.opensInteraction = target.opensInteraction || source.opensInteraction;
     target.fallbackReason ??= source.fallbackReason;
+    if (source.commutativeOperation === undefined) {
+        target.commutativeOperation = 'mixed';
+    } else if (target.commutativeOperation === undefined) {
+        target.commutativeOperation = source.commutativeOperation;
+    } else if (
+        target.commutativeOperation !== 'mixed'
+        && target.commutativeOperation !== source.commutativeOperation
+    ) {
+        target.commutativeOperation = 'mixed';
+    }
 }
 
 function isReactionResourceRef(value: unknown): value is SmashUpReactionResourceRef {
@@ -666,6 +684,7 @@ function buildTriggerProbeContext(
         actionTargetBaseIndex: trigger.actionTargetBaseIndex,
         actionTargetType: trigger.actionTargetType,
         actionTargetMinionUid: trigger.actionTargetMinionUid,
+        actionDestinationOverride: trigger.actionDestinationOverride,
         buriedCardUid: trigger.buriedCardUid,
         buriedCardDefId: trigger.buriedCardDefId,
         buriedCardControllerId: trigger.buriedCardControllerId,
@@ -742,6 +761,25 @@ export function resourceFootprintsConflict(
     const rightWrites = new Set(right.writes.map(reactionResourceKey));
     const leftReads = new Set(left.reads.map(reactionResourceKey));
     const rightReads = new Set(right.reads.map(reactionResourceKey));
+    if (
+        left.commutativeOperation === 'ongoing_detach_discard'
+        && right.commutativeOperation === 'ongoing_detach_discard'
+        && !left.opensInteraction
+        && !right.opensInteraction
+    ) {
+        const sharedWrites = [...leftWrites].filter(key => rightWrites.has(key));
+        const onlySharedDiscardWrites = sharedWrites.length > 0
+            && sharedWrites.every(key => key.startsWith('playerDiscard:'));
+        const hasCrossReadWriteConflict = [...leftWrites].some(key => rightReads.has(key))
+            || [...rightWrites].some(key => leftReads.has(key));
+        const leftCardInstances = left.writes.filter(ref => ref.kind === 'cardInstance').map(ref => ref.uid);
+        const rightCardInstances = right.writes.filter(ref => ref.kind === 'cardInstance').map(ref => ref.uid);
+        const distinctCardInstances = leftCardInstances.length > 0
+            && rightCardInstances.length > 0
+            && leftCardInstances.every(uid => !rightCardInstances.includes(uid));
+        if (onlySharedDiscardWrites && distinctCardInstances && !hasCrossReadWriteConflict) return false;
+    }
+
     return [...leftWrites].some(key => rightWrites.has(key) || rightReads.has(key))
         || [...rightWrites].some(key => leftReads.has(key));
 }

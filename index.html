@@ -79,6 +79,71 @@
         if (!el) return;
         var p = location.pathname;
         var isGame = p.indexOf('/play/') === 0;
+        function readOnlineMatchRoute() {
+          var match = /^\/play\/([^/?#]+)\/match\/([^/?#]+)/.exec(location.pathname);
+          if (!match) return null;
+          try {
+            return {
+              gameId: decodeURIComponent(match[1]),
+              matchId: decodeURIComponent(match[2])
+            };
+          } catch (error) {
+            return {
+              gameId: match[1],
+              matchId: match[2]
+            };
+          }
+        }
+        function suppressOwnerActiveMatch(matchId) {
+          try {
+            var key = 'owner_active_match_suppressed';
+            var parsed = JSON.parse(localStorage.getItem(key) || '[]');
+            var list = Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [];
+            if (list.indexOf(matchId) !== -1) return;
+            list.push(matchId);
+            localStorage.setItem(key, JSON.stringify(list));
+          } catch (error) {
+            try {
+              localStorage.setItem('owner_active_match_suppressed', JSON.stringify([matchId]));
+            } catch (innerError) {
+              // localStorage 可能不可用；缺房跳转仍继续。
+            }
+          }
+        }
+        function clearMissingOnlineMatchLocalState(matchId) {
+          try {
+            localStorage.removeItem('match_creds_' + matchId);
+            localStorage.removeItem('match_ai_creds_' + matchId);
+            var ownerActiveRaw = localStorage.getItem('owner_active_match');
+            if (ownerActiveRaw) {
+              try {
+                var ownerActive = JSON.parse(ownerActiveRaw);
+                if (ownerActive && String(ownerActive.matchID) === matchId) {
+                  localStorage.removeItem('owner_active_match');
+                }
+              } catch (error) {
+                // 无法证明这个损坏记录属于当前房间时，不误删其它活跃对局。
+              }
+            }
+            suppressOwnerActiveMatch(matchId);
+          } catch (error) {
+            // 只要服务端已确认缺房，就不让本地存储异常阻止返回大厅。
+          }
+        }
+        function confirmMissingOnlineMatchBeforeAppBoot() {
+          var route = readOnlineMatchRoute();
+          if (!route || !route.gameId || !route.matchId || typeof fetch !== 'function') return;
+          var apiPath = '/games/' + encodeURIComponent(route.gameId) + '/' + encodeURIComponent(route.matchId);
+          fetch(apiPath, { cache: 'no-store' })
+            .then(function(response) {
+              if (!response || response.status !== 404) return;
+              clearMissingOnlineMatchLocalState(route.matchId);
+              location.replace('/?game=' + encodeURIComponent(route.gameId));
+            })
+            .catch(function() {
+              // 网络错误、服务暂不可达或代理未启动时不清理，避免误踢正常房间。
+            });
+        }
         function showFriendlyFallback() {
           var current = document.getElementById('initial-loader');
           if (!current || !isGame) return;
@@ -109,6 +174,7 @@
           }
         }
         if (isGame) {
+          confirmMissingOnlineMatchBeforeAppBoot();
           el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center';
           el.innerHTML = '<div style="width:16px;height:16px;background:#d97706;border-radius:50%;filter:blur(2px);box-shadow:0 0 20px #f59e0b,0 0 60px rgba(245,158,11,0.3);animation:il-breath 2s ease-in-out infinite"></div>';
           window.setTimeout(function() {

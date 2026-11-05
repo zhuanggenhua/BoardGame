@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import {
+  applyEvents,
   expectNoPrompt,
   getPromptOption,
   getPromptOptions,
@@ -14,6 +15,7 @@ import {
   makeMinion,
   respondToPromptOption,
 } from './helpers';
+import { getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { clearBaseAbilityRegistry, registerBaseAbility, registerExtended } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
@@ -122,6 +124,46 @@ describe('Reaction queue: base abilities', () => {
     expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
     expect(result.events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
     expectNoPrompt(result.matchState!);
+  });
+
+  it('mandatory queued effect is consumed, reduced, and leaves stable final power', () => {
+    registerBaseAbility('base_a', 'onActionPlayed', (ctx) => ({
+      events: [{
+        type: SU_EVENTS.POWER_COUNTER_ADDED,
+        payload: {
+          minionUid: 'minion-1',
+          baseIndex: 0,
+          amount: 1,
+          reason: 'base-a-mandatory-power',
+        },
+        timestamp: ctx.now,
+      }] as any,
+    }), {});
+
+    const core = core2b({
+      bases: [makeBase('base_a', [makeMinion('minion-1', 'test_minion', '0', 3)]), makeBase('base_b')],
+    });
+    const result = postProcessSystemEvents(core, [{
+      type: SU_EVENTS.ACTION_PLAYED,
+      payload: {
+        playerId: '0',
+        cardUid: 'action-1',
+        defId: 'test_action',
+        targetBaseIndex: 0,
+        targetType: 'base',
+      },
+      timestamp: 2,
+    } as any], { shuffle: (items: any[]) => items } as any, makeMatchState(core));
+
+    expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
+    expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
+    expect(result.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+    expectNoPrompt(result.matchState!);
+
+    const finalCore = applyEvents(core, result.events as any);
+    expect(finalCore.triggerQueue).toBeUndefined();
+    expect(finalCore.bases[0].minions[0].powerCounters).toBe(1);
+    expect(getPlayerEffectivePowerOnBase(finalCore, finalCore.bases[0], 0, '0')).toBe(4);
   });
 
   it('ACTION_PLAYED with multiple mandatory reactions opens one unified ordering interaction', () => {

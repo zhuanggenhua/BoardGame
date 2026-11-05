@@ -139,7 +139,7 @@ async function readBudgetViewState(page: Page) {
         const useAction = document.querySelector<HTMLButtonElement>('[data-testid="betrayal-action-use"]');
         const roomEffectAction = document.querySelector<HTMLButtonElement>('[data-testid="betrayal-action-roomEffect"]');
         const visibleReason = document.querySelector<HTMLElement>('[data-testid="betrayal-action-disabled-reason-visible"]');
-        const mobileUseStatus = document.querySelector<HTMLElement>('[data-testid="betrayal-mobile-use-status"]');
+        const useStatus = document.querySelector<HTMLElement>('[data-testid="betrayal-use-status"]');
         return {
             phase: core?.phase ?? null,
             currentPlayer: core?.currentPlayer ?? null,
@@ -155,7 +155,7 @@ async function readBudgetViewState(page: Page) {
             roomEffectDisabled: Boolean(roomEffectAction?.disabled),
             roomEffectDisabledReason: roomEffectAction?.getAttribute('data-action-disabled-reason') ?? '',
             visibleReason: visibleReason?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
-            mobileUseStatus: mobileUseStatus?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
+            useStatus: useStatus?.textContent?.replace(/\s+/g, ' ').trim() ?? '',
         };
     });
 }
@@ -195,7 +195,7 @@ test.describe('山屋惊魂特殊行动预算', () => {
             useDisabled: true,
             useDisabledReason: '被动效果，不能主动使用',
             visibleReason: '被动效果，不能主动使用',
-            mobileUseStatus: '被动效果，不能主动使用',
+            useStatus: '被动效果，不能主动使用',
         });
         await saveScreenshot(page, PASSIVE_POSSESSION_SCREENSHOT);
 
@@ -221,7 +221,7 @@ test.describe('山屋惊魂特殊行动预算', () => {
             useDisabled: true,
             useDisabledReason: '本回合新获得，下回合可用',
             visibleReason: '本回合新获得，下回合可用',
-            mobileUseStatus: '本回合新获得，下回合可用',
+            useStatus: '本回合新获得，下回合可用',
         });
         await saveScreenshot(page, NEW_POSSESSION_SCREENSHOT);
 

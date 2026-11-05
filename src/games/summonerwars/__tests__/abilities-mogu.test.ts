@@ -187,11 +187,11 @@ describe('莫古 - 疫病体与菌化野兽', () => {
     const body3 = place(state, { row: 4, col: 4 }, unitCard('mogu-spore-plague-body', '菌袍疫病体', [
       'mogu_burst',
       'mogu_fungal_mutation',
-    ]), '0', { boosts: 3 });
+    ], { unitTags: ['carrier'] }), '0', { boosts: 3 });
     const body2 = place(state, { row: 4, col: 5 }, unitCard('mogu-spore-plague-body-2', '菌袍疫病体', [
       'mogu_burst',
       'mogu_fungal_mutation',
-    ]), '0', { boosts: 2 });
+    ], { unitTags: ['carrier'] }), '0', { boosts: 2 });
 
     const { newState } = executeAndReduce(state, SW_COMMANDS.END_PHASE, {});
 
@@ -205,7 +205,7 @@ describe('莫古 - 疫病体与菌化野兽', () => {
     const body = place(state, { row: 4, col: 4 }, unitCard('mogu-spore-plague-body', '菌袍疫病体', [
       'mogu_burst',
       'mogu_fungal_mutation',
-    ]), '0', { boosts: 3 });
+    ], { unitTags: ['carrier'] }), '0', { boosts: 3 });
     state.players['0'].discard.push(unitCard('mogu-fungal-beast-discard', '菌化野兽', [
       'mogu_infection',
       'mogu_parasite',
@@ -228,7 +228,7 @@ describe('莫古 - 疫病体与菌化野兽', () => {
       faction: 'necromancer',
       life: 1,
     }), '1');
-    state.players['0'].discard.push(unitCard('mogu-spore-plague-body-discard', '菌袍疫病体'));
+    state.players['0'].discard.push(unitCard('mogu-spore-plague-body-discard', '菌袍疫病体', [], { unitTags: ['carrier'] }));
 
     const { newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
       attacker: beast.position,
@@ -636,9 +636,9 @@ describe('莫古 - 主动技能与事件牌', () => {
       unitClass: 'summoner',
       life: 7,
     }));
-    const bodyA = unitCard('mogu-spore-plague-body-a', '菌袍疫病体');
-    const bodyB = unitCard('mogu-spore-plague-body-b', '菌袍疫病体');
-    const bodyC = unitCard('mogu-spore-plague-body-c', '菌袍疫病体');
+    const bodyA = unitCard('mogu-spore-plague-body-a', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyB = unitCard('mogu-spore-plague-body-b', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyC = unitCard('mogu-spore-plague-body-c', '菌袍疫病体', [], { unitTags: ['carrier'] });
     state.players['0'].discard.push(bodyA, bodyB, bodyC);
     state.players['0'].hand.push(eventCard('mogu-release-spores', '释放菌袍'));
 
@@ -661,8 +661,8 @@ describe('莫古 - 主动技能与事件牌', () => {
       unitClass: 'summoner',
       life: 7,
     }));
-    const bodyA = unitCard('mogu-spore-plague-body-a', '菌袍疫病体');
-    const bodyB = unitCard('mogu-spore-plague-body-b', '菌袍疫病体');
+    const bodyA = unitCard('mogu-spore-plague-body-a', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyB = unitCard('mogu-spore-plague-body-b', '菌袍疫病体', [], { unitTags: ['carrier'] });
     state.players['0'].discard.push(bodyA, bodyB);
     state.players['0'].hand.push(eventCard('mogu-release-spores', '释放菌袍'));
 
@@ -712,9 +712,9 @@ describe('莫古 - 主动技能与事件牌', () => {
       unitClass: 'summoner',
       life: 7,
     }));
-    const bodyA = unitCard('mogu-spore-plague-body-repeat-a', '菌袍疫病体');
-    const bodyB = unitCard('mogu-spore-plague-body-repeat-b', '菌袍疫病体');
-    const bodyC = unitCard('mogu-spore-plague-body-repeat-c', '菌袍疫病体');
+    const bodyA = unitCard('mogu-spore-plague-body-repeat-a', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyB = unitCard('mogu-spore-plague-body-repeat-b', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyC = unitCard('mogu-spore-plague-body-repeat-c', '菌袍疫病体', [], { unitTags: ['carrier'] });
     state.players['0'].discard.push(bodyA, bodyB, bodyC);
     state.players['0'].hand.push(eventCard('mogu-release-spores', '释放菌袍'));
 
@@ -746,8 +746,8 @@ describe('莫古 - 主动技能与事件牌', () => {
       unitClass: 'summoner',
       life: 7,
     }));
-    const bodyA = unitCard('mogu-spore-plague-body-invalid-a', '菌袍疫病体');
-    const bodyB = unitCard('mogu-spore-plague-body-invalid-b', '菌袍疫病体');
+    const bodyA = unitCard('mogu-spore-plague-body-invalid-a', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyB = unitCard('mogu-spore-plague-body-invalid-b', '菌袍疫病体', [], { unitTags: ['carrier'] });
     state.players['0'].discard.push(bodyA, bodyB);
     state.players['0'].hand.push(eventCard('mogu-release-spores', '释放菌袍'));
 
@@ -772,7 +772,7 @@ describe('莫古 - 主动技能与事件牌', () => {
     const body = place(state, { row: 4, col: 4 }, unitCard('mogu-spore-plague-body-l4', '菌袍疫病体', [
       'mogu_burst',
       'mogu_fungal_mutation',
-    ]), '0', { boosts: 3 });
+    ], { unitTags: ['carrier'] }), '0', { boosts: 3 });
     const beastA = unitCard('mogu-fungal-beast-l4-a', '菌化野兽', ['mogu_infection', 'mogu_parasite']);
     const beastB = unitCard('mogu-fungal-beast-l4-b', '菌化野兽', ['mogu_infection', 'mogu_parasite']);
     state.players['0'].discard.push(beastA, beastB);
@@ -799,8 +799,8 @@ describe('莫古 - 主动技能与事件牌', () => {
       faction: 'necromancer',
       life: 1,
     }), '1');
-    const bodyA = unitCard('mogu-spore-plague-body-l4-a', '菌袍疫病体');
-    const bodyB = unitCard('mogu-spore-plague-body-l4-b', '菌袍疫病体');
+    const bodyA = unitCard('mogu-spore-plague-body-l4-a', '菌袍疫病体', [], { unitTags: ['carrier'] });
+    const bodyB = unitCard('mogu-spore-plague-body-l4-b', '菌袍疫病体', [], { unitTags: ['carrier'] });
     state.players['0'].discard.push(bodyA, bodyB);
 
     const { events, newState } = executeAndReduce(state, SW_COMMANDS.DECLARE_ATTACK, {
@@ -864,7 +864,7 @@ describe('莫古 - 主动技能与事件牌', () => {
     const body = place(state, { row: 4, col: 5 }, unitCard('mogu-spore-plague-body-chain', '菌袍疫病体', [
       'mogu_burst',
       'mogu_fungal_mutation',
-    ]), '0', { boosts: 3 });
+    ], { unitTags: ['carrier'] }), '0', { boosts: 3 });
     const beast = unitCard('mogu-fungal-beast-chain', '菌化野兽', ['mogu_infection', 'mogu_parasite']);
     state.players['0'].discard.push(beast);
 

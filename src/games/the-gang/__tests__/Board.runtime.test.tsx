@@ -229,6 +229,68 @@ const expectBggTableAnchors = () => {
     ).toBeInTheDocument();
 };
 
+test('观战者可查看同时行动游戏的全部玩家手牌且没有回合提交入口', () => {
+    const core = startHeistCore(TheGangDomain.setup(['0', '1', '2'], fixedRandom));
+    const dispatch = vi.fn();
+
+    renderWithToast(
+        <Board
+            G={stateOf(core)}
+            dispatch={dispatch as never}
+            playerID={null}
+            matchData={matchDataForPlayerCount(3)}
+            isMultiplayer
+            isConnected
+        />,
+    );
+
+    for (const playerId of core.playerIds) {
+        const hand = screen.getByTestId(playerId === core.playerIds[0]
+            ? 'the-gang-local-hand-rows'
+            : `the-gang-spectator-hand-${playerId}-rows`);
+        expect(within(hand).getAllByRole('img')).toHaveLength(core.players[playerId].pocketCards.length);
+    }
+    expect(screen.queryByTestId('the-gang-start-heist')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('the-gang-next-round')).not.toBeInTheDocument();
+    expect(dispatch).not.toHaveBeenCalled();
+});
+
+test('个人公共牌模式把本地和其它座位的明牌都放回牌桌', () => {
+    let core = TheGangDomain.setup(['0', '1', '2'], fixedRandom);
+    core = reduceCommand(core, {
+        type: THE_GANG_COMMANDS.SET_RULES_CONFIG,
+        playerId: '0',
+        payload: {
+            config: {
+                ...core.rules.config,
+                gameMode: 'banana-split',
+            },
+        },
+        timestamp: 1,
+    } as Parameters<typeof TheGangDomain.execute>[1]);
+    core = startHeistCore(core, '0', 2);
+    core = {
+        ...core,
+        round: 4,
+        players: Object.fromEntries(core.playerIds.map((playerId, index) => [playerId, {
+            ...core.players[playerId],
+            communityCards: [
+                standardCard(String(index + 2) as PlayingCard['rank'], 'clubs'),
+                standardCard(String(index + 3) as PlayingCard['rank'], 'diamonds'),
+                standardCard(String(index + 4) as PlayingCard['rank'], 'hearts'),
+            ],
+        }])),
+    };
+
+    renderBoardForCore(core);
+
+    expect(screen.getByTestId('the-gang-player-community-cards-1')).toBeInTheDocument();
+    expect(screen.getByTestId('the-gang-player-community-cards-2')).toBeInTheDocument();
+    expect(screen.getByTestId('the-gang-player-community-cards-1').querySelectorAll('img')).toHaveLength(3);
+    expect(screen.getByTestId('the-gang-player-community-cards-2').querySelectorAll('img')).toHaveLength(3);
+    expect(document.querySelector('[data-bgg-zone="card-river"]')?.querySelectorAll('img')).toHaveLength(3);
+});
+
 const buildFourPlayerTwoHandFinalRoundCore = () => {
     let core = TheGangDomain.setup(['0', '1', '2', '3'], fixedRandom);
     core = reduceCommand(core, {

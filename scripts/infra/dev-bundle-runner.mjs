@@ -1,10 +1,13 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { build as nativeBuild, context as nativeContext } from 'esbuild';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
+import './load-dev-env.mjs';
 import { resolveWorkspaceNodeModuleFile } from './node-module-resolver.mjs';
 import { withWindowsHide } from './windows-hide.js';
+import { captureSourceIdentity } from './e2e-source-identity.mjs';
 
 await assertChildProcessSupport('bundle-runner / esbuild watch', { probeEsbuild: true });
 
@@ -24,6 +27,7 @@ const enableNodeBundleSourceMap = nodeBundleSourceMapMode === '1'
 
 let currentBuildStartedAt = 0;
 let child = null;
+const expectedChildExits = new WeakSet();
 let shuttingDown = false;
 let buildVersion = 0;
 let restartQueue = Promise.resolve();
@@ -193,6 +197,7 @@ async function restartRuntime(reason) {
     if (child) {
         const previous = child;
         child = null;
+        expectedChildExits.add(previous);
         await stopChildProcess(previous);
     }
 
@@ -205,23 +210,26 @@ async function restartRuntime(reason) {
         ...(enableNodeBundleSourceMap ? ['--enable-source-maps'] : []),
         absOutfile,
     ];
-    child = spawn(process.execPath, runtimeArgs, withWindowsHide({
+    const runtimeChild = spawn(process.execPath, runtimeArgs, withWindowsHide({
         cwd: repoRoot,
         env: process.env,
         stdio: ['ignore', 'pipe', 'pipe'],
     }));
-    prefixOutput(`${label}:runtime`, child.stdout, process.stdout);
-    prefixOutput(`${label}:runtime`, child.stderr, process.stderr);
-    child.on('exit', (code, signal) => {
+    child = runtimeChild;
+    prefixOutput(`${label}:runtime`, runtimeChild.stdout, process.stdout);
+    prefixOutput(`${label}:runtime`, runtimeChild.stderr, process.stderr);
+    runtimeChild.on('exit', (code, signal) => {
         if (shuttingDown) {
             return;
         }
-        const detail = signal ? `signal=${signal}` : `code=${code ?? 0}`;
-        console.error(`[bundle-runner] ${label} runtime exited (${detail})`);
-        child = null;
-        if (onceMode) {
-            process.exit(code ?? 1);
+        if (expectedChildExits.has(runtimeChild)) {
+            expectedChildExits.delete(runtimeChild);
+            return;
         }
+        const detail = signal ? `signal=${signal}` : `code=${code ?? 0}`;
+        console.error(`[bundle-runner] ${label} runtime exited unexpectedly (${detail}); stopping the launcher`);
+        child = null;
+        process.exit(code === 0 ? 1 : (code ?? 1));
     });
 }
 
@@ -267,6 +275,7 @@ const rebuildPlugin = {
             }
 
             buildVersion += 1;
+            writeSourceIdentity(result);
             const action = buildVersion === 1 ? 'initial build ready' : 'rebuilt';
             console.log(`[bundle-runner] ${label} ${action} in ${durationMs}ms`);
             await queueRestart(buildVersion === 1 ? 'ready' : 'reloaded');
@@ -274,18 +283,51 @@ const rebuildPlugin = {
     },
 };
 
+const isProductionBundle = process.env.NODE_ENV === 'production';
+const nodeImportMetaEnv = {
+    BASE_URL: '/',
+    DEV: !isProductionBundle,
+    MODE: isProductionBundle ? 'production' : 'development',
+    PROD: isProductionBundle,
+    SSR: true,
+    ...Object.fromEntries(
+        Object.entries(process.env).filter(([name]) => name.startsWith('VITE_')),
+    ),
+};
+
 const sharedBuildOptions = {
     absWorkingDir: repoRoot,
     entryPoints: [entry],
     outfile,
     bundle: true,
+    metafile: true,
     platform: 'node',
     format: 'esm',
     packages: 'external',
     sourcemap: enableNodeBundleSourceMap,
     logLevel: 'info',
     tsconfig,
+    define: { 'import.meta.env': JSON.stringify(nodeImportMetaEnv) },
 };
+
+function writeSourceIdentity(result) {
+    const configuration = ['package.json', 'package-lock.json', tsconfig,
+        ...fs.readdirSync(repoRoot).filter(name => /^tsconfig.*\.json$/.test(name) || /^\.env(?:\.|$)/.test(name)),
+    ].filter(file => fs.existsSync(path.resolve(repoRoot, file)));
+    const fileInputs = Object.keys(result.metafile.inputs)
+        .filter(input => !input.startsWith('<define:'));
+    const inputs = [...fileInputs, ...configuration];
+    const identity = captureSourceIdentity(inputs, repoRoot);
+    for (const file of identity.files) {
+        if (fs.statSync(file.path).mtimeMs > currentBuildStartedAt) file.unstable = true;
+    }
+    const absolute = input => path.resolve(repoRoot, input);
+    const imports = Object.fromEntries(fileInputs.map(input => [absolute(input),
+        result.metafile.inputs[input].imports.filter(dependency => !dependency.external)
+            .map(dependency => absolute(dependency.path))]));
+    fs.writeFileSync(`${absOutfile}.sources.json`, JSON.stringify({ ...identity,
+        graph: { entry: absolute(entry), imports, configuration: configuration.map(absolute) } }));
+}
 
 if (onceMode) {
     process.on('SIGINT', () => {
@@ -298,7 +340,8 @@ if (onceMode) {
     currentBuildStartedAt = Date.now();
     console.log(`[bundle-runner] ${label} building ${entry}`);
     try {
-        await buildWithFallback(sharedBuildOptions);
+        const result = await buildWithFallback(sharedBuildOptions);
+        writeSourceIdentity(result);
         console.log(`[bundle-runner] ${label} initial build ready in ${Date.now() - currentBuildStartedAt}ms`);
         await restartRuntime('ready');
     } catch (error) {

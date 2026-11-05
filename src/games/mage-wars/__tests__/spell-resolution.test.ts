@@ -28,13 +28,23 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars spell resolution', () => {
-    it('casts attack spells from config cost, rolls spell dice, and consumes the matching readiness track', () => {
+    it('casts quick and standard spells from the same turn state and consumes the matching readiness track', () => {
         const quickSpellId = 1710;
-        const actionSpellId = 1711;
-        const planned = runCommand(setupState('planning'), planCommand([quickSpellId, actionSpellId]));
+        const standardSpellId = 2819;
+        const planned = runCommand(setupState('planning'), planCommand([quickSpellId, standardSpellId]));
         expect(planned.success).toBe(true);
 
-        const quickcastCore = withPlayerInZone(planned.state.core, '1', ARENA_ZONE_IDS.A2);
+        const plannedCore: MageWarsCore = {
+            ...planned.state.core,
+            players: {
+                ...planned.state.core.players,
+                '0': {
+                    ...planned.state.core.players['0'],
+                    mana: 20,
+                },
+            },
+        };
+        const quickcastCore = withPlayerInZone(plannedCore, '1', ARENA_ZONE_IDS.A2);
         const quickcastState: MatchState<MageWarsCore> = {
             core: {
                 ...quickcastCore,
@@ -62,12 +72,12 @@ describe('mage-wars spell resolution', () => {
 
         expect(quickcast.success).toBe(true);
         expect(quickcast.state.core.players['0']).toMatchObject({
-            mana: planned.state.core.players['0'].mana - 4,
+            mana: plannedCore.players['0'].mana - 4,
             quickcastReady: false,
             actionReady: true,
         });
         expect(quickcast.state.core.players['0'].statusTokens[STATUS_TOKEN_IDS.WEAK]).toBe(5);
-        expect(quickcast.state.core.players['0'].preparedSpellCardIds).toEqual([actionSpellId]);
+        expect(quickcast.state.core.players['0'].preparedSpellCardIds).toEqual([standardSpellId]);
         expect(quickcast.state.core.players['0'].discardSpellCardIds).toEqual([quickSpellId]);
         expect(quickcast.events.map((event) => event.type)).toEqual(expect.arrayContaining([
             MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
@@ -114,30 +124,156 @@ describe('mage-wars spell resolution', () => {
         }, {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
-            payload: { spellCardId: actionSpellId, manaCost: 1, targetPlayerId: '1' },
+            payload: { spellCardId: standardSpellId, manaCost: 1, targetZoneId: ARENA_ZONE_IDS.A3 },
         })).toBe('manaCostMismatch');
 
         const actionCast = runCommand({
-            core: withPlayerInZone(planned.state.core, '1', ARENA_ZONE_IDS.A2),
-            sys: { ...planned.state.sys, phase: 'creatureAction' },
+            core: quickcast.state.core,
+            sys: { ...quickcast.state.sys, phase: 'creatureAction' },
         }, {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
-                spellCardId: actionSpellId,
-                manaCost: 4,
-                targetPlayerId: '1',
-                pushToZoneId: ARENA_ZONE_IDS.A3,
+                spellCardId: standardSpellId,
+                manaCost: 9,
+                targetZoneId: ARENA_ZONE_IDS.A3,
             },
         });
 
         expect(actionCast.success).toBe(true);
         expect(actionCast.state.core.players['0']).toMatchObject({
+            mana: plannedCore.players['0'].mana - 13,
             actionReady: false,
+            quickcastReady: false,
+        });
+        expect(actionCast.state.core.players['0'].preparedSpellCardIds).toEqual([]);
+        expect(actionCast.state.core.players['0'].discardSpellCardIds).toEqual([standardSpellId, quickSpellId]);
+        expect(Object.values(actionCast.state.core.objects)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                ownerId: '0',
+                sourceSpellCardId: standardSpellId,
+                zoneId: ARENA_ZONE_IDS.A3,
+            }),
+        ]));
+    });
+
+    it('uses spell speed rather than phase alone for mage casting action tracks', () => {
+        const quickSpellId = 1710;
+        const standardSpellId = 2819;
+        const planned = runCommand(setupState('planning'), planCommand([quickSpellId, standardSpellId]));
+        expect(planned.success).toBe(true);
+        const targetCore = withPlayerInZone(planned.state.core, '1', ARENA_ZONE_IDS.A2);
+
+        expect(validateCommand({
+            core: targetCore,
+            sys: { ...planned.state.sys, phase: 'deployment' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
+        })).toBeUndefined();
+
+        const deploymentQuickcast = runCommand({
+            core: targetCore,
+            sys: { ...planned.state.sys, phase: 'deployment' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
+        });
+        expect(deploymentQuickcast.success).toBe(true);
+        expect(deploymentQuickcast.events.find((event) => event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED)).toMatchObject({
+            payload: {
+                spellCardId: quickSpellId,
+                castMode: 'deployment',
+            },
+        });
+        expect(deploymentQuickcast.state.core.players['0']).toMatchObject({
+            mana: planned.state.core.players['0'].mana - 4,
+            actionReady: true,
             quickcastReady: true,
         });
-        expect(actionCast.state.core.players['0'].discardSpellCardIds).toEqual([actionSpellId]);
-        expect(actionCast.state.core.players['1'].damage).toBe(6);
+
+        expect(validateCommand({
+            core: {
+                ...targetCore,
+                players: {
+                    ...targetCore.players,
+                    '0': {
+                        ...targetCore.players['0'],
+                        actionReady: false,
+                    },
+                },
+            },
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
+        })).toBeUndefined();
+
+        expect(validateCommand({
+            core: {
+                ...targetCore,
+                players: {
+                    ...targetCore.players,
+                    '0': {
+                        ...targetCore.players['0'],
+                        quickcastReady: false,
+                    },
+                },
+            },
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
+        })).toBe('quickcastSpent');
+
+        expect(validateCommand({
+            core: {
+                ...targetCore,
+                players: {
+                    ...targetCore.players,
+                    '0': {
+                        ...targetCore.players['0'],
+                        actionReady: false,
+                    },
+                },
+            },
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId: standardSpellId,
+                manaCost: 9,
+                targetZoneId: ARENA_ZONE_IDS.A3,
+            },
+        })).toBe('actionSpent');
+
+        const creatureActionQuickcast = runCommand({
+            core: targetCore,
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: quickSpellId, manaCost: 4, targetPlayerId: '1' },
+        });
+
+        expect(creatureActionQuickcast.success).toBe(true);
+        expect(creatureActionQuickcast.events.find((event) => event.type === MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED)).toMatchObject({
+            payload: {
+                spellCardId: quickSpellId,
+                castMode: 'quickcast',
+            },
+        });
+        expect(creatureActionQuickcast.state.core.players['0']).toMatchObject({
+            mana: planned.state.core.players['0'].mana - 4,
+            actionReady: true,
+            quickcastReady: false,
+        });
+        expect(creatureActionQuickcast.state.core.players['0'].preparedSpellCardIds).toEqual([standardSpellId]);
     });
 
     it('casts minor healing on a living arena object from config data', () => {
@@ -1075,6 +1211,74 @@ describe('mage-wars spell resolution', () => {
                 [STATUS_TOKEN_IDS.BURN]: 2,
             },
         });
+    });
+
+    it('casts Lightning Bolt from the wizard spellbook as a single-target stun attack', () => {
+        const spellCardId = 1708;
+        const statusRandom: RandomFn = {
+            ...fixedRandom,
+            d: (sides: number) => (sides === 12 ? 7 : 3),
+        };
+        const planningState = setupState('planning');
+        const planned = runCommand({
+            core: withPlayerMage(planningState.core, '0', MAGE_IDS.WIZARD_APPRENTICE),
+            sys: planningState.sys,
+        }, planCommand([spellCardId]));
+        const target = makeArenaObject('lightning-bolt-target', '1', ARENA_ZONE_IDS.A2, {
+            life: 30,
+        });
+
+        const result = runCommand({
+            core: withArenaObject(planned.state.core, target),
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId,
+                manaCost: 10,
+                targetObjectId: target.id,
+            },
+        }, statusRandom);
+
+        expect(planned.success).toBe(true);
+        expect(result.success).toBe(true);
+        expect(result.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+                payload: expect.objectContaining({
+                    spellCardId,
+                    sourceAbilityId: 'mw.spell.1708',
+                    targetObjectId: target.id,
+                    diceResults: [3, 3, 3, 3, 3, 3],
+                    effectDieResult: 7,
+                    baseDamage: 18,
+                }),
+            }),
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({
+                    targetId: target.id,
+                    actualDamage: 18,
+                    sourceAbilityId: 'mw.spell.1708',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                payload: expect.objectContaining({
+                    targetObjectId: target.id,
+                    statusTokenId: STATUS_TOKEN_IDS.STUN,
+                    amount: 1,
+                    sourceAbilityId: 'mw.spell.1708',
+                    spellCardId,
+                }),
+            }),
+        ]));
+        expect(result.state.core.objects[target.id]).toMatchObject({
+            damage: 18,
+            statusTokens: { [STATUS_TOKEN_IDS.STUN]: 1 },
+        });
+        expect(result.state.core.players['0'].discardSpellCardIds).toEqual([spellCardId]);
     });
 
     it('does not place burn on arena objects with cannot-burn traits', () => {

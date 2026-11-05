@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import {
+    resolvePendingEventRollResolutionRequiredPlayerIds,
+    resolveRoomExploredCardResolutionRequiredPlayerIds,
+} from '../acknowledgementReadModel';
 import { resolveBetrayalHauntSpecialActionStatus } from '../hauntSpecialActionReadModel';
 import {
     acknowledgePendingCardResolutions,
@@ -24,6 +28,7 @@ import {
     markRecentEventRollPendingFinalizationForTest,
     startFirstScenarioFromCharacterSelect,
     setNextDiscoverySymbolRoomsForAllFloors,
+    setDiscoveredTestRoom,
     setTestTraitTrack,
     setTestExplorerTraitsBelowCatalogStart,
     traitTrackPosition,
@@ -39,6 +44,67 @@ import {
 } from './helpers/firstScenarioRuntimeHarness';
 
 describe('Betrayal first scenario runtime - possessions and recent-roll rerolls', () => {
+it('物品发现默认只由获得者确认，不按未来能力扩大确认范围', () => {
+        const core = createStartedFirstScenarioCore();
+        const baseEvent = {
+            payload: {
+                playerId: '0',
+                deckKind: 'item' as const,
+                roomDiscoveryCards: [],
+                buriedRoomDiscoveryCards: [],
+            },
+        };
+
+        expect(resolveRoomExploredCardResolutionRequiredPlayerIds(core, {
+            ...baseEvent,
+            payload: {
+                ...baseEvent.payload,
+                drawnCard: { id: 'map', kind: 'item' as const },
+            },
+        })).toEqual(['0']);
+        expect(resolveRoomExploredCardResolutionRequiredPlayerIds(core, {
+            ...baseEvent,
+            payload: {
+                ...baseEvent.payload,
+                drawnCard: { id: 'rope', kind: 'item' as const },
+            },
+        })).toEqual(['0']);
+        expect(resolveRoomExploredCardResolutionRequiredPlayerIds(core, {
+            ...baseEvent,
+            payload: {
+                ...baseEvent.payload,
+                drawnCard: { id: 'angel-feather', kind: 'item' as const },
+            },
+        })).toEqual(['0']);
+        expect(resolveRoomExploredCardResolutionRequiredPlayerIds(core, {
+            ...baseEvent,
+            payload: {
+                ...baseEvent.payload,
+                drawnCard: { id: 'lucky-coin', kind: 'item' as const },
+            },
+        })).toEqual(['0']);
+    });
+
+it('事件结果确认只统计真人，确认快照不会把 AI 重新纳入名单', () => {
+        const core = createStartedFirstScenarioCore();
+        core.seatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai' },
+            '2': { type: 'human' },
+        };
+        const resolution = {
+            rollId: 'event-roll-human-confirmation',
+            playerId: '0',
+            sourceTitle: '墙中低语',
+            effect: { mode: 'trait' as const, trait: 'knowledge' as const, amount: -1 },
+            requiredPlayerIds: ['0', '2'],
+            acknowledgedPlayerIds: [],
+            requiresAcknowledgement: true,
+        };
+
+        expect(resolvePendingEventRollResolutionRequiredPlayerIds(core, resolution)).toEqual(['0', '2']);
+    });
+
 it('能在第三次恶兆且 haunt roll 达标后进入真实 haunt', () => {
         const core = createFirstScenarioHauntCore();
 
@@ -369,7 +435,12 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
         expect(core.currentExplorer.traitTracks.knowledge.position).toBe(knowledgePositionBeforeWhisper);
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.recentRoll?.dice).toEqual([0, 0, 0]);
-        expect(core.pendingEventRollResolution?.effect).toMatchObject({ mode: 'trait', trait: 'knowledge', amount: -1 });
+        expect(core.pendingEventRollResolution).toMatchObject({
+            effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
+            requiredPlayerIds: core.playerIds,
+            acknowledgedPlayerIds: [],
+            requiresAcknowledgement: false,
+        });
 
         core = applyBetrayalCommand(
             core,
@@ -388,9 +459,9 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
         expect(core.recentRoll?.dice).toEqual([2, 0, 0]);
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.usedCardIdsThisTurn).toContain('rope');
 
@@ -408,7 +479,7 @@ it('兔脚会重掷刚刚事件检定的一颗骰子，并回写原事件分支�
         expect(secondUse.valid).toBe(false);
     });
 
-it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰面才结算', () => {
+it('兔脚重掷事件骰后，普通最终分支不再等待无意义的确认投掷', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -473,9 +544,9 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'knowledge', amount: -1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = finalizePendingEventRollForTest(core);
@@ -495,9 +566,9 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
             playerId: '0',
             sourceTitle: '墙中低语',
             effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         };
         core.currentExplorer.traits.knowledge = 3;
         core.currentExplorerTraits = { ...core.currentExplorer.traits };
@@ -519,9 +590,9 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
         expect(core.currentExplorer.traits.knowledge).toBe(3);
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = finalizePendingEventRollForTest(core);
@@ -531,7 +602,7 @@ it('兔脚重掷事件骰后，普通最终分支必须等待玩家确认新骰�
         expect(core.pendingEventRollResolution).toBeNull();
     });
 
-it('恐怖玩偶重掷事件属性检定后，普通最终分支必须等待玩家确认新骰面才结算', () => {
+it('恐怖玩偶重掷事件属性检定后，普通最终分支不再等待无意义的确认投掷', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -604,9 +675,9 @@ it('恐怖玩偶重掷事件属性检定后，普通最终分支必须等待玩�
         expect(core.usedCardIdsThisTurn).toContain('scary-doll');
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
 
         core = finalizePendingEventRollForTest(core);
@@ -716,6 +787,59 @@ it('幸运硬币只重掷刚刚属性检定的空白骰，重投后空白会生�
 
         expect(core.pendingDamageAllocation).toBeNull();
         expect(traitTrackPosition(core, '0', 'sanity')).toBe(sanityPositionBeforeDamage - 1);
+    });
+
+it('幸运硬币改写公开判定后，结果自动进入后续结算', () => {
+        let core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.currentExplorer = {
+            ...core.currentExplorer,
+            inventory: [{ id: 'lucky-coin', name: '幸运硬币', kind: 'item' }],
+        };
+        core.currentExplorerInventory = [...core.currentExplorer.inventory];
+        core.turnStartInventoryCardIds = ['lucky-coin'];
+        core.recentRoll = {
+            id: 'lucky-coin-shared-confirmation',
+            kind: 'eventTraitCheck',
+            playerId: '0',
+            sourceTitle: '幸运硬币公开判定',
+            trait: 'knowledge',
+            dice: [0, 1, 2],
+            passiveBonus: 0,
+            latestLabel: '属性检定空白骰',
+            branchThresholds: [
+                { min: 5, label: '成功', effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'endTurn' } },
+                { min: 0, label: '失败', effect: { mode: 'trait', trait: 'knowledge', amount: -1, recommendedAction: 'endTurn' } },
+            ],
+            consumedRabbitFootCardIds: [],
+        };
+        markRecentEventRollPendingFinalizationForTest(core);
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.USE_ROLL_REROLL_ITEM,
+            '0',
+            { cardId: 'lucky-coin', dieIndex: 0 },
+            100,
+            createBetrayalScriptedRandom(3),
+            false,
+        );
+
+        expect(core.recentRoll?.dice).toEqual([2, 1, 2]);
+        expect(core.pendingEventRollResolution).toMatchObject({
+            requiredPlayerIds: core.playerIds,
+            acknowledgedPlayerIds: [],
+            requiresAcknowledgement: false,
+        });
+
+        core = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: core.pendingEventRollResolution?.rollId },
+            101,
+        );
+
+        expect(core.pendingEventRollResolution).toBeNull();
     });
 
 it('幸运硬币重投后没有空白时不会生成精神伤害分配', () => {
@@ -891,9 +1015,9 @@ it('兔脚可以重掷刚刚事件固定投骰，并回写原事件分支结算'
         expect(core.recentRoll?.dice).toEqual([2, 0]);
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'sanity', amount: -1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(traitTrackPosition(core, '0', 'might')).toBe(mightPositionBeforeWeirdFeeling);
         expect(core.usedCardIdsThisTurn).toContain('rope');
@@ -964,9 +1088,9 @@ it('兔脚可以重掷标本剥制力量检定，并在展示结束后只应用�
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'sanity', amount: 1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.currentExplorer.traits.might).toBe(4);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.markerTokens ?? []).not.toContain('obstacle');
@@ -1042,7 +1166,7 @@ it('事件骰出现后使用书本会立即支付神志并按知识重新投骰�
         expect(core.pendingEventRollResolution).toMatchObject({
             rollId: core.recentRoll?.id,
             sourceTitle: '标本剥制',
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             requiresAcknowledgement: false,
             effect: { mode: 'trait', trait: 'sanity', amount: 1 },
         });
@@ -1056,7 +1180,7 @@ it('事件骰出现后使用书本会立即支付神志并按知识重新投骰�
         expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
-it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤害分配', () => {
+it('书本改骰后兔脚仍失败时，自动进入固定物理伤害分配', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1120,7 +1244,7 @@ it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤�
         expect(core.recentRoll?.dice).toEqual([2, 0, 0, 0, 0]);
         expect(core.pendingEventRollResolution).toMatchObject({
             sourceTitle: '标本剥制',
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             requiresAcknowledgement: false,
             effect: expect.objectContaining({ mode: 'compound' }),
         });
@@ -1139,9 +1263,9 @@ it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤�
         expect(core.recentRoll?.dice).toEqual([0, 0, 0, 0, 0]);
         expect(core.pendingEventRollResolution).toMatchObject({
             sourceTitle: '标本剥制',
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
             effect: expect.objectContaining({ mode: 'compound' }),
         });
         expect(core.pendingDamageAllocation).toBeNull();
@@ -1166,7 +1290,7 @@ it('书本改骰后兔脚仍失败时，确认新骰面后进入固定物理伤�
         expect(traitTrackPositionTotal(core, '0', ['might', 'speed'])).toBe(physicalPositionBeforeDamage - 1);
     });
 
-it('兔脚重掷电话铃声时会在确认新骰面后应用新分支', () => {
+it('兔脚重掷电话铃声时会自动应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1221,9 +1345,9 @@ it('兔脚重掷电话铃声时会在确认新骰面后应用新分支', () => {
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'trait', trait: 'knowledge', amount: 1 },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.currentExplorer.traits.sanity).toBe(4);
         expect(core.usedCardIdsThisTurn).toContain('rope');
@@ -1236,7 +1360,7 @@ it('兔脚重掷电话铃声时会在确认新骰面后应用新分支', () => {
         expect(core.currentExplorer.traits.sanity).toBe(4);
     });
 
-it('兔脚重掷小机器人时会在确认新骰面后应用新分支', () => {
+it('兔脚重掷小机器人时会自动应用新分支', () => {
         let core = createStartedFirstScenarioCore();
         core.drawOrder = ['event'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
@@ -1294,9 +1418,9 @@ it('兔脚重掷小机器人时会在确认新骰面后应用新分支', () => {
         expect(core.currentExplorer.traits.speed).toBe(4);
         expect(core.pendingEventRollResolution).toMatchObject({
             effect: { mode: 'rolledDamage', dice: 1, damageKind: 'physical' },
-            requiredPlayerIds: ['0'],
+            requiredPlayerIds: core.playerIds,
             acknowledgedPlayerIds: [],
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: false,
         });
         expect(core.pendingDamageAllocation).toBeNull();
 
@@ -1744,6 +1868,11 @@ it('骨制钥匙可以穿过墙壁移动到已发现相邻板块，且不会作�
             }
             return room;
         });
+        setDiscoveredTestRoom(core, 'upper-west', {
+            name: '图书馆',
+            visualId: 'library',
+            discoveryReward: 'event',
+        });
 
         const normalMove = BetrayalDomain.validate(
             { core, sys: {} as never },
@@ -1792,6 +1921,11 @@ it('骨制钥匙穿墙投到空白会被埋葬，且不能用于发现新房间'
                 };
             }
             return room;
+        });
+        setDiscoveredTestRoom(core, 'upper-west', {
+            name: '图书馆',
+            visualId: 'library',
+            discoveryReward: 'event',
         });
 
         const undiscoveredMove = BetrayalDomain.validate(

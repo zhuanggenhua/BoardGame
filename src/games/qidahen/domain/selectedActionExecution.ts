@@ -37,6 +37,7 @@ type QidahenPreparedSelectedActionResult =
         discardedCardCount: number;
         nextFactions: QidahenCore['factions'];
         paidHandCards: QidahenCore['handCards'];
+        koreaDiscardPile: QidahenCore['koreaDiscardPile'];
         selectedEventActionCardDefId: string | null;
         selectedEventActionCardLabel: string | null;
         selectedEventActionCardRemovedFromGame: boolean;
@@ -106,6 +107,7 @@ interface QidahenSelectedActionExecutionDependencies {
                 wheelDispatchProgress: QidahenCore['wheelDispatchProgress'];
             };
             paidHandCards: QidahenCore['handCards'];
+        koreaDiscardPile: QidahenCore['koreaDiscardPile'];
             regions: QidahenCore['regions'];
             selectedEventActionCardDefId: string | null;
             selectedEventActionCardLabel: string | null;
@@ -147,6 +149,7 @@ export const executeQidahenSelectedAction = (
         discardedCardCount,
         nextFactions: preparedFactions,
         paidHandCards,
+        koreaDiscardPile,
         selectedEventActionCardDefId,
         selectedEventActionCardLabel,
         selectedEventActionCardRemovedFromGame,
@@ -198,6 +201,7 @@ export const executeQidahenSelectedAction = (
         factions: executionResolution.factions,
         followUp,
         paidHandCards,
+        koreaDiscardPile,
         regions: executionResolution.regions,
         selectedEventActionCardDefId,
         selectedEventActionCardLabel,

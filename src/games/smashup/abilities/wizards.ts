@@ -4,7 +4,8 @@
  * 主题：抽牌、额外打出行动卡
  */
 
-import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
+import {
+ registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     grantContextualExtraAction,
@@ -36,6 +37,8 @@ import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -397,17 +400,17 @@ function createWizardPromptContext(ctx: AbilityContext): WizardPromptContext {
     };
 }
 
-function attachOptionsGenerator<T>(
+function attachOptionsGenerator<T extends object>(
     interaction: InteractionDescriptor<T>,
     optionsGenerator: (
         nextState: { core: SmashUpCore },
         interactionData: Record<string, unknown> | undefined,
     ) => unknown[],
-): InteractionDescriptor<T> {
+): InteractionDescriptor<T & { optionsGenerator: typeof optionsGenerator }> {
     return {
         ...interaction,
         data: {
-            ...(interaction.data ?? {}),
+            ...interaction.data,
             optionsGenerator,
         },
     };
@@ -699,14 +702,14 @@ function resolveWizardExternalActionPlay(params: {
     };
 }
 
-function attachContinuationData<T>(
+function attachContinuationData<T extends object>(
     interaction: InteractionDescriptor<T>,
     continuationContext: Record<string, unknown>,
-): InteractionDescriptor<T> {
+): InteractionDescriptor<T & { continuationContext: Record<string, unknown> }> {
     return {
         ...interaction,
         data: {
-            ...(interaction.data ?? {}),
+            ...interaction.data,
             continuationContext,
         },
     };
@@ -762,7 +765,7 @@ function createWizardSacrificeContext(ctx: AbilityContext): WizardPromptContext 
     return createWizardPromptContext(ctx);
 }
 
-const wizardNeophyteChooseBasePromptProgram = createPromptProgram<WizardExternalActionContext, SmashUpCore, SmashUpEvent>({
+const wizardNeophyteChooseBasePromptProgram = createPromptProgram<WizardExternalActionContext>({
     sourceId: 'wizard_neophyte_choose_base',
     buildInteraction: (context) => attachOptionsGenerator(
         attachContinuationData(
@@ -789,7 +792,7 @@ const wizardNeophyteChooseBasePromptProgram = createPromptProgram<WizardExternal
     },
 });
 
-const wizardNeophyteChooseMinionPromptProgram = createPromptProgram<WizardExternalActionContext, SmashUpCore, SmashUpEvent>({
+const wizardNeophyteChooseMinionPromptProgram = createPromptProgram<WizardExternalActionContext>({
     sourceId: 'wizard_neophyte_choose_minion',
     buildInteraction: (context) => attachOptionsGenerator(
         attachContinuationData(
@@ -817,7 +820,7 @@ const wizardNeophyteChooseMinionPromptProgram = createPromptProgram<WizardExtern
     },
 });
 
-const wizardMassEnchantmentChooseBasePromptProgram = createPromptProgram<WizardExternalActionContext, SmashUpCore, SmashUpEvent>({
+const wizardMassEnchantmentChooseBasePromptProgram = createPromptProgram<WizardExternalActionContext>({
     sourceId: 'wizard_mass_enchantment_choose_base',
     buildInteraction: (context) => attachOptionsGenerator(
         attachContinuationData(
@@ -844,7 +847,7 @@ const wizardMassEnchantmentChooseBasePromptProgram = createPromptProgram<WizardE
     },
 });
 
-const wizardMassEnchantmentChooseMinionPromptProgram = createPromptProgram<WizardExternalActionContext, SmashUpCore, SmashUpEvent>({
+const wizardMassEnchantmentChooseMinionPromptProgram = createPromptProgram<WizardExternalActionContext>({
     sourceId: 'wizard_mass_enchantment_choose_minion',
     buildInteraction: (context) => attachOptionsGenerator(
         attachContinuationData(
@@ -872,7 +875,7 @@ const wizardMassEnchantmentChooseMinionPromptProgram = createPromptProgram<Wizar
     },
 });
 
-const wizardNeophytePromptProgram = createPromptProgram<WizardNeophyteContext, SmashUpCore, SmashUpEvent>({
+const wizardNeophytePromptProgram = createPromptProgram<WizardNeophyteContext>({
     sourceId: 'wizard_neophyte',
     buildInteraction: (context) => {
         const topCard = context.topCard;
@@ -944,15 +947,14 @@ const wizardNeophytePromptProgram = createPromptProgram<WizardNeophyteContext, S
         return {
             events: [],
             matchState: state,
-            context: playContext,
-            nextProgram: resolutionPlan === 'base'
+            continuation: createAbilityRuntimeContinuation(playContext, resolutionPlan === 'base'
                 ? wizardNeophyteChooseBasePromptProgram
-                : wizardNeophyteChooseMinionPromptProgram,
+                : wizardNeophyteChooseMinionPromptProgram),
         };
     },
 });
 
-const wizardMassEnchantmentPromptProgram = createPromptProgram<WizardMassEnchantmentContext, SmashUpCore, SmashUpEvent>({
+const wizardMassEnchantmentPromptProgram = createPromptProgram<WizardMassEnchantmentContext>({
     sourceId: 'wizard_mass_enchantment',
     buildInteraction: (context) => attachOptionsGenerator(
         attachContinuationData(
@@ -1004,15 +1006,14 @@ const wizardMassEnchantmentPromptProgram = createPromptProgram<WizardMassEnchant
         return {
             events: [],
             matchState: state,
-            context: playContext,
-            nextProgram: resolutionPlan === 'base'
+            continuation: createAbilityRuntimeContinuation(playContext, resolutionPlan === 'base'
                 ? wizardMassEnchantmentChooseBasePromptProgram
-                : wizardMassEnchantmentChooseMinionPromptProgram,
+                : wizardMassEnchantmentChooseMinionPromptProgram),
         };
     },
 });
 
-const wizardPortalPickPromptProgram = createPromptProgram<WizardPortalContext, SmashUpCore, SmashUpEvent>({
+const wizardPortalPickPromptProgram = createPromptProgram<WizardPortalContext>({
     sourceId: 'wizard_portal_pick',
     buildInteraction: (context) => {
         const options = buildWizardPortalPickOptions(context.matchState.core, context.playerId, context.topCards);
@@ -1066,7 +1067,7 @@ const wizardPortalPickPromptProgram = createPromptProgram<WizardPortalContext, S
         return {
             events,
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
@@ -1076,13 +1077,12 @@ const wizardPortalPickPromptProgram = createPromptProgram<WizardPortalContext, S
                     trackedAll: currentTopCards.map((card) => ({ uid: card.uid, defId: card.defId })),
                     pickedToHandUids: validPickedUids,
                 },
-            } as WizardPortalOrderPromptContext,
-            nextProgram: wizardPortalOrderPromptProgram,
+            } as WizardPortalOrderPromptContext, wizardPortalOrderPromptProgram),
         };
     },
 });
 
-const wizardPortalOrderPromptProgram = createPromptProgram<WizardPortalOrderPromptContext, SmashUpCore, SmashUpEvent>({
+const wizardPortalOrderPromptProgram: AbilityProgram<WizardPortalOrderPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<WizardPortalOrderPromptContext>({
     sourceId: 'wizard_portal_order',
     buildInteraction: (context) => {
         const snapshot = resolveWizardPortalOrderSnapshot(context.matchState.core, context.playerId, context.orderContext);
@@ -1132,7 +1132,7 @@ const wizardPortalOrderPromptProgram = createPromptProgram<WizardPortalOrderProm
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
@@ -1142,13 +1142,12 @@ const wizardPortalOrderPromptProgram = createPromptProgram<WizardPortalOrderProm
                     trackedAll: context.orderContext.trackedAll,
                     pickedToHandUids: context.orderContext.pickedToHandUids,
                 },
-            },
-            nextProgram: wizardPortalOrderPromptProgram,
+            }, wizardPortalOrderPromptProgram),
         };
     },
 });
 
-const wizardScryPromptProgram = createPromptProgram<WizardPromptContext, SmashUpCore, SmashUpEvent>({
+const wizardScryPromptProgram = createPromptProgram<WizardPromptContext>({
     sourceId: 'wizard_scry',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -1205,7 +1204,7 @@ const wizardScryPromptProgram = createPromptProgram<WizardPromptContext, SmashUp
     },
 });
 
-const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, SmashUpCore, SmashUpEvent>({
+const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext>({
     sourceId: 'wizard_sacrifice',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -1294,8 +1293,7 @@ const wizardNeophyteProgram = createEffectProgram<WizardNeophyteContext, SmashUp
     }
     return {
         events,
-        context: { ...context, topCard },
-        nextProgram: wizardNeophytePromptProgram,
+        continuation: createAbilityRuntimeContinuation({ ...context, topCard }, wizardNeophytePromptProgram),
     };
 });
 
@@ -1361,11 +1359,10 @@ const wizardPortalProgram = createEffectProgram<WizardPortalContext, SmashUpCore
     }
     return {
         events: [revealEvent],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             ...context,
             orderContext: { remaining, ordered: [] },
-        } as WizardPortalOrderPromptContext,
-        nextProgram: wizardPortalOrderPromptProgram,
+        } as WizardPortalOrderPromptContext, wizardPortalOrderPromptProgram),
     };
 });
 

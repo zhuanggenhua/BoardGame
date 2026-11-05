@@ -17,15 +17,20 @@ import {
     unlinkSync,
     writeFileSync,
 } from 'node:fs';
+import { homedir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import {
     SERVER_PUBLISH_INDEX_FILE,
     SERVER_PUBLISH_MANIFEST_FILE,
 } from './publish-primary-assets.mjs';
 import { resolveActiveAssetSet } from './active-server-assets.mjs';
 import { normalizePathOwnership } from './asset-publish-ownership.mjs';
-import { selectRetainedReleaseIds } from './release-retention.mjs';
+import {
+    selectExpiredReleaseIds,
+    selectRetainedReleaseIds,
+} from './release-retention.mjs';
 import { refreshAndroidPackageIndexesForPublishedAssets } from './server-android-package-refresh.mjs';
 
 const MANAGED_PUBLISH_PREFIXES = [
@@ -34,6 +39,26 @@ const MANAGED_PUBLISH_PREFIXES = [
     'official/native-app-updates/',
 ];
 const RELEASE_RETENTION_COUNT = 5;
+
+const resolveProjectRootDir = () => {
+    const candidates = [
+        process.env.BG_ASSET_PUBLISH_PROJECT_ROOT?.trim(),
+        path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'),
+        path.join(homedir(), 'BoardGame'),
+        process.cwd(),
+    ].filter(Boolean).map((candidate) => path.resolve(candidate));
+    const projectRootDir = candidates.find((candidate) => (
+        existsSync(path.join(candidate, 'package.json'))
+    ));
+    if (!projectRootDir) {
+        throw new Error(
+            '无法定位 BoardGame 项目根目录，请设置 BG_ASSET_PUBLISH_PROJECT_ROOT',
+        );
+    }
+    return projectRootDir;
+};
+
+const projectRootDir = resolveProjectRootDir();
 
 const args = process.argv.slice(2);
 const readArg = (name) => {
@@ -170,6 +195,33 @@ const pruneInactiveManagedObjects = async (releaseDir, publishedKeys) => {
     }
 };
 
+const listReleaseIds = (releasesRoot) => readdirSync(releasesRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^\d{17}$/.test(entry.name))
+    .map((entry) => entry.name);
+
+const resolveCurrentReleaseId = (currentLink) => (
+    existsSync(currentLink) ? path.basename(realpathSync(currentLink)) : ''
+);
+
+const pruneExpiredReleases = ({ releasesRoot, currentLink }) => {
+    const releaseIds = listReleaseIds(releasesRoot);
+    const currentReleaseId = resolveCurrentReleaseId(currentLink);
+    if (!currentReleaseId) {
+        return [];
+    }
+
+    const expiredReleaseIds = selectExpiredReleaseIds(
+        releaseIds,
+        currentReleaseId,
+        RELEASE_RETENTION_COUNT,
+    );
+    for (const oldReleaseId of expiredReleaseIds) {
+        const oldReleaseDir = resolveWithin(releasesRoot, oldReleaseId);
+        rmSync(oldReleaseDir, { recursive: true, force: true });
+    }
+    return expiredReleaseIds;
+};
+
 const manifestPath = path.join(stagingRoot, SERVER_PUBLISH_MANIFEST_FILE);
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.objects) || manifest.objects.length === 0) {
@@ -192,97 +244,129 @@ for (const object of manifest.objects) {
     publishBytes += stats.size;
 }
 
-const fsStats = statfsSync(assetsRoot);
-const freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize);
-const minimumFreeBytes = 5 * 1024 * 1024 * 1024;
-if (freeBytes - publishBytes < minimumFreeBytes) {
-    throw new Error(`服务器空间不足: free=${freeBytes} publish=${publishBytes} minimum=${minimumFreeBytes}`);
-}
-
-const releaseId = new Date().toISOString().replace(/\D/g, '').slice(0, 17);
+const minimumFreeBytes = 1 * 1024 * 1024 * 1024;
 const releasesRoot = path.join(assetsRoot, 'releases');
-const releaseDir = path.join(releasesRoot, releaseId);
 const currentLink = path.join(assetsRoot, 'current');
-mkdirSync(releaseDir, { recursive: true });
-
-if (existsSync(currentLink)) {
-    const currentRelease = realpathSync(currentLink);
-    const clone = spawnSync('cp', ['-al', `${currentRelease}/.`, `${releaseDir}/`], {
-        encoding: 'utf8',
-    });
-    if (clone.status !== 0) {
-        rmSync(releaseDir, { recursive: true, force: true });
-        mkdirSync(releaseDir, { recursive: true });
-        const fallbackClone = spawnSync('cp', ['-a', `${currentRelease}/.`, `${releaseDir}/`], {
-            encoding: 'utf8',
-        });
-        if (fallbackClone.status !== 0) {
-            throw new Error(
-                `克隆当前服务器 release 失败: hardlink=${clone.stderr || clone.stdout}; `
-                + `copy=${fallbackClone.stderr || fallbackClone.stdout}`,
-            );
-        }
+let fsStats = statfsSync(assetsRoot);
+let freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize);
+let preflightDeletedReleaseIds = [];
+if (!preserveExistingAssets && freeBytes - publishBytes < minimumFreeBytes && existsSync(releasesRoot)) {
+    preflightDeletedReleaseIds = pruneExpiredReleases({ releasesRoot, currentLink });
+    if (preflightDeletedReleaseIds.length > 0) {
+        console.warn(
+            `服务器空间预检清理旧 release: ${preflightDeletedReleaseIds.join(', ')}`,
+        );
+        fsStats = statfsSync(assetsRoot);
+        freeBytes = Number(fsStats.bavail) * Number(fsStats.bsize);
     }
 }
-
-for (const object of manifest.objects) {
-    const sourcePath = resolveWithin(stagingRoot, object.key);
-    const destinationPath = resolveWithin(releaseDir, object.key);
-    mkdirSync(path.dirname(destinationPath), { recursive: true });
-    if (existsSync(destinationPath)) {
-        unlinkSync(destinationPath);
-    }
-    copyFileSync(sourcePath, destinationPath);
-}
-
-const androidPackageRefresh = await refreshAndroidPackageIndexesForPublishedAssets({
-    releaseDir,
-    publishedKeys: manifest.objects.map((object) => object.key),
-});
-const publishedAndGeneratedKeys = new Set([
-    ...manifest.objects.map((object) => object.key),
-    ...androidPackageRefresh.objects.map((object) => object.key),
-]);
-
-if (!preserveExistingAssets) {
-    await pruneInactiveManagedObjects(
-        releaseDir,
-        publishedAndGeneratedKeys,
+if (freeBytes - publishBytes < minimumFreeBytes) {
+    throw new Error(
+        `服务器空间不足: free=${freeBytes} publish=${publishBytes} minimum=${minimumFreeBytes}`
+        + ` preflightDeleted=${preflightDeletedReleaseIds.join(',') || 'none'}`,
     );
 }
 
-let assetIndex = readAssetIndex(releaseDir);
-if (!assetIndex) {
-    assetIndex = await buildAssetIndex(releaseDir);
-}
-for (const object of manifest.objects) {
-    assetIndex[object.key] = {
-        size: object.size,
-        sha256: object.sha256,
-    };
-}
-for (const object of androidPackageRefresh.objects) {
-    assetIndex[object.key] = {
-        size: object.size,
-        sha256: object.sha256,
-    };
-}
-for (const key of Object.keys(assetIndex)) {
-    if (!existsSync(resolveWithin(releaseDir, key))) {
-        delete assetIndex[key];
+const releaseId = new Date().toISOString().replace(/\D/g, '').slice(0, 17);
+const releaseDir = path.join(releasesRoot, releaseId);
+mkdirSync(releaseDir, { recursive: true });
+let androidPackageRefresh;
+let releaseOwnership;
+let publishedIndexObjectCount;
+let nextLink = '';
+let releaseActivated = false;
+let serverPrimaryIndexObjects = 0;
+
+try {
+    if (existsSync(currentLink)) {
+        const currentRelease = realpathSync(currentLink);
+        const clone = spawnSync('cp', ['-al', `${currentRelease}/.`, `${releaseDir}/`], {
+            encoding: 'utf8',
+        });
+        if (clone.status !== 0) {
+            rmSync(releaseDir, { recursive: true, force: true });
+            mkdirSync(releaseDir, { recursive: true });
+            const fallbackClone = spawnSync('cp', ['-a', `${currentRelease}/.`, `${releaseDir}/`], {
+                encoding: 'utf8',
+            });
+            if (fallbackClone.status !== 0) {
+                throw new Error(
+                    `克隆当前服务器 release 失败: hardlink=${clone.stderr || clone.stdout}; `
+                    + `copy=${fallbackClone.stderr || fallbackClone.stdout}`,
+                );
+            }
+        }
     }
+
+    for (const object of manifest.objects) {
+        const sourcePath = resolveWithin(stagingRoot, object.key);
+        const destinationPath = resolveWithin(releaseDir, object.key);
+        mkdirSync(path.dirname(destinationPath), { recursive: true });
+        if (existsSync(destinationPath)) {
+            unlinkSync(destinationPath);
+        }
+        copyFileSync(sourcePath, destinationPath);
+    }
+
+    androidPackageRefresh = await refreshAndroidPackageIndexesForPublishedAssets({
+        releaseDir,
+        publishedKeys: manifest.objects.map((object) => object.key),
+        rootDir: projectRootDir,
+    });
+    const publishedAndGeneratedKeys = new Set([
+        ...manifest.objects.map((object) => object.key),
+        ...androidPackageRefresh.objects.map((object) => object.key),
+    ]);
+
+    if (!preserveExistingAssets) {
+        await pruneInactiveManagedObjects(
+            releaseDir,
+            publishedAndGeneratedKeys,
+        );
+    }
+
+    let assetIndex = readAssetIndex(releaseDir);
+    if (!assetIndex) {
+        assetIndex = await buildAssetIndex(releaseDir);
+    }
+    for (const object of manifest.objects) {
+        assetIndex[object.key] = {
+            size: object.size,
+            sha256: object.sha256,
+        };
+    }
+    for (const object of androidPackageRefresh.objects) {
+        assetIndex[object.key] = {
+            size: object.size,
+            sha256: object.sha256,
+        };
+    }
+    for (const key of Object.keys(assetIndex)) {
+        if (!existsSync(resolveWithin(releaseDir, key))) {
+            delete assetIndex[key];
+        }
+    }
+    writeAssetIndex(releaseDir, assetIndex);
+    publishedIndexObjectCount = Object.keys(assetIndex).length;    rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
+
+    releaseOwnership = normalizePathOwnership({
+        assetsRoot,
+        targetPath: releaseDir,
+    });
+
+    nextLink = path.join(assetsRoot, `.current-${releaseId}-${process.pid}`);
+    symlinkSync(releaseDir, nextLink, 'dir');
+    renameSync(nextLink, currentLink);
+    releaseActivated = true;
+} catch (error) {
+    if (nextLink) {
+        rmSync(nextLink, { force: true });
+    }
+    if (!releaseActivated) {
+        rmSync(releaseDir, { recursive: true, force: true });
+    }
+    throw error;
 }
-writeAssetIndex(releaseDir, assetIndex);
-rmSync(path.join(releaseDir, '.active-release.json'), { force: true });
-
-const releaseOwnership = normalizePathOwnership({
-    assetsRoot,
-    targetPath: releaseDir,
-});
-
-const nextLink = path.join(assetsRoot, `.current-${releaseId}-${process.pid}`);
-symlinkSync(releaseDir, nextLink, 'dir');
-renameSync(nextLink, currentLink);
 
 const auditRoot = path.join(assetsRoot, 'control', 'publish-audit');
 mkdirSync(auditRoot, { recursive: true });
@@ -320,9 +404,7 @@ normalizePathOwnership({
     targetPath: auditRoot,
 });
 
-const releaseIds = readdirSync(releasesRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^\d{17}$/.test(entry.name))
-    .map((entry) => entry.name);
+const releaseIds = listReleaseIds(releasesRoot);
 const currentReleaseId = path.basename(realpathSync(currentLink));
 const retainedReleaseIds = selectRetainedReleaseIds(
     releaseIds,
@@ -333,6 +415,7 @@ const deletedReleaseIds = [];
 if (!preserveExistingAssets) {
     for (const oldReleaseId of releaseIds) {
         if (retainedReleaseIds.has(oldReleaseId)) continue;
+        if (preflightDeletedReleaseIds.includes(oldReleaseId)) continue;
         const oldReleaseDir = resolveWithin(releasesRoot, oldReleaseId);
         rmSync(oldReleaseDir, { recursive: true, force: true });
         deletedReleaseIds.push(oldReleaseId);
@@ -344,7 +427,10 @@ console.log(`serverPrimaryObjects=${manifest.objects.length}`);
 console.log(`androidPackageRefreshGames=${androidPackageRefresh.gameIds.join(',') || 'none'}`);
 console.log(`androidPackageRefreshChannels=${androidPackageRefresh.channels.join(',') || 'none'}`);
 console.log(`androidPackageRefreshObjects=${androidPackageRefresh.objects.length}`);
-console.log(`serverPrimaryIndexObjects=${Object.keys(assetIndex).length}`);
-console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
-console.log(`serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size} deleted=${deletedReleaseIds.length}`);
+console.log(`serverPrimaryIndexObjects=${publishedIndexObjectCount}`);console.log(`serverPrimaryOwnership=owner=${releaseOwnership.owner} normalized=${releaseOwnership.normalized}`);
+console.log(
+    `serverPrimaryReleaseRetention=retained=${retainedReleaseIds.size}`
+    + ` preflightDeleted=${preflightDeletedReleaseIds.length}`
+    + ` deleted=${deletedReleaseIds.length}`,
+);
 console.log('assetBackupQueue=disabled');

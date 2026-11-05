@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, type ComponentType, type ReactNode } fr
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AiSeatController } from '../engine/ai';
-import type { GameBoardProps } from '../engine/transport/protocol';
+import type {
+    GameBoardProps,
+    ManualForceEndAiPhaseResult,
+} from '../engine/transport/protocol';
 import type { GameBoardRenderer } from '../engine/boardRenderer';
 import {
     BoardBridge,
@@ -101,7 +104,7 @@ export type MatchRoomOnlineOverlayBridgesModel = {
 export type MatchRoomOnlineSeatBridgeModel = {
     seatControllers: Record<string, AiSeatController>;
     engineConfig: GameEngineConfig | null;
-    onForceEndAiPhaseReady: (handler: (() => Promise<boolean>) | null) => void;
+    onForceEndAiPhaseReady: (handler: (() => Promise<ManualForceEndAiPhaseResult>) | null) => void;
 };
 
 export type MatchRoomOnlineBoardRuntimeModel = {
@@ -365,28 +368,28 @@ const OnlineAiServerRecoveryBridge = ({
 }) => {
     const { requestForceEndAiPhase } = useGameClient();
 
-    const handleForceEndAiPhase = useCallback((): Promise<boolean> => (
-        new Promise<boolean>((resolve) => {
+    const handleForceEndAiPhase = useCallback((): Promise<ManualForceEndAiPhaseResult> => (
+        new Promise<ManualForceEndAiPhaseResult>((resolve) => {
             if (!requestForceEndAiPhase) {
-                resolve(false);
+                resolve({ accepted: false, reason: 'not-connected' });
                 return;
             }
 
             let settled = false;
-            const finish = (accepted: boolean) => {
+            const finish = (result: ManualForceEndAiPhaseResult) => {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timeoutId);
-                resolve(accepted);
+                resolve(result);
             };
             const timeoutId = setTimeout(() => {
-                finish(false);
+                finish({ accepted: false, reason: 'timeout' });
             }, FORCE_END_AI_PHASE_ACK_TIMEOUT_MS);
             const sent = requestForceEndAiPhase((result) => {
-                finish(result.accepted);
+                finish(result);
             });
             if (!sent) {
-                finish(false);
+                finish({ accepted: false, reason: 'not-connected' });
             }
         })
     ), [requestForceEndAiPhase]);

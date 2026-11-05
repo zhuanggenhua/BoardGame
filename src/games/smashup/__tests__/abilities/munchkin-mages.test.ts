@@ -7,6 +7,8 @@ import { clearInteractionHandlers } from '../../domain/abilityInteractionHandler
 import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { SU_EVENTS, type SmashUpCore } from '../../domain/types';
+import { getControlledMonsterPowerOnBase } from '../../domain/ongoingModifiers';
+import { collectBaseAbilityTriggers } from '../../domain/baseAbilityQueue';
 import {
     applyEvents,
     getPromptMulti,
@@ -39,7 +41,7 @@ beforeAll(() => {
 function invoke(
     core: SmashUpCore,
     defId: string,
-    tag: 'onPlay' | 'talent',
+    tag: 'onPlay' | 'talent' | 'special',
     cardUid: string,
     baseIndex = 0,
 ) {
@@ -303,6 +305,35 @@ describe('Munchkin 法师派系能力', () => {
         }));
     });
 
+    it('魔杖天才可以跳过，跳过后不弃牌也不进入额外出牌模式', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('cost', 'test_action', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [makeMinion('wand', 'munchkin_mages_wand_whiz', '0', 3)])],
+        });
+        const ability = invoke(core, 'munchkin_mages_wand_whiz', 'onPlay', 'wand');
+        const prompt = getSimpleChoicePrompt(ability.matchState!, 'munchkin_mages_wand_whiz_discard');
+        expect(prompt.options.some(option => option.value?.skip === true)).toBe(true);
+
+        const skipped = respondToPromptOption(
+            ability.matchState!,
+            option => option.value?.skip === true,
+            '跳过魔杖天才',
+            '0',
+            defaultTestRandom,
+        );
+
+        expect(skipped.success).toBe(true);
+        expect(skipped.finalState.core.players['0'].hand).toEqual([
+            expect.objectContaining({ uid: 'cost', defId: 'test_action' }),
+        ]);
+        expect(skipped.events.some((event: any) => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(skipped.events.some((event: any) => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+        expect(skipped.finalState.interaction).toBeUndefined();
+    });
+
     it('魅力控制怪物到回合结束，并恢复为公共怪物', () => {
         const core = makeState({
             players: {
@@ -512,5 +543,193 @@ describe('Munchkin 法师派系能力', () => {
         const towerPrompt = getSimpleChoicePrompt(tower.matchState!, 'base_mages_tower_draw');
         expect(towerPrompt.options).toHaveLength(2);
         expect(towerPrompt.options.some((option: any) => option.value?.draw === true)).toBe(true);
+    });
+
+    it('爆破大师没有合法力量目标时不创建弃牌交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('cost', 'test_action', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base', [
+                makeMinion('blaster', 'munchkin_mages_blaster_master', '0', 5),
+                makeMinion('high-target', 'test_minion', '1', 3),
+            ])],
+        });
+
+        const ability = invoke(core, 'munchkin_mages_blaster_master', 'talent', 'blaster');
+
+        expect(ability.matchState).toBeUndefined();
+        expect(ability.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({ messageKey: 'feedback.no_valid_target' }),
+        }));
+    });
+
+    it('魅力只提供未被控制的怪物，并把受控怪物计入基地力量直到回合结束', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { discard: [makeCard('charm', 'munchkin_mages_charm', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'test_base',
+                monsters: [
+                    { uid: 'controlled', defId: 'munchkin_monster_bigfoot', controllerId: '1' },
+                    { uid: 'available', defId: 'munchkin_monster_bigfoot' },
+                ],
+            })],
+        });
+
+        const ability = invoke(core, 'munchkin_mages_charm', 'onPlay', 'charm');
+        const prompt = getSimpleChoicePrompt(ability.matchState!, 'munchkin_mages_charm_target');
+        expect(prompt.options).toHaveLength(1);
+        expect(prompt.options[0]?.value?.monsterUid).toBe('available');
+
+        const resolved = respondToPromptOption(
+            ability.matchState!,
+            option => option.value?.monsterUid === 'available',
+            '选择未被控制的怪物',
+            '0',
+            defaultTestRandom,
+        );
+        expect(getControlledMonsterPowerOnBase(resolved.finalState.core, 0, '0')).toBeGreaterThan(0);
+
+        const ended = applyEvents(resolved.finalState.core, [{
+            type: SU_EVENTS.TURN_ENDED,
+            payload: { playerId: '0', nextPlayerIndex: 1 },
+            timestamp: 200,
+        } as any]);
+        expect(ended.bases[0].monsters?.find(monster => monster.uid === 'available')?.controllerId).toBeUndefined();
+        expect(getControlledMonsterPowerOnBase(ended, 0, '0')).toBe(0);
+    });
+
+    it('通往次元之门在怪物牌库为空时不留下弃牌成本交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'test_base',
+                ongoingActions: [{ uid: 'portal', defId: 'munchkin_mages_portal_to_beyond', ownerId: '0' }],
+            })],
+            monsterDeck: [],
+        });
+
+        const ability = invoke(core, 'munchkin_mages_portal_to_beyond', 'talent', 'portal');
+
+        expect(ability.matchState).toBeUndefined();
+        expect(ability.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ABILITY_FEEDBACK,
+            payload: expect.objectContaining({ messageKey: 'feedback.no_valid_target' }),
+        }));
+    });
+
+    it('神奇的夜晚允许选择零张手牌并且不产生额外随从额度', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('hand-1', 'test_action', 'action', '0')],
+                    discard: [makeCard('evening', 'munchkin_mages_some_enchanted_evening', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('test_base')],
+        });
+
+        const ability = invoke(core, 'munchkin_mages_some_enchanted_evening', 'onPlay', 'evening');
+        const prompt = getSimpleChoicePrompt(ability.matchState!, 'munchkin_mages_some_enchanted_evening_discard');
+        const resolved = respondToPromptOptions(ability.matchState!, [], '0', defaultTestRandom);
+
+        expect(getPromptMulti(prompt)).toMatchObject({ min: 0, max: 1 });
+        expect(resolved.events.some((event: any) => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+        expect(resolved.events.some((event: any) => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['hand-1']);
+    });
+
+    it('大召唤在怪物牌库为空时不生成虚假怪物', () => {
+        const core = makeState({
+            players: { '0': makePlayer('0'), '1': makePlayer('1') },
+            bases: [makeBase('base-a'), makeBase('base-b')],
+            monsterDeck: [],
+        });
+
+        const ability = invoke(core, 'munchkin_mages_mass_summoning', 'onPlay', 'mass');
+
+        expect(ability.events).toEqual([]);
+    });
+
+    it('次元之门每回合第二次在此打出随从时不重复开放额外出牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('cost', 'test_action', 'action', '0')],
+                    minionsPlayedPerBase: { 0: 2 },
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_dimension_doors', [makeMinion('played', 'test_minion', '0', 2)])],
+        });
+
+        const queued = collectBaseAbilityTriggers({
+            core,
+            timing: 'onMinionPlayed',
+            ownerPlayerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'played',
+            triggerMinionDefId: 'test_minion',
+            triggerMinionPower: 2,
+            now: 100,
+        });
+
+        expect(queued).toBeUndefined();
+    });
+
+    it('法师之塔在空牌库选择抽牌时不生成抽牌事件，选择跳过也能正常收口', () => {
+        const buildCore = () => makeState({
+            players: {
+                '0': makePlayer('0', { deck: [] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_mages_tower', [makeMinion('played', 'test_minion', '0', 2)])],
+        });
+
+        const drawPromptState = triggerBaseAbilityWithMS('base_mages_tower', 'onMinionPlayed', {
+            state: buildCore(),
+            baseIndex: 0,
+            baseDefId: 'base_mages_tower',
+            playerId: '0',
+            minionUid: 'played',
+            random: defaultTestRandom,
+            now: 100,
+        });
+        const drawResolved = respondToPromptOption(
+            drawPromptState.matchState!,
+            option => option.value?.draw === true,
+            '空牌库选择抽牌',
+            '0',
+            defaultTestRandom,
+        );
+        expect(drawResolved.events.some((event: any) => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+
+        const skipPromptState = triggerBaseAbilityWithMS('base_mages_tower', 'onMinionPlayed', {
+            state: buildCore(),
+            baseIndex: 0,
+            baseDefId: 'base_mages_tower',
+            playerId: '0',
+            minionUid: 'played',
+            random: defaultTestRandom,
+            now: 101,
+        });
+        const skipResolved = respondToPromptOption(
+            skipPromptState.matchState!,
+            option => option.value?.skip === true,
+            '法师之塔跳过抽牌',
+            '0',
+            defaultTestRandom,
+        );
+        expect(skipResolved.success).toBe(true);
+        expect(skipResolved.events.some((event: any) => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
     });
 });

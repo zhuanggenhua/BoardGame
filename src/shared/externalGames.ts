@@ -1,0 +1,86 @@
+export const MAX_RULES_FILE_BYTES = 10 * 1024 * 1024;
+/** 文件描述由上传服务生成，不属于普通表单可编辑字段。 */
+export interface GameRulesDocument { url: string; name: string; size: number; }
+
+/** 外链目录的公开字段；不承载本站领域引擎或建房配置。 */
+export interface ExternalGameFields {
+    name: string;
+    url: string;
+    category: string;
+    minPlayers?: number;
+    maxPlayers?: number;
+    durationMinutes?: number;
+    author: string;
+    authorProfileUrl?: string;
+    description: string;
+    rules: string;
+}
+export type EmbedStatus = 'unknown' | 'allowed' | 'blocked';
+export interface ExternalGame extends ExternalGameFields {
+    rulesDocument?: GameRulesDocument;
+    gameId: string;
+    coverUrl: string;
+    published: boolean;
+    embedStatus: EmbedStatus;
+    embedReason: string;
+    embedCheckedUrl?: string;
+    embedCheckedAt?: string;
+    ownerUserId: string | null;
+    updatedAt: string;
+}
+export type ClaimStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+export interface CreatorClaim {
+    claimId: string;
+    gameId: string;
+    applicantId: string;
+    applicantName?: string;
+    profileUrl: string;
+    explanation: string;
+    verificationCode: string;
+    verificationExpiresAt: string;
+    hasEvidence: boolean;
+    evidenceDigest: string;
+    status: ClaimStatus;
+    reviewComment: string;
+    updatedAt: string;
+}
+export interface ExternalPlayHistory {
+    totalSeconds: number;
+    items: Array<{ gameId: string; name: string; seconds: number; lastPlayedAt: string }>;
+}
+
+/** 不允许凭 URL 注入脚本或用户名密码；浏览器自身不对外站代理请求。 */
+export function parseExternalUrl(value: string): URL {
+    let url: URL;
+    try { url = new URL(value); } catch { throw new Error('请填写完整的网址'); }
+    if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new Error('仅支持不含账号密码的 HTTP(S) 网址');
+    return url;
+}
+
+export function isExternalGameId(id: string) {
+    return id.startsWith('external-');
+}
+
+export function resolveExternalEmbed(item: Pick<ExternalGame, 'url' | 'published' | 'embedStatus' | 'embedCheckedUrl'>, origin: string, protocol: string) {
+    const restricted = item.embedStatus === 'blocked' && item.embedCheckedUrl === item.url;
+    const safeHttps = protocol !== 'https:' || item.url.startsWith('https:');
+    let sameOrigin = true;
+    try { sameOrigin = new URL(item.url).origin === origin; } catch { sameOrigin = true; }
+    return { restricted, safeHttps, sameOrigin, canEmbed: Boolean(item.published && !restricted && safeHttps && !sameOrigin) };
+}
+
+export function playerOptionsFromRange(minPlayers?: number, maxPlayers?: number) {
+    if (!minPlayers || !maxPlayers || maxPlayers < minPlayers || maxPlayers - minPlayers > 16) return [];
+    return Array.from({ length: maxPlayers - minPlayers + 1 }, (_, index) => minPlayers + index);
+}
+
+export function mergeTimeRanges(ranges: Array<{ start: number; end: number }>): number {
+    const sorted = ranges.filter(range => Number.isFinite(range.start) && Number.isFinite(range.end) && range.end > range.start)
+        .sort((a, b) => a.start - b.start);
+    let total = 0; let end = -Infinity;
+    for (const range of sorted) {
+        total += Math.max(0, range.end - Math.max(end, range.start));
+        end = Math.max(end, range.end);
+    }
+    return total;
+}

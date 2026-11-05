@@ -35,12 +35,14 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 2. **先建录入合同**
    - 按 `data-entry.md` 完成真相源表、对象全集、规则数量 × 素材数量对账、字段版式合同、裁图 / OCR / atlas / 索引合同。
    - 新游戏和新增派系都把数据录入作为第一优先级：凡是实际读取过的图片、图集、截图或裁图，先登记图面数据、对象 / 槽位、最终处置和处置依据，再判断是否进入运行时；卡牌描述、i18n、运行时定义和机制实现只能消费锁定合同。
+   - 退出 S0 前按 `data-entry.md` 的完整语义录入门禁逐项复核：全部具有特殊含义的文本、数字、图案、颜色、框线、区域关系和规则原子都必须有来源定位、原文或图面描述、结构化字段和处置结果。`deferred / not-currently-consumed` 是合法去向，不是省略理由。
    - 每个对象退出录入层时必须是 `locked / partial / blocked / disputed` 之一；`partial` 只表示已登记但字段或证据仍不完整，未 `locked` 对象不得进入实现、UI、E2E、截图或完成口径。
    - `blocked / disputed / unknown-slot / not-in-runtime` 只拦阶段升级和完成宣称，不等于停工；仍有本地证据可补时继续补合同。
 
 3. **图片读取走需求交接**
-   - 主线程先写清业务对象、图片路径、要补足的字段 / 判断点、结果用途。
-   - 读图 / OCR 只返回当前需求所需字段；录入结论必须落到合同表、evidence 或真相表。
+   - 主线程先写清业务对象、图片路径、当前重点字段 / 判断点和结果用途，但不得把“当前重点”当成读取范围上限。
+   - 读图 / OCR 必须先返回完整的特殊含义元素清单，再突出当前需求直接相关的字段；不得只摘当前代码准备使用、当前测试覆盖或当前提问点涉及的内容。
+   - 录入结论必须落到合同表、evidence 或真相表；暂未消费的内容标 `reference / deferred / not-currently-consumed`，不能从结果中删除。
    - 可读字段立即入表；不可读字段只标 `blocked / disputed / partial`，不得猜。
 
 4. **资源链按主源执行**
@@ -56,7 +58,7 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 当任务不只是“录入”，还包含实现、重构或验证时，按层推进：
 
-1. **S0 合同层**：真相源、对象全集、数量对账、atlas / 索引、字段版式、`locked / blocked / disputed`。
+1. **S0 合同层**：真相源、对象全集、数量对账、完整特殊含义元素清单、atlas / 索引、字段版式、处置结果、`locked / partial / blocked / disputed`。
 2. **S1 配置复用层**：ids、静态数据、metadata、locale、可直接复用 handler。
 3. **S2 机制扩展层**：只为 S0/S1 无法承接的规则增加机制，先查 `engine-systems.md`。
 4. **S3 UI 与 E2E 层**：只对 `locked` 对象做 UI / E2E / 截图证据，不能用截图反推录入已完成。
@@ -73,13 +75,13 @@ description: "BoardGame 数据录入与核对流程。用于图片、规则书�
 
 - 用户说“新增派系”“新增角色”“新增可玩单元”“从素材做到可玩”“数据录入、上传、审计、端到端全流程”“彻底完成才停”等语义时，先读 `.spec/skills/add-new-faction/SKILL.md`，再按 `gameId` 查是否已有专项 workflow。
 - 已有专项 workflow 时，本 skill 只负责通用录入纪律和批量门禁；具体素材来源、字段裁定、脚本、E2E 名称和游戏规则链都回到专项 workflow。
-- 没有专项 workflow 时，以 `.spec/knowledge/standards/data-entry.md` 为主流程，再补读该游戏自己的 `src/games/<gameId>/rule/` 文档；若本轮沉淀出可复用流程，按 spec-steward 裁定是否新建专项 workflow。
+- 没有专项 workflow 时，以 `.spec/knowledge/standards/data-entry.md` 为主流程，再补读该游戏自己的 `src/games/<gameId>/rule/` 文档；若本轮沉淀出可复用流程，按系统 `skill-governance` 裁定是否新建专项 workflow，再由 `spec-steward` 落地。
 - “新增已有游戏的可玩对象”不是“新增全新游戏”；只有新增全新 `gameId` 时才走 `.spec/skills/create-new-game/SKILL.md`。
 - 不得把某个游戏的字段结构、抓取站点、Wiki 规则、索引习惯或脚本命令提升成项目全局默认。
 
 ## 交付要求
 
-- 至少产出：真相源表、切图表、核对合同表、对照表、冲突待裁定表。
+- 至少产出：真相源表、切图表、特殊含义元素清单、核对合同表、对照表、冲突待裁定表。
 - 最终汇报必须明确：
   - 主真相源是什么；
   - 对照源是什么；

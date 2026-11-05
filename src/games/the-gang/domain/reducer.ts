@@ -19,6 +19,7 @@ import {
     createSpecialistDeck,
     createToolDeck,
     getBlackedRankForHeist,
+    hasCompleteCommunityCards,
     isChallengeActive,
     normalizeRulesConfig,
     rulesConfigRequiresRedeal,
@@ -225,7 +226,11 @@ const buildAutoProgressEventsAfterChip = (
         }];
     }
 
-    if (core.communityCards.length < 5) return [];
+    if (!hasCompleteCommunityCards({
+        ...core,
+        currentRoundChips: nextRoundChips,
+        currentRoundExitChipOwners: nextExitChipOwners,
+    })) return [];
 
     const coreWithFinalChip = {
         ...core,

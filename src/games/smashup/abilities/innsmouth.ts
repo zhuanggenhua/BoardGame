@@ -7,6 +7,7 @@
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -164,7 +165,7 @@ function innsmouthNewAcolytes(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const innsmouthRecruitmentPromptProgram = createPromptProgram<InnsmouthPromptContext & { maxDraw: number }, SmashUpCore, SmashUpEvent>({
+const innsmouthRecruitmentPromptProgram = createPromptProgram<InnsmouthPromptContext & { maxDraw: number }>({
     sourceId: 'innsmouth_recruitment',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `innsmouth_recruitment_${context.now}`,
@@ -206,13 +207,12 @@ const innsmouthRecruitmentProgram = createEffectProgram<AbilityContext, SmashUpC
     if (available === 0) return { events: [] };
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             maxDraw: Math.min(3, available),
-        },
-        nextProgram: innsmouthRecruitmentPromptProgram,
+        }, innsmouthRecruitmentPromptProgram),
     };
 });
 // innsmouth_in_plain_sight (ongoing) - 通过 ongoing 效果系统实现（注册在 registerInnsmouthAbilities 中）
@@ -285,7 +285,7 @@ function buildReturnToSeaMinionOptions(
     });
 }
 
-const innsmouthReturnToTheSeaMinionPromptProgram = createPromptProgram<InnsmouthReturnToSeaMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const innsmouthReturnToTheSeaMinionPromptProgram = createPromptProgram<InnsmouthReturnToSeaMinionPromptContext>({
     sourceId: 'innsmouth_return_to_the_sea',
     buildInteraction: (context) => {
         const options = buildReturnToSeaMinionOptions(
@@ -332,7 +332,7 @@ const innsmouthReturnToTheSeaMinionPromptProgram = createPromptProgram<Innsmouth
     },
 });
 
-const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<InnsmouthReturnToSeaNamePromptContext, SmashUpCore, SmashUpEvent>({
+const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<InnsmouthReturnToSeaNamePromptContext>({
     sourceId: 'innsmouth_return_to_the_sea_choose_name',
     buildInteraction: (context) => {
         const resolvedBaseIndex = resolveLiveBaseIndex(context.matchState.core, context.baseIndex, context.baseDefId);
@@ -385,15 +385,14 @@ const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<Innsm
         if (options.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 baseIndex: selected.baseIndex,
                 baseDefId: selected.baseDefId,
                 minionDefId: selected.minionDefId,
-            } satisfies InnsmouthReturnToSeaMinionPromptContext,
-            nextProgram: innsmouthReturnToTheSeaMinionPromptProgram,
+            } satisfies InnsmouthReturnToSeaMinionPromptContext, innsmouthReturnToTheSeaMinionPromptProgram),
         };
     },
 });
@@ -430,21 +429,20 @@ const innsmouthReturnToTheSeaProgram = createEffectProgram<AbilityContext, Smash
         if (options.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: ctx.matchState,
                 playerId: ctx.playerId,
                 now: ctx.now,
                 baseIndex,
                 baseDefId: base.defId,
                 minionDefId,
-            } satisfies InnsmouthReturnToSeaMinionPromptContext,
-            nextProgram: innsmouthReturnToTheSeaMinionPromptProgram,
+            } satisfies InnsmouthReturnToSeaMinionPromptContext, innsmouthReturnToTheSeaMinionPromptProgram),
         };
     }
 
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
@@ -452,12 +450,12 @@ const innsmouthReturnToTheSeaProgram = createEffectProgram<AbilityContext, Smash
             defId: ctx.defId,
             baseIndex,
             baseDefId: base.defId,
-        } satisfies InnsmouthReturnToSeaNamePromptContext,
-        nextProgram: innsmouthReturnToTheSeaChooseNamePromptProgram,
+        } satisfies InnsmouthReturnToSeaNamePromptContext, innsmouthReturnToTheSeaChooseNamePromptProgram),
     };
 });
 function innsmouthReturnToTheSeaAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     const { state, baseIndex, now, sourceCardUid } = ctx;
+    if (!ctx.matchState) return [];
     if (baseIndex === undefined || !sourceCardUid) return [];
 
     const armedEntry = (state.pendingAfterScoringSpecials ?? []).find(
@@ -524,7 +522,7 @@ function innsmouthTheLocals(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const innsmouthMysteriesOfTheDeepPromptProgram = createPromptProgram<InnsmouthPromptContext, SmashUpCore, SmashUpEvent>({
+const innsmouthMysteriesOfTheDeepPromptProgram = createPromptProgram<InnsmouthPromptContext>({
     sourceId: 'innsmouth_mysteries_of_the_deep',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `innsmouth_mysteries_of_the_deep_${context.now}`,
@@ -591,8 +589,7 @@ const innsmouthMysteriesOfTheDeepProgram = createEffectProgram<AbilityContext, S
     const events: SmashUpEvent[] = buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now);
     return {
         events,
-        context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now },
-        nextProgram: innsmouthMysteriesOfTheDeepPromptProgram,
+        continuation: createAbilityRuntimeContinuation({ matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now }, innsmouthMysteriesOfTheDeepPromptProgram),
     };
 });
 /**
@@ -622,7 +619,7 @@ function innsmouthSacredCircle(ctx: AbilityContext): AbilityResult {
     return { events: [grantExtraMinion(ctx.playerId, 'innsmouth_sacred_circle', ctx.now, sacredBaseIndex, { sameNameOnly: true })] };
 }
 
-const innsmouthSpreadingTheWordPromptProgram = createPromptProgram<InnsmouthPromptContext & { matchingDefIds: string[] }, SmashUpCore, SmashUpEvent>({
+const innsmouthSpreadingTheWordPromptProgram = createPromptProgram<InnsmouthPromptContext & { matchingDefIds: string[] }>({
     sourceId: 'innsmouth_spreading_the_word',
     buildInteraction: (context) => {
         const player = context.matchState.core.players[context.playerId];
@@ -685,12 +682,11 @@ const innsmouthSpreadingTheWordProgram = createEffectProgram<AbilityContext, Sma
     if (!ctx.matchState) return { events: [] };
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             matchingDefIds: defIdArray,
-        },
-        nextProgram: innsmouthSpreadingTheWordPromptProgram,
+        }, innsmouthSpreadingTheWordPromptProgram),
     };
 });

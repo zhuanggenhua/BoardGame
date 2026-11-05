@@ -1633,11 +1633,10 @@ describe('FantasyRealms Board foundation', () => {
 
             fireEvent.click(handButton);
 
-            expect(dispatch).toHaveBeenCalledTimes(2);
-            expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: HAND_CARDS[1]!.id });
+            expect(dispatch).toHaveBeenCalledTimes(1);
             expect(handButton).toHaveAttribute('data-action-state', 'discard');
             expect(screen.queryByTestId('fantasyrealms-live-status-banner')).not.toBeInTheDocument();
-            expect(dispatch).toHaveBeenNthCalledWith(2, 'DISCARD_CARD', { cardId: HAND_CARDS[1]!.id });
+            expect(dispatch).toHaveBeenNthCalledWith(1, 'DISCARD_CARD', { cardId: HAND_CARDS[1]!.id });
         });
     });
 
@@ -1910,7 +1909,7 @@ describe('FantasyRealms Board foundation', () => {
         }
     });
 
-    it('粗指针环境点击手牌采用先聚焦后二次弃牌', () => {
+    it('反馈回归：粗指针环境弃牌阶段点击手牌应直接提交弃牌', () => {
         const originalForcedCoarsePointer = (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__;
         (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = true;
 
@@ -1921,30 +1920,13 @@ describe('FantasyRealms Board foundation', () => {
                     stage: 'discard',
                     discardPile: [],
                 });
-                const { rerender } = renderBoard(baseCore, { dispatch });
+                renderBoard(baseCore, { dispatch });
                 const firstHandButton = screen.getAllByRole('button', { name: /弃置手牌/ })[0]!;
 
                 fireEvent.click(firstHandButton);
 
                 expect(dispatch).toHaveBeenCalledTimes(1);
-                expect(dispatch).toHaveBeenNthCalledWith(1, 'SET_FOCUS_CARD', { cardId: HAND_CARDS[0]!.id });
-                expect(dispatch).not.toHaveBeenCalledWith('DISCARD_CARD', expect.anything());
-
-                rerender(
-                    <Board
-                        G={{ core: { ...baseCore, focusCardId: HAND_CARDS[0]!.id }, sys: {} } as MatchState<Record<string, unknown>>}
-                        dispatch={dispatch}
-                        playerID="0"
-                        matchData={[{ id: 0, name: '测试玩家', isConnected: true }]}
-                        isConnected
-                    />,
-                );
-
-                fireEvent.click(screen.getAllByRole('button', { name: /弃置手牌/ })[0]!);
-
-                expect(dispatch).toHaveBeenCalledTimes(3);
-                expect(dispatch).toHaveBeenNthCalledWith(2, 'SET_FOCUS_CARD', { cardId: HAND_CARDS[0]!.id });
-                expect(dispatch).toHaveBeenNthCalledWith(3, 'DISCARD_CARD', { cardId: HAND_CARDS[0]!.id });
+                expect(dispatch).toHaveBeenNthCalledWith(1, 'DISCARD_CARD', { cardId: HAND_CARDS[0]!.id });
             });
         } finally {
             (window as Window & { __BG_FORCE_COARSE_POINTER__?: boolean }).__BG_FORCE_COARSE_POINTER__ = originalForcedCoarsePointer;
@@ -2371,7 +2353,7 @@ describe('FantasyRealms Board foundation', () => {
         });
     });
 
-    it('旁观视角不会借用当前玩家身份，不会泄露任何手牌或实时总分', () => {
+    it('旁观视角默认跟随当前行动玩家，完整展示其手牌并保留只读检视', () => {
         const hiddenOpponentCard = HAND_CARDS[5]!;
         const publicDiscardCard = PUBLIC_CARDS[0]!;
         withViewport(1024, 768, () => {
@@ -2426,10 +2408,13 @@ describe('FantasyRealms Board foundation', () => {
             });
 
             expect(screen.getByTestId('fantasyrealms-live-hand-zone')).toBeInTheDocument();
-            expect(screen.queryByRole('button', { name: /查看手牌/ })).not.toBeInTheDocument();
             expect(screen.queryByRole('button', { name: /弃置手牌/ })).not.toBeInTheDocument();
             expect(screen.queryByText(hiddenOpponentCard.displayNameZh)).not.toBeInTheDocument();
             expect(screen.queryByTestId('fantasyrealms-focus-preview')).not.toBeInTheDocument();
+
+            const activeHandCard = screen.getByRole('button', { name: `查看手牌 ${HAND_CARDS[4]!.displayNameZh}` });
+            fireEvent.click(activeHandCard);
+            expect(screen.getByTestId('fantasyrealms-magnify-overlay')).toBeVisible();
 
             const scoreTable = screen.getByLabelText('玩家分数总览');
             expect(within(scoreTable).queryByText('终局揭示')).toBeNull();

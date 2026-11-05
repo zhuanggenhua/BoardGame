@@ -186,4 +186,14 @@ describe('变体选择文案兜底', () => {
         expect(text.description).toContain('造成9点伤害');
         expect(text.description).not.toContain('包含星蚀与暗月两个变体');
     });
+    it('显式变体名称和描述优先于父技能及通用效果汇总', () => {
+        const variant = {
+            id: 'branch-primary', name: 'variant.primary.name', description: 'variant.primary.description',
+            trigger: { type: 'largeStraight' as const }, effects: [{ description: 'generic-effect' }],
+        };
+        const text = getAbilityChoiceText(variant.id, {
+            ability: { id: 'branch', name: 'parent.name', description: 'parent.description', type: 'offensive', variants: [variant] }, variant,
+        }, { t: key => key, exists: key => key.startsWith('variant.primary.') });
+        expect(text).toEqual({ name: 'variant.primary.name', description: 'variant.primary.description' });
+    });
 });

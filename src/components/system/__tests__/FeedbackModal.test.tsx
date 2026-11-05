@@ -7,6 +7,13 @@ import * as AuthContextModule from '../../../contexts/AuthContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import { setCurrentGameFeedbackContext } from '../../../lib/feedback/gameFeedbackContext';
 
+const feedbackScreenshotMocks = vi.hoisted(() => ({
+    captureCurrentFeedbackScreenshot: vi.fn(async () => 'data:image/jpeg;base64,manual-capture'),
+    readCachedFeedbackScreenshot: vi.fn(() => null as { dataUrl: string; capturedAt: number } | null),
+}));
+
+vi.mock('../../../lib/feedback/feedbackScreenshot', () => feedbackScreenshotMocks);
+
 // Mock fetch
 global.fetch = vi.fn();
 
@@ -25,9 +32,12 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 describe('FeedbackModal', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        feedbackScreenshotMocks.captureCurrentFeedbackScreenshot.mockResolvedValue('data:image/jpeg;base64,manual-capture');
+        feedbackScreenshotMocks.readCachedFeedbackScreenshot.mockReturnValue(null);
         setCurrentGameFeedbackContext(null);
         window.history.pushState({}, '', '/');
         window.localStorage.clear();
+        document.documentElement.removeAttribute('data-game-page');
         (global.fetch as any).mockResolvedValue({
             ok: true,
             json: async () => ({ success: true })
@@ -43,6 +53,137 @@ describe('FeedbackModal', () => {
 
         // 使用更具体的选择器，避免匹配多个元素
         expect(screen.getByRole('heading', { name: /反馈/ })).toBeInTheDocument();
+    });
+
+    it('打开反馈不会自动截图或附加已缓存截图', async () => {
+        document.documentElement.setAttribute('data-game-page', 'true');
+        window.history.pushState({}, '', '/play/dicethrone');
+        feedbackScreenshotMocks.readCachedFeedbackScreenshot.mockReturnValue({
+            dataUrl: 'data:image/jpeg;base64,cached-capture',
+            capturedAt: Date.now(),
+        });
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'dicethrone', matchId: 'match-1' }}
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.queryByTestId('feedback-image-preview')).not.toBeInTheDocument();
+        expect(feedbackScreenshotMocks.captureCurrentFeedbackScreenshot).not.toHaveBeenCalled();
+        expect(screen.getByRole('button', { name: /截图当前画面/ })).toBeInTheDocument();
+
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '只提交文字，不附带截图' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交反馈/ }));
+
+        await waitFor(() => {
+            const callArgs = (global.fetch as any).mock.calls.find((call: any[]) => call[1]?.body) as any;
+            expect(callArgs).toBeDefined();
+            const body = JSON.parse(callArgs[1].body);
+            expect(body.content).toBe('只提交文字，不附带截图');
+        });
+    });
+
+    it('点击截图会重新捕获当前画面，即使预热缓存仍新鲜', async () => {
+        document.documentElement.setAttribute('data-game-page', 'true');
+        window.history.pushState({}, '', '/play/dicethrone');
+        feedbackScreenshotMocks.readCachedFeedbackScreenshot.mockReturnValue({
+            dataUrl: 'data:image/jpeg;base64,older-cached-capture',
+            capturedAt: Date.now(),
+        });
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'dicethrone', matchId: 'match-1' }}
+                />
+            </TestWrapper>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /截图当前画面/ }));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('feedback-image-preview')).toBeInTheDocument();
+        });
+        expect(feedbackScreenshotMocks.readCachedFeedbackScreenshot).not.toHaveBeenCalled();
+        expect(feedbackScreenshotMocks.captureCurrentFeedbackScreenshot).toHaveBeenCalledWith({
+            gameId: 'dicethrone',
+            matchId: 'match-1',
+            mode: 'local',
+        });
+        expect(screen.getByTestId('feedback-image-preview').querySelector('img')).toHaveAttribute(
+            'src',
+            'data:image/jpeg;base64,manual-capture',
+        );
+
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '截图后提交' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交反馈/ }));
+
+        await waitFor(() => {
+            const callArgs = (global.fetch as any).mock.calls.find((call: any[]) => call[1]?.body) as any;
+            const body = JSON.parse(callArgs[1].body);
+            expect(body.content).toContain('![Screenshot](data:image/jpeg;base64,manual-capture)');
+        });
+    });
+
+    it('缓存过期时点击截图会重新捕获当前画面', async () => {
+        document.documentElement.setAttribute('data-game-page', 'true');
+        window.history.pushState({}, '', '/play/dicethrone');
+        feedbackScreenshotMocks.readCachedFeedbackScreenshot.mockReturnValue({
+            dataUrl: 'data:image/jpeg;base64,stale-capture',
+            capturedAt: Date.now() - 10_000,
+        });
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'dicethrone', matchId: 'match-1' }}
+                />
+            </TestWrapper>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: /截图当前画面/ }));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('feedback-image-preview')).toBeInTheDocument();
+        });
+        expect(feedbackScreenshotMocks.readCachedFeedbackScreenshot).not.toHaveBeenCalled();
+        expect(feedbackScreenshotMocks.captureCurrentFeedbackScreenshot).toHaveBeenCalledWith({
+            gameId: 'dicethrone',
+            matchId: 'match-1',
+            mode: 'local',
+        });
+        expect(screen.getByTestId('feedback-image-preview').querySelector('img')).toHaveAttribute(
+            'src',
+            'data:image/jpeg;base64,manual-capture',
+        );
+    });
+
+    it('不会从旧草稿恢复以前自动附加的截图', () => {
+        window.history.pushState({}, '', '/play/dicethrone');
+        window.localStorage.setItem('feedback-modal:draft:v1:game:dicethrone:match-1', JSON.stringify({
+            content: '保留文字草稿',
+            pastedImage: 'data:image/jpeg;base64,legacy-auto-capture',
+            imageSource: 'auto',
+            gameName: 'dicethrone',
+        }));
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'local', gameId: 'dicethrone', matchId: 'match-1' }}
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.getByPlaceholderText(/描述/i)).toHaveValue('保留文字草稿');
+        expect(screen.queryByTestId('feedback-image-preview')).not.toBeInTheDocument();
     });
 
     it('应该在有 actionLogText 时显示"附带操作日志"选项', () => {
@@ -234,6 +375,9 @@ describe('FeedbackModal', () => {
             matchId: 'tIB30DkkiVZ',
             playerId: '0',
             gameId: 'betrayal',
+            performance: {
+                windowMs: 30_000,
+            },
         });
         expect(body.actionLog).toContain('user-feedback-diagnostic');
         expect(body.actionLog).toContain('玩家 0 结算事件：小机器人');
@@ -404,6 +548,9 @@ describe('FeedbackModal', () => {
 
         await waitFor(() => {
             expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+        await waitFor(() => {
+            expect(window.localStorage.getItem('feedback-modal:draft:v1:outside')).toBeNull();
         });
 
         firstRender.unmount();

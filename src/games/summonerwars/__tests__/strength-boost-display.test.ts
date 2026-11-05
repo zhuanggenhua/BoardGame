@@ -159,7 +159,7 @@ describe('力量增强显示 - getStrengthBoostForDisplay', () => {
           strength: 1,
           life: 4,
           move: 1,
-          isFortress: true,
+          unitTags: ['citadel'],
           spriteIndex: 0,
         },
       }),

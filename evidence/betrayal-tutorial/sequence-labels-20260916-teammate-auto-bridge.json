@@ -1,0 +1,280 @@
+{
+  "title": "山屋惊魂教程全流程截图 - 队友自动桥接修正版",
+  "items": [
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\01-回合目标与行动区.jpg",
+      "label": "回合目标与行动区",
+      "transition": "起点：进入本轮真实浏览器端到端截图链。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\02-速度决定本回合移动力.jpg",
+      "label": "速度决定本回合移动力",
+      "transition": "从上一张继续到：速度决定本回合移动力。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\03-属性轨读法.jpg",
+      "label": "属性轨读法",
+      "transition": "从上一张继续到：属性轨读法。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\04-剩余移动力.jpg",
+      "label": "剩余移动力",
+      "transition": "从上一张继续到：剩余移动力。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\05-房间主视区.jpg",
+      "label": "房间主视区",
+      "transition": "从上一张继续到：房间主视区。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\06-观察队友一视角.jpg",
+      "label": "观察队友一视角",
+      "transition": "从上一张继续到：观察队友一视角。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\07-观察队友二视角.jpg",
+      "label": "观察队友二视角",
+      "transition": "从上一张继续到：观察队友二视角。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\08-再次点击队友返回观察前位置.jpg",
+      "label": "再次点击队友返回观察前位置",
+      "transition": "从上一张继续到：再次点击队友返回观察前位置。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\09-聚焦回自己房间.jpg",
+      "label": "聚焦回自己房间",
+      "transition": "从上一张继续到：聚焦回自己房间。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\10-预兆作祟进度条.jpg",
+      "label": "预兆作祟进度条",
+      "transition": "从上一张继续到：预兆作祟进度条。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\11-持有区与帮助牌读法.jpg",
+      "label": "持有区与帮助牌读法",
+      "transition": "从上一张继续到：持有区与帮助牌读法。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\12-打开移动目标.jpg",
+      "label": "打开移动目标",
+      "transition": "从上一张继续到：打开移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\13-移动目标门厅.jpg",
+      "label": "移动目标门厅",
+      "transition": "从上一张继续到：移动目标门厅。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\14-移动到门厅后准备探索.jpg",
+      "label": "移动到门厅后准备探索",
+      "transition": "从上一张继续到：移动到门厅后准备探索。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\15-探索目标房间.jpg",
+      "label": "探索目标房间",
+      "transition": "从上一张继续到：探索目标房间。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\16-旋转新房间朝向.jpg",
+      "label": "旋转新房间朝向",
+      "transition": "从上一张继续到：旋转新房间朝向。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\17-确认放置新房间.jpg",
+      "label": "确认放置新房间",
+      "transition": "从上一张继续到：确认放置新房间。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\18-事件牌公开与投掷入口.jpg",
+      "label": "事件牌公开与投掷入口",
+      "transition": "从上一张继续到：事件牌公开与投掷入口。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\19-投掷事件.jpg",
+      "label": "投掷事件",
+      "transition": "从上一张继续到：投掷事件。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\20-事件骰出现与书本可查看.jpg",
+      "label": "事件骰出现与书本可查看",
+      "transition": "从上一张继续到：事件骰出现与书本可查看。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\21-使用书本改用知识检定.jpg",
+      "label": "使用书本改用知识检定",
+      "transition": "从上一张继续到：使用书本改用知识检定。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\22-选择兔脚重掷.jpg",
+      "label": "选择兔脚重掷",
+      "transition": "从上一张继续到：选择兔脚重掷。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\23-兔脚重投后确认新骰面.jpg",
+      "label": "兔脚重投后确认新骰面",
+      "transition": "从上一张继续到：兔脚重投后确认新骰面。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\24-伤害分配面板可操作.jpg",
+      "label": "伤害分配面板可操作",
+      "transition": "从上一张继续到：伤害分配面板可操作。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\25-伤害分配完成后回到牌桌.jpg",
+      "label": "伤害分配完成后回到牌桌",
+      "transition": "从上一张继续到：伤害分配完成后回到牌桌。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\26-狗确认后回到当前玩家.jpg",
+      "label": "狗确认后回到当前玩家",
+      "transition": "从上一张继续到：狗确认后回到当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\27-移动到大阶梯.jpg",
+      "label": "移动到大阶梯",
+      "transition": "从上一张继续到：移动到大阶梯。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\28-切到上层地图.jpg",
+      "label": "切到上层地图",
+      "transition": "从上一张继续到：切到上层地图。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\29-上层平台移动目标.jpg",
+      "label": "上层平台移动目标",
+      "transition": "从上一张继续到：上层平台移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\30-上层平台结束回合.jpg",
+      "label": "上层平台结束回合",
+      "transition": "从上一张继续到：上层平台结束回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\31-队友一翻出面具并等待确认.jpg",
+      "label": "队友一翻出面具并等待确认",
+      "transition": "从上一张继续到：队友一翻出面具并等待确认。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\32-英雄开场过场.jpg",
+      "label": "英雄开场过场",
+      "transition": "从上一张继续到：英雄开场过场。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\33-过场继续进入英雄剧本书.jpg",
+      "label": "过场继续进入英雄剧本书",
+      "transition": "从上一张继续到：过场继续进入英雄剧本书。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\34-英雄剧本书目标页说明图书馆原因.jpg",
+      "label": "英雄剧本书目标页说明图书馆原因",
+      "transition": "从上一张继续到：英雄剧本书目标页说明图书馆原因。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\35-读完目标关闭剧本书.jpg",
+      "label": "读完目标关闭剧本书",
+      "transition": "从上一张继续到：读完目标关闭剧本书。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\36-读完目标回到英雄回合.jpg",
+      "label": "读完目标回到英雄回合",
+      "transition": "从上一张继续到：读完目标回到英雄回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\37-读完目标后准备打开移动.jpg",
+      "label": "读完目标后准备打开移动",
+      "transition": "从上一张继续到：读完目标后准备打开移动。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\38-图书馆成为可点击移动目标.jpg",
+      "label": "图书馆成为可点击移动目标",
+      "transition": "从上一张继续到：图书馆成为可点击移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\39-英雄寻找木乃伊真名入口.jpg",
+      "label": "英雄寻找木乃伊真名入口",
+      "transition": "从上一张继续到：英雄寻找木乃伊真名入口。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\40-寻找真名知识检定成功.jpg",
+      "label": "寻找真名知识检定成功",
+      "transition": "从上一张继续到：寻找真名知识检定成功。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\main-flow-full-rerun\\41-确认后回到牌桌可结束回合.jpg",
+      "label": "确认后回到牌桌可结束回合",
+      "transition": "从上一张继续到：确认后回到牌桌可结束回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\01-当前玩家结束回合前.jpg",
+      "label": "当前玩家结束回合前",
+      "transition": "起点：进入本轮真实浏览器端到端截图链。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\02-队友自动行动后回到当前玩家.jpg",
+      "label": "队友自动行动后回到当前玩家",
+      "transition": "从上一张继续到：队友自动行动后回到当前玩家。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\03-再次结束当前回合.jpg",
+      "label": "再次结束当前回合",
+      "transition": "从上一张继续到：再次结束当前回合。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\04-队友一翻出面具并等待确认.jpg",
+      "label": "队友一翻出面具并等待确认",
+      "transition": "从上一张继续到：队友一翻出面具并等待确认。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\05-当前玩家看到英雄开场过场.jpg",
+      "label": "当前玩家看到英雄开场过场",
+      "transition": "从上一张继续到：当前玩家看到英雄开场过场。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\06-开场过场继续进入英雄剧本书.jpg",
+      "label": "开场过场继续进入英雄剧本书",
+      "transition": "从上一张继续到：开场过场继续进入英雄剧本书。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\07-英雄剧本书目标页与图书馆原因.jpg",
+      "label": "英雄剧本书目标页与图书馆原因",
+      "transition": "从上一张继续到：英雄剧本书目标页与图书馆原因。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\08-读完剧本书目标准备关闭.jpg",
+      "label": "读完剧本书目标准备关闭",
+      "transition": "从上一张继续到：读完剧本书目标准备关闭。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\09-读完目标回到上层平台英雄.jpg",
+      "label": "读完目标回到上层平台英雄",
+      "transition": "从上一张继续到：读完目标回到上层平台英雄。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\10-读完目标后准备打开移动目标.jpg",
+      "label": "读完目标后准备打开移动目标",
+      "transition": "从上一张继续到：读完目标后准备打开移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\11-图书馆成为可点击移动目标.jpg",
+      "label": "图书馆成为可点击移动目标",
+      "transition": "从上一张继续到：图书馆成为可点击移动目标。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\12-轮到英雄寻找木乃伊真名.jpg",
+      "label": "轮到英雄寻找木乃伊真名",
+      "transition": "从上一张继续到：轮到英雄寻找木乃伊真名。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\13-寻找真名知识检定成功.jpg",
+      "label": "寻找真名知识检定成功",
+      "transition": "从上一张继续到：寻找真名知识检定成功。"
+    },
+    {
+      "path": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\haunt-natural-trigger-flow\\14-确认后回到牌桌可结束回合.jpg",
+      "label": "确认后回到牌桌可结束回合",
+      "transition": "从上一张继续到：确认后回到牌桌可结束回合。"
+    }
+  ]
+}

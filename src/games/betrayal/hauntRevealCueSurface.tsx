@@ -8,13 +8,11 @@ export function BetrayalHauntRevealCue({
   revealProtocol,
   scenarioRuntime,
   readerScope,
-  isPhoneLandscapeLayout,
   onDismiss,
 }: {
   revealProtocol: BetrayalHauntRevealProtocol;
   scenarioRuntime: BetrayalCore["scenarioRuntime"];
   readerScope: ScenarioReaderScope;
-  isPhoneLandscapeLayout: boolean;
   onDismiss: () => void;
 }) {
   const { t } = useTranslation("game-betrayal");
@@ -37,12 +35,10 @@ export function BetrayalHauntRevealCue({
       data-haunt-type={revealProtocol.hauntType}
       data-haunt-public-step-count={revealProtocol.publicSteps.length}
       data-haunt-setup-count={revealProtocol.setupQueue.length}
-      className={`betrayal-haunt-reveal-cue pointer-events-none absolute left-1/2 -translate-x-1/2 ${
-        isPhoneLandscapeLayout ? "top-2" : "top-[88px]"
-      }`}
+      className="betrayal-haunt-reveal-cue pointer-events-none absolute left-1/2 top-[88px] -translate-x-1/2"
       style={{ zIndex: UI_Z_INDEX.overlayRaised + 4 }}
     >
-      <div className="relative flex min-h-[44px] w-[min(760px,calc(100vw-2rem))] items-center justify-between gap-3 overflow-hidden rounded-[999px] border border-[rgba(255,207,137,0.34)] bg-[rgba(32,14,12,0.88)] px-4 py-2 text-left shadow-[0_14px_34px_rgba(0,0,0,0.34),0_0_24px_rgba(181,63,44,0.16)] backdrop-blur-[8px]">
+      <div className="relative flex min-h-[44px] w-[760px] items-center justify-between gap-3 overflow-hidden rounded-[999px] border border-[rgba(255,207,137,0.34)] bg-[rgba(32,14,12,0.88)] px-4 py-2 text-left shadow-[0_14px_34px_rgba(0,0,0,0.34),0_0_24px_rgba(181,63,44,0.16)] backdrop-blur-[8px]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-[linear-gradient(90deg,rgba(255,191,128,0),rgba(255,191,128,0.95),rgba(255,191,128,0))]" />
         <div className="relative flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-0.5">
           <span

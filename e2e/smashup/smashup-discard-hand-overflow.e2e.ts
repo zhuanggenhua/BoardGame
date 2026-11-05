@@ -113,4 +113,30 @@ test.describe('SmashUp 弃牌阶段手牌溢出布局', () => {
 
         console.log('SmashUp 弃牌阶段手牌布局一致性截图:', { discardShot, normalShot });
     });
+
+    test('弃到10张后按规则自动进入下一位玩家回合', async ({ page, game }) => {
+        test.setTimeout(60000);
+
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene({
+            ...OVERFLOW_SCENE,
+            phase: 'draw',
+        });
+
+        const discardHeading = page.getByText(/丢弃|Discard|Too Many Cards|手牌过多/i);
+        await expect(discardHeading).toBeVisible({ timeout: 10000 });
+        const cards = page.getByTestId('su-hand-area').locator('> div > div');
+        for (let i = 0; i < DISCARD_OVERFLOW_HAND.length - 10; i++) {
+            await cards.nth(i).click();
+            await page.waitForTimeout(200);
+        }
+        const throwButton = page.getByRole('button', { name: /继续|Continue/i });
+        await expect(throwButton).toBeEnabled({ timeout: 5000 });
+        await throwButton.click();
+        await expect(discardHeading).toBeHidden({ timeout: 10000 });
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return { phase: state?.sys?.phase ?? null, currentPlayerIndex: state?.core?.currentPlayerIndex ?? null };
+        }, { timeout: 10000 }).toEqual({ phase: 'playCards', currentPlayerIndex: 1 });
+    });
 });

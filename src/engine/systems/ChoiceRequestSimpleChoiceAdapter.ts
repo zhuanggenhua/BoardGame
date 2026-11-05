@@ -136,6 +136,6 @@ export function createSimpleChoiceFromChoiceRequest<TValue>(
             },
         },
     );
-    interaction.data.choiceRequest = buildChoiceRequestDiagnosticSnapshot(request);
+    interaction.data.choiceRequest = { ...buildChoiceRequestDiagnosticSnapshot(request) };
     return interaction;
 }

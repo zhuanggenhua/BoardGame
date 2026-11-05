@@ -61,12 +61,13 @@ export function createLobbyCoordinator<TGame extends string>(args: CreateLobbyCo
         try {
             let result = await args.storage.fetch(matchID, { metadata: true });
             if (!result.metadata) return null;
-            const game = args.normalizeGameName(result.metadata.gameName);
+            const metadata = result.metadata;
+            const game = args.normalizeGameName(metadata.gameName);
             if (game && shouldReadGameStateForPublicRoomSummary(game)) {
                 const stateResult = await args.storage.fetch(matchID, { state: true });
                 result = { ...result, state: stateResult.state };
             }
-            const match = buildLobbyMatch(matchID, result.metadata, result.state?.G);
+            const match = buildLobbyMatch(matchID, metadata, result.state?.G);
             if (game && args.isSupportedGame(game)) {
                 matchGameIndex.set(matchID, game);
                 ensureGameState(game);

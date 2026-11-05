@@ -8,6 +8,7 @@ import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
 import { CHARACTER_DATA_MAP } from '../../src/games/dicethrone/domain/characters';
 import { DICETHRONE_CHARACTER_CATALOG } from '../../src/games/dicethrone/domain/core-types';
 import { SHARED_TOKENS } from '../../src/games/dicethrone/domain/sharedTokens';
+import { CARD_PLAY_FAIL_REASONS } from '../../src/games/dicethrone/domain/rules';
 import type { AbilityDef } from '../../src/games/dicethrone/domain/combat';
 import type { TriggerCondition } from '../../src/games/dicethrone/domain/combat/conditions';
 
@@ -121,6 +122,7 @@ const LOCALE_VISIBLE_TECHNICAL_TERMS = new Set([
     'AI',
     'API',
     'APP',
+    'AVIF',
     'Android',
     'afterEvents',
     'Bug',
@@ -3028,8 +3030,22 @@ export const collectDiceThroneDataContractReferences = (): { references: I18nRef
     const references: I18nReference[] = [];
     const warnings: I18nWarning[] = [];
     const coreTypesFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'core-types.ts'));
+    const rulesFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'rules.ts'));
     const sharedTokensFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'sharedTokens.ts'));
     const commonCardsFile = normalizeFilePath(path.join(DICETHRONE_ROOT_DIR, 'domain', 'commonCards.ts'));
+
+    // Board.tsx uses error.${cardCheck.reason}; expand the authoritative reason registry
+    // here so static i18n checking covers the runtime-composed keys as well.
+    for (const reason of CARD_PLAY_FAIL_REASONS) {
+        pushDiceThroneContractValue(
+            references,
+            warnings,
+            rulesFile,
+            `dicethrone.cardPlayFailReason:${reason}`,
+            'CARD_PLAY_FAIL_REASONS',
+            `error.${reason}`,
+        );
+    }
 
     for (const character of DICETHRONE_CHARACTER_CATALOG) {
         pushDiceThroneContractValue(

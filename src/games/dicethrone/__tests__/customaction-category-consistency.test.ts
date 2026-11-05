@@ -87,7 +87,7 @@ function createMockState(actionId: string): any {
                 discard: [],
                 abilityLevels: {},
                 dice: p0Data.diceDefinition,
-                ...(isLierenKindredBond ? { companion: { id: 'nyra', hp: 5, maxHp: 5 } } : {}),
+                ...(isLierenKindredBond ? { companion: { id: 'nyra', hp: 5, maxHp: 5, active: true } } : {}),
             },
             '1': {
                 characterId: p1CharId,
@@ -830,6 +830,11 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'moon_elf-exploding-arrow-resolve-1',
             'moon_elf-exploding-arrow-resolve-2',
             'moon_elf-exploding-arrow-resolve-3',
+            // 吸血鬼领主：死亡终结伤害在奖励骰结算链路落地；沸腾鲜血只给当前攻击加伤；
+            // 不死之身防御伤害依赖吸血鬼防御骰面，基础 mock 不保证血滴面。
+            'vampire-lord-total-demise-roll',
+            'vampire-lord-boiling-blood-bonus',
+            'vampire-lord-undying-defense',
             // 火法师熔岩护甲：防御技能，伤害依赖防御投掷骰面结果（火面数量），mock 骰子无 symbol 字段
             'magma-armor-resolve',
             'magma-armor-2-resolve',
@@ -842,6 +847,12 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             // 武僧雷霆万钧：伤害由奖励骰结算链路落地，基础 mock 只会创建待结算骰面
             'thunder-strike-roll-damage',
             'thunder-strike-2-roll-damage',
+            // 蜘蛛侠蜘蛛感应：伤害由 bonus settlement handler 在奖励骰确认后落地
+            'zhizhuxia-spider-reflex',
+            // 蜘蛛侠奇袭：先把伤害加到当前攻击，后续攻击结算才会产生 DAMAGE_DEALT
+            'zhizhuxia-ambush',
+            // 蜘蛛侠隐形重拳：只有蜘蛛感应减伤状态成立时才直接造成伤害
+            'zhizhuxia-invisible-punch',
             // 神枪手决斗：当前 handler 只发起比较/选项交互，实际伤害在 choice-resolved handler 中落地
             'gunslinger-duel-resolve',
             // 通用加攻与部分工匠 / 忍者动作会把伤害挂到当前攻击、机器人分支或后续结算路径，不在基础 mock 中直接落 DAMAGE_DEALT

@@ -1,12 +1,54 @@
-import { AnimatePresence } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, type ComponentProps } from 'react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, useIsPresent } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useModalStack } from '../../contexts/ModalStackContext';
 import { UI_Z_INDEX } from '../../core';
 
 // 默认起始层级，需覆盖常规页面元素且低于教程层
 const DEFAULT_Z_INDEX = UI_Z_INDEX.modalRoot;
+
+const ModalStackEntry = ({
+    entry,
+    isTop,
+    index,
+    closeModal,
+    exiting = false,
+}: {
+    entry: ReturnType<typeof useModalStack>['stack'][number];
+    isTop: boolean;
+    index: number;
+    closeModal: (id: string) => void;
+    exiting?: boolean;
+}) => {
+    const present = !exiting;
+    const zIndex = entry.zIndex ?? DEFAULT_Z_INDEX + index * 10;
+    const pointerEvents = isTop && present
+        ? (entry.allowPointerThrough ? 'none' : 'auto')
+        : 'none';
+
+    return (
+        <div
+            className="fixed inset-0"
+            inert={!present}
+            aria-hidden={!present || undefined}
+            data-modal-exiting={!present || undefined}
+            style={{ zIndex, pointerEvents }}
+        >
+            <div className={entry.allowPointerThrough ? 'pointer-events-auto' : undefined}>
+                {entry.render({
+                    close: () => closeModal(entry.id),
+                    closeOnBackdrop: entry.closeOnBackdrop ?? true,
+                })}
+            </div>
+        </div>
+    );
+};
+
+const AnimatedModalStackEntry = (props: ComponentProps<typeof ModalStackEntry>) => {
+    const present = useIsPresent();
+    return <ModalStackEntry {...props} exiting={!present} />;
+};
 
 export const ModalStackRoot = () => {
     const { stack, closeTop, closeModal, closeAll } = useModalStack();
@@ -43,23 +85,7 @@ export const ModalStackRoot = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [closeTop, topEntry]);
 
-    // 控制滚动锁定状态，避免动画还没结束就解锁导致页面跳动
-    const [isLocked, setIsLocked] = useState(false);
-
-    useEffect(() => {
-        if (stack.length === 0) return;
-
-        let cancelled = false;
-        queueMicrotask(() => {
-            if (!cancelled) {
-                setIsLocked(true);
-            }
-        });
-
-        return () => {
-            cancelled = true;
-        };
-    }, [stack.length]);
+    const isLocked = stack.length > 0;
 
     // 真正的文档操作副作用
     useEffect(() => {
@@ -85,37 +111,21 @@ export const ModalStackRoot = () => {
     return createPortal(
         // 传送门容器必须显式层级，否则处于自动层会被页面正层级覆盖
         <div className="fixed inset-0 pointer-events-none" style={{ zIndex: DEFAULT_Z_INDEX }}>
-            <AnimatePresence
-                onExitComplete={() => {
-                    // 只有当栈彻底空了，才解除锁定
-                    if (stack.length === 0) {
-                        setIsLocked(false);
-                    }
-                }}
-            >
-                {stack.map((entry, index) => {
-                    const isTop = index === stack.length - 1;
-                    const zIndex = entry.zIndex ?? DEFAULT_Z_INDEX + index * 10;
-                    const pointerEvents = isTop
-                        ? (entry.allowPointerThrough ? 'none' : 'auto')
-                        : 'none';
-                    return (
-                        <div
-                            key={entry.id}
-                            // 非栈顶禁止交互，只保留视觉层级
-                            className="fixed inset-0"
-                            style={{ zIndex, pointerEvents }}
-                        >
-                            <div className={entry.allowPointerThrough ? 'pointer-events-auto' : undefined}>
-                                {entry.render({
-                                    close: () => closeModal(entry.id),
-                                    closeOnBackdrop: entry.closeOnBackdrop ?? true,
-                                })}
-                            </div>
-                        </div>
-                    );
-                })}
-            </AnimatePresence>
+                {stack.map((entry, index) => entry.animateExit ? null : (
+                    <ModalStackEntry
+                        key={entry.id}
+                        entry={entry}
+                        isTop={index === stack.length - 1}
+                        index={index}
+                        closeModal={closeModal}
+                    />
+                ))}
+                <AnimatePresence key={location.pathname} initial={false}>
+                    {stack.map((entry, index) => entry.animateExit ? <AnimatedModalStackEntry
+                        key={entry.id} entry={entry} isTop={index === stack.length - 1}
+                        index={index} closeModal={closeModal}
+                    /> : null)}
+                </AnimatePresence>
         </div>,
         portalRoot
     );

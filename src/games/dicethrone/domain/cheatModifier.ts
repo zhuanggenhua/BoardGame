@@ -86,6 +86,9 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
     getResource: (core, playerId, resourceId) => {
         return core.players[playerId]?.resources[resourceId];
     },
+    getToken: (core, playerId, tokenId) => {
+        return core.players[playerId]?.tokens[tokenId];
+    },
     setResource: (core, playerId, resourceId, value) => {
         const player = core.players[playerId];
         if (!player) return core;
@@ -124,7 +127,7 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
         // 阶段现由 sys.phase 管理，core 不再存储 turnPhase
         return core;
     },
-    setDice: (core, values, options) => {
+    setDice: (core, values, options?: { phase?: string }) => {
         const currentRollContext = resolveCurrentRollContext(core, options?.phase as Parameters<typeof resolveCurrentRollContext>[1]);
         if (currentRollContext?.dice.length) {
             const target = getCheatDieModifyTarget(currentRollContext.kind);
@@ -156,15 +159,16 @@ export const diceThroneCheatModifier: CheatResourceModifier<DiceThroneCore> = {
             }, primedCore);
         }
 
+        const replayOnlyRollContext = core.currentRollContext;
         if (
-            isSettledReplayOnlyRollContext(core.currentRollContext)
-            && core.currentRollContext.dice.length > 0
+            isSettledReplayOnlyRollContext(replayOnlyRollContext)
+            && replayOnlyRollContext.dice.length > 0
         ) {
             return {
                 ...core,
                 currentRollContext: {
-                    ...core.currentRollContext,
-                    dice: applyDiceValues(core.currentRollContext.dice, values),
+                    ...replayOnlyRollContext,
+                    dice: applyDiceValues(replayOnlyRollContext.dice, values),
                 },
             };
         }

@@ -4,7 +4,7 @@
  */
 
 import type { PlayerId } from '../../../engine/types';
-import type { DtResponseWindowType } from './core-types';
+import type { CharacterId, DtResponseWindowType } from './core-types';
 import type { AbilityContext } from './combat';
 import { combatAbilityManager } from './combatAbility';
 import type { RollDieConditionalEffect, RollDieDefaultEffect } from './effects';
@@ -14,11 +14,12 @@ import type {
     DiceThroneCore,
     Die,
     DieFace,
+    HeroState,
     TurnPhase,
     AbilityCard,
     SelectableCharacterId,
 } from './types';
-import { HAND_LIMIT, PHASE_ORDER } from './types';
+import { HAND_LIMIT, MAX_HEALTH, PHASE_ORDER, SKIRMISH_MAX_HEALTH } from './types';
 import { RESOURCE_IDS } from './resources';
 import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
@@ -26,12 +27,15 @@ import { CHARACTER_DATA_MAP } from './characters';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { getCurrentRollDice, getCurrentRollOwnerId, isCurrentBonusRollSettlement, resolveCurrentRollContext } from './rollContext';
 import { canRerollBonusDiceSettlement } from './bonusDiceSettlement';
-import { hasUsableDiceRerollPassiveAction } from './passiveAbility';
+import { canPrepareSpell, isCrimsonBandsBlocking } from './doctorStrange/rules';
+import { hasUsableDiceRerollPassiveAction, hasUsableResponseWindowPassiveAction } from './passiveAbility';
+import { hasUsableActiveRollToken } from './activeRollTokens';
 import {
     areTeammates,
     getSeatingOrder,
     getTeamId,
     isTeamMode,
+    isSkirmishMode,
 } from './rollContextPolicy';
 import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 
@@ -76,6 +80,14 @@ export const getPlayerDieFace = (state: DiceThroneCore, playerId: PlayerId, valu
     const player = state.players[playerId];
     if (!player || !player.characterId || player.characterId === 'unselected') return null;
     return getHeroDieFace(player.characterId, value);
+};
+
+export const requirePlayerDieFace = (state: DiceThroneCore, playerId: PlayerId, value: number): DieFace => {
+    const face = getPlayerDieFace(state, playerId, value);
+    if (!face) {
+        throw new Error(`Cannot resolve die face for player ${playerId} with value ${value}`);
+    }
+    return face;
 };
 
 export const getPlayerDiceDefinitionId = (state: DiceThroneCore, playerId: PlayerId): string | null => {
@@ -161,7 +173,7 @@ export const hasPendingBonusDiceSettlement = (
 
 export const hasPhaseBlockingPendingBonusDiceSettlement = (state: DiceThroneCore): boolean => {
     const settlement = state.pendingBonusDiceSettlement;
-    if (!hasPendingBonusDiceSettlement(settlement)) {
+    if (!settlement || !hasPendingBonusDiceSettlement(settlement)) {
         return false;
     }
 
@@ -187,6 +199,14 @@ export const hasPhaseBlockingPendingBonusDiceSettlement = (state: DiceThroneCore
 
     return true;
 };
+
+export const isNyraCompanionActive = (
+    player: Pick<HeroState, 'characterId' | 'companion'> | null | undefined,
+): boolean => Boolean(
+    player?.characterId === 'lieren'
+    && player.companion?.id === 'nyra'
+    && player.companion.active === true
+);
 
 /**
  * 奖励骰始终需要右侧骰盘的普通确认收口。
@@ -286,6 +306,7 @@ export {
     getTeamId,
     getTeamIdByPlayerIdMap,
     isTeamMode,
+    isSkirmishMode,
     isPlayerAllowedByRollContextPolicy,
 } from './rollContextPolicy';
 
@@ -300,19 +321,27 @@ export const getTeammateId = (state: DiceThroneCore, playerId: PlayerId): Player
 export const getOpponents = (state: DiceThroneCore, playerId: PlayerId): PlayerId[] => {
     const playerIds = getSeatingOrder(state);
     if (!state.players[playerId]) return [];
+
+    const eligiblePlayerIds = isSkirmishMode(state) && state.hostStarted
+        ? playerIds.filter((pid) => (state.players[pid]?.resources[RESOURCE_IDS.HP] ?? 0) > 0)
+        : playerIds;
     if (!isTeamMode(state)) {
-        return playerIds.filter((pid) => pid !== playerId);
+        return eligiblePlayerIds.filter((pid) => pid !== playerId);
     }
 
     const teamId = getTeamId(state, playerId);
     if (!teamId) return [];
-    return playerIds.filter((pid) => pid !== playerId && getTeamId(state, pid) !== teamId);
+    return eligiblePlayerIds.filter((pid) => pid !== playerId && getTeamId(state, pid) !== teamId);
 };
+
+export const getPlayerHealthCap = (state: DiceThroneCore, _playerId?: PlayerId): number => (
+    isSkirmishMode(state) ? SKIRMISH_MAX_HEALTH : MAX_HEALTH
+);
 
 export const getDefaultOpponentId = (state: DiceThroneCore, playerId: PlayerId): PlayerId | undefined => {
     if (!state.players[playerId]) return undefined;
     if (!isTeamMode(state)) {
-        return (Object.keys(state.players) as PlayerId[]).find((pid) => pid !== playerId);
+        return getOpponents(state, playerId)[0];
     }
 
     return getLeftOpponentId(state, playerId)
@@ -358,7 +387,7 @@ export const getSelectedCombatOpponentId = (
             return pendingAttack.defenderId;
         }
 
-        const effectivePhase = phase ?? state.turnPhase;
+        const effectivePhase = phase ?? state.currentRollContext?.phase;
         if (effectivePhase === 'targetingRoll') {
             const targetingValue = getActiveDice(state, effectivePhase)[0]?.value;
             if (typeof targetingValue === 'number') {
@@ -399,7 +428,10 @@ const findOpponentByDirection = (
     for (let step = 1; step < seatingOrder.length; step++) {
         const nextIndex = (seatIndex + direction * step + seatingOrder.length) % seatingOrder.length;
         const candidate = seatingOrder[nextIndex];
-        if (candidate && !areTeammates(state, playerId, candidate)) {
+        const isAliveSkirmishOpponent = !isSkirmishMode(state)
+            || !state.hostStarted
+            || (state.players[candidate]?.resources[RESOURCE_IDS.HP] ?? 0) > 0;
+        if (candidate && isAliveSkirmishOpponent && !areTeammates(state, playerId, candidate)) {
             return candidate;
         }
     }
@@ -498,7 +530,15 @@ const buildTeamTurnOrder = (state: DiceThroneCore): PlayerId[] => {
  * 获取玩家顺序列表
  */
 export const getPlayerOrder = (state: DiceThroneCore): PlayerId[] => {
-    return buildTeamTurnOrder(state);
+    const order = buildTeamTurnOrder(state);
+    if (!isSkirmishMode(state) || !state.hostStarted) {
+        return order;
+    }
+
+    const livingOrder = order.filter((playerId) => (
+        (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) > 0
+    ));
+    return livingOrder.length > 0 ? livingOrder : order;
 };
 
 /**
@@ -637,7 +677,7 @@ export const canAdvancePhase = (state: DiceThroneCore, phase: TurnPhase): boolea
     }
 
     if (phase === 'targetingRoll') {
-        return state.rollCount > 0 && state.rollConfirmed;
+        return isSkirmishMode(state) || (state.rollCount > 0 && state.rollConfirmed);
     }
     
     return true;
@@ -663,7 +703,7 @@ export const getNextPhase = (state: DiceThroneCore, phase: TurnPhase): TurnPhase
     if (phase === 'offensiveRoll') {
         const sourceAbilityId = state.pendingAttack?.sourceAbilityId;
         const needsTargetingRoll = Boolean(
-            isTeamMode(state)
+            (isTeamMode(state) || isSkirmishMode(state))
             && state.pendingAttack
             && sourceAbilityId
             && state.pendingAttack.defenderId === undefined
@@ -805,34 +845,42 @@ export type CardPlayCheckResult =
     | { ok: false; reason: CardPlayFailReason };
 
 /** 卡牌打出失败原因（用于国际化 key，必须与 i18n 保持一致） */
-export type CardPlayFailReason =
-    | 'playerNotFound'
-    | 'upgradeCardCannotPlay'      // 升级卡缺少目标技能
-    | 'upgradeCardSkipLevel'       // 旧错误码保留兼容；当前规则允许直接 I→III
-    | 'upgradeCardMaxLevel'        // 技能已达到最高级
-    | 'wrongPhaseForUpgrade'       // 升级卡只能在主要阶段
-    | 'wrongPhaseForMain'          // 主要阶段卡只能在主要阶段
-    | 'wrongPhaseForRoll'          // 投掷阶段卡只能在投掷阶段
-    | 'notEnoughCp'                // CP 不足
-    | 'unknownCardTiming'          // 未知卡牌时机
-    | 'wrongPhaseForCard'          // 卡牌需要特定阶段（进攻/防御）
-    | 'attackModifierRequiresSelectedAttack' // 攻击修正牌需要先选定攻击技能
-    | 'attackModifierRequiresSelectedDefender' // 4 人模式下该攻击修正牌需要先选定具体受击者
-    | 'requireLoaded'             // 需要消耗装填指示物
-    | 'requireOwnTurn'             // 卡牌需要在自己回合打出
-    | 'requireOpponentTurn'        // 卡牌需要在对手回合打出
-    | 'requireIsRoller'            // 卡牌需要是当前投掷方
-    | 'requireIsNotRoller'         // 卡牌需要不是当前投掷方（响应对手骰面）
-    | 'requireHasRolled'           // 卡牌需要已经投掷过
-    | 'requireDiceExists'          // 卡牌需要有骰子结果
-    | 'requireMinDiceCount'        // 卡牌需要最少骰子数量
-    | 'requireOpponentDiceExists'  // 卡牌需要对手有骰子结果
-    | 'requireRollConfirmed'       // 卡牌需要骰面已确认（响应对手确认后）
-    | 'requireNotRollConfirmed'    // 骰面已确认，不能再打出该卡
-    | 'requireMinDamageDealt'      // 本回合未造成足够伤害
-    | 'noStatusOnBoard'            // 场上没有任何状态效果或 token
-    | 'rollContextLocked'          // 当前骰区不允许改骰牌
-    | 'requirePendingDamage';      // 需要处于待结算伤害响应窗口
+export const CARD_PLAY_FAIL_REASONS = [
+    'crimsonBandsBlocksCards',
+    'spellPreparationUnavailable',
+    'playerNotFound',
+    'upgradeCardCannotPlay',
+    'upgradeCardSkipLevel',
+    'upgradeCardMaxLevel',
+    'wrongPhaseForUpgrade',
+    'wrongPhaseForMain',
+    'wrongPhaseForRoll',
+    'notEnoughCp',
+    'unknownCardTiming',
+    'wrongPhaseForCard',
+    'attackModifierRequiresSelectedAttack',
+    'attackModifierRequiresSelectedDefender',
+    'requireLoaded',
+    'requireOwnTurn',
+    'requireOpponentTurn',
+    'requireIsRoller',
+    'requireIsNotRoller',
+    'requireHasRolled',
+    'requireDiceExists',
+    'requireMinDiceCount',
+    'requireOpponentDiceExists',
+    'requireRollConfirmed',
+    'requireNotRollConfirmed',
+    'requireMinDamageDealt',
+    'requireMjolnirThrowsThisTurn',
+    'requireLethalAttack',
+    'requireTokenStacks',
+    'noStatusOnBoard',
+    'rollContextLocked',
+    'requirePendingDamage',
+] as const;
+
+export type CardPlayFailReason = typeof CARD_PLAY_FAIL_REASONS[number];
 
 const getAttackModifierPlayFailureReason = (
     state: DiceThroneCore,
@@ -901,12 +949,17 @@ const matchesPendingDamagePlayCondition = (
         // 这时尚未生成 pendingDamage，因此允许 beforeDamageReceived 类卡牌在 defensiveRoll 先落成一次性护盾。
         // 对于不可防御攻击，当前项目口径同样允许这类“受击即刻防伤牌”在防御阶段直接落地护盾，
         // 不把“不可防御”误解释为“连受击即时牌都不能打”。
+        const knownDamageTargetId = state.pendingAttack?.defenderId;
         if (
             phase === 'defensiveRoll'
             && pendingDamageCondition.responseType === 'beforeDamageReceived'
-            && state.pendingAttack?.defenderId === playerId
+            && knownDamageTargetId !== undefined
         ) {
-            return pendingDamageCondition.role !== 'source';
+            if (pendingDamageCondition.role === 'source') return false;
+            if (pendingDamageCondition.role === 'target' || pendingDamageCondition.role === 'responder') {
+                return knownDamageTargetId === playerId;
+            }
+            return true;
         }
         return false;
     }
@@ -1054,7 +1107,7 @@ const checkStandardCardPlay = (
         return { ok: false, reason: 'notEnoughCp' };
     }
 
-    if (card.timing === 'roll' && hasAnyDiceEffect(card)) {
+    if (card.timing === 'roll' && hasExistingDiceToolEffect(card)) {
         const diceEffectTarget = getDiceEffectTarget(card);
         if (diceEffectTarget === 'self' && playerId !== getRollerId(state, phase)) {
             return { ok: false, reason: 'requireIsRoller' };
@@ -1113,6 +1166,10 @@ const checkStandardCardPlay = (
             return { ok: false, reason: 'requireIsRoller' };
         }
 
+        if (cond.requireIsRollerOrTeammate && !areTeammates(state, playerId, getRollerId(state, phase))) {
+            return { ok: false, reason: 'requireIsRoller' };
+        }
+
         if (cond.requireIsNotRoller && playerId === getRollerId(state, phase)) {
             return { ok: false, reason: 'requireIsNotRoller' };
         }
@@ -1144,7 +1201,12 @@ const checkStandardCardPlay = (
         }
 
         if (cond.requireRollConfirmed && !state.rollConfirmed) {
-            if (!hasCurrentDiceTargetForCard(state, card, phase)) {
+            // 骰面响应窗口一旦由骰主确认打开，前一名响应者改骰只会让骰主
+            // 后续重新确认；不能撤销同一窗口对后续响应者的改骰授权。
+            const isContinuedAfterRollConfirmedResponse =
+                responseWindowType === 'afterRollConfirmed'
+                && hasExistingDiceToolEffect(card);
+            if (!isContinuedAfterRollConfirmedResponse && !hasCurrentDiceTargetForCard(state, card, phase)) {
                 return { ok: false, reason: 'requireRollConfirmed' };
             }
         }
@@ -1167,6 +1229,22 @@ const checkStandardCardPlay = (
             }
         }
 
+        if (cond.requireMjolnirThrowsThisTurn !== undefined && (state.mjolnirThrowsThisTurn?.[playerId] ?? 0) < cond.requireMjolnirThrowsThisTurn) {
+            return { ok: false, reason: 'requireMjolnirThrowsThisTurn' };
+        }
+        if (cond.requireLethalAttack && (!state.pendingDamage || state.pendingDamage.targetPlayerId !== playerId
+            || state.pendingDamage.damageScope !== 'attack' || state.pendingDamage.currentDamage < (state.players[playerId].resources[RESOURCE_IDS.HP] ?? 0))) {
+            return { ok: false, reason: 'requireLethalAttack' };
+        }
+        if (cond.requireTokenStacks) {
+            const { tokenId, min } = cond.requireTokenStacks;
+            const requiredStacks = Math.max(0, Math.trunc(min));
+            const currentStacks = state.players[playerId]?.tokens?.[tokenId] ?? 0;
+            if (currentStacks < requiredStacks) {
+                return { ok: false, reason: 'requireTokenStacks' };
+            }
+        }
+
         if (cond.requireAnyStatusOnBoard) {
             const allPlayerIds = Object.keys(state.players);
             const hasAny = allPlayerIds.some(pid => {
@@ -1181,7 +1259,8 @@ const checkStandardCardPlay = (
             }
         }
 
-        if (cond.pendingDamage && !matchesPendingDamagePlayCondition(state, playerId, cond.pendingDamage, phase)) {
+        if (cond.pendingDamage && ((cond.pendingDamage.requireCommittedDamage && !state.pendingDamage)
+            || !matchesPendingDamagePlayCondition(state, playerId, cond.pendingDamage, phase))) {
             return { ok: false, reason: 'requirePendingDamage' };
         }
     }
@@ -1320,6 +1399,9 @@ export const checkPlayCard = (
     phase: TurnPhase,
     responseWindowType?: DtResponseWindowType,
 ): CardPlayCheckResult => {
+    if (isCrimsonBandsBlocking(state, playerId, phase)) return { ok: false, reason: 'crimsonBandsBlocksCards' };
+    if (card.type === 'spell') return canPrepareSpell(state, playerId, phase) && !responseWindowType
+        ? { ok: true } : { ok: false, reason: 'spellPreparationUnavailable' };
     const effectiveResponseWindowType = responseWindowType
         ?? resolveBonusDiceCardPlayResponseWindowType(state, playerId, card, phase);
 
@@ -1341,6 +1423,7 @@ export const checkPlayCard = (
 /** 升级卡打出失败原因 */
 export type UpgradeCardPlayFailReason =
     | 'playerNotFound'
+    | 'crimsonBandsBlocksCards'
     | 'notUpgradeCard'
     | 'wrongPhaseForUpgrade'
     | 'upgradeCardCannotPlay'     // 升级卡缺少 replaceAbility 效果
@@ -1364,6 +1447,7 @@ export const checkPlayUpgradeCard = (
     targetAbilityId: string,
     phase: TurnPhase
 ): UpgradeCardPlayCheckResult => {
+    if (isCrimsonBandsBlocking(state, playerId, phase)) return { ok: false, reason: 'crimsonBandsBlocksCards' };
     const player = state.players[playerId];
     if (!player) return { ok: false, reason: 'playerNotFound' };
     
@@ -1451,7 +1535,8 @@ const rollBranchTargetsOpponent = (
     if (!branch) return false;
     return branch.grantStatus?.target === 'opponent'
         || branch.grantToken?.target === 'opponent'
-        || (branch.grantTokens?.some((grant) => grant.target === 'opponent') ?? false);
+        || (('grantTokens' in branch
+            && branch.grantTokens?.some((grant) => grant.target === 'opponent')) ?? false);
 };
 
 export const hasOpponentTargetEffect = (card: AbilityCard): boolean => {
@@ -1491,7 +1576,8 @@ const rollBranchNeedsSelectedDefender = (
     if (!branch) return false;
     return branch.grantStatus?.target === 'opponent'
         || branch.grantToken?.target === 'opponent'
-        || (branch.grantTokens?.some((grant) => grant.target === 'opponent') ?? false);
+        || (('grantTokens' in branch
+            && branch.grantTokens?.some((grant) => grant.target === 'opponent')) ?? false);
 };
 
 const actionNeedsSelectedDefender = (
@@ -1583,6 +1669,7 @@ const EXISTING_DICE_TOOL_CUSTOM_ACTION_IDS = new Set([
     'reroll-opponent-die-1',
     'reroll-die-2',
     'reroll-die-5',
+    'thor-worthy',
 ]);
 
 /**
@@ -1691,10 +1778,20 @@ export const hasRespondableContent = (
         }
     }
 
+    if (windowType === 'afterRollConfirmed' && hasUsableActiveRollToken(state, playerId, phase, {
+        responseWindowType: windowType,
+    })) {
+        return true;
+    }
+
     // 奖励骰已投出后，只有实际能重投当前骰区的被动能力才算介入手段。
     // 抽牌、建造等“任意时刻”动作不能凭 timing 字样插入奖励骰介入窗口；
     // 无响应时仍回到右侧骰盘普通确认，而不是自动结算。
     if (hasUsableDiceRerollPassiveAction(state, playerId, phase, { responseWindowType: windowType })) {
+        return true;
+    }
+
+    if (hasUsableResponseWindowPassiveAction(state, playerId, phase, { responseWindowType: windowType })) {
         return true;
     }
 

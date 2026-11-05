@@ -69,6 +69,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.GOVERNESS, (ctx: CardiaAbilityConte
                     type: CARDIA_EVENTS.ABILITY_NO_VALID_TARGET.type,
                     payload: {
                         abilityId: ctx.abilityId,
+                        cardId: ctx.cardId,
                         playerId: ctx.playerId,
                         reason: 'no_eligible_cards',
                     },
@@ -197,6 +198,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.ILLUSIONIST, (ctx: CardiaAbilityCon
                     type: CARDIA_EVENTS.ABILITY_NO_VALID_TARGET.type,
                     payload: {
                         abilityId: ctx.abilityId,
+                        cardId: ctx.cardId,
                         playerId: ctx.playerId,
                         reason: 'no_eligible_cards',
                     },
@@ -302,6 +304,7 @@ abilityExecutorRegistry.register(ABILITY_IDS.ELEMENTALIST, (ctx: CardiaAbilityCo
                     type: CARDIA_EVENTS.ABILITY_NO_VALID_TARGET.type,
                     payload: {
                         abilityId: ctx.abilityId,
+                        cardId: ctx.cardId,
                         playerId: ctx.playerId,
                         reason: 'no_eligible_cards',
                     },
@@ -433,8 +436,8 @@ export function registerCopyInteractionHandlers(): void {
         }
         
         // ✅ 修复：从 cardiaInteraction.cardId 获取女导师的 cardId
-        const cardiaInteraction = (_interactionData as any)?.cardiaInteraction;
-        const cardId = cardiaInteraction?.cardId || '';
+        const cardId = resolveSourceCardId(_interactionData);
+        if (!cardId) return { state, events: [] };
         
         console.log('[Governess] Interaction handler:', {
             cardId,
@@ -444,6 +447,8 @@ export function registerCopyInteractionHandlers(): void {
         
         const ctx: CardiaAbilityContext = {
             core: state.core,
+            sourceId: cardId,
+            ownerId: playerId,
             playerId,
             opponentId: playerId === '0' ? '1' : '0',
             cardId,
@@ -493,11 +498,13 @@ export function registerCopyInteractionHandlers(): void {
         }
         
         // ✅ 修复：从 cardiaInteraction.cardId 获取幻术师的 cardId
-        const cardiaInteraction = (_interactionData as any)?.cardiaInteraction;
-        const cardId = cardiaInteraction?.cardId || '';
+        const cardId = resolveSourceCardId(_interactionData);
+        if (!cardId) return { state, events: [] };
         
         const ctx: CardiaAbilityContext = {
             core: state.core,
+            sourceId: cardId,
+            ownerId: playerId,
             playerId,
             opponentId,
             cardId,
@@ -541,11 +548,13 @@ export function registerCopyInteractionHandlers(): void {
         
         const opponentId = playerId === '0' ? '1' : '0';
         // ✅ 修复：从 cardiaInteraction.cardId 获取元素师的 cardId
-        const cardiaInteraction = (_interactionData as any)?.cardiaInteraction;
-        const cardId = cardiaInteraction?.cardId || '';
+        const cardId = resolveSourceCardId(_interactionData);
+        if (!cardId) return { state, events: [] };
         
         const ctx: CardiaAbilityContext = {
             core: state.core,
+            sourceId: cardId,
+            ownerId: playerId,
             playerId,
             opponentId,
             cardId,
@@ -563,6 +572,13 @@ export function registerCopyInteractionHandlers(): void {
             interaction: result.interaction, // ✅ 修复：传递被复制能力的交互
         };
     });
+}
+
+function resolveSourceCardId(interactionData: Record<string, unknown> | undefined): string | undefined {
+    const cardiaInteraction = interactionData?.cardiaInteraction;
+    if (typeof cardiaInteraction !== 'object' || cardiaInteraction === null) return undefined;
+    const cardId = (cardiaInteraction as { cardId?: unknown }).cardId;
+    return typeof cardId === 'string' && cardId.length > 0 ? cardId : undefined;
 }
 
 // 导入必要的类型和函数

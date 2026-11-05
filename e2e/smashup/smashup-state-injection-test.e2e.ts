@@ -195,4 +195,37 @@ test.describe('状态注入功能测试', () => {
         expect(Math.abs(afterScoreBox.height - beforeScoreBox.height)).toBeLessThan(1);
         expect(Math.abs(afterScoreBox.width - beforeScoreBox.width)).toBeLessThan(1);
     });
+
+    test('波利尼西亚航海者英文基地图集在中文牌桌上常显中文名称与效果', async ({ page, game }, testInfo) => {
+        test.setTimeout(60000);
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: { factions: ['polynesian_voyagers', 'pirates'] },
+            player1: { factions: ['ninjas', 'zombies'] },
+            currentPlayer: '0',
+            phase: 'playCards',
+            bases: [
+                { defId: 'base_island_chain', minions: [] },
+                { defId: 'base_island_peak', minions: [] },
+                { defId: 'base_tropical_paradise', minions: [] },
+            ],
+        });
+
+        const baseZone = page.getByTestId('base-zone-0');
+        await expect(baseZone).toBeVisible({ timeout: 15000 });
+        const overlay = baseZone.getByTestId('su-card-text-overlay');
+        await expect(overlay).toBeVisible({ timeout: 15000 });
+        await expect(overlay).toHaveAttribute('data-overlay-visibility', 'always');
+        await expect(overlay).toContainText('岛链');
+        await expect(overlay).toContainText('基地牌库顶牌');
+
+        const evidencePath = getEvidenceScreenshotPath(testInfo, '波利尼西亚航海者基地中文覆盖层', {
+            filename: '波利尼西亚航海者基地中文覆盖层.png',
+            format: 'png',
+            requireChineseName: true,
+        });
+        await page.screenshot({ path: evidencePath, fullPage: true, type: 'png' });
+    });
 });

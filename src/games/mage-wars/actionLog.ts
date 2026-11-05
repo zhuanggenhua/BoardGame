@@ -28,6 +28,7 @@ import type {
     MageWarsMageAbilityResolvedEvent,
     MageWarsMageDefeatedEvent,
     MageWarsMageMovedEvent,
+    MageWarsMageRegeneratedEvent,
     MageWarsManaChanneledEvent,
     MageWarsManaDrainedEvent,
     MageWarsSpellAttackRolledEvent,
@@ -481,6 +482,15 @@ export function formatMageWarsActionEntry({
                 pushEntry(entries, event.type, payload.ownerId, entryTimestamp, [
                     i18nSeg('actionLog.arenaObjectRegenerated', {
                         objectId: payload.objectId,
+                        healing: payload.actualHealing,
+                    }),
+                ], index);
+                break;
+            }
+            case MAGE_WARS_EVENTS.MAGE_REGENERATED: {
+                const payload = (event as MageWarsMageRegeneratedEvent).payload;
+                pushEntry(entries, event.type, payload.playerId, entryTimestamp, [
+                    i18nSeg('actionLog.mageRegenerated', {
                         healing: payload.actualHealing,
                     }),
                 ], index);

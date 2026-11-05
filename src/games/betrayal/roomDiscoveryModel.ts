@@ -15,6 +15,7 @@ import {
     type BetrayalRoomDoorway,
     type BetrayalRoomEdge,
     type BetrayalRoomFloor,
+    type BetrayalRoomVisualId,
 } from './scenarioConfig';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
@@ -22,6 +23,7 @@ import {
 import { isAttackWeaponCard } from './attackRules';
 import { cloneExplorerSummary } from './explorerReadModel';
 import { moveExplorerTraitSteps } from './traitTrackModel';
+import { createDrawnCardFromTemplate } from './possessionDeckModel';
 import type {
     BetrayalBuriedRoomTileSummary,
     BetrayalCore,
@@ -925,14 +927,18 @@ export function resolveRoomTemplateDiscoveryDeckKind(roomTemplate: RoomTemplate)
     return roomDiscoverySymbolToDeckKind(resolveBetrayalRoomDiscoverySymbol(roomTemplate));
 }
 
-export function hasAvailableDiscoveryDeckCard(core: BetrayalCore, deckKind: BetrayalDeckKind): boolean {
-    if (core.deckCounts[deckKind] <= 0) {
+export function hasAvailableDiscoveryDeckCard(
+    core: BetrayalCore,
+    deckKind: BetrayalDeckKind,
+    requiredCount = 1,
+): boolean {
+    if (core.deckCounts[deckKind] < requiredCount) {
         return false;
     }
     if (deckKind === 'event') {
-        return core.eventOrder.length > 0;
+        return core.eventOrder.length >= requiredCount;
     }
-    return core.possessionOrderByKind[deckKind].length > 0;
+    return core.possessionOrderByKind[deckKind].length >= requiredCount;
 }
 
 export interface ResolvedRoomDraw {
@@ -1169,14 +1175,23 @@ function createDrawnCardsUntilWeapon(core: BetrayalCore): { weapon: BetrayalInve
 export function resolveRoomDiscoveryCards(
     core: BetrayalCore,
     effect: BetrayalRoomDiscoveryEffect | undefined,
+    options: { discoveryCardCount?: number } = {},
 ): BetrayalRoomDiscoveryCards {
-    if (effect !== 'drawUntilWeapon') {
+    if (effect === 'drawUntilWeapon') {
+        const result = createDrawnCardsUntilWeapon(core);
+        return {
+            roomDiscoveryCards: result.weapon ? [result.weapon] : [],
+            buriedRoomDiscoveryCards: result.buriedCards,
+        };
+    }
+    const additionalItemCardCount = Math.max(0, (options.discoveryCardCount ?? 1) - 1);
+    if (additionalItemCardCount === 0) {
         return {};
     }
-    const result = createDrawnCardsUntilWeapon(core);
     return {
-        roomDiscoveryCards: result.weapon ? [result.weapon] : [],
-        buriedRoomDiscoveryCards: result.buriedCards,
+        roomDiscoveryCards: core.possessionOrderByKind.item
+            .slice(0, additionalItemCardCount)
+            .map((template, index) => createDrawnCardFromTemplate(core, template, { suffix: index })),
     };
 }
 

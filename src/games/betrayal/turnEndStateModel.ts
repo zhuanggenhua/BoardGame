@@ -274,6 +274,7 @@ function advanceTurnEndState(
     };
     const advancedCore: BetrayalCore = {
         ...nextCore,
+        turnNumber: nextCore.turnNumber + 1,
         turnStartSpeed: nextTurnStartSpeed,
         movesRemaining: nextMovesRemaining,
         recommendedAction: resolveRecommendedAction({
@@ -425,7 +426,7 @@ export function applyBetrayalTurnEndedState(
                 roomEffectCore,
                 pendingDustEndTurnDamageAllocation,
                 event.payload.logText,
-                'damage',
+                'endTurn',
             ),
         };
     }
@@ -493,7 +494,7 @@ export function applyBetrayalTurnEndRollAcknowledgedState(
         && pendingRoomEndTurnExplorer
     )
         ? createPendingDamageAllocation({
-            id: `room-fall-damage-${pendingRoomEndTurnRecentRoll.playerId}-${event.timestamp}`,
+            id: `room-fall-damage-${pendingRoomEndTurnExplorer.playerId}-${event.timestamp}`,
             explorer: pendingRoomEndTurnExplorer,
             sourceTitle: pendingRoomEndTurnRoll.roomName,
             damageKind: 'physical',

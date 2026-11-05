@@ -1,6 +1,6 @@
 {
   "title": "法师战争",
-  "description": "双人法术战棋。首轮基础流程覆盖法师状态、法术书与事件驱动特效。",
+    "description": "双人法术战棋。首轮基础流程覆盖法师状态、法术书、墙体、守卫与事件驱动特效。",
   "players": "2 人",
   "arena": {
     "actionStage": "行动环节",
@@ -48,7 +48,6 @@
       "activeSpellbookAria": "可选法术书库",
       "activeSpellbookTitle": "选中法术书",
       "editCurrentSpellbook": "编辑选中书",
-      "spellbookLibraryHelp": "标准起始书和命名副本同屏同级；点击一本书会同时绑定对应法师。",
       "standardSpellbook": "标准起始书",
       "spellbookCardSummary": "{{count}} 张",
       "newSpellbook": "新建法术书",
@@ -115,7 +114,9 @@
     "inspectCardAria": "放大查看 {{name}}",
     "observeOpponentPublicView": "观察对手公开区",
     "opponentPublicView": "对手公开视角",
-    "backToSelfView": "返回自己视角"
+    "backToSelfView": "返回自己视角",
+    "phaseProgressTitle": "回合流程",
+    "cardOriginalText": "卡牌原文"
   },
   "zonesPanel": {
     "title": "私有与附着区",
@@ -150,7 +151,6 @@
     "hiddenInfo": "隐藏信息",
     "spellbook": "法术书",
     "preparedSpells": "已计划法术",
-    "preparedSpellsWithCount": "己方已计划 {{count}} / {{total}}",
     "preparedSpell": "已计划法术",
     "discardPile": "弃牌堆",
     "discardPileWithCount": "弃牌 {{count}}",
@@ -162,7 +162,17 @@
     "attack": "攻击骰",
     "effect": "12 面效果骰",
     "effectShort": "d12",
+    "effectResult": "D12 · {{result}}",
+    "effectNativeAssetNote": "蓝色十二面效果骰",
     "settlement": "掷骰预备"
+  },
+  "diceResult": {
+    "meleeAttack": "近战攻击",
+    "rangedAttack": "远程攻击",
+    "heal": "治疗",
+    "damage": "{{count}} 点伤害",
+    "miss": "未命中",
+    "healed": "+{{count}}"
   },
   "actionDock": {
     "title": "当前行动",
@@ -179,14 +189,16 @@
     "guardCreature": "守卫",
     "attack": "基础攻击",
     "attackCreature": "生物攻击",
-    "advanceReset": "继续重置",
-    "advanceChannel": "继续聚魔",
-    "advanceUpkeep": "继续维持",
-    "passPlanning": "确认不计划",
     "passDeployment": "结束部署",
     "passQuickcast": "让过快速施法",
     "endAction": "结束行动",
     "endTurn": "回合结束",
+    "activateAbility": "发动能力",
+    "rebindSpell": "重新绑定",
+    "castBoundSpell": "施放{{name}}",
+    "meleeBonus": "近战加成",
+    "healMode": "治疗",
+    "meleeBonusMarker": "近战+{{amount}}",
     "close": "关闭"
   },
   "interaction": {
@@ -195,11 +207,33 @@
       "manaCost": "法力 {{manaCost}}",
       "cancel": "取消"
     },
+    "battleFury": {
+      "title": "{{attackerObjectId}} 可以进行一次额外的快速近战攻击",
+      "options": {
+        "attack": "追加攻击",
+        "pass": "放弃追加攻击"
+      }
+    },
+    "fearHelmet": {
+      "title": "{{attackerObjectId}} 的攻击被恐惧头盔取消，选择后续动作",
+      "options": {
+        "retarget": "改攻其他目标",
+        "guard": "改为守卫",
+        "cancel": "取消攻击"
+      }
+    },
     "counterstrike": {
       "title": "{{defenderObjectId}} 可以反击 {{attackerObjectId}}",
       "options": {
         "counterstrike": "反击",
         "pass": "放弃反击"
+      }
+    },
+    "battleFury": {
+      "title": "{{attackerObjectId}} 可以进行战斗怒火额外攻击",
+      "options": {
+        "attack": "进行额外攻击",
+        "pass": "跳过"
       }
     },
     "defense": {
@@ -216,6 +250,13 @@
         "destroy": "摧毁结界"
       }
     },
+    "upkeepEquipmentDirectDamage": {
+      "title": "{{targetObjectId}} 可受到 {{amount}} 点摩洛王的折磨伤害",
+      "options": {
+        "pay": "支付法力并造成伤害",
+        "skip": "不造成伤害"
+      }
+    },
     "upkeepHealTransfer": {
       "title": "{{targetObjectId}} 的死亡链接可治疗最多 {{availableHealing}} 点伤害",
       "options": {
@@ -224,9 +265,11 @@
       }
     },
     "enchantmentResponse": {
-      "title": "必须展示响应结界 {{responseObjectId}}",
+      "title": "必须展示响应结界：{{responseCardName}}",
       "options": {
-        "reveal": "展示并结算"
+        "reveal": "展示并结算",
+        "redirect": "展示并将法术重定向给施法者",
+        "teleport": "传送到 {{targetZoneId}}"
       }
     },
     "spellCastChoice": {
@@ -237,7 +280,37 @@
     }
   },
   "error": {
-    "unsupportedCommand": "当前命令尚未进入基础流程实现范围。"
+    "unsupportedCommand": "当前命令尚未进入基础流程实现范围。",
+    "actionUnavailable": "现在不能执行这个操作。",
+    "wrongPhase": "当前阶段不能执行这个操作。",
+    "tutorialBlocked": "教程当前步骤不允许这个操作，请先按提示完成当前步骤。",
+    "invalidSpellTarget": "这个目标不能承接当前法术。",
+    "invalidMoveTarget": "不能移动到这个区域。",
+    "invalidAttackTarget": "当前不能攻击这个目标。",
+    "invalidAbilityTarget": "这个目标不能承接当前能力。",
+    "invalidArenaObjectAbility": "当前对象能力不能这样使用。",
+    "invalidMageAbility": "当前法师能力不能这样使用。",
+    "insufficientMana": "法力不足，不能施放这个法术。",
+    "insufficientSourceMana": "来源对象上的法力不足，不能通过这个施法点施放法术。",
+    "manaCostMismatch": "法力费用与当前法术不匹配。",
+    "spellNotPrepared": "这个法术还没有被计划，不能直接施放。",
+    "spellNotQuick": "这个法术不是快速法术，不能在快速施法窗口使用。",
+    "quickcastSpent": "快速施法标记已经用过，不能再次快速施法。",
+    "actionSpent": "行动标记已经用过，不能再次行动。",
+    "objectActionSpent": "这个单位的行动标记已经用过，不能再次行动。",
+    "notYourObject": "这不是你控制的对象。",
+    "invalidTargetObject": "这个目标对象无效。",
+    "spellSchoolLineNotAllowed": "这个施法点不允许该学派的法术。",
+    "targetOutOfRange": "目标不在当前范围内。",
+    "wallEdgeOccupied": "这条边界已经有墙体，不能再放置墙体。",
+    "missingTarget": "请先选择一个合法目标。",
+    "spellRequiresCodeSupport": "这个法术还没有进入当前可操作范围。",
+    "resurrectionTargetNotLivingCreature": "起死回生只能选择弃牌堆中的活体生物。",
+    "resurrectionTargetNotInSpellbook": "目标生物不在你的法术书中。",
+    "resurrectionTargetNotDefeated": "目标生物不在被摧毁的活体生物牌池中。",
+    "resurrectionTargetNotDiscarded": "目标生物当前不在你的弃牌堆中。",
+    "resurrectionTargetMissingCost": "目标生物的法力费用或法术等级资料不完整。",
+    "resurrectionTargetMissingStats": "目标生物的生命或护甲资料不完整。"
   },
   "spellbook": {
     "previousPage": "上一页",
@@ -326,10 +399,10 @@
     "back": "返回",
     "confirm": "确认法术书",
     "mageDetailAria": "法师规则卡",
-    "mageDetailDescription": "这份构筑按这张法师能力牌的训练方向计算。需要更换法师时，返回选书页选择另一本绑定对应法师的法术书。",
+    "builderConstraints": "构筑限制",
     "trainedDirection": "受训方向",
-    "opposedDirection": "相斥方向",
-    "currentListLabel": "法术书清单",
+      "opposedDirection": "相斥方向",
+      "currentListLabel": "法术书清单",
     "none": "无",
     "close": "关闭",
     "type": {
@@ -378,7 +451,7 @@
     "catalog": {
       "basic": {
         "title": "首局流程：读局、计划与常见结算",
-        "description": "从胜利条件、法师读数、聚魔和计划开始，接着走召唤、公开弃牌、快速施法窗口与移动。"
+        "description": "从胜利条件、法师读数、聚魔和计划开始，接着走召唤、公开弃牌、快速施法窗口、移动、墙体与守卫。"
       }
     },
     "visuals": {
@@ -391,13 +464,14 @@
       "intro": "法师战争中，游戏将持续数个回合，直到一方法师受到的伤害足以将其毁灭。最后一个屹立不倒的法师赢得游戏的胜利。",
       "selfHud": "你的法师面板显示生命、伤害、法力、聚魔、行动标记和快速施法标记。学徒法师起始生命24、初始法力10、聚魔10；目标是让对方法师累计足够伤害并被击败。",
       "opponentHud": "对手面板同样显示这些读数。对手的已计划法术用牌背和数量表示，未公开前不能看见牌名。",
-      "stage": "每个游戏回合分为准备环节和行动环节。准备环节完成后行动环节才会开始。",
+      "stage": "规则把一回合分成准备环节和行动环节。准备环节包含起始、重置、聚魔、维持、计划、部署；行动环节包含优先快速施法、生物行动、最终快速施法。教程只在需要你决定的窗口停下。",
       "prepareChannelResult": "准备环节正在结算。",
       "prepareUpkeep": "维持阶段正在结算。",
       "channelResult": "兽王当前聚魔为10；聚魔后法力池加入10点法力。",
       "preparePlanning": "维持结算完成，正在进入计划阶段。",
       "spellCardReading": "先看计划法术会用到的基础字段：费用、行动、范围、目标、类型、派系和等级决定能不能计划与施放。",
-      "attackBarReading": "准备区里的丛林灰狼即将被打出。先读它的攻击条：左侧图标区分快速或标准行动、近战或远程；右侧读范围、伤害类型、攻击骰子、附加效果和特性。读完点下一步继续。",
+      "planningSkip": "计划阶段每回合最多准备2张法术；不准备时也用“确认计划”提交。本轮先准备两张。",
+      "attackBarReading": "准备区里的丛林灰狼马上要打出。先看攻击条：它是快速近战，攻击骰子为4。",
       "planOpenCreatureCategory": "点击“生物”分类。",
       "planCreatureNextPage": "点击下一页，找到“丛林灰狼”。",
       "planSelectWolf": "丛林灰狼是生物类法术，生物会被召唤到竞技场并持续战斗。点击“丛林灰狼”卡牌本体，把它放进第一个计划槽。",
@@ -409,7 +483,8 @@
       "preparedAndHidden": "双方玩家同时选择各自的法术。你所选择的法术对你的对手保密，以使他无法得知你的计划。",
       "deploySelectWolf": "点击准备区的“丛林灰狼”。",
       "deployTargetZone": "点击兽王所在区域。",
-      "wolfSummoned": "丛林灰狼已经被召唤到兽王所在区域；刚进场时行动未就绪，行动标记显示已用面表示它现在还不能行动。这一步先读状态，不点灰狼，点下一步继续。",
+      "wolfSummoned": "丛林灰狼进场后行动标记是已用面，所以现在不能行动；下一步用兽性觉醒把它翻回就绪。",
+      "armorReading": "看灰狼卡牌上的护甲字段。护甲会在伤害结算时抵消相应伤害；攻击条里的“穿刺+N”会抵消相应点数的护甲。",
       "rouseSelectSpell": "点击准备区的“兽性觉醒”。",
       "rouseTargetWolf": "点击场上的“丛林灰狼”卡牌本体，让兽性觉醒作用到它。",
       "passYourDeployment": "丛林灰狼的行动标记已经就绪，但现在仍在部署阶段。先点击“结束部署”；进入行动阶段后再点灰狼卡牌本体移动。",
@@ -422,7 +497,31 @@
       "opponentPassInitiativeQuickcast": "对手也让过先手快速施法后，轮到你的生物行动。接下来使用丛林灰狼移动。",
       "moveSelectWolf": "点击场上的“丛林灰狼”卡牌本体，选它作为这次移动的来源。",
       "moveTargetZone": "点击相邻区域移动。",
-      "finish": "你已经走过首局读局、读牌、聚魔、计划、召唤、攻击条、唤醒、公开弃牌、快速施法窗口和一次生物移动。基础教程完成。"
+      "endCreatureAction": "移动已经消耗了灰狼的行动。点击“结束行动”，让双方完成生物行动并进入最终快速施法。",
+      "opponentPassCreatureAction": "对手的生物行动按正式流程结算中。",
+      "skipFinalQuickcast": "现在是你的最终快速施法窗口。本次不施放快速法术，点击“让过快速施法”。",
+      "roundTwoPlanning": "新一轮的重置、聚魔和维持已经自动完成；丛林灰狼的行动标记重新就绪。本轮准备荆棘之墙，看墙体怎样占住两个区域之间的边界。",
+      "planOpenAllCategory": "点击“全部”分类。",
+      "planWallNextPage": "点击下一页，找到“荆棘之墙”。",
+      "planSelectThornsWall": "荆棘之墙是墙体法术，会放在两个相邻区域之间的边界上。点击“荆棘之墙”卡牌本体，把它放进计划槽。",
+      "planConfirmThornsWall": "点击“确认计划 1/2”提交本回合计划。",
+      "prepareOpponentEmptyPlan": "对手本回合不准备法术，双方进入部署阶段。",
+      "opponentPassSecondDeployment": "对手先让过部署，轮到你施放准备好的墙体法术。",
+      "wallPrepared": "荆棘之墙已经在准备区。墙体法术不是召唤到格子里，而是选择两个区域之间的边界。",
+      "wallSelectSpell": "点击准备区的“荆棘之墙”。",
+      "wallTargetEdge": "点击左后区与中左后区之间的边界。",
+      "wallCardResult": "荆棘之墙已经贴在这条边界上，墙体用自己的法术牌面表示，不是普通单位卡位。",
+      "wallEffectReading": "这张墙会挡住边界上的移动和视线；后续攻击或法术需要按墙体位置判断能不能穿过。",
+      "endSecondDeployment": "墙体已经完成部署。点击“结束部署”，进入先手快速施法窗口。",
+      "opponentPassSecondInitiativeQuickcast": "对手让过先手快速施法后，轮到你决定是否快速施法。",
+      "skipSecondInitiativeQuickcast": "本轮仍不使用快速施法，点击“让过快速施法”。",
+      "opponentPassSecondCreatureAction": "对手让过生物行动后，轮到你的丛林灰狼行动。",
+      "guardSelectWolf": "点击场上的“丛林灰狼”卡牌本体，选它作为这次行动来源。",
+      "guardAction": "点击行动条里的“守卫”。守卫是一个行动，结算后才会在单位上出现守卫标记。",
+      "guardTokenResult": "丛林灰狼获得守卫标记，并消耗本回合行动。守卫标记贴在单位上，表示它会保护同区域的友方对象。",
+      "endSecondCreatureAction": "守卫已经消耗灰狼行动。点击“结束行动”，进入最终快速施法。",
+      "opponentPassSecondFinalQuickcast": "对手让过最终快速施法后，轮到你收尾本回合。",
+      "finish": "教程完成。你已经走过一轮常规流程，并看过墙体和守卫的结果。"
     }
   },
   "actionLog": {
@@ -477,6 +576,7 @@
     "spellPushTarget": "，目标 {{targetId}}，{{from}} → {{to}}",
     "spellTeleportResolved": "法术传送",
     "spellTeleportTarget": "，目标 {{targetId}}，{{from}} → {{to}}，距离 {{distance}}",
-    "arenaObjectRegenerated": "{{objectId}} 重生治疗 {{healing}} 点伤害"
+    "arenaObjectRegenerated": "{{objectId}} 重生治疗 {{healing}} 点伤害",
+    "mageRegenerated": "法师重生治疗 {{healing}} 点伤害"
   }
 }

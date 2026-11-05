@@ -3,6 +3,7 @@ import {
     createWriteStream,
     existsSync,
     mkdirSync,
+    readdirSync,
     readFileSync,
     renameSync,
     rmSync,
@@ -65,6 +66,128 @@ export const isSharedRuntimeAssetKey = (key) => {
     if (!normalizedKey.startsWith('official/common/')) return false;
     if (!normalizedKey.startsWith('official/common/audio/')) return true;
     return COMMON_RUNTIME_AUDIO_KEYS.has(normalizedKey);
+};
+
+const isSafeManifestAssetPath = (value) => typeof value === 'string'
+    && value.length > 0
+    && value.trim() === value
+    && !value.startsWith('/')
+    && !value.includes('\\')
+    && !/^[A-Za-z]:/.test(value)
+    && !/^[a-z][a-z0-9+.-]*:/i.test(value)
+    && value.split('/').every((segment) => segment && segment !== '.' && segment !== '..');
+
+const getRuntimeAssetManifestPaths = ({ assetsDir, gameIds, all }) => {
+    const normalizedGameIds = new Set(gameIds.map(normalizeGameId));
+    const paths = new Set();
+    const addGameManifest = (gameRoot) => {
+        const manifestPath = path.join(gameRoot, 'assets-manifest.json');
+        if (existsSync(manifestPath)) paths.add(path.resolve(manifestPath));
+    };
+
+    if (all) {
+        for (const entry of readdirSync(assetsDir, { withFileTypes: true })) {
+            if (entry.isDirectory() && entry.name !== 'i18n' && entry.name !== 'atlas-configs') {
+                addGameManifest(path.join(assetsDir, entry.name));
+            }
+        }
+    } else {
+        for (const gameId of normalizedGameIds) addGameManifest(path.join(assetsDir, gameId));
+    }
+
+    const i18nRoot = path.join(assetsDir, 'i18n');
+    if (existsSync(i18nRoot)) {
+        for (const locale of readdirSync(i18nRoot, { withFileTypes: true })) {
+            if (!locale.isDirectory()) continue;
+            const localeRoot = path.join(i18nRoot, locale.name);
+            for (const game of readdirSync(localeRoot, { withFileTypes: true })) {
+                if (!game.isDirectory() || (!all && !normalizedGameIds.has(game.name))) continue;
+                addGameManifest(path.join(localeRoot, game.name));
+            }
+        }
+    }
+
+    return [...paths].sort((left, right) => left.localeCompare(right));
+};
+
+export const loadRuntimeManifestObjects = ({
+    assetsDir = path.join(process.cwd(), 'public', 'assets'),
+    gameIds = [],
+    all = false,
+} = {}) => {
+    if (!all && gameIds.length === 0) {
+        throw new Error('加载运行时素材 manifest 必须指定 --game <gameId>，或明确使用 --all');
+    }
+
+    const runtimeObjects = new Map();
+    for (const manifestPath of getRuntimeAssetManifestPaths({ assetsDir, gameIds, all })) {
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+        if (manifest?.manifestVersion !== 1
+            || manifest.scope !== 'official'
+            || !manifest.files
+            || Array.isArray(manifest.files)
+            || typeof manifest.files !== 'object') {
+            throw new Error('运行时素材 manifest 无效: ' + manifestPath);
+        }
+
+        const relativeDirectory = path.relative(assetsDir, path.dirname(manifestPath)).replace(/\\/g, '/');
+        const expectedBasePrefix = 'official/' + relativeDirectory + '/';
+        if (manifest.basePrefix !== expectedBasePrefix) {
+            throw new Error('运行时素材 manifest basePrefix 不匹配: ' + manifestPath);
+        }
+        if (!all && ![...gameIds].map(normalizeGameId).some((gameId) => matchesGameAssetKey(expectedBasePrefix, gameId))) {
+            throw new Error('运行时素材 manifest 不属于指定 gameId: ' + manifestPath);
+        }
+
+        for (const [logicalPath, definition] of Object.entries(manifest.files)) {
+            if (!isSafeManifestAssetPath(logicalPath)
+                || !definition?.variants
+                || Array.isArray(definition.variants)
+                || typeof definition.variants !== 'object') {
+                continue;
+            }
+            for (const [rawExtension, variant] of Object.entries(definition.variants)) {
+                const extension = rawExtension.replace(/^\./, '');
+                if (!/^[a-z0-9]+$/i.test(extension)) continue;
+                const key = expectedBasePrefix + logicalPath + '.' + extension;
+                if (!isPublishableActiveObjectKey(key)) continue;
+                if (!Number.isSafeInteger(variant?.bytes)
+                    || variant.bytes < 0
+                    || !/^[a-f0-9]{64}$/i.test(String(variant?.sha256 || ''))) {
+                    throw new Error('运行时素材 manifest 缺少有效 size/hash: ' + key);
+                }
+                const metadata = { size: variant.bytes, sha256: variant.sha256.toLowerCase() };
+                const existing = runtimeObjects.get(key);
+                if (existing && (existing.size !== metadata.size || existing.sha256 !== metadata.sha256)) {
+                    throw new Error('多个运行时 manifest 对象元数据冲突: ' + key);
+                }
+                runtimeObjects.set(key, metadata);
+            }
+        }
+    }
+    return runtimeObjects;
+};
+
+export const mergeRuntimeManifestObjects = (inventoryObjects, runtimeManifestObjects) => {
+    if (!(inventoryObjects instanceof Map) || !(runtimeManifestObjects instanceof Map)) {
+        throw new Error('服务器清单和运行时 manifest 对象必须是 Map');
+    }
+
+    const objects = new Map(inventoryObjects);
+    const inventoryMissing = [];
+    for (const [key, manifestMetadata] of runtimeManifestObjects) {
+        const inventoryMetadata = inventoryObjects.get(key);
+        if (!inventoryMetadata) {
+            objects.set(key, manifestMetadata);
+            inventoryMissing.push(key);
+            continue;
+        }
+        if (inventoryMetadata.size !== manifestMetadata.size
+            || String(inventoryMetadata.sha256 || '').toLowerCase() !== manifestMetadata.sha256) {
+            throw new Error('服务器素材清单与运行时 manifest 元数据不一致: ' + key);
+        }
+    }
+    return { objects, inventoryMissing: inventoryMissing.sort((left, right) => left.localeCompare(right)) };
 };
 
 export const selectAssetKeys = (objects, { gameIds = [], all = false } = {}) => {
@@ -204,10 +327,19 @@ export const runDownloadCli = async (argv = process.argv.slice(2)) => {
             throw new Error(`未知参数: ${arg}`);
         }
     }
-    const objects = await fetchAssetInventory();
-    const keys = selectAssetKeys(objects, { gameIds, all });
-    const result = await downloadAssetKeys({ objects, keys, dryRun });
-    console.log(`素材下载完成：选择 ${result.selected}，下载 ${result.downloaded}，跳过未变化 ${result.skipped}`);
+    const inventoryObjects = await fetchAssetInventory();
+    const assetsDir = path.join(process.cwd(), 'public', 'assets');
+    const runtimeManifestObjects = loadRuntimeManifestObjects({ assetsDir, gameIds, all });
+    const merged = mergeRuntimeManifestObjects(inventoryObjects, runtimeManifestObjects);
+    const keys = selectAssetKeys(merged.objects, { gameIds, all });
+    const result = await downloadAssetKeys({ objects: merged.objects, keys, assetsDir, dryRun });
+    const supplemental = merged.inventoryMissing.length
+        ? '（远端清单漏列 ' + merged.inventoryMissing.length + ' 项）'
+        : '';
+    console.log((dryRun ? '素材下载计划：' : '素材下载完成：') + '选择 ' + result.selected
+        + (dryRun ? '，计划下载 ' : '，下载 ') + result.downloaded
+        + '，本地 hash 一致跳过 ' + result.skipped
+        + '，运行 manifest 补充 ' + merged.inventoryMissing.length + supplemental);
     return 0;
 };
 

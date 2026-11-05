@@ -288,7 +288,7 @@ export const DECK_II_CARDS: CardDef[] = [
         id: CARD_IDS_DECK_II.CARD_08,
         influence: 8,
         faction: FACTION_IDS.DYNASTY,
-        abilityIds: [ABILITY_IDS.NOBLE],
+        abilityIds: [ABILITY_IDS.ARISTOCRAT],
         difficulty: 2,
         deckVariant: 'II',
         nameKey: 'cards.deck_ii_card_08.name',

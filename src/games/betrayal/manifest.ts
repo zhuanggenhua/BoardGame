@@ -1,5 +1,8 @@
 import type { GameManifestEntry } from '../manifest.types';
 import {
+    DESKTOP_REFERENCE_VIEWPORT,
+} from '../../shared/referenceViewports';
+import {
     BETRAYAL_SCENARIO_SETUP_OPTIONS,
 } from './roomSetup';
 
@@ -42,7 +45,14 @@ const entry: GameManifestEntry = {
     },
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
-    mobileLayoutPreset: 'map-shell',
+    mobileLayoutPreset: 'board-shell',
+    mobileHudPlacement: 'portal',
+    mobileBoardShellLayout: {
+        designWidth: DESKTOP_REFERENCE_VIEWPORT.width,
+        designHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+        referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
+        referenceHeight: DESKTOP_REFERENCE_VIEWPORT.height,
+    },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     pageShell: {
         keepBoardMountedOnPlayerViewChange: true,

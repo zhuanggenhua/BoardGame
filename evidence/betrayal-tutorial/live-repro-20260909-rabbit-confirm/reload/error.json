@@ -1,0 +1,237 @@
+{
+  "screen": {
+    "url": "http://127.0.0.1:4274/play/betrayal/tutorial/basic-setup-and-turn",
+    "title": "正在学习 山屋惊魂 | 易桌游",
+    "activeStep": null,
+    "overlayText": null,
+    "confirmText": null,
+    "confirmDisabled": null,
+    "confirmedCount": null,
+    "requiredCount": null,
+    "discoveryPanelVisible": false,
+    "damagePanelVisible": false,
+    "continueModalVisible": false
+  },
+  "snapshot": {
+    "key": "local_match_snapshot_v1:betrayal:tutorial-progress:v1:betrayal:basic-setup-and-turn",
+    "savedAt": 1788933329353,
+    "tutorial": {
+      "active": false,
+      "manifestId": null,
+      "manifestRevision": null,
+      "stepIndex": 0,
+      "stepId": null,
+      "allowedCommands": null,
+      "infoStep": null,
+      "aiActionCount": 0,
+      "stepAiActionCount": 0
+    },
+    "core": {
+      "phase": "characterSelect",
+      "currentPlayerId": null,
+      "pendingEventRollResolution": null,
+      "recentRoll": null,
+      "latestFeedback": null
+    }
+  },
+  "logs": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "info",
+      "text": "🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙"
+    },
+    {
+      "type": "log",
+      "text": "[TokenRefresh] 启动时未发现本地 token，尝试刷新 token"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T05:55:19.179Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T05:55:19.182Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"timeoutMs\":120000}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"match-room-ai-runtime\",\"mode\":\"tutorial-local\",\"source\":\"MatchRoom\",\"gameId\":\"betrayal\",\"matchId\":null,\"hasOnlineAiSeat\":false,\"aiSeatIds\":[],\"authority\":\"server-online-ai-executor\",\"effectivePlayerID\":\"0\",\"statusPlayerID\":\"0\",\"route\":{\"isTutorialRoute\":true,\"isSpectatorRoute\":false,\"shouldAutoJoin\":false},\"seatControllerTypes\":{}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: match-room-ai-runtime, mode: tutorial-local, source: MatchRoom, gameId: betrayal, matchId: null}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T05:55:19.894Z\",\"stage\":\"load-start\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\"}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T05:55:19.895Z\",\"stage\":\"load-reuse-inflight\",\"gameId\":\"betrayal\"}"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 35.0 FPS | P95 帧时 16.8ms — 低于 60fps"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T05:55:28.084Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":8903}"
+    },
+    {
+      "type": "info",
+      "text": "[GameRuntime] {\"at\":\"2026-09-09T05:55:28.084Z\",\"stage\":\"load-success\",\"gameId\":\"betrayal\",\"durationMs\":8189}"
+    },
+    {
+      "type": "info",
+      "text": "[GameNamespace] {\"at\":\"2026-09-09T05:55:29.232Z\",\"stage\":\"load-http-fallback-success\",\"gameId\":\"betrayal\",\"namespace\":\"game-betrayal\",\"language\":\"zh-CN\",\"resolvedLanguage\":\"zh-CN\",\"durationMs\":9338}"
+    },
+    {
+      "type": "warning",
+      "text": "[TutorialSystem] START: 教程启动 {manifestId: basic-setup-and-turn, stepsCount: 44, firstStepId: setup-runtime}"
+    },
+    {
+      "type": "log",
+      "text": "%c✓ [AI_RUNTIME_TRUTH] {\"stage\":\"local-provider-state\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"hasAiSeat\":false,\"currentPlayerId\":\"0\",\"currentControllerType\":\"human\",\"phase\":\"\",\"turnNumber\":0,\"localPregameControlledPlayerId\":null,\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #51cf66; font-weight: bold; background: #e7f5e7; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-provider-state, mode: local, gameId: betrayal, hasAiSeat: false, currentPlayerId: 0}"
+    },
+    {
+      "type": "log",
+      "text": "%c⚠️ [AI_RUNTIME_TRUTH] {\"stage\":\"local-ai-disabled\",\"mode\":\"local\",\"gameId\":\"betrayal\",\"reason\":\"all-human-seats\",\"seatControllerTypes\":{\"0\":\"human\",\"1\":\"human\",\"2\":\"human\"}} color: #ff8c00; font-weight: bold; background: #fff4e6; padding: 4px 8px; border-radius: 4px;"
+    },
+    {
+      "type": "log",
+      "text": "[AI_RUNTIME_TRUTH] {stage: local-ai-disabled, mode: local, gameId: betrayal, reason: all-human-seats, seatControllerTypes: Object}"
+    },
+    {
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg"
+    },
+    {
+      "type": "debug",
+      "text": "[AssetLoader] 图片加载失败（将尝试备选格式）: http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg"
+    },
+    {
+      "type": "warning",
+      "text": "[AssetLoader] betrayal 关键图片预加载耗时 31753ms（83 张）"
+    },
+    {
+      "type": "warning",
+      "text": "🟡 [性能] 平均 37.9 FPS | P95 帧时 133.4ms — 低于 60fps"
+    }
+  ],
+  "failures": [
+    {
+      "url": "http://127.0.0.1:4274/auth/refresh",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/haunts/mummy-girl.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "https://assets.easyboardgame.top/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg",
+      "failure": "net::ERR_BLOCKED_BY_ORB"
+    },
+    {
+      "url": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg",
+      "failure": "net::ERR_ABORTED"
+    },
+    {
+      "url": "http://8.148.71.102/official/common/audio/bgm/Horror%20Music%20Pack%20Vol.%209/Tip%20Toe%20(RT%205.085)/compressed/Horror%20Vol9%20Tip%20Toe%20Main.ogg",
+      "failure": "net::ERR_ABORTED"
+    }
+  ]
+}

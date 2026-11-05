@@ -17,6 +17,7 @@ import {
 import type { ActionBarAction } from "../../core/ui/types";
 import { BetrayalConfirmButton } from "./confirmButtonSurface";
 import type { BetrayalCore } from "./game";
+import type { PreviewState } from "./previewStateModel";
 
 const ACTION_ICON_BY_ID: Partial<Record<ActionBarAction["id"], LucideIcon>> = {
   move: Footprints,
@@ -35,28 +36,11 @@ const ACTION_ICON_BY_ID: Partial<Record<ActionBarAction["id"], LucideIcon>> = {
   cancelTarget: X,
 };
 
-type BetrayalActionDockInteractionMode =
-  | "move"
-  | "trade"
-  | "heal"
-  | "attack"
-  | "eventChoice"
-  | "dustHauntSearch"
-  | "dustHauntCure"
-  | "inventoryTargetRoom"
-  | "helpingHandsTrollMove"
-  | "monsterMove"
-  | "monsterAttack"
-  | "bloodFromStoneSetupPlacement"
-  | "hauntTargeting"
-  | null;
-
 type BetrayalActionDockSurfaceProps = {
   actions: ActionBarAction[];
-  variant: "desktop" | "mobile";
   phase: BetrayalCore["phase"];
   recommendedAction: ActionBarAction["id"] | null | undefined;
-  interactionMode: BetrayalActionDockInteractionMode;
+  interactionMode: PreviewState["interactionMode"];
   hauntActionKind: string | null | undefined;
   hauntTargetingActionKind: string | null | undefined;
   hasActiveHauntTargetGuide: boolean;
@@ -65,7 +49,6 @@ type BetrayalActionDockSurfaceProps = {
   isBloodFromStoneSetupPlacementMode: boolean;
   isDustSicknessExchangeMode: boolean;
   isHauntTargetingMode: boolean;
-  isPhoneLandscapeLayout: boolean;
   hideTradeAction: boolean;
   actionCueText: string;
   actionHandlers: Partial<Record<ActionBarAction["id"], () => void>>;
@@ -183,80 +166,20 @@ function resolveDesktopActionButtonClassName({
   }`;
 }
 
-function resolveMobileActionButtonClassName({
-  action,
-  isHauntPrimaryButton,
-  isHauntTargetCancelButton,
-  isHauntTargetingMode,
-  isInventoryUseConfirmation,
-  isPhoneLandscapeLayout,
-  isRecommended,
-  isRoomEndTurnEffectAction,
-}: {
-  action: ActionBarAction;
-  isHauntPrimaryButton: boolean;
-  isHauntTargetCancelButton: boolean;
-  isHauntTargetingMode: boolean;
-  isInventoryUseConfirmation: boolean;
-  isPhoneLandscapeLayout: boolean;
-  isRecommended: boolean;
-  isRoomEndTurnEffectAction: boolean;
-}) {
-  if (isInventoryUseConfirmation) {
-    return "min-w-[132px] px-5 text-[14px] shadow-[0_10px_22px_rgba(0,0,0,0.34)]";
-  }
-
-  return `flex flex-col items-center justify-center transition ${
-    isPhoneLandscapeLayout && isHauntTargetingMode
-      ? isHauntTargetCancelButton
-        ? "absolute"
-        : isHauntPrimaryButton
-          ? "absolute"
-          : ""
-      : ""
-  } ${
-    isPhoneLandscapeLayout
-      ? "min-h-[56px] gap-0.5 rounded-[5px] border-0 bg-transparent px-1 py-1 text-[11px] font-bold uppercase tracking-[0.08em] shadow-none"
-      : "min-h-[54px] gap-1 rounded-[14px] border px-1.5 py-1.5 text-[10px] font-medium"
-  } ${
-    action.disabled
-      ? isPhoneLandscapeLayout
-        ? "cursor-not-allowed text-[#5f584d] opacity-55"
-        : "cursor-not-allowed border-[#3e3526] bg-[rgba(22,17,13,0.72)] text-[#6f6758]"
-      : isRoomEndTurnEffectAction
-        ? isPhoneLandscapeLayout
-          ? "text-[#ffd59a] underline decoration-[#f59e0b] decoration-2 underline-offset-4 hover:text-[#ffe6b8]"
-          : "border-[#b66b36] bg-[rgba(105,45,18,0.34)] text-[#ffd59a]"
-        : isRecommended
-          ? isPhoneLandscapeLayout
-            ? "text-[#f6ffc4] underline decoration-[#f2cc79] decoration-2 underline-offset-4 hover:text-[#fbffd2]"
-            : "border-[#c9a35e] bg-[rgba(201,163,94,0.16)] text-[#f3e0b4]"
-          : isPhoneLandscapeLayout
-            ? "text-[#ead8a8] hover:text-[#fff0ba]"
-            : "border-[#5c4d35] bg-[rgba(30,22,17,0.88)] text-[#d8ccb0]"
-  }`;
-}
-
 function resolveBetrayalActionButtonStyle({
   action,
-  isHauntPrimaryButton,
   isHauntTargetCancelButton,
   isHauntTargetingMode,
   isInventoryUseConfirmation,
-  isPhoneLandscapeLayout,
   isRecommended,
   isRoomEndTurnEffectAction,
-  variant,
 }: {
   action: ActionBarAction;
-  isHauntPrimaryButton: boolean;
   isHauntTargetCancelButton: boolean;
   isHauntTargetingMode: boolean;
   isInventoryUseConfirmation: boolean;
-  isPhoneLandscapeLayout: boolean;
   isRecommended: boolean;
   isRoomEndTurnEffectAction: boolean;
-  variant: BetrayalActionDockSurfaceProps["variant"];
 }): React.CSSProperties | undefined {
   if (isInventoryUseConfirmation) {
     return undefined;
@@ -270,50 +193,18 @@ function resolveBetrayalActionButtonStyle({
         ? "0 1px 2px rgba(0,0,0,0.9), 0 0 14px rgba(238,244,168,0.48)"
         : "0 1px 2px rgba(0,0,0,0.88), 0 0 8px rgba(234,216,168,0.28)";
 
-  if (variant === "desktop") {
-    return {
-      backgroundColor: "transparent",
-      backgroundImage: "none",
-      border: 0,
-      boxShadow: "none",
-      textShadow,
-      ...(isHauntTargetCancelButton && isHauntTargetingMode
-        ? {
-            bottom: 0,
-            left: "50%",
-            position: "absolute",
-            transform: "translateX(208px)",
-          }
-        : {}),
-    };
-  }
-
   return {
-    ...(isPhoneLandscapeLayout
-      ? {
-          backgroundColor: "transparent",
-          backgroundImage: "none",
-          border: 0,
-          boxShadow: "none",
-          textShadow,
-        }
-      : {}),
-    ...(isPhoneLandscapeLayout &&
-    isHauntTargetingMode &&
-    isHauntTargetCancelButton
+    backgroundColor: "transparent",
+    backgroundImage: "none",
+    border: 0,
+    boxShadow: "none",
+    textShadow,
+    ...(isHauntTargetCancelButton && isHauntTargetingMode
       ? {
           bottom: 0,
           left: "50%",
           position: "absolute",
-          transform: "translateX(184px)",
-        }
-      : {}),
-    ...(isPhoneLandscapeLayout && isHauntTargetingMode && isHauntPrimaryButton
-      ? {
-          bottom: 0,
-          left: "50%",
-          position: "absolute",
-          transform: "translateX(-50%)",
+          transform: "translateX(208px)",
         }
       : {}),
   };
@@ -321,7 +212,6 @@ function resolveBetrayalActionButtonStyle({
 
 export function BetrayalActionDockSurface({
   actions,
-  variant,
   phase,
   recommendedAction,
   interactionMode,
@@ -333,7 +223,6 @@ export function BetrayalActionDockSurface({
   isBloodFromStoneSetupPlacementMode,
   isDustSicknessExchangeMode,
   isHauntTargetingMode,
-  isPhoneLandscapeLayout,
   hideTradeAction,
   actionCueText,
   actionHandlers,
@@ -367,43 +256,26 @@ export function BetrayalActionDockSurface({
           isBloodFromStoneSetupPlacementMode,
           isDustSicknessExchangeMode,
         });
-        const className =
-          variant === "desktop"
-            ? resolveDesktopActionButtonClassName({
-                action,
-                isHauntTargetCancelButton,
-                isHauntTargetingMode,
-                isInventoryUseConfirmation,
-                isRecommended,
-                isRoomEndTurnEffectAction,
-              })
-            : resolveMobileActionButtonClassName({
-                action,
-                isHauntPrimaryButton,
-                isHauntTargetCancelButton,
-                isHauntTargetingMode,
-                isInventoryUseConfirmation,
-                isPhoneLandscapeLayout,
-                isRecommended,
-                isRoomEndTurnEffectAction,
-              });
-        const style = resolveBetrayalActionButtonStyle({
+        const className = resolveDesktopActionButtonClassName({
           action,
-          isHauntPrimaryButton,
           isHauntTargetCancelButton,
           isHauntTargetingMode,
           isInventoryUseConfirmation,
-          isPhoneLandscapeLayout,
           isRecommended,
           isRoomEndTurnEffectAction,
-          variant,
+        });
+        const style = resolveBetrayalActionButtonStyle({
+          action,
+          isHauntTargetCancelButton,
+          isHauntTargetingMode,
+          isInventoryUseConfirmation,
+          isRecommended,
+          isRoomEndTurnEffectAction,
         });
         const testId = isHauntTargetCancelButton
           ? "betrayal-haunt-target-cancel"
-          : variant === "desktop"
-            ? `betrayal-action-${action.id}`
-            : `betrayal-mobile-dock-${action.id}`;
-        const key = variant === "desktop" ? action.id : `mobile-dock-${action.id}`;
+          : `betrayal-action-${action.id}`;
+        const key = action.id;
         const clickHandler = actionHandlers[action.id];
         const title =
           action.disabled && action.description
@@ -430,19 +302,12 @@ export function BetrayalActionDockSurface({
           style,
         };
         const onClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-          if (variant === "desktop") {
-            event.stopPropagation();
-          }
+          event.stopPropagation();
           clickHandler?.();
         };
         const content = (
           <>
-            <Icon
-              size={variant === "desktop" ? 20 : isPhoneLandscapeLayout ? 18 : 14}
-              strokeWidth={
-                variant === "mobile" && isPhoneLandscapeLayout ? 2.35 : undefined
-              }
-            />
+            <Icon size={20} />
             <span>{action.label}</span>
           </>
         );
@@ -462,14 +327,8 @@ export function BetrayalActionDockSurface({
         return (
           <button
             key={key}
-            {...(variant === "desktop"
-              ? {
-                  onPointerDown: (event: React.PointerEvent<HTMLButtonElement>) =>
-                    event.stopPropagation(),
-                  onPointerUp: (event: React.PointerEvent<HTMLButtonElement>) =>
-                    event.stopPropagation(),
-                }
-              : {})}
+            onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
             {...commonButtonProps}
             onClick={onClick}
           >

@@ -39,9 +39,131 @@ import { isMageWarsImplementedVisibleEnchantmentSpell } from '../domain/spellRul
 
 const configPath = path.join(process.cwd(), MAGE_WARS_CONFIG_SOURCE_ID);
 
+const assertNoDuplicateJsonObjectKeys = (text: string): void => {
+    let index = 0;
+
+    const fail = (message: string): never => {
+        throw new Error(`${message} at offset ${index}`);
+    };
+
+    const skipWhitespace = (): void => {
+        while (/\s/.test(text[index] ?? '')) index += 1;
+    };
+
+    const expectCharacter = (character: string): void => {
+        skipWhitespace();
+        if (text[index] !== character) fail(`Expected "${character}"`);
+        index += 1;
+    };
+
+    const parseString = (): string => {
+        skipWhitespace();
+        if (text[index] !== '"') fail('Expected JSON string');
+
+        const start = index;
+        index += 1;
+        while (index < text.length) {
+            const character = text[index];
+            if (character === '\\') {
+                index += 2;
+                continue;
+            }
+            if (character === '"') {
+                index += 1;
+                return JSON.parse(text.slice(start, index)) as string;
+            }
+            index += 1;
+        }
+        fail('Unterminated JSON string');
+    };
+
+    const parseValue = (pathLabel: string): void => {
+        skipWhitespace();
+        const character = text[index];
+
+        if (character === '{') {
+            index += 1;
+            const keys = new Set<string>();
+            skipWhitespace();
+            if (text[index] === '}') {
+                index += 1;
+                return;
+            }
+
+            while (true) {
+                const key = parseString();
+                if (keys.has(key)) {
+                    fail(`Duplicate JSON property "${key}" at ${pathLabel}`);
+                }
+                keys.add(key);
+                expectCharacter(':');
+                parseValue(`${pathLabel}.${key}`);
+                skipWhitespace();
+                if (text[index] === '}') {
+                    index += 1;
+                    return;
+                }
+                expectCharacter(',');
+            }
+        }
+
+        if (character === '[') {
+            index += 1;
+            skipWhitespace();
+            if (text[index] === ']') {
+                index += 1;
+                return;
+            }
+
+            let itemIndex = 0;
+            while (true) {
+                parseValue(`${pathLabel}[${itemIndex}]`);
+                itemIndex += 1;
+                skipWhitespace();
+                if (text[index] === ']') {
+                    index += 1;
+                    return;
+                }
+                expectCharacter(',');
+            }
+        }
+
+        if (character === '"') {
+            parseString();
+            return;
+        }
+
+        if (text.startsWith('true', index)) {
+            index += 4;
+            return;
+        }
+        if (text.startsWith('false', index)) {
+            index += 5;
+            return;
+        }
+        if (text.startsWith('null', index)) {
+            index += 4;
+            return;
+        }
+
+        const number = text.slice(index).match(/^-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/);
+        if (number) {
+            index += number[0].length;
+            return;
+        }
+
+        fail(`Unexpected JSON value at ${pathLabel}`);
+    };
+
+    parseValue('$');
+    skipWhitespace();
+    if (index !== text.length) fail('Unexpected trailing JSON content');
+};
+
 describe('mage-wars config package', () => {
     test('loads as strict JSON and materializes one-source review rows', () => {
         const text = readFileSync(configPath, 'utf8');
+        assertNoDuplicateJsonObjectKeys(text);
         const materialized = loadGameConfigPackageFromText(text, {
             sourceId: MAGE_WARS_CONFIG_SOURCE_ID,
         });
@@ -55,6 +177,12 @@ describe('mage-wars config package', () => {
         expect(reviewTable.rows).toHaveLength(materialized.package.objects.length);
     });
 
+    test('rejects duplicate properties before JSON.parse can overwrite them', () => {
+        expect(() => assertNoDuplicateJsonObjectKeys('{"value": 1, "value": 2}')).toThrow(
+            'Duplicate JSON property "value"',
+        );
+    });
+
     test('covers preset mage resources, spell cards, standard zones, legacy zones, dice, and tokens', () => {
         const materialized = materializeMageWarsConfigPackage();
         const objects = materialized.package.objects;
@@ -63,7 +191,7 @@ describe('mage-wars config package', () => {
         expect(byType('mage')).toHaveLength(4);
         expect(byType('card')).toHaveLength(157);
         expect(byType('card').filter((object) => object.tags?.includes('standard-starting-spell'))).toHaveLength(153);
-        expect(byType('card').filter((object) => object.tags?.includes('apprentice-spell'))).toHaveLength(91);
+        expect(byType('card').filter((object) => object.tags?.includes('apprentice-spell'))).toHaveLength(93);
         expect(byType('board-zone')).toHaveLength(18);
         expect(byType('board-zone').filter((object) => object.tags?.includes('apprentice-2x3'))).toHaveLength(6);
         expect(byType('board-zone').filter((object) => object.tags?.includes('formal-4x3'))).toHaveLength(12);
@@ -115,6 +243,21 @@ describe('mage-wars config package', () => {
             requiresCodeSupport: false,
             spellActionSpeed: 'quick',
             tags: expect.arrayContaining(['standard-starting-spell', 'apprentice-spell', '装备']),
+        });
+    });
+
+    test('loads Regrowth Belt as implemented mage-target equipment', () => {
+        expect(requireMageWarsSpellCardFromConfig(3707)).toMatchObject({
+            spellType: '装备',
+            typeLine: '装备 / 腰带',
+            schoolLine: '自然',
+            level: 1,
+            targetRule: '0-2` / 法师',
+            attackOrTraitLine: '法师获得重生2特性',
+            requiresCodeSupport: false,
+            spellActionSpeed: 'quick',
+            rawCost: '6',
+            manaCost: 6,
         });
     });
 
@@ -331,23 +474,15 @@ describe('mage-wars config package', () => {
         ]);
     });
 
-    test('maps landed standard starting spell cards to official atlas frames and keeps missing atlas explicit', () => {
+    test('maps all landed standard starting spell cards to official atlas frames', () => {
         const materialized = materializeMageWarsConfigPackage();
-        const missingRuntimeAtlasCardIds = [2303, 3800, 3801, 3802, 3803];
         const standardSpellObjects = materialized.package.objects
             .filter((object) => object.tags?.includes('standard-starting-spell'));
-        const missingAtlasObjects: number[] = [];
 
         expect(standardSpellObjects).toHaveLength(153);
         for (const object of standardSpellObjects) {
             const cardId = object.data?.cardId;
             expect(typeof cardId).toBe('number');
-
-            if (object.data?.assetStatus === 'blocked-missing-runtime-atlas') {
-                missingAtlasObjects.push(cardId as number);
-                expect(object.assetRefs ?? []).not.toContain(`spell-card-${cardId}-frame`);
-                continue;
-            }
 
             expect(object.assetRefs).toContain(`spell-card-${cardId}-frame`);
             const frameAsset = materialized.assetsById.get(`spell-card-${cardId}-frame`);
@@ -355,11 +490,9 @@ describe('mage-wars config package', () => {
             expect(frameAsset?.path).not.toContain('temp/mage-wars');
         }
 
-        expect(missingAtlasObjects.sort((left, right) => left - right)).toEqual(missingRuntimeAtlasCardIds);
-
         const legacySpellObjects = materialized.package.objects.filter((object) => object.tags?.includes('apprentice-spell'));
 
-        expect(legacySpellObjects).toHaveLength(91);
+        expect(legacySpellObjects).toHaveLength(93);
         for (const object of legacySpellObjects) {
             const cardId = object.data?.cardId;
             expect(typeof cardId).toBe('number');
@@ -407,15 +540,16 @@ describe('mage-wars config package', () => {
             3405, 3409,
         ];
 
-        expect(speedByCardId.size).toBe(91);
+        expect(speedByCardId.size).toBe(93);
         expect([...speedByCardId.values()].every((speed) => speed === 'quick' || speed === 'standard')).toBe(true);
-        expect([...speedByCardId.values()].filter((speed) => speed === 'quick')).toHaveLength(61);
+        expect([...speedByCardId.values()].filter((speed) => speed === 'quick')).toHaveLength(63);
         expect([...speedByCardId.entries()]
             .filter(([, speed]) => speed === 'standard')
             .map(([spellCardId]) => spellCardId)
             .sort((left, right) => Number(left) - Number(right))).toEqual(standardSpellCardIds);
         expect(requireMageWarsSpellCardFromConfig(1710).spellActionSpeed).toBe('quick');
         expect(requireMageWarsSpellCardFromConfig(1806).spellActionSpeed).toBe('quick');
+        expect(requireMageWarsSpellCardFromConfig(1807).spellActionSpeed).toBe('quick');
         expect(requireMageWarsSpellCardFromConfig(2224).spellActionSpeed).toBe('quick');
         expect(requireMageWarsSpellCardFromConfig(2800).spellActionSpeed).toBe('standard');
         expect(requireMageWarsSpellCardFromConfig(3400).spellActionSpeed).toBe('quick');
@@ -562,6 +696,21 @@ describe('mage-wars config package', () => {
             ],
             unsupportedRules: undefined,
         });
+        expect(requireMageWarsSpellCardFromConfig(1807).semantics).toEqual({
+            abilityKind: 'visible-object-enchantment',
+            attachment: {
+                kind: 'enchantment',
+                visibility: 'revealed',
+                anchor: 'object',
+            },
+            continuousModifiers: undefined,
+            grants: undefined,
+            movementEffects: [
+                { kind: 'direct-damage', amount: 1, damageType: 'aether' },
+            ],
+            unsupportedRules: undefined,
+        });
+        expect(requireMageWarsSpellCardFromConfig(1807).requiresCodeSupport).toBe(false);
         expect(requireMageWarsSpellCardFromConfig(1801).requiresCodeSupport).toBe(false);
         expect(requireMageWarsSpellCardFromConfig(1826).semantics).toEqual({
             abilityKind: 'visible-object-enchantment',
@@ -691,6 +840,22 @@ describe('mage-wars config package', () => {
             },
         });
         expect(requireMageWarsSpellCardFromConfig(3705).requiresCodeSupport).toBe(false);
+    });
+
+    test('marks implemented familiar and spawn-point cards as code-complete', () => {
+        expect(requireMageWarsSpellCardFromConfig(2218).requiresCodeSupport).toBe(false);
+        expect(requireMageWarsSpellCardFromConfig(2908).requiresCodeSupport).toBe(false);
+        expect(requireMageWarsSpellCardFromConfig(1907).semantics).toEqual({
+            abilityKind: 'visible-area-enchantment',
+            attachment: {
+                kind: 'enchantment',
+                visibility: 'revealed',
+                anchor: 'zone',
+            },
+            continuousModifiers: undefined,
+            grants: undefined,
+            unsupportedRules: undefined,
+        });
     });
 
     test('exposes Demon Cuirass damage barrier from structured config', () => {

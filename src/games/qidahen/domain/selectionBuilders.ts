@@ -1,4 +1,6 @@
+import { getQidahenTrainableTroopPieces } from './wheelRecruitTrain';
 import {
+    isQidahenLogicalRuleRegionId,
     isQidahenKoreaRuntimeRegionId,
     resolveQidahenPrimaryRuntimeRegionId,
 } from './regionConfig';
@@ -7,6 +9,8 @@ import {
 } from './actionSourceRegionState';
 import {
     canPlaceRegularTroopsInRegion,
+    canReceiveFriendlyTroopsInRegion,
+    getPreferredNonSiegedControlledRuntimeRegion,
     getPreferredRegularTroopPlacementRegion,
     isRegionAvailableForNonDispatchAction,
     isRegionUnderSiege,
@@ -40,6 +44,37 @@ import type {
 
 const QIDAHEN_DIPLOMACY_MAX_TARGETS = 3;
 
+const getGrantPardonSourceTokens = (
+    state: QidahenCore,
+    sourceRegionId: string,
+): Array<{
+    tokenId: string;
+    pieceId: string;
+    troopIndex: number;
+    location: 'field' | 'city';
+    factionId: QidahenFactionId;
+}> => state.mapTokens
+    .filter((token) => (
+        token.type === 'army'
+        && token.regionId === sourceRegionId
+        && (token.location === 'field' || token.location === 'city')
+        && token.faction !== 'neutral'
+        && token.pieceId != null
+        && token.troopIndex != null
+    ))
+    .map((token) => ({
+        tokenId: token.id,
+        pieceId: token.pieceId!,
+        troopIndex: token.troopIndex!,
+        location: token.location as 'field' | 'city',
+        factionId: token.faction as QidahenFactionId,
+    }))
+    .sort((left, right) => (
+        left.location.localeCompare(right.location, 'en')
+        || left.troopIndex - right.troopIndex
+        || left.tokenId.localeCompare(right.tokenId, 'en')
+    ));
+
 const cloneQidahenDiplomacyResolvedSteps = (
     resolvedSteps: QidahenDiplomacySelection['resolvedSteps'],
 ): QidahenDiplomacySelection['resolvedSteps'] => (
@@ -68,7 +103,7 @@ export const buildMaShiTradeSelectionFromRegionSemantics = (
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
-        && canPlaceRegularTroopsInRegion(region, 'ming')
+        && canPlaceRegularTroopsInRegion(region, 'ming', state)
     ));
     const targetRegion = selectedRuntimeRegion ?? getPreferredRegularTroopPlacementRegion(state, 'ming');
     if (!targetRegion) {
@@ -116,13 +151,17 @@ export const buildRecruitSelectionFromRegionSemantics = (
     const selectedRuntimeRegion = state.regions.find((region) => (
         !region.isLogicalRegion
         && region.id === selectedRuntimeRegionId
-        && canPlaceRegularTroopsInRegion(region, factionId)
+        && canPlaceRegularTroopsInRegion(region, factionId, state)
     ));
     const targetRegion = selectedRuntimeRegion ?? getPreferredRegularTroopPlacementRegion(state, factionId);
     if (!targetRegion) {
         return null;
     }
-    const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, regionSemantics.displayAnchorRegionId);
+    const isSelectedRuntimeRegion = !isQidahenLogicalRuleRegionId(regionSemantics.targetRegionId)
+        && selectedRuntimeRegion?.id === targetRegion.id;
+    const targetRegionName = isSelectedRuntimeRegion
+        ? targetRegion.name
+        : getPreferredLogicalRegionDisplayName(targetRegion, regionSemantics.displayAnchorRegionId);
     const choices: QidahenRecruitSelection['choices'] = [
         {
             id: 'level-2-troops',
@@ -137,16 +176,6 @@ export const buildRecruitSelectionFromRegionSemantics = (
             troopDelta: 2,
         },
     ];
-
-    const artilleryTechLevel = getArmamentLevel(state, factionId, 'artillery-tech');
-    if (artilleryTechLevel > 0) {
-        choices.push({
-            id: 'level-1-artillery',
-            label: '建立 1 个等级 1 炮兵',
-            detail: `${targetRegionName} 部队 +1，并记录炮兵 x1（1级）；火炮技术${artilleryTechLevel} 允许建立炮兵。`,
-            troopDelta: 1,
-        });
-    }
 
     return {
         targetRegionId: targetRegion.id,
@@ -182,8 +211,7 @@ const isGrantPardonSourceRegion = (
     executorFactionId: QidahenFactionId,
 ): boolean => (
     !region.isLogicalRegion
-    && region.controller !== executorFactionId
-    && getNonSiegedCityActionSourceSnapshot(region).troops > 0
+    && getGrantPardonSourceTokens(state, region.id).some((token) => token.factionId !== executorFactionId)
     && region.adjacentRegionIds.some((adjacentRegionId) => (
         state.regions.some((adjacentRegion) => (
             !adjacentRegion.isLogicalRegion
@@ -198,21 +226,11 @@ export const buildGrantPardonSelectionFromRegionSemantics = (
     regionSemantics: QidahenExplicitRegionSelectionSemantics,
     executorFactionId: QidahenFactionId = 'ming',
 ): QidahenGrantPardonSelection | null => {
-    const executorFactionName = state.factions[executorFactionId].name;
-    const selectedRuntimeRegionId = resolveQidahenPrimaryRuntimeRegionId(regionSemantics.targetRegionId);
-    const preferredSourceRegion = state.regions.find((region) => (
-        region.id === selectedRuntimeRegionId
-        && isGrantPardonSourceRegion(state, region, executorFactionId)
-    )) ?? null;
-    const sourceRegions = [
-        ...(preferredSourceRegion ? [preferredSourceRegion] : []),
-        ...state.regions.filter((region) => (
-            region.id !== preferredSourceRegion?.id
-            && isGrantPardonSourceRegion(state, region, executorFactionId)
-        )),
-    ];
-    const choices = sourceRegions.flatMap((sourceRegion) => (
-        sourceRegion.adjacentRegionIds.flatMap((targetRegionId) => {
+    const sourceRegions = state.regions.filter((region) => isGrantPardonSourceRegion(state, region, executorFactionId));
+    const choices = sourceRegions.flatMap((sourceRegion) => {
+        const sourceRegionName = getPreferredLogicalRegionDisplayName(sourceRegion, regionSemantics.displayAnchorRegionId);
+        const sourceTokens = getGrantPardonSourceTokens(state, sourceRegion.id);
+        return sourceRegion.adjacentRegionIds.flatMap((targetRegionId) => {
             const targetRegion = state.regions.find((region) => (
                 !region.isLogicalRegion
                 && region.id === targetRegionId
@@ -221,38 +239,50 @@ export const buildGrantPardonSelectionFromRegionSemantics = (
             if (!targetRegion) {
                 return [];
             }
-            const sourceRegionName = getPreferredLogicalRegionDisplayName(sourceRegion, regionSemantics.displayAnchorRegionId);
             const targetRegionName = getPreferredLogicalRegionDisplayName(targetRegion, targetRegion.id);
-            const targetFactionName = toFactionLabel(sourceRegion.controller);
-            return [{
-                id: `${sourceRegion.id}->${targetRegion.id}`,
+            return sourceTokens
+                .filter(({ factionId }) => factionId !== executorFactionId)
+                .map(({ tokenId: sourceTokenId, pieceId: sourcePieceId, troopIndex, location: sourceLocation, factionId: sourceFactionId }) => {
+                    const sourceFactionName = toFactionLabel(sourceFactionId);
+                    return {
+                id: `${sourceRegion.id}:${sourceTokenId}->${targetRegion.id}`,
+                sourceTokenId,
+                sourcePieceId,
+                sourceTroopIndex: troopIndex,
+                sourceLocation,
+                sourceFactionId,
+                sourceFactionName,
                 sourceRegionId: sourceRegion.id,
                 sourceRegionName,
                 targetRegionId: targetRegion.id,
                 targetRegionName,
-                targetFactionId: sourceRegion.controller,
-                targetFactionName,
-                label: `${sourceRegionName} → ${targetRegionName}`,
-                detail: `指定${targetFactionName}在 ${sourceRegionName} 的 1 个部队，移动到相邻的${executorFactionName}控制区 ${targetRegionName} 并改为${executorFactionName}部队。`,
-            }];
-        })
-    ));
+                label: `${sourceRegionName}部队 ${troopIndex}`,
+                detail: `${sourceFactionName}玩家选择后，这支部队会直接移入${targetRegionName}并转为${state.factions[executorFactionId].name}部队。`,
+                    };
+                });
+        });
+    });
     if (choices.length === 0) {
         return null;
     }
-    const sourceRegion = preferredSourceRegion ?? sourceRegions[0] ?? null;
-    const displayAnchorRegionId = sourceRegion
-        ? resolvePreferredRegionDisplayAnchor(sourceRegion, regionSemantics.displayAnchorRegionId)
+    const targetRegion = state.regions.find((region) => choices.some((choice) => choice.targetRegionId === region.id)) ?? null;
+    const displayAnchorRegionId = targetRegion
+        ? resolvePreferredRegionDisplayAnchor(targetRegion, regionSemantics.displayAnchorRegionId)
         : null;
     return {
-        title: '赐印招安：选择目标部队和接收区',
-        summary: `指定 1 个对手相邻于${executorFactionName}控制区域的部队，再指定相邻的${executorFactionName}控制区域接收并转为${executorFactionName}部队。`,
+        title: '赐印招安：选择接收区',
+        summary: `先点击合法的大明接收区；系统根据相邻部队所属方交给对应对手选兵。`,
         ...(executorFactionId === 'ming' ? {} : { executorFactionId }),
-        preferredSourceRegionId: preferredSourceRegion?.id ?? null,
-        sourceRegionId: sourceRegion?.id ?? null,
-        sourceRegionName: sourceRegion ? getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId) : null,
+        preferredSourceRegionId: null,
+        targetRegionId: null,
+        opponentFactionId: null,
+        sourceRegionId: null,
+        sourceTokenId: null,
+        sourceRegionName: null,
         displayAnchorRegionId,
-        displayAnchorRegionName: sourceRegion ? getPreferredLogicalRegionDisplayName(sourceRegion, displayAnchorRegionId) : null,
+        displayAnchorRegionName: targetRegion
+            ? getPreferredLogicalRegionDisplayName(targetRegion, displayAnchorRegionId)
+            : null,
         selectedChoiceId: null,
         choices,
     };
@@ -406,15 +436,15 @@ export const buildDiplomacySelectionFromRegionSemantics = (
         ? state.regions.find((region) => (
             !region.isLogicalRegion
             && region.id === pinnedSourceRuntimeRegionId
-            && canPlaceRegularTroopsInRegion(region, actingFactionId)
+            && canReceiveFriendlyTroopsInRegion(region, actingFactionId)
         )) ?? null
         : null;
-    const candidateSourceRegion = selectedTargetOrSourceRegion && canPlaceRegularTroopsInRegion(selectedTargetOrSourceRegion, actingFactionId)
+    const candidateSourceRegion = selectedTargetOrSourceRegion && canReceiveFriendlyTroopsInRegion(selectedTargetOrSourceRegion, actingFactionId)
         ? selectedTargetOrSourceRegion
         : null;
     const sourceRegion = candidateSourceRegion
         ? candidateSourceRegion
-        : pinnedSourceRegion ?? getPreferredRegularTroopPlacementRegion(state, actingFactionId);
+        : pinnedSourceRegion ?? getPreferredNonSiegedControlledRuntimeRegion(state, actingFactionId);
     if (!sourceRegion) {
         return null;
     }
@@ -602,17 +632,17 @@ export const buildKhanEdictSelectionFromRegionSemantics = (
     const preferredSourceRuntimeRegion = preferredSourceRuntimeRegionId
         ? state.regions.find((region) => !region.isLogicalRegion && region.id === preferredSourceRuntimeRegionId) ?? null
         : null;
-    const fallbackSourceRegion = preferredSourceRuntimeRegion && canPlaceRegularTroopsInRegion(preferredSourceRuntimeRegion, attackerFactionId)
+    const fallbackSourceRegion = preferredSourceRuntimeRegion && canReceiveFriendlyTroopsInRegion(preferredSourceRuntimeRegion, attackerFactionId)
         ? preferredSourceRuntimeRegion
-        : getPreferredRegularTroopPlacementRegion(state, attackerFactionId);
-    const recruitTargetRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
+        : getPreferredNonSiegedControlledRuntimeRegion(state, attackerFactionId);
+    const recruitTargetRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId, state)
         ? selectedRuntimeRegion
-        : fallbackSourceRegion;
-    const hireTargetRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
+        : getPreferredRegularTroopPlacementRegion(state, attackerFactionId);
+    const hireTargetRegion = selectedRuntimeRegion && canReceiveFriendlyTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
         ? selectedRuntimeRegion
         : fallbackSourceRegion;
     const choices: QidahenKhanEdictSelection['choices'] = [];
-    const preferredSourceRegion = selectedRuntimeRegion && canPlaceRegularTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
+    const preferredSourceRegion = selectedRuntimeRegion && canReceiveFriendlyTroopsInRegion(selectedRuntimeRegion, attackerFactionId)
         ? selectedRuntimeRegion
         : fallbackSourceRegion ?? recruitTargetRegion ?? hireTargetRegion;
     const recruitTargetRegionName = recruitTargetRegion
@@ -631,11 +661,11 @@ export const buildKhanEdictSelectionFromRegionSemantics = (
         )
         : null;
 
-    if (recruitTargetRegion) {
+    if (recruitTargetRegion || getQidahenTrainableTroopPieces(state, attackerFactionId).length > 0) {
         choices.push({
             id: 'recruit-train',
             label: '征兵训练',
-            detail: `${recruitTargetRegionName} 部队 +2（免支付）`,
+            detail: recruitTargetRegion ? '选择征兵或训练。' : '训练现有部队。',
         });
     }
     if (hireTargetRegion) {

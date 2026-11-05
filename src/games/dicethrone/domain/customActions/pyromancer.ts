@@ -20,7 +20,7 @@ import { registerCustomActionHandler, createBonusDiceWithReroll, createDisplayOn
 import { registerChoiceEffectHandler } from '../choiceEffects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
 import { resourceSystem } from '../resourceSystem';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 
 // ============================================================================
 // 辅助函数
@@ -98,7 +98,7 @@ const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
     const collateralTargets = Object.keys(ctx.state.players).filter(playerId => playerId !== ctx.attackerId);
     for (const [index, targetId] of collateralTargets.entries()) {
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: targetId },
             baseDamage: dmg,
             state: ctx.state,
@@ -109,7 +109,7 @@ const resolveSoulBurnDamage = (ctx: CustomActionContext): DiceThroneEvent[] => {
             autoCollectStatus: false,
             autoCollectShields: false,
         });
-        events.push(...markUnblockableDamage(damageCalc.toEvents({ includeSideEffects: true }), 'direct'));
+        events.push(...markUnblockableDamage(damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[], 'direct'));
     }
     return events;
 };
@@ -143,7 +143,7 @@ const resolveFieryCombo = (ctx: CustomActionContext): DiceThroneEvent[] => {
     // 使用新伤害计算管线
     // 注意：伤害基于授予后的 FM 数量，需要手动添加修正（因为 state 还未更新）
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: opponentId },
         baseDamage: 5,
         state: ctx.state,
@@ -160,7 +160,7 @@ const resolveFieryCombo = (ctx: CustomActionContext): DiceThroneEvent[] => {
         autoCollectTokens: false, // 手动处理 FM 修正：FM 刚授予但 state 未更新，自动收集会用旧值导致数值错误
     });
     
-    events.push(...damageCalc.toEvents({ includeSideEffects: true }));
+    events.push(...damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
 
     return events;
 };
@@ -179,7 +179,7 @@ const resolveFieryCombo2 = (ctx: CustomActionContext): DiceThroneEvent[] => {
     
     // 使用新伤害计算管线
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: opponentId },
         baseDamage: 6,
         state: ctx.state,
@@ -196,7 +196,7 @@ const resolveFieryCombo2 = (ctx: CustomActionContext): DiceThroneEvent[] => {
         autoCollectTokens: false, // 手动处理 FM 修正：FM 可能未在 tokenDefinitions 中定义 damageBonus，需手动添加
     });
     
-    return damageCalc.toEvents({ includeSideEffects: true });
+    return damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[];
 };
 
 /**
@@ -228,13 +228,13 @@ const resolveMeteor = (ctx: CustomActionContext): DiceThroneEvent[] => {
     if (updatedFM > 0) {
         // 使用新伤害计算管线（伤害值 = FM 数量，自动收集所有修正）
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: updatedFM,
             state: ctx.state,
             timestamp: timestamp + 0.1,
         });
-        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
     }
     return events;
 };
@@ -274,13 +274,13 @@ const resolveBurnDown = (ctx: CustomActionContext, dmgPerToken: number, limit: n
 
         // 使用新伤害计算管线
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: toConsume * dmgPerToken,
             state: ctx.state,
             timestamp: timestamp + 0.2,
         });
-        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
     }
 
     return events;
@@ -313,7 +313,7 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
 
     // 使用新伤害计算管线，添加乘法修正
     const damageCalc = createDamageCalculation({
-        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+        source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
         target: { playerId: opponentId },
         baseDamage: base,
         state: ctx.state,
@@ -330,7 +330,7 @@ const resolveIgnite = (ctx: CustomActionContext, base: number, multiplier: numbe
         autoCollectTokens: false, // 手动处理 FM 修正：使用乘法系数（2x FM），自动收集只支持 1x，需手动计算
     });
     
-    events.push(...damageCalc.toEvents({ includeSideEffects: true }));
+    events.push(...damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
 
     return events;
 };
@@ -448,14 +448,14 @@ const resolveMagmaArmor = (ctx: CustomActionContext, opts: { dmgPerFire?: number
 
         // 使用新伤害计算管线（自动收集所有修正）
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: totalDamage,
             state: ctx.state,
             timestamp: ctx.timestamp + 0.1,
         });
 
-        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
     }
 
     return events;
@@ -507,13 +507,13 @@ const resolveMagmaArmor3 = (ctx: CustomActionContext): DiceThroneEvent[] => {
     if (totalDamage > 0) {
         const opponentId = ctx.ctx.defenderId;
         const damageCalc = createDamageCalculation({
-            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId, phase: ctx.damagePhase },
+            source: { playerId: ctx.attackerId, abilityId: ctx.sourceAbilityId },
             target: { playerId: opponentId },
             baseDamage: totalDamage,
             state: ctx.state,
             timestamp: ctx.timestamp + 0.1,
         });
-        events.push(...damageCalc.toEvents({ includeSideEffects: true }));
+        events.push(...damageCalc.toEvents({ includeSideEffects: true }) as DiceThroneEvent[]);
     }
 
     return events;
@@ -910,6 +910,7 @@ export function registerPyromancerCustomActions(): void {
                 } as TokenGrantedEvent],
             };
         }
+        if (!random) throw new Error('Pyromancer bonus-dice draw requires the authoritative random source');
         return {
             totalDamage: 0,
             followupEvents: buildDrawEvents(state, settlement.attackerId, 1, random, 'BONUS_DICE_SETTLED', timestamp, settlement.sourceAbilityId),

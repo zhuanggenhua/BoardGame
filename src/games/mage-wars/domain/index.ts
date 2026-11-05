@@ -53,6 +53,7 @@ function createPlayerState(
         preparedSpellSlots: 0,
         preparedSpellCardIds: [],
         discardSpellCardIds: [],
+        defeatedLivingCreatureCardIds: [],
     };
 }
 
@@ -107,6 +108,7 @@ export const MageWarsDomain: DomainCore<MageWarsCore, MageWarsCommand, MageWarsE
         return {
             playerOrder: normalizedPlayerIds,
             currentPlayerId: normalizedPlayerIds[0],
+            nextObjectSequence: 1,
             phaseReadyPlayerIds: [],
             turnNumber: 1,
             players,

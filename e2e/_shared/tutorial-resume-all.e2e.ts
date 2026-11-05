@@ -16,6 +16,7 @@ type TutorialResumeCase = {
     gameId: string;
     tutorialId: string;
     manifestId: string;
+    manifestRevision?: number | null;
     numPlayers: number;
     stepCount: number;
 };
@@ -35,10 +36,14 @@ const buildTutorialProgressSeed = (
     gameId: string,
     tutorialId: string,
     manifestId: string,
+    manifestRevision?: number | null,
 ) => [
     PROGRESS_SEED_PREFIX,
     encodeProgressPart(gameId),
     encodeProgressPart(tutorialId || manifestId),
+    ...(Number.isInteger(manifestRevision) && (manifestRevision ?? 0) > 0
+        ? [`r${manifestRevision}`]
+        : []),
 ].join(':');
 
 const sanitizeForPath = (value: string) => value.replace(/[^a-zA-Z0-9_-]+/g, '-');
@@ -107,6 +112,9 @@ const discoverTutorialResumeCases = async (page: Page): Promise<TutorialDiscover
                 gameId,
                 tutorialId,
                 manifestId: manifest.id,
+                manifestRevision: typeof (manifest as { revision?: unknown }).revision === 'number'
+                    ? (manifest as { revision?: number }).revision
+                    : null,
                 numPlayers,
                 stepCount: manifest.steps.length,
             });
@@ -141,6 +149,7 @@ const getSnapshotKey = (resumeCase: TutorialResumeCase) => {
         resumeCase.gameId,
         resumeCase.tutorialId,
         resumeCase.manifestId,
+        resumeCase.manifestRevision,
     );
     return `local_match_snapshot_v1:${resumeCase.gameId}:${seed}`;
 };

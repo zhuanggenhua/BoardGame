@@ -1,4 +1,5 @@
 import type { MatchState } from '../types';
+import { capturePrivateFeedbackReplay } from './feedbackPrivateReplay';
 import logger from '../../../server/logger.js';
 import {
     OnlineAiCircuitBreaker,
@@ -15,13 +16,18 @@ import {
     type OnlineAiRecoveryEngineConfig,
 } from './onlineAiRecovery';
 import type { OnlineAiClientTransportDiagnostics } from './protocol';
-import type { OnlineAiRecoveryFeedbackPayload } from './transportFeedbackReporter';
+import {
+    resolveTransportFeedbackCorrelation,
+    type OnlineAiRecoveryFeedbackPayload,
+} from './transportFeedbackReporter';
 
 export type OnlineAiCircuitFailureMatch = {
     matchID: string;
     gameId: string;
     state: MatchState<unknown>;
     stateID: number;
+    randomSeed?: string;
+    getRandomCursor?: () => number;
     engineConfig: OnlineAiRecoveryEngineConfig;
     commandQueue: OnlineAiCircuitQueuedItemLike[];
     lastCommandFailureReason: string | null;
@@ -104,6 +110,7 @@ export class OnlineAiCircuitFailureCoordinator<TMatch extends OnlineAiCircuitFai
             stateID: args.match.stateID,
             progressMarker: args.progressMarker ?? null,
         });
+        const privateReplay = capturePrivateFeedbackReplay(args.match);
         await this.hooks.reportRecoveryFeedback({
             matchId: args.match.matchID,
             gameId: args.match.gameId,
@@ -116,6 +123,13 @@ export class OnlineAiCircuitFailureCoordinator<TMatch extends OnlineAiCircuitFai
             progressMarker: args.progressMarker ?? buildAiProgressMarker(args.match.state, {
                 engineConfig: args.match.engineConfig,
                 gameId: args.match.gameId,
+            }),
+            privateReplay: privateReplay.data,
+            privateReplayError: privateReplay.error,
+            ...resolveTransportFeedbackCorrelation({
+                matchId: args.match.matchID,
+                state: args.match.state,
+                stateId: args.match.stateID,
             }),
             stateSnapshot: buildOnlineAiCircuitStateSnapshot({
                 matchId: args.match.matchID,

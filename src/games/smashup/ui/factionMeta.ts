@@ -74,9 +74,8 @@ import {
     VenetianMask,
     Wand2,
     Zap,
-    type LucideIcon,
 } from 'lucide-react';
-import type { ElementType } from 'react';
+import type { ComponentType, CSSProperties } from 'react';
 import { isSmashUpFactionImplementationInProgress, SMASHUP_FACTION_IDS } from '../domain/ids';
 import {
     AntIcon,
@@ -87,10 +86,18 @@ import {
     SvgRepoMagicLampIcon,
 } from './icons/CustomIcons';
 
+type FactionIcon = ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+    color?: string;
+    className?: string;
+    style?: CSSProperties;
+}>;
+
 export interface FactionMeta {
     id: string;
     nameKey: string;
-    icon: LucideIcon | ElementType;
+    icon: FactionIcon;
     color: string;
     descriptionKey: string;
     /** 可选：派系特有机制规则说明（用于派系选择详情面板） */

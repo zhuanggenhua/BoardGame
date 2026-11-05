@@ -5,12 +5,12 @@
  */
 
 import type { Browser, Page, TestInfo } from '@playwright/test';
-import { dirname } from 'node:path';
-import { mkdir } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { test, expect } from '../framework';
-import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotDir, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { getGameServerBaseURL } from '../helpers/common';
-import { getMatchState, injectMatchState } from '../helpers/state-injection';
+import { getMatchState, injectMatchState, patchMatchState } from '../helpers/state-injection';
 import '../../src/games/dicethrone/domain';
 import {
     closeDebugPanelIfOpen,
@@ -29,6 +29,7 @@ import {
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import {
     CURSED_PIRATE_DICE_FACE_IDS,
+    SHADOW_THIEF_DICE_FACE_IDS,
     STATUS_IDS,
     TOKEN_IDS,
     ZHANSHUJIA_DICE_FACE_IDS,
@@ -170,6 +171,13 @@ const saveEvidenceScreenshot = async (page: Page, testInfo: TestInfo, name: stri
     return path;
 };
 
+const saveEvidenceJson = async (testInfo: TestInfo, name: string, evidence: JsonRecord): Promise<string> => {
+    const path = join(getEvidenceScreenshotDir(testInfo), `${name}.json`);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
+    return path;
+};
+
 const setHarnessRandomQueue = async (page: Page, values: number[]): Promise<void> => {
     await page.evaluate((queueValues) => {
         const harness = (window as Window & {
@@ -201,7 +209,11 @@ const withTutorialRandomPolicy = (sys: JsonRecord, values: number[]): JsonRecord
     },
 });
 
-const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined): Promise<MatchSetup> => {
+const setupNewHeroMatch = async (
+    browser: Browser,
+    baseURL: string | undefined,
+    heroIds: { host?: string; guest?: string } = {},
+): Promise<MatchSetup> => {
     const match = await setupOnlineMatch(browser, baseURL, {
         skipImageGate: true,
         characterSelectionTimeout: CHARACTER_SELECTION_TIMEOUT,
@@ -211,8 +223,8 @@ const setupNewHeroMatch = async (browser: Browser, baseURL: string | undefined):
         throw new Error('DiceThrone online setup failed');
     }
 
-    await selectCharacter(match.hostPage, HOST_HERO_ID);
-    await selectCharacter(match.guestPage, GUEST_HERO_ID);
+    await selectCharacter(match.hostPage, heroIds.host ?? HOST_HERO_ID);
+    await selectCharacter(match.guestPage, heroIds.guest ?? GUEST_HERO_ID);
     await readyAndStartGame(match.hostPage, match.guestPage);
     await waitForGameBoard(match.hostPage);
     await waitForGameBoard(match.guestPage);
@@ -288,12 +300,31 @@ const applyOnlineMatchState = async (
         currentPlayerIndex: typeof sys.currentPlayerIndex === 'number' ? sys.currentPlayerIndex : 0,
     };
 
-    await injectMatchState(matchId, next, page);
+    const receipt = await injectMatchState(matchId, next, page);
     await page.evaluate(() => {
         window.dispatchEvent(new Event('focus'));
         window.dispatchEvent(new Event('online'));
     });
     await page.waitForTimeout(1000);
+    return receipt;
+};
+
+const applyOnlineMatchPatch = async (
+    matchId: string,
+    page: Page,
+    patch: JsonRecord,
+) => {
+    const receipt = await patchMatchState(
+        matchId,
+        patch as unknown as Parameters<typeof patchMatchState>[1],
+        page,
+    );
+    await page.evaluate(() => {
+        window.dispatchEvent(new Event('focus'));
+        window.dispatchEvent(new Event('online'));
+    });
+    await page.waitForTimeout(1000);
+    return receipt;
 };
 
 const waitForSelectedHeroes = async (page: Page) => {
@@ -439,10 +470,12 @@ const waitForHandCardVisualReady = async (page: Page, cardId: string) => {
         const card = handArea.querySelector(`[data-card-id="${expectedCardId}"]`);
         if (!card) return false;
         const atlasFrame = card.querySelector('[data-card-atlas-frame="true"]') as HTMLElement | null;
+        const atlasImage = atlasFrame?.querySelector('[data-card-atlas-img="true"]') as HTMLImageElement | null;
         return card.getAttribute('data-is-flipped') === 'true'
             && atlasFrame != null
             && !atlasFrame.classList.contains('atlas-shimmer')
-            && atlasFrame.style.backgroundImage.includes('url(');
+            && atlasImage?.complete === true
+            && atlasImage.naturalWidth > 0;
     }, cardId, { timeout: 60000, polling: 200 });
     await page.waitForTimeout(500);
 };
@@ -1078,7 +1111,7 @@ const setupHighGroundScenario = async (match: MatchSetup) => {
             rollCount: 1,
             rollLimit: 3,
             rollDiceCount: 5,
-            rollConfirmed: true,
+            rollConfirmed: false,
             selectedAbilityId: undefined,
             activatingAbilityId: undefined,
             pendingAttack: undefined,
@@ -1727,39 +1760,30 @@ const setupCrowsNestScenario = async (
     crowsNestCard: JsonRecord,
     targetCards: JsonRecord[],
 ) => {
-    await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
-        const root = asRecord(state.G ?? state);
-        const core = asRecord(root.core);
-        const sys = asRecord(root.sys);
-        const players = asRecordMap(core.players);
-        const host = asRecord(players['0']);
-        const guest = asRecord(players['1']);
-        const guestResources = asRecord(guest.resources);
-
-        players['0'] = {
-            ...host,
-            hand: targetCards,
-            discard: [],
-        };
-        players['1'] = {
-            ...guest,
-            hand: [crowsNestCard],
-            resources: { ...guestResources, [RESOURCE_IDS.CP]: 5 },
-        };
-
-        root.core = {
-            ...core,
-            players,
+    // Repeated branch attempts accumulate match history. Patch only the
+    // scenario fields so this fixture does not resend the full state each time.
+    await applyOnlineMatchPatch(match.matchId, match.guestPage, {
+        core: {
+            players: {
+                '0': { hand: targetCards, discard: [] },
+                '1': {
+                    hand: [crowsNestCard],
+                    discard: [],
+                    resources: { [RESOURCE_IDS.CP]: 5 },
+                },
+            },
             activePlayerId: '1',
             phase: 'main1',
-        };
-        root.sys = {
-            ...sys,
+            pendingAttack: null,
+            pendingBonusDiceSettlement: null,
+            pendingDamage: null,
+        },
+        sys: {
             phase: 'main1',
             currentPlayerIndex: 1,
-            interaction: { current: undefined, queue: [] },
-        };
-        return state;
+            interaction: { current: null, queue: [] },
+            responseWindow: { current: null },
+        },
     });
 };
 
@@ -3792,7 +3816,7 @@ const setupCursedUpkeepSelfDamageScenario = async (match: MatchSetup) => {
 };
 
 const setupCursedNoAttackPowderKegScenario = async (match: MatchSetup) => {
-    await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+    return applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
         const root = asRecord(state.G ?? state);
         const core = asRecord(root.core);
         const sys = asRecord(root.sys);
@@ -3802,6 +3826,12 @@ const setupCursedNoAttackPowderKegScenario = async (match: MatchSetup) => {
         const hostResources = asRecord(host.resources);
         const guestResources = asRecord(guest.resources);
         const guestAbilityLevels = asRecord(guest.abilityLevels);
+        const shadowThiefDice = buildDiceForValues('shadow_thief-dice', [5, 5, 2, 6, 4], {
+            2: SHADOW_THIEF_DICE_FACE_IDS.DAGGER,
+            4: SHADOW_THIEF_DICE_FACE_IDS.BAG,
+            5: SHADOW_THIEF_DICE_FACE_IDS.CARD,
+            6: SHADOW_THIEF_DICE_FACE_IDS.SHADOW,
+        });
 
         players['0'] = {
             ...host,
@@ -3836,20 +3866,14 @@ const setupCursedNoAttackPowderKegScenario = async (match: MatchSetup) => {
             players,
             activePlayerId: '0',
             phase: 'offensiveRoll',
-            dice: buildDiceForValues('zhanshujia-dice', [1, 2, 3, 4, 5], {
-                1: ZHANSHUJIA_DICE_FACE_IDS.SABER,
-                2: ZHANSHUJIA_DICE_FACE_IDS.FLAG,
-                3: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
-                4: ZHANSHUJIA_DICE_FACE_IDS.FLAG,
-                5: ZHANSHUJIA_DICE_FACE_IDS.SABER,
-            }),
+            dice: shadowThiefDice,
             rollCount: 1,
             rollLimit: 3,
             rollDiceCount: 5,
-            rollConfirmed: true,
+            rollConfirmed: false,
             selectedAbilityId: undefined,
             activatingAbilityId: undefined,
-            pendingAttack: undefined,
+            pendingAttack: null,
             pendingBonusDiceSettlement: undefined,
             pendingDamage: undefined,
             offensiveRollAttackMadeThisTurn: undefined,
@@ -4829,8 +4853,8 @@ const playHeftyUntilLoot = async (
         });
 
         await dismissCardSpotlightIfPresent(match.guestPage);
-        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 1 });
-        await saveEvidenceScreenshot(match.guestPage, testInfo, '27-guest-hefty-bonus-die-right-tray-loot');
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, { diceCount: 2 });
+        await saveEvidenceScreenshot(match.guestPage, testInfo, '27-guest-hefty-bonus-dice-right-tray-loot');
         await settleBonusDiceOnPage(match, match.guestPage);
 
         let lootResolved = true;
@@ -5901,14 +5925,32 @@ const playCrowsNestUntilBranch = async (
         await dismissCardSpotlightIfPresent(match.hostPage);
         await dismissCardSpotlightIfPresent(match.guestPage);
 
-        await dispatchDiceThroneCommand(match.guestPage, {
-            type: 'PLAY_CARD',
-            playerId: '1',
-            payload: { cardId: CROWS_NEST_CARD_ID },
+        await waitForHandCardVisualReady(match.guestPage, CROWS_NEST_CARD_ID);
+        await dragHandCardToPlay(match.guestPage, CROWS_NEST_CARD_ID);
+        await expectRightTrayBonusDiceOnPage(match, match.guestPage, {
+            diceCount: 1,
+            sourceAbilityId: CROWS_NEST_CARD_ID,
         });
 
-        const branch = await waitForCrowsNestBranch(match.matchId, match.guestPage);
-        if (branch === targetBranch) {
+        const coreWithSettlement = await readServerCore(match.matchId, match.guestPage);
+        const settlement = asRecord(coreWithSettlement.pendingBonusDiceSettlement);
+        const dice = Array.isArray(settlement.dice) ? settlement.dice as JsonRecord[] : [];
+        const rolledFace = asRecord(dice[0]).face;
+        const rolledBranch: CrowsNestBranch | null = rolledFace === CURSED_PIRATE_DICE_FACE_IDS.CUTLASS
+            ? 'view'
+            : rolledFace === CURSED_PIRATE_DICE_FACE_IDS.LOOT
+                ? 'loot'
+                : rolledFace === CURSED_PIRATE_DICE_FACE_IDS.SKULL
+                    ? 'skull'
+                    : null;
+
+        await settleBonusDiceOnPage(match, match.guestPage, { sourceAbilityId: CROWS_NEST_CARD_ID });
+
+        if (rolledBranch === targetBranch) {
+            const branch = await waitForCrowsNestBranch(match.matchId, match.guestPage);
+            if (branch !== targetBranch) {
+                throw new Error(`瞭望台奖励骰显示 ${targetBranch}，实际进入 ${branch}`);
+            }
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
             return;
@@ -5919,6 +5961,81 @@ const playCrowsNestUntilBranch = async (
 };
 
 test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
+    test('真实入口中单张 selectHandCard 应复用手牌区弃牌交互', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL);
+
+        try {
+            await clearEvidenceScreenshotsForTest(testInfo);
+
+            const handSelectionCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], HAND_SELECTION_CARD_ID);
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const host = asRecord(players['0']);
+                const hostResources = asRecord(host.resources);
+
+                players['0'] = {
+                    ...host,
+                    hand: [handSelectionCard],
+                    discard: [],
+                    resources: { ...hostResources, [RESOURCE_IDS.CP]: 5 },
+                };
+
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'main1',
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 0,
+                    interaction: {
+                        current: {
+                            id: 'dt-reference-select-hand-card',
+                            kind: 'dt:card-interaction',
+                            playerId: '0',
+                            data: {
+                                id: 'reference-select-hand-card',
+                                playerId: '0',
+                                sourceCardId: 'deep-sea-dive',
+                                sourceId: 'deep-sea-dive',
+                                type: 'selectHandCard',
+                                titleKey: 'interaction.selectHandCardToDiscard',
+                                selectCount: 1,
+                                selected: [],
+                                targetPlayerIds: ['0'],
+                            },
+                        },
+                        queue: [],
+                    },
+                };
+                return state;
+            });
+
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HAND_SELECTION_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
+            await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-reference-dicethrone-hand-area-discard-choice');
+
+            await discardedHandCard.click();
+            await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
+            await expect(discardedHandCard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-reference-dicethrone-hand-area-discarded');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实在线双玩家应能选择战术家和咒缚海盗并看到面板、提示板、手牌与 HUD', async ({ browser }, testInfo) => {
         test.setTimeout(300000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -6341,7 +6458,7 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(goFishApplyOpponentButton).toBeVisible({ timeout: 10000 });
             await expect(goFishSkipButton).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '159-guest-go-fish-skip-choice');
-            await goFishSkipButton.click({ force: true });
+            await goFishSkipButton.click();
             await expect(goFishSkipModal).toBeHidden({ timeout: 10000 });
             await waitForStatusStack(match.matchId, match.guestPage, '0', STATUS_IDS.POWDER_KEG, 0);
             await waitForStatusStack(match.matchId, match.guestPage, '1', STATUS_IDS.POWDER_KEG, 0);
@@ -6396,12 +6513,14 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 return state;
             });
 
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toBeVisible({ timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toContainText('作战室');
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HAND_SELECTION_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-host-select-hand-card-choice');
-            await match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            await discardedHandCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '12-host-select-hand-card-discarded');
 
@@ -6423,12 +6542,30 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await saveEvidenceScreenshot(match.guestPage, testInfo, '14-guest-crows-nest-confirmed-hand-unchanged');
 
             await playCrowsNestUntilBranch(match, crowsNestCard, crowsNestTargetCards, 'loot');
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`)).toContainText('作战室', { timeout: 10000 });
+            const lootDiscardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const lootDiscardCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${HAND_SELECTION_CARD_ID}"]`);
+            await expect(lootDiscardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(lootDiscardCard).toBeVisible({ timeout: 10000 });
+            await waitForHandCardVisualReady(match.hostPage, HAND_SELECTION_CARD_ID);
+            await match.hostPage.waitForTimeout(400);
+            const lootCandidateGeometry = await match.hostPage.locator('[data-testid="hand-area"] [data-testid="hand-card-visual"]').evaluateAll(cards => ({
+                viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY },
+                cards: cards.map(card => {
+                    const rect = card.getBoundingClientRect();
+                    const style = getComputedStyle(card);
+                    return { id: card.closest('[data-card-id]')?.getAttribute('data-card-id'), top: rect.top, bottom: rect.bottom, transform: style.transform, transformOrigin: style.transformOrigin };
+                }),
+            }));
+            await saveEvidenceJson(testInfo, '15-host-crows-nest-loot-discard-geometry', lootCandidateGeometry);
+            for (const candidate of lootCandidateGeometry.cards) {
+                expect(candidate.top).toBeGreaterThanOrEqual(0);
+                expect(candidate.bottom).toBeLessThanOrEqual(lootCandidateGeometry.viewport.height + 1);
+            }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '15-host-crows-nest-loot-discard-choice');
 
-            await match.hostPage.getByTestId(`dt-hand-card-option-${HAND_SELECTION_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            await lootDiscardCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', HAND_SELECTION_CARD_ID);
             await waitForHandIds(match.matchId, match.hostPage, '0', [STRATEGIC_DEFENSE_CARD_ID]);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '16-host-crows-nest-loot-discarded');
@@ -6439,35 +6576,24 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '17-host-crows-nest-skull-random-discarded');
 
             const warRoomCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], HOST_CARD_ID);
-            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
-                const root = asRecord(state.G ?? state);
-                const core = asRecord(root.core);
-                const sys = asRecord(root.sys);
-                const players = asRecordMap(core.players);
-                const host = asRecord(players['0']);
-                const hostResources = asRecord(host.resources);
-
-                players['0'] = {
-                    ...host,
-                    hand: [warRoomCard],
-                    discard: [],
-                    tokens: {},
-                    resources: { ...hostResources, [RESOURCE_IDS.CP]: 5 },
-                };
-
-                root.core = {
-                    ...core,
-                    players,
+            await applyOnlineMatchPatch(match.matchId, match.hostPage, {
+                core: {
+                    players: {
+                        '0': {
+                            hand: [warRoomCard],
+                            discard: [],
+                            tokens: {},
+                            resources: { [RESOURCE_IDS.CP]: 5 },
+                        },
+                    },
                     activePlayerId: '0',
                     phase: 'main1',
-                };
-                root.sys = {
-                    ...sys,
+                },
+                sys: {
                     phase: 'main1',
                     currentPlayerIndex: 0,
-                    interaction: { current: undefined, queue: [] },
-                };
-                return state;
+                    interaction: { current: null, queue: [] },
+                },
             });
 
             await dispatchDiceThroneCommand(match.hostPage, {
@@ -8393,18 +8519,72 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await expect(advanceButton).toBeEnabled({ timeout: 10000 });
             await advanceButton.click();
 
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${DEEP_SEA_DIVE_TARGET_CARD_ID}`)).toContainText('战略防御', { timeout: 10000 });
+            const hostAttackShowcase = match.hostPage.getByTestId('attack-showcase-overlay');
+            await expect(hostAttackShowcase).toBeVisible({ timeout: 10000 });
+            await hostAttackShowcase.getByRole('button', { name: /开始防御|继续/i }).click();
+            await expect(hostAttackShowcase).toBeHidden({ timeout: 5000 });
+
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${DEEP_SEA_DIVE_TARGET_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
+            await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.CP, 4);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.CP, 6);
-            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 0);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '25-host-deep-sea-dive-discard-choice');
 
-            await match.hostPage.getByTestId(`dt-hand-card-option-${DEEP_SEA_DIVE_TARGET_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            await discardedHandCard.click();
             await waitForDiscardContains(match.matchId, match.hostPage, '0', DEEP_SEA_DIVE_TARGET_CARD_ID);
             await waitForHandCount(match.matchId, match.hostPage, '0', 0);
+            await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '26-host-deep-sea-dive-discarded');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('深海潜行先弃牌再防止凋零后才能进入防御', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const match = await setupNewHeroMatch(browser, testInfo.project.use.baseURL as string | undefined, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            const targetCard = cloneCard(ZHANSHUJIA_CARDS as unknown as JsonRecord[], DEEP_SEA_DIVE_TARGET_CARD_ID);
+            await setupDeepSeaDiveAttackScenario(match, targetCard);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                players['0'] = { ...defender, tokens: { ...asRecord(defender.tokens), [TOKEN_IDS.TREANT_DIVINE]: 1 } };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            await match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lotus"]').first().click();
+            await waitForPendingAttack(match.matchId, match.guestPage, { attackerId: '1', defenderId: '0', sourceAbilityId: 'deep-sea-dive' });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const showcase = match.hostPage.getByTestId('attack-showcase-overlay');
+            await expect(showcase).toBeVisible({ timeout: 10000 });
+            await showcase.getByRole('button', { name: /开始防御|继续/i }).click();
+            const card = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${DEEP_SEA_DIVE_TARGET_CARD_ID}"]`);
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-hint')).toBeVisible({ timeout: 10000 });
+            let root = await readServerRoot(match.matchId, match.hostPage);
+            expect(root.sys.phase).toBe('offensiveRoll');
+            expect(asRecord(asRecord(root.core.players)['0']).statusEffects).not.toHaveProperty(STATUS_IDS.WITHER);
+            await card.click();
+            await waitForDiscardContains(match.matchId, match.hostPage, '0', DEEP_SEA_DIVE_TARGET_CARD_ID);
+            const prevent = match.hostPage.locator('#modal-root').getByRole('button', { name: /花费神性树灵：防止该状态/ });
+            await expect(prevent).toBeVisible({ timeout: 15000 });
+            root = await readServerRoot(match.matchId, match.hostPage);
+            expect(root.sys.phase).toBe('offensiveRoll');
+            await prevent.click();
+            await expect.poll(async () => (await readServerRoot(match.matchId, match.hostPage)).sys.phase, { timeout: 10000 }).toBe('defensiveRoll');
+            root = await readServerRoot(match.matchId, match.hostPage);
+            const defender = asRecord(asRecord(root.core.players)['0']);
+            expect(asRecord(defender.statusEffects)[STATUS_IDS.WITHER] ?? 0).toBe(0);
+            expect(asRecord(defender.tokens)[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(0);
         } finally {
             await cleanupDTMatch(match);
         }
@@ -9514,6 +9694,55 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('灵魂指令多个状态可指定防止火药桶并继续结算整次攻击', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            await setupSoulCommandScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                players['0'] = {
+                    ...defender,
+                    tokens: { ...asRecord(defender.tokens), [TOKEN_IDS.TREANT_DIVINE]: 1 },
+                    statusEffects: { ...asRecord(defender.statusEffects), [STATUS_IDS.POWDER_KEG]: 1 },
+                };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            const slot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lightning"]').first();
+            await expect(slot).toHaveAttribute('data-resolved-ability-id', 'soul-command', { timeout: 10000 });
+            await slot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1', defenderId: '0', sourceAbilityId: 'soul-command',
+            });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const modal = match.hostPage.locator('#modal-root');
+            await expect(modal.getByRole('button', { name: /^休战$/ })).toBeVisible({ timeout: 15000 });
+            await expect(modal.getByRole('button', { name: /^火药桶$/ })).toBeVisible();
+            await expect(modal.getByRole('button', { name: /^凋零$/ })).toBeVisible();
+            const before = await readServerRoot(match.matchId, match.hostPage);
+            const defenderBefore = asRecord(asRecord(before.core.players)['0']);
+            expect(asRecord(defenderBefore.resources)[RESOURCE_IDS.HP]).toBe(50);
+            expect(asRecord(defenderBefore.statusEffects)[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+            await modal.getByRole('button', { name: /^火药桶$/ }).click();
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            const after = await readServerRoot(match.matchId, match.hostPage);
+            const defenderAfter = asRecord(asRecord(after.core.players)['0']);
+            expect(asRecord(defenderAfter.resources)[RESOURCE_IDS.HP]).toBe(42);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.PARLEY]).toBe(1);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.POWDER_KEG]).toBe(1);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.WITHER]).toBe(1);
+            expect(asRecord(defenderAfter.tokens)[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(0);
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应通过咒缚面 combo 槽位触发并结算死亡吐息的小顺子多状态链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -9590,6 +9819,52 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.WITHER, 1);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '142-host-breath-of-death-applied');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
+    test('反馈：判决指令选择金币后，树精可先用神性树灵防止休战再受伤', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            await setupHumanVerdictCommandScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                players['0'] = { ...defender, tokens: { ...asRecord(defender.tokens), [TOKEN_IDS.TREANT_DIVINE]: 1 } };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            const slot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="lightning"]').first();
+            await expect(slot).toHaveAttribute('data-resolved-ability-id', 'verdict-command', { timeout: 10000 });
+            await slot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1', defenderId: '0', sourceAbilityId: 'verdict-command',
+            });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            const guestModal = match.guestPage.locator('#modal-root');
+            await guestModal.getByRole('button', { name: /^获得诅咒金币$/ }).click({ timeout: 15000 });
+            const hostModal = match.hostPage.locator('#modal-root');
+            const prevent = hostModal.getByRole('button', { name: /花费神性树灵：防止该状态/ });
+            await expect(prevent).toBeVisible({ timeout: 15000 });
+            const before = await readServerRoot(match.matchId, match.hostPage);
+            const defenderBefore = asRecord(asRecord(before.core.players)['0']);
+            expect(asRecord(defenderBefore.resources)[RESOURCE_IDS.HP]).toBe(50);
+            expect(asRecord(defenderBefore.statusEffects)[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, 'feedback-verdict-treant-prevent-before-damage');
+            await prevent.click();
+            await waitForAttackResolved(match.matchId, match.hostPage);
+            const after = await readServerRoot(match.matchId, match.hostPage);
+            const defenderAfter = asRecord(asRecord(after.core.players)['0']);
+            expect(asRecord(defenderAfter.resources)[RESOURCE_IDS.HP]).toBe(43);
+            expect(asRecord(defenderAfter.statusEffects)[STATUS_IDS.PARLEY] ?? 0).toBe(0);
+            expect(asRecord(defenderAfter.tokens)[TOKEN_IDS.TREANT_DIVINE] ?? 0).toBe(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, 'feedback-verdict-treant-prevent-after-damage');
         } finally {
             await cleanupDTMatch(match);
         }
@@ -9709,6 +9984,48 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
         }
     });
 
+    test('反馈：点燃炸药对树精时，扎根发动后投防御骰之前不能先扣主攻击伤害', async ({ browser }, testInfo) => {
+        test.setTimeout(240000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupNewHeroMatch(browser, baseURL, { host: 'treant', guest: 'cursed_pirate' });
+        try {
+            await setupHumanLightTheFuseScenario(match);
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const players = asRecordMap(core.players);
+                const attacker = asRecord(players['1']);
+                players['1'] = { ...attacker, tokens: { ...asRecord(attacker.tokens), [TOKEN_IDS.THORN]: 1 } };
+                root.core = { ...core, players };
+                return state;
+            });
+            await dismissCardSpotlightIfPresent(match.guestPage);
+            const slot = match.guestPage.locator('[data-testid="player-board-surface"] [data-ability-slot="combo"]').first();
+            await expect(slot).toHaveAttribute('data-resolved-ability-id', 'light-the-fuse-small', { timeout: 10000 });
+            await slot.click();
+            await waitForPendingAttack(match.matchId, match.guestPage, {
+                attackerId: '1', defenderId: '0', sourceAbilityId: 'light-the-fuse-small',
+            });
+            await match.guestPage.locator('[data-tutorial-id="advance-phase-button"]').click();
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const defender = asRecord(asRecord(core.players)['0']);
+                return {
+                    phase: sys.phase,
+                    defenseAbilityId: asRecord(core.pendingAttack).defenseAbilityId,
+                    defenderHp: asRecord(defender.resources)[RESOURCE_IDS.HP],
+                    keg: asRecord(defender.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                    rollConfirmed: core.rollConfirmed,
+                };
+            }, { timeout: 15000 }).toMatchObject({
+                phase: 'defensiveRoll', defenseAbilityId: 'rooted', defenderHp: 50, keg: 1, rollConfirmed: false,
+            });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, 'feedback-light-fuse-treant-before-defense-roll');
+        } finally {
+            await cleanupDTMatch(match);
+        }
+    });
+
     test('真实入口应通过人类面 combo 槽位触发并结算点燃炸药的小顺子链', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
@@ -9754,13 +10071,22 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
                 defenseAbilityId: 'countermeasures',
             });
 
+            await expect.poll(async () => {
+                const { core } = await readServerRoot(match.matchId, match.hostPage);
+                const defender = asRecord(asRecord(core.players)['0']);
+                return {
+                    hp: asRecord(defender.resources)[RESOURCE_IDS.HP],
+                    powderKeg: asRecord(defender.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ hp: 50, powderKeg: 1 });
+
             await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
                 const root = asRecord(state.G ?? state);
                 const core = asRecord(root.core);
                 root.core = {
                     ...core,
-                    dice: buildDiceForValues('zhanshujia-dice', [5, 5, 5, 5], {
-                        5: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
+                    dice: buildDiceForValues('zhanshujia-dice', [6, 6, 6, 6], {
+                        6: ZHANSHUJIA_DICE_FACE_IDS.MEDAL,
                     }),
                     rollCount: 1,
                     rollLimit: 1,
@@ -10147,16 +10473,26 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
 
             const guestModal = match.guestPage.locator('#modal-root');
             await expect(guestModal).toContainText('走跳板：选择结算方式', { timeout: 10000 });
-            await expect(guestModal.getByRole('button', { name: /^偷取 1CP$/ })).toBeVisible({ timeout: 10000 });
+            await expect(guestModal.getByRole('button', { name: /^偷取 1 CP$/ })).toBeVisible({ timeout: 10000 });
             await expect(guestModal.getByRole('button', { name: /^令对手选择弃掉 1 张牌$/ })).toBeVisible({ timeout: 10000 });
             await saveEvidenceScreenshot(match.guestPage, testInfo, '122-guest-human-walk-the-plank-choice');
 
             await guestModal.getByRole('button', { name: /^令对手选择弃掉 1 张牌$/ }).click();
 
-            await expect(match.hostPage.locator('#modal-root')).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
-            await expect(match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`)).toContainText('战略防御', { timeout: 10000 });
-            await match.hostPage.getByTestId(`dt-hand-card-option-${WALK_THE_PLANK_TARGET_CARD_ID}`).click();
-            await match.hostPage.locator('#modal-root').getByRole('button', { name: /确认|Confirm/i }).click();
+            const hostAttackShowcase = match.hostPage.getByTestId('attack-showcase-overlay');
+            await expect(hostAttackShowcase).toBeVisible({ timeout: 10000 });
+            await hostAttackShowcase.getByRole('button', { name: /开始防御|继续/i }).click();
+            await expect(hostAttackShowcase).toBeHidden({ timeout: 5000 });
+
+            const discardHint = match.hostPage.getByTestId('dicethrone-hand-discard-hint');
+            const discardedHandCard = match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${WALK_THE_PLANK_TARGET_CARD_ID}"]`);
+            await expect(discardHint).toContainText('选择 1 张手牌弃置', { timeout: 10000 });
+            await expect(match.hostPage.getByTestId('dt-card-pool-overlay')).toBeHidden();
+            await expect(match.hostPage.getByTestId('dicethrone-hand-discard-cancel')).toHaveCount(0);
+            await expect(discardedHandCard).toBeVisible({ timeout: 10000 });
+            await expect(discardedHandCard).toHaveAttribute('data-is-discard-mode', 'true');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '123-host-human-walk-the-plank-discard-choice');
+            await discardedHandCard.click();
 
             await waitForDiscardContains(match.matchId, match.hostPage, '0', WALK_THE_PLANK_TARGET_CARD_ID);
             await waitForHandCount(match.matchId, match.hostPage, '0', 0);
@@ -10871,26 +11207,168 @@ test.describe('DiceThrone 战术家 / 咒缚海盗新增英雄 intake', () => {
     test('真实入口应在对手未发起攻击时由咒缚施加火药桶', async ({ browser }, testInfo) => {
         test.setTimeout(240000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
-        const match = await setupNewHeroMatch(browser, baseURL);
+        const match = await setupNewHeroMatch(browser, baseURL, {
+            host: 'shadow_thief',
+            guest: 'cursed_pirate',
+        });
 
         try {
             await clearEvidenceScreenshotsForTest(testInfo);
 
-            await setupCursedNoAttackPowderKegScenario(match);
+            const injectionReceipt = await setupCursedNoAttackPowderKegScenario(match);
             await dismissCardSpotlightIfPresent(match.hostPage);
             await dismissCardSpotlightIfPresent(match.guestPage);
 
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-cursed-no-attack-before-advance');
-
-            await dispatchDiceThroneCommand(match.hostPage, {
-                type: 'ADVANCE_PHASE',
-                playerId: '0',
-                payload: {},
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const host = asRecord(asRecordMap(core.players)['0']);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    activePlayerId: core.activePlayerId ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    activatingAbilityId: core.activatingAbilityId ?? null,
+                    selectedAbilityId: core.selectedAbilityId ?? null,
+                    diceValues: Array.isArray(core.dice) ? core.dice.slice(0, 5).map((die) => asRecord(die).value) : [],
+                    powderKeg: asRecord(host.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                    pendingAttack: core.pendingAttack ?? null,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'offensiveRoll',
+                activePlayerId: '0',
+                rollConfirmed: false,
+                activatingAbilityId: null,
+                selectedAbilityId: null,
+                diceValues: [5, 5, 2, 6, 4],
+                powderKeg: 0,
+                pendingAttack: null,
             });
+            const injectedState = await readServerRoot(match.matchId, match.hostPage);
+            const consumedActionLog = asRecord(injectedState.sys.actionLog);
+            const consumedEventStream = asRecord(injectedState.sys.eventStream);
+            const injectionEvidence = {
+                injectionReceipt,
+                runtimeReadback: {
+                    phase: injectedState.sys.phase ?? injectedState.core.phase ?? null,
+                    activePlayerId: injectedState.core.activePlayerId ?? null,
+                    rollConfirmed: injectedState.core.rollConfirmed ?? null,
+                    diceValues: Array.isArray(injectedState.core.dice)
+                        ? injectedState.core.dice.slice(0, 5).map((die) => asRecord(die).value)
+                        : [],
+                    activatingAbilityId: injectedState.core.activatingAbilityId ?? null,
+                    selectedAbilityId: injectedState.core.selectedAbilityId ?? null,
+                    pendingAttack: injectedState.core.pendingAttack ?? null,
+                    pendingInteraction: asRecord(asRecord(injectedState.sys.interaction).current).id ?? null,
+                    actionLogTail: Array.isArray(consumedActionLog.entries)
+                        ? consumedActionLog.entries.slice(-8)
+                        : [],
+                    eventStreamTail: Array.isArray(consumedEventStream.entries)
+                        ? consumedEventStream.entries.slice(-8)
+                        : [],
+                },
+            };
+            await testInfo.attach('feedback-state-injection-consumption.json', {
+                body: JSON.stringify(injectionEvidence, null, 2),
+                contentType: 'application/json',
+            });
+            await saveEvidenceJson(testInfo, '咒缚被动-注入时点与消费证明', injectionEvidence);
+            const confirmRollButton = match.hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
+            await expect(confirmRollButton).toBeEnabled({ timeout: 10000 });
+            await confirmRollButton.click();
+            await expect.poll(async () => {
+                const { core, sys } = await readServerRoot(match.matchId, match.hostPage);
+                const responseWindow = asRecord(asRecord(sys.responseWindow).current);
+                return {
+                    phase: sys.phase ?? core.phase ?? null,
+                    rollConfirmed: core.rollConfirmed ?? null,
+                    responseWindowType: responseWindow.windowType ?? null,
+                    powderKeg: asRecord(asRecordMap(core.players)['0'].statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                };
+            }, { timeout: 10000 }).toMatchObject({
+                phase: 'offensiveRoll',
+                rollConfirmed: true,
+                powderKeg: 0,
+            });
+            const confirmedState = await readServerRoot(match.matchId, match.hostPage);
+            const confirmedResponseWindow = asRecord(asRecord(confirmedState.sys.responseWindow).current);
+            if (confirmedResponseWindow.windowType === 'afterRollConfirmed') {
+                await expect(match.guestPage.getByTestId('dicethrone-response-pass-button'))
+                    .toBeEnabled({ timeout: 10000 });
+                await match.guestPage.getByTestId('dicethrone-response-pass-button').click();
+                await expect.poll(async () => {
+                    const { sys } = await readServerRoot(match.matchId, match.hostPage);
+                    return asRecord(asRecord(sys.responseWindow).current).windowType ?? null;
+                }, { timeout: 10000 }).toBe(null);
+            }
+            const cornucopiaSlot = match.hostPage.locator(
+                '[data-testid="player-board-surface"] [data-base-ability-id="cornucopia"]',
+            );
+            await expect(cornucopiaSlot).toHaveAttribute('data-available-ability-id', 'cornucopia', { timeout: 10000 });
+            await expect(cornucopiaSlot).toHaveAttribute('data-can-click', 'true', { timeout: 10000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '78-host-cornucopia-available-before-select');
+            await cornucopiaSlot.click();
+            let selectedNonAttackSnapshot: JsonRecord | null = null;
+            await expect.poll(async () => {
+                const { core } = await readServerRoot(match.matchId, match.hostPage);
+                const pendingAttack = asRecord(core.pendingAttack);
+                const attackMade = asRecord(core.offensiveRollAttackMadeThisTurn);
+                selectedNonAttackSnapshot = {
+                    sourceAbilityId: pendingAttack.sourceAbilityId ?? null,
+                    countsAsOffensiveAttackMade: pendingAttack.countsAsOffensiveAttackMade ?? true,
+                    attackMadeThisTurn: attackMade['0'] === true,
+                    powderKeg: asRecord(asRecordMap(core.players)['0'].statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                };
+                return selectedNonAttackSnapshot;
+            }, { timeout: 10000 }).toMatchObject({
+                sourceAbilityId: 'cornucopia',
+                countsAsOffensiveAttackMade: false,
+                attackMadeThisTurn: false,
+                powderKeg: 0,
+            });
+            await testInfo.attach('feedback-non-attack-selection-before-settlement.json', {
+                body: JSON.stringify(selectedNonAttackSnapshot, null, 2),
+                contentType: 'application/json',
+            });
+            await saveEvidenceJson(testInfo, '咒缚被动-非攻击技能选择后结算前状态', selectedNonAttackSnapshot);
+            const guestAttackShowcase = match.guestPage.getByTestId('attack-showcase-overlay');
+            await expect(guestAttackShowcase).toBeVisible({ timeout: 10000 });
+            await guestAttackShowcase.locator('[data-tutorial-id="defense-start-button"]').click();
+            await expect(guestAttackShowcase).toBeHidden({ timeout: 5000 });
+            await expect(match.hostPage.locator('[data-tutorial-id="advance-phase-button"]'))
+                .toBeEnabled({ timeout: 10000 });
+            await match.hostPage.locator('[data-tutorial-id="advance-phase-button"]').click();
 
             await waitForStatusStack(match.matchId, match.hostPage, '0', STATUS_IDS.POWDER_KEG, 1);
             await waitForResourceValue(match.matchId, match.hostPage, '0', RESOURCE_IDS.HP, 50);
             await waitForResourceValue(match.matchId, match.hostPage, '1', RESOURCE_IDS.HP, 50);
+            const outcomeState = await readServerRoot(match.matchId, match.hostPage);
+            const outcomeHost = asRecord(asRecordMap(outcomeState.core.players)['0']);
+            const outcomeActionLog = asRecord(outcomeState.sys.actionLog);
+            const outcomeEventStream = asRecord(outcomeState.sys.eventStream);
+            const outcomeEvents = Array.isArray(outcomeEventStream.entries)
+                ? outcomeEventStream.entries.map((entry) => asRecord(asRecord(entry).event ?? entry))
+                : [];
+            const cornucopiaAttackEvent = outcomeEvents.find((event) => (
+                event.type === 'ATTACK_INITIATED'
+                && asRecord(event.payload).sourceAbilityId === 'cornucopia'
+            ));
+            const outcomeEvidence = {
+                phase: outcomeState.sys.phase ?? outcomeState.core.phase ?? null,
+                activePlayerId: outcomeState.core.activePlayerId ?? null,
+                targetPlayerId: '0',
+                powderKegStacks: asRecord(outcomeHost.statusEffects)[STATUS_IDS.POWDER_KEG] ?? 0,
+                hp: asRecord(outcomeHost.resources)[RESOURCE_IDS.HP] ?? null,
+                selectedAbilityId: 'cornucopia',
+                cornucopiaAttackEvent: cornucopiaAttackEvent ?? null,
+                actionLogTail: Array.isArray(outcomeActionLog.entries) ? outcomeActionLog.entries.slice(-8) : [],
+                eventStreamTail: Array.isArray(outcomeEventStream.entries) ? outcomeEventStream.entries.slice(-8) : [],
+            };
+            expect(cornucopiaAttackEvent).toBeDefined();
+            expect(asRecord(asRecord(cornucopiaAttackEvent).payload).countsAsOffensiveAttackMade).toBe(false);
+            await testInfo.attach('feedback-powder-keg-runtime-outcome.json', {
+                body: JSON.stringify(outcomeEvidence, null, 2),
+                contentType: 'application/json',
+            });
+            await saveEvidenceJson(testInfo, '咒缚被动-火药桶结算结果', outcomeEvidence);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '79-host-cursed-no-attack-powder-keg-applied');
         } finally {
             await cleanupDTMatch(match);

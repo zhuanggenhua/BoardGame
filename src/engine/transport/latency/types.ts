@@ -101,6 +101,14 @@ export interface OptimisticConfig {
     commandDeterminism?: CommandDeterminismMap;
     /** 命令动画模式声明（可选，未声明则全部使用 'wait-confirm'） */
     animationMode?: CommandAnimationMap;
+    /**
+     * 可在已有乐观 pending 后直接发送的后续命令。
+     *
+     * 这类命令通常是上一条乐观命令打开的当前交互、确认或中间选择命令：
+     * Provider 会先刷新已排队命令，再按预测后的 stateID 单独发送它。
+     * 引擎内置 SYS_INTERACTION_* 交互命令已自动覆盖；这里用于旧游戏私有交互命令。
+     */
+    pendingCompanionCommands?: string[];
 }
 
 // ============================================================================

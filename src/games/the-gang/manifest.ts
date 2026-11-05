@@ -18,6 +18,9 @@ const entry: GameManifestEntry = {
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',
     mobileLayoutPreset: 'board-shell',
+    mobileBoardShellLayout: {
+        designWidth: 1280,
+    },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     ai: {
         capture: true,

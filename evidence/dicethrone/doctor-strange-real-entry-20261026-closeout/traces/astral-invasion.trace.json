@@ -1,0 +1,1481 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "奇异博士星际侵入奖励骰结算",
+  "sourceRun": "1792997716246-291300-a4d2d83b-8f7e-4a43-bf23-dc8cc5099de8",
+  "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+  "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+  "status": "PASS",
+  "outcome": "真实选择星际侵入并确认两颗奖励骰，记录攻击加伤、预感和仍待防御的伤害阶段。",
+  "steps": [
+    {
+      "id": "astral-incursion-ready",
+      "action": "进入包含四种必要骰面且第五骰为曼荼罗的攻击状态",
+      "before": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange",
+            "thor",
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": "setup",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 5,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "四种星际侵入触发骰面均就位",
+          "actual": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "expected": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "astral-incursion-selected",
+      "action": "真实鼠标选择星际侵入技能槽",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 5,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-astral-incursion"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 5,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-astral-incursion",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "星际侵入技能已进入待结算状态",
+          "actual": true,
+          "expected": true
+        }
+      ]
+    },
+    {
+      "id": "astral-bonus-dice-pending",
+      "action": "提交技能结算并等待右侧奖励骰普通确认",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            "strange-astral-incursion"
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "2",
+              "ownerId": "0",
+              "value": "5",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "3",
+              "ownerId": "0",
+              "value": "6",
+              "selected": false,
+              "clickable": true
+            },
+            {
+              "id": "4",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": true
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 5,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-astral-incursion",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            ""
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 5,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "dt:bonus-dice",
+            "playerId": "0",
+            "sourceId": null,
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-astral-incursion",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": {
+            "sourceAbilityId": "strange-astral-incursion",
+            "dice": [
+              {
+                "value": 1,
+                "face": "strange-mandala"
+              },
+              {
+                "value": 3,
+                "face": "strange-book"
+              }
+            ],
+            "displayOnly": true
+          },
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "两颗奖励骰及骰主待确认结算可见",
+          "actual": {
+            "sourceAbilityId": "strange-astral-incursion",
+            "dice": [
+              {
+                "value": 1,
+                "face": "strange-mandala"
+              },
+              {
+                "value": 3,
+                "face": "strange-book"
+              }
+            ],
+            "displayOnly": true
+          },
+          "expected": {
+            "sourceAbilityId": "strange-astral-incursion",
+            "dice": [
+              {
+                "value": 1,
+                "face": "strange-mandala"
+              },
+              {
+                "value": 3,
+                "face": "strange-book"
+              }
+            ],
+            "displayOnly": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "astral-bonus-dice-confirmed",
+      "action": "真实点击右侧确认奖励骰；攻击仍处于防御/伤害前阶段",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [
+            ""
+          ],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结算攻击",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "0",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "0",
+              "value": "3",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "offensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 1,
+          "diceSymbols": [
+            "strange-mandala",
+            "strange-book",
+            "strange-cloak",
+            "strange-amulet",
+            "strange-mandala"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 3,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 5,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 6,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": {
+            "kind": "dt:bonus-dice",
+            "playerId": "0",
+            "sourceId": null,
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-astral-incursion",
+            "bonusDamage": 0,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": {
+            "sourceAbilityId": "strange-astral-incursion",
+            "dice": [
+              {
+                "value": 1,
+                "face": "strange-mandala"
+              },
+              {
+                "value": 3,
+                "face": "strange-book"
+              }
+            ],
+            "displayOnly": true
+          },
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "monk"
+          ],
+          "selectedAbilityIds": [
+            "meditation"
+          ],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "结束防御",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "monk"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [
+            "premonition"
+          ],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "1",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "1",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "1",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "1",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "defensiveRoll",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [
+            "fist",
+            "fist",
+            "fist",
+            "fist",
+            "fist"
+          ],
+          "dice": [
+            {
+              "id": 0,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 1,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 2,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 3,
+              "value": 1,
+              "ownerId": null
+            },
+            {
+              "id": 4,
+              "value": 1,
+              "ownerId": null
+            }
+          ],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 1,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 4,
+              "handIds": [
+                "card-play-six",
+                "card-just-this",
+                "card-give-hand",
+                "card-i-can-again"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": {
+            "attackerId": "0",
+            "defenderId": "1",
+            "sourceAbilityId": "strange-astral-incursion",
+            "bonusDamage": 3,
+            "settlementStage": "preDamage",
+            "damageResolved": false
+          },
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "奖励骰加伤与预感已确认，主攻击尚待防御和伤害结算",
+          "actual": {
+            "pendingBonusDiceSettlement": null,
+            "pendingAttack": {
+              "attackerId": "0",
+              "defenderId": "1",
+              "sourceAbilityId": "strange-astral-incursion",
+              "bonusDamage": 3,
+              "settlementStage": "preDamage",
+              "damageResolved": false
+            },
+            "opponentHp": 50,
+            "premonition": 1
+          },
+          "expected": {
+            "pendingBonusDiceSettlement": null,
+            "pendingAttack": {
+              "attackerId": "0",
+              "defenderId": "1",
+              "sourceAbilityId": "strange-astral-incursion",
+              "bonusDamage": 3,
+              "settlementStage": "preDamage",
+              "damageResolved": false
+            },
+            "opponentHp": 50,
+            "premonition": 1
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-astral-ready",
+      "stepId": "astral-incursion-ready",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "b65e9a54e6830f1943a5ff821e6ba7f58cc3b493d94b6d820a44ed358b2e5077"
+    },
+    {
+      "id": "doctor-strange-astral-selected",
+      "stepId": "astral-incursion-selected",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "e5817db875ec8575e0d1fe33185bfcb3a8e10aa21049b066c00628a8da503781"
+    },
+    {
+      "id": "doctor-strange-astral-bonus-dice",
+      "stepId": "astral-bonus-dice-pending",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "4b5e2ec84e15dac37f3e02b0836b5d557033f98c4143c35576cdda973f1be704"
+    },
+    {
+      "id": "doctor-strange-astral-bonus-confirmed",
+      "stepId": "astral-bonus-dice-confirmed",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "d46446750d686e0258042e206a6e5f920338a1b4706546a72d702625e053f101"
+    }
+  ]
+}

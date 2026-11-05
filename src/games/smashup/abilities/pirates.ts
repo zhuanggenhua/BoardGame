@@ -4,7 +4,8 @@
  * 主题：移动随从、消灭低力量随从
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { addTempPower, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, buildFieldSourceToBaseTargetOptions, buildFieldSourceTargetPromptConfig, applySemanticMinionEffectBatch, buildAbilityFeedback, findMinionOnBases, buildPlayerTargetOptions, buildActionMinionTargetOptions, buildValidatedDestroyEvents, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import type { SmashUpEvent, MinionCardDef, SmashUpCore } from '../domain/types';
@@ -16,6 +17,8 @@ import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel, resolveLiveBaseIndex } from '../domain/utils';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -587,7 +590,7 @@ function buildSeaDogsFactionSubtitle(factionId: string | undefined): string | un
     return `已选种族：${factionLabel}`;
 }
 
-const pirateSaucyWenchPromptProgram = createPromptProgram<PiratePromptContext & { baseIndex: number; sourceCardUid: string }, SmashUpCore, SmashUpEvent>({
+const pirateSaucyWenchPromptProgram = createPromptProgram<PiratePromptContext & { baseIndex: number; sourceCardUid: string }>({
     sourceId: 'pirate_saucy_wench',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -634,7 +637,7 @@ const pirateSaucyWenchPromptProgram = createPromptProgram<PiratePromptContext & 
     },
 });
 
-const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroadsidePlayerPromptContext, SmashUpCore, SmashUpEvent>({
+const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroadsidePlayerPromptContext>({
     sourceId: 'pirate_broadside_choose_player',
     buildInteraction: (context) => {
         const candidates = collectPirateBroadsideTargetPlayers(context.matchState.core, context.playerId, context.baseIndex);
@@ -685,7 +688,7 @@ const pirateBroadsideChoosePlayerPromptProgram = createPromptProgram<PirateBroad
     },
 });
 
-const pirateBroadsideChooseBasePromptProgram = createPromptProgram<PiratePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateBroadsideChooseBasePromptProgram = createPromptProgram<PiratePromptContext>({
     sourceId: 'pirate_broadside_choose_base',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; label: string }[] = [];
@@ -718,13 +721,12 @@ const pirateBroadsideChooseBasePromptProgram = createPromptProgram<PiratePromptC
         if (next.length === 0) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, { baseIndex }),
-            nextProgram: pirateBroadsideChoosePlayerPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, { baseIndex }), pirateBroadsideChoosePlayerPromptProgram),
         };
     },
 });
 
-const pirateCannonChooseSecondPromptProgram = createPromptProgram<PirateCannonSecondPromptContext, SmashUpCore, SmashUpEvent>({
+const pirateCannonChooseSecondPromptProgram = createPromptProgram<PirateCannonSecondPromptContext>({
     sourceId: 'pirate_cannon_choose_second',
     buildInteraction: (context) => {
         const remaining: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -775,7 +777,7 @@ const pirateCannonChooseSecondPromptProgram = createPromptProgram<PirateCannonSe
     },
 });
 
-const pirateCannonChooseFirstPromptProgram = createPromptProgram<PiratePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateCannonChooseFirstPromptProgram = createPromptProgram<PiratePromptContext>({
     sourceId: 'pirate_cannon_choose_first',
     buildInteraction: (context) => {
         const allTargets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -828,13 +830,12 @@ const pirateCannonChooseFirstPromptProgram = createPromptProgram<PiratePromptCon
         if (remainingCount === 0) return { events };
         return {
             events,
-            context: createPiratePromptContext(state, playerId, timestamp, { firstTargetUid: minionUid }),
-            nextProgram: pirateCannonChooseSecondPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, { firstTargetUid: minionUid }), pirateCannonChooseSecondPromptProgram),
         };
     },
 });
 
-const pirateShanghaiChooseBasePromptProgram = createPromptProgram<PirateMoveBasePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateShanghaiChooseBasePromptProgram = createPromptProgram<PirateMoveBasePromptContext>({
     sourceId: 'pirate_shanghai_choose_base',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; label: string }[] = [];
@@ -871,7 +872,7 @@ const pirateShanghaiChooseBasePromptProgram = createPromptProgram<PirateMoveBase
     },
 });
 
-const pirateShanghaiChooseMinionPromptProgram = createPromptProgram<PiratePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateShanghaiChooseMinionPromptProgram = createPromptProgram<PiratePromptContext>({
     sourceId: 'pirate_shanghai_choose_minion',
     buildInteraction: (context) => {
         const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -906,17 +907,16 @@ const pirateShanghaiChooseMinionPromptProgram = createPromptProgram<PiratePrompt
         if (!minion) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, {
                 minionUid,
                 minionDefId: minion.defId,
                 fromBaseIndex: baseIndex,
-            }),
-            nextProgram: pirateShanghaiChooseBasePromptProgram,
+            }), pirateShanghaiChooseBasePromptProgram),
         };
     },
 });
 
-const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPromptContext, SmashUpCore, SmashUpEvent>({
+const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPromptContext>({
     sourceId: 'pirate_sea_dogs_choose_to',
     buildInteraction: (context) => {
         const destCandidates: { baseIndex: number; label: string }[] = [];
@@ -977,7 +977,7 @@ const pirateSeaDogsChooseToPromptProgram = createPromptProgram<PirateSeaDogsToPr
     },
 });
 
-const pirateSeaDogsChooseFromPromptProgram = createPromptProgram<PirateSeaDogsFromPromptContext, SmashUpCore, SmashUpEvent>({
+const pirateSeaDogsChooseFromPromptProgram = createPromptProgram<PirateSeaDogsFromPromptContext>({
     sourceId: 'pirate_sea_dogs_choose_from',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; count: number; label: string }[] = [];
@@ -1012,16 +1012,15 @@ const pirateSeaDogsChooseFromPromptProgram = createPromptProgram<PirateSeaDogsFr
         if (destCandidates.length === 0) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, {
                 factionId: context.factionId,
                 fromBase,
-            }),
-            nextProgram: pirateSeaDogsChooseToPromptProgram,
+            }), pirateSeaDogsChooseToPromptProgram),
         };
     },
 });
 
-const pirateSeaDogsChooseFactionPromptProgram = createPromptProgram<PiratePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateSeaDogsChooseFactionPromptProgram = createPromptProgram<PiratePromptContext>({
     sourceId: 'pirate_sea_dogs_choose_faction',
     buildInteraction: (context) => {
         const factionSet = new Map<string, string>();
@@ -1066,13 +1065,12 @@ const pirateSeaDogsChooseFactionPromptProgram = createPromptProgram<PiratePrompt
         if (!hasCandidate) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, { factionId }),
-            nextProgram: pirateSeaDogsChooseFromPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, { factionId }), pirateSeaDogsChooseFromPromptProgram),
         };
     },
 });
 
-const pirateDinghySecondChooseBasePromptProgram = createPromptProgram<PirateMoveBasePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateDinghySecondChooseBasePromptProgram = createPromptProgram<PirateMoveBasePromptContext>({
     sourceId: 'pirate_dinghy_second_choose_base',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; label: string }[] = [];
@@ -1109,7 +1107,7 @@ const pirateDinghySecondChooseBasePromptProgram = createPromptProgram<PirateMove
     },
 });
 
-const pirateDinghyChooseSecondPromptProgram = createPromptProgram<PirateDinghySecondPromptContext, SmashUpCore, SmashUpEvent>({
+const pirateDinghyChooseSecondPromptProgram = createPromptProgram<PirateDinghySecondPromptContext>({
     sourceId: 'pirate_dinghy_choose_second',
     buildInteraction: (context) => {
         const remaining: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -1144,17 +1142,16 @@ const pirateDinghyChooseSecondPromptProgram = createPromptProgram<PirateDinghySe
         if (!minion) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, {
                 minionUid: selected.minionUid,
                 minionDefId: minion.defId,
                 fromBaseIndex: selected.baseIndex,
-            }),
-            nextProgram: pirateDinghySecondChooseBasePromptProgram,
+            }), pirateDinghySecondChooseBasePromptProgram),
         };
     },
 });
 
-const pirateDinghyFirstChooseBasePromptProgram = createPromptProgram<PirateMoveBasePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateDinghyFirstChooseBasePromptProgram = createPromptProgram<PirateMoveBasePromptContext>({
     sourceId: 'pirate_dinghy_first_choose_base',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; label: string }[] = [];
@@ -1195,13 +1192,12 @@ const pirateDinghyFirstChooseBasePromptProgram = createPromptProgram<PirateMoveB
         if (remainingCount === 0) return { events };
         return {
             events,
-            context: createPiratePromptContext(state, playerId, timestamp, { firstMovedUid: context.minionUid }),
-            nextProgram: pirateDinghyChooseSecondPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, { firstMovedUid: context.minionUid }), pirateDinghyChooseSecondPromptProgram),
         };
     },
 });
 
-const pirateDinghyChooseFirstPromptProgram = createPromptProgram<PiratePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateDinghyChooseFirstPromptProgram = createPromptProgram<PiratePromptContext>({
     sourceId: 'pirate_dinghy_choose_first',
     buildInteraction: (context) => {
         const myMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -1233,17 +1229,16 @@ const pirateDinghyChooseFirstPromptProgram = createPromptProgram<PiratePromptCon
         if (!minion) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, {
                 minionUid,
                 minionDefId: minion.defId,
                 fromBaseIndex: baseIndex,
-            }),
-            nextProgram: pirateDinghyFirstChooseBasePromptProgram,
+            }), pirateDinghyFirstChooseBasePromptProgram),
         };
     },
 });
 
-const piratePowderkegPromptProgram = createPromptProgram<PiratePromptContext, SmashUpCore, SmashUpEvent>({
+const piratePowderkegPromptProgram = createPromptProgram<PiratePromptContext>({
     sourceId: 'pirate_powderkeg',
     buildInteraction: (context) => {
         const myMinions: { uid: string; defId: string; power: number; baseIndex: number; label: string }[] = [];
@@ -1306,7 +1301,7 @@ const piratePowderkegPromptProgram = createPromptProgram<PiratePromptContext, Sm
     },
 });
 
-const pirateFullSailChooseBasePromptProgram = createPromptProgram<PirateFullSailChooseBasePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateFullSailChooseBasePromptProgram: AbilityProgram<PirateFullSailChooseBasePromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<PirateFullSailChooseBasePromptContext>({
     sourceId: 'pirate_full_sail_choose_base',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; label: string }[] = [];
@@ -1343,13 +1338,12 @@ const pirateFullSailChooseBasePromptProgram = createPromptProgram<PirateFullSail
         if (!nextInteraction) return { events };
         return {
             events,
-            context: createPiratePromptContext(state, playerId, timestamp, { movedUids: newMovedUids }),
-            nextProgram: pirateFullSailChooseMinionPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, { movedUids: newMovedUids }), pirateFullSailChooseMinionPromptProgram),
         };
     },
 });
 
-const pirateFullSailChooseMinionPromptProgram = createPromptProgram<PirateFullSailChooseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const pirateFullSailChooseMinionPromptProgram: AbilityProgram<PirateFullSailChooseMinionPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<PirateFullSailChooseMinionPromptContext>({
     sourceId: 'pirate_full_sail_choose_minion',
     buildInteraction: (context) => {
         const interaction = buildFullSailChooseMinionInteraction(
@@ -1372,18 +1366,17 @@ const pirateFullSailChooseMinionPromptProgram = createPromptProgram<PirateFullSa
         if (!minion) return { events: [] };
         return {
             events: [],
-            context: createPiratePromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, playerId, timestamp, {
                 movedUids: context.movedUids,
                 minionUid: selected.minionUid,
                 minionDefId: minion.defId,
                 fromBaseIndex: selected.baseIndex,
-            }),
-            nextProgram: pirateFullSailChooseBasePromptProgram,
+            }), pirateFullSailChooseBasePromptProgram),
         };
     },
 });
 
-const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMovePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMovePromptContext>({
     sourceId: 'pirate_buccaneer_move',
     buildInteraction: (context) => {
         const candidates: { baseIndex: number; label: string; baseDefId: string }[] = [];
@@ -1451,7 +1444,7 @@ const pirateBuccaneerMovePromptProgram = createPromptProgram<PirateBuccaneerMove
     },
 });
 
-const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateKingMovePromptProgram: AbilityProgram<PirateKingMovePromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<PirateKingMovePromptContext>({
     sourceId: 'pirate_king_move',
     buildInteraction: (context) => {
         const baseDef = getBaseDef(context.matchState.core.bases[context.scoringBaseIndex]?.defId ?? '');
@@ -1516,17 +1509,16 @@ const pirateKingMovePromptProgram = createPromptProgram<PirateKingMovePromptCont
         if (context.remaining.length === 0) return { events };
         return {
             events,
-            context: createPiratePromptContext(state, context.remaining[0].controller, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPiratePromptContext(state, context.remaining[0].controller, timestamp, {
                 scoringBaseIndex: context.scoringBaseIndex,
                 current: context.remaining[0],
                 remaining: context.remaining.slice(1),
-            }),
-            nextProgram: pirateKingMovePromptProgram,
+            }), pirateKingMovePromptProgram),
         };
     },
 });
 
-const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMateChooseBasePromptContext, SmashUpCore, SmashUpEvent>({
+const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMateChooseBasePromptContext>({
     sourceId: 'pirate_first_mate_choose_base',
     buildInteraction: (context) => {
         const def = getCardDef(context.mateDefId) as MinionCardDef | undefined;

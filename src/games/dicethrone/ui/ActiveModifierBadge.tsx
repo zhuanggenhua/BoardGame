@@ -11,6 +11,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Zap } from 'lucide-react';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 import type { ActiveModifier } from '../hooks/useActiveModifiers';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
+
+const dtUnit = buildBoardShellInlineUnitValue;
 
 interface ActiveModifierBadgeProps {
     modifiers: ActiveModifier[];
@@ -31,10 +34,11 @@ export const ActiveModifierBadge: React.FC<ActiveModifierBadgeProps> = ({ modifi
     const tooltipContent = modifiers.map((mod) => {
         const name = t(mod.nameKey);
         const desc = mod.descriptionKey ? t(mod.descriptionKey) : '';
+        const displayDesc = desc.replace(/^(?:攻击修正\s*[：:]\s*|attack modifier\s*:\s*)/i, '');
         return (
             <span key={mod.cardId + mod.timestamp}>
                 <span className="text-amber-300 font-semibold">{name}</span>
-                {desc && <span className="text-slate-400"> — {desc}</span>}
+                {displayDesc && <span className="text-slate-400"> — {displayDesc}</span>}
             </span>
         );
     });
@@ -52,21 +56,29 @@ export const ActiveModifierBadge: React.FC<ActiveModifierBadgeProps> = ({ modifi
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-                <div className="flex h-[1.9vw] items-center justify-center gap-[0.4vw] px-[0.78vw] rounded-full bg-gradient-to-r from-amber-900/90 to-orange-900/90 border border-amber-500/50 shadow-[0_0_1vw_rgba(245,158,11,0.3)] backdrop-blur-sm cursor-default">
-                    <Zap className="w-[0.82vw] h-[0.82vw] text-amber-400 fill-amber-400" />
-                    <div className="flex items-center gap-[0.28vw] whitespace-nowrap leading-none">
-                        <span className="text-amber-100/90 text-[0.62vw] font-semibold tracking-[0.08em] uppercase">
+                <div
+                    className="flex items-center justify-center rounded-full bg-gradient-to-r from-amber-900/90 to-orange-900/90 border border-amber-500/50 backdrop-blur-sm cursor-default"
+                    style={{
+                        height: dtUnit(1.9),
+                        gap: dtUnit(0.4),
+                        paddingInline: dtUnit(0.78),
+                        boxShadow: `0 0 ${dtUnit(1)} rgba(245,158,11,0.3)`,
+                    }}
+                >
+                    <Zap className="text-amber-400 fill-amber-400" style={{ width: dtUnit(0.82), height: dtUnit(0.82) }} />
+                    <div className="flex items-center whitespace-nowrap leading-none" style={{ gap: dtUnit(0.28) }}>
+                        <span className="text-amber-100/90 font-semibold tracking-[0.08em] uppercase" style={{ fontSize: dtUnit(0.62) }}>
                             {badgeLabel}
                         </span>
                         {badgeValue && (
-                            <span className="text-amber-200 text-[0.78vw] font-black tracking-wide">
+                            <span className="text-amber-200 font-black tracking-wide" style={{ fontSize: dtUnit(0.78) }}>
                                 {badgeValue}
                             </span>
                         )}
                     </div>
                 </div>
                 <InfoTooltip
-                    title={t('modifierActive.tooltip')}
+                    title={null}
                     content={tooltipContent}
                     isVisible={isHovered}
                     position="left"

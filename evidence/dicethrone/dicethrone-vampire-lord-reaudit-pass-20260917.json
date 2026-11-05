@@ -1,0 +1,68 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-17T17:31:00.000Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "催眠在对手自然进攻骰确认后进入响应窗口，临时骰和对手骰重掷完成后攻击没有被跳过",
+      "status": "PASS",
+      "evidence": [
+        "标准 DiceThrone 真实入口 E2E 通过：响应窗口确实打开，临时骰投出 6，选择并重掷对手骰，窗口收口后对手仍能建立 slap-4 攻击。"
+      ]
+    },
+    {
+      "requirement": "死无全尸按利爪数量加伤，2 个利爪应记录并结算为 +2 伤害，行动日志卡图 hover 浮层可见且不被遮挡",
+      "status": "PASS",
+      "evidence": [
+        "标准 DiceThrone 真实入口 E2E 通过：2 个利爪结算为 +2，日志包含“利爪 2 个”和“+2”，卡图浮层位于视口内且层级高于行动日志面板。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\01-催眠-自然进攻骰确认后响应窗口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\02-催眠-重掷后仍等待攻击声明.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\03-催眠-攻击重新建立.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\04-死无全尸-两利爪奖励骰.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\05-死无全尸-两利爪加两伤害.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\06-死无全尸-日志卡图浮层可见.jpg"
+  ],
+  "images": [
+    {
+      "file": "01-催眠-自然进攻骰确认后响应窗口.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\01-催眠-自然进攻骰确认后响应窗口.jpg",
+      "note": "对手自然进攻骰确认后，催眠进入响应窗口"
+    },
+    {
+      "file": "02-催眠-重掷后仍等待攻击声明.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\02-催眠-重掷后仍等待攻击声明.jpg",
+      "note": "催眠重掷对手骰后，攻击声明仍未被跳过"
+    },
+    {
+      "file": "03-催眠-攻击重新建立.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\03-催眠-攻击重新建立.jpg",
+      "note": "对手随后仍能重新建立 slap-4 攻击"
+    },
+    {
+      "file": "04-死无全尸-两利爪奖励骰.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\04-死无全尸-两利爪奖励骰.jpg",
+      "note": "死无全尸奖励骰中明确出现 2 个利爪"
+    },
+    {
+      "file": "05-死无全尸-两利爪加两伤害.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\05-死无全尸-两利爪加两伤害.jpg",
+      "note": "2 个利爪结算为当前攻击增加 2 点伤害"
+    },
+    {
+      "file": "06-死无全尸-日志卡图浮层可见.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\evidence\\dicethrone\\reaudit-pass-20260917\\06-死无全尸-日志卡图浮层可见.jpg",
+      "note": "行动日志中的死无全尸卡图 hover 浮层可见且未被面板遮挡"
+    }
+  ]
+}

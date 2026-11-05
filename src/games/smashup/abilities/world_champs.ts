@@ -49,6 +49,7 @@ import type {
 } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -275,7 +276,7 @@ function buildEnemyMinionFieldTargets(
     }));
 }
 
-const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_stoneford',
     buildInteraction: (context) => {
         const player = context.matchState.core.players[context.playerId];
@@ -319,7 +320,7 @@ const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptC
     },
 });
 
-const worldChampsShieldMaidenPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsShieldMaidenPromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_shield_maiden',
     buildInteraction: (context) => {
         const state = context.matchState.core;
@@ -369,7 +370,7 @@ const worldChampsShieldMaidenPromptProgram = createPromptProgram<WorldChampsProm
     },
 });
 
-const worldChampsCalicoinPromptProgram = createPromptProgram<WorldChampsMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsCalicoinPromptProgram = createPromptProgram<WorldChampsMinionPromptContext>({
     sourceId: 'world_champs_calicoin',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -402,7 +403,7 @@ const worldChampsCalicoinPromptProgram = createPromptProgram<WorldChampsMinionPr
     },
 });
 
-const worldChampsItsBlitzinTimePromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsItsBlitzinTimePromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_its_blitzin_time',
     buildInteraction: (context) => {
         const ownMinions = collectOwnMinions(context.matchState.core, context.playerId);
@@ -427,7 +428,7 @@ const worldChampsItsBlitzinTimePromptProgram = createPromptProgram<WorldChampsPr
     },
 });
 
-const worldChampsFightingSpiritPrizePromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsFightingSpiritPrizePromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_fighting_spirit_prize',
     buildInteraction: (context) => {
         const ownMinions = collectOwnMinions(context.matchState.core, context.playerId);
@@ -475,7 +476,7 @@ const worldChampsFightingSpiritPrizePromptProgram = createPromptProgram<WorldCha
     },
 });
 
-const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCardPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCardPromptContext>({
     sourceId: 'world_champs_akye_the_turtle_card',
     buildInteraction: (context) => {
         const player = context.matchState.core.players[context.playerId];
@@ -506,7 +507,7 @@ const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCard
     },
 });
 
-const worldChampsAkyePlayerPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsAkyePlayerPromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_akye_the_turtle_player',
     buildInteraction: (context) => {
         const opponents = getOtherPlayers(context.matchState.core, context.playerId);
@@ -539,15 +540,14 @@ const worldChampsAkyePlayerPromptProgram = createPromptProgram<WorldChampsPrompt
         if (!player || player.hand.length === 0) return { events: [] };
         return {
             events: [],
-            context: createWorldChampsPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createWorldChampsPromptContext(state, playerId, timestamp, {
                 targetPlayerId: selected.targetPlayerId,
-            } satisfies AkyeContinuation),
-            nextProgram: worldChampsAkyeCardPromptProgram,
+            } satisfies AkyeContinuation), worldChampsAkyeCardPromptProgram),
         };
     },
 });
 
-const worldChampsFastAsLightningPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsFastAsLightningPromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_fast_as_lightning',
     buildInteraction: (context) => {
         const minions = collectAllMinions(context.matchState.core);
@@ -573,7 +573,7 @@ const worldChampsFastAsLightningPromptProgram = createPromptProgram<WorldChampsP
     },
 });
 
-const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldChampsHighSpeedChaseBasePromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldChampsHighSpeedChaseBasePromptContext>({
     sourceId: 'world_champs_high_speed_chase_base',
     buildInteraction: (context) => {
         const baseOptions = context.matchState.core.bases
@@ -641,7 +641,7 @@ const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldCham
     },
 });
 
-const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldChampsPromptContext & { sourceBaseIndex: number }, SmashUpCore, SmashUpEvent>({
+const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldChampsPromptContext & Pick<HighSpeedChaseContinuation, 'sourceCardUid' | 'sourceBaseIndex' | 'sourceControllerId'>>({
     sourceId: 'world_champs_high_speed_chase_minion',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.sourceBaseIndex];
@@ -678,19 +678,18 @@ const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldCh
         if (baseOptions.length === 0) return { events: [] };
         return {
             events: [],
-            context: createWorldChampsPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createWorldChampsPromptContext(state, playerId, timestamp, {
                 sourceCardUid: context.sourceCardUid,
                 sourceBaseIndex: selected.baseIndex,
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
-                sourceControllerId: context.playerId,
-            } satisfies HighSpeedChaseContinuation),
-            nextProgram: worldChampsHighSpeedChaseBasePromptProgram,
+                sourceControllerId: context.sourceControllerId,
+            } satisfies HighSpeedChaseContinuation), worldChampsHighSpeedChaseBasePromptProgram),
         };
     },
 });
 
-const worldChampsMouseBirdTargetsPromptProgram = createPromptProgram<WorldChampsMouseBirdTargetsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsMouseBirdTargetsPromptProgram = createPromptProgram<WorldChampsMouseBirdTargetsPromptContext>({
     sourceId: 'world_champs_mouse_bird_and_sausage_targets',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -738,7 +737,7 @@ const worldChampsMouseBirdTargetsPromptProgram = createPromptProgram<WorldChamps
     },
 });
 
-const worldChampsMouseBirdAnchorPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsMouseBirdAnchorPromptProgram = createPromptProgram<WorldChampsPromptContext>({
     sourceId: 'world_champs_mouse_bird_and_sausage_anchor',
     buildInteraction: (context) => {
         const minions = collectAllMinions(context.matchState.core);
@@ -757,18 +756,19 @@ const worldChampsMouseBirdAnchorPromptProgram = createPromptProgram<WorldChampsP
     },
     onResolve: ({ state, playerId, value, timestamp }) => {
         const selected = value as MinionChoice;
-        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const selectedBaseIndex = selected.baseIndex;
+        if (!selected.minionUid || selectedBaseIndex === undefined || !selected.defId) return { events: [] };
         const anchorDef = getCardDef(selected.defId);
         const faction = anchorDef?.faction;
         if (!faction) return { events: [] };
-        const base = state.core.bases[selected.baseIndex];
+        const base = state.core.bases[selectedBaseIndex];
         if (!base) return { events: [] };
         const candidates = base.minions
             .filter(minion => getCardDef(minion.defId)?.faction === faction)
             .map((minion) => ({
                 uid: minion.uid,
                 defId: minion.defId,
-                baseIndex: selected.baseIndex,
+                baseIndex: selectedBaseIndex,
                 label: getCardDef(minion.defId)?.name ?? minion.defId,
             }));
         if (candidates.length === 0) return { events: [] };
@@ -779,16 +779,15 @@ const worldChampsMouseBirdAnchorPromptProgram = createPromptProgram<WorldChampsP
         }
         return {
             events: [],
-            context: createWorldChampsPromptContext(state, playerId, timestamp, {
-                baseIndex: selected.baseIndex,
+            continuation: createAbilityRuntimeContinuation(createWorldChampsPromptContext(state, playerId, timestamp, {
+                baseIndex: selectedBaseIndex,
                 faction,
-            } satisfies MouseBirdAndSausageContinuation),
-            nextProgram: worldChampsMouseBirdTargetsPromptProgram,
+            } satisfies MouseBirdAndSausageContinuation), worldChampsMouseBirdTargetsPromptProgram),
         };
     },
 });
 
-const worldChampsEhPromptProgram = createPromptProgram<WorldChampsEhPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsEhPromptProgram = createPromptProgram<WorldChampsEhPromptContext>({
     sourceId: 'world_champs_eh',
     buildInteraction: (context) => {
         const ownMinions = collectOwnMinions(context.matchState.core, context.playerId);
@@ -828,7 +827,7 @@ const worldChampsEhPromptProgram = createPromptProgram<WorldChampsEhPromptContex
     },
 });
 
-const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldChampsSheriffPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldChampsSheriffPromptContext>({
     sourceId: 'world_champs_sheriff_before_scoring',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `world_champs_sheriff_before_scoring_${context.now}_${context.friendlyMinionUid}`,
@@ -872,7 +871,7 @@ const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldCh
     },
 });
 
-const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChampsMummyPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChampsMummyPromptContext>({
     sourceId: 'world_champs_mummy_after_scoring',
     buildInteraction: (context) => {
         const baseOptions = context.matchState.core.bases
@@ -927,7 +926,7 @@ const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChamp
     },
 });
 
-const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChampsBewitchedTransferPromptContext, SmashUpCore, SmashUpEvent>({
+const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChampsBewitchedTransferPromptContext>({
     sourceId: 'world_champs_bewitched_transfer',
     buildInteraction: (context) => {
         const minionOptions = collectAllMinions(context.matchState.core).filter(minion => minion.uid !== context.triggerMinionUid);
@@ -1111,6 +1110,7 @@ function worldChampsHighSpeedChaseTalent(ctx: AbilityContext): AbilityResult {
         createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceCardUid: ctx.cardUid,
             sourceBaseIndex: ctx.baseIndex,
+            sourceControllerId: ctx.playerId,
         }),
     );
     return { events: result.events, matchState: result.matchState };
@@ -1205,6 +1205,7 @@ function worldChampsEhSpecial(ctx: AbilityContext): AbilityResult {
 
 function worldChampsAramisOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return [];
+    if (!ctx.affectEvent) return [];
     if (ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
     const aramisControllerId = ctx.sourceControllerId;
     const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];
@@ -1234,6 +1235,7 @@ function worldChampsAramisOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] 
 
 function canTriggerWorldChampsAramisOnMinionAffected(ctx: TriggerContext): boolean {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId === undefined) return false;
+    if (!ctx.affectEvent) return false;
     if (ctx.triggerMinionUid !== ctx.sourceCardUid) return false;
     const aramisControllerId = ctx.sourceControllerId;
     const currentPlayerId = ctx.state.turnOrder[ctx.state.currentPlayerIndex];

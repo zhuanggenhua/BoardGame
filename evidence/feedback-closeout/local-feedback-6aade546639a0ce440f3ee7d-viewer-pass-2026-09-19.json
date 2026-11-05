@@ -1,0 +1,32 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "feedbackId": "6aade546639a0ce440f3ee7d",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "吸血鬼领主催眠改对手进攻骰时，改骰提示框完整显示，不被截断",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d/01-催眠改第4颗骰-提示完整.jpg"
+      ]
+    },
+    {
+      "requirement": "吸血鬼领主催眠改骰过程在行动日志中记录第 4 颗骰从 5 改为 4",
+      "status": "PASS",
+      "evidence": [
+        "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d/02-催眠改第4颗骰-行动日志5到4.jpg"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d/01-催眠改第4颗骰-提示完整.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d/02-催眠改第4颗骰-行动日志5到4.jpg"
+  ],
+  "latestDirectory": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d"
+}

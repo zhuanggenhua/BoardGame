@@ -35,6 +35,7 @@ export type BetrayalVisualTransition = {
   girlToken?: BetrayalHauntTokenInstanceSummary;
   possessionCard?: BetrayalInventoryCard;
   possessionVisual?: BetrayalPossessionAtlasVisual;
+  possessionOwnerPlayerId?: string;
   locale: string;
   tokenLabel?: string;
   tone?: "self" | "ally";
@@ -43,12 +44,38 @@ export type BetrayalVisualTransition = {
   onComplete?: () => void;
 };
 
-export function findBetrayalTestElement(testId: string): HTMLElement | null {
+export function findBetrayalTestElement(
+  testId: string,
+  options: { visibleOnly?: boolean } = {},
+): HTMLElement | null {
   if (typeof document === "undefined") {
     return null;
   }
-  return Array.from(document.querySelectorAll<HTMLElement>("[data-testid]"))
-    .find((element) => element.dataset.testid === testId) ?? null;
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>("[data-testid]"),
+  ).filter((element) => element.dataset.testid === testId);
+  const sizedCandidates = candidates.filter((element) => {
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  });
+  const visibleCandidates = sizedCandidates.filter((element) => {
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      Number.parseFloat(style.opacity || "1") > 0 &&
+      rect.right > 0 &&
+      rect.bottom > 0 &&
+      rect.left < window.innerWidth &&
+      rect.top < window.innerHeight &&
+      element.dataset.visualTransitionAnchorHidden !== "true"
+    );
+  });
+  if (options.visibleOnly) {
+    return visibleCandidates[0] ?? null;
+  }
+  return visibleCandidates[0] ?? sizedCandidates[0] ?? candidates[0] ?? null;
 }
 
 export function readBetrayalViewportRect(
@@ -80,6 +107,33 @@ export function centerBetrayalRect(
     width,
     height,
   };
+}
+
+export function resolveBetrayalVisualTransitionContentScale({
+  targetWidth,
+  targetHeight,
+  contentWidth,
+  contentHeight,
+}: {
+  targetWidth: number;
+  targetHeight: number;
+  contentWidth: number;
+  contentHeight: number;
+}) {
+  if (
+    !Number.isFinite(targetWidth) ||
+    !Number.isFinite(targetHeight) ||
+    !Number.isFinite(contentWidth) ||
+    !Number.isFinite(contentHeight) ||
+    targetWidth <= 0 ||
+    targetHeight <= 0 ||
+    contentWidth <= 0 ||
+    contentHeight <= 0
+  ) {
+    return 1;
+  }
+
+  return Math.min(1, targetWidth / contentWidth, targetHeight / contentHeight);
 }
 
 export function BetrayalVisualTransitionLayer({
@@ -116,6 +170,24 @@ export function BetrayalVisualTransitionLayer({
     transition.kind === "possession-gain"
       ? Math.min(transition.sourceRect.height, 320)
       : transition.sourceRect.height;
+  const contentBaseSize = transition.explorer
+    ? { width: 66, height: 72 }
+    : transition.monster
+      ? { width: 52, height: 52 }
+      : transition.girlToken
+        ? {
+            width: transition.attachedTo === "mummy" ? 28 : 54,
+            height: transition.attachedTo === "mummy" ? 28 : 54,
+          }
+        : null;
+  const contentScale = contentBaseSize
+    ? resolveBetrayalVisualTransitionContentScale({
+        targetWidth: transitionWidth,
+        targetHeight: transitionHeight,
+        contentWidth: contentBaseSize.width,
+        contentHeight: contentBaseSize.height,
+      })
+    : 1;
   const content = transition.explorer ? (
     <ExplorerFigureToken
       explorer={transition.explorer}
@@ -232,7 +304,15 @@ export function BetrayalVisualTransitionLayer({
             }}
             onAnimationComplete={handleAnimationComplete}
           >
-            {content}
+            <div
+              className="inline-flex items-center justify-center"
+              style={{
+                transform: `scale(${contentScale})`,
+                transformOrigin: "center center",
+              }}
+            >
+              {content}
+            </div>
           </motion.div>
         ) : null}
       </div>

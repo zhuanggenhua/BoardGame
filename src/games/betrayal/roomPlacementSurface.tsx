@@ -32,8 +32,8 @@ export function BetrayalRoomPlacementFailureBanner({
       data-testid="betrayal-room-placement-failure"
       className="pointer-events-auto absolute top-3 z-[70] flex min-h-[54px] items-center gap-2 rounded-[10px] border border-[rgba(238,204,126,0.42)] bg-[rgba(10,12,10,0.88)] px-3 py-2 text-[#ead7a5] shadow-[0_14px_34px_rgba(0,0,0,0.44),0_0_20px_rgba(238,204,126,0.16)] backdrop-blur-md"
       style={{
-        left: "clamp(1rem, 20vw, 20rem)",
-        width: "min(300px, 76vw)",
+        left: "384px",
+        width: "300px",
       }}
       aria-live="polite"
     >
@@ -51,7 +51,7 @@ export interface BetrayalRoomPlacementSurfaceProps {
   selectedOrientationTurns: RoomOrientationTurns;
   visual: BetrayalRoomTileVisual;
   adjustmentText: string | null;
-  tileAdjustmentOptions: BetrayalRoomTileAdjustmentOption[];
+  tileAdjustmentOptions: readonly BetrayalRoomTileAdjustmentOption[];
   selectedTileAdjustmentOption: BetrayalRoomTileAdjustmentOption | null;
   locale: string;
   onRotate: (direction: 1 | -1) => void;
@@ -97,8 +97,8 @@ export function BetrayalRoomPlacementSurface({
       data-room-entry-edge={connectingEdge}
       className="pointer-events-auto absolute top-3 z-[70] rounded-[10px] border border-[rgba(238,204,126,0.50)] bg-[rgba(10,12,10,0.88)] p-3 text-[#ead7a5] shadow-[0_14px_34px_rgba(0,0,0,0.44),0_0_24px_rgba(238,204,126,0.20)] backdrop-blur-md"
       style={{
-        left: "clamp(1rem, 20vw, 20rem)",
-        width: "min(300px, 76vw)",
+        left: "384px",
+        width: "300px",
       }}
       onPointerDown={(event) => event.stopPropagation()}
       onPointerUp={(event) => event.stopPropagation()}

@@ -30,7 +30,18 @@ function createRegistry(): FxRegistry {
     });
 
     registry.register(MW_FX.SPELL_PUSH, SpellPushRenderer, {
-        timeoutMs: 5000,
+        timeoutMs: 4_000,
+        maxConcurrent: 3,
+        debounceMs: 40,
+        budget: {
+            areaPolicy: 'cell',
+            estimatedCost: 'low',
+            maxDpr: 1.25,
+            reducedMaxDpr: 1,
+        },
+    });
+    registry.register(MW_FX.MOVE, MovementRenderer, {
+        timeoutMs: 1400,
         maxConcurrent: 3,
         debounceMs: 40,
         budget: {
@@ -51,18 +62,6 @@ function createRegistry(): FxRegistry {
             reducedMaxDpr: 1,
         },
     });
-    registry.register(MW_FX.MOVE, MovementRenderer, {
-        timeoutMs: 1600,
-        maxConcurrent: 4,
-        debounceMs: 30,
-        budget: {
-            areaPolicy: 'path',
-            estimatedCost: 'low',
-            maxDpr: 1.15,
-            reducedMaxDpr: 1,
-        },
-    });
-
     registry.register(MW_FX.DAMAGE_IMPACT, DamageImpactRenderer, {
         timeoutMs: 1100,
         maxConcurrent: 4,
@@ -76,7 +75,7 @@ function createRegistry(): FxRegistry {
     });
 
     registry.register(MW_FX.HEALING_IMPACT, HealingImpactRenderer, {
-        timeoutMs: 1400,
+        timeoutMs: 5600,
         maxConcurrent: 4,
         debounceMs: 20,
         budget: {

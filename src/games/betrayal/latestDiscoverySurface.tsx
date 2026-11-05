@@ -6,6 +6,7 @@ import {
   BetrayalConfirmButton,
   BETRAYAL_CONFIRM_BUTTON_CLASS,
 } from "./confirmButtonSurface";
+import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
 import type { BetrayalDiscoveryAtlasVisual } from "./discoveryAtlas";
 import type {
   BetrayalDiscoveryResolutionStep,
@@ -20,6 +21,7 @@ import { RecentRollPanel } from "./recentRollSurface";
 type BetrayalLatestDiscoveryContinueButtonState = {
   label: string;
   disabled: boolean;
+  eventRollReadable?: boolean;
   pendingCardResolutionId?: string;
   pendingCardResolutionStep?: string;
   cardResolutionConfirmedCount?: number;
@@ -43,16 +45,17 @@ type BetrayalLatestDiscoverySurfaceProps = {
   shouldShowCardFace: boolean;
   shouldShowRoll: boolean;
   recentRoll: BetrayalRecentRollState | null;
+  animateRerollMotion: boolean;
   rerollSelection: RecentRollRerollSelection | null;
   canModifyRoll: boolean;
   rollActorLabel: string;
   rollModifierActionSlot: React.ReactNode;
-  pendingEventRollRequiresNoAcknowledgement: boolean;
+  modifierEffectLabel?: string | null;
+  modifierEffectSources?: string | null;
   hasPendingEventRollStart: boolean;
   canStartPendingEventRoll: boolean;
+  suppressExternalActionDock?: boolean;
   continueButton: BetrayalLatestDiscoveryContinueButtonState;
-  isPhoneLandscapeLayout: boolean;
-  shouldUseMobileEventOpenTableChrome: boolean;
   effectiveLocale: string;
   canDismissByBackdrop: boolean;
   isPossessionGainTransitionActive: boolean;
@@ -61,6 +64,50 @@ type BetrayalLatestDiscoverySurfaceProps = {
   onContinue: () => void;
   onDiceSettledChange: (rollId: string, settled: boolean) => void;
 };
+
+export function resolveDisplayedDiscoveryDetail(
+  discovery: BetrayalDiscoverySummary,
+  resolutionSteps: readonly BetrayalDiscoveryResolutionStep[],
+): string {
+  const roomResolutionTexts = resolutionSteps
+    .filter(
+      (step) =>
+        step.kind === "room-effect" ||
+        step.kind === "room-discovery-card" ||
+        step.kind === "buried-room-discovery-card",
+    )
+    .map((step) => step.text)
+    .filter(Boolean);
+  const detail = roomResolutionTexts.reduce(
+    (currentDetail, roomResolutionText) =>
+      currentDetail.replace(roomResolutionText, ""),
+    discovery.detail,
+  )
+    .replace(
+      /((?:抽到预兆后进行|选择进行|进行)?\s*作祟检定\s*[:：]\s*)总点数\s*[-+]?\d+\s*[（(]\s*(\d+)\s*颗骰子[^）)]*[）)]/g,
+      "$1投 $2 颗骰子",
+    )
+    .replace(
+      /(?:抽到预兆后进行|选择进行|进行)?\s*作祟检定\s*[:：]\s*投\s*\d+\s*颗骰子/g,
+      "",
+    )
+    .replace(
+      /预兆牌堆耗尽，自动触发作祟/g,
+      "",
+    )
+    .replace(
+      /(?:力量|速度|知识|神志)检定(?:\s*[-+]?\d+)?\s*[:：]\s*/g,
+      "",
+    )
+    .replace(
+      /(投\s*\d+\s*颗骰子)\s*[-+]?\d+\s*[:：]\s*/g,
+      "$1：",
+    );
+  return detail
+    .replace(/[；;]\s*[；;]/g, "；")
+    .replace(/^[；;]\s*|[；;]\s*$/g, "")
+    .trim();
+}
 
 export function BetrayalLatestDiscoverySurface({
   visible,
@@ -77,16 +124,17 @@ export function BetrayalLatestDiscoverySurface({
   shouldShowCardFace,
   shouldShowRoll,
   recentRoll,
+  animateRerollMotion,
   rerollSelection,
   canModifyRoll,
   rollActorLabel,
   rollModifierActionSlot,
-  pendingEventRollRequiresNoAcknowledgement,
+  modifierEffectLabel = null,
+  modifierEffectSources = null,
   hasPendingEventRollStart,
   canStartPendingEventRoll,
+  suppressExternalActionDock = false,
   continueButton,
-  isPhoneLandscapeLayout,
-  shouldUseMobileEventOpenTableChrome,
   effectiveLocale,
   canDismissByBackdrop,
   isPossessionGainTransitionActive,
@@ -102,16 +150,25 @@ export function BetrayalLatestDiscoverySurface({
   }
 
   const hasRollModifierActionSlot = Boolean(rollModifierActionSlot);
-  const shouldDockRollModifierInPhoneCorner = Boolean(
-    isPhoneLandscapeLayout &&
-      shouldShowRoll &&
-      recentRoll &&
-      hasRollModifierActionSlot,
+  const shouldHideExternalActionDock =
+    suppressExternalActionDock ||
+    hasRollModifierActionSlot ||
+    Boolean(shouldShowRoll && recentRoll && continueButton.eventRollReadable === false);
+  const shouldRenderCardFace = Boolean(
+    shouldShowCardFace ||
+      (discovery.kind === "event" && panelVisual),
   );
-  const shouldHideExternalActionDock = Boolean(
-    pendingEventRollRequiresNoAcknowledgement ||
-      shouldDockRollModifierInPhoneCorner ||
-      hasRollModifierActionSlot,
+  const displayedDiscoveryDetail = resolveDisplayedDiscoveryDetail(
+    discovery,
+    resolutionSteps,
+  )
+    .replace(/[；;]\s*没有事件、物品或预兆发现牌[。.]?\s*$/, "")
+    .replace(/^没有事件、物品或预兆发现牌[。.]?\s*$/, "")
+    .trim();
+  const shouldShowVisibleDiscoveryDetail = Boolean(
+    displayedDiscoveryDetail &&
+      !visibleProcessCard &&
+      !(shouldShowRoll && recentRoll),
   );
 
   return (
@@ -123,27 +180,13 @@ export function BetrayalLatestDiscoverySurface({
       data-allows-inventory-roll-modifiers={canModifyRoll ? "true" : "false"}
       data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
       onClick={canDismissByBackdrop ? onDismiss : undefined}
-      className={`pointer-events-auto absolute flex cursor-default ${
-        isPhoneLandscapeLayout
-          ? shouldUseMobileEventOpenTableChrome
-            ? "inset-0 z-50 items-start justify-end bg-transparent px-2 pb-[74px] pr-[8.25rem] pt-[92px]"
-            : "inset-0 z-[120] items-center justify-center bg-[rgba(3,7,6,0.92)] px-3 pb-[76px] pt-[5.75rem]"
-          : `inset-0 z-[120] items-center justify-center px-4 py-16 ${
-              shouldShowRoll && recentRoll ? "" : "bg-[rgba(3,7,6,0.76)]"
-            }`
-      }`}
+      className="pointer-events-auto absolute inset-0 z-[120] flex cursor-default items-center justify-center bg-[rgba(3,7,6,0.76)] px-4 py-16"
     >
       {panelVisual ? null : (
         <div
           data-testid="betrayal-discovery-top-banner"
           data-prompt-placement="top"
-          className={`pointer-events-none absolute z-30 flex min-h-[76px] flex-wrap items-center justify-center gap-2.5 rounded-[11px] border border-[rgba(238,204,126,0.48)] bg-[rgba(18,17,13,0.88)] px-5 py-3 text-center font-bold tracking-[0.05em] text-[#f3e0a6] shadow-[0_20px_42px_rgba(0,0,0,0.38),0_0_30px_rgba(238,204,126,0.20)] backdrop-blur-sm ${
-            isPhoneLandscapeLayout
-              ? shouldUseMobileEventOpenTableChrome
-                ? "left-2 right-[8.25rem] top-1 min-h-[58px] px-3 py-2 text-[12px]"
-                : "left-3 right-3 top-2 min-h-[60px] px-3 py-2 text-[13px]"
-              : "left-4 right-4 top-4 text-[16px]"
-          }`}
+          className="pointer-events-none absolute left-4 right-4 top-4 z-30 flex min-h-[76px] flex-wrap items-center justify-center gap-2.5 rounded-[11px] border border-[rgba(238,204,126,0.48)] bg-[rgba(18,17,13,0.88)] px-5 py-3 text-center text-[16px] font-bold tracking-[0.05em] text-[#f3e0a6] shadow-[0_20px_42px_rgba(0,0,0,0.38),0_0_30px_rgba(238,204,126,0.20)] backdrop-blur-sm"
           style={{
             textShadow:
               "0 1px 2px rgba(0,0,0,0.88), 0 0 14px rgba(238,204,126,0.34)",
@@ -155,17 +198,13 @@ export function BetrayalLatestDiscoverySurface({
           <span className="text-[#d8c692]">{displayedKindLabel}</span>
           <span
             data-testid="betrayal-discovery-top-banner-title"
-            className={`text-[#fff7c8] ${
-              isPhoneLandscapeLayout ? "text-[17px]" : "text-[24px]"
-            }`}
+              className="text-[24px] text-[#fff7c8]"
           >
             {displayedTitle}
           </span>
           <span
             data-testid="betrayal-discovery-top-banner-detail"
-            className={`basis-full leading-snug text-[#e8d7a5] ${
-              isPhoneLandscapeLayout ? "text-[13px]" : "text-[16px]"
-            }`}
+            className="basis-full text-[16px] leading-snug text-[#e8d7a5]"
           >
             {displaySummary}
           </span>
@@ -174,27 +213,27 @@ export function BetrayalLatestDiscoverySurface({
       <div
         data-testid="betrayal-discovery-panel-content"
         onClick={(event) => event.stopPropagation()}
-        className={`flex flex-col items-center ${
+        className={`pointer-events-none flex flex-col items-center ${
           shouldShowRoll && recentRoll ? "w-full" : "w-fit"
         } ${
-          isPhoneLandscapeLayout
-            ? shouldUseMobileEventOpenTableChrome
-              ? "relative justify-start gap-1.5 max-h-[calc(100vh-5.25rem)] w-[min(604px,calc(100vw-20.75rem))] max-w-[calc(100vw-20.75rem)] px-2 py-2"
-              : "justify-center gap-3 max-h-[calc(100vh-4.5rem)] max-w-[calc(100vw-2rem)]"
-            : shouldShowRoll && recentRoll
-              ? "relative isolate justify-center gap-3 max-h-[calc(100vh-8rem)] bg-transparent"
-              : "relative isolate justify-center gap-3 max-h-[calc(100vh-8rem)] rounded-[28px] bg-[radial-gradient(ellipse_at_center,rgba(4,12,10,0.86),rgba(4,12,10,0.62)_52%,rgba(4,12,10,0.46)_72%,rgba(4,12,10,0)_88%)]"
+          shouldShowRoll && recentRoll
+            ? "relative isolate justify-center gap-3 max-h-[calc(1080px-8rem)] bg-transparent"
+            : "relative isolate justify-center gap-3 max-h-[calc(1080px-8rem)] rounded-[28px] bg-[radial-gradient(ellipse_at_center,rgba(4,12,10,0.86),rgba(4,12,10,0.62)_52%,rgba(4,12,10,0.46)_72%,rgba(4,12,10,0)_88%)]"
         }`}
       >
-        {shouldDockRollModifierInPhoneCorner ? (
-          <div className="pointer-events-auto absolute right-2 top-2 z-20">
-            {rollModifierActionSlot}
-          </div>
-        ) : null}
         <span className="sr-only" data-testid="betrayal-discovery-detail">
           {displayedKindLabel} {displayedTitle} {displaySummary}{" "}
-          {discovery.detail ?? ""}
+          {displayedDiscoveryDetail}
         </span>
+        {shouldShowVisibleDiscoveryDetail ? (
+          <div
+            data-testid="betrayal-discovery-visible-detail"
+            data-ui-role="visible-effect-description"
+            className="pointer-events-none z-10 max-w-[680px] rounded-[10px] border border-[rgba(214,181,109,0.42)] bg-[rgba(14,12,8,0.78)] px-4 py-2 text-center text-[16px] font-bold leading-snug tracking-[0.04em] text-[#f4e3b5] shadow-[0_10px_24px_rgba(0,0,0,0.30)]"
+          >
+            {displayedDiscoveryDetail}
+          </div>
+        ) : null}
         {resolutionSteps.length > 0 ? (
           <ol
             hidden
@@ -221,7 +260,7 @@ export function BetrayalLatestDiscoverySurface({
             data-room-discovery-search-index={String(searchStepNumber)}
             data-room-discovery-search-total={String(searchSequenceLength)}
             data-room-discovery-search-outcome={visibleProcessCard.outcome}
-            className="pointer-events-none z-10 max-w-[min(520px,calc(100vw-2rem))] rounded-[10px] border border-[rgba(214,181,109,0.42)] bg-[rgba(14,12,8,0.78)] px-4 py-2 text-center text-[13px] font-bold leading-snug tracking-[0.04em] text-[#f4e3b5] shadow-[0_10px_24px_rgba(0,0,0,0.30)]"
+            className="pointer-events-none z-10 max-w-[520px] rounded-[10px] border border-[rgba(214,181,109,0.42)] bg-[rgba(14,12,8,0.78)] px-4 py-2 text-center text-[13px] font-bold leading-snug tracking-[0.04em] text-[#f4e3b5] shadow-[0_10px_24px_rgba(0,0,0,0.30)]"
           >
             {visibleProcessCard.text}
           </div>
@@ -231,34 +270,24 @@ export function BetrayalLatestDiscoverySurface({
             {searchFinalEffectText}
           </div>
         ) : null}
-        {shouldShowCardFace || (shouldShowRoll && recentRoll) ? (
+        {shouldRenderCardFace || (shouldShowRoll && recentRoll) ? (
           <div
             data-testid="betrayal-discovery-panel-main"
-            className={`flex min-h-0 items-center justify-center ${
-              isPhoneLandscapeLayout && shouldShowRoll && recentRoll
-                ? "h-[min(228px,calc(100vh-10.625rem))] w-full max-w-[calc(100vw-1rem)] flex-row gap-3"
-                : `max-w-[calc(100vw-2rem)] flex-col gap-4 md:flex-row ${
-                    shouldShowRoll && recentRoll
-                      ? canModifyRoll
-                        ? "w-full md:max-w-[900px] md:gap-5"
-                        : "w-full md:max-w-[920px] md:gap-5"
-                      : canModifyRoll
-                        ? "md:max-w-[min(780px,calc(100vw-18rem))]"
-                        : "md:max-w-[900px]"
-                  }`
+            className={`flex min-h-0 max-w-[920px] flex-row items-center justify-center gap-5 ${
+              shouldShowRoll && recentRoll
+                ? canModifyRoll
+                  ? "w-full max-w-[900px]"
+                  : "w-full max-w-[920px]"
+                : canModifyRoll
+                  ? "max-w-[780px]"
+                  : "max-w-[900px]"
             }`}
           >
-            {shouldShowCardFace ? (
+            {shouldRenderCardFace ? (
               <div
                 className={`relative shrink-0 transition-opacity duration-100 ${
                   isPossessionGainTransitionActive ? "opacity-0" : "opacity-100"
-                } ${
-                  isPhoneLandscapeLayout && shouldShowRoll && recentRoll
-                    ? "w-[120px]"
-                    : shouldShowRoll && recentRoll
-                      ? "w-[min(300px,calc(100vw-2rem))] md:w-[300px]"
-                      : "w-[min(300px,calc(100vw-2rem))] md:w-[300px]"
-                }`}
+                } w-[300px]`}
               >
                 {panelVisual ? (
                   <DiscoveryAtlasFrame
@@ -285,45 +314,45 @@ export function BetrayalLatestDiscoverySurface({
             {shouldShowRoll && recentRoll ? (
               <RecentRollPanel
                 roll={recentRoll}
-                className={
-                  isPhoneLandscapeLayout
-                    ? "h-full min-h-[208px] min-w-0 flex-1"
-                    : "h-[min(46vh,380px)] min-h-[332px] w-[min(640px,calc(100vw-2rem))] shrink-0 md:w-[560px]"
-                }
-                diceClassName={
-                  isPhoneLandscapeLayout ? "min-h-[164px]" : "min-h-[236px]"
-                }
+                className="h-[380px] min-h-[332px] w-[560px] shrink-0"
+                diceClassName="min-h-[236px]"
+                animateRerollMotion={animateRerollMotion}
                 rerollSelection={rerollSelection}
                 deferEventDamageStage={false}
                 effectiveLocale={effectiveLocale}
                 actorLabel={rollActorLabel}
                 showSource={false}
-                showRollLabel={false}
-                openTable
-                compactResult
-                denseResult={isPhoneLandscapeLayout}
-                denseResultPlacement={
-                  isPhoneLandscapeLayout ? "floatingSide" : "stacked"
+                showThresholds={!panelVisual || recentRoll.kind === "hauntRoll"}
+                showRollLabel
+                showOutcome={
+                  recentRoll.kind === "eventRolledDamage" ||
+                  recentRoll.kind === "eventTraitCheck" ||
+                  recentRoll.kind === "eventDiceRoll"
                 }
+                resultReadable={continueButton.eventRollReadable !== false}
+                modifierEffectLabel={modifierEffectLabel}
+                modifierEffectSources={modifierEffectSources}
+                openTable
+                compactResult={false}
+                denseResult={false}
+                denseResultPlacement="stacked"
                 actionSlot={rollModifierActionSlot}
-                floatingResultClassName={isPhoneLandscapeLayout ? "top-[52px]" : ""}
+                floatingResultClassName=""
                 onDiceSettledChange={onDiceSettledChange}
               />
             ) : null}
           </div>
         ) : null}
         {shouldHideExternalActionDock ? null : (
-          <div
-            data-testid="betrayal-discovery-card-external-action-dock"
-            className={`pointer-events-auto z-10 flex min-h-[62px] justify-center ${
-              isPhoneLandscapeLayout ? "relative w-full" : "relative mt-2 w-full"
-            }`}
+          <BetrayalDecisionActionDock
+            testId="betrayal-discovery-card-external-action-dock"
+            className="pointer-events-none relative mt-3 border-t-0 bg-transparent"
           >
             {hasPendingEventRollStart ? (
               <button
                 type="button"
                 data-testid="betrayal-event-roll-start"
-                className={BETRAYAL_CONFIRM_BUTTON_CLASS}
+                className={`pointer-events-auto ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
                 disabled={!canStartPendingEventRoll}
                 onClick={onRollLatestDiscoveryEvent}
               >
@@ -361,14 +390,19 @@ export function BetrayalLatestDiscoverySurface({
                     ? String(continueButton.eventRollRequiredCount)
                     : undefined
                 }
+                data-event-roll-readable={
+                  typeof continueButton.eventRollReadable === "boolean"
+                    ? String(continueButton.eventRollReadable)
+                    : undefined
+                }
                 disabled={continueButton.disabled}
-                className={`pointer-events-auto min-w-[132px] shrink-0 ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
+                className={`pointer-events-auto min-w-[176px] shrink-0 ${BETRAYAL_CONFIRM_BUTTON_CLASS}`}
                 onClick={onContinue}
               >
                 {continueButton.label}
               </BetrayalConfirmButton>
             )}
-          </div>
+          </BetrayalDecisionActionDock>
         )}
       </div>
     </div>

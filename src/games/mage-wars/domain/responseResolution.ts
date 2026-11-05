@@ -1,12 +1,16 @@
 import type { PlayerId, ResolutionFrame } from '../../../engine/types';
 import type { MageWarsSpellCasterRef } from './core-types';
+import type { ArenaZoneId, MageWarsWallEdgeId, StatusTokenId } from './ids';
+import type { MageWarsCastSpellCommand } from './commands';
 import { isMageWarsSpellCasterRef } from './spellCasting';
 import {
     isMageWarsAttackReversalResponseCardId,
     isMageWarsSpellCounterResponseCardId,
-    isMageWarsTargetSpellCounterResponseCardId,
+    isMageWarsTargetSpellRedirectResponseCardId,
+    isMageWarsTargetSpellResponseCardId,
     type MageWarsAttackReversalResponseCardId,
     type MageWarsSpellCounterResponseCardId,
+    type MageWarsTargetSpellRedirectResponseCardId,
 } from './spellRules';
 
 export const MAGE_WARS_RESPONSE_FRAME_KIND = 'mage-wars.enchantment-response' as const;
@@ -25,7 +29,14 @@ export type MageWarsSpellResponseContext = {
     objectManaCost?: number;
     playerManaCost?: number;
     castMode: 'quickcast' | 'action' | 'deployment';
+    targetSpellCardId?: number;
+    targetPlayerId?: string;
     targetObjectId?: string;
+    targetZoneId?: ArenaZoneId;
+    targetWallEdgeId?: MageWarsWallEdgeId;
+    statusTokenIds?: StatusTokenId[];
+    statusTokenAmounts?: Partial<Record<StatusTokenId, number>>;
+    selectedEnchantmentObjectIds?: string[];
     sourceCommandType: string;
 };
 
@@ -47,7 +58,27 @@ export type MageWarsAttackResponseContext = {
     sourceCommandType: string;
 };
 
-export type MageWarsResponseContext = MageWarsSpellResponseContext | MageWarsAttackResponseContext;
+export type MageWarsSpellRedirectResponseContext = {
+    kind: 'spell-redirect';
+    responseId: string;
+    responseCardId: MageWarsTargetSpellRedirectResponseCardId;
+    responseObjectId: string;
+    responseOwnerId: PlayerId;
+    originalSpellOwnerId: PlayerId;
+    originalCaster: MageWarsSpellCasterRef;
+    spellCardId: number;
+    originalManaCost: number;
+    originalObjectManaCost?: number;
+    originalPlayerManaCost?: number;
+    originalCastMode: 'quickcast' | 'action' | 'deployment';
+    originalPayload: MageWarsCastSpellCommand['payload'];
+    sourceCommandType: string;
+};
+
+export type MageWarsResponseContext =
+    | MageWarsSpellResponseContext
+    | MageWarsAttackResponseContext
+    | MageWarsSpellRedirectResponseContext;
 
 export function createMageWarsResponseFrame(
     context: MageWarsResponseContext,
@@ -60,7 +91,11 @@ export function createMageWarsResponseFrame(
         ownerToken: context.responseId,
         ordering: 'explicit',
         status: 'running',
-        phase: context.kind === 'spell-counter' ? 'spell-counter' : 'attack-evasion',
+        phase: context.kind === 'spell-counter'
+            ? 'spell-counter'
+            : context.kind === 'spell-redirect'
+                ? 'spell-redirect'
+                : 'attack-evasion',
         phaseGate: 'block-advance-when-blocked',
         metadata: {
             [MAGE_WARS_RESPONSE_METADATA_KEY]: context,
@@ -75,6 +110,7 @@ export function readMageWarsResponseContext(frame: ResolutionFrame | undefined):
     const candidate = value as Partial<MageWarsResponseContext>;
     if (
         candidate.kind !== 'spell-counter'
+        && candidate.kind !== 'spell-redirect'
         && candidate.kind !== 'attack-reversal'
     ) return undefined;
     if (typeof candidate.responseId !== 'string' || typeof candidate.responseObjectId !== 'string') return undefined;
@@ -87,12 +123,28 @@ export function readMageWarsResponseContext(frame: ResolutionFrame | undefined):
             || typeof candidate.spellCardId !== 'number'
             || typeof candidate.manaCost !== 'number'
             || typeof candidate.castMode !== 'string'
-            || (isMageWarsTargetSpellCounterResponseCardId(candidate.responseCardId) && typeof candidate.targetObjectId !== 'string')
+            || (isMageWarsTargetSpellResponseCardId(candidate.responseCardId) && typeof candidate.targetObjectId !== 'string')
             || typeof candidate.sourceCommandType !== 'string'
         ) return undefined;
         return candidate as MageWarsSpellResponseContext;
     }
 
+    if (candidate.kind === 'spell-redirect') {
+        if (
+            !isMageWarsTargetSpellRedirectResponseCardId(candidate.responseCardId)
+            || typeof candidate.originalSpellOwnerId !== 'string'
+            || !isMageWarsSpellCasterRef(candidate.originalCaster)
+            || typeof candidate.spellCardId !== 'number'
+            || typeof candidate.originalManaCost !== 'number'
+            || typeof candidate.originalCastMode !== 'string'
+            || !candidate.originalPayload
+            || typeof candidate.originalPayload !== 'object'
+            || typeof candidate.sourceCommandType !== 'string'
+        ) return undefined;
+        return candidate as MageWarsSpellRedirectResponseContext;
+    }
+
+    if (candidate.kind !== 'attack-reversal') return undefined;
     if (
         !isMageWarsAttackReversalResponseCardId(candidate.responseCardId)
         || typeof candidate.attackerObjectId !== 'string'

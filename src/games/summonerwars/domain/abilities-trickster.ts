@@ -19,7 +19,7 @@
  */
 
 import type { AbilityDef } from './abilities';
-import { getUnitAt } from './helpers';
+import { getForceDestinations, getUnitAt, hasStableAbility } from './helpers';
 import { abilityText } from './abilityTextHelper';
 
 export const TRICKSTER_ABILITIES: AbilityDef[] = [
@@ -139,7 +139,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
         if (tkTarget.card.unitClass === 'summoner') {
           return { valid: false, error: '不能推拉召唤师' };
         }
-        
+
         return { valid: true };
       },
     },
@@ -199,6 +199,14 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
         
         if (tkTarget.card.unitClass === 'summoner') {
           return { valid: false, error: '不能推拉召唤师' };
+        }
+
+        if (dist === 0 || hasStableAbility(tkTarget, ctx.core)) {
+          return { valid: false, error: '目标不能被推拉' };
+        }
+
+        if (getForceDestinations(ctx.core, targetPosition, 1).length === 0) {
+          return { valid: false, error: '目标没有可用的推拉方向' };
         }
         
         return { valid: true };
@@ -378,7 +386,7 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
         if (tkTarget.card.unitClass === 'summoner') {
           return { valid: false, error: '不能推拉召唤师' };
         }
-        
+
         return { valid: true };
       },
     },
@@ -438,6 +446,14 @@ export const TRICKSTER_ABILITIES: AbilityDef[] = [
         
         if (tkTarget.card.unitClass === 'summoner') {
           return { valid: false, error: '不能推拉召唤师' };
+        }
+
+        if (dist === 0 || hasStableAbility(tkTarget, ctx.core)) {
+          return { valid: false, error: '目标不能被推拉' };
+        }
+
+        if (getForceDestinations(ctx.core, targetPosition, 1).length === 0) {
+          return { valid: false, error: '目标没有可用的推拉方向' };
         }
         
         return { valid: true };

@@ -112,7 +112,7 @@ function makeFortressWarrior(id: string): UnitCard {
     id, cardType: 'unit', name: '城塞圣武士', unitClass: 'common',
     faction: 'paladin', strength: 3, life: 4, cost: 2,
     attackType: 'melee', attackRange: 1,
-    abilities: ['judgment'], deckSymbols: [],
+    abilities: ['judgment'], unitTags: ['citadel'], deckSymbols: [],
   };
 }
 
@@ -121,7 +121,7 @@ function makeFortressKnight(id: string): UnitCard {
     id, cardType: 'unit', name: '城塞骑士', unitClass: 'common',
     faction: 'paladin', strength: 2, life: 5, cost: 2,
     attackType: 'melee', attackRange: 1,
-    abilities: ['entangle', 'guardian'], deckSymbols: [],
+    abilities: ['entangle', 'guardian'], unitTags: ['citadel'], deckSymbols: [],
   };
 }
 

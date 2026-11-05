@@ -1,0 +1,35 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-18T12:00:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "死无全尸真实入口使用利爪骰面结算，并按 2 个利爪增加 2 点攻击伤害",
+      "status": "PASS",
+      "evidence": [
+        "当前工作树的 vampire-lord-real-entry 真实入口 E2E 通过：奖励骰面为利爪、利爪数量为 2、结算事件的 totalDamage 为 2，攻击修正增加为 2。",
+        "截图中的右侧骰盘显示利爪结果，结算后右上角显示攻击修正 +2。"
+      ]
+    },
+    {
+      "requirement": "行动日志记录利爪数量和 +2 伤害，卡图 hover 浮层在当前窗口内且没有被行动日志面板遮挡",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E 通过：行动日志同时包含“利爪 2 个”和“+2”。",
+        "截图中的“死无全尸”卡图浮层位于行动日志面板上方，完整落在 1920x1080 视口内。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个利爪加-2-伤害，且行动日志卡图-hover-不被遮挡\\吸血鬼领主-死无全尸-2利爪奖励骰待确认.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个利爪加-2-伤害，且行动日志卡图-hover-不被遮挡\\吸血鬼领主-死无全尸-2利爪加2伤害后.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个利爪加-2-伤害，且行动日志卡图-hover-不被遮挡\\吸血鬼领主-死无全尸-行动日志hover卡图可见.jpg"
+  ]
+}

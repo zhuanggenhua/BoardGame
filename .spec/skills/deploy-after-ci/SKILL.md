@@ -54,6 +54,31 @@ node scripts/release/deploy-and-ota.mjs --skip-wait --ota-channel stable
 
 服务器部署版本以 git ref、CI run 和镜像为准，不要求修改商业产品版本。OTA 包版本在上传时决定：默认自动生成内部游标和显示发布号；需要显式商业产品版本时，通过 `-OtaExtra "--product-version <version>"` 或底层 `--ota-extra "--product-version <version>"` 传入。
 
+### 可选玩家更新日志
+
+只有本次部署包含玩家可感知的游戏改动时，才准备按游戏区分的 JSON 文案并传 `-ChangelogFile`。正文沿用 PC 更新日志风格：一句概述，后接少量“修复 / 新增 / 优化 / 调整”要点；不要把测试、审计、规范、构建或部署流水线写成玩家更新。
+
+```json
+{
+  "entries": [
+    {
+      "gameId": "dicethrone",
+      "title": "王权骰铸 0.6.48：伤害响应提示修复",
+      "versionLabel": "0.6.48",
+      "content": "本次更新修复伤害响应提示。\n\n## 修复\n- 修复不可防御伤害错误打开防御窗口"
+    }
+  ]
+}
+```
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci\scripts\deploy-prod.ps1 -ChangelogFile .\temp\release-notes.json
+```
+
+部署成功后，流程使用现有后台账号发布网页日志，并将相同标题、正文传给 OTA manifest；重复运行只复用已公开的相同记录，未发布草稿不会阻止发布。若文件含可公开日志，必须通过 `-ChangelogApiBaseUrl`、`BG_CHANGELOG_API_BASE_URL` 或 `VITE_BACKEND_URL` 明确日志 API 地址；缺少配置会在服务器部署前报错，不会静默使用本机默认 API。空文件或全被过滤的日志无需配置 API。账号凭据仍由现有环境配置或隐藏交互输入提供。
+
+没有文案时网页日志跳过，完整部署的 OTA `notes` 留空；完整部署不接受 `-OtaExtra` 覆盖共享日志的 `--notes` / `--empty-notes`。独立触发 Android OTA 仍按提交生成说明。使用 `-SkipOta` 并提供日志文件时只发布网页记录，手机端要等后续 OTA 才能看到更新。日志写入失败会停止 OTA 并报告服务器已部署；OTA 后续失败时网页日志可能已可见，应分别报告两端状态。
+
 其中服务器步骤默认等价于手动触发：
 
 ```powershell
@@ -104,6 +129,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .spec\skills\deploy-after-ci
 - 不要默认让生产机或本机从 GHCR 拉镜像；默认必须走 CI 构建后直传到服务器并 `update-local`。
 - “更新部署”默认包含 Android OTA；如果用户只要服务器更新，必须显式 `-SkipOta` 或口头说明“只更新服务器”。
 - 指定 tag 时，不要在未确认 OTA git ref 与该 tag 对齐的情况下顺手发 OTA。
+- 不要为没有玩家可感知内容的完整部署生成玩家日志；不要把部署用的共享日志回退成另一份自动提交摘要。
 - 不要把服务器热更新绑到 `package.json.version` 自增；商业产品版本、OTA 包版本和原生壳版本是三类不同版本。
 - 不要默认执行本地测试、lint、构建或额外审计。
 - 部署失败时只报告：执行了哪个脚本、远端脚本失败位置、下一步最小补救。

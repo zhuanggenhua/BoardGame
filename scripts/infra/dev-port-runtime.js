@@ -1,11 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DEV_RUNTIME_PORTS_FILE = path.join(process.cwd(), '.tmp', 'dev-runtime-ports.json');
+const DEV_RUNTIME_PORTS_FILE = process.env.BG_DEV_RUNTIME_PORTS_FILE?.trim()
+  || path.join(process.cwd(), '.tmp', 'dev-runtime-ports.json');
 
 function normalizePort(value) {
   const port = Number(value);
   return Number.isFinite(port) && port > 0 ? port : null;
+}
+
+function normalizeOwnerPid(value) {
+  const pid = Number(value);
+  return Number.isInteger(pid) && pid > 0 ? pid : null;
 }
 
 function normalizePortsRecord(ports) {
@@ -21,6 +27,54 @@ function normalizePortsRecord(ports) {
   }
 
   return { frontend, gameServer, apiServer };
+}
+
+function readRuntimeDescriptor() {
+  try {
+    const raw = fs.readFileSync(DEV_RUNTIME_PORTS_FILE, 'utf-8');
+    const parsed = JSON.parse(raw);
+    const ports = normalizePortsRecord(parsed?.ports);
+    if (!ports) {
+      return null;
+    }
+
+    return {
+      ports,
+      ownerPid: normalizeOwnerPid(parsed?.ownerPid),
+      updatedAt: typeof parsed?.updatedAt === 'string' ? parsed.updatedAt : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isProcessAlive(pid) {
+  if (!normalizeOwnerPid(pid)) {
+    return false;
+  }
+
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function createDevRuntimeEnv(ports, extraEnv = {}) {
+  const normalized = normalizePortsRecord(ports);
+  if (!normalized) {
+    throw new Error('开发运行时端口无效，无法生成统一环境');
+  }
+
+  return {
+    ...extraEnv,
+    VITE_DEV_PORT: String(normalized.frontend),
+    GAME_SERVER_PORT: String(normalized.gameServer),
+    API_SERVER_PORT: String(normalized.apiServer),
+    GAME_SERVER_PROXY_TARGET: `http://127.0.0.1:${normalized.gameServer}`,
+    API_SERVER_PROXY_TARGET: `http://127.0.0.1:${normalized.apiServer}`,
+  };
 }
 
 export function saveDevRuntimePorts(ports) {
@@ -46,24 +100,40 @@ export function saveDevRuntimePorts(ports) {
   return normalized;
 }
 
-export function loadDevRuntimePorts() {
-  try {
-    const raw = fs.readFileSync(DEV_RUNTIME_PORTS_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return normalizePortsRecord(parsed?.ports);
-  } catch {
+export function loadDevRuntimePorts(options = {}) {
+  const descriptor = readRuntimeDescriptor();
+  if (!descriptor) {
     return null;
   }
+
+  const requireLiveOwner = options.requireLiveOwner ?? true;
+  if (requireLiveOwner && !isProcessAlive(descriptor.ownerPid)) {
+    return null;
+  }
+
+  return descriptor.ports;
 }
 
-export function removeDevRuntimePorts() {
+export function removeDevRuntimePorts(options = {}) {
   if (!fs.existsSync(DEV_RUNTIME_PORTS_FILE)) {
-    return;
+    return false;
+  }
+
+  const descriptor = readRuntimeDescriptor();
+  const force = options.force === true;
+  if (
+    !force
+    && descriptor?.ownerPid
+    && descriptor.ownerPid !== process.pid
+    && isProcessAlive(descriptor.ownerPid)
+  ) {
+    return false;
   }
 
   try {
     fs.unlinkSync(DEV_RUNTIME_PORTS_FILE);
+    return true;
   } catch {
-    // ignore
+    return false;
   }
 }

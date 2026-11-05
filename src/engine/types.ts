@@ -32,6 +32,8 @@ export interface Command<TType extends string = string, TPayload = unknown> {
     timestamp?: number;
     /** 本地同屏可跳过领域校验（由适配层注入） */
     skipValidation?: boolean;
+    /** 本地自动执行不单独建立普通撤回点；属于引擎元数据，不进入领域 payload。 */
+    skipUndoSnapshot?: boolean;
 }
 
 /**
@@ -70,6 +72,13 @@ export interface UndoState {
     snapshots: unknown[];
     /** 最大快照数 */
     maxSnapshots: number;
+    /**
+     * 权威撤回版本。
+     *
+     * 仅在真正恢复快照时递增，且不会随快照恢复回退。
+     * UI / transport 消费它来失效撤回前的本地展示投影。
+     */
+    rollbackRevision?: number;
     /** 撤销请求（多人握手） */
     pendingRequest?: {
         requesterId: PlayerId;
@@ -147,6 +156,13 @@ export interface BreakdownLine {
  * - i18n: 延迟翻译片段（存储 key + params，渲染时翻译，支持服务端无 i18n 环境）
  * - breakdown: 带 tooltip 的数值片段（hover 显示构成明细，虚线下划线）
  */
+export interface ActionLogInteractiveParam {
+    text: string;
+    tooltip?: string;
+    /** 可选：悬停时显示对象预览（房间、事件牌或持有物） */
+    previewRef?: import('../core').CardPreviewRef;
+}
+
 export type ActionLogSegment =
     | { type: 'text'; text: string }
     | {
@@ -168,6 +184,8 @@ export type ActionLogSegment =
           params?: Record<string, string | number>;
           /** 需要先翻译的 params key 列表（值为同 ns 下的 i18n key） */
           paramI18nKeys?: string[];
+          /** 将指定插值文本渲染为可悬浮查看的交互片段 */
+          interactiveParams?: Record<string, ActionLogInteractiveParam>;
       }
     | {
           type: 'breakdown';
@@ -353,6 +371,25 @@ export interface TutorialAiAction {
     waitForBoardSyncAfter?: boolean;
 }
 
+export interface TutorialHiddenAutomationContract {
+    /**
+     * `setup-precondition` 只能用于首张玩家可见教程卡之前建立合法教程起点；
+     * 它不是玩家流程里的已教学步骤，中途分段预设必须显示为玩家可见分段或拆成独立教程。
+     *
+     * `compressed-repeat` 只能用于压缩已经通过可见步骤教学过的同类正式动作；
+     * 不同阶段、不同权限、不同结果或首次出现的机制不得标成重复。
+     * `branch-recovery` 只能用于合法但不属于当前示范主线的分支恢复，
+     * 必须通过教程系统恢复到分支前的完整检查点，不得要求玩家阅读或操作导航。
+     */
+    kind: 'setup-precondition' | 'compressed-repeat' | 'branch-recovery';
+    /** 人能读懂的压缩依据，写明为什么这不是新的玩家教学动作。 */
+    reason: string;
+    /** `compressed-repeat` 对应的已教学步骤 ID，用于审计和测试。 */
+    equivalentStepIds?: string[];
+    /** `branch-recovery` 要恢复到的分支前可见步骤 ID。 */
+    recoveryStepId?: string;
+}
+
 export interface TutorialStepVisual {
     /** 逻辑资源路径；运行时由统一图片链解析，不手写 /assets 或 compressed。 */
     src: string;
@@ -364,10 +401,36 @@ export interface TutorialStepVisual {
 
 export interface TutorialStepSnapshot {
     id: string;
+    /** Optional course branch selected by a completed authored lesson action. */
+    branch?: string;
     content: string;
+    /** 仅保留教程状态推进，不渲染重复文字浮层；适用于地图结果动画等自解释反馈。 */
+    hideOverlay?: boolean;
+    /** 正式控件已承接操作时，不再显示浮层底部的重复操作状态；默认保留。 */
+    hideActionHint?: boolean;
     /** 可选的教程内参考图，用于首次讲清卡面、图标或帮助卡读法。 */
     visual?: TutorialStepVisual;
     highlightTarget?: string;
+    /** 说明贴近的真实阅读对象；省略时沿用高亮目标，不改变场景聚焦与输入权限。 */
+    tooltipAnchorTarget?: string;
+    /**
+     * CSS selectors for continuous reading surfaces or other protected regions
+     * that the tutorial card must avoid covering when choosing a placement.
+     */
+    avoidOverlapSelectors?: string[];
+    /** Additional protected regions used only by the compact landscape layout. */
+    compactAvoidOverlapSelectors?: string[];
+    /**
+     * Optional maximum width for dense layouts where the tooltip must fit
+     * beside a protected reading surface without covering it.
+     */
+    tooltipMaxWidth?: number;
+    /** Fixed width for this step in compact layouts, before the compact scale is applied. */
+    compactTooltipWidth?: number;
+    /** Optional vertical nudge applied after placement, in CSS pixels. */
+    tooltipOffsetY?: number;
+    /** Center a targetless card in the viewport instead of pinning it to an edge. */
+    targetlessPlacement?: 'center';
     /**
      * Controls only the tutorial-drawn frame around the target.
      * Use `none` when the target is already a self-explanatory game object
@@ -390,6 +453,12 @@ export interface TutorialStepSnapshot {
     randomPolicy?: TutorialRandomPolicy;
     aiActions?: TutorialAiAction[];
     /**
+     * 允许此步骤在玩家教程流程中隐藏并由教程自动命令执行的显式合同。
+     * 没有该字段时，`aiActions` 只表示“这一步有教程代执行命令”，
+     * 不再自动意味着可隐藏、可从上一步回退中跳过，或可自动消费后推进。
+     */
+    hiddenAutomation?: TutorialHiddenAutomationContract;
+    /**
      * Delay before tutorial-authored automatic actions run.
      *
      * Used when the current visible step must stay readable before an AI/system
@@ -399,7 +468,8 @@ export interface TutorialStepSnapshot {
     /**
      * AI actions 执行完成后是否自动推进。
      *
-     * 默认保持旧行为：没有 advanceOnEvents 的 AI 步骤会自动推进。
+     * 只有声明 hiddenAutomation 的自动步骤才会在 AI actions 消费后自动推进；
+     * 没有 hiddenAutomation 时，AI actions 只表示教程代执行了命令，步骤仍是玩家可见步骤。
      * 某些教程步骤需要 AI 先补齐桌面状态，但仍停留在当前说明页等待玩家阅读。
      */
     autoAdvanceAfterAi?: boolean;
@@ -426,6 +496,8 @@ export interface TutorialStepSnapshot {
 
 export interface TutorialManifest {
     id: string;
+    /** 固定的学习者座位；声明后不随热座回合或他人响应切换控制身份。 */
+    playerId?: PlayerId;
     /**
      * 教程进度版本。
      *
@@ -433,6 +505,13 @@ export interface TutorialManifest {
      * 页面层用它隔离本地教程进度，避免旧快照恢复到新版提示里形成步骤错位。
      */
     revision?: number;
+    /**
+     * Keep the completed tutorial's local match open so the learner can continue playing it.
+     * Defaults to the existing completion route for tutorials that teach an isolated scenario.
+     */
+    stayOnMatchAfterCompletion?: boolean;
+    /** Close the active course when the authoritative match ends. */
+    closeOnGameOver?: boolean;
     steps: TutorialStepSnapshot[];
     allowManualSkip?: boolean;
     randomPolicy?: TutorialRandomPolicy;
@@ -452,6 +531,19 @@ export interface TutorialManifest {
      * 注意：函数不可序列化，不会存入 TutorialState。
      */
     stepValidator?: (state: MatchState<unknown>, step: TutorialStepSnapshot) => boolean;
+    /** Select one course branch from a successfully completed visible step. */
+    selectBranch?: (state: MatchState<unknown>, step: TutorialStepSnapshot, command: Command, events: GameEvent[]) => string | undefined;
+}
+
+/**
+ * 教程可见步骤节点：由 TutorialSystem 自动记录，用于教程“上一步”恢复完整对局。
+ * state 是去掉教程节点历史后的完整 MatchState 快照，避免递归膨胀。
+ */
+export interface TutorialCheckpoint {
+    stepIndex: number;
+    stepId: string | null;
+    state: unknown;
+    randomCursor?: number;
 }
 
 export interface TutorialCollectionEntry {
@@ -494,6 +586,8 @@ export interface TutorialState {
     /** manifest 级别配置（用于步骤推进时复用） */
     manifestAllowManualSkip?: boolean;
     manifestRandomPolicy?: TutorialRandomPolicy;
+    /** Persisted policy copied from the bound manifest for terminal cleanup. */
+    manifestCloseOnGameOver?: boolean;
     /** 派生值：结合 step + manifest 得出的有效随机策略 */
     randomPolicy?: TutorialRandomPolicy;
     /** 可变运行时：AI 动作队列（消费后清除） */
@@ -504,6 +598,9 @@ export interface TutorialState {
     pendingAnimationAdvance?: boolean;
     /** 本次推进中因当前局面不适用而跳过的步骤，供教程界面给出可见提示 */
     skippedStepIds?: string[];
+    /** 每个可见教程步骤的完整状态节点，按步骤顺序排列。 */
+    checkpoints?: TutorialCheckpoint[];
+    selectedBranch?: string;
 }
 
 export const DEFAULT_TUTORIAL_STATE: TutorialState = {
@@ -512,6 +609,7 @@ export const DEFAULT_TUTORIAL_STATE: TutorialState = {
     stepIndex: 0,
     steps: [],
     step: null,
+    manifestCloseOnGameOver: false,
 };
 
 export interface RefereeTraceEntry {
@@ -731,6 +829,8 @@ export interface DomainCore<
 
     /** 玩家视图过滤（隐藏信息，仅作用于 core） */
     playerView?(state: TState, playerId: PlayerId): Partial<TState>;
+    /** Optional game-specific public spectator projection; absent preserves the existing full spectator view. */
+    spectatorView?(state: TState): Partial<TState>;
 
     /** 判断游戏是否结束（仅作用于 core） */
     isGameOver?(state: TState): GameOverResult | undefined;

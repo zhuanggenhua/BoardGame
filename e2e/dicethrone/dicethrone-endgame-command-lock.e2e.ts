@@ -79,6 +79,34 @@ test.describe('DiceThrone 终局胜负画面操作锁', () => {
 
         await page.setViewportSize({ width: 812, height: 375 });
         await expect(endgameTitle).toBeVisible({ timeout: 10000 });
+        const fabMenu = page.getByTestId('fab-menu');
+        await expect(fabMenu).toHaveAttribute('data-hud-placement', 'in-shell');
+        await fabMenu.locator('button').first().click();
+        const feedbackAction = page.locator('[data-fab-id="feedback"]');
+        await expect(feedbackAction).toBeVisible({ timeout: 10000 });
+        await feedbackAction.click();
+        const feedbackModal = page.getByTestId('feedback-modal');
+        await expect(feedbackModal).toBeVisible({ timeout: 10000 });
+        await expect(endgameOverlay).toBeVisible();
+        await expect(endgameTitle).toBeVisible();
+        await expect(page.getByTestId('feedback-capture-screenshot')).toBeVisible();
+        await expect(page.getByTestId('feedback-image-preview')).toHaveCount(0);
+        await game.screenshot('终局时反馈按钮可点击-未自动附图', testInfo);
+        const screenshotCaptureStartedAt = Date.now();
+        await page.getByTestId('feedback-capture-screenshot').click();
+        const feedbackImagePreview = page.getByTestId('feedback-image-preview');
+        await expect(feedbackImagePreview).toBeVisible({ timeout: 15000 });
+        const screenshotCaptureLatencyMs = Date.now() - screenshotCaptureStartedAt;
+        expect(screenshotCaptureLatencyMs).toBeLessThan(4000);
+        console.info(`[FEEDBACK_SCREENSHOT_PREVIEW_LATENCY_MS] ${screenshotCaptureLatencyMs}`);
+        await expect(feedbackImagePreview.locator('img')).toHaveAttribute('src', /^data:image\/jpeg;base64,/);
+        await expect(endgameOverlay).toBeVisible();
+        await expect(endgameTitle).toBeVisible();
+        await feedbackImagePreview.scrollIntoViewIfNeeded();
+        await game.screenshot('终局反馈-手动截图预览', testInfo);
+        await feedbackModal.getByRole('button').first().click();
+        await expect(feedbackModal).toHaveCount(0);
+
         const rematchActions = page.getByTestId('rematch-actions');
         await expect(rematchActions).toBeVisible({ timeout: 10000 });
         await expect(rematchActions).toHaveCSS('margin-top', '16px');

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
@@ -11,6 +11,7 @@ import type { MageId } from '../domain/ids';
 import {
     buildMageWarsMageSetupData,
     buildMageWarsMageSetupSelections,
+    getMageWarsDefaultSpellbookEntries,
     getMageWarsSelectableMageIds,
     resolveMageWarsSelectedMageIdForSeat,
     resolveMageWarsSpellbookEntriesForSeat,
@@ -27,10 +28,52 @@ import {
     getMageWarsMagePreviewRef,
 } from './cardAtlas';
 import { MageWarsSpellbookBuilderPanel } from './SpellbookBuilderPanel';
+import {
+    MAGE_SELECTION_STAGE_HEIGHT,
+    MAGE_SELECTION_STAGE_WIDTH,
+    resolveMageSelectionStageScale,
+} from './selectionStageScale';
 
 type SeatId = '0' | '1';
 
 const SEAT_IDS = ['0', '1'] as const satisfies readonly SeatId[];
+
+function isBoardShellMobileViewport(viewportWidth: number, viewportHeight: number): boolean {
+    if (viewportWidth > 1023 || viewportWidth <= viewportHeight || typeof document === 'undefined') {
+        return false;
+    }
+
+    const gamePage = document.querySelector<HTMLElement>('[data-game-page="true"]');
+    return [document.documentElement, document.body, gamePage]
+        .filter((target): target is HTMLElement => Boolean(target))
+        .some((target) => target.dataset.mobileLayoutPreset === 'board-shell');
+}
+
+function useSelectionStageScale() {
+    const [scale, setScale] = useState(1);
+
+    useEffect(() => {
+        const updateScale = () => {
+            const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+            const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+            setScale(resolveMageSelectionStageScale(
+                viewportWidth,
+                viewportHeight,
+                isBoardShellMobileViewport(viewportWidth, viewportHeight),
+            ));
+        };
+
+        updateScale();
+        window.addEventListener('resize', updateScale);
+        window.visualViewport?.addEventListener('resize', updateScale);
+        return () => {
+            window.removeEventListener('resize', updateScale);
+            window.visualViewport?.removeEventListener('resize', updateScale);
+        };
+    }, []);
+
+    return scale;
+}
 
 type StandardSpellbookOption = {
     kind: 'standard';
@@ -75,6 +118,7 @@ function MageWarsMageSelectionGateContent({
     const [builderSessionKey, setBuilderSessionKey] = useState(0);
     const [newSpellbookMagePickerOpen, setNewSpellbookMagePickerOpen] = useState(false);
     const [savedLibraryRevision, setSavedLibraryRevision] = useState(0);
+    const stageScale = useSelectionStageScale();
 
     const standardSpellbookOptions = useMemo<StandardSpellbookOption[]>(() => getMageWarsSelectableMageIds()
         .map((mageId) => ({
@@ -242,7 +286,20 @@ function MageWarsMageSelectionGateContent({
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(245,158,11,0.24),transparent_34%),radial-gradient(circle_at_12%_84%,rgba(22,163,74,0.2),transparent_28%),linear-gradient(135deg,#180604_0%,#3b1409_55%,#070201_100%)]" />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.58)_0%,rgba(0,0,0,0.08)_42%,rgba(0,0,0,0.62)_100%)]" />
 
-            <div className="relative z-10 flex h-full min-h-0 flex-col px-[clamp(2rem,2.8vw,3rem)] py-[clamp(1.5rem,2.2vw,2rem)]">
+            <div
+                className="absolute left-1/2 top-1/2 z-10 flex min-h-0 flex-col px-12 py-8"
+                data-testid="mage-wars-mage-selection-stage"
+                data-layout-mode="contain-scale"
+                data-layout-width={MAGE_SELECTION_STAGE_WIDTH}
+                data-layout-height={MAGE_SELECTION_STAGE_HEIGHT}
+                data-layout-scale={stageScale.toFixed(4)}
+                style={{
+                    height: MAGE_SELECTION_STAGE_HEIGHT,
+                    transform: `translate(-50%, -50%) scale(${stageScale})`,
+                    transformOrigin: 'center center',
+                    width: MAGE_SELECTION_STAGE_WIDTH,
+                }}
+            >
                 <header className="shrink-0">
                     <div>
                         <div className="text-sm font-black uppercase tracking-[0.24em] text-amber-200/70">
@@ -254,7 +311,7 @@ function MageWarsMageSelectionGateContent({
                     </div>
                 </header>
 
-                <main className="mt-[clamp(1rem,2vw,1.5rem)] grid min-h-0 flex-1 grid-cols-[clamp(14rem,13vw,16rem)_minmax(0,1fr)_clamp(20rem,17vw,22rem)] gap-[clamp(1rem,1.8vw,1.5rem)]">
+                <main className="mt-6 grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)_22rem] gap-6">
                     <section
                         className="min-h-0 rounded-[0.55rem] border border-amber-100/10 bg-black/40 p-4 shadow-[0_18px_44px_rgba(0,0,0,0.34)]"
                         aria-label={t('setup.mageSelection.seats')}
@@ -323,9 +380,6 @@ function MageWarsMageSelectionGateContent({
                             <div>
                                 <div className="text-xs font-black uppercase tracking-[0.2em] text-amber-100/60">
                                     {t('setup.mageSelection.spellbookLibrary')}
-                                </div>
-                                <div className="mt-1 text-sm font-semibold text-stone-200/70">
-                                    {t('setup.mageSelection.spellbookLibraryHelp')}
                                 </div>
                             </div>
                         </div>

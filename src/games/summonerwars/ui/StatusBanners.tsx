@@ -365,6 +365,7 @@ export const StatusBanners: React.FC<StatusBannersProps> = ({
         {abilityMode.step === 'selectChoice' && (
           YONGHENG_BUTTON_CHOICE_ABILITIES.includes(abilityMode.abilityId as never)
           || abilityMode.abilityId === 'shadow_judgment'
+          || abilityMode.abilityId === 'zhongcai_decree'
         ) && (
           <>
             {(abilityMode.systemChoiceOptions ?? []).map((option) => (

@@ -19,6 +19,7 @@ export type RunAuthoritativeCommandSuccessEffectsArgs<FeedbackPayload = unknown>
     gameOver: unknown;
     unsatisfiableInteractionFeedback?: FeedbackPayload | null;
     suppressBroadcast?: boolean;
+    captureTrainingData?: boolean;
     trainingDataCapture: Pick<TrainingDataCapture, 'recordDecisionSample'>;
     reportOnlineAiRecoveryFeedback: (payload: FeedbackPayload) => Promise<void>;
     broadcastState: () => void;
@@ -31,23 +32,24 @@ export async function runAuthoritativeCommandSuccessEffects<FeedbackPayload = un
     args: RunAuthoritativeCommandSuccessEffectsArgs<FeedbackPayload>,
 ): Promise<void> {
     const { match } = args;
-    const postTrainingState = args.buildPostTrainingState();
-
-    args.trainingDataCapture.recordDecisionSample({
-        match: {
-            matchID: match.matchID,
-            gameId: match.gameId,
-            metadata: match.metadata,
-        },
-        playerID: args.playerID,
-        commandType: args.commandType,
-        payload: args.payload,
-        stateIdBefore: args.stateIdBefore,
-        stateIdAfter: args.stateIdAfter,
-        preState: args.preTrainingState,
-        postState: postTrainingState,
-        gameOver: args.gameOver,
-    });
+    if (args.captureTrainingData !== false) {
+        const postTrainingState = args.buildPostTrainingState();
+        args.trainingDataCapture.recordDecisionSample({
+            match: {
+                matchID: match.matchID,
+                gameId: match.gameId,
+                metadata: match.metadata,
+            },
+            playerID: args.playerID,
+            commandType: args.commandType,
+            payload: args.payload,
+            stateIdBefore: args.stateIdBefore,
+            stateIdAfter: args.stateIdAfter,
+            preState: args.preTrainingState,
+            postState: postTrainingState,
+            gameOver: args.gameOver,
+        });
+    }
 
     if (args.unsatisfiableInteractionFeedback) {
         await args.reportOnlineAiRecoveryFeedback(args.unsatisfiableInteractionFeedback);

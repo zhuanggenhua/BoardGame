@@ -38,9 +38,11 @@ import { getBaseDef, getCardDef } from '../data/cards';
 import { actionLikeNeedsPlayBase } from '../domain/utils';
 import { createCardObjectRef, createCardTransferEvent } from '../domain/objectProvenance';
 import {
+    createAbilityRuntimeContinuation,
     createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
+    type AbilityRuntimePromptResumeResult,
 } from '../domain/abilityRuntime';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { appendResolvedActionAbility } from '../domain/externalActionPlay';
@@ -84,6 +86,14 @@ type VikingBaseLonghouseMinionPromptContext = VikingPromptContext & {
     ownerId: PlayerId;
 };
 type VikingBerserkMinionPromptContext = VikingPromptContext & HandChoice;
+type VikingRevealEligiblePromptContext = VikingPromptContext & {
+    actingPlayerId: PlayerId;
+    targetPlayerId: PlayerId;
+    cardUid: string;
+    defId: string;
+    ownerId: PlayerId;
+    reason: 'vikings_shield_maiden' | 'base_drakkar';
+};
 
 function createVikingPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: MatchState<SmashUpCore>,
@@ -393,6 +403,7 @@ function vikingsVikingFuneralTrigger(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 function vikingsBaseDrakkarOnMinionPlayed(ctx: BaseAbilityContext): AbilityResult {
+    if (!ctx.matchState) return { events: [] };
     if (getTurnMinionsPlayedAtBase(ctx.state, ctx.baseIndex) !== 1) return { events: [] };
     const opponents = getOtherPlayers(ctx.state, ctx.playerId).filter(
         pid => getTopDeckCardWithReshuffle(ctx.state, pid, DEFAULT_RANDOM, ctx.now).card !== undefined,
@@ -406,6 +417,7 @@ function vikingsBaseDrakkarOnMinionPlayed(ctx: BaseAbilityContext): AbilityResul
 }
 
 function vikingsBaseLonghouseDuringTurn(ctx: BaseAbilityContext): AbilityResult {
+    if (!ctx.matchState) return { events: [] };
     const player = ctx.state.players[ctx.playerId];
     const minions = ctx.state.bases[ctx.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
     if (!player || player.hand.length === 0 || minions.length === 0) return { events: [] };
@@ -425,7 +437,7 @@ function resolveRevealAndStealTopCard(params: {
     reason: 'vikings_shield_maiden' | 'base_drakkar';
     random: RandomFn;
     timestamp: number;
-}): AbilityResult {
+}): AbilityRuntimePromptResumeResult<VikingPromptContext, SmashUpCore, SmashUpEvent> {
     const deckInfo = prepareTopDeckForVikingPeek(params.state.core, params.targetPlayerId, params.random, params.timestamp);
     if (!deckInfo.card) return { events: deckInfo.events };
     const def = getCardDef(deckInfo.card.defId) as { power?: number } | undefined;
@@ -444,22 +456,58 @@ function resolveRevealAndStealTopCard(params: {
         ),
     ];
     if (eligible) {
-        events.push(
-            transferCard(
-                deckInfo.card.uid,
-                deckInfo.card.defId,
-                params.targetPlayerId,
-                params.actingPlayerId,
-                params.reason,
-                params.timestamp,
-                deckInfo.card.owner,
-            ),
-        );
+        return {
+            events,
+            continuation: createAbilityRuntimeContinuation(createVikingPromptContext(params.state, params.actingPlayerId, params.timestamp, {
+                actingPlayerId: params.actingPlayerId,
+                targetPlayerId: params.targetPlayerId,
+                cardUid: deckInfo.card.uid,
+                defId: deckInfo.card.defId,
+                ownerId: deckInfo.card.owner,
+                reason: params.reason,
+            }), vikingsRevealEligiblePromptProgram),
+        };
     }
     return { events };
 }
 
-const vikingsHuscarlPromptProgram = createPromptProgram<VikingBuffPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRevealEligiblePromptProgram = createPromptProgram<VikingRevealEligiblePromptContext>({
+    sourceId: 'vikings_reveal_eligible',
+    buildInteraction: (context) => createSimpleChoice(
+        `vikings_reveal_eligible_${context.reason}_${context.now}`,
+        context.playerId,
+        context.reason === 'base_drakkar'
+            ? '德拉卡尔号：是否将这张合格牌加入你的手牌？'
+            : '盾女：是否将这张合格牌加入你的手牌？',
+        [
+            {
+                id: 'draw',
+                label: '加入手牌',
+                labelKey: 'ui.vikings_reveal_eligible_draw_option',
+                value: { draw: true },
+                displayMode: 'button' as const,
+            },
+            createSkipOption('放回牌库顶', 'ui.vikings_reveal_eligible_skip_option'),
+        ],
+        { sourceId: 'vikings_reveal_eligible', targetType: 'generic' },
+    ),
+    onResolve: ({ context, value, timestamp }) => {
+        if (!(value as { draw?: boolean } | undefined)?.draw) return { events: [] };
+        return {
+            events: [transferCard(
+                context.cardUid,
+                context.defId,
+                context.targetPlayerId,
+                context.actingPlayerId,
+                context.reason,
+                timestamp,
+                context.ownerId,
+            )],
+        };
+    },
+});
+
+const vikingsHuscarlPromptProgram = createPromptProgram<VikingBuffPromptContext>({
     sourceId: 'vikings_huscarl',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_huscarl_${context.now}`,
@@ -481,7 +529,7 @@ const vikingsHuscarlPromptProgram = createPromptProgram<VikingBuffPromptContext,
     },
 });
 
-const vikingsShieldMaidenPromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsShieldMaidenPromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_shield_maiden',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_shield_maiden_${context.now}`,
@@ -515,7 +563,7 @@ const vikingsShieldMaidenPromptProgram = createPromptProgram<VikingPromptContext
     },
 });
 
-const vikingsRaiderPromptProgram = createPromptProgram<VikingBuffPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRaiderPromptProgram = createPromptProgram<VikingBuffPromptContext>({
     sourceId: 'vikings_raider',
     buildInteraction: (context) => {
         const options = buildHandCardOptions(context.matchState.core.players[context.playerId]?.hand ?? []);
@@ -542,7 +590,7 @@ const vikingsRaiderPromptProgram = createPromptProgram<VikingBuffPromptContext, 
     },
 });
 
-const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_valkyrie',
     buildInteraction: (context) => {
         const options = getOtherPlayers(context.matchState.core, context.playerId).flatMap(targetPlayerId => {
@@ -575,7 +623,7 @@ const vikingsValkyriePromptProgram = createPromptProgram<VikingPromptContext, Sm
     },
 });
 
-const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_ransack',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_ransack_${context.now}`,
@@ -616,7 +664,7 @@ const vikingsRansackPromptProgram = createPromptProgram<VikingPromptContext, Sma
     },
 });
 
-const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_pillage',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_pillage_${context.now}`,
@@ -640,7 +688,7 @@ const vikingsPillagePromptProgram = createPromptProgram<VikingPromptContext, Sma
     },
 });
 
-const vikingsCastTheRunesOrderPromptProgram = createPromptProgram<VikingCastRunesOrderPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsCastTheRunesOrderPromptProgram = createPromptProgram<VikingCastRunesOrderPromptContext>({
     sourceId: 'vikings_cast_the_runes_order',
     buildInteraction: (context) => {
         const interaction = createSimpleChoice(
@@ -696,7 +744,7 @@ const vikingsCastTheRunesOrderPromptProgram = createPromptProgram<VikingCastRune
     },
 });
 
-const vikingsCastTheRunesPlayerPromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsCastTheRunesPlayerPromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_cast_the_runes_player',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_cast_the_runes_player_${context.now}`,
@@ -735,16 +783,15 @@ const vikingsCastTheRunesPlayerPromptProgram = createPromptProgram<VikingPromptC
         }
         return {
             events,
-            context: createVikingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, context.playerId, timestamp, {
                 targetPlayerId: selected.targetPlayerId,
                 revealedCards,
-            }),
-            nextProgram: vikingsCastTheRunesOrderPromptProgram,
+            }), vikingsCastTheRunesOrderPromptProgram),
         };
     },
 });
 
-const vikingsRaidingPartyMinionBasePromptProgram = createPromptProgram<VikingRaidingPartyTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRaidingPartyMinionBasePromptProgram = createPromptProgram<VikingRaidingPartyTargetPromptContext>({
     sourceId: 'vikings_raiding_party_minion_base',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_raiding_party_minion_base_${context.now}`,
@@ -760,7 +807,7 @@ const vikingsRaidingPartyMinionBasePromptProgram = createPromptProgram<VikingRai
     },
 });
 
-const vikingsRaidingPartyActionBasePromptProgram = createPromptProgram<VikingRaidingPartyTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRaidingPartyActionBasePromptProgram = createPromptProgram<VikingRaidingPartyTargetPromptContext>({
     sourceId: 'vikings_raiding_party_action_base',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_raiding_party_action_base_${context.now}`,
@@ -776,7 +823,7 @@ const vikingsRaidingPartyActionBasePromptProgram = createPromptProgram<VikingRai
     },
 });
 
-const vikingsRaidingPartyActionMinionPromptProgram = createPromptProgram<VikingRaidingPartyTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRaidingPartyActionMinionPromptProgram = createPromptProgram<VikingRaidingPartyTargetPromptContext>({
     sourceId: 'vikings_raiding_party_action_minion',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_raiding_party_action_minion_${context.now}`,
@@ -800,7 +847,7 @@ const vikingsRaidingPartyActionMinionPromptProgram = createPromptProgram<VikingR
     },
 });
 
-const vikingsRaidingPartyChoicePromptProgram = createPromptProgram<VikingRaidingPartyChoicePromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRaidingPartyChoicePromptProgram = createPromptProgram<VikingRaidingPartyChoicePromptContext>({
     sourceId: 'vikings_raiding_party_choice',
     buildInteraction: (context) => {
         const interaction = createSimpleChoice(
@@ -840,26 +887,36 @@ const vikingsRaidingPartyChoicePromptProgram = createPromptProgram<VikingRaiding
             }
             return {
                 events: [],
-                context: createVikingPromptContext(state, playerId, timestamp, { selected, reorderEvent }),
-                nextProgram: vikingsRaidingPartyMinionBasePromptProgram,
+                continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, playerId, timestamp, { selected, reorderEvent }), vikingsRaidingPartyMinionBasePromptProgram),
             };
         }
 
-        const actionDef = getCardDef(selected.defId) as { subtype?: string; ongoingTarget?: string } | undefined;
-        if (actionDef?.subtype === 'ongoing' && actionDef.ongoingTarget === 'minion') {
+        const actionDef = getCardDef(selected.defId);
+        const actionSubtype = actionDef?.type === 'fusion'
+            ? actionDef.actionSubtype
+            : actionDef?.type === 'action'
+                ? actionDef.subtype
+                : undefined;
+        const ongoingTarget = actionDef?.type === 'fusion'
+            ? actionDef.actionOngoingTarget
+            : actionDef?.type === 'action'
+                ? actionDef.ongoingTarget
+                : undefined;
+        if (actionSubtype === 'ongoing' && ongoingTarget === 'minion') {
             if (getAllMinionOptions(state.core, playerId).length === 0) return { events: [reorderEvent] };
             return {
                 events: [],
-                context: createVikingPromptContext(state, playerId, timestamp, { selected, reorderEvent }),
-                nextProgram: vikingsRaidingPartyActionMinionPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, playerId, timestamp, { selected, reorderEvent }), vikingsRaidingPartyActionMinionPromptProgram),
             };
         }
 
-        if (actionDef && (actionDef.subtype === 'ongoing' || actionLikeNeedsPlayBase(actionDef))) {
+        if (
+            (actionDef?.type === 'action' || actionDef?.type === 'fusion')
+            && (actionSubtype === 'ongoing' || actionLikeNeedsPlayBase(actionDef))
+        ) {
             return {
                 events: [],
-                context: createVikingPromptContext(state, playerId, timestamp, { selected, reorderEvent }),
-                nextProgram: vikingsRaidingPartyActionBasePromptProgram,
+                continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, playerId, timestamp, { selected, reorderEvent }), vikingsRaidingPartyActionBasePromptProgram),
             };
         }
 
@@ -867,7 +924,7 @@ const vikingsRaidingPartyChoicePromptProgram = createPromptProgram<VikingRaiding
     },
 });
 
-const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_raiding_party_player',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_raiding_party_player_${context.now}`,
@@ -898,16 +955,15 @@ const vikingsRaidingPartyPlayerPromptProgram = createPromptProgram<VikingPromptC
         ];
         return {
             events,
-            context: createVikingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, context.playerId, timestamp, {
                 targetPlayerId: selected.targetPlayerId,
                 revealedCards,
-            }),
-            nextProgram: vikingsRaidingPartyChoicePromptProgram,
+            }), vikingsRaidingPartyChoicePromptProgram),
         };
     },
 });
 
-const vikingsBerserkMinionPromptProgram = createPromptProgram<VikingBerserkMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsBerserkMinionPromptProgram = createPromptProgram<VikingBerserkMinionPromptContext>({
     sourceId: 'vikings_berserk_minion',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_berserk_minion_${context.now}`,
@@ -936,7 +992,7 @@ const vikingsBerserkMinionPromptProgram = createPromptProgram<VikingBerserkMinio
     },
 });
 
-const vikingsBerserkCardPromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsBerserkCardPromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'vikings_berserk_card',
     buildInteraction: (context) => createSimpleChoice(
         `vikings_berserk_card_${context.now}`,
@@ -951,17 +1007,16 @@ const vikingsBerserkCardPromptProgram = createPromptProgram<VikingPromptContext,
         if (getOwnMinions(state.core, context.playerId).length === 0) return { events: [] };
         return {
             events: [],
-            context: createVikingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, context.playerId, timestamp, {
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 ownerId: selected.ownerId,
-            }),
-            nextProgram: vikingsBerserkMinionPromptProgram,
+            }), vikingsBerserkMinionPromptProgram),
         };
     },
 });
 
-const vikingsBaseDrakkarPromptProgram = createPromptProgram<VikingPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsBaseDrakkarPromptProgram = createPromptProgram<VikingPromptContext>({
     sourceId: 'base_drakkar',
     buildInteraction: (context) => createSimpleChoice(
         `base_drakkar_${context.now}`,
@@ -995,7 +1050,7 @@ const vikingsBaseDrakkarPromptProgram = createPromptProgram<VikingPromptContext,
     },
 });
 
-const vikingsBaseLonghouseMinionPromptProgram = createPromptProgram<VikingBaseLonghouseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const vikingsBaseLonghouseMinionPromptProgram = createPromptProgram<VikingBaseLonghouseMinionPromptContext>({
     sourceId: 'base_longhouse_minion',
     buildInteraction: (context) => {
         const base = context.matchState.core.bases[context.baseIndex];
@@ -1028,7 +1083,7 @@ const vikingsBaseLonghouseMinionPromptProgram = createPromptProgram<VikingBaseLo
     },
 });
 
-const vikingsBaseLonghouseCardPromptProgram = createPromptProgram<VikingPromptContext & { baseIndex: number }, SmashUpCore, SmashUpEvent>({
+const vikingsBaseLonghouseCardPromptProgram = createPromptProgram<VikingPromptContext & { baseIndex: number }>({
     sourceId: 'base_longhouse_card',
     buildInteraction: (context) => createSimpleChoice(
         `base_longhouse_card_${context.now}`,
@@ -1046,13 +1101,12 @@ const vikingsBaseLonghouseCardPromptProgram = createPromptProgram<VikingPromptCo
         if (minions.length === 0) return { events: [] };
         return {
             events: [],
-            context: createVikingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createVikingPromptContext(state, context.playerId, timestamp, {
                 baseIndex: context.baseIndex,
                 cardUid: selected.cardUid,
                 defId: selected.defId,
                 ownerId: selected.ownerId,
-            }),
-            nextProgram: vikingsBaseLonghouseMinionPromptProgram,
+            }), vikingsBaseLonghouseMinionPromptProgram),
         };
     },
 });

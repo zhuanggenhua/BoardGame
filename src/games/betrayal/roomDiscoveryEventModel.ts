@@ -4,8 +4,6 @@ import { resolveEvent } from './eventDeckModel';
 import { resolveEventDamageDeathPrevention } from './eventEffectResolutionModel';
 import {
     materializeEventEffect,
-    resolveEventBranch,
-    rollEventFixedDice,
 } from './eventRollModel';
 import { cloneExplorerSummary } from './explorerReadModel';
 import {
@@ -24,7 +22,6 @@ import {
     createDrawnCard,
 } from './possessionDeckModel';
 import {
-    BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
     eventEffectNeedsPendingEventChoice,
     formatEffectLabel,
     isWarningEventEffect,
@@ -48,7 +45,6 @@ import {
     applyRoomDiscoveryEffect,
 } from './roomDiscoveryModel';
 import { canUseBetrayalTraitorPowers } from './traitorPowerRules';
-import { rollEventTraitCheckWithDice } from './traitRollModel';
 import type {
     BetrayalCore,
     BetrayalDiscoveryResolutionStep,
@@ -113,7 +109,16 @@ export function resolveBetrayalRoomExploredPayload(
     }
     const deckKind = resolveRoomTemplateDiscoveryDeckKind(roomTemplate);
     const roomTextResolvedCore = resolveCoreAfterRoomDiscoveryText(core, roomTemplate.discoveryEffect);
-    const roomDiscoveryCards = resolveRoomDiscoveryCards(roomTextResolvedCore, roomTemplate.discoveryEffect);
+    const requiredDiscoveryCardCount = deckKind === 'item'
+        ? Math.max(1, roomTemplate.discoveryCardCount ?? 1)
+        : 1;
+    const hasRequiredDiscoveryCards = deckKind === null
+        || hasAvailableDiscoveryDeckCard(core, deckKind, requiredDiscoveryCardCount);
+    const roomDiscoveryCards = hasRequiredDiscoveryCards
+        ? resolveRoomDiscoveryCards(roomTextResolvedCore, roomTemplate.discoveryEffect, {
+            discoveryCardCount: roomTemplate.discoveryCardCount,
+        })
+        : {};
     const roomDiscoveryEffectResolutionSteps = createRoomDiscoveryEffectResolutionSteps(
         roomTemplate.name,
         roomTemplate.discoveryEffect,
@@ -178,10 +183,12 @@ export function resolveBetrayalRoomExploredPayload(
         };
     }
 
-    if (!hasAvailableDiscoveryDeckCard(core, deckKind)) {
+    if (!hasAvailableDiscoveryDeckCard(core, deckKind, requiredDiscoveryCardCount)) {
         const emptyDeckDetailParts = [
             ...roomDiscoveryRewardDetailParts,
-            `${DECK_KIND_LABEL[deckKind]}牌堆已空，没有抽取发现牌`,
+            requiredDiscoveryCardCount > 1
+                ? `${DECK_KIND_LABEL[deckKind]}牌堆不足${requiredDiscoveryCardCount}张，没有抽取发现牌`
+                : `${DECK_KIND_LABEL[deckKind]}牌堆已空，没有抽取发现牌`,
         ];
         return {
             playerId: command.playerId,
@@ -353,41 +360,22 @@ export function resolveBetrayalRoomExploredPayload(
                 hauntTriggered: false,
             };
         }
-        const eventRollKind = eventCard.roll?.kind ?? 'trait';
-        const eventRollResult = eventCard.roll
-            ? eventRollKind === 'dice'
-                ? rollEventFixedDice(random, eventCard.roll.dice)
-                : rollEventTraitCheckWithDice(random, roomTextResolvedCore.currentExplorer, eventCard.roll.trait, roomTextResolvedCore)
-            : null;
-        const eventRollTotal = eventRollResult?.total ?? null;
-        const eventBranch = eventCard.roll && eventRollTotal !== null
-            ? resolveEventBranch(eventCard.roll.branches, eventRollTotal)
-            : null;
-        const eventEffect = eventBranch?.effect ?? eventCard.effect;
+        const eventEffect = eventCard.effect;
         if (!eventEffect) {
             throw new Error(`event ${eventCard.name} has no resolvable effect`);
         }
-        const deferEventRollEffectRandomResults = Boolean(eventCard.roll && eventRollTotal !== null && eventBranch);
         const materializedEventEffect = materializeEventEffect(
             eventEffect,
             random,
             roomTextResolvedCore.currentExplorer,
             roomTextResolvedCore,
-            { materializeRandomResults: !deferEventRollEffectRandomResults },
+            {
+                materializeRandomResults: eventEffect.mode !== 'allTraitChecks',
+            },
         );
-        const deathPrevention = deferEventRollEffectRandomResults
-            ? undefined
-            : resolveEventDamageDeathPrevention(roomTextResolvedCore, materializedEventEffect, random);
+        const deathPrevention = resolveEventDamageDeathPrevention(roomTextResolvedCore, materializedEventEffect, random);
         const effectLabel = formatEffectLabel(materializedEventEffect);
-        const eventRollLabel = eventCard.roll
-            ? eventRollKind === 'dice'
-                ? eventCard.roll.label
-                : `${TRAIT_LABEL[eventCard.roll.trait]}检定`
-            : undefined;
-        const rollLabel = eventCard.roll && eventRollTotal !== null && eventBranch
-            ? `${eventRollLabel} ${eventRollTotal}：${eventBranch.label}`
-            : undefined;
-        const eventEffectResolutionText = rollLabel ? `${rollLabel}；${effectLabel}` : effectLabel;
+        const eventEffectResolutionText = effectLabel;
         const eventEffectResolutionSteps: BetrayalDiscoveryResolutionStep[] = eventEffectNeedsPendingEventChoice(materializedEventEffect)
             ? []
             : [{
@@ -409,23 +397,6 @@ export function resolveBetrayalRoomExploredPayload(
             eventEffect: materializedEventEffect,
             eventDescription: eventCard.description,
             deathPrevention,
-            eventRoll: eventCard.roll && eventRollTotal !== null && eventBranch
-                ? {
-                    kind: eventRollKind,
-                    trait: eventRollKind === 'dice' ? undefined : eventCard.roll.trait,
-                    total: eventRollTotal,
-                    label: eventBranch.label,
-                    eventDescription: eventCard.description,
-                    rollLabel: eventRollLabel,
-                    dice: eventRollResult?.dice,
-                    passiveBonus: eventRollResult?.passiveBonus,
-                    branchThresholds: eventCard.roll.branches.map((branch) => ({
-                        min: branch.min,
-                        label: branch.label,
-                        effect: { ...branch.effect },
-                    })),
-                }
-                : undefined,
             skippedRoomWithHolySymbol: skippedRoomTemplate
                 ? { name: skippedRoomTemplate.name }
                 : undefined,
@@ -439,7 +410,7 @@ export function resolveBetrayalRoomExploredPayload(
                 tone: isWarningEventEffect(eventEffect) ? 'warning' : 'accent',
                 resolutionSteps: discoveryResolutionSteps,
             },
-            logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，事件：${eventCard.name}（${rollLabel ? `${rollLabel}，` : ''}${effectLabel}）`,
+            logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，事件：${eventCard.name}（${effectLabel}）`,
             hauntTriggered: false,
         };
     }
@@ -463,7 +434,11 @@ export function resolveBetrayalRoomExploredPayload(
         ? resolveHauntRevealResolutionForTrigger(core, drawnCard)
         : undefined;
     const roomDiscoveryRewardNames = getRoomDiscoveryRewardNames(roomDiscoveryCards);
-    const drawnCardBaseDetail = drawnCardEffect ? formatEffectLabel(drawnCardEffect) : '按卡面规则持有';
+    const drawnCardBaseDetail = drawnCardEffect
+        ? formatEffectLabel(drawnCardEffect)
+        : roomDiscoveryRewardNames.gained.length > 0
+            ? `符号抽到${drawnCard.name}`
+            : null;
     const mummyForcedOmenDetail = mummyForcedOmenDraw.forcedOmenSearch
         ? mummyForcedOmenDraw.forcedOmenSearch.role === 'hero-book'
             ? '木乃伊横行：英雄首次需要预兆时，从预兆堆找出书本并洗牌'

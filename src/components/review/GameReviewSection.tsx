@@ -46,13 +46,13 @@ export const GameReviews = ({ gameId }: { gameId: string }) => {
             closeOnBackdrop: true,
             render: ({ close }) => (
                 <ModalBase onClose={close} preserveKeyboardLayout>
-                    <div className="bg-parchment-card-bg w-full max-w-lg max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] rounded-sm shadow-parchment-card border border-parchment-card-border/30 overflow-hidden pointer-events-auto flex flex-col">
+                    <div data-platform-dialog="review" className="bg-parchment-card-bg w-full max-w-lg max-h-[var(--modal-max-height,var(--runtime-modal-max-height))] rounded-sm shadow-parchment-card border border-parchment-card-border/30 overflow-hidden pointer-events-auto flex flex-col">
                         {/* 弹窗头部 */}
                         <div className="shrink-0 flex items-center justify-between px-4 py-4 sm:px-6 border-b border-parchment-card-border/10">
                             <span className="text-lg font-bold text-parchment-base-text uppercase tracking-widest">
                                 {myReview ? t('form.editTitle') : t('form.newTitle')}
                             </span>
-                            <button onClick={close} className="p-1 hover:bg-parchment-base-bg rounded-full text-parchment-light-text transition-colors">
+                            <button onClick={close} aria-label={t('common:close')} className="platform-dialog-close p-1 hover:bg-parchment-base-bg rounded-full text-parchment-light-text transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
@@ -94,7 +94,7 @@ export const GameReviews = ({ gameId }: { gameId: string }) => {
     return (
         <div className="flex flex-col gap-2.5 h-full px-0.5">
             {/* 顶部紧凑统计区 */}
-            <div className="shrink-0 flex flex-col gap-2">
+            <div className="platform-review-summary shrink-0 flex flex-col gap-2">
                 {stats ? (
                     <div className="flex flex-col gap-1.5">
                         <ApprovalBar

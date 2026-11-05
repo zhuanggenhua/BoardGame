@@ -9,6 +9,7 @@ import {
 import type { AiSeatController } from '../ai/types';
 import type { GameClientContextValue } from './reactContext';
 import type { GameEngineConfig } from './engineConfig';
+import type { LocalMatchSnapshot } from './localSession';
 import { resolveLocalPregameControlledPlayerId } from './followCurrentTurnPlayer';
 import { useLocalAiRuntime } from './useLocalAiRuntime';
 import { useLocalProviderDebugEffects } from './useLocalProviderDebugEffects';
@@ -29,6 +30,7 @@ export function useLocalGameProviderRuntime(args: {
     followCurrentTurnPlayer: boolean;
     persistSession: boolean;
     persistGameId?: string;
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
     disableLocalAiAutomation?: boolean;
 }): GameClientContextValue {
     const playerIds = useMemo(
@@ -65,6 +67,7 @@ export function useLocalGameProviderRuntime(args: {
         aiSeatIds,
         persistSession: args.persistSession,
         persistGameId: args.persistGameId,
+        shouldRestorePersistedSession: args.shouldRestorePersistedSession,
     });
     const runtimeSeatControllers = useMemo(
         () => resolveRuntimeSeatControllers({

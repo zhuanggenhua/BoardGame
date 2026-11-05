@@ -23,7 +23,7 @@
 
 1. 根 `AGENTS.md` 与 `.spec/AGENTS.md`。
 2. 本文件和 `game-audit-workflow/SKILL.md`。
-3. [`testing-audit`](../../../knowledge/standards/testing-audit.md)：审计入口、缺口分类和旧分卷兼容。
+3. [`testing-audit`](../../../knowledge/standards/testing-audit.md)：审计入口和缺口分类。
 4. [`description-to-implementation-audit`](../../../knowledge/standards/description-to-implementation-audit.md)：描述到实现审计主源。
 5. [`audit-evidence-template`](../../../knowledge/standards/audit-evidence-template.md)：需要写 evidence 或对外使用“已审计 / 已收口”时读取。
 

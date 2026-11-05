@@ -268,7 +268,7 @@ function buildDeckShuffleWithCardEvent(
     };
 }
 
-const temporaryMinionBasePromptProgram = createPromptProgram<TemporaryMinionBaseContext, SmashUpCore, SmashUpEvent>({
+const temporaryMinionBasePromptProgram = createPromptProgram<TemporaryMinionBaseContext>({
     sourceId: 'itty_critters_temporary_minion_base',
     interactionSourceIds: [
         'itty_critters_i_select_you_base',
@@ -294,7 +294,7 @@ const temporaryMinionBasePromptProgram = createPromptProgram<TemporaryMinionBase
     },
 });
 
-const baseExtraMinionPromptProgram = createPromptProgram<BaseExtraMinionContext, SmashUpCore, SmashUpEvent>({
+const baseExtraMinionPromptProgram = createPromptProgram<BaseExtraMinionContext>({
     sourceId: 'base_critter_combat_club',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `base_critter_combat_club_${context.now}`,
@@ -325,7 +325,7 @@ const baseExtraMinionPromptProgram = createPromptProgram<BaseExtraMinionContext,
     },
 });
 
-const ittyCityPromptProgram = createPromptProgram<IttyCityContext, SmashUpCore, SmashUpEvent>({
+const ittyCityPromptProgram = createPromptProgram<IttyCityContext>({
     sourceId: 'base_itty_city',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `base_itty_city_${context.now}`,
@@ -362,7 +362,7 @@ const ittyCityPromptProgram = createPromptProgram<IttyCityContext, SmashUpCore, 
     },
 });
 
-const temporaryMinionChoicePromptProgram = createPromptProgram<TemporaryMinionChoiceContext, SmashUpCore, SmashUpEvent>({
+const temporaryMinionChoicePromptProgram = createPromptProgram<TemporaryMinionChoiceContext>({
     sourceId: 'itty_critters_temporary_minion_choice',
     interactionSourceIds: [
         'itty_critters_i_select_you',
@@ -408,7 +408,7 @@ const temporaryMinionChoicePromptProgram = createPromptProgram<TemporaryMinionCh
     },
 });
 
-const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore, SmashUpEvent>({
+const evolutionPromptProgram = createPromptProgram<EvolutionContext>({
     sourceId: 'itty_critters_evolution',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `itty_critters_evolution_${context.now}`,
@@ -494,7 +494,7 @@ const evolutionPromptProgram = createPromptProgram<EvolutionContext, SmashUpCore
     },
 });
 
-const optionalMinionPromptProgram = createPromptProgram<OptionalMinionContext, SmashUpCore, SmashUpEvent>({
+const optionalMinionPromptProgram = createPromptProgram<OptionalMinionContext>({
     sourceId: 'itty_critters_optional_minion',
     interactionSourceIds: [
         'itty_critters_calicoin',
@@ -563,7 +563,7 @@ function runOptionalMinionEffect(
     });
 }
 
-const tadpourChooseMinionProgram = createPromptProgram<MoveMinionContext, SmashUpCore, SmashUpEvent>({
+const tadpourChooseMinionProgram = createPromptProgram<MoveMinionContext>({
     sourceId: 'itty_critters_tadpour',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -599,7 +599,7 @@ const tadpourChooseMinionProgram = createPromptProgram<MoveMinionContext, SmashU
     },
 });
 
-const tadpourDestinationProgram = createPromptProgram<MoveDestinationContext, SmashUpCore, SmashUpEvent>({
+const tadpourDestinationProgram = createPromptProgram<MoveDestinationContext>({
     sourceId: 'itty_critters_tadpour_dest',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -633,7 +633,7 @@ const tadpourDestinationProgram = createPromptProgram<MoveDestinationContext, Sm
     },
 });
 
-const flooffairyPromptProgram = createPromptProgram<DrawChoiceContext, SmashUpCore, SmashUpEvent>({
+const flooffairyPromptProgram = createPromptProgram<DrawChoiceContext>({
     sourceId: 'itty_critters_flooffairy',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `itty_critters_flooffairy_${context.now}`,
@@ -663,7 +663,7 @@ const flooffairyPromptProgram = createPromptProgram<DrawChoiceContext, SmashUpCo
     },
 });
 
-const leafarooPromptProgram = createPromptProgram<LeafarooContext, SmashUpCore, SmashUpEvent>({
+const leafarooPromptProgram = createPromptProgram<LeafarooContext>({
     sourceId: 'itty_critters_leafaroo',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `itty_critters_leafaroo_${context.now}`,
@@ -703,7 +703,7 @@ const leafarooPromptProgram = createPromptProgram<LeafarooContext, SmashUpCore, 
     },
 });
 
-const superEffectivePromptProgram = createPromptProgram<SuperEffectiveContext, SmashUpCore, SmashUpEvent>({
+const superEffectivePromptProgram = createPromptProgram<SuperEffectiveContext>({
     sourceId: 'itty_critters_super_effective',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `itty_critters_super_effective_${context.now}`,

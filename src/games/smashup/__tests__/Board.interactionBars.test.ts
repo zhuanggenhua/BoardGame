@@ -43,7 +43,8 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
     it('普通 hand prompt 仍由手牌直选承接，reaction_choose 的手牌响应不得落回 PromptOverlay 按钮主路径', () => {
         const source = readBoardSource();
         expect(source).toContain('isDirectHandSelectPrompt && (isMultiDirectHandSelect || handSelectExtraOptions.length > 0)');
-        expect(source).toContain('const shouldRender = !isDirectHandSelectPrompt');
+        expect(source).toContain('? Boolean(currentInteraction)');
+        expect(source).toContain(': !isDirectHandSelectPrompt');
         expect(source).toContain('&& !isReactionChoicePrompt');
         expect(source).toContain('const reactionChoicePlayableCardUids = useMemo<Set<string>>');
         expect(source).toContain('const reactionChoiceTargetStateByCardUid = useMemo<Map<string');
@@ -56,7 +57,7 @@ describe('SmashUp 交互浮动操作栏源码约束', () => {
         expect(source).toContain("data-testid={opt.id === 'pass' ? 'su-reaction-pass-button' : 'su-reaction-option-button'}");
         expect(source).toContain('data-option-id={opt.id}');
         expect(source).toContain('&& !isDiscardCardPrompt');
-        expect(source).toContain('isDiscardMode={needDiscard}');
+        expect(source).toContain('isDiscardMode={!isSpectator && needDiscard}');
         expect(source).not.toContain('isHandDrivenPrompt');
         expect(source).not.toContain('isReactionDirectHandPrompt');
         expect(source).not.toContain('type ReactionChoicePromptOptionValue');

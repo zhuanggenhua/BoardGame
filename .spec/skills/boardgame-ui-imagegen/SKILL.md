@@ -130,6 +130,18 @@ description: "BoardGame 桌游 UI 设计稿前置门禁与 imagegen/Open Design 
 
 禁止常驻规则说明句、教程句、“点击这里”式指令、按钮功能解释，以及规则不存在的资源栏或系统名。需要解释时用 tooltip、帮助入口、临时说明浮层或规则页。
 
+## 当前工作稿身份（强制）
+
+每个 Open Design 项目只能有一个当前工作稿指针：未带版本号的 `open-design-artifact.manifest.json` 里的 `metadata.currentArtifact`。捕获、默认 HTTP 入口、用户可见截图目录、中文索引标题和查看器标题都必须读这个指针。
+
+- 触发：同一项目同时存在 `index.html`、`index-vN.html`、带版本号的 manifest，或用户要求“在第 N 稿上补全、不要重新设计”之后还要出截图。
+- 做什么：把未版本化 manifest 的 `currentArtifact` 和 `title` 写成当前工作稿；默认 HTTP 入口落到该文件；证据目录使用当前工作稿身份（例如 `open-design-current`）；查看器标题写「当前工作稿」。工作文件可以继续沿用谱系文件名，例如 `index-v6.html`。
+- 何时阻塞：用户可见标题、证据目录、捕获脚本或 HTTP 根入口仍写成「第 N 稿 / 第六稿 / vN」等已冻结历史身份；捕获仍写回 `open-design-vN`；未版本化 manifest 仍指向更早的历史稿。命中任一项，该组截图 PASS 立即作废。
+- 验收：打开未版本化 manifest、HTTP 根入口、证据目录名和查看器标题，四者都指向同一份当前工作稿，且都不使用冻结历史版本号当用户可见身份。同一目录覆盖写回不能修复身份错误，必须换新证据目录和新查看器目录 key。
+- 未获用户明确授权前，不得把“在第 N 稿上补全”升级成新的第 N+1 稿重设计。
+
+带版本号的 `index-vN.html`、`open-design-artifact-vN.manifest.json`、`open-design-vN` 证据目录只表示已冻结或已取代的谱系，不得作为用户可见交付身份。
+
 ## 阶段和实现边界
 
 - 设计稿阶段不得启动真实页面、写 `Board.tsx`、扩展 HUD 或用运行页截图冒充设计稿。

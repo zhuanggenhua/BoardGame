@@ -99,10 +99,10 @@ export const resolveQidahenSelectedArmamentUpgradeExecution = (
             armament.id === upgradeResult.upgradedArmament?.id
                 ? {
                     ...armament,
-                    sourceCardDefIds: Array.from(new Set([
+                    sourceCardDefIds: [
                         ...(armament.sourceCardDefIds ?? []),
                         selectedHandActionCardDefId,
-                    ])),
+                    ],
                 }
                 : armament
         ))
@@ -188,6 +188,7 @@ const resolveQidahenSunYuanhuaTech = (
                 ...state.factions.ming,
                 handCount: Math.max(0, state.factions.ming.handCount - selection.requiredCardCount),
                 discardPileCount: Math.max(0, state.factions.ming.discardPileCount ?? 0) + selection.requiredCardCount,
+                discardPile: [...state.factions.ming.discardPile, ...state.handCards.filter(card => removedCardIds.has(card.id))],
                 armaments: upgradeResult.armaments,
             },
         },

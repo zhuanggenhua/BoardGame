@@ -89,7 +89,7 @@ describe('神圣护盾 (divine_shield)', () => {
       move: 1,
       attackType: 'melee',
       attackRange: 1,
-      isFortress: true,
+      unitTags: ['citadel'],
       deckSymbols: [],
       spriteIndex: 0,
     };
@@ -208,7 +208,7 @@ describe('神圣护盾 (divine_shield)', () => {
       move: 1,
       attackType: 'melee',
       attackRange: 1,
-      isFortress: true,
+      unitTags: ['citadel'],
       deckSymbols: [],
       spriteIndex: 0,
     };
@@ -418,7 +418,7 @@ describe('神圣护盾 (divine_shield)', () => {
       move: 1,
       attackType: 'melee',
       attackRange: 1,
-      isFortress: true,
+      unitTags: ['citadel'],
       deckSymbols: [],
       spriteIndex: 0,
     };

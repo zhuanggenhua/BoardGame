@@ -11,6 +11,7 @@ import type {
     RandomFn,
 } from '../../../engine/types';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
+import { resolveLocalAiActionWithRecovery } from '../../../engine/transport/localAiResolution';
 import { BETRAYAL_AI_ACTION_KINDS } from '../ai';
 import {
     BetrayalDomain,
@@ -46,6 +47,7 @@ import {
     createStartedFirstScenarioCore,
     createTradeReadyCore,
 } from '../testing/firstScenarioTestUtils';
+import { createBetrayalMonsterFromDefinition } from '../domain/monsterDefinitions';
 
 function stateOf(core: BetrayalCore, seed = 'betrayal-ai-test'): MatchState<BetrayalCore> {
     const adapter = createReplayAdapter(BetrayalDomain, seed);
@@ -209,7 +211,7 @@ describe('小黑屋本地 AI', () => {
             cardName: '幸运硬币',
             discoveryTitle: '幸运硬币',
             stepKind: 'drawn-card',
-            text: '已加入持有区：幸运硬币（按卡面规则持有）',
+            text: '已加入持有区：幸运硬币',
             index: 1,
             total: 1,
         }];
@@ -248,7 +250,7 @@ describe('小黑屋本地 AI', () => {
             cardName: '幸运硬币',
             discoveryTitle: '幸运硬币',
             stepKind: 'drawn-card',
-            text: '已加入持有区：幸运硬币（按卡面规则持有）',
+            text: '已加入持有区：幸运硬币',
             index: 1,
             total: 1,
         }];
@@ -303,6 +305,51 @@ describe('小黑屋本地 AI', () => {
         }]);
     });
 
+    test('回合结束投骰待确认时，watchdog 应先确认结果而不是裸推进阶段', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.currentPlayer = '0';
+        core.recentRoll = {
+            id: 'room-end-roll-recovery',
+            kind: 'roomEndTurnTraitCheck',
+            playerId: '0',
+            sourceTitle: '回合结束检定',
+            dice: [2, 3],
+            passiveBonus: 0,
+            latestLabel: '知识检定 5',
+            consumedRabbitFootCardIds: [],
+            roomEndTurn: {
+                kind: 'physicalDamage1',
+                roomName: '图书馆',
+                roomId: 'library',
+                originalRoomId: 'library',
+                traitsBeforeEffect: { ...core.currentExplorer.traits },
+                previousPhysicalDamage: 0,
+                nextPlayerId: '1',
+            },
+        };
+        const state = stateOf(core, 'betrayal-ai-turn-end-roll-recovery');
+        state.sys.phase = 'preHaunt';
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'local-ai' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            seatStates: {},
+            engineConfig,
+            gameId: 'betrayal',
+        });
+
+        expect(candidate?.reason).toBe('seat-legal-only');
+        expect(candidate?.playerId).toBe('0');
+        expect(candidate?.resolution.action.commands).toEqual([{
+            type: BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL,
+            payload: {},
+        }]);
+    });
+
     test('事件待投骰缺少非当前 AI 座位时，watchdog 应代触发者投骰而不是推进当前 AI 阶段', () => {
         const core = createStartedFirstScenarioCore(['0', '1', '2']);
         activateTestExplorer(core, '1');
@@ -335,6 +382,44 @@ describe('小黑屋本地 AI', () => {
             type: BETRAYAL_COMMANDS.ROLL_EVENT,
             payload: { sourceTitle: '着火的人' },
         }]);
+    });
+
+    test('事件待投骰时真人探索命令由共享校验链拦截，不进入探索执行器', () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        activateTestExplorer(core, '1');
+        core.currentPlayer = '1';
+        core.pendingEventRollStart = {
+            playerId: '0',
+            roomId: 'frontier-ground-east-south',
+            sourceTitle: '着火的人',
+        };
+        const state = stateOf(core, 'betrayal-human-event-roll-guard');
+        state.sys.phase = 'preHaunt';
+
+        const blocked = executePipeline(
+            {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems,
+            },
+            state,
+            {
+                type: BETRAYAL_COMMANDS.EXPLORE_ROOM,
+                playerId: '1',
+                payload: {},
+                timestamp: 200,
+            } as BetrayalCommand,
+            BETRAYAL_FIXED_RANDOM,
+            core.playerIds,
+        );
+
+        expect(blocked.success).toBe(false);
+        expect(blocked.error).toBe('请等待触发事件的玩家投掷。');
+        expect(BetrayalDomain.validate(state, {
+            type: BETRAYAL_COMMANDS.ROLL_EVENT,
+            playerId: '0',
+            payload: { sourceTitle: '着火的人' },
+            timestamp: 201,
+        } as BetrayalCommand)).toEqual({ valid: true });
     });
 
     test('AI 代投带房间效果的无线电广播时不会在同轮裸结算伤害骰', () => {
@@ -405,7 +490,7 @@ describe('小黑屋本地 AI', () => {
             .toBeUndefined();
         expect(result.state.core.pendingDamageAllocation).toBeNull();
 
-        const finalized = executePipeline(
+        const triggeringPlayerAcknowledged = executePipeline(
             {
                 domain: engineConfig.domain,
                 systems: engineConfig.systems,
@@ -415,6 +500,53 @@ describe('小黑屋本地 AI', () => {
                 type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
                 playerId: '2',
                 payload: { rollId: result.state.core.pendingEventRollResolution?.rollId },
+                timestamp: 201,
+            } as BetrayalCommand,
+            createBetrayalScriptedRandom(3),
+            core.playerIds,
+        );
+
+        expect(triggeringPlayerAcknowledged.success).toBe(true);
+        expect(triggeringPlayerAcknowledged.state.core.pendingEventRollResolution).toMatchObject({
+            playerId: '2',
+            sourceTitle: '无线电广播',
+            acknowledgedPlayerIds: ['2'],
+            requiredPlayerIds: ['0', '1', '2', '3'],
+        });
+        expect(triggeringPlayerAcknowledged.state.core.pendingDamageAllocation).toBeNull();
+
+        let finalState = triggeringPlayerAcknowledged.state;
+        for (const playerId of ['0', '1']) {
+            const acknowledgement = executePipeline(
+                {
+                    domain: engineConfig.domain,
+                    systems: engineConfig.systems,
+                },
+                finalState,
+                {
+                    type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                    playerId,
+                    payload: { rollId: finalState.core.pendingEventRollResolution?.rollId },
+                    timestamp: 201,
+                } as BetrayalCommand,
+                BETRAYAL_FIXED_RANDOM,
+                core.playerIds,
+            );
+            expect(acknowledgement.success).toBe(true);
+            expect(acknowledgement.state.core.pendingDamageAllocation).toBeNull();
+            finalState = acknowledgement.state;
+        }
+
+        const finalized = executePipeline(
+            {
+                domain: engineConfig.domain,
+                systems: engineConfig.systems,
+            },
+            finalState,
+            {
+                type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+                playerId: '3',
+                payload: { rollId: finalState.core.pendingEventRollResolution?.rollId },
                 timestamp: 201,
             } as BetrayalCommand,
             createBetrayalScriptedRandom(3),
@@ -490,6 +622,35 @@ describe('小黑屋本地 AI', () => {
         });
 
         expect(candidate).toBeNull();
+    });
+
+    test('本地 AI 决策缺少 core.seatControllers 时，不得替真人跳过小机器人事件确认', async () => {
+        const core = createStartedFirstScenarioCore(['0', '1', '2']);
+        core.pendingEventRollResolution = {
+            rollId: 'human-robot-event-roll',
+            playerId: '0',
+            sourceTitle: '小机器人',
+            requiredPlayerIds: ['0'],
+            acknowledgedPlayerIds: [],
+            effect: { mode: 'trait', trait: 'knowledge', amount: 1, recommendedAction: 'explore' },
+        };
+        const state = stateOf(core, 'betrayal-local-human-robot-event-roll');
+        state.sys.phase = 'preHaunt';
+
+        const resolution = await resolveLocalAiActionWithRecovery({
+            config: engineConfig,
+            state,
+            matchId: 'betrayal-local-human-robot-event-roll',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'local-ai' },
+            },
+            activePhaseElapsedMs: 0,
+            stallRecoveryGraceMs: 1000,
+        });
+
+        expect(resolution).toBeNull();
     });
 
     test('AI 会先确认翻牌结算，避免在线 watchdog 裸过阶段被拒', async () => {
@@ -621,6 +782,40 @@ describe('小黑屋本地 AI', () => {
         );
         expect(core.pendingEventRollResolution).toBeNull();
         expect(core.currentExplorer.traits.knowledge).toBe(4);
+    });
+
+    test('事件确认名单已落快照时，缺少 seatControllers 也由单个真人确认立即结算', () => {
+        const baseCore = createStartedFirstScenarioCore(['0', '1', '2', '3']);
+        const core = {
+            ...baseCore,
+            seatControllers: undefined,
+            pendingEventRollResolution: {
+                rollId: 'small-robot-roll',
+                playerId: '3',
+                sourceTitle: '小机器人',
+                requiredPlayerIds: ['0'],
+                acknowledgedPlayerIds: [],
+                requiresAcknowledgement: true,
+                effect: {
+                    mode: 'trait',
+                    trait: 'knowledge',
+                    amount: 1,
+                },
+            },
+        } as unknown as BetrayalCore;
+
+        const nextCore = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            '0',
+            { rollId: 'small-robot-roll' },
+            100,
+            BETRAYAL_FIXED_RANDOM,
+            false,
+        );
+
+        expect(nextCore.pendingEventRollResolution).toBeNull();
+        expect(nextCore.currentExplorer.traits.knowledge).toBe(4);
     });
 
     test('待分配伤害时必须生成并执行伤害分配动作，不能把阶段推进当成唯一动作', async () => {
@@ -1008,6 +1203,52 @@ describe('小黑屋本地 AI', () => {
             combined: true,
             targetPlayerId: '1',
         });
+    });
+
+    test('顽石之血 AI 会接管石像小天使怪物回合，并保留结束回合收口动作', () => {
+        const core = createFirstScenarioHauntCore(['0', '1', '2']);
+        activateTestExplorer(core, '1');
+        core.activePlayerId = '1';
+        core.scenarioRuntime.hauntCardNumber = 5;
+        core.scenarioRuntime.traitorPlayerId = null;
+        core.scenarioRuntime.bloodFromStone = {
+            monsterTurnAfterPlayerId: '1',
+            activeMonsterTurn: true,
+            monsterTurnControllerPlayerId: '1',
+        };
+        core.monsters = [
+            createBetrayalMonsterFromDefinition(
+                'blood-from-stone-stone-cherub',
+                'stone-cherub-ai',
+                core.currentExplorer.roomId,
+            ),
+        ];
+
+        const state = stateOf(core, 'betrayal-ai-blood-from-stone-monster-turn');
+        const actions = buildActions(state, '1');
+
+        const startAction = actions.find((action) => (
+            action.kind === BETRAYAL_AI_ACTION_KINDS.RESOLVE_MONSTER_TURN_START
+        ));
+        expect(startAction).toBeDefined();
+        expect(actions.some((action) => action.kind === BETRAYAL_AI_ACTION_KINDS.ROLL_MONSTER_MOVEMENT_GROUP)).toBe(false);
+        expect(buildActions(state, '0')).toEqual([]);
+
+        const afterStart = applyBetrayalCommand(
+            core,
+            BETRAYAL_COMMANDS.RESOLVE_MONSTER_TURN_START,
+            '1',
+            { monsterId: 'stone-cherub-ai' },
+        );
+        const afterStartActions = buildActions(
+            stateOf(afterStart, 'betrayal-ai-blood-from-stone-monster-turn-after-start'),
+            '1',
+        );
+        expect(afterStartActions.some((action) => (
+            action.kind === BETRAYAL_AI_ACTION_KINDS.END_BLOOD_FROM_STONE_MONSTER_TURN
+        ))).toBe(true);
+        expect(betrayalAiRuntime.localPolicies?.baseline.decide(buildContext(state, '1'))?.actionId)
+            .toBe(startAction?.actionId);
     });
 
     test('AI 会用急救包治疗同房受伤队友，并通过正式领域管线生效', async () => {

@@ -8,14 +8,15 @@ import entry3 from './betrayal/manifest';
 import entry4 from './cardia/manifest';
 import entry5 from './dicethrone/manifest';
 import entry6 from './fantasyrealms/manifest';
-import entry7 from '../tools/fxpreview/manifest';
-import entry8 from './mage-wars/manifest';
-import entry9 from './qidahen/manifest';
-import entry10 from './smashup/manifest';
-import entry11 from './splendor/manifest';
-import entry12 from './summonerwars/manifest';
-import entry13 from './the-gang/manifest';
-import entry14 from './tictactoe/manifest';
+import entry7 from './fate-domination/manifest';
+import entry8 from '../tools/fxpreview/manifest';
+import entry9 from './mage-wars/manifest';
+import entry10 from './qidahen/manifest';
+import entry11 from './smashup/manifest';
+import entry12 from './splendor/manifest';
+import entry13 from './summonerwars/manifest';
+import entry14 from './the-gang/manifest';
+import entry15 from './tictactoe/manifest';
 
 export const GAME_MANIFEST: GameManifestEntry[] = [
     entry0,
@@ -33,6 +34,7 @@ export const GAME_MANIFEST: GameManifestEntry[] = [
     entry12,
     entry13,
     entry14,
+    entry15,
 ];
 
 export const GAME_MANIFEST_BY_ID: Record<string, GameManifestEntry> = Object.fromEntries(

@@ -7,7 +7,7 @@
  */
 
 import { beforeEach, describe, it, expect } from 'vitest';
-import { registerGameAiRuntime, resolveNextLocalAiAction } from '../../../engine/ai';
+import { registerGameAiRuntime, resolveNextLocalAiAction, resolveOnlineAiDecisionView } from '../../../engine/ai';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
 import { postProcessSystemEvents } from '../domain';
@@ -944,6 +944,116 @@ describe('scoreBases 阶段自动推进', () => {
             },
         }]);
         expect((withSeatSpecificState?.action as any)?.metadata?.optionValue).toEqual({ minionUid: 'c66', baseIndex: 0 });
+    });
+
+    it('线上反馈 6aa6ddadae0a0460bcd97f0b：Alien Collector 的数字 seat owner 仍应生成 simple-choice 响应', () => {
+        const state: MatchState<SmashUpCore> = {
+            core: makeMinimalCore({
+                currentPlayerIndex: 0,
+                bases: [makeBase('base_the_homeworld_pod', [
+                    {
+                        ...makeMinion('1', 'alien_collector_pod', 2),
+                        uid: 'c48',
+                    },
+                ])],
+            }),
+            sys: {
+                phase: 'playCards',
+                turnNumber: 0,
+                interaction: {
+                    current: createSimpleChoice(
+                        'alien_collector_397',
+                        1 as any,
+                        '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上',
+                        [
+                            {
+                                id: 'skip',
+                                label: '跳过（不收回随从）',
+                                value: { skip: true },
+                                displayMode: 'button',
+                            },
+                            {
+                                id: 'minion-0',
+                                label: '异星收藏家 POD',
+                                value: {
+                                    minionUid: 'c48',
+                                    baseIndex: 0,
+                                    defId: 'alien_collector_pod',
+                                    minionDefId: 'alien_collector_pod',
+                                    baseDefId: 'base_the_homeworld_pod',
+                                },
+                                displayMode: 'card',
+                            },
+                        ],
+                        {
+                            sourceId: 'alien_collector',
+                            targetType: 'minion',
+                            titleKey: 'ui.alien_collector_title',
+                        },
+                    ),
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: { current: null, history: [] },
+                eventStream: { nextId: 151 },
+            } as any,
+        };
+
+        const actions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        const interactionChoices = actions.filter((action) => action.kind === 'interaction-choice');
+        expect(interactionChoices.map((action) => getRespondCommandOptionId(action.commands[0]))).toEqual([
+            'skip',
+            'minion-0',
+        ]);
+    });
+
+    it('Smash Up reaction ordering 的数字 seat owner 仍应使用 shared 决策视图', () => {
+        const state: MatchState<SmashUpCore> = {
+            core: makeMinimalCore({ currentPlayerIndex: 0 }),
+            sys: {
+                phase: 'afterScoring',
+                turnNumber: 1,
+                interaction: {
+                    current: createSimpleChoice(
+                        'smashup_reaction_ordering_numeric_owner',
+                        1 as any,
+                        '选择先结算哪个响应',
+                        [
+                            {
+                                id: 'trigger-a',
+                                label: '先结算触发 A',
+                                value: { kind: 'trigger', triggerId: 'trigger-a' },
+                            },
+                            {
+                                id: 'pass',
+                                label: '跳过',
+                                value: { kind: 'pass' },
+                            },
+                        ],
+                        { sourceId: 'smashup_reaction_choose' },
+                    ),
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: { current: null, history: [] },
+                eventStream: { nextId: 180 },
+            } as any,
+        };
+
+        const resolved = resolveOnlineAiDecisionView({
+            runtime: smashUpAiRuntime,
+            sharedState: state,
+            privateOverlay: null,
+            playerId: '1',
+        });
+
+        expect(resolved.visibility).toBe('shared');
+        expect(resolved.canDecide).toBe(true);
+        expect(resolved.visibleState).toBe(state);
     });
 
     it('afterScoring 响应窗口与 reaction queue 主动选择并存时，AI 应优先响应当前交互而不是窗口动作', async () => {

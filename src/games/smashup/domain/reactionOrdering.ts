@@ -17,7 +17,7 @@ function resolveTriggerFootprint(
     if (state && random && typeof now === 'number') {
         const derived = deriveFootprintFromTriggerProbe(state, trigger, random, now);
         const explicitFallback = explicitFallbackFootprintFromTrigger(trigger);
-        if (explicitFallback && !derived.fallbackReason) {
+        if (explicitFallback?.fallbackReason && !derived.fallbackReason) {
             recordReactionFootprintFallback(trigger, explicitFallback.fallbackReason);
             trigger.derivedFootprint = {
                 reads: [...derived.reads, ...explicitFallback.reads],

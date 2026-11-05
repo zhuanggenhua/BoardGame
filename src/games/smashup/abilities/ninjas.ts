@@ -4,11 +4,12 @@
  * 主题：消灭随从、潜入基地
  */
 
-import { registerAbility, registerAbilityProgram, resolveSpecial } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram, resolveSpecial } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedDestroyEvents, buildValidatedMoveEvents, buildValidatedReturnEvents } from '../domain/abilityHelpers';
+import { getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedDestroyEvents, buildValidatedMoveEvents, buildValidatedReturnEvents, createSkipOption } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, MinionPlayedEvent, PlayerState } from '../domain/types';
+import type { SmashUpEvent, MinionPlayedEvent, PlayerState, SmashUpCore } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
@@ -17,13 +18,15 @@ import type { MatchState, PlayerId } from '../../../engine/types';
 import { validateImmediateHandExtraMinionPlaySemantics } from '../domain/playLegality';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
 } from '../domain/abilityRuntime';
 
 type NinjaPromptContext = {
-    matchState: MatchState<any>;
+    matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
 };
@@ -79,8 +82,8 @@ type NinjaDisguiseContext = NinjaPromptContext & {
     playedHandUids?: string[];
 };
 
-function createNinjaPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
-    matchState: MatchState<any>,
+function createNinjaPromptContext<const TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,
     extra?: TExtra,
@@ -94,7 +97,14 @@ function createNinjaPromptContext<TExtra extends Record<string, unknown> = Recor
 }
 
 function createSkipButton(label = '跳过') {
-    return { id: 'skip', label, value: { skip: true }, displayMode: 'button' as const };
+    return createSkipOption(label);
+}
+
+function createNinjaContinuation<TContext extends NinjaPromptContext>(
+    context: NoInfer<TContext>,
+    program: AbilityProgram<TContext, SmashUpCore, SmashUpEvent>,
+) {
+    return createAbilityRuntimeContinuation<TContext, SmashUpCore, SmashUpEvent>(context, program);
 }
 
 function buildDestroyMinionOptions(
@@ -105,10 +115,10 @@ function buildDestroyMinionOptions(
         sourcePlayerId: context.playerId,
         effectType: 'destroy',
     });
-    if (context.allowSkip) {
-        options.push(createSkipButton());
-    }
-    return options as any[];
+    return [
+        ...options,
+        ...(context.allowSkip ? [createSkipButton()] : []),
+    ];
 }
 
 function buildHandPlayEvents(
@@ -184,7 +194,7 @@ export function registerNinjaAbilities(): void {
     registerNinjaOngoingEffects();
 }
 
-const ninjaDestroyMinionPromptProgram = createPromptProgram<NinjaDestroyMinionPromptContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaDestroyMinionPromptProgram = createPromptProgram<NinjaDestroyMinionPromptContext>({
     sourceId: 'ninja_destroy_minion_prompt',
     interactionSourceIds: ['ninja_master', 'ninja_tiger_assassin', 'ninja_seeing_stars'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -233,13 +243,12 @@ const ninjaMasterProgram = createEffectProgram<AbilityContext, AbilityContext['s
     if (targets.length === 0) return { events: [] };
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_master',
             title: '选择要消灭的随从（可跳过）',
             allowSkip: true,
             targets,
-        }),
-        nextProgram: ninjaDestroyMinionPromptProgram,
+        }), ninjaDestroyMinionPromptProgram),
     };
 });
 
@@ -257,13 +266,12 @@ const ninjaTigerAssassinProgram = createEffectProgram<AbilityContext, AbilityCon
     if (targets.length === 0) return { events: [] };
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_tiger_assassin',
             title: '选择要消灭的力量≤3的随从（可跳过）',
             allowSkip: true,
             targets,
-        }),
-        nextProgram: ninjaDestroyMinionPromptProgram,
+        }), ninjaDestroyMinionPromptProgram),
     };
 });
 
@@ -285,12 +293,11 @@ const ninjaSeeingStarsProgram = createEffectProgram<AbilityContext, AbilityConte
     }
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_seeing_stars',
             title: '选择要消灭的力量≤3的随从',
             targets,
-        }),
-        nextProgram: ninjaDestroyMinionPromptProgram,
+        }), ninjaDestroyMinionPromptProgram),
     };
 });
 
@@ -328,7 +335,7 @@ function ninjaPoisonOnPlay(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const ninjaDestroyOngoingPromptProgram = createPromptProgram<NinjaDestroyOngoingPromptContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaDestroyOngoingPromptProgram = createPromptProgram<NinjaDestroyOngoingPromptContext>({
     sourceId: 'ninja_destroy_ongoing_prompt',
     interactionSourceIds: ['ninja_infiltrate_destroy', 'ninja_infiltrate_pod_destroy'],
     buildInteraction: (context) => {
@@ -339,14 +346,14 @@ const ninjaDestroyOngoingPromptProgram = createPromptProgram<NinjaDestroyOngoing
             _source: 'ongoing' as const,
             displayMode: 'card' as const,
         }));
-        if (context.allowSkip) {
-            options.push(createSkipButton('跳过（不消灭）'));
-        }
         return createAbilityRuntimeSimpleChoice(
             `${context.sourceId}_${context.now}`,
             context.playerId,
             context.title,
-            options as any[],
+            [
+                ...options,
+                ...(context.allowSkip ? [createSkipButton('跳过（不消灭）')] : []),
+            ],
             { sourceId: context.sourceId, targetType: 'ongoing', autoResolveIfSingle: false },
         );
     },
@@ -379,12 +386,11 @@ const ninjaInfiltrateOnPlayProgram = createEffectProgram<AbilityContext, Ability
     if (!ctx.matchState) return { events: [] };
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_infiltrate_destroy',
             title: '选择要消灭的战术',
             targets,
-        }),
-        nextProgram: ninjaDestroyOngoingPromptProgram,
+        }), ninjaDestroyOngoingPromptProgram),
     };
 });
 
@@ -400,17 +406,16 @@ const ninjaInfiltratePodOnPlayProgram = createEffectProgram<AbilityContext, Abil
     if (targets.length === 0) return { events: [] };
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_infiltrate_pod_destroy',
             title: '你可以消灭该基地上的另一张战术',
             allowSkip: true,
             targets,
-        }),
-        nextProgram: ninjaDestroyOngoingPromptProgram,
+        }), ninjaDestroyOngoingPromptProgram),
     };
 });
 
-const ninjaWayOfDeceptionBasePromptProgram = createPromptProgram<NinjaMovePromptContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaWayOfDeceptionBasePromptProgram = createPromptProgram<NinjaMovePromptContext>({
     sourceId: 'ninja_way_of_deception_base_prompt',
     interactionSourceIds: ['ninja_way_of_deception_choose_base'],
     buildInteraction: (context) => {
@@ -453,7 +458,7 @@ const ninjaWayOfDeceptionBasePromptProgram = createPromptProgram<NinjaMovePrompt
     },
 });
 
-const ninjaWayOfDeceptionMinionPromptProgram = createPromptProgram<NinjaMovePromptContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaWayOfDeceptionMinionPromptProgram = createPromptProgram<NinjaMovePromptContext>({
     sourceId: 'ninja_way_of_deception_minion_prompt',
     interactionSourceIds: ['ninja_way_of_deception_choose_minion'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -483,14 +488,13 @@ const ninjaWayOfDeceptionMinionPromptProgram = createPromptProgram<NinjaMoveProm
         if (candidates.length === 0) return { events: [] };
         return {
             events: [],
-            context: createNinjaPromptContext(state, context.playerId, timestamp, {
+            continuation: createNinjaContinuation(createNinjaPromptContext(state, context.playerId, timestamp, {
                 sourceId: 'ninja_way_of_deception_choose_base',
                 title: '选择目标基地',
                 fromBaseIndex: selected.baseIndex,
                 minionUid: selected.minionUid,
                 minionDefId: minion.defId,
-            }),
-            nextProgram: ninjaWayOfDeceptionBasePromptProgram,
+            }), ninjaWayOfDeceptionBasePromptProgram),
         };
     },
 });
@@ -516,12 +520,11 @@ const ninjaWayOfDeceptionProgram = createEffectProgram<AbilityContext, AbilityCo
     }
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_way_of_deception_choose_minion',
             title: '选择要移动的己方随从',
             minionCandidates: myMinions,
-        }),
-        nextProgram: ninjaWayOfDeceptionMinionPromptProgram,
+        }), ninjaWayOfDeceptionMinionPromptProgram),
     };
 });
 
@@ -542,7 +545,7 @@ function buildHandMinionOptions(cards: AbilityContext['state']['players'][Player
         });
 }
 
-const ninjaPlayFromHandPromptProgram = createPromptProgram<NinjaPlayFromHandPromptContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaPlayFromHandPromptProgram = createPromptProgram<NinjaPlayFromHandPromptContext>({
     sourceId: 'ninja_play_from_hand_prompt',
     interactionSourceIds: ['ninja_hidden_ninja', 'ninja_acolyte_play'],
     buildInteraction: (context) => {
@@ -584,14 +587,13 @@ const ninjaHiddenNinjaProgram = createEffectProgram<AbilityContext, AbilityConte
         : emitSpecialLimitUsed(ctx.playerId, 'ninja_hidden_ninja', ctx.baseIndex, ctx.now);
     return {
         events: limitEvt ? [limitEvt] : [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_hidden_ninja',
             title: '选择要打出到该基地的随从（可跳过）',
             baseIndex: ctx.baseIndex,
             includeSkip: true,
             handOptions,
-        }),
-        nextProgram: ninjaPlayFromHandPromptProgram,
+        }), ninjaPlayFromHandPromptProgram),
     };
 });
 
@@ -624,14 +626,13 @@ const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityCo
     if (handOptions.length === 0) return { events };
     return {
         events,
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_acolyte_play',
             title: '选择要打出到该基地的随从（可跳过）',
             baseIndex: ctx.baseIndex,
             includeSkip: true,
             handOptions,
-        }),
-        nextProgram: ninjaPlayFromHandPromptProgram,
+        }), ninjaPlayFromHandPromptProgram),
     };
 });
 
@@ -664,14 +665,13 @@ const ninjaAcolytePodTalentProgram = createEffectProgram<AbilityContext, Ability
     if (handOptions.length === 0) return { events };
     return {
         events,
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_acolyte_play',
             title: '选择要打出到该基地的随从（可跳过）',
             baseIndex: ctx.baseIndex,
             includeSkip: true,
             handOptions,
-        }),
-        nextProgram: ninjaPlayFromHandPromptProgram,
+        }), ninjaPlayFromHandPromptProgram),
     };
 });
 
@@ -748,7 +748,7 @@ function buildNinjaDisguiseReturnEvents(
     return events;
 }
 
-const ninjaDisguiseChooseBasePromptProgram = createPromptProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaDisguiseChooseBasePromptProgram = createPromptProgram<NinjaDisguiseContext>({
     sourceId: 'ninja_disguise_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ninja_disguise_base_${context.now}`,
@@ -774,19 +774,18 @@ const ninjaDisguiseChooseBasePromptProgram = createPromptProgram<NinjaDisguiseCo
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createNinjaContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 baseIndex: selected.baseIndex,
                 sourceId: 'ninja_disguise_choose_minions',
-            },
-            nextProgram: ninjaDisguiseChooseMinionsPromptProgram,
+            }, ninjaDisguiseChooseMinionsPromptProgram),
         };
     },
 });
 
-const ninjaDisguiseChooseMinionsPromptProgram = createPromptProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaDisguiseChooseMinionsPromptProgram = createPromptProgram<NinjaDisguiseContext>({
     sourceId: 'ninja_disguise_choose_minions',
     buildInteraction: (context) => {
         if (context.baseIndex === undefined) {
@@ -828,9 +827,11 @@ const ninjaDisguiseChooseMinionsPromptProgram = createPromptProgram<NinjaDisguis
                 state: context.matchState.core,
                 sourcePlayerId: context.playerId,
             }),
-            { sourceId: 'ninja_disguise_choose_minions', targetType: 'minion' },
-            undefined,
-            { min: 1, max: maxSelect },
+            {
+                sourceId: 'ninja_disguise_choose_minions',
+                targetType: 'minion',
+                multi: { min: 1, max: maxSelect },
+            },
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {
@@ -844,7 +845,7 @@ const ninjaDisguiseChooseMinionsPromptProgram = createPromptProgram<NinjaDisguis
         return {
             events: [],
             matchState: state,
-            context: {
+            continuation: createNinjaContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
@@ -852,13 +853,12 @@ const ninjaDisguiseChooseMinionsPromptProgram = createPromptProgram<NinjaDisguis
                 totalToPlay: selectedMinionUids.length,
                 playedHandUids: [],
                 sourceId: 'ninja_disguise_choose_play1',
-            },
-            nextProgram: ninjaDisguisePlayPromptProgram,
+            }, ninjaDisguisePlayPromptProgram),
         };
     },
 });
 
-const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent>({
+const ninjaDisguisePlayPromptProgram: AbilityProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent> = createPromptProgram<NinjaDisguiseContext>({
     sourceId: 'ninja_disguise_choose_play1',
     interactionSourceIds: ['ninja_disguise_choose_play2'],
     buildInteraction: (context) => {
@@ -949,14 +949,13 @@ const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext,
                 return {
                     events,
                     matchState: state,
-                    context: {
+                    continuation: createNinjaContinuation({
                         ...context,
                         matchState: state,
                         now: timestamp,
                         playedHandUids,
                         sourceId: 'ninja_disguise_choose_play2',
-                    },
-                    nextProgram: ninjaDisguisePlayPromptProgram,
+                    }, ninjaDisguisePlayPromptProgram),
                 };
             }
         }
@@ -984,12 +983,11 @@ const ninjaDisguiseProgram = createEffectProgram<AbilityContext, AbilityContext[
 
     return {
         events: [],
-        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createNinjaContinuation(createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceId: 'ninja_disguise_choose_base',
             cardUid: ctx.cardUid,
             eligibleBases,
-        }),
-        nextProgram: ninjaDisguiseChooseBasePromptProgram,
+        }), ninjaDisguiseChooseBasePromptProgram),
     };
 });
 

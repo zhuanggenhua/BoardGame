@@ -152,14 +152,14 @@ it('正式探索会从真实开放门位动态生成下一批未知房间，并�
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north' }, 100, createBetrayalScriptedRandom(1));
 
         const discoveredRoom = core.rooms.find((room) => room.id === 'upper-north');
-        const dynamicFrontier = core.rooms.find((room) => room.id === 'frontier-upper-north-west');
+        const dynamicFrontier = core.rooms.find((room) => room.id === 'frontier-upper-north-east');
         expect(discoveredRoom?.state).toBe('discovered');
         expect(dynamicFrontier?.state).toBe('unexplored');
         expect(dynamicFrontier?.doorways).toEqual([
-            { edge: 'east', connectsToRoomId: 'upper-north' },
+            { edge: 'west', connectsToRoomId: 'upper-north' },
         ]);
         expect(discoveredRoom?.doorways.some((doorway) => (
-            doorway.edge === 'west' && doorway.connectsToRoomId === 'frontier-upper-north-west'
+            doorway.edge === 'east' && doorway.connectsToRoomId === 'frontier-upper-north-east'
         ))).toBe(true);
         expect(core.movesRemaining).toBe(0);
         expect(core.turnEndedByDiscovery).toBe(true);
@@ -167,7 +167,7 @@ it('正式探索会从真实开放门位动态生成下一批未知房间，并�
 
         const moveAfterDiscovery = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'frontier-upper-north-west' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'frontier-upper-north-east' }),
         );
         expect(moveAfterDiscovery.valid).toBe(false);
         if (!moveAfterDiscovery.valid) {
@@ -177,7 +177,7 @@ it('正式探索会从真实开放门位动态生成下一批未知房间，并�
         core = acknowledgeAnyPendingCardResolutions(core);
         const moveAfterResolution = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'frontier-upper-north-west' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'frontier-upper-north-east' }),
         );
         expect(moveAfterResolution.valid).toBe(false);
         if (!moveAfterResolution.valid) {

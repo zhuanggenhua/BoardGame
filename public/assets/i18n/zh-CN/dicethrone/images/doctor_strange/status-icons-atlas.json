@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "image": "compressed/status-icons-atlas.webp",
+    "size": {
+      "w": 1204,
+      "h": 400
+    }
+  },
+  "frames": {
+    "premonition": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      }
+    },
+    "crimson-bands": {
+      "frame": {
+        "x": 402,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      }
+    },
+    "deja-vu": {
+      "frame": {
+        "x": 804,
+        "y": 0,
+        "w": 400,
+        "h": 400
+      }
+    }
+  }
+}

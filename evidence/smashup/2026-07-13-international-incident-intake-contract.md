@@ -133,11 +133,11 @@
 | `sumo_wrestlers_rookie_sumo` | 相扑新人 | 随从 | partial：弃牌给己方随从 +2 指示物已测 | pending | 天赋真实入口待补 |
 | `base_heya_training_stable` | 训练馆 | 基地 | passed：可跳过；也可在回合开始弃 1 张牌并给这里己方随从 +1 指示物 | pending | 真实入口待补 |
 | `base_the_dohyo` | 土俵 | 基地 | passed：可跳过；也可在首次打出随从后移动另一玩家随从到其它基地 | pending | 真实入口待补 |
-| `musketeers_on_a_roll` | 连连获胜 | 行动 | passed：两个额外行动均限定所选随从 | pending | 真实额外行动消费链待补 |
-| `musketeers_make_way` | 让路 | 行动 | passed：移动一个己方随从后授予额外行动 | pending | 真实入口与更多目标选择待补 |
+| `musketeers_on_a_roll` | 连连获胜 | 行动 | passed：两个额外行动均限定所选随从 | passed：真实手牌入口选择限定随从，连续消费两次受限额外行动并清理流程态 | 见 `e2e/smashup/smashup-international-incident-four-factions.e2e.ts:1736-1870` 与对应 50-56 截图；更复杂候选组合属于扩展覆盖 |
+| `musketeers_make_way` | 让路 | 行动 | passed：移动一个己方随从后授予额外行动 | passed：真实手牌入口完成己方随从选择、目标基地选择、移动后额外行动消费并清理流程态 | 见 `e2e/smashup/smashup-international-incident-four-factions.e2e.ts:1876-1994` 与对应 57-62 截图；更复杂移动候选组合属于扩展覆盖 |
 | `musketeers_en_garde` | 预备姿势 | 行动 | passed：命令层目标随从消费、抽牌、触发年轻的火枪手 | pending | 更多触发对象待补 |
 | `musketeers_biding_time` | 等待时间 | 行动 | passed：额外行动限定字段指向随从 | pending | 真实额外行动消费链待补 |
-| `musketeers_to_battle` | 奋斗！ | 行动 | passed：额外随从后额外行动绑定新随从 | pending | skip/不打额外随从消费 pending effect 待补 |
+| `musketeers_to_battle` | 投入战斗！ | 行动 | passed：额外随从后额外行动绑定新随从 | passed：真实手牌入口完成额外随从、基地、受限 `预备姿势` 和目标随从选择，最终行动额度、手牌、弃牌堆、pending effect、triggerQueue 与交互态均核对通过，见 `smashup-international-incident-four-factions.e2e.ts:1990-2078` 与 63-68 截图 | 更复杂的 skip 组合仍由领域测试覆盖 |
 | `musketeers_porthos` | Porthos | 随从 | passed：只防其他玩家行动；不防己方行动或非行动消灭 | pending | 真实入口待补 |
 | `musketeers_athos` | Athos | 随从 | passed：行动直接影响同基地己方随从后加力 | pending | once/turn 边界待补 |
 | `musketeers_one_for_all` | 一为全 | 行动 | passed：多基地候选中只强化所选基地己方随从并授予额外行动 | representative-passed：真实手牌入口选择目标基地，所选基地己方随从 +1 且获得额外行动 | 其它基地/边界仍待对象级扩展 |

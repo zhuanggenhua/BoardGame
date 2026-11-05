@@ -48,6 +48,7 @@ interface QidahenSelectedActionStateCommitInput {
     factions: QidahenCore['factions'];
     followUp: QidahenSelectedActionStateCommitFollowUp;
     paidHandCards: QidahenCore['handCards'];
+    koreaDiscardPile: QidahenCore['koreaDiscardPile'];
     regions: QidahenCore['regions'];
     selectedEventActionCardDefId: string | null;
     selectedEventActionCardLabel: string | null;
@@ -72,6 +73,7 @@ export function commitQidahenSelectedActionState(
         factions,
         followUp,
         paidHandCards,
+        koreaDiscardPile,
         regions,
         selectedEventActionCardDefId,
         selectedEventActionCardLabel,
@@ -106,8 +108,10 @@ export function commitQidahenSelectedActionState(
         bonusFactionActionUsed: usedBonusFactionAction,
         lastFactionActionId: actionId,
         payment: buildPaymentState(actionId, 0),
-        discardPileCount: state.discardPileCount + discardedCardCount,
-        drawPileCount: state.drawPileCount,
+        discardPileCount: factions.ming.discardPileCount,
+        drawPileCount: factions.ming.drawPileCount,
+        koreaDiscardPile,
+        koreaDiscardCount: koreaDiscardPile.length,
         handCards: paidHandCards,
         activeEventCards: actionId === 'play-event-card'
             && selectedEventActionCardPersistent
@@ -125,6 +129,7 @@ export function commitQidahenSelectedActionState(
                     label: selectedEventActionCardLabel,
                     ownerFactionId: currentFactionId,
                     rulesSummary: selectedEventActionRulesSummary,
+                    sourceCard: state.handCards.find(card => card.cardDefId === selectedEventActionCardDefId && !paidHandCards.some(remaining => remaining.id === card.id)),
                 },
             ]
             : state.activeEventCards,

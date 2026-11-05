@@ -14,6 +14,7 @@ import type { EngineSystem } from '../../../engine/systems/types';
 import {
   createInitializedCore,
   createPromptResponseCommand,
+  ensurePipelineSummoners,
   generateInstanceId,
   getPromptOptionIds,
   getPromptPlayerId,
@@ -177,6 +178,7 @@ function createFlowInteractionSystems(): EngineSystem<SummonerWarsCore>[] {
 }
 
 function createPipelineState(core: SummonerWarsCore, systems = createInteractionSystems()): MatchState<SummonerWarsCore> {
+  ensurePipelineSummoners(core);
   return {
     core,
     sys: createInitialSystemState(['0', '1'], systems),

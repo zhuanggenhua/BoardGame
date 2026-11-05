@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameBoardProps } from '../engine/transport/protocol';
 import type { GameBoardRenderer } from '../engine/boardRenderer';
@@ -13,10 +13,13 @@ import { useSearchParams } from 'react-router-dom';
 import { useDebug } from '../contexts/DebugContext';
 import type { TutorialManifest } from '../engine/types';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
+import type { LocalMatchSnapshot } from '../engine/transport/localSession';
+import { buildTutorialSessionScope } from '../contexts/tutorialSessionScope';
 import { resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 import {
     buildTutorialProgressSeed,
     clearTutorialProgress,
+    isRestorableTutorialProgressSnapshot,
     notifyTutorialProgressStorageChanged,
     readRestorableTutorialProgress,
 } from './useMatchRoomTutorialLifecycle';
@@ -60,6 +63,15 @@ const TutorialLocalGameRuntime = ({
         runtime.tutorialManifest?.id,
         runtime.tutorialManifest?.revision,
     ) ?? `tutorial-${runtime.gameId ?? 'unknown'}`;
+    const tutorialSessionScope = useMemo(() => buildTutorialSessionScope({
+        gameId: runtime.gameId,
+        tutorialId: runtime.tutorialId,
+        manifest: runtime.tutorialManifest,
+    }), [
+        runtime.gameId,
+        runtime.tutorialId,
+        runtime.tutorialManifest,
+    ]);
     const restorableProgress = useMemo(() => readRestorableTutorialProgress({
         gameId: runtime.gameId,
         tutorialId: runtime.tutorialId,
@@ -75,6 +87,15 @@ const TutorialLocalGameRuntime = ({
         ? `${restorableProgress.seed}:${restorableProgress.stepIndex}:${restorableProgress.stepId}`
         : null;
     const shouldAskResume = Boolean(restorableProgress && progressKey !== handledProgressKey);
+    const shouldRestorePersistedSession = useCallback((snapshot: LocalMatchSnapshot) => {
+        if (!runtime.tutorialManifest) {
+            return false;
+        }
+        return isRestorableTutorialProgressSnapshot({
+            snapshot,
+            manifest: runtime.tutorialManifest,
+        });
+    }, [runtime.tutorialManifest]);
     const seatControllers = useMemo(
         () => Object.fromEntries(
             Array.from({ length: numPlayers }, (_, index) => {
@@ -131,8 +152,8 @@ const TutorialLocalGameRuntime = ({
                     panelClassName="rounded-[22px] border border-[#6c5736] bg-[linear-gradient(180deg,rgba(35,28,20,0.98),rgba(14,17,25,0.98))] p-6 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)]"
                     titleClassName="text-sm font-bold tracking-[0.22em] text-[#f2d49b]"
                     descriptionClassName="text-sm leading-6 text-[#f4ead4]"
-                    confirmClassName="rounded-full bg-[#d9b36d] px-5 py-2 text-xs font-bold tracking-[0.14em] text-[#1e160d] hover:bg-[#f0ce88]"
-                    cancelClassName="rounded-full border border-[#6f7f9a] bg-slate-900/40 px-5 py-2 text-xs font-bold tracking-[0.14em] text-[#dbe7ff] hover:bg-slate-800/70"
+                    confirmClassName="min-h-[56px] min-w-[176px] rounded-full bg-[#d9b36d] px-6 py-3 text-[16px] font-bold tracking-[0.10em] text-[#1e160d] hover:bg-[#f0ce88]"
+                    cancelClassName="min-h-[56px] min-w-[176px] rounded-full border border-[#6f7f9a] bg-slate-900/40 px-6 py-3 text-[16px] font-bold tracking-[0.10em] text-[#dbe7ff] hover:bg-slate-800/70"
                 />
             ),
         });
@@ -174,15 +195,20 @@ const TutorialLocalGameRuntime = ({
             config={runtime.engineConfig}
             numPlayers={numPlayers}
             seed={progressSeed}
-            playerId={playerID ?? '0'}
+            playerId={runtime.tutorialManifest?.playerId ?? playerID ?? '0'}
             setupData={setupData}
             onCommandRejected={runtime.onCommandRejected}
             seatControllers={seatControllers}
-            followCurrentTurnPlayer={false}
+            followCurrentTurnPlayer={runtime.tutorialManifest?.playerId === undefined && Boolean(runtime.engineConfig.resolveLocalRuntimeControlledPlayerId)}
             persistSession={Boolean(runtime.gameId)}
             persistGameId={runtime.gameId}
+            shouldRestorePersistedSession={shouldRestorePersistedSession}
+            disableLocalAiAutomation
         >
-            <TutorialDispatchBridge tutorialManifest={runtime.tutorialManifest}>
+            <TutorialDispatchBridge
+                tutorialManifest={runtime.tutorialManifest}
+                sessionScope={tutorialSessionScope}
+            >
                 <BoardBridge
                     board={runtime.board}
                     renderer={runtime.boardRenderer}

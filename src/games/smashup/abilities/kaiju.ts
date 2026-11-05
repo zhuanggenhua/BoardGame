@@ -363,15 +363,16 @@ function getMovableTitans(core: SmashUpCore) {
         .filter(titan => titan.location.zone === 'base')
         .flatMap(titan => {
             if (titan.location.zone !== 'base') return [];
-            const base = core.bases[titan.location.baseIndex];
+            const currentBaseIndex = titan.location.baseIndex;
+            const base = core.bases[currentBaseIndex];
             if (!base) return [];
             const destinations = core.bases
                 .map((_candidate, baseIndex) => baseIndex)
-                .filter(baseIndex => baseIndex !== titan.location.baseIndex);
+                .filter(baseIndex => baseIndex !== currentBaseIndex);
             if (destinations.length === 0) return [];
             return [{
                 titan,
-                baseIndex: titan.location.baseIndex,
+                baseIndex: currentBaseIndex,
                 label: `${getCardDef(titan.defId)?.name ?? titan.defId} @ ${getBaseDef(base.defId)?.name ?? base.defId}`,
             }];
         });
@@ -537,7 +538,7 @@ export function registerKaijuInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'kaiju_radioactive_breath',
                 now: timestamp,
-                sourcePlayerId: continuation?.sourcePlayerId,
+                sourcePlayerId: continuation?.sourcePlayerId ?? playerId,
                 sourceCardUid: continuation?.sourceCardUid,
                 sourceDefId: continuation?.sourceDefId,
                 sourceControllerId: continuation?.sourceControllerId,
@@ -560,7 +561,7 @@ export function registerKaijuInteractionHandlers(): void {
                 destroyerId: playerId,
                 reason: 'kaiju_tail_smash',
                 now: timestamp,
-                sourcePlayerId: continuation?.sourcePlayerId,
+                sourcePlayerId: continuation?.sourcePlayerId ?? playerId,
                 sourceCardUid: continuation?.sourceCardUid,
                 sourceDefId: continuation?.sourceDefId,
                 sourceControllerId: continuation?.sourceControllerId,

@@ -1,0 +1,122 @@
+{
+  "verdict": "SUPERSEDED",
+  "supersededBy": "evidence/dicethrone/dicethrone-vampire-lord-reaudit-pass-20260917.json",
+  "supersededReason": "旧证据把死无全尸错误记录为血滴，且催眠只覆盖防御确认链，不能证明当前自然进攻投掷响应要求。",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-17T15:44:54.6633539+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "催眠从真实防御确认后进入响应窗口，临时骰不会跳过攻击",
+      "status": "PASS",
+      "evidence": [
+        "E2E: vampire-lord-real-entry 催眠真实防御确认用例 1 passed"
+      ]
+    },
+    {
+      "requirement": "死无全尸 2 个血滴加 2 伤害，行动日志 hover 卡图可见且不被遮挡",
+      "status": "PASS",
+      "evidence": [
+        "E2E: vampire-lord-real-entry 死无全尸用例 1 passed"
+      ]
+    },
+    {
+      "requirement": "不可防御伤害造成后仍触发鲜血之力 4 档吸血窗口",
+      "status": "PASS",
+      "evidence": [
+        "E2E: vampire-lord-real-entry 基础魅惑之力不可防御用例 1 passed"
+      ]
+    },
+    {
+      "requirement": "妮拉倒下后回血到 2 仍不能承伤，5 血复活另由维持阶段事件处理",
+      "status": "PASS",
+      "evidence": [
+        "E2E: lieren-intake 妮拉倒下回血用例 1 passed",
+        "Vitest: lieren-rule-matrix includes 2血不承伤与5血复活"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "file": "01-催眠-响应窗口-token本体高亮.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\催眠从真实防御确认按钮后应打开响应窗口，临时骰后攻击不能被跳过\\吸血鬼领主-催眠真实防御确认后响应窗口-token本体高亮.jpg",
+      "note": "对手确认防御骰后，吸血鬼玩家进入响应窗口，催眠 token 本体可点"
+    },
+    {
+      "file": "02-催眠-临时骰确认前.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\催眠从真实防御确认按钮后应打开响应窗口，临时骰后攻击不能被跳过\\吸血鬼领主-催眠真实防御确认后临时骰确认前.jpg",
+      "note": "使用催眠后进入临时骰确认"
+    },
+    {
+      "file": "03-催眠-选择对手骰.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\催眠从真实防御确认按钮后应打开响应窗口，临时骰后攻击不能被跳过\\吸血鬼领主-催眠真实防御确认后选择对手骰.jpg",
+      "note": "临时骰结算后可选择对手骰"
+    },
+    {
+      "file": "04-催眠-重掷未跳过攻击.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\催眠从真实防御确认按钮后应打开响应窗口，临时骰后攻击不能被跳过\\吸血鬼领主-催眠真实防御确认后重掷未跳过攻击.jpg",
+      "note": "重掷后攻击仍停在防御阶段，未被跳过"
+    },
+    {
+      "file": "05-催眠-结束防御才结算攻击.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\催眠从真实防御确认按钮后应打开响应窗口，临时骰后攻击不能被跳过\\吸血鬼领主-催眠真实防御确认后结束防御才结算攻击.jpg",
+      "note": "防御结束后才造成攻击伤害并进入 main2"
+    },
+    {
+      "file": "06-死无全尸-2血滴奖励骰待确认.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个血滴加-2-伤害，且行动日志卡图-hover-不被遮挡\\吸血鬼领主-死无全尸-2血滴奖励骰待确认.jpg",
+      "note": "死无全尸投出 2 个血滴"
+    },
+    {
+      "file": "07-死无全尸-2血滴加2伤害后.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个血滴加-2-伤害，且行动日志卡图-hover-不被遮挡\\吸血鬼领主-死无全尸-2血滴加2伤害后.jpg",
+      "note": "日志和状态都按 2 个血滴加 2 伤害"
+    },
+    {
+      "file": "08-死无全尸-行动日志hover卡图可见.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个血滴加-2-伤害，且行动日志卡图-hover-不被遮挡\\吸血鬼领主-死无全尸-行动日志hover卡图可见.jpg",
+      "note": "行动日志 hover 卡图在面板之上且视口内"
+    },
+    {
+      "file": "09-不可防御伤害后-鲜血之力弹窗.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血\\吸血鬼领主-魅惑之力不可防御攻击后鲜血之力弹窗-使用前.jpg",
+      "note": "不可防御伤害造成后仍暂停，允许 4 档鲜血之力吸血"
+    },
+    {
+      "file": "10-不可防御伤害后-鲜血之力治疗收口.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血\\吸血鬼领主-魅惑之力不可防御攻击后鲜血之力治疗后收口.jpg",
+      "note": "4 档使用后按已造成伤害治疗并收口"
+    },
+    {
+      "file": "11-普通攻击后-鲜血之力弹窗.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档应通过攻击后弹窗按已造成伤害治疗并收口\\吸血鬼领主-鲜血之力攻击后治疗弹窗-使用前.jpg",
+      "note": "普通攻击后 4 档鲜血之力弹窗"
+    },
+    {
+      "file": "12-普通攻击后-鲜血之力治疗收口.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\鲜血之力-4-档应通过攻击后弹窗按已造成伤害治疗并收口\\吸血鬼领主-鲜血之力治疗后收口.jpg",
+      "note": "普通攻击后 4 档治疗收口"
+    },
+    {
+      "file": "13-妮拉倒下且羁绊可治疗.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\lieren-intake.e2e\\妮拉倒下后使用妮拉之系治疗到-2-血仍不能承伤\\01-妮拉倒下且妮拉之系可用于治疗.jpg",
+      "note": "妮拉 0/7 倒下，妮拉之系只作为治疗入口"
+    },
+    {
+      "file": "14-妮拉回血到2仍未复活.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\lieren-intake.e2e\\妮拉倒下后使用妮拉之系治疗到-2-血仍不能承伤\\02-妮拉倒下后回血到2仍未复活.jpg",
+      "note": "治疗到 2/7 后 active 仍为 false"
+    },
+    {
+      "file": "15-妮拉2血倒下态不出现承伤分配.jpg",
+      "source": "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\lieren-intake.e2e\\妮拉倒下后使用妮拉之系治疗到-2-血仍不能承伤\\03-妮拉2血倒下态再次受伤不出现承伤分配.jpg",
+      "note": "再次受伤不弹妮拉承伤分配"
+    }
+  ]
+}

@@ -613,7 +613,8 @@ export function formatSmashUpActionEntry({
                     segments.push(textSegment('：'));
                     displayCards.forEach((card, idx) => {
                         if (idx > 0) segments.push(textSegment('、'));
-                        segments.push(buildCardSegment(card.defId));
+                        const cardSegment = buildCardSegment(card.defId);
+                        if (cardSegment) segments.push(cardSegment);
                     });
                     if (payload.cards.length > 5) {
                         segments.push(textSegment(`...（共${payload.cards.length}张）`));

@@ -163,6 +163,10 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             value: 3,
         });
 
+        const diceInteractionHint = page.getByTestId('dice-interaction-hint');
+        await expect(diceInteractionHint).toBeVisible({ timeout: 5000 });
+        await game.screenshot('弹一手-改骰提示框完整', testInfo);
+
         const incrementButton = diceTray.getByTestId('die-adjust-increment-0');
         await expect(incrementButton).toBeVisible({ timeout: 5000 });
         await expect(incrementButton).toBeEnabled({ timeout: 5000 });
@@ -184,7 +188,19 @@ test.describe('DiceThrone - 选择骰子修改', () => {
             kept: true,
             interaction: null,
         });
-        await game.screenshot('弹一手-锁定骰改面后', testInfo);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return (state?.sys?.actionLog?.entries ?? []).some((entry: any) => entry?.kind === 'DIE_MODIFIED');
+        }, { timeout: 5000 }).toBe(true);
+
+        const actionLogPanel = await openActionLogPanel(page);
+        const actionLogRows = page.locator('[data-testid="hud-action-log-row"]');
+        await expect(actionLogRows.first()).toBeVisible({ timeout: 5000 });
+        const actionLogTexts = await actionLogRows.allInnerTexts();
+        expect(actionLogTexts.some((text) => text.includes('修改骰子'))).toBe(true);
+        await game.screenshot('弹一手-改骰行动日志', testInfo);
+        await expect(actionLogPanel).toBeVisible();
     });
 
     test('AI 遇到全同骰面的复制交互应取消空操作并解除交互锁', async ({ page, game }, testInfo) => {

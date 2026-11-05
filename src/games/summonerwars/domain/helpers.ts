@@ -286,15 +286,13 @@ export function canMoveTo(
 function buildPassableCheck(
   state: SummonerWarsCore,
   canPassThrough: boolean,
+  canPassStructures: boolean = false,
 ): (pos: CellCoord, isDestination: boolean) => boolean {
   return (pos, isDestination) => {
     const cell = getCell(state, pos);
     if (!cell) return false;
     if (isDestination) return isCellEmpty(state, pos);
-    // 中间格：建筑始终不可穿越，单位需要 canPassThrough
-    if (cell.structure) return false;
-    if (cell.unit && !canPassThrough) return false;
-    return true;
+    return isCellPassableForMovement(state, pos, canPassThrough, canPassStructures);
   };
 }
 
@@ -335,10 +333,11 @@ export function getMovePath(from: CellCoord, to: CellCoord, state?: SummonerWars
     const enhancements = movingUnit ? getUnitMoveEnhancements(state, from) : null;
     const maxSteps = enhancements ? MOVE_DISTANCE + enhancements.extraDistance : distance;
     const canPass = enhancements?.canPassThrough ?? false;
+    const canPassStructures = enhancements?.canPassStructures ?? false;
 
     const allPaths = findAllShortestGridPaths(
       from, to, maxSteps, BOARD_ROWS, BOARD_COLS,
-      buildPassableCheck(state, canPass),
+      buildPassableCheck(state, canPass, canPassStructures),
     );
     if (allPaths.length > 0) {
       const best = selectBestGridPath(allPaths, buildPathScorer(state, movingUnit?.owner));
@@ -379,10 +378,11 @@ export function getPassedThroughUnitPositions(
   const enhancements = movingUnit ? getUnitMoveEnhancements(state, from) : null;
   const maxSteps = enhancements ? MOVE_DISTANCE + enhancements.extraDistance : distance;
   const canPass = enhancements?.canPassThrough ?? false;
+  const canPassStructures = enhancements?.canPassStructures ?? false;
 
   const allPaths = findAllShortestGridPaths(
     from, to, maxSteps, BOARD_ROWS, BOARD_COLS,
-    buildPassableCheck(state, canPass),
+    buildPassableCheck(state, canPass, canPassStructures),
   );
   if (allPaths.length === 0) return [];
 
@@ -422,10 +422,11 @@ export function getMovementPath(
   const enhancements = movingUnit ? getUnitMoveEnhancements(state, from) : null;
   const maxSteps = enhancements ? MOVE_DISTANCE + enhancements.extraDistance : distance;
   const canPass = enhancements?.canPassThrough ?? false;
+  const canPassStructures = enhancements?.canPassStructures ?? false;
 
   const allPaths = findAllShortestGridPaths(
     from, to, maxSteps, BOARD_ROWS, BOARD_COLS,
-    buildPassableCheck(state, canPass),
+    buildPassableCheck(state, canPass, canPassStructures),
   );
   if (allPaths.length === 0) return [from, to]; // 降级：直接返回起点和终点
 
@@ -467,7 +468,7 @@ export function isRangedPathClear(
   return true;
 }
 
-/** 检查是否可以攻击目标 */
+/** 检查是否可以攻击目标（攻击合法目标按卡牌判断，不因友方归属非法） */
 export function canAttack(
   state: SummonerWarsCore,
   attacker: CellCoord,
@@ -480,8 +481,6 @@ export function canAttack(
   const targetUnit = getUnitAt(state, target);
   const targetStructure = getStructureAt(state, target);
   if (!targetUnit && !targetStructure) return false;
-  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
-  if (targetOwner === attackerUnit.owner) return false;
   
   const distance = manhattanDistance(attacker, target);
   
@@ -599,6 +598,15 @@ export function getValidSummonPositionsForCard(
     }
   }
 
+  // 仲裁“护持”：仲裁士兵可召唤到友方护持牧师相邻的空格。
+  if (unitCard.faction === 'zhongcai') {
+    for (const unit of getPlayerUnits(state, playerId)) {
+      if (getUnitAbilities(unit, state).includes('zhongcai_support')) {
+        addAdjacentEmpty(unit.position);
+      }
+    }
+  }
+
   // 火焰龙兽 - 护主：火焰龙兽可召唤到召唤师相邻位置。
   if ((unitCard.abilities ?? []).includes('huijin_guard_master')) {
     const summoner = getSummoner(state, playerId);
@@ -702,74 +710,6 @@ export function hasEnoughMagic(state: SummonerWarsCore, playerId: PlayerId, cost
 
 
 // ============================================================================
-// 阶段可操作性检查
-// ============================================================================
-
-/** 检查手牌中是否有可在指定阶段打出的事件卡（含 playPhase='any'）且魔力足够 */
-function hasPlayableEvents(player: { hand: readonly import('./types').Card[]; magic: number }, phase: GamePhase): boolean {
-  return player.hand.some(
-    c => c.cardType === 'event'
-      && ((c as import('./types').EventCard).playPhase === phase || (c as import('./types').EventCard).playPhase === 'any')
-      && (c as import('./types').EventCard).cost <= player.magic
-  );
-}
-
-/** 检查当前阶段是否有可用操作（用于自动跳过） */
-export function hasAvailableActions(state: SummonerWarsCore, playerId: PlayerId): boolean {
-  const player = state.players[playerId];
-  const phase = state.phase;
-
-  switch (phase) {
-    case 'summon': {
-      const unitCards = player.hand.filter(c => c.cardType === 'unit');
-      const canSummonUnit = unitCards.length > 0 && 
-        unitCards.some(c => {
-          const unitCard = c as import('./types').UnitCard;
-          return unitCard.cost <= player.magic
-            && getValidSummonPositionsForCard(state, playerId, unitCard).length > 0;
-        });
-      return canSummonUnit || hasPlayableEvents(player, phase);
-    }
-    case 'move': {
-      const canMoveUnit = player.moveCount < MAX_MOVES_PER_TURN &&
-        getPlayerUnits(state, playerId).some(u => !u.hasMoved && !isImmobile(u, state) && getValidMoveTargetsEnhanced(state, u.position).length > 0);
-      return canMoveUnit || hasPlayableEvents(player, phase);
-    }
-    case 'build': {
-      const structureCards = player.hand.filter(c => c.cardType === 'structure');
-      const positions = getValidBuildPositions(state, playerId);
-      const canBuildStructure = structureCards.length > 0 && 
-        positions.length > 0 && 
-        structureCards.some(c => (c as import('./types').StructureCard).cost <= player.magic);
-      return canBuildStructure || hasPlayableEvents(player, phase);
-    }
-    case 'attack': {
-      const units = getPlayerUnits(state, playerId);
-      const normalAttackAvailable = player.attackCount < MAX_ATTACKS_PER_TURN &&
-        units.some(u => !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0);
-      const ferocityAvailable = units.some(u => 
-        hasFerocityAbility(u, state) && !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0
-      );
-      // 有额外攻击的单位（连续射击/群情激愤）不受3次限制
-      const extraAttackAvailable = units.some(u =>
-        (u.extraAttacks ?? 0) > 0 && !u.hasAttacked && getValidAttackTargetsEnhanced(state, u.position).length > 0
-      );
-      return normalAttackAvailable || ferocityAvailable || extraAttackAvailable || hasPlayableEvents(player, phase);
-    }
-    case 'magic': {
-      // 魔力阶段总是可以手动跳过（弃牌是可选的）
-      return true;
-    }
-    case 'draw': {
-      // 抽牌阶段是自动的，直接跳过
-      return false;
-    }
-    default:
-      return true;
-  }
-}
-
-// ============================================================================
 // 手牌辅助
 // ============================================================================
 
@@ -809,6 +749,7 @@ export function getUnitBaseAbilities(unit: BoardUnit): string[] {
  */
 export function getUnitAbilities(unit: BoardUnit, state: SummonerWarsCore): string[] {
   if (isUnitFrozen(state, unit)) return [];
+  if (unit.suppressedUntilTurnEnd) return [];
 
   const result = getUnitBaseAbilities(unit);
 
@@ -1067,10 +1008,7 @@ export function canMoveToEnhanced(
   const maxDistance = MOVE_DISTANCE + extraDistance;
   if (distance > maxDistance) return false;
 
-  // 飞行单位可以穿过其他卡牌（单位+建筑）
-  if (canPassThrough) return true;
-
-  // 非飞行单位的路径检查
+  // 路径检查：穿过单位和穿过建筑是两个独立权限。
   if (distance === 2) {
     const dr = to.row - from.row;
     const dc = to.col - from.col;
@@ -1079,29 +1017,37 @@ export function canMoveToEnhanced(
         row: from.row + Math.sign(dr),
         col: from.col + Math.sign(dc),
       };
-      if (!isCellEmptyOrPassable(state, mid, canPassStructures)) return false;
+      if (!isCellPassableForMovement(state, mid, canPassThrough, canPassStructures)) return false;
     } else {
       const mid1 = { row: from.row, col: to.col };
       const mid2 = { row: to.row, col: from.col };
-      if (!isCellEmptyOrPassable(state, mid1, canPassStructures) && !isCellEmptyOrPassable(state, mid2, canPassStructures)) return false;
+      if (
+        !isCellPassableForMovement(state, mid1, canPassThrough, canPassStructures)
+        && !isCellPassableForMovement(state, mid2, canPassThrough, canPassStructures)
+      ) return false;
     }
   }
 
   // 3格以上移动（飞行/迅捷/攀爬/速度强化等）的路径检查
-  if (distance >= 3 && !canPassThrough) {
-    return hasValidPath(state, from, to, maxDistance, false, canPassStructures);
+  if (distance >= 3) {
+    return hasValidPath(state, from, to, maxDistance, canPassThrough, canPassStructures);
   }
 
   return true;
 }
 
 /**
- * 检查格子是否可通过（空格，或攀爬时可穿过建筑）
+ * 检查中间格是否可通过。单位和建筑分别由不同规则授权。
  */
-function isCellEmptyOrPassable(state: SummonerWarsCore, coord: CellCoord, canPassStructures: boolean): boolean {
+function isCellPassableForMovement(
+  state: SummonerWarsCore,
+  coord: CellCoord,
+  canPassUnits: boolean,
+  canPassStructures: boolean,
+): boolean {
   const cell = getCell(state, coord);
   if (!cell) return false;
-  if (cell.unit) return false;
+  if (cell.unit && !canPassUnits) return false;
   if (cell.structure && !canPassStructures) return false;
   return true;
 }
@@ -1138,7 +1084,7 @@ function hasValidPath(
       }
 
       // 中间格必须可通过
-      if (canPassThrough || isCellEmptyOrPassable(state, adj, canPassStructures)) {
+      if (isCellPassableForMovement(state, adj, canPassThrough, canPassStructures)) {
         queue.push({ pos: adj, steps: steps + 1 });
       }
     }
@@ -1178,7 +1124,7 @@ export function getEffectiveAttackRangeBase(unit: BoardUnit): number {
 }
 
 /**
- * 增强版攻击验证（考虑远射等技能）
+ * 增强版攻击验证（考虑远射等技能；普通攻击允许指定友方卡牌）
  */
 export function canAttackEnhanced(
   state: SummonerWarsCore,
@@ -1202,9 +1148,6 @@ export function canAttackEnhanced(
     if (targetUnit.card.unitClass !== 'common' && targetUnit.card.unitClass !== 'champion') return false;
     return manhattanDistance(attacker, target) === 1;
   }
-
-  const targetOwner = targetUnit?.owner ?? targetStructure?.owner;
-  if (targetOwner === attackerUnit.owner) return false;
 
   const distance = manhattanDistance(attacker, target);
 
@@ -1479,7 +1422,7 @@ export function getPushPullOptions(
  */
 export function hasEntangleAbility(unit: BoardUnit, state: SummonerWarsCore): boolean {
   const abilities = getUnitAbilities(unit, state);
-  return abilities.includes('rebound') || abilities.includes('entangle');
+  return abilities.includes('rebound') || abilities.includes('entangle') || abilities.includes('zhongcai_high_gate');
 }
 
 /**

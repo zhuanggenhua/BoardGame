@@ -76,10 +76,10 @@ export function resolveReferencePages(
 function normalizeBetrayalReferenceViewerSide(
   side: BetrayalExplorerSide,
 ): BetrayalReferenceCardAccessSummary["viewerSide"] {
-  if (side?.startsWith("free-for-all:")) {
-    return "free-for-all";
+  if (side === null || side === "hero" || side === "traitor") {
+    return side;
   }
-  return side;
+  return "free-for-all";
 }
 
 function canViewerOpenBetrayalReferenceCard(

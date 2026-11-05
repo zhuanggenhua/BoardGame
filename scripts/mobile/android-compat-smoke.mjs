@@ -940,7 +940,6 @@ const main = async () => {
     const command = process.argv.join(' ');
     const taskGuard = acquireTaskGuard({
         name: 'android-compat-smoke',
-        conflicts: ['e2e-run', 'quality-gate'],
         command,
         metadata,
     });

@@ -1,6 +1,6 @@
 const normalizeUrl = (url: string) => url.replace(/\/$/, '');
 
-const metaEnv = (import.meta as { env?: Record<string, string | boolean | undefined> }).env ?? {};
+const metaEnv = import.meta.env ?? {};
 const isDev = metaEnv.DEV === true;
 const safeWindowOrigin = typeof window !== 'undefined' ? window.location.origin : '';
 const isTruthyFlag = (value: string | boolean | undefined) => /^(1|true|yes|on)$/i.test(String(value ?? '').trim());

@@ -9,6 +9,7 @@ import type { GameEngineConfig } from '../engineConfig';
 import { createSimpleChoice } from '../../systems/InteractionSystem';
 import type { MatchMetadata, StoredMatchState } from '../storage';
 import smashUpEngineConfig from '../../../games/smashup/game';
+import mageWarsEngineConfig from '../../../games/mage-wars/game';
 import {
     InMemoryStorage,
     MockIO,
@@ -179,6 +180,32 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         );
 
         expect(receivedPlayerIds).toEqual(['0', '1']);
+    });
+
+    it('setupMatch 创建 Mage Wars 正式房间后应完成开局自动准备阶段并进入计划阶段', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [mageWarsEngineConfig],
+        });
+
+        const result = await server.setupMatch(
+            'match-mage-wars-initial-auto-flow',
+            'mage-wars',
+            ['0', '1'],
+            'seed-mage-wars-initial-auto-flow',
+        );
+
+        expect(result).toBeTruthy();
+        expect(result?.state.sys.phase).toBe('planning');
+        expect(result?.state.core).toMatchObject({
+            currentPlayerId: '0',
+            phaseReadyPlayerIds: [],
+            turnNumber: 1,
+        });
+        expect(result?.state.sys.undo.snapshots).toEqual([]);
     });
 
     it('offline adjudication should use generic cancel for unknown interaction kinds', async () => {
@@ -659,7 +686,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         expect(otherView?.sys?.interaction?.queue).toEqual([]);
     });
 
-    it('sync 发出的 state:sync 对 spectator 也必须过滤 owner-only prompt，不得退回完整 shared state', async () => {
+    it('sync 发出的 state:sync 对 spectator 返回完整权威 owner-only prompt', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         await storage.createMatch('match-sync-smashup-spectator-private-prompt', {
@@ -672,12 +699,16 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
                         '0',
                         '选择要弃掉的手牌',
                         [
-                            { id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } },
-                            { id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } },
+                            { id: 'stale-hand-a', label: '旧手牌 A', value: { cardUid: 'stale-hand-a' } },
+                            { id: 'stale-hand-b', label: '旧手牌 B', value: { cardUid: 'stale-hand-b' } },
                         ],
                         {
                             sourceId: 'super_spies_secret_agent_discard',
                             targetType: 'hand',
+                            optionsGenerator: () => [
+                                { id: 'fresh-hand-a', label: '当前动态手牌 A', value: { cardUid: 'fresh-hand-a' } },
+                                { id: 'fresh-hand-b', label: '当前动态手牌 B', value: { cardUid: 'fresh-hand-b' } },
+                            ],
                         },
                     ),
                     queue: [
@@ -686,11 +717,14 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
                             '0',
                             '继续选择要弃掉的手牌',
                             [
-                                { id: 'queued-hand-a', label: '排队手牌 A', value: { cardUid: 'queued-hand-a' } },
+                                { id: 'stale-queued-hand-a', label: '旧排队手牌 A', value: { cardUid: 'stale-queued-hand-a' } },
                             ],
                             {
                                 sourceId: 'super_spies_secret_agent_discard_queue',
                                 targetType: 'hand',
+                                optionsGenerator: () => [
+                                    { id: 'fresh-queued-hand-a', label: '当前动态排队手牌 A', value: { cardUid: 'fresh-queued-hand-a' } },
+                                ],
                             },
                         ),
                     ],
@@ -719,9 +753,29 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         expect(spectatorSync).toBeDefined();
 
         const spectatorView = spectatorSync?.args[1] as any;
-        expect(spectatorView?.sys?.interaction?.current).toBeUndefined();
-        expect(spectatorView?.sys?.interaction?.queue).toEqual([]);
-        expect(spectatorView?.sys?.interaction?.isBlocked).toBe(true);
+        expect(spectatorView?.sys?.interaction?.current).toEqual(expect.objectContaining({
+            id: 'smashup-owner-only-secret-spectator-sync',
+            playerId: '0',
+            data: expect.objectContaining({
+                options: expect.arrayContaining([
+                    expect.objectContaining({ id: 'fresh-hand-a' }),
+                    expect.objectContaining({ id: 'fresh-hand-b' }),
+                ]),
+            }),
+        }));
+        expect(spectatorView?.sys?.interaction?.queue?.[0]).toEqual(expect.objectContaining({
+            id: 'smashup-owner-only-secret-spectator-sync-queued',
+            playerId: '0',
+            data: expect.objectContaining({
+                options: expect.arrayContaining([
+                    expect.objectContaining({
+                        id: 'fresh-queued-hand-a',
+                        value: { cardUid: 'fresh-queued-hand-a' },
+                    }),
+                ]),
+            }),
+        }));
+        expect(spectatorView?.sys?.interaction?.isBlocked).toBe(false);
     });
 
     it('stateSynchronizer.broadcast 的 state:patch 也必须按 seat view 隔离 owner-only prompt，非 owner 不得收到同一私有交互补丁', async () => {
@@ -860,7 +914,7 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
         }
     });
 
-    it('stateSynchronizer.broadcast 发给 spectator 的 state:update/state:patch 也必须过滤 owner-only prompt', async () => {
+    it('stateSynchronizer.broadcast 发给 spectator 的 state:update/state:patch 保留完整 owner-only prompt', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const initialState = createOnlineAiRecoveryState({
@@ -907,12 +961,16 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
                         '0',
                         '选择要弃掉的手牌',
                         [
-                            { id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } },
-                            { id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } },
+                            { id: 'stale-hand-a', label: '旧手牌 A', value: { cardUid: 'stale-hand-a' } },
+                            { id: 'stale-hand-b', label: '旧手牌 B', value: { cardUid: 'stale-hand-b' } },
                         ],
                         {
                             sourceId: 'super_spies_secret_agent_discard',
                             targetType: 'hand',
+                            optionsGenerator: () => [
+                                { id: 'fresh-hand-a', label: '当前动态手牌 A', value: { cardUid: 'fresh-hand-a' } },
+                                { id: 'fresh-hand-b', label: '当前动态手牌 B', value: { cardUid: 'fresh-hand-b' } },
+                            ],
                         },
                     ),
                     queue: [
@@ -921,11 +979,14 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
                             '0',
                             '继续选择要弃掉的手牌',
                             [
-                                { id: 'queued-hand-a', label: '排队手牌 A', value: { cardUid: 'queued-hand-a' } },
+                                { id: 'stale-queued-hand-a', label: '旧排队手牌 A', value: { cardUid: 'stale-queued-hand-a' } },
                             ],
                             {
                                 sourceId: 'super_spies_secret_agent_discard_queue',
                                 targetType: 'hand',
+                                optionsGenerator: () => [
+                                    { id: 'fresh-queued-hand-a', label: '当前动态排队手牌 A', value: { cardUid: 'fresh-queued-hand-a' } },
+                                ],
                             },
                         ),
                     ],
@@ -946,25 +1007,63 @@ describe('GameTransportServer（setup / sync / lifecycle）', () => {
 
         if (spectatorUpdate?.event === 'state:update') {
             const spectatorView = spectatorUpdate.args[1] as any;
-            expect(spectatorView?.sys?.interaction?.current).toBeUndefined();
-            expect(spectatorView?.sys?.interaction?.queue).toEqual([]);
-            expect(spectatorView?.sys?.interaction?.isBlocked).toBe(true);
+            expect(spectatorView?.sys?.interaction?.current).toEqual(expect.objectContaining({
+                id: 'smashup-owner-only-private-patch-spectator',
+                playerId: '0',
+                data: expect.objectContaining({
+                    options: expect.arrayContaining([
+                        expect.objectContaining({
+                            id: 'fresh-hand-a',
+                            value: { cardUid: 'fresh-hand-a' },
+                        }),
+                    ]),
+                }),
+            }));
+            expect(spectatorView?.sys?.interaction?.queue?.[0]).toEqual(expect.objectContaining({
+                id: 'smashup-owner-only-private-patch-spectator-queued',
+                playerId: '0',
+                data: expect.objectContaining({
+                    options: expect.arrayContaining([
+                        expect.objectContaining({
+                        id: 'fresh-queued-hand-a',
+                        value: { cardUid: 'fresh-queued-hand-a' },
+                        }),
+                    ]),
+                }),
+            }));
+            expect(spectatorView?.sys?.interaction?.isBlocked).toBe(false);
         } else {
             const spectatorPatches = spectatorUpdate?.args[1] as Array<{ op?: string; path?: string; value?: any }> | undefined;
             expect(spectatorPatches).toEqual(expect.arrayContaining([
                 expect.objectContaining({
-                    path: '/sys/interaction/isBlocked',
-                    value: true,
-                }),
-            ]));
-            expect(spectatorPatches).not.toEqual(expect.arrayContaining([
-                expect.objectContaining({
                     path: '/sys/interaction/current',
+                    value: expect.objectContaining({
+                        id: 'smashup-owner-only-private-patch-spectator',
+                        playerId: '0',
+                        data: expect.objectContaining({
+                            options: expect.arrayContaining([
+                                expect.objectContaining({
+                                    id: 'fresh-hand-a',
+                                    value: { cardUid: 'fresh-hand-a' },
+                                }),
+                            ]),
+                        }),
+                    }),
                 }),
-            ]));
-            expect(spectatorPatches).not.toEqual(expect.arrayContaining([
                 expect.objectContaining({
                     path: '/sys/interaction/queue/0',
+                    value: expect.objectContaining({
+                        id: 'smashup-owner-only-private-patch-spectator-queued',
+                        playerId: '0',
+                        data: expect.objectContaining({
+                            options: expect.arrayContaining([
+                                expect.objectContaining({
+                                    id: 'fresh-queued-hand-a',
+                                    value: { cardUid: 'fresh-queued-hand-a' },
+                                }),
+                            ]),
+                        }),
+                    }),
                 }),
             ]));
         }

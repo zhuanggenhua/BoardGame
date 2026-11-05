@@ -1,6 +1,7 @@
 import type { MatchState } from '../types';
 import type { GameEngineConfig } from './engineConfig';
 import type { AiSeatController } from '../ai/types';
+import { mergeSeatControllerRecords } from '../ai/seatControllers';
 
 function extractStateSeatControllers(
     state: MatchState<unknown> | undefined,
@@ -22,10 +23,14 @@ export function resolveRuntimeSeatControllers(args: {
     state: MatchState<unknown> | undefined;
     seatControllers: Record<string, AiSeatController>;
 }): Record<string, AiSeatController> {
-    return {
-        ...args.seatControllers,
-        ...(extractStateSeatControllers(args.state) ?? {}),
-    };
+    const stateSeatControllers = extractStateSeatControllers(args.state);
+    if (!stateSeatControllers || Object.keys(stateSeatControllers).length === 0) {
+        return args.seatControllers;
+    }
+    return mergeSeatControllerRecords(
+        args.seatControllers,
+        stateSeatControllers,
+    ) as Record<string, AiSeatController>;
 }
 
 export function buildLocalAiSeatStates(

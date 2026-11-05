@@ -40,6 +40,7 @@
     "shouren": "Tundra Orcs",
     "yongheng": "Eternal Council",
     "shadow": "Shadow Elves"
+    ,"zhongcai": "Arbiters"
   },
   "configReview": {
     "eyebrow": "Config review table",
@@ -70,6 +71,7 @@
       "deckSymbols": "Deck Symbols",
       "cardType": "Card Type",
       "unitClass": "Unit Class",
+      "unitTags": "Unit Tags",
       "quantity": "Qty",
       "setupPositions": "Setup Position",
       "attack": "Attack",
@@ -98,6 +100,7 @@
       "deckSymbols": "deck symbols",
       "cardType": "card type",
       "unitClass": "unit class",
+      "unitTags": "unit tags",
       "quantity": "quantity",
       "setupPositions": "setup position",
       "attack": "attack",
@@ -168,6 +171,11 @@
         "summoner": "Summoner",
         "champion": "Champion",
         "common": "Common Unit"
+      },
+      "unitTags": {
+        "undead": "Undead",
+        "carrier": "Carrier",
+        "citadel": "Citadel"
       },
       "attackType": {
         "melee": "Melee",
@@ -273,6 +281,8 @@
     "feedBeastSelfDestroy": "Self-destruct",
     "moguParasiteConsumeCharge": "Spend 1 Charge",
     "moguParasiteTakeDamage": "Take 1 Damage",
+    "zhongcaiDecreeDiscard": "Spend 1 charge and discard",
+    "zhongcaiDecreeKeep": "Keep ongoing effect",
     "chargeSelf": "Charge Self",
     "playEvent": "Play",
     "discardForMagic": "Discard",
@@ -302,16 +312,6 @@
     "showAllLifeTotals": "Show all unit life",
     "hideAllLifeTotals": "Hide all unit life"
   },
-  "hud": {
-    "combatEffects": {
-      "title": "Combat Presentation",
-      "hint": "Only affects local attack animations on mobile. Resolution, damage, and audio volume stay unchanged.",
-      "reduced": "Reduce attack effects",
-      "reducedHint": "Use on slower devices: mobile keeps the ranged wave, hit flash, and damage numbers while reducing the heaviest particles, shake, and lunge presentation.",
-      "enabled": "Enabled",
-      "disabled": "Disabled"
-    }
-  },
   "debug": {
     "phase_labels": {
       "factionSelect": "Faction",
@@ -335,6 +335,16 @@
       "subtract": "- Remove",
       "clear": "Clear",
       "full": "Full Magic (15)"
+    },
+    "health": {
+      "section_title": "Summoner Health",
+      "description": "Quickly test Summoner damage, death, and game over.",
+      "player_option": "P{{player}} ({{current}}/{{life}})",
+      "missing_option": "P{{player}} (Summoner is off board)",
+      "status": "Target: P{{player}} Summoner, {{current}} / {{life}} remaining, {{damage}} damage taken.",
+      "no_summoner": "The target Summoner is already off board.",
+      "damage": "Damage",
+      "kill": "Kill"
     },
     "phase": {
       "section_title": "Phase Switch",
@@ -629,7 +639,7 @@
   },
   "cardSelector": {
     "reviveUndead": "Revive Undead: Select an undead unit from the discard pile",
-    "infection": "Infection: Select a plague zombie from the discard pile",
+    "infection": "Infection: Select a Carrier unit from the discard pile",
     "fortressPower": "Fortress Power: Select a fortress unit from the discard pile",
     "shadowMarlGrimoire": "Marl Grimoire: Select a card from the discard pile",
     "default": "Select a card",
@@ -703,7 +713,7 @@
       "fireSacrificeSummon": "Fire Sacrifice: Select a friendly unit to destroy",
       "lifeDrain": "Life Drain: Select a friendly unit within 2 spaces to destroy",
       "infection": {
-        "selectCard": "Infection: Select a plague zombie from the discard pile",
+        "selectCard": "Infection: Select a Carrier unit from the discard pile",
         "selectPosition": "Infection: Confirm placement"
       },
       "holyArrow": {
@@ -860,6 +870,9 @@
       "eventTarget": "Choose an event target",
       "magicEventChoice": "Magic phase: choose to play or discard",
       "funeralPyre": "Funeral Pyre: choose a unit to heal",
+      "zhongcaiObedienceUnit": "Obedience: choose a friendly soldier within 3 spaces",
+      "zhongcaiObediencePosition": "Obedience: choose an empty space adjacent to your summoner",
+      "zhongcaiDecree": "Arbiter decree: choose whether to spend a charge and discard",
       "bloodSummonTarget": "Blood Summon: choose the ally that takes damage",
       "bloodSummonCard": "Blood Summon: choose a unit card to summon",
       "bloodSummonPosition": "Blood Summon: choose a summon position",
@@ -875,7 +888,7 @@
       "sneakDirection": "Sneak: choose a movement direction",
       "glacialShiftBuilding": "Glacial Shift: choose a friendly building",
       "glacialShiftDestination": "Glacial Shift: choose a destination",
-      "infection": "Infection: choose a plague zombie to revive",
+      "infection": "Infection: choose a Carrier unit to replace the destroyed unit",
       "grabFollow": "Grab: choose a follow-up position",
       "grabFollowWithSource": "Grab: {{unit}} ({{position}}) choose a follow-up position",
       "soulTransfer": "Soul Transfer: confirm movement",
@@ -1026,7 +1039,7 @@
     },
     "infection": {
       "name": "Infection",
-      "description": "After this unit destroys a unit, you may replace the destroyed unit with a Plague Zombie from your discard pile."
+      "description": "After this unit destroys a unit, you may replace the destroyed unit with a Carrier unit from your discard pile."
     },
     "soul_transfer": {
       "name": "Soul Transfer",
@@ -1467,6 +1480,42 @@
     "shadow_sudden_assault": {
       "name": "Sudden Assault",
       "description": "After summoning this unit, you may push or pull it 1 space."
+    },
+    "zhongcai_word": {
+      "name": "Holy Word",
+      "description": "After this unit moves or attacks, it may target a friendly soldier within 2 spaces and push or pull it 1 space."
+    },
+    "zhongcai_high_gate": {
+      "name": "High Gate",
+      "description": "Whenever an enemy unit moves or is pushed/pulled away from this unit, deal 2 damage to it."
+    },
+    "zhongcai_radiant_healing": {
+      "name": "Radiant Healing",
+      "description": "At the end of your Attack phase, remove 1 damage from each friendly soldier within 2 spaces of this unit."
+    },
+    "zhongcai_erase": {
+      "name": "Erase",
+      "description": "At the start of your Move phase, you may target a soldier within 3 spaces. That unit loses all abilities until end of turn."
+    },
+    "zhongcai_repentance": {
+      "name": "Repentance",
+      "description": "After this unit attacks and deals damage, deal 1 damage to this unit."
+    },
+    "zhongcai_sturdy": {
+      "name": "Sturdy",
+      "description": "The first attack against this unit each turn deals 1 less damage."
+    },
+    "zhongcai_support": {
+      "name": "Support",
+      "description": "Your Arbiter soldiers may be summoned into empty spaces adjacent to this unit."
+    },
+    "zhongcai_inspire": {
+      "name": "Inspire",
+      "description": "After summoning this unit, you may remove 1 damage from an adjacent friendly soldier."
+    },
+    "zhongcai_strong": {
+      "name": "Strong",
+      "description": "This unit gains +1 strength."
     }
   },
   "buffs": {

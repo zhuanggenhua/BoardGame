@@ -40,6 +40,7 @@
     "shouren": "冰苔兽人",
     "yongheng": "永恒议会",
     "shadow": "暗影精灵"
+    ,"zhongcai": "仲裁"
   },
   "configReview": {
     "eyebrow": "配置审查表",
@@ -70,6 +71,7 @@
       "deckSymbols": "牌组符号",
       "cardType": "卡牌类型",
       "unitClass": "单位级别",
+      "unitTags": "单位标签",
       "quantity": "数量",
       "setupPositions": "起始位置",
       "attack": "攻击",
@@ -98,6 +100,7 @@
       "deckSymbols": "牌组符号",
       "cardType": "卡牌类型",
       "unitClass": "单位级别",
+      "unitTags": "单位标签",
       "quantity": "数量",
       "setupPositions": "起始位置",
       "attack": "攻击",
@@ -168,6 +171,11 @@
         "summoner": "召唤师",
         "champion": "英雄",
         "common": "士兵"
+      },
+      "unitTags": {
+        "undead": "亡灵",
+        "carrier": "疫病体",
+        "citadel": "城塞"
       },
       "attackType": {
         "melee": "近战",
@@ -273,6 +281,8 @@
     "feedBeastSelfDestroy": "自毁",
     "moguParasiteConsumeCharge": "消耗 1 点充能",
     "moguParasiteTakeDamage": "受到 1 点伤害",
+    "zhongcaiDecreeDiscard": "消耗1点充能并弃置",
+    "zhongcaiDecreeKeep": "保留持续效果",
     "chargeSelf": "充能自身",
     "playEvent": "打出",
     "discardForMagic": "弃牌",
@@ -302,16 +312,6 @@
     "showAllLifeTotals": "显示全部单位血量",
     "hideAllLifeTotals": "隐藏全部单位血量"
   },
-  "hud": {
-    "combatEffects": {
-      "title": "战斗表现",
-      "hint": "只影响移动端本机攻击动画，不改变结算、伤害或音效音量。",
-      "reduced": "降低攻击特效",
-      "reducedHint": "卡顿时开启：移动端保留远程气浪、命中闪光和伤害数字，并降低最重的粒子、震动和冲刺表现。",
-      "enabled": "已开启",
-      "disabled": "已关闭"
-    }
-  },
   "debug": {
     "phase_labels": {
       "factionSelect": "选阵营",
@@ -335,6 +335,16 @@
       "subtract": "-减少",
       "clear": "清零",
       "full": "满魔力（15）"
+    },
+    "health": {
+      "section_title": "召唤师血量",
+      "description": "用于快速测试召唤师受伤、死亡和游戏结束。",
+      "player_option": "P{{player}}（{{current}}/{{life}}）",
+      "missing_option": "P{{player}}（召唤师已不在场）",
+      "status": "当前目标：P{{player}} 召唤师，剩余 {{current}} / {{life}}，已受伤害 {{damage}}。",
+      "no_summoner": "当前目标召唤师已不在场。",
+      "damage": "扣血",
+      "kill": "直接击杀"
     },
     "phase": {
       "section_title": "阶段切换",
@@ -679,6 +689,9 @@
       "eventTarget": "选择事件卡目标",
       "magicEventChoice": "魔力阶段：选择打出或弃牌换魔力",
       "funeralPyre": "殉葬火堆：选择治疗目标",
+      "zhongcaiObedienceUnit": "服从：选择召唤师3格内的友方士兵",
+      "zhongcaiObediencePosition": "服从：选择召唤师相邻空格",
+      "zhongcaiDecree": "仲裁律令：选择是否消耗充能弃置",
       "bloodSummonTarget": "血契召唤：选择承伤友方单位",
       "bloodSummonCard": "血契召唤：选择要召唤的单位卡",
       "bloodSummonPosition": "血契召唤：选择放置位置",
@@ -1467,6 +1480,42 @@
     "shadow_sudden_assault": {
       "name": "急袭",
       "description": "在召唤本单位之后，你可以将其推拉 1 个区格。"
+    },
+    "zhongcai_word": {
+      "name": "圣言",
+      "description": "本单位移动或攻击后，可以指定其 2 个区格以内的一个友方士兵，将其推拉 1 个区格。"
+    },
+    "zhongcai_high_gate": {
+      "name": "高阶变门",
+      "description": "每当一个敌方单位因为移动或被推拉而远离本单位时，对其造成 2 点伤害。"
+    },
+    "zhongcai_radiant_healing": {
+      "name": "治疗灵光",
+      "description": "在你的攻击阶段结束时，移除本单位 2 个区格以内每个友方士兵的 1 点伤害。"
+    },
+    "zhongcai_erase": {
+      "name": "抹消",
+      "description": "在你的移动阶段开始时，可以指定本单位3个区格以内的一个士兵为目标。目标失去所有技能，直到回合结束。"
+    },
+    "zhongcai_repentance": {
+      "name": "赎罪",
+      "description": "本单位攻击并造成伤害后，对本单位造成 1 点伤害。"
+    },
+    "zhongcai_sturdy": {
+      "name": "刚硬",
+      "description": "本单位每回合第一次被攻击时，受到的伤害减少 1 点。"
+    },
+    "zhongcai_support": {
+      "name": "护持",
+      "description": "你的仲裁士兵可以被召唤到本单位相邻的空格。"
+    },
+    "zhongcai_inspire": {
+      "name": "鼓舞",
+      "description": "召唤本单位后，可以移除一个相邻友方士兵的 1 点伤害。"
+    },
+    "zhongcai_strong": {
+      "name": "强健",
+      "description": "本单位获得战力 +1。"
     }
   },
   "buffs": {

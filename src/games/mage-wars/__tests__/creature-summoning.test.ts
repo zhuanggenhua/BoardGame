@@ -11,6 +11,10 @@ import {
 } from '../domain/ids';
 import type { MageWarsCommand, MageWarsCore } from '../domain/types';
 import {
+    isMageWarsFlyingArenaObject,
+    isMageWarsSmallArenaObject,
+} from '../domain/spellRules';
+import {
     actionLogKinds,
     fixedRandom,
     makeArenaObject,
@@ -208,6 +212,79 @@ describe('mage-wars creature summoning', () => {
             actionReady: false,
             quickcastReady: true,
         });
+    });
+
+    it('summons Moonlight Fairy with flying, small, and aether nonliving bonus traits', () => {
+        const creatureSpellId = 2904;
+        const planningState = setupState('planning');
+        const planned = runCommand({
+            core: withPlayerMage(planningState.core, '0', MAGE_IDS.WIZARD_APPRENTICE),
+            sys: planningState.sys,
+        }, planCommand([creatureSpellId]));
+
+        const summoned = runCommand({
+            core: planned.state.core,
+            sys: { ...planned.state.sys, phase: 'creatureAction' },
+        }, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId: creatureSpellId,
+                manaCost: 8,
+                targetZoneId: PLAYER_ZERO_START_ZONE,
+            },
+        });
+
+        const fairy = summoned.state.core.objects['mwobj-0-2904-1'];
+        const nonlivingTarget = makeArenaObject('moon-fairy-target-1', '1', PLAYER_ZERO_START_ZONE, {
+            life: 20,
+            attackOrTraitLine: '短剑：快速近战 4 骰；非活体；精神免疫',
+        });
+
+        expect(summoned.success).toBe(true);
+        expect(getMageWarsSpellCardFromConfig(creatureSpellId)?.requiresCodeSupport).toBe(false);
+        expect(getMageWarsSpellCardFromConfig(creatureSpellId)?.combatProfiles?.attacks[0]?.damageTypes).toEqual(['aether']);
+        expect(fairy).toMatchObject({
+            kind: 'creature',
+            name: '月光妖精',
+            life: 5,
+            armor: 0,
+            actionReady: false,
+            attackOrTraitLine: '电击：快速近战 2 骰，以太，对抗非活体+2；飞行；小型',
+        });
+        expect(isMageWarsFlyingArenaObject(fairy, summoned.state.core)).toBe(true);
+        expect(isMageWarsSmallArenaObject(fairy)).toBe(true);
+
+        const attackState: MatchState<MageWarsCore> = {
+            core: withArenaObject({
+                ...summoned.state.core,
+                objects: {
+                    ...summoned.state.core.objects,
+                    [fairy.id]: { ...fairy, actionReady: true },
+                },
+            }, nonlivingTarget),
+            sys: { ...summoned.state.sys, phase: 'creatureAction' },
+        };
+        const attacked = runCommand(attackState, {
+            type: MAGE_WARS_COMMANDS.DECLARE_OBJECT_ATTACK,
+            playerId: '0',
+            payload: {
+                attackerObjectId: fairy.id,
+                attackProfileId: 'attack-0',
+                targetObjectId: nonlivingTarget.id,
+            },
+        });
+
+        expect(attacked.success).toBe(true);
+        expect(attacked.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: 'DAMAGE_DEALT',
+                payload: expect.objectContaining({
+                    targetId: nonlivingTarget.id,
+                    actualDamage: 8,
+                }),
+            }),
+        ]));
     });
 
     it('summons Skeleton Sentry from config with nonliving and mental immunity traits', () => {

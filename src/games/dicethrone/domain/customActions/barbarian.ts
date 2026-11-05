@@ -2,7 +2,7 @@
  * 閲庤洰浜?(Barbarian) 涓撳睘 Custom Action 澶勭悊鍣?
  */
 
-import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, getPlayerDieFace } from '../rules';
+import { getActiveDice, getAttackMaxDuplicateValueCount, getFaceCounts, getPendingBonusSettlementDice, requirePlayerDieFace } from '../rules';
 import { STATUS_IDS, BARBARIAN_DICE_FACE_IDS as FACES } from '../ids';
 import type {
     DiceThroneEvent,
@@ -16,10 +16,10 @@ import type {
     PendingInteraction,
     InteractionRequestedEvent,
 } from '../types';
-import { registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
+import { createDiceThroneDamageCalculation as createDamageCalculation, registerCustomActionHandler, createDisplayOnlySettlement, type CustomActionContext } from '../effects';
 import { registerBonusDiceSettlementHandler } from '../bonusDiceSettlement';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import { isRemovableStatusId } from '../statusRemoval';
+import { attackModifierBonusDiceContinuation } from '../utils';
 
 // ============================================================================
 
@@ -44,7 +44,7 @@ function handleBarbarianSuppressRoll({ ctx, attackerId, sourceAbilityId, state, 
     // 鎶曟幏3涓瀛愶紝绱姞鐐规暟鎬诲拰
     for (let i = 0; i < 3; i++) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         dice.push({ index: i, value, face });
         events.push({
             type: 'BONUS_DIE_ROLLED',
@@ -81,7 +81,7 @@ function handleBarbarianSuppress2Roll({ ctx, attackerId, sourceAbilityId, state,
 
     for (let i = 0; i < 3; i++) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         dice.push({ index: i, value, face });
         events.push({
             type: 'BONUS_DIE_ROLLED',
@@ -196,7 +196,7 @@ function handleLuckyRollHeal({ attackerId, sourceAbilityId, state, timestamp, ra
     let heartCount = 0;
     for (let i = 0; i < 3; i++) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         if (face === FACES.HEART) {
             heartCount++;
         }
@@ -239,7 +239,7 @@ function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, t
 
     for (let i = 0; i < 5; i++) {
         const value = random.d(6);
-        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        const face = requirePlayerDieFace(state, attackerId, value);
         dice.push({ index: i, value, face });
         events.push({
             type: 'BONUS_DIE_ROLLED',
@@ -261,7 +261,7 @@ function handleMorePleaseRollDamage({ ctx, attackerId, sourceAbilityId, state, t
         summaryEffectKey: 'bonusDie.effect.morePleaseRoll.result',
         // “再来点儿”是主攻击伤害前的攻击修正：奖励骰确认后应回到父攻击的正常伤害结算，
         // 不能标成 readyToResolve（该阶段表示主伤害已经落地，只剩 ATTACK_RESOLVED 收口）。
-        continuation: { kind: 'attack', settlementStage: 'preDamage', markBonusDiceResolved: true },
+        continuation: attackModifierBonusDiceContinuation(),
     }));
 
     return events;

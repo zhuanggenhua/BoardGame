@@ -69,7 +69,7 @@ vi.mock('react-i18next', async () => {
             t: (key: string, options?: Record<string, unknown>) => {
                 if (key === 'setup.expansions.titans') return '泰坦';
                 if (key === 'setup.expansions.diy') return 'DIY';
-                if (key === 'setup.deckQuery.label') return '余牌查询';
+                if (key === 'setup.deckQuery.label') return '牌堆可查';
                 if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
                 if (key === 'lobby:rooms.enabledExpansions' || key === 'rooms.enabledExpansions') return '扩展';
                 if (key === 'lobby:rooms.scenario' || key === 'rooms.scenario') return '剧本';
@@ -575,7 +575,7 @@ describe('HomeV2 GameDetails locked room join', () => {
         }));
 
         expect(await screen.findByTestId('home-v2-room-expansion-summary-match-smashup-1'))
-            .toHaveTextContent('扩展：泰坦 / DIY / 余牌查询');
+            .toHaveTextContent('扩展：泰坦 / DIY / 牌堆可查');
     });
 
     it('七大恨房间账本会显示当前剧本摘要', async () => {

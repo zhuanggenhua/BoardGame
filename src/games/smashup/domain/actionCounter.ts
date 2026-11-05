@@ -42,6 +42,8 @@ export type PendingActionResolution = {
     targetMinionUid?: string;
     fromDiscard?: boolean;
     fromStored?: boolean;
+    /** 简易武器限定的附着行动：本回合结束时摧毁已打出的附着牌。 */
+    destroyAttachedActionAtTurnEnd?: boolean;
     nextResponderOffset: number;
     resolutionKind: PendingActionResolutionKind;
     cancelTargetActionInstanceId?: string;
@@ -89,6 +91,7 @@ export function createPendingActionResolution(params: {
     targetMinionUid?: string;
     fromDiscard?: boolean;
     fromStored?: boolean;
+    destroyAttachedActionAtTurnEnd?: boolean;
     now: number;
     resolutionKind?: PendingActionResolutionKind;
     cancelTarget?: PendingActionResolution;
@@ -104,6 +107,7 @@ export function createPendingActionResolution(params: {
         ...(params.targetMinionUid ? { targetMinionUid: params.targetMinionUid } : {}),
         ...(params.fromDiscard ? { fromDiscard: true } : {}),
         ...(params.fromStored ? { fromStored: true } : {}),
+        ...(params.destroyAttachedActionAtTurnEnd ? { destroyAttachedActionAtTurnEnd: true } : {}),
         nextResponderOffset: 0,
         resolutionKind: params.resolutionKind ?? 'normal',
         ...(params.cancelTarget
@@ -351,7 +355,7 @@ function queueWilBasePrompt(
         defId,
         ownerId,
     };
-    interaction.data.optionsGenerator = (latestState) => latestState.core.bases.map((base, baseIndex) => ({
+    interaction.data.optionsGenerator = (latestState) => (latestState.core as SmashUpCore).bases.map((base, baseIndex) => ({
         id: `base-${baseIndex}`,
         label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
         value: { baseIndex },
@@ -455,6 +459,15 @@ export function resolvePendingActionExecution(
 
     const subtype = def.type === 'fusion' ? def.actionSubtype : def.subtype;
     if (subtype === 'ongoing') {
+        const attachMetadata = {
+            ...(buildActivationPlayedThisTurnMetadata(pending.defId) ?? {}),
+            ...(pending.destroyAttachedActionAtTurnEnd
+                ? {
+                    diyKillersImprovisedWeaponControllerId: pending.playerId,
+                    diyKillersImprovisedWeaponTurnNumber: updatedState.core.turnNumber,
+                }
+                : {}),
+        };
         events.push(...buildSemanticOngoingAttachEvents(updatedState, {
             cardUid: pending.cardUid,
             defId: pending.defId,
@@ -463,7 +476,7 @@ export function resolvePendingActionExecution(
             sourceKind: 'action',
             targetBaseIndex,
             targetMinionUid: pending.targetMinionUid,
-            metadata: buildActivationPlayedThisTurnMetadata(pending.defId),
+            metadata: Object.keys(attachMetadata).length > 0 ? attachMetadata : undefined,
             onBlockedSourceDestination: 'discard',
             now,
         }));

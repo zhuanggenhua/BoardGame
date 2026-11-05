@@ -128,7 +128,10 @@ function inferPlayTargetMinionController(effectText: string): 'self' | 'opponent
     const firstClause = normalized.split(/[。；;]/)[0] ?? normalized;
     if (/不由你控制[^。；;，,]*(随从|仆从)/.test(firstClause)) return 'opponent';
     if (/(其他玩家|另一位玩家|对手|敌方|另一个玩家)[^。；;，,]*(随从|仆从)/.test(firstClause)) return 'opponent';
-    if (/(你的|你控制|己方)[^。；;，,]*(随从|仆从)/.test(firstClause)) return 'self';
+    if (/(?:你的|你控制的|由你控制的|己方)(?:的)?(?:一个|一名|其他|另一个)?(?:的)?(?:随从|仆从)/.test(firstClause)
+        || /(?:一个|一名|其他|另一个)(?:你的|你控制的|由你控制的|己方)(?:的)?(?:随从|仆从)/.test(firstClause)) {
+        return 'self';
+    }
     return undefined;
 }
 

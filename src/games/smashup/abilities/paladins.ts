@@ -5,6 +5,7 @@ import { registerInteractionHandler, type InteractionHandler } from '../domain/a
 import { startDuelWithEvents } from '../domain/duel';
 import { registerInterceptor, registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -203,11 +204,7 @@ type PaladinsDevoutPastorDiscardContext = {
     now: number;
 };
 
-const paladinsDevoutPastorDiscardPromptProgram = createPromptProgram<
-    PaladinsDevoutPastorDiscardContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const paladinsDevoutPastorDiscardPromptProgram = createPromptProgram<PaladinsDevoutPastorDiscardContext>({
     sourceId: 'paladins_devout_pastor_discard',
     buildInteraction: (context) => {
         const hand = context.matchState.core.players[context.playerId]?.hand ?? [];
@@ -244,13 +241,12 @@ const paladinsDevoutPastorProgram = createEffectProgram<AbilityContext, SmashUpC
     if (drawEvents.length === 0 && currentHand.length === 0) return { events: [] };
     return {
         events: drawEvents,
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             cardUid: ctx.cardUid,
             now: ctx.now,
-        } satisfies PaladinsDevoutPastorDiscardContext,
-        nextProgram: paladinsDevoutPastorDiscardPromptProgram,
+        } satisfies PaladinsDevoutPastorDiscardContext, paladinsDevoutPastorDiscardPromptProgram),
     };
 });
 
@@ -453,11 +449,7 @@ type PaladinsHeavenlyMinionPromptContext = PaladinsHeavenlyTalentPromptContext &
     cardUid: string;
 };
 
-const paladinsHeavenlyMinionPromptProgram = createPromptProgram<
-    PaladinsHeavenlyMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const paladinsHeavenlyMinionPromptProgram = createPromptProgram<PaladinsHeavenlyMinionPromptContext>({
     sourceId: 'paladins_heavenly_soldiers_descend',
     buildInteraction: (context) => {
         const minionCards = context.matchState.core.players[context.playerId]?.hand.filter(card => card.type === 'minion') ?? [];
@@ -497,13 +489,12 @@ const paladinsHeavenlyMinionPromptProgram = createPromptProgram<
         }
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 baseIndex: context.baseIndex,
                 now: timestamp,
-            } satisfies PaladinsHeavenlyTalentPromptContext,
-            nextProgram: paladinsHeavenlyTalentPromptProgram,
+            } satisfies PaladinsHeavenlyTalentPromptContext, paladinsHeavenlyTalentPromptProgram),
         };
     },
 });
@@ -527,7 +518,7 @@ function paladinsHeavenlySoldiersDescend(ctx: AbilityContext): AbilityResult {
 }
 
 function paladinsNoviceKnightOnTalentUsed(ctx: TriggerContext) {
-    if (!ctx.triggerMinionUid || ctx.triggerMinion?.controller !== ctx.sourceControllerId) return [];
+    if (!ctx.triggerMinionUid || !ctx.triggerMinion || ctx.triggerMinion.controller !== ctx.sourceControllerId) return [];
     if (ctx.triggerMinion.talentUsed) return [];
     if (ctx.sourceCardUid === ctx.triggerMinionUid) return [];
     if (ctx.sourceBaseIndex !== ctx.baseIndex || ctx.sourceBaseIndex === undefined) return [];

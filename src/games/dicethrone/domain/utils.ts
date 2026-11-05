@@ -33,12 +33,35 @@ export function applyEvents<TState, TEvent>(
 
 import type {
     AttackResolvedEvent,
+    BonusDiceContinuation,
     DiceThroneCore,
     PendingAttack,
     PendingAttackSettlementStage,
-    PlayerId,
 } from './types';
+import type { PlayerId } from '../../../engine/types';
 import { getPlayerAbilityBaseDamage } from './abilityLookup';
+
+/** 攻击修正牌的临时骰不能推进或完成父攻击自身的奖励骰。 */
+export function attackModifierBonusDiceContinuation(): BonusDiceContinuation {
+    return { kind: 'attack', settlementStage: 'preserve', markBonusDiceResolved: false };
+}
+
+export function assertValidBonusDiceContinuation(
+    continuation: BonusDiceContinuation | null | undefined,
+    sourceAbilityId: string | undefined,
+): void {
+    if (
+        continuation?.kind === 'attack'
+        && continuation.settlementStage === 'readyToResolve'
+        && continuation.markBonusDiceResolved !== true
+    ) {
+        throw new Error(
+            `[DiceThrone] invalid bonus dice continuation for ${sourceAbilityId ?? 'unknown'}: `
+            + 'readyToResolve means the main attack damage has already resolved, '
+            + 'so markBonusDiceResolved must be true.',
+        );
+    }
+}
 
 export function isDiceThroneAiSeat(state: DiceThroneCore, playerId: PlayerId): boolean {
     const controllerType = state.seatControllers?.[playerId]?.type;
@@ -114,6 +137,39 @@ export function updatePendingAttackSettlementStage(
         ...pendingAttack,
         settlementStage: stage,
     };
+}
+
+/**
+ * 攻击链拥有的规则选择已完成后，按显式入口阶段转到“可结算”。
+ * settlementStage 是阶段真相源；postDamageFollowUpResolved 只同步给旧结算消费点。
+ */
+export function markPendingAttackChoiceFollowUpResolvedFromStage(
+    pendingAttack: PendingAttack | null | undefined,
+    sourceAbilityId: string | undefined,
+    expectedStage: PendingAttackSettlementStage,
+): PendingAttack | null | undefined {
+    if (!pendingAttack || !sourceAbilityId || pendingAttack.sourceAbilityId !== sourceAbilityId) {
+        return pendingAttack;
+    }
+    if (getPendingAttackSettlementStage(pendingAttack) !== expectedStage) {
+        return pendingAttack;
+    }
+
+    return updatePendingAttackSettlementStage({
+        ...pendingAttack,
+        postDamageFollowUpResolved: true,
+    }, 'readyToResolve');
+}
+
+export function markPendingAttackPostDamageFollowUpResolved(
+    pendingAttack: PendingAttack | null | undefined,
+    sourceAbilityId: string | undefined,
+): PendingAttack | null | undefined {
+    return markPendingAttackChoiceFollowUpResolvedFromStage(
+        pendingAttack,
+        sourceAbilityId,
+        'postDamagePending',
+    );
 }
 
 export function buildPendingAttackResolvedEvent(

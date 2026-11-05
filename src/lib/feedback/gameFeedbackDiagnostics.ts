@@ -111,6 +111,7 @@ export const buildGameFeedbackActionLog = (
         const undoSnapshots = Array.isArray(state.sys?.undo?.snapshots)
             ? state.sys.undo.snapshots
             : [];
+        const projectedUndoCount = (state.sys?.undo as { snapshotCount?: unknown } | undefined)?.snapshotCount;
         const interaction = cloneJsonValue(state.sys?.interaction?.current);
         const responseWindow = cloneJsonValue(state.sys?.responseWindow?.current);
         const formattedActionLogRows = actionLogRows.length > 0
@@ -133,25 +134,14 @@ export const buildGameFeedbackActionLog = (
             turnNumber: state.sys?.turnNumber,
             humanReadableLog,
             ...(visibleResourceSnapshot.length > 0 ? { visibleResourceSnapshot } : {}),
-            actionLogTail: actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT).map((rawEntry) => {
-                const entry = asFeedbackRecord(rawEntry);
-                const event = asFeedbackRecord(entry.event);
-                return {
-                    text: typeof entry.text === 'string' ? entry.text : undefined,
-                    type: event.type,
-                    timestamp: entry.timestamp,
-                };
-            }),
-            eventStreamTail: eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT).map((rawEntry) => {
-                const entry = asFeedbackRecord(rawEntry);
-                return {
-                    type: entry.type,
-                    timestamp: entry.timestamp,
-                    payload: cloneJsonValue(entry.payload),
-                };
-            }),
+            actionLogTail: cloneJsonValue(actionLogEntries.slice(-FEEDBACK_ACTION_LOG_TAIL_LIMIT)),
+            eventStreamTail: cloneJsonValue(eventStreamEntries.slice(-FEEDBACK_EVENT_STREAM_TAIL_LIMIT)),
             interaction,
             responseWindow,
+            undoCapture: {
+                availableCount: typeof projectedUndoCount === 'number' ? projectedUndoCount : undoSnapshots.length,
+                capturedCount: Math.min(undoSnapshots.length, FEEDBACK_UNDO_SNAPSHOT_LIMIT),
+            },
             undoSnapshots: undoSnapshots.slice(-FEEDBACK_UNDO_SNAPSHOT_LIMIT).map((rawSnapshot, index) => {
                 const snapshot = asFeedbackRecord(rawSnapshot);
                 const sys = asFeedbackRecord(snapshot.sys);

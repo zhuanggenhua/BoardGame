@@ -1,6 +1,7 @@
 import type { PlayerId } from '../../../engine/types';
 import type { CardiaCore, PlayerState, PlayedCard, ModifierToken } from './core-types';
 import { resolveCardiaEncounterOutcome } from './effectHost';
+import { createTagContainer } from '../../../engine/primitives/tags';
 
 /**
  * 创建初始玩家状态
@@ -14,7 +15,7 @@ export function createPlayerState(playerId: PlayerId): PlayerState {
         discard: [],
         playedCards: [],
         signets: 0,
-        tags: { tags: {} },
+        tags: createTagContainer(),
         hasPlayed: false,
         cardRevealed: false,
     };

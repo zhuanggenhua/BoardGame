@@ -1,4 +1,5 @@
 import type { GameManifestEntry } from '../manifest.types';
+import { DESKTOP_REFERENCE_VIEWPORT, MOBILE_LANDSCAPE_DESIGN_VIEWPORT } from '../../shared/referenceViewports';
 
 const entry: GameManifestEntry = {
     id: 'dicethrone',
@@ -11,9 +12,9 @@ const entry: GameManifestEntry = {
     icon: '🎲',
     thumbnailPath: 'dicethrone/thumbnails/fengm',
     allowLocalMode: false,
-    playerOptions: [2, 4],
+    playerOptions: [2, 3, 4],
     tags: ['dice_driven', 'combat'],
-    bestPlayers: [2, 4],
+    bestPlayers: [2, 3, 4],
     cursorTheme: 'dicethrone-critical',
     fontFamily: { display: 'Cinzel' },
     mobileProfile: 'landscape-adapted',
@@ -21,7 +22,12 @@ const entry: GameManifestEntry = {
     mobileLayoutPreset: 'board-shell',
     mobileBattlefieldZoom: 'game-owned',
     mobileBoardShellLayout: {
-        designWidth: 940,
+        designWidth: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width,
+        designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
+        referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
+        // 已验收的 001 构图及宽高对照使用 1920×960 排版坐标。
+        referenceHeight: 960,
+        fit: 'contain',
     },
     shellTargets: ['pwa', 'app-webview', 'mini-program-webview'],
     mobileDelivery: {
@@ -34,6 +40,7 @@ const entry: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: true,
+        manualSetupSelection: true,
         trainingMinCompletedDurationMs: 10 * 60 * 1000,
     },
 };

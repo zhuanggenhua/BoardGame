@@ -268,7 +268,6 @@ type BaseFairyRingBranchEffectContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
-    random: RandomFn;
     baseIndex: number;
 };
 
@@ -293,11 +292,10 @@ const baseFairyRingExtraActionProgram = createEffectDslProgram(baseFairyRingExtr
 function createBaseFairyRingBranchEffectContext(
     state: MatchState<SmashUpCore>,
     playerId: PlayerId,
-    random: RandomFn,
     timestamp: number,
     baseIndex: number,
 ): BaseFairyRingBranchEffectContext {
-    return { matchState: state, playerId, random, now: timestamp, baseIndex };
+    return { matchState: state, playerId, now: timestamp, baseIndex };
 }
 
 const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, planContext, random, timestamp }) => {
@@ -310,7 +308,6 @@ const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, pl
     const effectContext = createBaseFairyRingBranchEffectContext(
         state,
         playerId,
-        random,
         timestamp,
         continuation.baseIndex,
     );
@@ -1046,7 +1043,6 @@ export function registerExpansionBaseAbilities(): void {
         const branchContext = createBaseFairyRingBranchEffectContext(
             ctx.matchState,
             ctx.playerId,
-            ctx.random,
             ctx.now,
             ctx.baseIndex,
         );
@@ -1637,12 +1633,15 @@ export function registerExpansionBaseInteractionHandlers(): void {
     registerInteractionHandler('base_innsmouth_base_choose_card', (state, _playerId, value, _iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; cardUid?: string; defId?: string; ownerId?: string; sourcePlayerId?: string };
         if (selected.skip) return { state, events: [] };
+        if (!selected.cardUid || !selected.defId || !selected.ownerId || !selected.sourcePlayerId) {
+            return { state, events: [] };
+        }
         return {
             state,
             events: buildValidatedCardToDeckBottomEvents(state, {
-                cardUid: selected.cardUid!,
-                defId: selected.defId!,
-                ownerId: selected.ownerId!,
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                ownerId: selected.ownerId,
                 sourcePlayerId: selected.sourcePlayerId,
                 locationPlayerId: selected.sourcePlayerId,
                 reason: '印斯茅斯基地：弃牌堆卡放入牌库底',
@@ -1913,6 +1912,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             fromBaseIndex?: number;
             houseBaseIndex?: number;
             ownerId?: string;
+            controllerId?: string;
             destroyerId?: string;
         };
         const ctx = getContinuationContext<{
@@ -1921,6 +1921,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
             fromBaseIndex?: number;
             houseBaseIndex?: number;
             ownerId?: string;
+            controllerId?: string;
             destroyerId?: string;
         }>(iData);
         const minionUid = selected.minionUid ?? ctx?.minionUid;

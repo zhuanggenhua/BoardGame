@@ -6,6 +6,7 @@ import {
     DUPLICATE_OWNER_DISCONNECT_GRACE_MS,
     parseActiveMatchExistsConflict,
     planDuplicateOwnerRoomCreate,
+    resolveForceReplaceOwnerRoom,
 } from '../duplicateOwnerRooms';
 
 const buildMetadata = (overrides?: Partial<MatchMetadata>): MatchMetadata => ({
@@ -141,6 +142,17 @@ describe('decideDuplicateOwnerRoomAction', () => {
                 },
             }],
         });
+    });
+});
+
+describe('resolveForceReplaceOwnerRoom', () => {
+    it('游客创建房间默认自动覆盖旧房，不把 409 交给前端', () => {
+        expect(resolveForceReplaceOwnerRoom('guest', false)).toBe(true);
+    });
+
+    it('登录用户默认保留旧房保护，只有显式替换时才允许覆盖', () => {
+        expect(resolveForceReplaceOwnerRoom('user', false)).toBe(false);
+        expect(resolveForceReplaceOwnerRoom('user', true)).toBe(true);
     });
 });
 

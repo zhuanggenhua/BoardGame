@@ -24,3 +24,8 @@ export const hasArmamentSourceCard = (
         .find((armament) => armament.id === armamentId)
         ?.sourceCardDefIds?.includes(cardDefId) ?? false;
 };
+
+export const getQidahenArtilleryTechnologyCount = (state: QidahenCore, factionId: QidahenFactionId | null): number => (
+    factionId ? (state.factions[factionId].armaments.find(armament => armament.id === 'artillery-tech')?.sourceCardDefIds ?? [])
+        .filter(id => id === 'qidahen-atlas05-1626-artillery-tech' || id === 'qidahen-korea-1702').length : 0
+);

@@ -453,7 +453,7 @@ describe('DiceThrone timing opportunities', () => {
         state.core.players['1'] = {
             ...state.core.players['1'],
             characterId: 'lieren',
-            companion: { id: 'nyra', hp: 5, maxHp: 7 },
+            companion: { id: 'nyra', hp: 5, maxHp: 7, active: true },
             tokens: {
                 ...state.core.players['1'].tokens,
                 [TOKEN_IDS.NYRAS_BOND]: 1,
@@ -538,6 +538,30 @@ describe('DiceThrone timing opportunities', () => {
             payload: { tokenId: TOKEN_IDS.NYRAS_BOND, amount: 5 },
             timestamp: 1,
         })).toEqual({ valid: false, error: 'choice_contract_mismatch' });
+    });
+
+    it('女猎手倒下后即使被治疗到 2 血也不生成妮拉承伤候选', () => {
+        const pendingDamage = makePendingDamage({
+            originalDamage: 4,
+            currentDamage: 4,
+            targetPlayerId: '1',
+            responderId: '1',
+            responseType: 'beforeDamageReceived',
+        });
+        const state = makeState(pendingDamage);
+        state.core.players['1'] = {
+            ...state.core.players['1'],
+            characterId: 'lieren',
+            companion: { id: 'nyra', hp: 2, maxHp: 7, active: false },
+            tokens: {
+                ...state.core.players['1'].tokens,
+                [TOKEN_IDS.NYRAS_BOND]: 1,
+            },
+        };
+
+        const candidates = buildDiceThroneTokenResponseChoiceCandidates(state.core, pendingDamage);
+        expect(candidates.some(candidate => candidate.id.startsWith(`use-token:${TOKEN_IDS.NYRA_REDIRECT}`))).toBe(false);
+        expect(candidates.some(candidate => candidate.id.startsWith(`use-token:${TOKEN_IDS.NYRAS_BOND}`))).toBe(false);
     });
 
     it('当前 dt:token-response 存在时，TimingOpportunitySystem 原地替换而不是追加第二个窗口', () => {

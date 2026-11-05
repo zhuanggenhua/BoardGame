@@ -81,6 +81,42 @@ describe('useLocalProviderViewModel', () => {
         });
     });
 
+    it('交互系统命令不应被当前本地视角席位覆盖', () => {
+        const dispatch = vi.fn();
+        const state = createState();
+        state.sys.interaction.current = {
+            id: 'interaction-0',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: 'test',
+                options: [],
+            },
+        };
+        const { result } = renderHook(() => useLocalProviderViewModel({
+            state,
+            dispatch,
+            reset: vi.fn(),
+            playerIds: ['0', '1'],
+            seatControllers: {},
+            localPregameControlledPlayerId: null,
+            followCurrentTurnPlayer: false,
+            localPlayerId: '1',
+        }));
+
+        act(() => {
+            result.current.dispatch('SYS_INTERACTION_RESPOND', {
+                interactionId: 'interaction-0',
+                optionId: 'confirm',
+            });
+        });
+
+        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', {
+            interactionId: 'interaction-0',
+            optionId: 'confirm',
+        });
+    });
+
     it('内部批量命令应逐条执行，并给每条业务命令注入本地视角玩家', () => {
         const dispatch = vi.fn();
         const { result } = renderHook(() => useLocalProviderViewModel({

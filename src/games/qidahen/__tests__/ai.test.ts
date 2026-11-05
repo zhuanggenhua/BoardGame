@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
 import { resolveNextLocalAiAction } from '../../../engine/ai';
+import {
+    resolveForceEndTurnForStalledAi,
+    resolveOnlineAiCurrentPlayerId,
+} from '../../../engine/transport/onlineAiRecovery';
 import type { MatchState } from '../../../engine/types';
 import { buildQidahenAiLegalActions } from '../ai';
 import { QIDAHEN_COMMANDS } from '../domain/commands';
 import { createInitialCore } from '../domain/initialCoreSetup';
+import { beginQidahenWheelRecruitTrain } from '../domain/wheelRecruitTrain';
 import type { QidahenCore } from '../domain/types';
 import { QidahenDomain } from '../domain';
 import { engineConfig } from '../game';
@@ -43,6 +48,232 @@ const applyAiResolution = (
 );
 
 describe('七大恨 AI', () => {
+    it('两格轮盘 AI 会指定真实对手，新增命令通过领域校验', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
+        const state = createAiState(core);
+        const twoSpaceAction = buildQidahenAiLegalActions({ playerId: core.currentPlayer, state })
+            .find((action) => action.commands.some((command) => (
+                command.type === QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE
+                && command.payload.moveId === 'move-2-one-opponent'
+            )));
+
+        expect(twoSpaceAction).toBeTruthy();
+        const command = twoSpaceAction!.commands[0]!;
+        expect(command.payload.opponentFactionId).toBeTruthy();
+        expect(command.payload.opponentFactionId).not.toBe('ming');
+        expect(QidahenDomain.validate(state, {
+            type: command.type as never,
+            playerId: core.currentPlayer,
+            payload: command.payload as never,
+            timestamp: 1,
+        }).valid).toBe(true);
+    });
+
+    it('AI 能支付、执行征兵训练、选择目标、完成，并在教程式进度中持续产生合法动作', () => {
+        const core = QidahenDomain.setup(['0', '1', '2'], testRandom);
+        const pendingCore = beginQidahenWheelRecruitTrain({
+            ...core,
+            actionWheelPosition: 'wheel-recruit-train',
+            wheelActionUsed: true,
+        }, 'wheel', 1);
+        let state = createAiState(pendingCore);
+        let executedKinds: string[] = [];
+
+        for (let index = 0; index < 24 && state.core.wheelRecruitTrainProgress != null; index += 1) {
+            const legalActions = buildQidahenAiLegalActions({ playerId: state.core.currentPlayer, state });
+            expect(legalActions.length, `第 ${index + 1} 步必须有可执行的 AI 动作`).toBeGreaterThan(0);
+            const action = legalActions[0]!;
+            executedKinds.push(action.kind);
+            state = action.commands.reduce((currentState, command) => executePipeline(
+                {
+                    domain: engineConfig.domain,
+                    systems: engineConfig.systems as any,
+                },
+                currentState,
+                {
+                    type: command.type,
+                    playerId: currentState.core.currentPlayer,
+                    payload: command.payload as Record<string, unknown>,
+                } as any,
+                testRandom,
+                currentState.core.playerIds,
+            ).state as MatchState<QidahenCore>, state);
+        }
+
+        expect(state.core.wheelRecruitTrainProgress).toBeNull();
+        expect(executedKinds).toContain('wheel-recruit-train-select-payment');
+        expect(executedKinds).toContain('wheel-recruit-train-confirm-payment');
+        expect(executedKinds).toContain('wheel-recruit-train-choice');
+        expect(state.core.wheelActionUsed).toBe(true);
+        const postTutorialActions = buildQidahenAiLegalActions({ playerId: state.core.currentPlayer, state });
+        expect(postTutorialActions, JSON.stringify({
+            currentPlayer: state.core.currentPlayer,
+            turnPhase: state.core.turnPhase,
+            factionActionUsed: state.core.factionActionUsed,
+            wheelActionUsed: state.core.wheelActionUsed,
+            actionChoices: state.core.actionChoices.map((choice) => choice.id),
+            payment: state.core.payment,
+            selectedActionId: state.core.selectedActionId,
+            confirmedActionId: state.core.confirmedActionId,
+            interaction: state.sys.interaction?.current,
+            validation: QidahenDomain.validate(state, {
+                type: QIDAHEN_COMMANDS.EXECUTE_ACTION,
+                playerId: state.core.currentPlayer,
+                payload: { actionId: 'recruit' },
+                timestamp: 0,
+            } as never),
+        })).not.toHaveLength(0);
+    });
+
+    it('剧本前置选择未完成时，online AI watchdog 应归属待选势力 seat，避免对下一位 AI 发 ADVANCE_PHASE', () => {
+        const baseCore = createInitialCore(['0', '1'], 'dingmao-rebellion-1627', false);
+        const state = createAiState({
+            ...baseCore,
+            factions: {
+                ...baseCore.factions,
+                ming: { ...baseCore.factions.ming, playerId: '1' },
+                jin: { ...baseCore.factions.jin, playerId: '0' },
+            },
+            currentPlayer: '1',
+            pendingScenarioCharacterChoices: [{
+                id: 'dingmao-rebellion-1627:jin:character:0',
+                factionId: 'jin',
+                factionName: '后金',
+                count: 1,
+                characterIds: ['jin-huangtaiji', 'jin-amin', 'jin-daisan'],
+                characterNames: ['皇太极', '阿敏', '代善'],
+            }],
+            pendingScenarioArmamentChoices: [],
+        });
+
+        const resolvedPlayerId = engineConfig.onlineAiRecovery?.resolveCurrentPlayerId?.({
+            state,
+            phase: '',
+            fallbackPlayerId: '1',
+        });
+
+        expect(resolvedPlayerId).toBe(state.core.factions.jin.playerId);
+        expect(resolvedPlayerId).toBe('0');
+        expect(resolveOnlineAiCurrentPlayerId(state, {
+            engineConfig,
+            gameId: 'qidahen',
+        })).toBe('0');
+        expect(buildQidahenAiLegalActions({ playerId: '1', state })).toEqual([]);
+        const jinActions = buildQidahenAiLegalActions({ playerId: '0', state });
+        expect(jinActions.length).toBeGreaterThan(0);
+        expect(new Set(jinActions.map((action) => action.commands[0]?.type)))
+            .toEqual(new Set([QIDAHEN_COMMANDS.RESOLVE_SCENARIO_CHARACTER_CHOICE]));
+
+        const candidate = resolveForceEndTurnForStalledAi({
+            sharedState: state,
+            seatControllers: {
+                '0': { type: 'local-ai' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '0': state,
+                '1': state,
+            },
+            engineConfig,
+            gameId: 'qidahen',
+        });
+
+        expect(engineConfig.onlineAiRecovery?.disableFallbackAdvancePhase).toBe(true);
+        expect(candidate?.reason).toBe('active-turn-legal-only');
+        expect(candidate?.resolution.action.commands).toEqual([]);
+    });
+
+    it('确认阵营阶段会为尚未选择的 AI 座位生成合法阵营动作', () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', false);
+        const state = createAiState({
+            ...baseCore,
+            factionSelection: {
+                availableFactionIds: ['ming', 'mongol', 'jin'],
+                selections: { '0': 'ming' },
+            },
+        });
+
+        const actions = buildQidahenAiLegalActions({ playerId: '1', state });
+
+        expect(actions.map((action) => action.commands[0])).toEqual([
+            { type: QIDAHEN_COMMANDS.SELECT_FACTION, payload: { factionId: 'mongol' } },
+            { type: QIDAHEN_COMMANDS.SELECT_FACTION, payload: { factionId: 'jin' } },
+        ]);
+    });
+
+    it('手动代选七大恨阵营时，adapter 应接管未选 AI、识别直接命令并在权威状态确认后释放', () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', false);
+        const pendingState = createAiState({
+            ...baseCore,
+            factionSelection: {
+                availableFactionIds: ['ming', 'mongol', 'jin'],
+                selections: { '0': 'ming' },
+            },
+        });
+
+        expect(engineConfig.onlineAiRecovery?.resolveManualSetupSelectionTakeoverPlayerId?.({
+            sharedState: pendingState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe('1');
+
+        expect(engineConfig.onlineAiRecovery?.resolveManualSetupSelectionActionKindFromCommand?.({
+            type: QIDAHEN_COMMANDS.SELECT_FACTION,
+            payload: { factionId: 'mongol' },
+        })).toBe('faction-selection');
+
+        expect(engineConfig.onlineAiRecovery?.shouldReleaseManualSetupAttemptFromSharedState?.({
+            sharedState: createAiState({
+                ...pendingState.core,
+                factionSelection: {
+                    ...pendingState.core.factionSelection!,
+                    selections: { '0': 'ming', '1': 'mongol' },
+                },
+            }),
+            playerId: '1',
+            actionKind: 'faction-selection',
+            selectionId: 'mongol',
+        })).toBe(true);
+
+        expect(engineConfig.onlineAiRecovery?.shouldReleaseManualSetupAttemptFromSharedState?.({
+            sharedState: createAiState({
+                ...pendingState.core,
+                factionSelection: null,
+            }),
+            playerId: '1',
+            actionKind: 'faction-selection',
+            selectionId: 'mongol',
+        })).toBe(true);
+    });
+
+    it('手动代选七大恨阵营时，本地 AI 不应自动提交 faction-selection', async () => {
+        const baseCore = createInitialCore(['0', '1', '2'], 'post-sarhu-1619', false);
+        const state = createAiState({
+            ...baseCore,
+            factionSelection: {
+                availableFactionIds: ['ming', 'mongol', 'jin'],
+                selections: { '0': 'ming' },
+            },
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'qidahen-manual-faction-selection',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+                '2': { type: 'human' },
+            },
+        });
+
+        expect(resolution).toBeNull();
+    });
+
     it('会为对应势力生成剧本前置选择动作', () => {
         const core = createInitialCore(['0', '1', '2'], 'shanhaiguan-1622', false);
         const state = createAiState(core);

@@ -1,5 +1,7 @@
 # 木乃伊大怪物 token 源素材搜索记录（2026-07-31）
 
+> 2026-09-19 当前裁定：本文件保留 2026-07-31 至 2026-09-18 的历史来源搜索记录，但当前木乃伊 portrait 按用户决定直接使用，不再标记为“临时占位”，也不再作为小黑屋牌效审计阻塞。当前资源索引状态以 `runtime-user-accepted` 为准。
+
 ## 前提锁定
 
 | 项 | 当前锁定 |
@@ -18,9 +20,9 @@
 | 项 | 结论 |
 | --- | --- |
 | 运行态木乃伊对象 | 已存在；木乃伊移动、攻击、偷取、胜负等行为链已有代表证据 |
-| 当前代码引用 | `portraitAsset: 'betrayal/monsters/mummy'`；`tokenAsset: 'betrayal/tokens/monsters/large-monster-front'` |
-| 当前正式资源 | 四个目标文件均不存在：`tokens/monsters/large-monster-front.png`、`tokens/monsters/compressed/large-monster-front.webp`、`monsters/mummy.png`、`monsters/compressed/mummy.webp` |
-| 当前 manifest / 索引 | `public/assets/i18n/zh-CN/betrayal/assets-manifest.json` 与 `docs/games/betrayal/sources/image-index/runtime-resource-map.json` 未登记 `large-monster-front` 或 `mummy` |
+| 当前代码引用 | `portraitAsset: 'betrayal/monsters/mummy'`；`tokenAsset: 'betrayal/tokens/monsters/mummy.svg'` |
+| 当前正式资源 | 地图 token `tokens/monsters/mummy.svg` 已存在，来源为 Openclipart 324162；`monsters/mummy.png` 与压缩图按用户裁定直接作为当前运行时图面使用；旧 `large-monster-front` 文件只保留为历史占位，不是当前木乃伊地图 token |
+| 当前 manifest / 索引 | `assets-manifest.json` 与 `runtime-resource-map.json` 已登记 `tokens/monsters/mummy`；`monsters/mummy` 当前登记为 `runtime-user-accepted`；旧 `large-monster-front` 标为 `legacy-placeholder-not-current-runtime` |
 
 ## 本地图包搜索范围
 
@@ -58,7 +60,7 @@
 
 ## 裁定
 
-当前本地 3e 图包、TTS Workshop 存档、`Models` 和 `Assetbundles` 都没有可确认的「木乃伊怪物标记(大)」源素材，也没有可确认的木乃伊怪物卡 / portrait 源素材。用户点名的 384x336 怪物 / Stunned token 范围已在 `token-384x336-intake-correction-2026-07-31.md` 中完成正式录入，但这只收掉该组普通 3e 怪物 token 的录入缺口，不改变木乃伊源图缺失结论。
+当前本地 3e 图包、TTS Workshop 存档、`Models` 和 `Assetbundles` 都没有可确认的木乃伊正式 portrait 源素材。地图 token 的缺口已由 Openclipart 324162 SVG 收掉，并已接入当前代码、manifest 和资源索引；用户点名的 384x336 怪物 / Stunned token 范围已在 `token-384x336-intake-correction-2026-07-31.md` 中完成正式录入，这些都不解除 portrait 源图缺失结论。
 
 2026-07-31 用户批准先占位后，已新增明确写有「临时占位 / 缺正式源图」的运行时占位资源：
 
@@ -67,22 +69,39 @@
 - `public/assets/i18n/zh-CN/betrayal/monsters/mummy.png`
 - `public/assets/i18n/zh-CN/betrayal/monsters/compressed/mummy.webp`
 
-上述四个文件只解决运行时缺图 / 404，不等于正式木乃伊素材完成。`runtime-resource-map.json` 中已标为 `temporary-runtime-placeholder`，最终 P0 仍必须回到正式源图补录。
+其中 `large-monster-front` 只解决历史运行时缺图 / 404，当前不再是木乃伊地图 token；`mummy.png` / 压缩图只解决 portrait 运行时缺图 / 404，不等于正式 portrait 完成。`runtime-resource-map.json` 已把旧 token 标为 `legacy-placeholder-not-current-runtime`，把 portrait 标为 `temporary-runtime-placeholder`，最终 P0 仍必须回到正式 portrait 源图补录。
 
 本地与远端验证：
 
 | 验证项 | 结果 |
 | --- | --- |
-| JSON / manifest | `runtime-resource-map.json` 与 `assets-manifest.json` 可解析；manifest 已登记 `tokens/monsters/large-monster-front`、`tokens/monsters/compressed/large-monster-front`、`monsters/mummy`、`monsters/compressed/mummy` |
+| JSON / manifest | `runtime-resource-map.json` 与 `assets-manifest.json` 可解析；manifest 已登记当前 `tokens/monsters/mummy` 和仍占位的 `monsters/mummy`，旧 `large-monster-front` 只作历史兼容 |
 | manifest 校验 | `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id betrayal --validate` 通过 |
-| 图片尺寸 | `large-monster-front.png/webp` 为 384x336；`mummy.png/webp` 为 1004x1004 |
-| 代码预加载 | `src/games/betrayal/criticalImageResolver.ts` 已加入 `betrayal/tokens/monsters/large-monster-front` 与 `betrayal/monsters/mummy`；`npx eslint src/games/betrayal/criticalImageResolver.ts` 0 errors |
+| 图片尺寸 | 当前地图 token `mummy.svg` 为公开 SVG；`mummy.png/webp` 为 1004x1004 的临时 portrait 占位 |
+| 代码预加载 | 当前地图 token 使用 `betrayal/tokens/monsters/mummy.svg`，portrait 使用 `betrayal/monsters/mummy`；`npx eslint src/games/betrayal/criticalImageResolver.ts` 0 errors |
 | 服务器运行时对象 | 已发布 `official/i18n/zh-CN/betrayal/tokens/monsters/compressed/large-monster-front.webp` 与 `official/i18n/zh-CN/betrayal/monsters/compressed/mummy.webp`；公开回查均为 `200 OK`、`X-Asset-Source: server`，大小分别为 10764 / 28934 bytes |
 
-最小解阻动作：
+## 2026-09-18 修订记录
 
-1. 提供或定位正式旧版 / 基础版木乃伊大怪物 token 源图。
-2. 若存在木乃伊怪物卡 / portrait，也提供或定位正式源图；否则必须把 portrait 缺口继续保留为 blocked。
-3. 源图确认后，落到 `public/assets/i18n/zh-CN/betrayal/tokens/monsters/large-monster-front.png` 和 `public/assets/i18n/zh-CN/betrayal/monsters/mummy.png`。
-4. 按正式素材流程生成 `compressed/*.webp`，更新 manifest / 资源索引。
-5. 回到真实地图截图验证木乃伊显示的是正式大怪物 token，而不是占位或其它语义家族素材。
+- 地图 token 已改为 `public/assets/i18n/zh-CN/betrayal/tokens/monsters/mummy.svg`，来源 `https://openclipart.org/download/324162`，并已写入 `runtime-resource-map.json`、`assets-manifest.json` 和 `monsterDefinitions.ts`。
+- 旧 `large-monster-front` 保留为历史占位记录，不再作为当前木乃伊运行时 token，也不能作为正式素材完成证据。
+- 木乃伊 portrait 仍使用明确标注的临时占位；本轮没有找到可确认正式 portrait 源图，因此整体素材阻塞没有解除。
+
+## 2026-09-18 外部来源复核
+
+- 复核了公开可检索的官方规则 PDF / 叛徒书资料，以及“替换木乃伊 token”类公开页面；这些资料能证明木乃伊规则对象或展示替换件照片，但没有提供可直接纳入本项目正式资源链的、可追溯来源与授权信息的 portrait 源文件。
+- 替换件页面照片不是项目源图，不能直接裁进 `public/assets/` 冒充正式素材；未获用户批准的通用公共域 mummy clipart 也只能保留为候选，不能自动替代游戏 portrait。
+- 因此本次外部复核没有解除 `betrayal/monsters/mummy` 的 `temporary-runtime-placeholder`，也没有把候选图写入运行时。
+
+## 2026-09-19 当前裁定回写
+
+- 上述外部来源搜索结论继续保留为历史记录：当时没有找到可确认的正式 portrait 源图。
+- 当前不再要求把 portrait 替换成另一份源图；用户已明确接受现有运行时图面，当前审计按 `runtime-user-accepted` 处理。
+- 因此本文件不再提出“找到正式 portrait 源图”作为本轮小黑屋牌效审计的解阻条件；后续只有用户要求换图或出现资源回归时才重新启动素材来源审计。
+
+历史最小解阻动作（当前不再阻塞牌效审计）：
+
+1. 提供或定位正式旧版 / 基础版木乃伊 portrait 源图。
+2. 将确认后的源图落到 `public/assets/i18n/zh-CN/betrayal/monsters/mummy.png`。
+3. 按正式素材流程生成 `compressed/mummy.webp`，更新 manifest / 资源索引。
+4. 回到真实怪物详情 / 地图入口验证 portrait 使用正式源图，不能继续把临时占位当完成证据。

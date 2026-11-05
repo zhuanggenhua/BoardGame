@@ -19,6 +19,8 @@ export interface ModalEntry {
     allowPointerThrough?: boolean;
     /** 不关闭弹窗，但允许系统返回/侧滑继续执行页面级返回（用于教程退出） */
     allowSystemBackNavigation?: boolean;
+    /** 仅显式申请的表现层等待 Motion 退场；默认条目仍即时卸载。 */
+    animateExit?: boolean;
     // 由栈触发的关闭回调（例如 ESC/编程关闭）
     onClose?: () => void;
 }
@@ -83,6 +85,7 @@ const areModalEntriesEquivalent = (
         && left.zIndex === right.zIndex
         && left.allowPointerThrough === right.allowPointerThrough
         && left.allowSystemBackNavigation === right.allowSystemBackNavigation
+        && left.animateExit === right.animateExit
         && areOwnerRefsEquivalent(left.owner, right.owner);
 };
 

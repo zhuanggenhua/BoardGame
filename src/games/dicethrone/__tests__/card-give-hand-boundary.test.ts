@@ -299,6 +299,13 @@ describe('抬一手（card-give-hand）边界测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
+        it('前一名响应者改骰后，同一确认骰响应窗口仍允许后一名对手使用抬一手', () => {
+            const core = makeCore({ rollConfirmed: false });
+            const result = checkPlayCard(core, '1', giveHandCard, 'offensiveRoll', 'afterRollConfirmed');
+
+            expect(result).toEqual({ ok: true });
+        });
+
         it('对手未投掷时不能使用抬一手', () => {
             const runner = createRunner(createQueuedRandom([1, 1, 1, 1, 1]));
             const result = runner.run({

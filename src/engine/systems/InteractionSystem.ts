@@ -21,6 +21,7 @@ import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 import { clearActiveResolutionBlock, getActiveResolutionFrame, syncActiveResolutionWithInteraction } from './resolutionStack';
+import { isSpectatorPlayerId } from '../playerView';
 
 function isSamePlayerId(a: unknown, b: unknown): boolean {
     if (a === undefined || a === null || b === undefined || b === null) return false;
@@ -181,6 +182,13 @@ export interface PromptOption<T = unknown> {
      * - 'button' | undefined: 普通按钮
      */
     displayMode?: 'card' | 'button';
+    /** 来源提示，用于动态候选刷新和卡区直选，不参与效果结算。 */
+    _source?: SimpleChoiceTargetType | SimpleChoiceAutoRefresh;
+    /** 候选项对应的上下文卡牌预览。 */
+    displayCard?: {
+        defId: string;
+        cardUid?: string;
+    };
     /**
      * 仅供 AI 使用的语义 hints。
      * 必须与业务 value 隔离，不能被规则处理器当成真实输入消费。
@@ -230,6 +238,15 @@ export type SimpleChoiceTargetType =
     | 'button'
     | 'discard'
     | 'discard_minion'
+    | 'card'
+    | 'deck'
+    | 'deck_minion'
+    | 'monster'
+    | 'board'
+    | 'die'
+    | 'none'
+    | 'option'
+    | 'static'
     | 'generic';
 
 export type SimpleChoiceButtonIntent =
@@ -263,6 +280,8 @@ export interface InteractionDescriptor<TData = unknown> {
     playerId: PlayerId;
     /** 所属 resolution frame（可选；未提供时由 queueInteraction 绑定当前 active frame） */
     resolutionFrameId?: string;
+    /** 必须完成的交互不允许通过普通取消命令绕过。 */
+    cancelPolicy?: 'forbidden';
     /** AI 支持声明：语义描述、游戏适配器或明确不支持。UI 不应依赖此字段渲染。 */
     ai?: AiInteractionSupportDeclaration;
     data: TData;
@@ -272,6 +291,11 @@ export interface InteractionDescriptor<TData = unknown> {
  * simple-choice 专用数据（等价于旧 PromptState['current'] 的业务字段）
  */
 export interface SimpleChoiceData<T = unknown> {
+    /**
+     * Interaction handlers may persist game-specific resolution context beside the shared prompt fields.
+     * These extension values remain unknown until the owning handler validates them.
+     */
+    [extensionKey: string]: unknown;
     title: string;
     titleKey?: string;
     titleParams?: Record<string, string | number>;
@@ -281,6 +305,8 @@ export interface SimpleChoiceData<T = unknown> {
     subtitleParams?: Record<string, string | number>;
     options: PromptOption<T>[];
     sourceId?: string;
+    /** Game-owned continuation data resumed by this choice's resolver. */
+    continuationContext?: unknown;
     timeout?: number;
     multi?: PromptMultiConfig;
     slider?: Record<string, unknown>;
@@ -291,9 +317,12 @@ export interface SimpleChoiceData<T = unknown> {
      * - 'hand': 高亮手牌区的候选卡牌，点击卡牌完成选择
      * - 'ongoing': 高亮棋盘上的候选持续行动卡，点击行动卡完成选择
      * - 'field-source-target': 先高亮场上来源对象，点击来源后再高亮目标对象
+     * - 'board': Smash Up 棋盘对象直选，由选项值判断是随从还是持续行动牌
+     * - 'monster': Smash Up 基地怪物行直选
      * - 'player': 使用通用弹窗中的玩家选项按钮完成选择
      * - 'button': 使用通用弹窗中的纯分支/确认按钮完成选择
      * - 'discard_minion': 使用游戏自定义的“弃牌堆选随从后再点击基地”直点交互
+     * - 'card' / 'deck' / 'deck_minion' / 'die' / 'none' / 'option' / 'static': 语义标签；当前由通用弹窗呈现
      * - undefined / 'generic': 使用通用弹窗选择
      */
     targetType?: SimpleChoiceTargetType;
@@ -332,7 +361,7 @@ export interface SimpleChoiceData<T = unknown> {
      * @param state - 当前最新的游戏状态
      * @param data - 交互数据（包含 continuationContext 等上下文信息）
      */
-    optionsGenerator?: <TCore>(state: { core: TCore; sys: any }, data: SimpleChoiceData<T>) => PromptOption<T>[];
+    optionsGenerator?: SimpleChoiceOptionsGenerator<T>;
     autoRefresh?: SimpleChoiceAutoRefresh;
     /**
      * 响应校验语义：
@@ -355,6 +384,13 @@ export interface SimpleChoiceData<T = unknown> {
     /** Choice Request 诊断摘要；仅供 AI/线上恢复定位，不参与规则执行或 UI 候选真相。 */
     choiceRequest?: Record<string, unknown>;
 }
+
+type SimpleChoiceOptionsGenerator<T> = {
+    bivarianceHack(
+        state: MatchState<unknown>,
+        data: SimpleChoiceData<T>,
+    ): PromptOption<T>[];
+}['bivarianceHack'];
 
 /**
  * slider-choice 专用数据 — 从连续数值范围中选择一个值
@@ -692,16 +728,18 @@ export const INTERACTION_EVENTS = {
 /**
  * createSimpleChoice 的配置参数
  */
-export interface SimpleChoiceConfig {
+export interface SimpleChoiceConfig<T = unknown> {
     titleKey?: string;
     titleParams?: Record<string, string | number>;
     subtitle?: string;
     subtitleKey?: string;
     subtitleParams?: Record<string, string | number>;
     sourceId?: string;
+    /** Game-owned continuation data resumed by this choice's resolver. */
+    continuationContext?: unknown;
     timeout?: number;
     multi?: PromptMultiConfig;
-    /** 选择目标类型，决定 UI 渲染方式（'base' | 'minion' | 'hand' | 'ongoing' | 'field-source-target' | 'field-source-action' | 'player' | 'button' | 'discard_minion' | 'generic'） */
+    /** 选择目标类型，决定 UI 渲染方式。 */
     targetType?: SimpleChoiceTargetType;
     /** button targetType 的现实职责声明。 */
     buttonIntent?: SimpleChoiceButtonIntent;
@@ -751,7 +789,7 @@ export interface SimpleChoiceConfig {
      * 动态选项生成器。原本可由调用方写入 interaction.data；作为正式 config 后，
      * request-first adapter 不需要再手工改写 data 才能保留 live 候选语义。
      */
-    optionsGenerator?: SimpleChoiceData['optionsGenerator'];
+    optionsGenerator?: SimpleChoiceData<T>['optionsGenerator'];
     /**
      * 在该 simple-choice 挂起期间允许继续执行的命令白名单。
      * 仅对当前交互所属玩家生效。
@@ -764,22 +802,40 @@ export interface SimpleChoiceConfig {
 /**
  * 创建 simple-choice 交互（替代旧 createPrompt）
  */
+export function createSimpleChoice<const TOptions extends readonly PromptOption<unknown>[]>(
+    id: string,
+    playerId: PlayerId,
+    title: string,
+    options: TOptions,
+    sourceIdOrConfig?: string | SimpleChoiceConfig<NoInfer<TOptions[number]['value']>>,
+    timeout?: number,
+    multi?: PromptMultiConfig,
+): InteractionDescriptor<SimpleChoiceData<TOptions[number]['value']>>;
 export function createSimpleChoice<T>(
     id: string,
     playerId: PlayerId,
     title: string,
-    options: PromptOption<T>[],
-    sourceIdOrConfig?: string | SimpleChoiceConfig,
+    options: readonly PromptOption<T>[],
+    sourceIdOrConfig?: string | SimpleChoiceConfig<T>,
+    timeout?: number,
+    multi?: PromptMultiConfig,
+): InteractionDescriptor<SimpleChoiceData<T>>;
+export function createSimpleChoice<T>(
+    id: string,
+    playerId: PlayerId,
+    title: string,
+    options: readonly PromptOption<T>[],
+    sourceIdOrConfig?: string | SimpleChoiceConfig<T>,
     timeout?: number,
     multi?: PromptMultiConfig,
 ): InteractionDescriptor<SimpleChoiceData<T>> {
     // 兼容旧签名：第5个参数可以是 string（sourceId）或 config 对象
-    const config: SimpleChoiceConfig = typeof sourceIdOrConfig === 'string'
+    const config: SimpleChoiceConfig<T> = typeof sourceIdOrConfig === 'string'
         ? { sourceId: sourceIdOrConfig, timeout, multi }
         : { ...sourceIdOrConfig, timeout: sourceIdOrConfig?.timeout ?? timeout, multi: sourceIdOrConfig?.multi ?? multi };
 
     // 自动添加取消选项
-    let finalOptions = options;
+    let finalOptions = [...options];
     if (config.autoCancelOption) {
         const cancelOption: PromptOption<T> = {
             id: '__cancel__',
@@ -813,6 +869,7 @@ export function createSimpleChoice<T>(
             subtitleParams: config.subtitleParams,
             options: finalOptions,
             sourceId: config.sourceId,
+            continuationContext: config.continuationContext,
             timeout: config.timeout,
             multi: config.multi,
             targetType: config.targetType,
@@ -955,14 +1012,14 @@ export function createMultistepChoice<TStep, TResult>(
 export function queueInteraction<TCore>(
     state: MatchState<TCore>,
     interaction: InteractionDescriptor,
-    options?: { urgent?: boolean }, // 新增：urgent 标志
+    options?: { urgent?: boolean; forceQueue?: boolean },
 ): MatchState<TCore> {
     if (!interaction) return state;
     interaction = bindInteractionToResolutionFrame(state, interaction);
 
     const { current, queue } = state.sys.interaction;
 
-    if (!current) {
+    if (!current && !options?.forceQueue) {
         // 如果当前没有交互，新交互立即成为 current
         // 如果有选项生成器，立即基于当前状态生成选项
         if (interaction.kind === 'simple-choice') {
@@ -1387,6 +1444,9 @@ export function createInteractionSystem<TCore>(
                 const ts = resolveCommandTimestamp(command);
                 const current = state.sys.interaction.current;
                 const queue = state.sys.interaction.queue ?? [];
+                if (current?.cancelPolicy === 'forbidden' || queue.some(interaction => interaction.cancelPolicy === 'forbidden')) {
+                    return { halt: true, error: '当前交互必须完成' };
+                }
                 const nextState = clearActiveResolutionBlock(
                     syncActiveResolutionWithInteraction(writeInteractionState(state, { queue: [] })),
                 );
@@ -1424,10 +1484,11 @@ export function createInteractionSystem<TCore>(
 
         playerView: (state, playerId): Partial<{ interaction: InteractionState }> => {
             const { current, queue } = state.sys.interaction;
+            const isSpectator = isSpectatorPlayerId(playerId);
 
             // 如果交互有 optionsGenerator，先调用它生成选项，再序列化
             let processedCurrent = current;
-            if (current && isSamePlayerId(current.playerId, playerId) && current.kind === 'simple-choice') {
+            if (current && (isSpectator || isSamePlayerId(current.playerId, playerId)) && current.kind === 'simple-choice') {
                 const data = current.data as SimpleChoiceData;
                 if (data.optionsGenerator) {
                     const freshOptions = normalizeFreshSimpleChoiceOptions(data.optionsGenerator(state, data), data);
@@ -1438,13 +1499,14 @@ export function createInteractionSystem<TCore>(
                 }
             }
 
-            const canViewCurrent = isSamePlayerId(processedCurrent?.playerId, playerId)
+            const canViewCurrent = isSpectator
+                || isSamePlayerId(processedCurrent?.playerId, playerId)
                 || canPlayerViewCompareRollInteraction(processedCurrent, playerId);
             const filteredCurrent = canViewCurrent ? stripNonSerializable(processedCurrent) : undefined;
 
             // 同样处理 queue 中的交互
             const processedQueue = queue
-                .filter((i) => isSamePlayerId(i?.playerId, playerId))
+                .filter((i) => isSpectator || isSamePlayerId(i?.playerId, playerId))
                 .map((i) => {
                     if (i.kind === 'simple-choice') {
                         const data = i.data as SimpleChoiceData;
@@ -1460,7 +1522,7 @@ export function createInteractionSystem<TCore>(
                 });
             const filteredQueue = processedQueue.map(i => stripNonSerializable(i)!);
             // 当其他玩家有未完成交互时，通知当前玩家被阻塞（不暴露交互详情）
-            const isBlocked = !!current && !isSamePlayerId(current.playerId, playerId);
+            const isBlocked = !isSpectator && !!current && !isSamePlayerId(current.playerId, playerId);
 
             return {
                 interaction: { current: filteredCurrent, queue: filteredQueue, isBlocked },
@@ -1489,6 +1551,9 @@ function handleInteractionCancel<TCore>(
     }
     if (typeof interactionId === 'string' && interactionId !== current.id) {
         return { halt: true, error: '交互已过期' };
+    }
+    if (current.cancelPolicy === 'forbidden') {
+        return { halt: true, error: '当前交互必须完成' };
     }
 
     const sourceId = (() => {

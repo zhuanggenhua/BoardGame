@@ -1,29 +1,31 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { HudPortal, UI_Z_INDEX } from "../../core";
 import type { DiceBoxStyleProfile } from "../../lib/dice-box-threejs/engine";
 import type { BetrayalRecentRollState } from "./game";
+import { BetrayalConfirmButton } from "./confirmButtonSurface";
+import { BetrayalDecisionActionDock } from "./decisionActionDockSurface";
 import {
-  BETRAYAL_HOUSE_DICE_MOBILE_STYLE_PROFILE,
   BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
 } from "./houseDicePresentation";
 import {
   BetrayalHouseDice3DGroup,
   type RecentRollRerollSelection,
 } from "./houseDiceSurface";
-import { resolveRecentRollTotal } from "./recentRollPresentation";
+import { resolveRecentRollTotal, buildRollThresholdRanges } from "./recentRollPresentation";
 
 export function RecentRollPanel({
   roll,
   className = "",
   diceClassName,
   animateInitialRoll = true,
+  animateRerollMotion = true,
   rerollSelection = null,
   effectiveLocale = "zh-CN",
   showSource = true,
   showOutcome = true,
   showRollLabel = true,
   showBreakdown = true,
+  showThresholds = true,
   openTable = false,
   compactResult = false,
   denseResult = false,
@@ -31,12 +33,14 @@ export function RecentRollPanel({
   deferEventDamageStage = false,
   diceStyleProfile = BETRAYAL_HOUSE_DICE_STYLE_PROFILE,
   diceVisualScale = 1,
-  landscapeResultDock = false,
   floatingResultClassName = "",
   openTableResultDocked = false,
   resultStageClassName = "",
   compactRowsClassName = "",
   actorLabel = null,
+  modifierEffectLabel = null,
+  modifierEffectSources = null,
+  resultReadable = true,
   actionSlot = null,
   onDiceSettledChange,
 }: {
@@ -44,12 +48,14 @@ export function RecentRollPanel({
   className?: string;
   diceClassName?: string;
   animateInitialRoll?: boolean;
+  animateRerollMotion?: boolean;
   rerollSelection?: RecentRollRerollSelection | null;
   effectiveLocale?: string;
   showSource?: boolean;
   showOutcome?: boolean;
   showRollLabel?: boolean;
   showBreakdown?: boolean;
+  showThresholds?: boolean;
   openTable?: boolean;
   compactResult?: boolean;
   denseResult?: boolean;
@@ -57,12 +63,14 @@ export function RecentRollPanel({
   deferEventDamageStage?: boolean;
   diceStyleProfile?: DiceBoxStyleProfile;
   diceVisualScale?: number;
-  landscapeResultDock?: boolean;
   floatingResultClassName?: string;
   openTableResultDocked?: boolean;
   resultStageClassName?: string;
   compactRowsClassName?: string;
   actorLabel?: string | null;
+  modifierEffectLabel?: string | null;
+  modifierEffectSources?: string | null;
+  resultReadable?: boolean;
   actionSlot?: React.ReactNode;
   onDiceSettledChange?: (rollId: string, settled: boolean) => void;
 }) {
@@ -161,6 +169,39 @@ export function RecentRollPanel({
         })
       : "";
   const primaryOutcomeLabel = roll.latestLabel;
+  const hauntThreshold =
+    roll.kind === "hauntRoll" && roll.branchThresholds?.length
+      ? Math.max(...roll.branchThresholds.map((branch) => branch.min))
+      : null;
+  const eventThresholdsLabel = roll.branchThresholds?.length
+    ? buildRollThresholdRanges(roll.branchThresholds)
+      .map((branch) => {
+        if (hauntThreshold !== null) {
+          return t(
+            branch.min === hauntThreshold
+              ? "board.roll.hauntSuccessThreshold"
+              : "board.roll.hauntFailureThreshold",
+            {
+              threshold: hauntThreshold,
+              label: branch.label,
+            },
+          );
+        }
+        return t(branch.max === null ? "board.roll.threshold" : "board.roll.thresholdRange", {
+          value: branch.min,
+          min: branch.min,
+          max: branch.max,
+          label: branch.label,
+        });
+      })
+      .join(" · ")
+    : "";
+  const eventThresholdsDescriptionLabel =
+    eventThresholdsLabel
+      && !showEventDamageDiceStage
+      && (showOutcome || roll.kind === "hauntRoll")
+      ? t("board.roll.thresholds", { value: eventThresholdsLabel })
+      : "";
   const diceStageRoll: BetrayalRecentRollState = showEventDamageDiceStage
     ? roll.kind === "eventRolledDamage"
       ? roll
@@ -201,6 +242,7 @@ export function RecentRollPanel({
       locale={effectiveLocale}
       canvasTestId={canvasTestId}
       animateInitialRoll={animateInitialRoll}
+      animateRerollMotion={animateRerollMotion}
       rerollSelection={rerollSelection}
       styleProfile={diceStyleProfile}
       visualScale={diceVisualScale}
@@ -208,10 +250,22 @@ export function RecentRollPanel({
       className={`h-full w-full min-w-0 ${diceClassName ?? ""}`}
     />
   );
+  const isRollStillRolling = !resultReadable;
   const diceStagePromptLabel = rerollSelection?.promptLabel ?? "";
   const shouldShowDiceStagePrompt = Boolean(diceStagePromptLabel);
   const diceStageWithPrompt = (
     <div className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-visible">
+      {isRollStillRolling ? (
+        <div className="pointer-events-none mb-1 grid justify-items-center gap-0.5 px-2 py-0.5 drop-shadow-[0_2px_7px_rgba(0,0,0,0.72)]">
+          <div
+            data-testid="betrayal-recent-roll-rolling-label"
+            data-result-role="rolling-label"
+            className="text-[11px] font-semibold tracking-[0.08em] text-[#d8c38b]"
+          >
+            {roll.rollLabel ?? t("board.roll.fallbackLabel")}
+          </div>
+        </div>
+      ) : null}
       <div
         data-testid="betrayal-reroll-prompt-outside-dice"
         aria-hidden={shouldShowDiceStagePrompt ? undefined : "true"}
@@ -245,6 +299,7 @@ export function RecentRollPanel({
       shouldShowEventDamageSubtitle ||
       shouldShowEventDamageEffect ||
       shouldShowPrimaryOutcome ||
+      (showThresholds && Boolean(eventThresholdsDescriptionLabel)) ||
       shouldShowEventDamageVisibleSummary ||
       (showBreakdown && attackComparisonText),
   );
@@ -261,7 +316,7 @@ export function RecentRollPanel({
         ? "grid-cols-[auto_auto]"
         : "grid-cols-[auto]";
   const shouldShowVisibleBreakdown =
-    showBreakdown && !(showEventDamageDiceStage && visiblePassiveBonus === 0);
+    showBreakdown && visiblePassiveBonus !== 0;
   const breakdownStage = shouldShowVisibleBreakdown ? (
     <div
       data-testid="betrayal-recent-roll-breakdown"
@@ -270,9 +325,6 @@ export function RecentRollPanel({
         denseResult ? "text-[10px] leading-[14px]" : "text-[12px] leading-[16px]"
       }`}
     >
-      <span data-testid="betrayal-recent-roll-detail" className="sr-only">
-        {rollDetailText}
-      </span>
       <span
         data-testid="betrayal-recent-roll-subtotal"
         className="text-[#e2cc91]"
@@ -286,18 +338,9 @@ export function RecentRollPanel({
       >
         {passiveBonusLabel}
       </span>
-      <span
-        data-testid="betrayal-recent-roll-a11y-summary"
-        className="sr-only"
-      >
-        {rollDetailText}
-      </span>
-      <span data-testid="betrayal-recent-roll-bonus" className="sr-only">
-        {bonusText}
-      </span>
     </div>
   ) : null;
-  const resultStage = (
+  const resultStage = isRollStillRolling ? null : (
     <div
       data-testid="betrayal-recent-roll-result-stage"
       data-result-layout="split-primary-total"
@@ -352,8 +395,25 @@ export function RecentRollPanel({
           </div>
         ) : null}
         {shouldShowVisibleRollLabel ? (
-          <div className="mt-0.5 truncate text-[12px] font-semibold text-[#d8c38b]">
+          <div
+            data-testid="betrayal-recent-roll-label"
+            data-result-role="roll-label"
+            className="mt-0.5 truncate text-[12px] font-semibold text-[#d8c38b]"
+          >
             {roll.rollLabel ?? t("board.roll.fallbackLabel")}
+          </div>
+        ) : null}
+        {showThresholds && eventThresholdsDescriptionLabel ? (
+          <div
+            data-testid="betrayal-recent-roll-thresholds"
+            data-result-role="thresholds"
+            className={`mt-1 max-w-full font-semibold tracking-[0.02em] text-[#d8c38b] ${
+              denseResult
+                ? "whitespace-normal break-words text-[11px] leading-[15px]"
+                : "whitespace-normal break-words text-[12px] leading-[16px]"
+            }`}
+          >
+            {eventThresholdsDescriptionLabel}
           </div>
         ) : null}
         {shouldShowEventDamageDescription ? (
@@ -365,7 +425,7 @@ export function RecentRollPanel({
                 ? openTableResultDocked
                   ? "max-h-[34px] overflow-hidden whitespace-normal break-words text-[12px] leading-[17px]"
                   : "whitespace-normal break-words text-[13px] leading-[18px]"
-                : "truncate text-[16px] md:text-[18px]"
+                : "truncate text-[18px]"
             }`}
           >
             {eventDamageDescriptionLabel}
@@ -406,10 +466,20 @@ export function RecentRollPanel({
                 ? openTableResultDocked
                   ? "mt-0.5 max-h-[34px] overflow-hidden whitespace-normal break-words text-[12px] leading-[17px]"
                   : "mt-1 whitespace-normal break-words text-[13px] leading-[18px]"
-                : "mt-2 truncate text-[16px] md:text-[18px]"
+                : "mt-2 whitespace-normal break-words text-[18px] leading-[1.5]"
             }`}
           >
             {primaryOutcomeLabel}
+          </div>
+        ) : null}
+        {modifierEffectLabel ? (
+      <div
+        data-testid="betrayal-recent-roll-modifier-effect"
+        data-result-role="modifier-effect"
+        title={modifierEffectSources ?? modifierEffectLabel ?? undefined}
+        className="mt-1 max-w-full whitespace-normal break-words text-[12px] font-semibold tracking-[0.03em] text-[#8fe7c3]"
+      >
+            {modifierEffectLabel}
           </div>
         ) : null}
         {showBreakdown && attackComparisonText ? (
@@ -456,7 +526,7 @@ export function RecentRollPanel({
             ? openTableResultDocked
               ? "pl-1.5 text-[16px]"
               : "pl-2 text-[16px]"
-          : "pl-4 text-[22px] md:text-[28px]"
+          : "pl-4 text-[28px]"
         }`}
       >
         <span className="leading-none">{totalLabel}</span>
@@ -475,8 +545,10 @@ export function RecentRollPanel({
       ) : null}
     </div>
   );
-  const srSummary = (
-    <div className="sr-only">
+  const srSummary = isRollStillRolling ? (
+    <div className="sr-only">{t("board.roll.rolling")}</div>
+  ) : (
+    <div className="sr-only" data-testid="betrayal-recent-roll-a11y-summary">
       {actorLabel ? <span>{actorLabel}</span> : null}
       {showSource ? <span>{roll.sourceTitle}</span> : null}
       {showRollLabel ? (
@@ -484,45 +556,24 @@ export function RecentRollPanel({
       ) : roll.rollLabel && !showEventDamageDiceStage ? (
         <span>{roll.rollLabel}</span>
       ) : null}
-      <span>{bonusText}</span>
+      <span data-testid="betrayal-recent-roll-bonus">{bonusText}</span>
       {attackComparisonText ? <span>{attackComparisonText}</span> : null}
       {eventDamageSummaries.map((damage, index) => (
         <span key={`${damage.damageKind}-${index}-${damage.rollsLabel}`}>
           {damage.srLabel}
         </span>
       ))}
-      <span>{rollDetailText}</span>
+      <span data-testid="betrayal-recent-roll-detail">{rollDetailText}</span>
       <span>{totalLabel}</span>
       {shouldShowEventDamageDescription ? <span>{eventDamageDescriptionLabel}</span> : null}
       {shouldShowEventDamageSubtitle ? <span>{eventDamageSubtitleLabel}</span> : null}
       {shouldShowEventDamageEffect ? <span>{eventDamageEffectLabel}</span> : null}
+      {eventThresholdsDescriptionLabel ? (
+        <span>{eventThresholdsDescriptionLabel}</span>
+      ) : null}
       {shouldShowPrimaryOutcome ? <span>{primaryOutcomeLabel}</span> : null}
     </div>
   );
-
-  if (landscapeResultDock) {
-    return (
-      <div
-        data-testid="betrayal-recent-roll-panel"
-        data-tutorial-id="betrayal-recent-roll-panel"
-        data-roll-panel-style="mobile-landscape-open-dock"
-        data-visible-dice-source={
-          showEventDamageDiceStage ? "event-rolled-damage" : "recent-roll"
-        }
-        className={`pointer-events-none min-h-[214px] text-[#f3e0a6] ${className}`}
-      >
-        <div className="grid h-full min-h-[214px] grid-cols-[minmax(260px,1fr)_minmax(190px,0.58fr)] items-center gap-3">
-          <div className="relative h-full min-h-[214px] min-w-0">
-            {diceStageWithPrompt}
-          </div>
-          <div className="pointer-events-auto flex min-h-0 min-w-0 flex-col justify-center gap-2">
-            {resultStage}
-          </div>
-        </div>
-        {srSummary}
-      </div>
-    );
-  }
 
   return (
     <div
@@ -605,113 +656,76 @@ export function RecentRollPanel({
 
 export function StandardRecentRollOverlay({
   roll,
-  isPhoneLandscapeLayout,
   canDismissByBackdrop,
   onDismiss,
   effectiveLocale,
   rerollSelection,
   actionSlot = null,
   actorLabel = null,
+  onDiceSettledChange,
+  resultReadable = true,
 }: {
   roll: BetrayalRecentRollState;
-  isPhoneLandscapeLayout: boolean;
   canDismissByBackdrop: boolean;
   onDismiss: () => void;
   effectiveLocale: string;
   rerollSelection?: RecentRollRerollSelection | null;
   actionSlot?: React.ReactNode;
   actorLabel?: string | null;
+  onDiceSettledChange?: (rollId: string, settled: boolean) => void;
+  resultReadable?: boolean;
 }) {
   const { t } = useTranslation("game-betrayal");
   const continueButton = (
-    <button
+    <BetrayalConfirmButton
       type="button"
       data-testid="betrayal-roll-continue"
-      className={`pointer-events-auto inline-flex min-h-[42px] max-w-full shrink-0 items-center justify-center whitespace-nowrap border border-[#d6b56d] bg-[#d6b56d] px-5 py-2 text-[14px] font-bold tracking-[0.12em] text-[#19140d] shadow-[0_10px_22px_rgba(0,0,0,0.34)] transition hover:bg-[#f0d28a] ${
-        isPhoneLandscapeLayout ? "min-w-[132px]" : "min-w-[168px]"
-      }`}
+      className="pointer-events-auto min-w-[168px] max-w-full shrink-0 shadow-[0_10px_22px_rgba(0,0,0,0.34)]"
       onClick={onDismiss}
     >
       {t("board.roll.backToBoard")}
-    </button>
+    </BetrayalConfirmButton>
   );
   const dockedActionSlot = actionSlot ?? continueButton;
   const overlay = (
     <div
       data-testid="betrayal-roll-result-backdrop"
       data-backdrop-dismiss={canDismissByBackdrop ? "enabled" : "disabled"}
-      data-render-layer={isPhoneLandscapeLayout ? "hud-portal" : "board-stage"}
-      className={`${isPhoneLandscapeLayout ? "fixed inset-0" : "absolute inset-0 z-40"} pointer-events-auto`}
-      style={
-        isPhoneLandscapeLayout
-          ? {
-              zIndex: UI_Z_INDEX.emergencyHud + 40,
-              backgroundImage:
-                "radial-gradient(circle at 50% 50%, rgba(6,18,13,0.86), rgba(2,8,6,0.94) 74%, rgba(2,8,6,0.98))",
-            }
-          : undefined
-      }
+      data-render-layer="board-stage"
+      className="pointer-events-auto absolute inset-0 z-40"
       onClick={canDismissByBackdrop ? onDismiss : undefined}
     >
       <div
         data-testid="betrayal-roll-result-dock"
-        className={
-          isPhoneLandscapeLayout
-            ? "pointer-events-auto absolute flex flex-col items-center gap-2"
-            : "pointer-events-auto absolute bottom-[106px] left-[392px] right-[240px] z-40 flex flex-col items-center gap-2"
-        }
-        style={
-          isPhoneLandscapeLayout
-            ? {
-                left: "50%",
-                top: "clamp(82px, 22vh, 108px)",
-                transform: "translateX(-50%)",
-                width: "min(760px, calc(100vw - 5rem))",
-              }
-            : undefined
-        }
+        className="pointer-events-auto absolute bottom-[106px] left-1/2 z-40 flex w-[min(700px,calc(100%-32px))] -translate-x-1/2 flex-col items-center gap-2"
         onClick={(event) => event.stopPropagation()}
       >
         <RecentRollPanel
           roll={roll}
-          className={
-            isPhoneLandscapeLayout
-              ? "h-[min(54vh,238px)] min-h-[218px] w-full"
-              : "h-[min(44vh,390px)] min-h-[360px] w-[min(700px,100%)]"
-          }
-          diceClassName={isPhoneLandscapeLayout ? "min-h-[214px]" : "min-h-[252px]"}
+          className="h-[min(44vh,390px)] min-h-[360px] w-[min(700px,100%)]"
+          diceClassName="min-h-[252px]"
           rerollSelection={rerollSelection}
           openTable
           compactResult
-          compactRowsClassName={
-            isPhoneLandscapeLayout
-              ? undefined
-              : "grid-rows-[minmax(252px,1fr)_auto]"
-          }
-          resultStageClassName={isPhoneLandscapeLayout ? undefined : "mt-3"}
-          denseResult={isPhoneLandscapeLayout}
-          landscapeResultDock={isPhoneLandscapeLayout}
-          diceStyleProfile={
-            isPhoneLandscapeLayout
-              ? BETRAYAL_HOUSE_DICE_MOBILE_STYLE_PROFILE
-              : BETRAYAL_HOUSE_DICE_STYLE_PROFILE
-          }
-          diceVisualScale={isPhoneLandscapeLayout ? 1.16 : 1}
+          compactRowsClassName="grid-rows-[minmax(252px,1fr)_auto]"
+          resultStageClassName="mt-3"
+          diceStyleProfile={BETRAYAL_HOUSE_DICE_STYLE_PROFILE}
           effectiveLocale={effectiveLocale}
           actorLabel={actorLabel}
-          actionSlot={isPhoneLandscapeLayout ? dockedActionSlot : null}
+          resultReadable={resultReadable}
+          onDiceSettledChange={onDiceSettledChange}
         />
-        {isPhoneLandscapeLayout ? null : (
-          <div
-            data-testid="betrayal-roll-continue-dock"
-            className="pointer-events-auto mt-2 flex w-[min(700px,100%)] justify-center"
+        {resultReadable ? (
+          <BetrayalDecisionActionDock
+            testId="betrayal-roll-continue-dock"
+            className="pointer-events-auto mt-2 min-h-0 w-[min(700px,100%)] border-t-0 bg-transparent pt-0"
           >
             {dockedActionSlot}
-          </div>
-        )}
+          </BetrayalDecisionActionDock>
+        ) : null}
       </div>
     </div>
   );
 
-  return isPhoneLandscapeLayout ? <HudPortal>{overlay}</HudPortal> : overlay;
+  return overlay;
 }

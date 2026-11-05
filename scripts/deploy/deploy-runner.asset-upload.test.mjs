@@ -81,6 +81,10 @@ test('健康检查会把素材发布依赖缺失报告为未就绪', async () =>
         );
         assert.match(
             health.assetPublish.missing.join('\n'),
+            /scripts\/mobile\/android-package-archive\.mjs/,
+        );
+        assert.match(
+            health.assetPublish.missing.join('\n'),
             /scripts\/mobile\/android-assets-base-url\.mjs/,
         );
 

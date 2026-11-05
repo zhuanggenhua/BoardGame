@@ -144,11 +144,22 @@ async function joinAsSeat(
     return playerPage;
 }
 
-async function waitForScenarioVoteScreen(page: Page): Promise<void> {
+async function waitForFactionSelectEntry(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-board')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId('qidahen-scenario-vote-title')).toContainText('房主选择', { timeout: 15000 });
+    await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId('qidahen-faction-selection-title')).toContainText('选择你的阵营', { timeout: 15000 });
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
+    await expect(page.getByTestId('qidahen-scenario-vote-screen')).toHaveCount(0);
+}
+
+async function openScenarioMenu(page: Page): Promise<void> {
+    const overlay = page.getByTestId('qidahen-scenario-vote-screen');
+    if (await overlay.isVisible().catch(() => false)) {
+        return;
+    }
+    await page.getByTestId('qidahen-scenario-menu-open').click();
+    await expect(overlay).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId('qidahen-scenario-vote-title')).toContainText('起始剧本设置卡', { timeout: 15000 });
 }
 
 async function waitForInMatchSetupOverlay(page: Page): Promise<void> {
@@ -165,10 +176,10 @@ async function waitForFactionSelectionScreen(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-action-wheel')).toHaveCount(0);
 }
 
-async function assertVoteOverlay(page: Page, playerId: string): Promise<void> {
+async function assertVoteOverlay(page: Page): Promise<void> {
     await expect(page.getByTestId('qidahen-scenario-vote-option-post-sarhu-1619')).toBeVisible();
     await expect(page.getByTestId('qidahen-scenario-vote-option-shanhaiguan-1622')).toBeVisible();
-    await expect(page.getByTestId(`qidahen-scenario-vote-status-${playerId}`)).toContainText('你');
+    await expect(page.getByTestId('qidahen-scenario-vote-option-dingmao-rebellion-1627')).toBeVisible();
 }
 
 async function hostPickScenario(
@@ -317,21 +328,32 @@ test.describe('七大恨联机局内前置选择', () => {
             const jinDiagnostics = attachPageDiagnostics(jinPage);
 
             await Promise.all([
-                waitForScenarioVoteScreen(page),
-                waitForScenarioVoteScreen(mongolPage),
-                waitForScenarioVoteScreen(jinPage),
+                waitForFactionSelectEntry(page),
+                waitForFactionSelectEntry(mongolPage),
+                waitForFactionSelectEntry(jinPage),
+            ]);
+            await expect(page.getByTestId('qidahen-faction-selection-status')).toContainText('请先确认起始剧本设置卡');
+            await expect(page.getByTestId('qidahen-faction-selection-confirm')).toBeDisabled();
+            await captureEvidence(page, testInfo, '七大恨-联机局内阵营选择-00-默认三列剧本关闭.png');
+
+            await Promise.all([
+                openScenarioMenu(page),
+                openScenarioMenu(mongolPage),
+                openScenarioMenu(jinPage),
             ]);
 
-            await assertVoteOverlay(page, '0');
-            await assertVoteOverlay(mongolPage, '1');
-            await assertVoteOverlay(jinPage, '2');
+            await assertVoteOverlay(page);
+            await assertVoteOverlay(mongolPage);
+            await assertVoteOverlay(jinPage);
+            await expect(page.getByTestId('qidahen-scenario-vote-locked-dingmao-rebellion-1627')).toContainText('当前 3 人房不可投');
+            await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible();
 
             await captureEvidence(page, testInfo, '七大恨-联机局内剧本选择-01-房主进入剧本书页并可点选.png');
 
             await expect(mongolPage.getByTestId('qidahen-scenario-vote-actions')).toContainText('等待房主');
             await hostPickScenario(page, 'shanhaiguan-1622', async () => {
                 await expect(page.getByTestId('qidahen-scenario-vote-screen')).toBeVisible();
-                await expect(page.getByTestId('qidahen-faction-selection-screen')).toHaveCount(0);
+                await expect(page.getByTestId('qidahen-faction-selection-screen')).toBeVisible();
                 await captureEvidence(page, testInfo, '七大恨-联机局内剧本选择-01b-山海关之议已暂选待确认.png');
             });
 
@@ -340,10 +362,17 @@ test.describe('七大恨联机局内前置选择', () => {
                 waitForFactionSelectionScreen(mongolPage),
                 waitForFactionSelectionScreen(jinPage),
             ]);
+            await expect(page.getByTestId('qidahen-scenario-vote-screen')).toHaveCount(0);
+            await expect(page.getByTestId('qidahen-scenario-menu-open')).toContainText('山海关之议');
             await captureEvidence(page, testInfo, '七大恨-联机局内阵营选择-02-三阵营可见且未被占用.png');
 
+            await page.getByTestId('qidahen-faction-act-ming-raid').hover();
+            await expect(page.getByTestId('qidahen-faction-act-ming-raid')).toContainText('弃1张手牌');
+            await captureEvidence(page, testInfo, '七大恨-联机局内阵营选择-02c-势力行动悬停.png');
+
             await selectFaction(page, 'ming', async () => {
-                await expect(page.getByTestId('qidahen-faction-selection-status')).toContainText('待确认 大明');
+                await expect(page.getByTestId('qidahen-faction-selection-status')).toContainText('大明');
+                await expect(page.getByTestId('qidahen-faction-selection-status')).not.toContainText('待确认');
                 await expect(page.getByTestId('qidahen-faction-selection-screen')).toContainText('已确认 0 / 3');
                 await expect(page.getByTestId('qidahen-inmatch-setup-overlay')).toHaveCount(0);
                 await captureEvidence(page, testInfo, '七大恨-联机局内阵营选择-02b-大明已暂选待确认.png');

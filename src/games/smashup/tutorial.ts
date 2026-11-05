@@ -5,13 +5,27 @@
  * - 子教程：牛仔决斗机制教学
  */
 
-import type { TutorialCollection, TutorialManifest } from '../../engine/types';
+import type { TutorialCollection, TutorialHiddenAutomationContract, TutorialManifest } from '../../engine/types';
 import type { BaseInPlay, CardInstance, MinionOnBase } from './domain/types';
 import { SU_COMMANDS, SU_EVENTS } from './domain/types';
 import { FLOW_COMMANDS, FLOW_EVENTS } from '../../engine/systems/FlowSystem';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../engine/systems/InteractionSystem';
 import { SMASHUP_FACTION_IDS } from './domain/ids';
+
+const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
+    kind: 'setup-precondition',
+    reason,
+});
+
+const compressedRepeat = (
+    equivalentStepIds: string[],
+    reason: string,
+): TutorialHiddenAutomationContract => ({
+    kind: 'compressed-repeat',
+    equivalentStepIds,
+    reason,
+});
 
 // ============================================================================
 // 事件匹配器常量
@@ -159,6 +173,7 @@ export const SMASH_UP_BASIC_TUTORIAL: TutorialManifest = {
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the fixed Smash Up combo board before the first visible tutorial step.'),
         },
         {
             id: 'welcome',
@@ -333,6 +348,10 @@ export const SMASH_UP_BASIC_TUTORIAL: TutorialManifest = {
             aiActions: [
                 { commandType: FLOW_COMMANDS.ADVANCE_PHASE, payload: undefined, playerId: '1' },
             ],
+            hiddenAutomation: compressedRepeat(
+                ['endPlayCards'],
+                'Opponent repeats formal turn progression after the player has completed the same turn loop.',
+            ),
             advanceOnEvents: [
                 { type: SU_EVENTS.TURN_STARTED, match: { playerId: '0' } },
             ],
@@ -433,6 +452,7 @@ export const SMASH_UP_COWBOYS_DUEL_TUTORIAL: TutorialManifest = {
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the fixed Cowboys duel board before the visible duel exercise begins.'),
         },
         {
             id: 'duelIntro',
@@ -508,6 +528,10 @@ export const SMASH_UP_COWBOYS_DUEL_TUTORIAL: TutorialManifest = {
                     payload: { optionId: 'skip' },
                 },
             ],
+            hiddenAutomation: compressedRepeat(
+                ['duelCard'],
+                'Opponent repeats the same duel response window after the player has resolved their duel card.',
+            ),
             advanceOnEvents: [
                 {
                     type: INTERACTION_EVENTS.RESOLVED,

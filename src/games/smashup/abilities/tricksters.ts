@@ -30,6 +30,7 @@ import type {
     DeckReorderedEvent,
     PlayerState,
     SmashUpEvent,
+    SmashUpCore,
     PowerCounterAddedEvent,
     BreakpointModifiedEvent,
 } from '../domain/types';
@@ -43,6 +44,7 @@ import { getOpponentLabel } from '../domain/utils';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { buildOngoingDetachedEvent, buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -50,7 +52,7 @@ import {
 } from '../domain/abilityRuntime';
 
 type TricksterPromptContext = {
-    matchState: MatchState<any>;
+    matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
 };
@@ -89,7 +91,7 @@ type TricksterGnomePromptContext = TricksterPromptContext & {
 };
 
 function createTricksterPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
-    matchState: MatchState<any>,
+    matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
     now: number,
     extra?: TExtra,
@@ -232,7 +234,7 @@ function collectBlockThePathFactions(state: AbilityContext['state']): string[] {
     return Array.from(factionSet);
 }
 
-const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptContext>({
     sourceId: 'trickster_disenchant',
     buildInteraction: (context) => {
         const targets = collectDisenchantTargets(context.matchState.core);
@@ -247,7 +249,7 @@ const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptCont
             `trickster_disenchant_${context.now}`,
             context.playerId,
             '选择要消灭的行动牌',
-            options as any[],
+            options,
             {
                 sourceId: 'trickster_disenchant',
                 titleKey: 'ui.trickster_disenchant_title',
@@ -270,7 +272,7 @@ const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptCont
     },
 });
 
-const tricksterBlockThePathPromptProgram = createPromptProgram<TricksterBlockThePathPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterBlockThePathPromptProgram = createPromptProgram<TricksterBlockThePathPromptContext>({
     sourceId: 'trickster_block_the_path',
     buildInteraction: (context) => {
         const options = collectBlockThePathFactions(context.matchState.core).map((factionId, index) => ({
@@ -312,7 +314,7 @@ const tricksterBlockThePathPromptProgram = createPromptProgram<TricksterBlockThe
     },
 });
 
-const tricksterMarkOfSleepPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterMarkOfSleepPromptProgram = createPromptProgram<TricksterPromptContext>({
     sourceId: 'trickster_mark_of_sleep',
     buildInteraction: (context) => {
         const options = context.matchState.core.turnOrder.map((pid, index) => ({
@@ -353,7 +355,7 @@ const tricksterMarkOfSleepPromptProgram = createPromptProgram<TricksterPromptCon
     },
 });
 
-const tricksterMarkOfSleepPodPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterMarkOfSleepPodPromptProgram = createPromptProgram<TricksterPromptContext>({
     sourceId: 'trickster_mark_of_sleep_pod',
     buildInteraction: (context) => {
         const otherPlayers = context.matchState.core.turnOrder.filter(pid => pid !== context.playerId);
@@ -475,7 +477,13 @@ function buildTricksterControlledMinionOptions(
     const options: Array<{
         id: string;
         label: string;
-        value: { minionUid: string; baseIndex: number };
+        value: {
+            minionUid: string;
+            minionDefId: string;
+            defId: string;
+            baseIndex: number;
+            baseDefId?: string;
+        };
         _source: 'minion';
         displayMode: 'card';
     }> = [];
@@ -608,7 +616,7 @@ function buildBlockThePathPodCombos(
     return combos;
 }
 
-const tricksterHideoutPodDestroyPromptProgram = createPromptProgram<TricksterHideoutPodDestroyPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterHideoutPodDestroyPromptProgram = createPromptProgram<TricksterHideoutPodDestroyPromptContext>({
     sourceId: 'trickster_hideout_pod_destroy',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `trickster_hideout_pod_destroy_${context.now}`,
@@ -650,12 +658,11 @@ const tricksterHideoutPodAfterSwapProgram = createEffectProgram<TricksterHideout
     }
     return {
         events: [],
-        context,
-        nextProgram: tricksterHideoutPodDestroyPromptProgram,
+        continuation: createAbilityRuntimeContinuation(context, tricksterHideoutPodDestroyPromptProgram),
     };
 });
 
-const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideoutPodSwapPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideoutPodSwapPromptContext>({
     sourceId: 'trickster_hideout_pod_swap',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `trickster_hideout_pod_swap_${context.now}`,
@@ -750,15 +757,14 @@ const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideou
 
         return {
             events,
-            context: createTricksterPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(state, playerId, timestamp, {
                 baseIndex: context.baseIndex,
-            }) satisfies TricksterHideoutPodDestroyPromptContext,
-            nextProgram: tricksterHideoutPodAfterSwapProgram,
+            }) satisfies TricksterHideoutPodDestroyPromptContext, tricksterHideoutPodAfterSwapProgram),
         };
     },
 });
 
-const tricksterPixiePodMinionPromptProgram = createPromptProgram<TricksterPixiePodMinionPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterPixiePodMinionPromptProgram = createPromptProgram<TricksterPixiePodMinionPromptContext>({
     sourceId: 'trickster_pixie_pod_minion',
     buildInteraction: (context) => {
         const options = buildTricksterBaseControlledMinionOptions(context.matchState.core, context.playerId, context.baseIndex);
@@ -792,7 +798,7 @@ const tricksterPixiePodMinionPromptProgram = createPromptProgram<TricksterPixieP
     },
 });
 
-const tricksterPixiePodActionCountersPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterPixiePodActionCountersPromptProgram = createPromptProgram<TricksterPromptContext>({
     sourceId: 'trickster_pixie_pod_action_counters',
     buildInteraction: (context) => {
         const options = buildTricksterControlledMinionOptions(context.matchState.core, context.playerId);
@@ -840,7 +846,7 @@ const tricksterPixiePodActionCountersPromptProgram = createPromptProgram<Trickst
     },
 });
 
-const tricksterPixiePodActionDestroyPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterPixiePodActionDestroyPromptProgram = createPromptProgram<TricksterPromptContext>({
     sourceId: 'trickster_pixie_pod_action_destroy',
     buildInteraction: (context) => {
         const targets = collectDisenchantTargets(context.matchState.core);
@@ -883,13 +889,12 @@ const tricksterPixiePodActionDestroyPromptProgram = createPromptProgram<Trickste
 
         return {
             events,
-            context: createTricksterPromptContext(state, playerId, timestamp),
-            nextProgram: tricksterPixiePodActionCountersPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(state, playerId, timestamp), tricksterPixiePodActionCountersPromptProgram),
         };
     },
 });
 
-const tricksterBlockThePathPodPromptProgram = createPromptProgram<TricksterBlockThePathPodPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterBlockThePathPodPromptProgram = createPromptProgram<TricksterBlockThePathPodPromptContext>({
     sourceId: 'trickster_block_the_path_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `trickster_block_the_path_pod_${context.now}`,
@@ -930,7 +935,7 @@ const tricksterBlockThePathPodPromptProgram = createPromptProgram<TricksterBlock
     },
 });
 
-const tricksterFlameTrapPodBreakpointPromptProgram = createPromptProgram<TricksterFlameTrapPodPromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterFlameTrapPodBreakpointPromptProgram = createPromptProgram<TricksterFlameTrapPodPromptContext>({
     sourceId: 'trickster_flame_trap_pod_bp',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `trickster_flame_trap_pod_bp_${context.now}`,
@@ -973,7 +978,7 @@ const tricksterFlameTrapPodBreakpointPromptProgram = createPromptProgram<Trickst
     },
 });
 
-const tricksterGnomePromptProgram = createPromptProgram<TricksterGnomePromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterGnomePromptProgram = createPromptProgram<TricksterGnomePromptContext>({
     sourceId: 'trickster_gnome',
     buildInteraction: (context) => {
         const { options } = buildTricksterGnomePromptOptions(
@@ -1026,7 +1031,7 @@ const tricksterGnomePromptProgram = createPromptProgram<TricksterGnomePromptCont
     },
 });
 
-const tricksterGnomePodPromptProgram = createPromptProgram<TricksterGnomePromptContext, AbilityContext['state'], SmashUpEvent>({
+const tricksterGnomePodPromptProgram = createPromptProgram<TricksterGnomePromptContext>({
     sourceId: 'trickster_gnome_pod',
     buildInteraction: (context) => {
         const { options } = buildTricksterGnomePromptOptions(
@@ -1144,8 +1149,7 @@ export function registerTricksterAbilities(): void {
             }
             return {
                 events: [],
-                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-                nextProgram: tricksterDisenchantPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now), tricksterDisenchantPromptProgram),
             };
         }),
     });
@@ -1155,8 +1159,7 @@ export function registerTricksterAbilities(): void {
     registerAbilityProgram('trickster_mark_of_sleep', 'onPlay', {
         program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => ({
             events: [],
-            context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-            nextProgram: tricksterMarkOfSleepPromptProgram,
+            continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now), tricksterMarkOfSleepPromptProgram),
         })),
     });
     // 封路（ongoing）：打出时选择一个派系
@@ -1168,11 +1171,10 @@ export function registerTricksterAbilities(): void {
             }
             return {
                 events: [],
-                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
                     cardUid: ctx.cardUid,
                     baseIndex: ctx.baseIndex,
-                }),
-                nextProgram: tricksterBlockThePathPromptProgram,
+                }), tricksterBlockThePathPromptProgram),
             };
         }),
     });
@@ -1228,8 +1230,7 @@ function registerTricksterPodAbilities(): void {
             if (otherPlayers.length === 0) return { events: [] };
             return {
                 events: [],
-                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-                nextProgram: tricksterMarkOfSleepPodPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now), tricksterMarkOfSleepPodPromptProgram),
             };
         }),
     });
@@ -1527,7 +1528,8 @@ function registerTricksterOngoingEffects(): void {
                 matchesDefId(o.defId, 'trickster_flame_trap')
                 && ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) !== trigCtx.playerId);
         if (!trap) return [];
-        const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
+        const metadataControllerId = trap.metadata?.sourceControllerId;
+        const controllerId = typeof metadataControllerId === 'string' ? metadataControllerId : trap.ownerId;
         if (controllerId === trigCtx.playerId) return [];
         return [
             ...buildValidatedDestroyEvents(trigCtx.state, {
@@ -1788,7 +1790,8 @@ function registerTricksterPodOngoingEffects(): void {
                 o.defId === 'trickster_flame_trap_pod'
                 && ((o.metadata?.sourceControllerId as PlayerId | undefined) ?? o.ownerId) !== trigCtx.playerId);
         if (!trap) return [];
-        const controllerId = trap.metadata?.sourceControllerId ?? trap.ownerId;
+        const metadataControllerId = trap.metadata?.sourceControllerId;
+        const controllerId = typeof metadataControllerId === 'string' ? metadataControllerId : trap.ownerId;
         if (controllerId === trigCtx.playerId) return [];
         return [
             buildOngoingDetachedEvent({
@@ -1883,11 +1886,10 @@ function registerTricksterPodOngoingEffects(): void {
             }
             return {
                 events: [],
-                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                continuation: createAbilityRuntimeContinuation(createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
                     cardUid: ctx.cardUid,
                     baseIndex: ctx.baseIndex,
-                }) satisfies TricksterBlockThePathPodPromptContext,
-                nextProgram: tricksterBlockThePathPodPromptProgram,
+                }) satisfies TricksterBlockThePathPodPromptContext, tricksterBlockThePathPodPromptProgram),
             };
         }),
     });
@@ -1920,12 +1922,7 @@ function registerTricksterPodOngoingEffects(): void {
                 && entry.targetPlayerId === minion.controller
                 && entry.restrictionType === 'move_minion',
         ) ?? false;
-        const legacyMarked = (state.sleepMoveMarkedPlayers ?? []) as string[];
-        const expires = (state.sleepMarkExpiresOnTurnNumber as number | undefined);
-        const legacyRestricted =
-            legacyMarked.includes(minion.controller)
-            && (expires === undefined || state.turnNumber < expires);
-        if (isRestricted || legacyRestricted) return null;
+        if (isRestricted) return null;
         return undefined;
     });
 }

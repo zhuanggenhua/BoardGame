@@ -117,7 +117,7 @@ export function setUndoAiSeatIds<TCore>(
     const normalizedSeatIds = normalizeAiSeatIds(aiSeatIds);
     const undoState = (state.sys.undo ?? {
         snapshots: [],
-        maxSnapshots: 1,
+        maxSnapshots: 10,
     }) as UndoState & { aiSeatIds?: PlayerId[] };
     const previousSeatIds = normalizeAiSeatIds(undoState.aiSeatIds);
     if (
@@ -173,7 +173,7 @@ export function createUndoSystem<TCore>(
     config: UndoSystemConfig = {}
 ): EngineSystem<TCore> {
     const {
-        maxSnapshots = 1,
+        maxSnapshots = 10,
         requireApproval = true,
         requiredApprovals = 1,
         // 由具体游戏提供：哪些“领域命令”会产生可撤回快照。
@@ -256,7 +256,7 @@ export function createUndoSystem<TCore>(
             // 通用标记：payload._noSnapshot === true 时跳过快照
             // 用于「移动后触发的技能」等场景与前一个命令共享同一个撤回点
             const pl = command.payload as Record<string, unknown> | undefined;
-            if (pl?._noSnapshot === true) {
+            if (command.skipUndoSnapshot === true || pl?._noSnapshot === true) {
                 return;
             }
 
@@ -325,12 +325,12 @@ export function createUndoSystem<TCore>(
  * 手写递归实现，能正确处理包含函数的对象（跳过函数值）
  * structuredClone 遇到函数会抛 DataCloneError，不适用于此场景
  */
-function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
+export function cloneSnapshotState<T>(value: T, seen = new Map<object, unknown>()): T {
     if (value === null || typeof value !== 'object') return value;
     if (seen.has(value as object)) return seen.get(value as object) as T;
 
     if (Array.isArray(value)) {
-        const cloned = value.map((item) => deepCloneSnapshot(item, seen));
+        const cloned = value.map((item) => cloneSnapshotState(item, seen));
         seen.set(value as object, cloned);
         return cloned as T;
     }
@@ -343,7 +343,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
         const cloned = new Map();
         seen.set(value as object, cloned);
         value.forEach((entryValue, entryKey) => {
-            cloned.set(deepCloneSnapshot(entryKey, seen), deepCloneSnapshot(entryValue, seen));
+            cloned.set(cloneSnapshotState(entryKey, seen), cloneSnapshotState(entryValue, seen));
         });
         return cloned as T;
     }
@@ -352,7 +352,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
         const cloned = new Set();
         seen.set(value as object, cloned);
         value.forEach((entryValue) => {
-            cloned.add(deepCloneSnapshot(entryValue, seen));
+            cloned.add(cloneSnapshotState(entryValue, seen));
         });
         return cloned as T;
     }
@@ -360,7 +360,7 @@ function deepCloneSnapshot<T>(value: T, seen = new Map<object, unknown>()): T {
     const cloned: Record<string, unknown> = {};
     seen.set(value as object, cloned);
     Object.entries(value as Record<string, unknown>).forEach(([key, entryValue]) => {
-        cloned[key] = deepCloneSnapshot(entryValue, seen);
+        cloned[key] = cloneSnapshotState(entryValue, seen);
     });
     return cloned as T;
 }
@@ -395,10 +395,14 @@ function createSnapshot<TCore>(
                     ? actionLog.entries.slice(-actionLogMaxEntries)
                     : [],
             },
+            tutorial: {
+                ...state.sys.tutorial,
+                checkpoints: undefined,
+            },
         },
     };
 
-    return deepCloneSnapshot(stateToSave) as MatchState<TCore>;
+    return cloneSnapshotState(stateToSave) as MatchState<TCore>;
 }
 
 function appendSnapshot<TCore>(
@@ -428,6 +432,35 @@ function appendSnapshot<TCore>(
                 snapshots,
                 snapshotCursors: cursors,
             },
+        },
+    };
+}
+
+function restoreSnapshotAfterUndo<TCore>(
+    currentState: MatchState<TCore>,
+    previousState: MatchState<TCore>,
+    newSnapshots: unknown[],
+    newCursors: number[],
+    restoredCursor: number,
+): MatchState<TCore> {
+    const currentUndo = currentState.sys.undo as UndoState & { aiSeatIds?: PlayerId[] };
+    const restoredUndo = {
+        ...previousState.sys.undo,
+        ...currentUndo,
+        maxSnapshots: currentUndo.maxSnapshots,
+        snapshots: newSnapshots,
+        snapshotCursors: newCursors,
+        aiSeatIds: normalizeAiSeatIds(currentUndo.aiSeatIds),
+        pendingRequest: undefined,
+        restoredRandomCursor: restoredCursor >= 0 ? restoredCursor : undefined,
+        rollbackRevision: (currentUndo.rollbackRevision ?? 0) + 1,
+    };
+
+    return {
+        ...previousState,
+        sys: {
+            ...previousState.sys,
+            undo: restoredUndo,
         },
     };
 }
@@ -471,20 +504,13 @@ function handleRequestUndo<TCore>(
         
         return {
             halt: true, // 阻止后续执行
-            state: {
-                ...previousState,
-                sys: {
-                    ...previousState.sys,
-                    undo: {
-                        maxSnapshots: undo.maxSnapshots,
-                        snapshots: newSnapshots,
-                        snapshotCursors: newCursors,
-                        aiSeatIds: normalizeAiSeatIds(undo.aiSeatIds),
-                        pendingRequest: undefined,
-                        restoredRandomCursor: restoredCursor >= 0 ? restoredCursor : undefined,
-                    },
-                },
-            },
+            state: restoreSnapshotAfterUndo(
+                state,
+                previousState,
+                newSnapshots,
+                newCursors,
+                restoredCursor,
+            ),
         };
     }
 
@@ -507,20 +533,13 @@ function handleRequestUndo<TCore>(
 
         return {
             halt: true,
-            state: {
-                ...previousState,
-                sys: {
-                    ...previousState.sys,
-                    undo: {
-                        maxSnapshots: undo.maxSnapshots,
-                        snapshots: newSnapshots,
-                        snapshotCursors: newCursors,
-                        aiSeatIds: normalizeAiSeatIds(undo.aiSeatIds),
-                        pendingRequest: undefined,
-                        restoredRandomCursor: restoredCursor >= 0 ? restoredCursor : undefined,
-                    },
-                },
-            },
+            state: restoreSnapshotAfterUndo(
+                state,
+                previousState,
+                newSnapshots,
+                newCursors,
+                restoredCursor,
+            ),
         };
     }
 
@@ -600,20 +619,13 @@ function handleApproveUndo<TCore>(
         
         return {
             halt: true,
-            state: {
-                ...previousState,
-                sys: {
-                    ...previousState.sys,
-                    undo: {
-                        maxSnapshots: undo.maxSnapshots,
-                        snapshots: newSnapshots,
-                        snapshotCursors: newCursors,
-                        aiSeatIds: normalizeAiSeatIds(undo.aiSeatIds),
-                        pendingRequest: undefined,
-                        restoredRandomCursor: restoredCursor >= 0 ? restoredCursor : undefined,
-                    },
-                },
-            },
+            state: restoreSnapshotAfterUndo(
+                state,
+                previousState,
+                newSnapshots,
+                newCursors,
+                restoredCursor,
+            ),
         };
     }
 

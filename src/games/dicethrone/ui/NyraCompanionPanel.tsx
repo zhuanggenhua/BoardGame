@@ -3,6 +3,7 @@ import { HeartPulse, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { HeroState } from '../types';
 import { ASSETS } from './assets';
+import { isNyraCompanionActive } from '../domain/rules';
 import { buildLocalizedImageSet, HudPortal, UI_Z_INDEX } from '../../../core';
 import { GameButton } from './components/GameButton';
 
@@ -42,7 +43,7 @@ export const NyraCompanionPanel = ({
     if (player.characterId !== 'lieren' || !companion) return null;
 
     const hp = Math.max(0, Math.min(companion.maxHp, companion.hp));
-    const isActive = hp > 0;
+    const isActive = isNyraCompanionActive(player);
     const bondCount = player.tokens.nyras_bond ?? 0;
     const backgroundImage = buildLocalizedImageSet(ASSETS.PLAYER_BOARD('lieren'), locale);
     const activeDamageResponse = damageResponse && isActive && damageResponse.currentDamage > 0

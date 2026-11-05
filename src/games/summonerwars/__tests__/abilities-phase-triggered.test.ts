@@ -679,22 +679,22 @@ describe('巨食兽 - 喂养巨食兽 (feed_beast)', () => {
 
 
 // ============================================================================
-// D8 集成测试：halt → confirm → auto-advance 完整流程
+// D8 集成测试：halt → confirm 后等待玩家手动推进
 // ============================================================================
 
 import { canActivateAbility } from '../domain/abilityHelpers';
 import { summonerWarsFlowHooks } from '../domain/flowHooks';
 import { buildUsageKey } from '../domain/utils';
 
-describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance', () => {
+describe('D8 时序集成：阶段结束技能 halt → confirm 后不自动推进', () => {
   /**
-   * feed_beast 路径A：吃友方后 usesPerTurn 阻止重复激活 → 自动推进
+   * feed_beast 路径A：吃友方后 usesPerTurn 阻止重复激活 → 等待玩家手动推进
    * 
    * 回归场景：巨食兽确认吃友方后仍在场上，若无 usesPerTurn 限制，
    * canActivateAbility 返回 true → hasConfirmablePhaseEndAbility 返回 true
-   * → onAutoContinueCheck 不触发 → 游戏卡住
+   * → 阶段不再自动推进，由玩家手动结束阶段以便继续查看场上。
    */
-  it('feed_beast 吃友方后 usesPerTurn 阻止重复激活，onAutoContinueCheck 自动推进', () => {
+  it('feed_beast 吃友方后 usesPerTurn 阻止重复激活，但不自动推进', () => {
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'goblin',
       faction1: 'necromancer',
@@ -737,18 +737,17 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
     // 步骤5：canActivateAbility 应返回 false（usesPerTurn 限制）
     expect(canActivateAbility(newState, newState.board[4][2].unit!, 'feed_beast', '0')).toBe(false);
 
-    // 步骤6：onAutoContinueCheck 应触发自动推进
+    // 步骤6：召唤师战争不再触发自动推进
     const mockSys = { flowHalted: true, phase: 'attack' };
-    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck!({
+    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck?.({
       state: { core: newState, sys: mockSys as any },
       events: [],
       random: createTestRandom(),
     });
-    expect(checkResult).toBeDefined();
-    expect(checkResult!.autoContinue).toBe(true);
+    expect(checkResult).toBeUndefined();
   });
 
-  it('feed_beast 本回合已击杀时不可触发，onAutoContinueCheck 自动推进', () => {
+  it('feed_beast 本回合已击杀时不可触发，但不自动推进', () => {
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'goblin',
       faction1: 'necromancer',
@@ -770,19 +769,18 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
     expect(canActivateAbility(state, beast, 'feed_beast', '0')).toBe(false);
 
     const mockSys = { flowHalted: true, phase: 'attack' };
-    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck!({
+    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck?.({
       state: { core: state, sys: mockSys as any },
       events: [],
       random: createTestRandom(),
     });
-    expect(checkResult).toBeDefined();
-    expect(checkResult!.autoContinue).toBe(true);
+    expect(checkResult).toBeUndefined();
   });
 
   /**
-   * feed_beast 路径B：自毁后单位不存在 → 自动推进
+   * feed_beast 路径B：自毁后单位不存在 → 等待玩家手动推进
    */
-  it('feed_beast 自毁后单位不存在，onAutoContinueCheck 自动推进', () => {
+  it('feed_beast 自毁后单位不存在，但不自动推进', () => {
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'goblin',
       faction1: 'necromancer',
@@ -808,21 +806,20 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
     // 巨食兽已不在场上
     expect(newState.board[4][2].unit).toBeUndefined();
 
-    // onAutoContinueCheck 应触发自动推进
+    // 召唤师战争不再触发自动推进
     const mockSys = { flowHalted: true, phase: 'attack' };
-    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck!({
+    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck?.({
       state: { core: newState, sys: mockSys as any },
       events: [],
       random: createTestRandom(),
     });
-    expect(checkResult).toBeDefined();
-    expect(checkResult!.autoContinue).toBe(true);
+    expect(checkResult).toBeUndefined();
   });
 
   /**
-   * ice_shards：消耗充能后 customValidator 返回 false → 自动推进
+   * ice_shards：消耗充能后 customValidator 返回 false → 等待玩家手动推进
    */
-  it('ice_shards 消耗充能后不可再激活，onAutoContinueCheck 自动推进', () => {
+  it('ice_shards 消耗充能后不可再激活，但不自动推进', () => {
     const state = createInitializedCore(['0', '1'], createTestRandom(), {
       faction0: 'frost',
       faction1: 'necromancer',
@@ -858,15 +855,14 @@ describe('D8 时序集成：阶段结束技能 halt → confirm → auto-advance
     // canActivateAbility 应返回 false
     expect(canActivateAbility(newState, newState.board[3][2].unit!, 'ice_shards', '0')).toBe(false);
 
-    // onAutoContinueCheck 应触发自动推进
+    // 召唤师战争不再触发自动推进
     const mockSys = { flowHalted: true, phase: 'attack' };
-    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck!({
+    const checkResult = summonerWarsFlowHooks.onAutoContinueCheck?.({
       state: { core: newState, sys: mockSys as any },
       events: [],
       random: createTestRandom(),
     });
-    expect(checkResult).toBeDefined();
-    expect(checkResult!.autoContinue).toBe(true);
+    expect(checkResult).toBeUndefined();
   });
 
   /**

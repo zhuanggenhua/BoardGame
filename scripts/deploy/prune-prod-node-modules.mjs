@@ -58,16 +58,14 @@ const profiles = {
             'mongoose',
             'nodemailer',
             'reflect-metadata',
+            'sharp',
             'socket.io-msgpack-parser',
             'winston',
             'winston-daily-rotate-file',
             'yaml',
             'zod',
         ],
-        optional: [
-            '@flow-host/core',
-            'sharp',
-        ],
+        optional: ['@flow-host/core'],
     },
 };
 

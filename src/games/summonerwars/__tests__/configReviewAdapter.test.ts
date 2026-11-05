@@ -43,6 +43,7 @@ describe('SummonerWars configReviewAdapter', () => {
     expect(summoner?.sourceContexts).toContain('召唤师');
     expect(summoner?.fieldPaths.attack).toBe('legacy.summonerwars.cardRegistry.necro-summoner.strength');
     expect(summoner?.fieldPaths.deckSymbols).toBe('legacy.summonerwars.cardRegistry.necro-summoner.deckSymbols');
+    expect(summoner?.fieldPaths.unitTags).toBe('legacy.summonerwars.cardRegistry.necro-summoner.unitTags');
     expect(summoner?.fieldPaths.sprite).toBe('legacy.summonerwars.cardRegistry.necro-summoner.sprite');
     expect(summoner?.fieldPaths.setupPositions).toBe('legacy.summonerwars.deckSources.necro-summoner.setupPositions');
     expect(summoner?.deckSymbols).toEqual(expect.arrayContaining(['double_axe', 'flame', 'moon']));
@@ -86,6 +87,7 @@ describe('SummonerWars configReviewAdapter', () => {
     expect(summoner?.fieldPaths).toMatchObject({
       cardType: 'legacy.summonerwars.cardRegistry.necro-summoner.cardType',
       unitClass: 'legacy.summonerwars.cardRegistry.necro-summoner.unitClass',
+      unitTags: 'legacy.summonerwars.cardRegistry.necro-summoner.unitTags',
       faction: 'legacy.summonerwars.cardRegistry.necro-summoner.faction',
       attackType: 'legacy.summonerwars.cardRegistry.necro-summoner.attackType',
       attackRange: 'legacy.summonerwars.cardRegistry.necro-summoner.attackRange',
@@ -121,6 +123,7 @@ describe('SummonerWars configReviewAdapter', () => {
     expect(requiredKeys).toEqual(expect.arrayContaining([
       'faction',
       'deckSymbols',
+      'unitTags',
       'setupPositions',
       'attackType',
       'attackRange',
@@ -152,11 +155,33 @@ describe('SummonerWars configReviewAdapter', () => {
     expect(getSummonerWarsConfigReviewCellValue(summoner, 'deckSymbols')).toEqual(['double_axe', 'flame', 'moon']);
     expect(getSummonerWarsConfigReviewCellValue(summoner, 'setupPositions')).toEqual(['summoner@0:3']);
     expect(isSummonerWarsConfigReviewFieldApplicable(summoner, 'deckSymbols')).toBe(true);
+    expect(getSummonerWarsConfigReviewCellValue(summoner, 'unitTags')).toEqual([]);
     expect(isSummonerWarsConfigReviewFieldApplicable(event, 'attack')).toBe(false);
 
     for (const columnKey of SUMMONER_WARS_CONFIG_REVIEW_COLUMN_KEYS) {
       if (columnKey === 'image') continue;
       expect(summoner.fieldPaths[columnKey]).toEqual(expect.any(String));
     }
+  });
+
+  it('把卡面单位分类标签暴露到配置审查表，避免按名称或阵营猜规则', () => {
+    const table = buildSummonerWarsConfigReviewTable();
+    const plagueZombie = table.rows.find((row) => row.objectId === 'necro-plague-zombie');
+    const startingZombie = table.rows.find((row) => row.objectId === 'necro-start-zombie');
+    const hellfireCultist = table.rows.find((row) => row.objectId === 'necro-hellfire-cultist');
+    const moguBody = table.rows.find((row) => row.objectId === 'mogu-spore-plague-body');
+    const fortressWarrior = table.rows.find((row) => row.objectId === 'paladin-fortress-warrior');
+    const fortressKnight = table.rows.find((row) => row.objectId === 'paladin-fortress-knight');
+    const fortressArcher = table.rows.find((row) => row.objectId === 'paladin-fortress-archer');
+    const yonghengAdvisor = table.rows.find((row) => row.objectId === 'yongheng-fortress-advisor');
+
+    expect(plagueZombie?.unitTags).toEqual(['undead', 'carrier']);
+    expect(startingZombie?.unitTags).toEqual(['undead', 'carrier']);
+    expect(hellfireCultist?.unitTags).toEqual([]);
+    expect(moguBody?.unitTags).toEqual(['carrier']);
+    expect(fortressWarrior?.unitTags).toEqual(['citadel']);
+    expect(fortressKnight?.unitTags).toEqual(['citadel']);
+    expect(fortressArcher?.unitTags).toEqual(['citadel']);
+    expect(yonghengAdvisor?.unitTags).toEqual([]);
   });
 });

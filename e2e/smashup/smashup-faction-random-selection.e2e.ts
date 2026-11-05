@@ -124,7 +124,12 @@ test.describe('SmashUp 随机派系选择', () => {
 
         await setChineseLocale(page.context());
         await page.setViewportSize({ width: 1440, height: 900 });
-        await game.openTestGame('smashup', { skipInitialization: true, seat1: 'human' }, 20000);
+        await game.openTestGame('smashup', {
+            skipInitialization: true,
+            playerID: '0',
+            seat0: 'human',
+            seat1: 'human',
+        }, 20000);
         await game.setupScene(buildFactionSelectionScene());
         await waitForFactionSelectionReady(page);
 
@@ -159,7 +164,29 @@ test.describe('SmashUp 随机派系选择', () => {
         expect(afterState?.core?.factionSelection?.playerSelections?.['0']).toContain(selectedFaction);
         expect(afterState?.core?.factionSelection?.takenFactions).toContain(selectedFaction);
 
-        await expect(page.getByTestId(`faction-option-${selectedFaction}`)).toContainText(/已选择|点按取消选择|已占领|Selected|Taken by/i);
+        const selectedFactionOption = page.getByTestId(`faction-option-${selectedFaction}`);
+        await expect(selectedFactionOption).toContainText(/已选择|点按取消选择|已占领|Selected|Taken by/i);
+        await expect(selectedFactionOption).toHaveAttribute('aria-pressed', 'true');
+        const selectedCardFrame = selectedFactionOption.locator('.smashup-card-frame').first();
+        await expect(selectedCardFrame).toHaveClass(/border-green-500/);
+        await expect(selectedCardFrame).toHaveClass(/scale-105/);
+        await expect(selectedCardFrame).toHaveClass(/-translate-y-2/);
+        await expect(selectedCardFrame).toHaveCSS('border-top-width', '4px');
+        await expect(selectedCardFrame).toHaveCSS('border-top-style', 'solid');
+        await expect(selectedCardFrame).toHaveCSS('border-top-color', 'rgb(34, 197, 94)');
+        await expect(selectedFactionOption.locator('[data-testid="faction-selection-border"]')).toHaveCount(0);
+        await expect(selectedFactionOption.locator('.smashup-card-inner').first()).not.toHaveClass(/(?:^|\s)border(?:\s|$)/);
+        await expect.poll(async () => {
+            return page.evaluate((id) => {
+                const node = document.querySelector<HTMLElement>(`[data-testid="faction-option-${id}"]`);
+                if (!node) return false;
+                const rect = node.getBoundingClientRect();
+                return rect.width > 0
+                    && rect.height > 0
+                    && rect.top >= 0
+                    && rect.bottom <= window.innerHeight;
+            }, selectedFaction);
+        }, { timeout: 10000, intervals: [100, 200, 400] }).toBe(true);
         await page.screenshot({ path: join(evidenceDir, '02-random-faction-selected.png'), fullPage: false });
         await page.screenshot({ path: testInfo.outputPath('02-random-faction-selected.png'), fullPage: false });
 
@@ -167,10 +194,25 @@ test.describe('SmashUp 随机派系选择', () => {
         await selectionGrid.evaluate((node) => {
             const scrollContainer = node.parentElement;
             if (!scrollContainer) throw new Error('找不到派系选择列表滚动容器');
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            scrollContainer.scrollTop = Math.min(scrollContainer.scrollHeight, 40);
         });
         await page.waitForTimeout(300);
         await expect(selectionGrid).toBeVisible();
+        await selectedFactionOption.evaluate((node) => {
+            node.scrollIntoView({ block: 'center', behavior: 'auto' });
+        });
+        await page.waitForTimeout(200);
+        await expect.poll(async () => {
+            return page.evaluate((id) => {
+                const node = document.querySelector<HTMLElement>(`[data-testid="faction-option-${id}"]`);
+                if (!node) return false;
+                const rect = node.getBoundingClientRect();
+                return rect.width > 0
+                    && rect.height > 0
+                    && rect.top >= 0
+                    && rect.bottom <= window.innerHeight;
+            }, selectedFaction);
+        }, { timeout: 10000, intervals: [100, 200, 400] }).toBe(true);
         await page.screenshot({ path: join(evidenceDir, '03-faction-list-scrolled.png'), fullPage: false });
         await page.screenshot({ path: testInfo.outputPath('03-faction-list-scrolled.png'), fullPage: false });
 

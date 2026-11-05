@@ -92,4 +92,4 @@
 - 用户批准设计稿前，不实现真实运行页。
 - 实现截图不能替代设计稿；设计稿截图不能替代规则理解。
 - 不用长文字解释替代图面问题；如果图上看不懂、看不全或不好判断，当前稿继续 `REVISE`。
-- 若最终交付是图片或 Open Design 截图，必须先 AI 图面核验，再按项目看图流程打开给用户。
+- 若最终交付是图片或 Open Design 截图，必须先 AI 图面核验，再按项目看图流程打开给用户。用户可见标题和证据目录必须是当前工作稿身份，见 [`boardgame-ui-imagegen`](../../boardgame-ui-imagegen/SKILL.md)「当前工作稿身份」；标成冻结历史第 N 稿即 `REVISE / stale-artifact-identity`。

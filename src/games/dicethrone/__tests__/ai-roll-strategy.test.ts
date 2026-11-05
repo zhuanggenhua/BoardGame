@@ -4,7 +4,7 @@ import { diceThroneAiRuntime } from '../ai';
 import type { DiceThroneCore, SelectableCharacterId } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { RESOURCE_IDS } from '../domain/resources';
-import { createHeroMatchup, fixedRandom } from './test-utils';
+import { createHeroMatchup, fixedRandom, getCardById } from './test-utils';
 import '../game';
 
 const setBarbarianOffensiveRoll = (
@@ -109,5 +109,28 @@ describe('DiceThrone 本地 AI 掷骰策略', () => {
 
         expect(burstDecision?.actionId).toBe('roll:dice');
         expect(steadyDecision?.actionId).toBe('toggle-die-lock:3:lock');
+    });
+
+    it('直接骰成终极后，应停止追其它技能并选择终极', async () => {
+        const state = setBarbarianOffensiveRoll([6, 6, 6, 6, 6]);
+
+        const confirmDecision = await decide(state);
+        expect(confirmDecision?.actionId).toBe('roll:confirm');
+
+        // CONFIRM_ROLL 执行后，游戏才会进入技能选择动作。
+        state.core.rollConfirmed = true;
+        const abilityDecision = await decide(state);
+
+        expect(abilityDecision?.actionId).toBe('ability:rage');
+    });
+
+    it('改一颗骰就能成终极时，应先打改骰牌而不是继续玩其它路线', async () => {
+        const state = setBarbarianOffensiveRoll([6, 6, 6, 6, 1]);
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 2;
+        state.core.players['0'].hand = [getCardById('card-surprise')];
+
+        const decision = await decide(state);
+
+        expect(decision?.actionId).toBe('play-card:card-surprise');
     });
 });

@@ -225,7 +225,7 @@ export function emitDestroyWithTriggers(
   const killerPlayerId = opts.killerPlayerId ?? opts.killer?.unit.owner;
 
   // 1. UNIT_DESTROYED 事件
-  events.push({
+  const destroyEvent: GameEvent = {
     type: SW_EVENTS.UNIT_DESTROYED,
     payload: {
       position,
@@ -239,12 +239,14 @@ export function emitDestroyWithTriggers(
       ...(opts.skipMagicReward ? { skipMagicReward: true } : {}),
     },
     timestamp: opts.timestamp,
-  });
+  };
+  events.push(destroyEvent);
 
   // 2. onKill 触发（感染、灵魂转移等）
   if (opts.triggerOnKill && opts.killer) {
+    const postDestroyCore = reduceEvent(core, destroyEvent);
     const killerCtx: AbilityContext = {
-      state: core,
+      state: postDestroyCore,
       sourceUnit: opts.killer.unit,
       sourcePosition: opts.killer.position,
       ownerId: opts.playerId,

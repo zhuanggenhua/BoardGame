@@ -301,10 +301,8 @@ async function closeCardSpotlightIfVisible(page: Page): Promise<void> {
         return;
     }
 
-    // 卡牌特写默认不自动关闭，点击遮罩空白区才能释放它；这里只关闭卡牌预览，
+    // 卡牌特写默认在短暂展示后自动退场；这里只等待卡牌预览消失，
     // 不触碰右侧奖励骰确认交互。
-    const spotlightRoot = page.getByTestId('spotlight-container-root').last();
-    await spotlightRoot.click({ position: { x: 8, y: 8 } });
     await expect(spotlight).toHaveCount(0, { timeout: 8000 });
 }
 

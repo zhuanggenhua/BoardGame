@@ -17,7 +17,7 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { fireTriggers } from './ongoingEffects';
 import { validateActionPlaySemantics } from './playLegality';
 import { buildActionPlayedEvent } from './actionPlayEvent';
-import { createEffectProgram, executeAbilityProgram } from './abilityRuntime';
+import { createAbilityRuntimeContinuation, createEffectProgram, executeAbilityProgram } from './abilityRuntime';
 import { appendResolvedActionAbility, type ExternalActionAbilityContinuationContext } from './externalActionPlay';
 import type {
     ActionCardDef,
@@ -173,14 +173,13 @@ const emitDuelEventsThenAdvanceDeputyProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         duel: context.duel,
         nextStage: context.nextStage,
         consecutivePasses: context.consecutivePasses,
         timestamp: context.timestamp,
-    } satisfies DuelDeputyAdvanceContinuationContext,
-    nextProgram: advanceDeputyStageAfterEventsProgram,
+    } satisfies DuelDeputyAdvanceContinuationContext, advanceDeputyStageAfterEventsProgram),
 }));
 
 const fireDuelResolvedTriggersAfterEventsProgram = createEffectProgram<
@@ -223,7 +222,7 @@ const emitDuelResolutionEventsThenTriggerProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         random: context.random,
         duel: context.duel,
@@ -234,8 +233,7 @@ const emitDuelResolutionEventsThenTriggerProgram = createEffectProgram<
         duelLoser: context.duelLoser,
         duelTie: context.duelTie,
         timestamp: context.timestamp,
-    } satisfies DuelResolvedTriggerContinuationContext,
-    nextProgram: fireDuelResolvedTriggersAfterEventsProgram,
+    } satisfies DuelResolvedTriggerContinuationContext, fireDuelResolvedTriggersAfterEventsProgram),
 }));
 
 const queueFirstDuelStageAfterStartedEventsProgram = createEffectProgram<
@@ -258,12 +256,11 @@ const emitDuelStartedEventsThenAdvanceProgram = createEffectProgram<
     SmashUpEvent
 >((context) => ({
     events: context.events,
-    context: {
+    continuation: createAbilityRuntimeContinuation({
         matchState: context.matchState,
         duel: context.duel,
         timestamp: context.timestamp,
-    } satisfies DuelStartedAdvanceContinuationContext,
-    nextProgram: queueFirstDuelStageAfterStartedEventsProgram,
+    } satisfies DuelStartedAdvanceContinuationContext, queueFirstDuelStageAfterStartedEventsProgram),
 }));
 
 function buildDuelEffectSource(
@@ -1247,11 +1244,17 @@ export function registerDuelInteractionHandlers(): void {
 
     registerInteractionHandler('smashup_duel_run_em_off_move', (state, _playerId, value, data, _random, now) => {
         const selected = value as { baseIndex?: number } | undefined;
-        const ctx = data?.continuationContext as { loserUid?: string; loserDefId?: string; fromBaseIndex?: number } | undefined;
-        if (!ctx?.loserUid || !ctx.loserDefId || ctx.fromBaseIndex === undefined || selected?.baseIndex === undefined) {
+        const ctx = data?.continuationContext as {
+            duel?: ActiveDuel;
+            loserUid?: string;
+            loserDefId?: string;
+            fromBaseIndex?: number;
+        } | undefined;
+        const duel = ctx?.duel;
+        if (!duel || !ctx?.loserUid || !ctx.loserDefId || ctx.fromBaseIndex === undefined || selected?.baseIndex === undefined) {
             return { state, events: [] };
         }
-        const moveSource = buildDuelEffectSource(ctx.duel, { sourceBaseIndex: ctx.fromBaseIndex });
+        const moveSource = buildDuelEffectSource(duel, { sourceBaseIndex: ctx.fromBaseIndex });
         return {
             state,
             events: buildValidatedMoveEvents(state, {

@@ -60,6 +60,8 @@
     "exploreRoom": "{{playerId}} 探索了{{room}}",
     "exploreEvent": "{{playerId}} 触发事件：{{event}}",
     "exploreRoomEvent": "{{playerId}} 探索到{{room}}，触发事件：{{event}}",
+    "exploreRoomCard": "{{playerId}} 探索到{{room}}，获得了{{card}}",
+    "exploreRoomCardBuried": "{{playerId}} 探索到{{room}}，将{{card}}埋入牌堆",
     "eventRollResult": "{{playerId}} 的{{event}}结果：{{roll}}，总点数 {{total}}，{{result}}",
     "eventRolledPhysicalDamageResult": "{{playerId}} 处理{{event}}伤害骰：{{damageRolls}}；合计 {{damageTotal}} 点；造成 {{appliedDamage}} 点物理伤害",
     "eventRolledMentalDamageResult": "{{playerId}} 处理{{event}}伤害骰：{{damageRolls}}；合计 {{damageTotal}} 点；造成 {{appliedDamage}} 点精神伤害",
@@ -156,7 +158,6 @@
       "scenarioDossierDetail": "剧本正文",
       "closeScenarioDialog": "关闭",
       "scenarioOnly": "局内确认",
-      "scenarioStepSubtitle": "翻阅候选剧本卡，确认当前提议后再进入探索。",
       "scenarioCardsTitle": "候选剧本卡",
       "scenarioCardsCount": "7 张候选",
       "scenarioCardMeta": "剧本卡 {{card}} / 触发 {{omen}}",
@@ -245,6 +246,8 @@
       "noSelectedCard": "未选卡牌",
       "damage": "伤害",
       "damageAllocationTitle": "伤害分配",
+      "chooseTrait": "选择属性",
+      "chooseCheckTrait": "检定属性",
       "damageAllocationHeading": "分配 {{amount}} 点{{kind}}",
       "damageAllocationAmount": "{{amount}} 点{{kind}}",
       "damageAllocationSource": "来源：{{source}}",
@@ -333,7 +336,7 @@
       "lootTargetsAvailable": "可搜刮尸体：{{count}}具",
       "noTradeTargets": "当前没有同房间队友",
       "turnHintMove": "可前往：{{targets}}",
-      "turnHintExplore": "可翻：{{floor}}",
+      "turnHintExplore": "点门口的 ? 探索（{{floor}}层）",
       "turnHintDiscoveryEndTurn": "探索完成，结束回合",
       "turnHintHold": "暂留本房间",
       "turnHintBloodFromStoneSetupPlacement": "还需选 {{count}} 间",
@@ -377,8 +380,8 @@
       "actionCueMoveMode": "现在：点绿色房间",
       "actionCueMoveSingle": "现在：点{{room}}",
       "actionCueMoveMany": "现在：点绿色房间",
-      "actionCueExplore": "现在：点探索翻{{floor}}",
-      "actionCueExploreSelect": "现在：点金色门位翻房间",
+      "actionCueExplore": "当前没有可探索门位",
+      "actionCueExploreSelect": "现在：点问号探索房间",
       "actionCueExploreOrient": "现在：旋转{{room}}并确认",
       "actionCueUse": "现在：点使用",
       "actionCueUseCard": "现在：点使用{{card}}",
@@ -425,6 +428,7 @@
       "mummyRewardWaiting": "等待{{player}}选择木乃伊攻击后的奖励",
       "mummyRewardDamage": "造成{{damage}}伤害",
       "mummyRewardSteal": "偷走{{card}}",
+      "mummyRewardDefenderHoldings": "防守者 {{player}} 当前持有的物品/预兆",
       "mummyRewardInvalidTargets": "{{count}} 个偷取目标已失效",
       "helpingHandsRewardTitle": "伤害或偷牌",
       "helpingHandsRewardChoose": "对{{player}}：造成{{damage}}伤害或偷牌",
@@ -535,6 +539,9 @@
       "readerStatusPublicBook": "剧本档案",
       "readerStatusHeroBook": "你是英雄：英雄剧本书",
       "readerStatusTraitorBook": "你是叛徒：叛徒剧本书",
+      "readerScopePublic": "公开剧本",
+      "readerScopeHero": "英雄视角",
+      "readerScopeTraitor": "叛徒视角",
       "readerPageLabel": "页数",
       "readerPageAria": "当前页 {{mobile}}，桌面双页 {{desktop}}",
       "readerPrev": "上一页",
@@ -603,9 +610,9 @@
         "reader": {
           "prologueLabel": "公开揭示",
           "prologue": "石棺里传出干枯的摩擦声。木乃伊醒来后盯上了女孩，宅邸里每一步都像在靠近一场不该发生的婚礼。",
-          "prologueHeroesLabel": "英雄开场过场",
+          "prologueHeroesLabel": "英雄序章",
           "prologueHeroes": "目睹房中忽然四处尘土飞扬，你心中闪过不祥的阴霾。不远处传来朋友的叫喊，其中混集着惊恐，还有一丝的兴奋。你脑中传来一把陌生而深沉的声音：“与挚爱散失于久远洪荒。纵泪已成灰，心中爱仍炽热如日。今我爱重临，我俩必永不分离！敢阻我者必死，并魂飞魄散！”",
-          "prologueTraitorLabel": "叛徒开场过场",
+          "prologueTraitorLabel": "叛徒序章",
           "prologueTraitor": "墙壁上有一破裂处，你伸手摸上后墙身随即滑动，露出一副尘封并画满了各式图案的石棺。石棺上的图案泛出微光，你禁不住近距离研究这些该是古埃及的象形文字。\n\n你脑中闪过一把陌生而深沉的声音：“与挚爱散失于久远洪荒。纵泪已成灰，心中爱仍炽热如日。今我爱重临，我俩必永不分离！汝辈休想妨碍我俩结合！”你脑中一片空白，只知道为了让有情人终成眷属，牺牲朋友也在所不惜。石棺缓缓打开，你虔诚地仰望你的主宰。",
           "setupLabel": "开局记录",
           "setup": "你的人物已成为奸徒但会继续游戏。\n\n拿出木乃伊怪物标记(大)和五角形物品标记（代表石棺）放在你所在的房间。\n\n你立刻失去小女孩的伴随，丢弃女孩预兆牌并丧失其作用。将女孩预兆牌旁置，拿出一个品红色标记代表女孩，放置到与木乃伊相同楼层的其它房间内。女孩与木乃伊必须最少相隔5个房间。若因楼层过小而没有合乎上述条件的房间，则把女孩标记放置到与木乃伊相隔最远的房间。",
@@ -769,6 +776,32 @@
           "endingSurvivors": "魔法相机碎裂后，被困在照片里的本质终于回到身体里。阴影退去，快门声也停止了。",
           "endingTraitor": "最后一张照片定格时，英雄的本质已经全被夺走。相纸里的影子抬起头，代替他们走出了画面。"
         }
+      },
+      "uponReflection": {
+        "title": "镜中回望",
+        "objective": "英雄找出正确的特质、预兆和房间组合并破咒；镜中怪物追击探索者。",
+        "heroGoal": "在正确房间用正确特质检定，并持有对应预兆破咒。",
+        "traitorGoal": "无叛徒。作祟揭秘者的灵魂困在镜中，不能交流，只能用事件牌提示。",
+        "nextFallback": "寻找特质、预兆和房间线索，或给队友事件提示",
+        "progress": {
+          "combination": "破咒组合",
+          "mirrorBeings": "镜中怪物",
+          "hint": "事件提示"
+        },
+        "reader": {
+          "prologueLabel": "镜中沉默",
+          "prologue": "怪异的镜子让宅邸变得不可靠。作祟揭秘者的灵魂被困在镜中，镜像怪物开始追踪探索者。",
+          "setupLabel": "开局记录",
+          "setup": "作祟揭秘者仍在游戏中，但视为已死亡，且不能正常交流。其秘密组合包含一个特质、一张预兆和一个房间；普通玩家看不到组合内容。按玩家人数在入口大厅放置 2/3/4/5 个镜中怪物。",
+          "heroesLabel": "英雄目标",
+          "heroes": "英雄要在正确房间持有正确预兆，并用正确特质完成破咒检定。检定结果为 5+ 且三项都正确时，英雄获胜；否则只得到赞成或否定反馈。全体英雄死亡则失败。",
+          "specialLabel": "破咒与提示",
+          "special": "作祟揭秘者不能说话、比划或书写。每回合只能从事件牌堆选一张事件牌交给任意存活玩家作为提示；该事件不结算，随后放到一边。",
+          "monsterLabel": "镜中怪物",
+          "monster": "镜中怪物的属性为力量 4、速度 3、神志 6、知识 4。怪物朝最近的探索者移动；结束移动后若与探索者同房，则用神志攻击，并只造成知识或神志伤害。",
+          "endingSurvivorsLabel": "结局",
+          "endingSurvivors": "镜中诅咒已被破解。幸存的探索者逃离宅邸。"
+        }
       }
     },
     "actions": {
@@ -861,10 +894,14 @@
       "tilePlaceholder": "未翻开房间",
       "ready": "可移动到此",
       "slotUndiscovered": "尚未翻出",
-      "slotReady": "按“探索”翻出新房间",
+      "slotReady": "点击此门口探索新房间",
       "explorable": "可探索",
       "moveTarget": "可移动到此",
       "skeletonKeyMoveTarget": "使用骨制钥匙穿墙移动",
+      "moveCostTitle": "移动至此 · 消耗 {{count}} 点移动力",
+      "skeletonKeyMoveCostTitle": "使用骨制钥匙 · 消耗 {{count}} 点移动力",
+      "moveCostBadge": "{{count}} 点",
+      "skeletonKeyMoveCostBadge": "骨钥匙 · {{count}} 点",
       "preview": "放大查看",
       "focusSelf": "聚焦到我的房间",
       "obstacle": "障碍物",
@@ -935,6 +972,7 @@
       "essence": "本质"
     },
     "players": {
+      "moveTokenAria": "选择{{player}}移动；右键或长按查看详情",
       "inventoryCount": "持有 {{count}}",
       "sameRoom": "同房间",
       "tradeTarget": "交易对象",
@@ -946,7 +984,9 @@
       "ability": "特性",
       "inventory": "持有物",
       "emptyInventory": "暂无持有物",
-      "detailSeparator": "："
+      "detailSeparator": "：",
+      "viewAbilityDetails": "查看",
+      "closeAbilityDetails": "关闭能力说明"
     },
     "summary": {
       "objective": "当前目标",
@@ -955,6 +995,8 @@
       "nextValue": "优先 {{action}}"
     },
     "discovery": {
+      "roomSceneTitle": "发现新房间",
+      "skipRoomScene": "跳过房间过场",
       "label": "探索结果",
       "resultLabel": "结果",
       "revealed": "已翻开",
@@ -973,19 +1015,30 @@
       "confirmCard": "确认",
       "confirmWithProgress": "确认 {{confirmed}}/{{total}}",
       "confirmedWithProgress": "已确认 {{confirmed}}/{{total}}",
+      "waitingForCardConfirmation": "等待确认 {{confirmed}}/{{total}}",
       "nextSearchCard": "下一张",
+      "nextTraitCheck": "进行{{trait}}检定",
+      "chooseRewardTrait": "选择奖励属性",
+      "resolveNextStep": "进入后续规则阶段",
+      "reviewResult": "查看结果",
       "confirmationProgress": "玩家确认 {{confirmed}}/{{total}}",
       "eventSymbolSkipPrompt": "已翻出带事件符号的房间；现在选择跳过事件，或抽取事件牌。",
       "rollEvent": "投掷事件"
     },
     "roll": {
       "fallbackLabel": "投骰",
+      "rolling": "骰子滚动中，等待停稳",
       "bonus": "加值 {{value}}",
       "noBonus": "无加值",
       "diceSubtotal": "骰面合计 {{value}}",
       "passiveBonus": "加值 {{value}}",
       "detail": "骰面合计 {{subtotal}}｜加值 {{bonus}}｜总点数 {{total}}",
       "total": "总点数 {{value}}",
+      "thresholds": "判定要求（总点数）：{{value}}",
+      "threshold": "达到 {{value}} 点：{{label}}",
+      "thresholdRange": "{{min}}–{{max}} 点：{{label}}",
+      "hauntSuccessThreshold": "达到 {{threshold}} 点或以上：{{label}}",
+      "hauntFailureThreshold": "低于 {{threshold}} 点：{{label}}",
       "eventRollTotal": "事件总点数 {{value}}",
       "eventRollDiceSubtotal": "事件骰面合计 {{value}}",
       "eventDamageDiceLabel": "伤害骰",
@@ -1003,6 +1056,10 @@
       "diceFaces": "骰面 {{value}}",
       "cancelModifier": "取消",
       "confirmModifier": "确认使用{{card}}"
+      ,"modifierAppliedFlashlight": "事件属性检定：加值 +2（手电筒）"
+      ,"modifierAppliedLantern": "事件属性检定：加值 +2（灯笼）"
+      ,"modifierAppliedCamera": "知识检定替代为神志检定（魔法相机）"
+      ,"modifierAppliedBook": "书本已使用：本次非战斗检定改用知识"
     },
     "useEffects": {
       "move": "移动 {{value}}",
@@ -1054,6 +1111,10 @@
       "status": {
         "stunned": "击晕"
       }
+    },
+    "turnIntro": {
+      "title": "你的回合",
+      "skip": "跳过回合片头"
     }
   },
   "errors": {
@@ -1067,20 +1128,17 @@
   },
   "tutorial": {
     "mainPath": {
-      "title": "主线教程：基础回合到第一次英雄目标行动",
-      "description": "从作祟前基础回合开始，沿着移动、探索、事件处理、书本使用、兔脚重掷、伤害分配、自然作祟和第一次英雄目标行动推进。",
+      "title": "主线教程：基础回合到作祟公开",
+      "description": "从作祟前基础回合开始，沿着移动、探索、事件处理、书本使用、兔脚重掷、伤害分配和自然作祟推进到英雄读本。",
       "steps": {
-        "endTurnAfterEvent": "伤害分配完成后，事件房探索已经结束你的回合。点“结束回合”，把轮序交给队友。",
-        "watchTeammateOneOmenTurn": "现在不是你的回合。队友 1 先移动回入口大厅旁，探索一层预兆房间并翻出指环；这次作祟检定未触发。",
-        "teammateOneOmenResults": "队友 1 获得指环，作祟仍未开始；轮到队友 2 继续行动。",
-        "watchTeammateTwoOmenTurn": "队友 2 移动到刚发现的一层房间，继续探索相邻预兆房间并翻出狗；这次作祟检定仍未触发。",
-        "teammateTwoOmenResults": "狗确认后，回合回到你。你仍在厨房；这一回合先移动到上层平台，图书馆就在旁边，等作祟目标出现后再决定是否进去。",
-        "moveToGrandStaircase": "你已经学过移动。保持移动模式，沿厨房、门厅移动到大阶梯；这里连接上下楼层。",
+        "endTurnAfterEvent": "伤害分配完成后，事件房探索已经结束你的回合。点“结束回合”，把轮序交给下一名探索者。",
+        "watchTeammateOneOmenTurn": "下一名探索者会按自己的回合移动、探索预兆房并获得预兆；你不用代操作，只读公开结果。作祟检定未成功时，轮序会继续。",
+        "watchTeammateTwoOmenTurn": "另一名探索者也会按自己的回合移动、探索并获得预兆；作祟检定仍未成功时，轮序会回到你。",
+        "moveToGrandStaircase": "刚才两名探索者各自获得了公开预兆，作祟仍未开始，所以现在回到你的回合。从厨房出发，先点地图上代表你的探索者棋子，再依次点门厅和大阶梯这两个相邻房间；大阶梯连接上下楼层。",
         "switchToUpperFloor": "到大阶梯后，右侧楼层按钮会提示上层还有移动目标。点上箭头切到上层地图，先看见上层平台。",
-        "moveToUpperLanding": "现在上层平台已经在画面里。点击上层平台，到达图书馆旁边；这一步先只完成真实可达的移动。",
-        "endTurnFromUpperLanding": "你现在在上层平台，图书馆就在西侧；这次先不继续探索。点“结束回合”，接下来队友继续探索，直到预兆检定自然触发作祟。",
-        "watchTeammateHauntTrigger": "队友 1 从一层新房间继续探索，翻出面具；这次预兆检定达到 5+，作祟自然开始。",
-        "teammateConfirmHauntTrigger": "队友 1 看清面具和作祟检定结果后确认，随后公开进入作祟。"
+        "moveToUpperLanding": "现在上层平台已经在画面里。点击已发现的上层平台；这一步是移动，不会翻开新房间。",
+        "endTurnFromUpperLanding": "你现在在上层平台。这次先不继续探索。点“结束回合”，让轮序自然推进到作祟公开。",
+        "watchTeammateHauntTrigger": "下一名探索者会按自己的回合翻出新的预兆并进行作祟检定；达到 5+ 后，作祟公开并打开你的英雄读本。"
       }
     },
     "basicSetup": {
@@ -1088,7 +1146,7 @@
       "description": "作祟开始前，你可以按任意顺序移动、探索新房间，以及使用物品和预兆的特殊行动。探索新房间会结束你的回合；交易保留在单独专题里教学。",
       "steps": {
         "setupRuntime": "作祟开始前先学一轮基础回合：移动到房间、探索新房间、翻出发现牌，并完成这一回合。",
-        "objectiveAndTurn": "现在是你的回合。先从“移动”开始，移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索。",
+        "objectiveAndTurn": "现在是你的回合。移动会改变你所在房间，也决定接下来能从哪条未探索走廊继续探索；先找到地图上代表你的探索者棋子。",
         "traitsAndSpeed": "回合开始时查看你的速度值。该数值表示你的探险者本回合最多可以移动多少个板块。",
         "traitTrackReading": "属性轨上的绿色数字是起始属性值；当前值由高亮格表示，骷髅是死亡标记，不是数值。重复的数字仍分别占格。",
         "movesRemaining": "回合开始时查看速度值；右上角的移动标记显示本回合还剩的移动力。速度在回合中途变化，不会改变本回合已经确定的移动力。",
@@ -1097,11 +1155,11 @@
         "focusSelfRoom": "镜头离开自己所在位置后，点“聚焦到我的房间”即可回到自己所在房间。",
         "hauntRiskTrack": "预兆进度条记录已发现的预兆数，高亮格表示当前数值。抽到预兆卡后，按所有玩家持有的预兆总数掷骰；结果为 5+ 时，作祟开始。",
         "inventoryAndHelp": "事件牌翻出后进入当前事件结算，不会放在你面前；物品和预兆会放在你面前。使用、交易或触发卡牌效果时，从这里选择对应牌。",
-        "viewBook": "先点书本右上角的放大按钮，读它的牌面：本次非战斗检定可以花费 1 点神志改用知识。读完关闭牌面。",
+        "viewBook": "桌面端先把鼠标悬浮到书本本体，右上角才会出现放大按钮，再点它查看牌面；触屏设备请长按书本本体放大查看。长按只用于读牌，不会触发使用书本。读清牌面后关闭：本次非战斗检定可以花费 1 点神志改用知识。",
         "useBook": "现在使用书本本体，扣除 1 点神志后，这次事件检定会改用知识重新投骰。",
-        "openMoveTargets": "点“移动”，然后选择相邻房间。每一点移动力可以移动到一个相邻板块。",
+        "openMoveTargets": "点击地图上代表你的探索者棋子，开启移动目标。每一点移动力可以移动到一个相邻板块。",
         "moveToHallway": "移动到门厅；门厅的未探索走廊可用于探索新房间。",
-        "exploreUpper": "点可探索的盖着房间，再选择出口。翻开新房间后，先看房间牌面和连接走廊。",
+        "exploreUpper": "到达门厅后，直接点地图上带 ? 的可探索房间槽；这不是移动到已发现房间，而是翻开并放置一个新房间。选好出口后，再看房间牌面和连接走廊。",
         "rotateRoomPlacement": "旋转新房间，选择一个能让走廊与当前未探索走廊相连的朝向。",
         "confirmRoomPlacement": "当前朝向已经选好。点“确认放置”后，才会结算房间文字和符号。",
         "discoveryCardType": "这个房间带事件符号，所以翻出事件牌；物品符号会翻物品牌，预兆符号会翻预兆牌。先看清牌型和牌面，再处理牌上的要求。",
@@ -1109,7 +1167,7 @@
         "useRabbitFoot": "书本已把检定改成知识。现在点兔脚，再选择一颗骰子重掷；选好后点“确认使用兔脚”。",
         "rabbitFootResult": "兔脚重掷完成。先看清新的骰面和总点数，再点“确认”确认结果；确认后如果仍失败，游戏会进入伤害分配。",
         "finish": "这里选择承受 1 点物理伤害的属性，再点确认完成分配。",
-        "returnToTableAfterDamage": "伤害已经分配到属性轨。点“返回牌桌”，回到你的行动入口。"
+        "returnToTableAfterDamage": "伤害已经分配到属性轨。事件房探索已经结束你的回合；点“结束回合”，把轮序交给下一名探索者。"
       }
     },
     "omenConfirmation": {
@@ -1124,23 +1182,20 @@
     },
     "hauntNaturalTrigger": {
       "title": "作祟自然触发：预兆到英雄目标起步",
-      "description": "按正常回合推进：你只操作自己的回合，队友行动作为公开结果推进；当队友揭示作祟后，你以英雄视角阅读英雄剧本书，并完成第一个英雄目标行动“寻找木乃伊真名”。",
+      "description": "按正常回合推进：你只操作自己的回合，轮序回到你时继续行动；作祟公开后，你以英雄视角阅读英雄剧本书，并完成第一个英雄目标行动“寻找木乃伊真名”。",
       "steps": {
-        "setupNaturalHauntFlow": "这段只教多数英雄视角：你在图书馆旁边结束自己的回合，只操作自己的回合；队友通过正式回合获得预兆。叛徒读本另有独立章节。",
+        "setupNaturalHauntFlow": "这段只教多数英雄视角：你在图书馆旁边结束自己的回合，只操作自己的回合。叛徒读本另有独立章节。",
         "handOffToTeammateOne": "点“结束回合”，把行动交给下一名探索者。作祟风险会随着大家实际获得的预兆增加。",
-        "watchTeammateOmenTurns": "现在不是你的回合。等待队友 1 探索预兆房间；这次只公开第一张预兆和一次未触发的检定。",
-        "teammateOmenResults": "队友 1 获得指环，1 颗作祟骰低于 5+；回合自然交给队友 2。",
-        "watchTeammateTwoOmenTurn": "队友 2 移动到观测台旁，探索下一间预兆房间并翻出狗。第二张预兆用 2 颗骰检定。",
-        "teammateTwoOmenResults": "队友 2 确认狗后，回合回到你；桌上已有指环和狗，下一张预兆会掷 3 颗骰。",
-        "handOffToTeammateSecondCycle": "现在又轮到你。点“结束回合”，继续让队友按正式流程探索；你不会替队友操作。",
-        "watchTeammateHauntTrigger": "队友 1 继续探索，从观测台向南翻出带预兆符号的房间并获得面具；第三张预兆会掷 3 颗作祟骰。",
-        "teammateConfirmHauntTrigger": "队友 1 读完面具和 3 颗作祟骰后确认；这一步由触发者看清公开结果后继续。",
-        "heroReaderOpened": "作祟公开揭示后，队友 1 是揭秘者并成为叛徒。你仍是英雄；系统先显示英雄开场过场，不是剧本书目标页。先读这段一次性开场。",
+        "watchTeammateOmenTurns": "下一名探索者会按自己的回合探索并获得公开预兆；你不用代操作，只读公开结果。作祟检定未成功时，轮序继续。",
+        "watchTeammateTwoOmenTurn": "另一名探索者也会按自己的回合移动、探索并获得公开预兆；作祟检定仍未达到 5+ 时，轮序会回到你。",
+        "handOffToTeammateSecondCycle": "前面两名探索者按自己的回合获得了公开预兆；作祟检定还没有达到 5+，所以现在又轮到你。作祟风险来自已经公开的预兆数量；这次结束自己的回合，让轮序继续推进。",
+        "watchTeammateHauntTrigger": "下一名探索者会按自己的回合翻出新的预兆并进行作祟检定；达到 5+ 后，作祟公开并打开你的英雄读本。",
+        "heroReaderOpened": "另一名探索者按自己的回合翻出新的预兆；这次作祟检定达到 5+。作祟公开揭示后，你仍是英雄；系统先显示英雄开场过场，不是剧本书目标页。先读这段一次性开场。",
         "heroReaderTurnPage": "开场过场读完后，点底部“进入剧本书”打开英雄剧本书目标页；那里才写找真名、学法术和驱逐木乃伊。",
         "heroReaderGoal": "英雄剧本书目标页写明：在石棺房、研究室或图书馆找真名；你当前就在图书馆旁边，所以读完后先移动进图书馆。",
         "heroReaderClose": "读完英雄剧本书目标页后，点关闭回到牌桌；后续会在英雄回合按这个目标行动。",
-        "waitForHeroTurnAfterHaunt": "作祟后轮序继续。队友 2 按正式流程结束回合后回到你；你仍在上层平台，刚读到图书馆可用于“研究木乃伊的历史”。",
-        "openLibraryMoveAfterGoal": "你已经读到英雄目标，也知道图书馆为什么重要。先点“移动”，打开从上层平台可前往的房间。",
+        "waitForHeroTurnAfterHaunt": "请稍候，轮序会回到你的英雄回合。",
+        "openLibraryMoveAfterGoal": "你已经读到英雄目标，也知道图书馆为什么重要。点击地图上代表你的探索者棋子，查看从上层平台可前往的房间。",
         "moveToLibraryAfterGoal": "图书馆现在是相邻移动目标。点击图书馆移动进去；进去后才能执行寻找木乃伊真名。",
         "heroStudyNameRoll": "英雄目标允许在石棺房、研究室或图书馆进行 6+ 知识检定找真名。你当前在图书馆，点“寻找木乃伊真名”；成功取得第 1 枚知识标记。",
         "heroStudyNameResult": "检定成功：英雄取得第 1 枚知识标记，并记录已找到真名。看完投骰结果后点“确认”回到牌桌。",

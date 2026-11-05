@@ -79,6 +79,14 @@ export function useLocalProviderViewModel(args: {
             return;
         }
 
+        // 交互系统命令的正式执行者是当前交互 owner，不一定等于本地正在跟随的视角席位。
+        // 让 localDispatchCommand 根据 state.sys.interaction.current.playerId 解析，
+        // 避免年中/新年等跨席位交互被误发成当前视角玩家。
+        if (type.startsWith('SYS_INTERACTION_')) {
+            dispatchCommand(type, payload);
+            return;
+        }
+
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
             dispatchCommand(type, payload);
             return;

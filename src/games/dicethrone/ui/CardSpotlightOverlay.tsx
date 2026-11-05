@@ -8,13 +8,14 @@
  */
 
 import React from 'react';
-import { CardPreview } from '../../../components/common/media/CardPreview';
+import { CardPreview, getCardAtlasSource } from '../../../components/common/media/CardPreview';
+import { computeSpriteAspectRatio } from '../../../engine/primitives/spriteAtlas';
 import type { CardPreviewRef } from '../../../core';
 import { UI_Z_INDEX } from '../../../core';
 import SpotlightContainer from './SpotlightContainer';
+import type { DieFace } from '../domain/core-types';
 
 const SPOTLIGHT_CARD_WIDTH = '16vw';
-const SPOTLIGHT_CARD_ASPECT_RATIO = 0.61;
 
 /** 特写队列项 */
 export interface CardSpotlightItem {
@@ -67,7 +68,7 @@ interface CardSpotlightOverlayProps {
     onClose: (id: string) => void;
     /** 对手悬浮窗元素引用（用于计算起始位置） */
     opponentHeaderRef?: React.RefObject<HTMLElement | null>;
-    /** 自动关闭延迟（毫秒）；不传时保持到玩家点击空白背景关闭 */
+    /** 仅显式教程调用可指定自动推进；普通卡牌阅读默认由玩家关闭。 */
     autoCloseDelay?: number;
 }
 
@@ -109,6 +110,11 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
         return null;
     }
     const currentCardId = getCardIdFromSpotlightItem(currentItem);
+    const preview = currentItem.previewRef;
+    const atlas = preview?.type === 'atlas' ? getCardAtlasSource(preview.atlasId) : undefined;
+    const cardAspectRatio = preview?.type === 'atlas' && atlas
+        ? computeSpriteAspectRatio(preview.index, atlas.config)
+        : undefined;
 
 
     return (
@@ -116,10 +122,9 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
             id={currentItem.id}
             isVisible={true}
             onClose={() => onClose(currentItem.id)}
-            autoCloseDelay={autoCloseDelay ?? 0}
-            zIndex={UI_Z_INDEX.overlayRaised}
+            autoCloseDelay={autoCloseDelay}
             disableAutoClose={autoCloseDelay === undefined}
-            disableBackdropClose={false}
+            zIndex={UI_Z_INDEX.overlayRaised}
             closeOnContentClick={false}
             allowContentPointerEvents={true}
             contentMotion={{
@@ -139,12 +144,10 @@ export const CardSpotlightOverlay: React.FC<CardSpotlightOverlayProps> = ({
                 <CardPreview
                     previewRef={currentItem.previewRef}
                     locale={locale}
-                    className="rounded-[0.6vw] shadow-2xl border-2 border-amber-500/60"
+                    className="drop-shadow-2xl"
                     style={{
                         width: SPOTLIGHT_CARD_WIDTH,
-                        height: `calc(${SPOTLIGHT_CARD_WIDTH} / ${SPOTLIGHT_CARD_ASPECT_RATIO})`,
-                        aspectRatio: `${SPOTLIGHT_CARD_ASPECT_RATIO} / 1`,
-                        boxShadow: '0 0 1.5vw 0.3vw rgba(251, 191, 36, 0.4)',
+                        height: cardAspectRatio ? `calc(${SPOTLIGHT_CARD_WIDTH} / ${cardAspectRatio})` : undefined,
                     }}
                 />
             </div>

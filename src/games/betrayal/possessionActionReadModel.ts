@@ -279,7 +279,10 @@ export function validateBetrayalPossessionSpecialActionCommand(
     }
     if (effect.mode === 'nextNonCombatTraitRollTotalReplacement') {
         const selectedTotal = payload.replacementRollTotal;
-        if (!Number.isInteger(selectedTotal) || selectedTotal < effect.minTotal || selectedTotal > effect.maxTotal) {
+        if (typeof selectedTotal !== 'number'
+            || !Number.isInteger(selectedTotal)
+            || selectedTotal < effect.minTotal
+            || selectedTotal > effect.maxTotal) {
             return { valid: false, error: `天使之羽必须选择 ${effect.minTotal}-${effect.maxTotal} 之间的整数作为投骰结果。` };
         }
     }

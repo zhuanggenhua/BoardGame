@@ -1,0 +1,150 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-18T17:04:05.7822486Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "主线教程使用随机地图，不把上层固定房间误写成图书馆。",
+      "status": "PASS",
+      "evidence": [
+        "主线真实浏览器 E2E 通过：基础回合到作祟公开与英雄读本。",
+        "29-主线-上层平台结束回合.jpg 显示上层平台与未探索房间，未把该房间显示为图书馆。",
+        "E2E 断言验证 upper-west 为 unexplored，且不包含图书馆。"
+      ]
+    },
+    {
+      "requirement": "兔脚重投后玩家能看清新骰面，并保留确认步骤；刷新恢复后确认仍在。",
+      "status": "PASS",
+      "evidence": [
+        "主线真实浏览器 E2E 日志两次显示确认 0/1：刷新前与刷新恢复后。",
+        "23-主线-兔脚重投后确认新骰面.jpg 显示新骰面、结果说明和确认 0/1。",
+        "E2E 继续通过确认进入伤害分配。"
+      ]
+    },
+    {
+      "requirement": "独立自然作祟专题保留图书馆移动、寻找真名检定、确认和回到牌桌的完整链路。",
+      "status": "PASS",
+      "evidence": [
+        "自然作祟真实浏览器 E2E 通过：1 passed。",
+        "42-自然作祟-图书馆成为可点击移动目标.jpg 显示图书馆本体与目标高亮。",
+        "44-自然作祟-寻找真名知识检定成功.jpg 显示骰子结果、取得知识标记和确认 0/1。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\01-主线-01-回合目标与行动区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\02-主线-02-速度决定本回合移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\03-主线-03-属性轨读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\04-主线-04-剩余移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\05-主线-05-房间主视区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\06-主线-06-观察队友一视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\07-主线-07-观察队友二视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\08-主线-08-再次点击队友返回观察前位置.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\09-主线-09-聚焦回自己房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\10-主线-10-预兆作祟进度条.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\11-主线-11-持有区与帮助牌读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\12-主线-12-打开移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\13-主线-13-移动目标门厅.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\14-主线-14-移动到门厅后准备探索.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\15-主线-15-探索目标房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\16-主线-16-旋转新房间朝向.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\17-主线-17-确认放置新房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\18-主线-18-事件牌公开与投掷入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\19-主线-19-投掷事件.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\20-主线-20-事件骰出现与书本可查看.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\21-主线-21-使用书本改用知识检定.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\22-主线-22-选择兔脚重掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\23-主线-23-兔脚重投后确认新骰面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\24-主线-24-伤害分配面板可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\25-主线-25-伤害分配完成后回到牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\26-主线-26-回到你的回合后移动到大阶梯.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\27-主线-27-切到上层地图.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\28-主线-28-上层平台移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\29-主线-29-上层平台结束回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\30-主线-30-英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\31-主线-31-过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\32-主线-32-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\33-主线-33-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\34-自然作祟-01-当前玩家结束回合前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\35-自然作祟-02-回到你的回合继续行动.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\36-自然作祟-03-当前玩家看到英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\37-自然作祟-04-开场过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\38-自然作祟-05-英雄剧本书目标页与图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\39-自然作祟-06-读完剧本书目标准备关闭.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\40-自然作祟-07-读完目标后回到英雄回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\41-自然作祟-08-图书馆成为可点击移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\42-自然作祟-09-轮到英雄寻找木乃伊真名.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\43-自然作祟-10-寻找真名知识检定成功.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\44-自然作祟-11-确认后回到牌桌可结束回合.jpg"
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\01-主线-01-回合目标与行动区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\02-主线-02-速度决定本回合移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\03-主线-03-属性轨读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\04-主线-04-剩余移动力.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\05-主线-05-房间主视区.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\06-主线-06-观察队友一视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\07-主线-07-观察队友二视角.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\08-主线-08-再次点击队友返回观察前位置.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\09-主线-09-聚焦回自己房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\10-主线-10-预兆作祟进度条.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\11-主线-11-持有区与帮助牌读法.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\12-主线-12-打开移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\13-主线-13-移动目标门厅.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\14-主线-14-移动到门厅后准备探索.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\15-主线-15-探索目标房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\16-主线-16-旋转新房间朝向.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\17-主线-17-确认放置新房间.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\18-主线-18-事件牌公开与投掷入口.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\19-主线-19-投掷事件.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\20-主线-20-事件骰出现与书本可查看.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\21-主线-21-使用书本改用知识检定.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\22-主线-22-选择兔脚重掷.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\23-主线-23-兔脚重投后确认新骰面.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\24-主线-24-伤害分配面板可操作.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\25-主线-25-伤害分配完成后回到牌桌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\26-主线-26-回到你的回合后移动到大阶梯.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\27-主线-27-切到上层地图.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\28-主线-28-上层平台移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\29-主线-29-上层平台结束回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\30-主线-30-英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\31-主线-31-过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\32-主线-32-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\33-主线-33-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\34-自然作祟-01-当前玩家结束回合前.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\35-自然作祟-02-回到你的回合继续行动.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\36-自然作祟-03-当前玩家看到英雄开场过场.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\37-自然作祟-04-开场过场继续进入英雄剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\38-自然作祟-05-英雄剧本书目标页与图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\39-自然作祟-06-读完剧本书目标准备关闭.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\40-自然作祟-07-读完目标后回到英雄回合.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\41-自然作祟-08-图书馆成为可点击移动目标.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\42-自然作祟-09-轮到英雄寻找木乃伊真名.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\43-自然作祟-10-寻找真名知识检定成功.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\final-web-view-20260919\\44-自然作祟-11-确认后回到牌桌可结束回合.jpg"
+  ],
+  "validation": [
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "node scripts/infra/vitest-cli-safe.mjs run src/games/betrayal/__tests__/tutorial.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1",
+      "result": "passed: 21 tests"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts 主线教程会从基础回合自然推进到作祟公开与英雄读本",
+      "result": "passed: 1 test"
+    },
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts haunt-natural",
+      "result": "passed: 1 test"
+    }
+  ]
+}

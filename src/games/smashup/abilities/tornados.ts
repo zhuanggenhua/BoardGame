@@ -1,4 +1,5 @@
-import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
+import {
+ registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter,
@@ -12,6 +13,8 @@ import {
 } from '../domain/abilityHelpers';
 import { buildValidatedOngoingDetachEvents } from '../domain/ongoingDetach';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -133,7 +136,7 @@ function moveEvents(
         sourceBaseIndex?: number;
     },
 ): SmashUpEvent[] {
-    return buildValidatedMoveEvents(state, {
+    return buildValidatedMoveEvents('core' in state ? state.core : state, {
         minionUid,
         minionDefId,
         fromBaseIndex,
@@ -152,7 +155,7 @@ function baseName(state: SmashUpCore, baseIndex: number): string {
     return getBaseDef(state.bases[baseIndex]?.defId)?.name ?? `基地 ${baseIndex + 1}`;
 }
 
-const moveToBasePromptProgram = createPromptProgram<MoveMinionToBaseContext, SmashUpCore, SmashUpEvent>({
+const moveToBasePromptProgram = createPromptProgram<MoveMinionToBaseContext>({
     sourceId: 'tornados_move_to_base',
     interactionSourceIds: [
         'tornados_cyclone', 'tornados_carried_away_dest', 'tornados_picked_up_dest',
@@ -194,7 +197,7 @@ const moveToBasePromptProgram = createPromptProgram<MoveMinionToBaseContext, Sma
     },
 });
 
-const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMoveContext, SmashUpCore, SmashUpEvent>({
+const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMoveContext>({
     sourceId: 'tornados_choose_minion_move',
     interactionSourceIds: ['tornados_monster_tornado', 'tornados_twister', 'tornados_carried_away', 'tornados_picked_up', 'tornados_over_the_rainbow', 'tornados_gone_with_the_wind'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -447,7 +450,7 @@ function tornadosWhirlwinds(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext, SmashUpCore, SmashUpEvent>({
+const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext>({
     sourceId: 'tornados_whirlwinds',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `tornados_whirlwinds_${context.now}`,
@@ -478,7 +481,7 @@ const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext, SmashUpCo
         const [current, ...remaining] = selected;
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
@@ -489,13 +492,12 @@ const whirlwindsPromptProgram = createPromptProgram<WhirlwindsContext, SmashUpCo
                 sourceKind: context.sourceKind,
                 sourceControllerId: context.sourceControllerId,
                 sourceBaseIndex: context.sourceBaseIndex,
-            },
-            nextProgram: whirlwindsTargetPromptProgram,
+            }, whirlwindsTargetPromptProgram),
         };
     },
 });
 
-const whirlwindsTargetPromptProgram = createPromptProgram<WhirlwindsTargetContext, SmashUpCore, SmashUpEvent>({
+const whirlwindsTargetPromptProgram: AbilityProgram<WhirlwindsTargetContext, SmashUpCore, SmashUpEvent> = createPromptProgram<WhirlwindsTargetContext>({
     sourceId: 'tornados_whirlwinds_dest',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `tornados_whirlwinds_dest_${context.current.uid}_${context.now}`,
@@ -531,19 +533,18 @@ const whirlwindsTargetPromptProgram = createPromptProgram<WhirlwindsTargetContex
         const [current, ...remaining] = context.remaining;
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 now: timestamp,
                 current,
                 remaining,
-            },
-            nextProgram: whirlwindsTargetPromptProgram,
+            }, whirlwindsTargetPromptProgram),
         };
     },
 });
 
-const tradeWindsFirstPromptProgram = createPromptProgram<TradeWindsFirstContext, SmashUpCore, SmashUpEvent>({
+const tradeWindsFirstPromptProgram = createPromptProgram<TradeWindsFirstContext>({
     sourceId: 'tornados_trade_winds_first',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `tornados_trade_winds_first_${context.now}`,
@@ -583,7 +584,7 @@ const tradeWindsFirstPromptProgram = createPromptProgram<TradeWindsFirstContext,
     },
 });
 
-const tradeWindsSecondPromptProgram = createPromptProgram<TradeWindsSecondContext, SmashUpCore, SmashUpEvent>({
+const tradeWindsSecondPromptProgram = createPromptProgram<TradeWindsSecondContext>({
     sourceId: 'tornados_trade_winds_second',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `tornados_trade_winds_second_${context.now}`,
@@ -666,7 +667,7 @@ function collectTransferableActions(state: SmashUpCore): RippedOffContext['actio
     return actions;
 }
 
-const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext, SmashUpCore, SmashUpEvent>({
+const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext>({
     sourceId: 'tornados_ripped_off',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `tornados_ripped_off_${context.now}`,
@@ -696,7 +697,7 @@ const rippedOffActionPromptProgram = createPromptProgram<RippedOffContext, Smash
     },
 });
 
-const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext, SmashUpCore, SmashUpEvent>({
+const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext>({
     sourceId: 'tornados_ripped_off_target',
     interactionSourceIds: [
         'tornados_ripped_off_target_base',
@@ -845,7 +846,7 @@ function canTriggerTornadosDustDevilBeforeScoring(ctx: TriggerContext): boolean 
         && !!ctx.matchState;
 }
 
-const dustDevilPromptProgram = createPromptProgram<DustDevilContext, SmashUpCore, SmashUpEvent>({
+const dustDevilPromptProgram = createPromptProgram<DustDevilContext>({
     sourceId: 'tornados_dust_devil',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `tornados_dust_devil_${context.now}`,
@@ -923,7 +924,7 @@ function baseTornadoAlley(ctx: BaseAbilityContext) {
     }));
 }
 
-const tornadoAlleyPromptProgram = createPromptProgram<TornadoAlleyContext, SmashUpCore, SmashUpEvent>({
+const tornadoAlleyPromptProgram = createPromptProgram<TornadoAlleyContext>({
     sourceId: 'base_tornado_alley',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `base_tornado_alley_${context.now}`,

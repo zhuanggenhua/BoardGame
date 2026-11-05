@@ -7,6 +7,10 @@ import {
 } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
+import { execute } from '../domain/execute';
+import { validateCommand } from '../domain/commandValidation';
+import { reduce } from '../domain/reducer';
+import { hasBeforeDamageReceivedCardForTarget, maybeCreateDamageResponseEvent } from '../domain/tokenResponse';
 import { cmd, createHeroMatchup, createRunner, fixedRandom } from './test-utils';
 
 const getAllDistinctCards = () => {
@@ -61,8 +65,8 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-lucky',
             'card-artificer-perfectly-calibrated',
             'card-bye-bye',
-            'card-next-time',
         ]));
+        expect(allCards.find((card) => card.id === 'card-next-time')?.timing).toBe('roll');
     });
 
     it('打出影响对局的卡牌后，afterCardPlayed 窗口只列自身前提满足的即时行动牌', () => {
@@ -115,6 +119,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-me-too',
             'card-play-six',
             'card-surprise',
+            'card-thor-worthy',
             'card-unexpected',
             'card-worthy-of-me',
         ]);
@@ -122,6 +127,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-cursed-pirate-ransom',
             'card-flick',
             'card-give-hand',
+            'card-i-can-again',
             'card-surprise',
             'card-unexpected',
         ]);
@@ -131,7 +137,7 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
         const state = prepareState();
         state.core.players['0'].tokens = {};
 
-        expect(unrestrictedInstantActions).toHaveLength(22);
+        expect(unrestrictedInstantActions).toHaveLength(27);
         for (const card of unrestrictedInstantActions) {
             expect(
                 checkPlayCard(state.core, '1', card, 'main1'),
@@ -150,8 +156,10 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             'card-artificer-mechanical-strike',
             'card-bye-bye',
             'card-flick',
-            'card-next-time',
+            'card-thor-storm-brewing',
             'card-zhanshujia-tactical-retreat',
+            'card-zhizhuxia-invisible-punch',
+            'card-zhizhuxia-wishful-thinking',
             'ninja-card-escape',
         ]);
 
@@ -196,21 +204,30 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
             originalDamage: 10,
             currentDamage: 10,
             responseType: 'beforeDamageReceived',
+            damageScope: 'attack',
             responderId: '1',
             isFullyEvaded: false,
         } as typeof state.core.pendingDamage;
+        state.core.players['1'].tokens[TOKEN_IDS.INVISIBLE] = 1;
+        state.core.players['1'].tokens[TOKEN_IDS.ELECTROKINESIS] = 2;
+        state.core.players['1'].resources[RESOURCE_IDS.HP] = 5;
         state.core.lastResolvedAttackDamage = 10;
 
         expect(beforeDamageResponseCards.map((card) => card.id).sort()).toEqual([
             'card-next-time',
             'ninja-card-escape',
             'card-artificer-mechanical-strike',
+            'card-thor-impenetrable',
+            'card-thor-undaunted',
+            'card-strange-shield-of-seraphim',
+            'card-zhizhuxia-invisible-punch',
+            'card-zhizhuxia-wishful-thinking',
             'upgrade-artificer-shock-bot-2',
         ].sort());
 
         for (const card of beforeDamageResponseCards) {
             expect(
-                checkPlayCard(state.core, '1', card, 'main2'),
+                checkPlayCard(state.core, '1', card, card.timing === 'roll' ? 'defensiveRoll' : 'main2'),
                 `${card.id} 应继续在受伤前的待结算伤害中可用`,
             ).toEqual({ ok: true });
             expect(
@@ -218,6 +235,116 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
                 `${card.id} 不能被错误放进改骰响应窗口`,
             ).toEqual({ ok: false, reason: 'wrongPhaseForCard' });
         }
+    });
+
+    it('下次一定允许任一持牌玩家替当前待受伤者减伤，并由受伤者承担护盾结果', () => {
+        const matchState = createHeroMatchup('monk', 'barbarian')(['0', '1'], fixedRandom);
+        const { core } = matchState;
+        const nextTime = allCards.find((card) => card.id === 'card-next-time')!;
+        core.players['2'] = JSON.parse(JSON.stringify(core.players['0']));
+        core.players['2'].id = '2';
+        core.players['3'] = JSON.parse(JSON.stringify(core.players['1']));
+        core.players['3'].id = '3';
+        core.seatingOrder = ['0', '1', '2', '3'];
+        core.teamIdByPlayerId = { '0': 'A', '1': 'B', '2': 'A', '3': 'B' };
+        core.teamHealth = { A: 50, B: 50 };
+        core.turnPhase = 'defensiveRoll';
+        matchState.sys.phase = 'defensiveRoll';
+        core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'fist-technique',
+            isDefendable: true,
+        } as typeof core.pendingAttack;
+        core.pendingDamage = {
+            id: 'teammate-card-damage',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 10,
+            currentDamage: 10,
+            responseType: 'beforeDamageReceived',
+            damageScope: 'attack',
+            responderId: '1',
+            isFullyEvaded: false,
+        } as typeof core.pendingDamage;
+        core.players['0'].hand = [];
+        core.players['1'].hand = [];
+        core.players['3'].hand = [nextTime];
+        core.players['3'].resources[RESOURCE_IDS.CP] = 1;
+
+        expect(hasBeforeDamageReceivedCardForTarget(core, '1')).toBe(true);
+        expect(checkPlayCard(core, '3', nextTime, 'defensiveRoll')).toEqual({ ok: true });
+
+        const playCard = cmd('PLAY_CARD', '3', { cardId: nextTime.id }) as any;
+        expect(validateCommand(core, playCard, 'defensiveRoll')).toEqual({ valid: true });
+        const afterCard = execute(matchState, playCard, fixedRandom)
+            .reduce((state, event) => reduce(state, event), core);
+
+        expect(afterCard.players['3'].resources[RESOURCE_IDS.CP]).toBe(0);
+        expect(afterCard.players['3'].discard.map((card) => card.id)).toContain(nextTime.id);
+        expect(afterCard.players['3'].damageShields).toEqual([]);
+        expect(afterCard.players['1'].damageShields).toEqual([
+            expect.objectContaining({ sourceId: nextTime.id, value: 6 }),
+        ]);
+        expect(afterCard.pendingDamage?.targetPlayerId).toBe('1');
+        expect(afterCard.pendingDamage?.currentDamage).toBe(4);
+    });
+
+    it('下次一定可在防御投掷阶段先打出，并把护盾给到已确定的受击者', () => {
+        const matchState = createHeroMatchup('monk', 'barbarian')(['0', '1'], fixedRandom);
+        const { core } = matchState;
+        const nextTime = allCards.find((card) => card.id === 'card-next-time')!;
+        core.players['2'] = JSON.parse(JSON.stringify(core.players['0']));
+        core.players['2'].id = '2';
+        core.players['3'] = JSON.parse(JSON.stringify(core.players['1']));
+        core.players['3'].id = '3';
+        core.seatingOrder = ['0', '1', '2', '3'];
+        core.teamIdByPlayerId = { '0': 'A', '1': 'B', '2': 'A', '3': 'B' };
+        core.teamHealth = { A: 50, B: 50 };
+        core.turnPhase = 'defensiveRoll';
+        matchState.sys.phase = 'defensiveRoll';
+        core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'fist-technique',
+            isDefendable: true,
+        } as typeof core.pendingAttack;
+        core.players['3'].hand = [nextTime];
+        core.players['3'].resources[RESOURCE_IDS.CP] = 1;
+
+        expect(hasBeforeDamageReceivedCardForTarget(core, '1')).toBe(true);
+        const responseEvent = maybeCreateDamageResponseEvent({
+            state: core,
+            attackerId: '0',
+            sourceAbilityId: 'fist-technique',
+            allowAttackerBoost: false,
+            damageEvent: {
+                type: 'DAMAGE_DEALT',
+                payload: {
+                    targetId: '1',
+                    amount: 10,
+                    actualDamage: 10,
+                    sourcePlayerId: '0',
+                    sourceAbilityId: 'fist-technique',
+                    damageScope: 'attack',
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: 90,
+            } as any,
+        });
+        expect(responseEvent?.payload.pendingDamage).toMatchObject({
+            targetPlayerId: '1',
+            responderId: '1',
+            responseType: 'beforeDamageReceived',
+        });
+        expect(checkPlayCard(core, '3', nextTime, 'defensiveRoll')).toEqual({ ok: true });
+        const afterCard = execute(matchState, cmd('PLAY_CARD', '3', { cardId: nextTime.id }) as any, fixedRandom)
+            .reduce((state, event) => reduce(state, event), core);
+
+        expect(afterCard.players['1'].damageShields).toEqual([
+            expect.objectContaining({ sourceId: nextTime.id, value: 6 }),
+        ]);
+        expect(afterCard.players['3'].damageShields).toEqual([]);
     });
 
     it('攻击结算后的响应牌仍只在攻击方造成足够伤害后出现，未被改骰窗口收紧影响', () => {

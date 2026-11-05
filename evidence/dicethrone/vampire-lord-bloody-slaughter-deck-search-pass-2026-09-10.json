@@ -1,0 +1,31 @@
+{
+  "verdict": "INVALIDATED",
+  "invalidatedAt": "2026-09-11T00:00:00+08:00",
+  "scope": "historical-evidence-only",
+  "reason": "旧 PASS 清单和截图只使用了 3 张测试候选牌，不能证明血色杀戮会在真实吸血鬼领主抽牌堆规模下提供牌库搜查 UI。",
+  "invalidatedCoverage": {
+    "oldDeckSize": 3,
+    "missingRequirements": [
+      "未证明候选集合来自当前玩家真实抽牌堆全集",
+      "未证明大集合初始容量和结果计数",
+      "未证明搜索框真实过滤当前可见卡面集合",
+      "未证明空搜索状态",
+      "未证明过滤后 1 张不等于初始牌库只有 1 张或 3 张",
+      "未证明真实大牌库状态下手牌仍可见、可读、可恢复查看"
+    ]
+  },
+  "supersededImages": [
+    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/02-血色杀戮搜牌窗口-抽牌堆三张候选可选.jpg",
+    "test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/血色杀戮应通过玩家板终极技打开抽牌堆搜牌交互并结算/03-血色杀戮已选择牌库牌-待确认加入手牌.jpg"
+  ],
+  "currentRequiredEvidence": {
+    "status": "pending-new-run",
+    "requirements": [
+      "真实牌库容量使用 VAMPIRE_LORD_CARDS 扣除预置手牌后的当前 deck，而不是 3 张缩小测试池",
+      "截图覆盖触发前、真实大牌库初始搜索窗口、空搜索、命中过滤、选择待确认、结算收口",
+      "E2E 实际输入搜索词并断言可见集合、空态和恢复/选择结果",
+      "最终状态断言手牌新增目标牌、抽牌堆减少 1 张且不再含目标牌、获得 2 鲜血之力、造成 10 点伤害并回到 main2",
+      "AI 图面复核确认没有复制大杀四方视觉壳、没有卡外复写牌面信息、没有隐藏手牌"
+    ]
+  }
+}

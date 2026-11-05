@@ -8,11 +8,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { SummonerWarsDomain, SW_COMMANDS } from '../domain';
+import { SummonerWarsDomain, SW_COMMANDS, SW_EVENTS } from '../domain';
 import type { SummonerWarsCore, PlayerId, FactionId } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
+import { FLOW_COMMANDS } from '../../../engine';
+import { engineConfig, SUMMONER_WARS_CHEAT_COMMANDS } from '../game';
 import { createInitializedCore } from './test-helpers';
+import { BOARD_ROWS, BOARD_COLS, getSummoner } from '../domain/helpers';
 
 // ============================================================================
 // 测试工具
@@ -179,6 +182,146 @@ describe('CONFIRM_ATTACK 旧攻击确认兼容', () => {
             const newState = result.state as MatchState<SummonerWarsCore>;
             expect(newState.core).toEqual(beforeCore);
         }
+    });
+});
+
+describe('召唤师死亡后的终局命令锁', () => {
+    it('敌方召唤师被攻击摧毁后立刻写入胜者，且不能继续推进阶段', () => {
+        const state = createMatchState(['0', '1'], fixedRandom);
+        state.core.phase = 'attack';
+        state.sys.phase = 'attack';
+        state.core.currentPlayer = '0';
+        state.core.players['0'].attackCount = 0;
+        state.core.players['0'].hasAttackedEnemy = false;
+
+        for (let row = 0; row < BOARD_ROWS; row += 1) {
+            for (let col = 0; col < BOARD_COLS; col += 1) {
+                const unit = state.core.board[row]?.[col]?.unit;
+                if (unit && unit.card.unitClass !== 'summoner') {
+                    state.core.board[row][col].unit = undefined;
+                }
+            }
+        }
+
+        const ownSummoner = getSummoner(state.core, '0');
+        const enemySummoner = getSummoner(state.core, '1');
+        expect(ownSummoner).toBeDefined();
+        expect(enemySummoner).toBeDefined();
+        if (!ownSummoner || !enemySummoner) return;
+
+        const target = enemySummoner.position;
+        const attacker = target.row < BOARD_ROWS - 1
+            ? { row: target.row + 1, col: target.col }
+            : { row: target.row - 1, col: target.col };
+
+        state.core.board[ownSummoner.position.row][ownSummoner.position.col].unit = undefined;
+        state.core.board[attacker.row][attacker.col].unit = {
+            ...ownSummoner,
+            position: attacker,
+            damage: 0,
+            hasAttacked: false,
+            card: {
+                ...ownSummoner.card,
+                strength: 1,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: [],
+            },
+        };
+        state.core.board[target.row][target.col].unit = {
+            ...enemySummoner,
+            damage: enemySummoner.card.life - 1,
+            card: {
+                ...enemySummoner.card,
+                abilities: [],
+            },
+        };
+
+        const killResult = execCmd(state, SW_COMMANDS.DECLARE_ATTACK, '0', { attacker, target });
+
+        expect(killResult.success).toBe(true);
+        expect(killResult.events.some(event => event.type === SW_EVENTS.UNIT_DESTROYED)).toBe(true);
+        expect(killResult.state.sys.gameover).toEqual({ winner: '0' });
+        expect(killResult.state.core.board[target.row][target.col].unit).toBeUndefined();
+
+        const continueResult = execCmd(killResult.state, SW_COMMANDS.END_PHASE, '0', {});
+
+        expect(continueResult.success).toBe(false);
+        expect(continueResult.error).toBe('game_over');
+        expect(continueResult.state.core.phase).toBe('attack');
+        expect(continueResult.state.sys.gameover).toEqual({ winner: '0' });
+
+        const flowContinueResult = executePipeline(
+            engineConfig,
+            killResult.state,
+            { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {}, timestamp: Date.now() },
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(flowContinueResult.success).toBe(false);
+        expect(flowContinueResult.error).toBe('game_over');
+        expect(flowContinueResult.state.core.phase).toBe('attack');
+        expect(flowContinueResult.state.sys.gameover).toEqual({ winner: '0' });
+    });
+});
+
+describe('召唤师战争调试扣血', () => {
+    it('扣减非致死血量时只增加召唤师伤害，不触发终局', () => {
+        const state = createMatchState(['0', '1'], fixedRandom);
+        const beforeSummoner = getSummoner(state.core, '1');
+        expect(beforeSummoner).toBeDefined();
+        if (!beforeSummoner) return;
+
+        const result = executePipeline(
+            engineConfig,
+            state,
+            {
+                type: SUMMONER_WARS_CHEAT_COMMANDS.DAMAGE_SUMMONER,
+                playerId: '0',
+                payload: { playerId: '1', amount: 1 },
+                timestamp: Date.now(),
+            },
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SW_EVENTS.UNIT_DAMAGED)).toBe(true);
+        expect(result.events.some(event => event.type === SW_EVENTS.UNIT_DESTROYED)).toBe(false);
+        expect(result.state.sys.gameover).toBeUndefined();
+
+        const afterSummoner = getSummoner(result.state.core, '1');
+        expect(afterSummoner).toBeDefined();
+        expect(afterSummoner?.damage).toBe(beforeSummoner.damage + 1);
+    });
+
+    it('扣到生命归零时走正常摧毁链路并写入游戏结束', () => {
+        const state = createMatchState(['0', '1'], fixedRandom);
+        const enemySummoner = getSummoner(state.core, '1');
+        expect(enemySummoner).toBeDefined();
+        if (!enemySummoner) return;
+
+        const attackerMagicBefore = state.core.players['0'].magic;
+        const result = executePipeline(
+            engineConfig,
+            state,
+            {
+                type: SUMMONER_WARS_CHEAT_COMMANDS.DAMAGE_SUMMONER,
+                playerId: '0',
+                payload: { playerId: '1', amount: enemySummoner.card.life - enemySummoner.damage },
+                timestamp: Date.now(),
+            },
+            fixedRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SW_EVENTS.UNIT_DAMAGED)).toBe(true);
+        expect(result.events.some(event => event.type === SW_EVENTS.UNIT_DESTROYED)).toBe(true);
+        expect(getSummoner(result.state.core, '1')).toBeUndefined();
+        expect(result.state.core.players['0'].magic).toBe(attackerMagicBefore);
+        expect(result.state.sys.gameover).toEqual({ winner: '0' });
     });
 });
 

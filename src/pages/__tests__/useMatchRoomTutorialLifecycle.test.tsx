@@ -17,6 +17,8 @@ const tutorialState = {
     tutorial: {
         manifestId: null as string | null,
     },
+    activeSessionScope: null as import('../../contexts/TutorialContext').TutorialSessionScope | null,
+    activateTutorialSession: vi.fn(),
     startTutorial: vi.fn(),
     closeTutorial: vi.fn(),
     isActive: false,
@@ -28,9 +30,13 @@ vi.mock('../../components/tutorial/TutorialOverlay', () => ({
     TutorialOverlay: () => null,
 }));
 
-vi.mock('../../contexts/TutorialContext', () => ({
-    useTutorial: () => tutorialState,
-}));
+vi.mock('../../contexts/TutorialContext', async () => {
+    const actual = await vi.importActual<typeof import('../../contexts/TutorialContext')>('../../contexts/TutorialContext');
+    return {
+        ...actual,
+        useTutorial: () => tutorialState,
+    };
+});
 
 const makeManifest = (id: string, stepIds: string[]): TutorialManifest => ({
     id,
@@ -57,6 +63,17 @@ const makeCatalog = (entries: Array<{
     ])),
 });
 
+const expectTutorialScope = (
+    gameId: string,
+    tutorialId: string | undefined,
+    manifest: TutorialManifest,
+) => expect.objectContaining({
+    gameId,
+    tutorialId: tutorialId ?? manifest.id,
+    manifestId: manifest.id,
+    manifestRevision: manifest.revision ?? null,
+});
+
 const persistTutorialSnapshot = (args: {
     gameId: string;
     tutorialId: string;
@@ -66,6 +83,7 @@ const persistTutorialSnapshot = (args: {
     active?: boolean;
     manifestId?: string;
     stepId?: string;
+    core?: Record<string, unknown>;
     legacySeed?: boolean;
     includeManifestRevision?: boolean;
 }) => {
@@ -78,6 +96,7 @@ const persistTutorialSnapshot = (args: {
         active = true,
         manifestId = manifest.id,
         stepId = manifest.steps[stepIndex]?.id,
+        core = {},
         legacySeed = false,
         includeManifestRevision = !legacySeed,
     } = args;
@@ -97,7 +116,7 @@ const persistTutorialSnapshot = (args: {
         numPlayers,
         randomCursor: 0,
         state: {
-            core: {},
+            core,
             sys: {
                 tutorial: {
                     active,
@@ -125,7 +144,9 @@ describe('useMatchRoomTutorialLifecycle', () => {
         window.localStorage.clear();
         tutorialState.startTutorial.mockReset();
         tutorialState.closeTutorial.mockReset();
+        tutorialState.activateTutorialSession.mockReset();
         tutorialState.isActive = false;
+        tutorialState.activeSessionScope = null;
         tutorialState.tutorial.manifestId = null;
         tutorialState.currentStep = null;
         tutorialState.isBoardMounted = false;
@@ -171,10 +192,13 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender(secondManifest);
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(secondManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            secondManifest,
+            expectTutorialScope('qidahen', 'field-battle', secondManifest),
+        );
     });
 
-    it('当前教程最后一步不是 finish 时，结束后仍会按完成态返回上一页', async () => {
+    it('当前教程最后一步不是 finish 时，结束后仍会按完成态返回游戏大厅', async () => {
         const setPlayerID = vi.fn();
         const navigate = vi.fn();
         const openModal = vi.fn(() => 'modal-1');
@@ -207,7 +231,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
             await vi.advanceTimersByTimeAsync(600);
         });
 
-        expect(navigate).toHaveBeenCalledWith(-1);
+        expect(navigate).toHaveBeenCalledWith('/?game=qidahen', { replace: true });
     });
 
     it('同一条教程已经走到最后一步且当前未激活时，不会重复自动启动', () => {
@@ -269,13 +293,19 @@ describe('useMatchRoomTutorialLifecycle', () => {
         }));
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
-        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
 
         tutorialState.isBoardMounted = true;
         rerender();
 
         expect(tutorialState.startTutorial).toHaveBeenCalledTimes(2);
-        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(manifest);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
     });
 
     it('从一个教程路由切到另一个教程路由时，旧实例的延迟清理不能把新教程误关掉', async () => {
@@ -329,8 +359,190 @@ describe('useMatchRoomTutorialLifecycle', () => {
             await vi.advanceTimersByTimeAsync(0);
         });
 
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(secondManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            secondManifest,
+            expectTutorialScope('betrayal', 'haunt-actions-and-finish', secondManifest),
+        );
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
+
+    it('从教程残留状态进入在线房间时，会清理全局教程状态，避免选角页卡在教程初始化', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', ['setup-runtime', 'overview', 'finish']);
+
+        tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
+        tutorialState.currentStep = manifest.steps[1] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'dicethrone',
+            tutorialId: undefined,
+            tutorialCatalog: null,
+            isTutorialRoute: false,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: null,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.closeTutorial).toHaveBeenCalledTimes(1);
+        expect(tutorialState.startTutorial).not.toHaveBeenCalled();
+    });
+
+    it('从课程返回多课程目录时，会关闭共享教程会话和提示层', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'tutorial-modal');
+        const closeModal = vi.fn();
+        const catalog = makeCatalog([
+            { id: 'basic-opening' },
+            { id: 'attack-and-battle' },
+        ]);
+        const manifest = catalog.tutorials['basic-opening']!.manifest;
+        let tutorialId: string | undefined = 'basic-opening';
+        let resolvedTutorialManifest: TutorialManifest | null = manifest;
+
+        tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
+        tutorialState.currentStep = manifest.steps[0] ?? null;
+        tutorialState.isBoardMounted = true;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'dicethrone',
+            tutorialId,
+            tutorialCatalog: catalog,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(openModal).toHaveBeenCalledTimes(1);
+
+        tutorialId = undefined;
+        resolvedTutorialManifest = null;
+        rerender();
+
+        expect(tutorialState.closeTutorial).toHaveBeenCalledTimes(1);
+        expect(closeModal).toHaveBeenCalledWith('tutorial-modal');
+        expect(tutorialState.startTutorial).not.toHaveBeenCalled();
+    });
+
+    it('没有多课程目录的默认教程入口仍会启动单课程', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('single-tutorial', ['overview', 'finish']);
+
+        renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'dicethrone',
+            tutorialId: undefined,
+            tutorialCatalog: makeCatalog([{ id: 'single-tutorial' }]),
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            manifest,
+            expectTutorialScope('dicethrone', undefined, manifest),
+        );
+        expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
+
+    it('同一教程 URL 的临时卸载不会关闭正在启动的教程', async () => {
+        window.history.pushState({}, '', '/play/betrayal/tutorial/basic-setup-and-turn');
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', ['setup-runtime', 'overview', 'finish']);
+
+        tutorialState.isActive = false;
+        tutorialState.tutorial.manifestId = null;
+        tutorialState.currentStep = null;
+        tutorialState.isBoardMounted = true;
+
+        const hook = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'basic-setup-and-turn',
+            tutorialCatalog: null,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
+
+        hook.unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
+    });
+
+    it('离开教程后，即使卸载清理时 URL 已切到目标页也会关闭共享教程状态', async () => {
+        const tutorialPath = '/play/betrayal/tutorial/basic-setup-and-turn';
+        window.history.pushState({}, '', tutorialPath);
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', ['setup-runtime', 'overview', 'finish']);
+
+        tutorialState.isBoardMounted = true;
+        const hook = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'basic-setup-and-turn',
+            tutorialCatalog: null,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        window.history.pushState({}, '', '/');
+        hook.unmount();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(0);
+        });
+
+        expect(tutorialState.closeTutorial).toHaveBeenCalledTimes(1);
+        expect(tutorialState.closeTutorial).toHaveBeenCalledWith(
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
     });
 
     it('教程进度 seed 会按游戏与章节隔离', () => {
@@ -411,6 +623,28 @@ describe('useMatchRoomTutorialLifecycle', () => {
             manifest,
             stepId: 'unexpected-step',
         });
+        expect(readRestorableTutorialProgress({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            numPlayers: 2,
+        })).toBeNull();
+    });
+
+    it('恢复教程进度时会复用 manifest stepValidator，避免恢复到过期画面', () => {
+        const manifest: TutorialManifest = {
+            ...makeManifest('basic-opening', ['intro', 'play-card', 'finish']),
+            stepValidator: (state, step) => (state.core as { phase?: string }).phase !== 'setup'
+                && step.id !== 'play-card-blocked',
+        };
+        persistTutorialSnapshot({
+            gameId: 'qidahen',
+            tutorialId: 'basic-opening',
+            manifest,
+            stepIndex: 1,
+            core: { phase: 'setup' },
+        });
+
         expect(readRestorableTutorialProgress({
             gameId: 'qidahen',
             tutorialId: 'basic-opening',
@@ -520,6 +754,61 @@ describe('useMatchRoomTutorialLifecycle', () => {
         expect(tutorialState.startTutorial).not.toHaveBeenCalled();
     });
 
+    it('首次启动后若 Provider 重挂载落回空白教程状态，会在真实 Board 挂载后补启动当前章节', () => {
+        const setPlayerID = vi.fn();
+        const navigate = vi.fn();
+        const openModal = vi.fn(() => 'modal-1');
+        const closeModal = vi.fn();
+        const manifest = makeManifest('basic-setup-and-turn', [
+            'setup-runtime',
+            'objective-and-turn',
+            'finish',
+        ]);
+
+        tutorialState.isActive = false;
+        tutorialState.tutorial.manifestId = null;
+        tutorialState.currentStep = null;
+        tutorialState.isBoardMounted = false;
+
+        const { rerender } = renderHook(() => useMatchRoomTutorialLifecycle({
+            gameId: 'betrayal',
+            tutorialId: 'basic-setup-and-turn',
+            tutorialCatalog: null,
+            isTutorialRoute: true,
+            isGameNamespaceReady: true,
+            gameImplReady: true,
+            resolvedTutorialManifest: manifest,
+            setPlayerID,
+            navigate,
+            openModal,
+            closeModal,
+        }));
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledTimes(1);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
+
+        tutorialState.isActive = true;
+        tutorialState.tutorial.manifestId = manifest.id;
+        tutorialState.currentStep = manifest.steps[0] ?? null;
+        rerender();
+
+        tutorialState.isActive = false;
+        tutorialState.tutorial.manifestId = null;
+        tutorialState.currentStep = null;
+        tutorialState.isBoardMounted = true;
+        rerender();
+
+        expect(tutorialState.startTutorial).toHaveBeenCalledTimes(2);
+        expect(tutorialState.startTutorial).toHaveBeenLastCalledWith(
+            manifest,
+            expectTutorialScope('betrayal', 'basic-setup-and-turn', manifest),
+        );
+        expect(navigate).not.toHaveBeenCalled();
+    });
+
     it('主章节完成后，若目录指定 nextTutorialId，会自动切到下一条隐藏教程路由', async () => {
         const setPlayerID = vi.fn();
         const navigate = vi.fn();
@@ -594,7 +883,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
             closeModal,
         }));
 
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(attackManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            attackManifest,
+            expectTutorialScope('qidahen', 'attack-and-battle', attackManifest),
+        );
         tutorialState.startTutorial.mockClear();
         tutorialState.closeTutorial.mockClear();
 
@@ -603,7 +895,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender();
 
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(retreatManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            retreatManifest,
+            expectTutorialScope('qidahen', 'retreat-and-rout', retreatManifest),
+        );
     });
 
     it('旧章节仍处于激活态时切到隐藏续章，也会用当前 manifest 替换旧教程', () => {
@@ -646,7 +941,10 @@ describe('useMatchRoomTutorialLifecycle', () => {
         rerender();
 
         expect(tutorialState.closeTutorial).not.toHaveBeenCalled();
-        expect(tutorialState.startTutorial).toHaveBeenCalledWith(retreatManifest);
+        expect(tutorialState.startTutorial).toHaveBeenCalledWith(
+            retreatManifest,
+            expectTutorialScope('qidahen', 'retreat-and-rout', retreatManifest),
+        );
     });
 
     it('隐藏续章完成后，会把对应的可见章节标记为已完成', async () => {
@@ -687,7 +985,7 @@ describe('useMatchRoomTutorialLifecycle', () => {
         });
 
         expect(readCompletedTutorialIds('qidahen').has('attack-and-battle')).toBe(true);
-        expect(navigate).toHaveBeenCalledWith(-1);
+        expect(navigate).toHaveBeenCalledWith('/?game=qidahen', { replace: true });
     });
 
     it('完成普通可见章节时，会直接记录该章节', async () => {

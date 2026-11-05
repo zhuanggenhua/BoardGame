@@ -196,7 +196,7 @@ describe('mage-wars event FX mapper', () => {
         });
     });
 
-    it('maps arena-object attacks with their rolled dice and both board endpoints', () => {
+    it.each([[12, 13], [1, 0]])('maps arena-object attacks preserving raw %i and resolved %i', (rawEffectDieResult, effectDieResult) => {
         const attackerId = 'mwobj-0-attacker';
         const targetId = 'mwobj-1-target';
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
@@ -252,7 +252,8 @@ describe('mage-wars event FX mapper', () => {
                 targetObjectId: targetId,
                 targetZoneId: ARENA_ZONE_IDS.B2,
                 diceResults: [1, 2, 3],
-                effectDieResult: 9,
+                rawEffectDieResult,
+                effectDieResult,
                 baseDamage: 6,
             },
             timestamp: 3,
@@ -270,13 +271,14 @@ describe('mage-wars event FX mapper', () => {
                 defenderId: targetId,
                 targetZoneId: ARENA_ZONE_IDS.B2,
                 diceResults: [1, 2, 3],
-                effectDieResult: 9,
+                rawEffectDieResult,
+                effectDieResult,
                 damageAmount: 6,
             },
         });
     });
 
-    it('maps spell attack and damage events to arena object zones', () => {
+    it.each([[12, 13], [1, 0]])('maps spell attacks preserving raw %i and resolved %i at target zones', (rawEffectDieResult, effectDieResult) => {
         const objectId = 'mwobj-0-2906-1';
         const baseCore = MageWarsDomain.setup(['0', '1'], fixedRandom);
         const core = {
@@ -314,6 +316,8 @@ describe('mage-wars event FX mapper', () => {
                 targetObjectId: objectId,
                 targetZoneId: ARENA_ZONE_IDS.A2,
                 diceResults: [3, 3, 3],
+                rawEffectDieResult,
+                effectDieResult,
                 baseDamage: 9,
             },
             timestamp: 3,
@@ -328,6 +332,9 @@ describe('mage-wars event FX mapper', () => {
             params: {
                 defenderId: objectId,
                 damageAmount: 9,
+                rangeKind: 'ranged',
+                rawEffectDieResult,
+                effectDieResult,
             },
         });
 
@@ -347,6 +354,31 @@ describe('mage-wars event FX mapper', () => {
             ctx: {
                 cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
                 intensity: 'strong',
+            },
+        });
+    });
+
+    it('maps range-zero attack spells to the ranged spell FX family', () => {
+        const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
+
+        const instruction = mapMageWarsEventToFx(createEntry({
+            type: MAGE_WARS_EVENTS.SPELL_ATTACK_ROLLED,
+            payload: {
+                playerId: '0',
+                spellCardId: 1704,
+                sourceAbilityId: 'mw.spell.1704',
+                targetZoneId: ARENA_ZONE_IDS.A2,
+                diceResults: [3, 3, 3, 3],
+                baseDamage: 12,
+            },
+            timestamp: 8,
+        }), core);
+
+        expect(instruction).toMatchObject({
+            cue: MW_FX.ATTACK_IMPACT,
+            params: {
+                spellCardId: 1704,
+                rangeKind: 'ranged',
             },
         });
     });
@@ -416,7 +448,7 @@ describe('mage-wars event FX mapper', () => {
         });
     });
 
-    it('does not map single-zone ordinary mage movement to a visible FX cue', () => {
+    it('maps ordinary mage movement to a slide FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -429,10 +461,12 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 9,
         }), core);
 
-        expect(instruction).toBeNull();
+        expect(instruction?.cue).toBe(MW_FX.MOVE);
+        expect(instruction?.params?.fromZoneId).toBe(ARENA_ZONE_IDS.C2);
+        expect(instruction?.params?.toZoneId).toBe(ARENA_ZONE_IDS.B2);
     });
 
-    it('does not map single-zone ordinary arena object movement to a visible FX cue', () => {
+    it('maps ordinary arena object movement to a slide FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -447,10 +481,11 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 10,
         }), core);
 
-        expect(instruction).toBeNull();
+        expect(instruction?.cue).toBe(MW_FX.MOVE);
+        expect(instruction?.params?.objectId).toBe('mwobj-left-moving-cat');
     });
 
-    it('maps multi-zone ordinary arena object movement to a local move cue', () => {
+    it('maps multi-zone ordinary arena object movement to a slide FX cue', () => {
         const core = MageWarsDomain.setup(['0', '1'], fixedRandom);
 
         const instruction = mapMageWarsEventToFx(createEntry({
@@ -465,26 +500,8 @@ describe('mage-wars event FX mapper', () => {
             timestamp: 10,
         }), core);
 
-        expect(instruction).toMatchObject({
-            cue: MW_FX.MOVE,
-            ctx: {
-                cell: getArenaCell(core, ARENA_ZONE_IDS.A2),
-                intensity: 'normal',
-            },
-            params: {
-                source: getArenaCell(core, ARENA_ZONE_IDS.C2),
-                ownerId: '0',
-                objectId: 'mwobj-long-moving-cat',
-                targetObjectId: 'mwobj-long-moving-cat',
-                fromZoneId: ARENA_ZONE_IDS.C2,
-                toZoneId: ARENA_ZONE_IDS.A2,
-                movementMode: 'normal',
-            },
-        });
-        const source = instruction?.params?.source as { row: number; col: number };
-        const target = instruction?.ctx.cell;
-        expect(target).toBeDefined();
-        expect(Math.abs(source.row - target!.row) + Math.abs(source.col - target!.col)).toBe(2);
+        expect(instruction?.cue).toBe(MW_FX.MOVE);
+        expect(instruction?.params?.objectId).toBe('mwobj-long-moving-cat');
     });
 
     it('maps teleport-mode arena object movement to teleport FX instead of ordinary move trail', () => {

@@ -102,7 +102,7 @@ function makeFortressKnight(id: string): UnitCard {
     id, cardType: 'unit', name: '城塞骑士', unitClass: 'common',
     faction: 'paladin', strength: 2, life: 5, cost: 2,
     attackType: 'melee', attackRange: 1,
-    abilities: ['entangle', 'guardian'], deckSymbols: [],
+    abilities: ['entangle', 'guardian'], unitTags: ['citadel'], deckSymbols: [],
   };
 }
 
@@ -112,7 +112,7 @@ function makeFortressWarrior(id: string): UnitCard {
     id, cardType: 'unit', name: '城塞圣武士', unitClass: 'common',
     faction: 'paladin', strength: 3, life: 4, cost: 2,
     attackType: 'melee', attackRange: 1,
-    abilities: ['judgment'], deckSymbols: [],
+    abilities: ['judgment'], unitTags: ['citadel'], deckSymbols: [],
   };
 }
 
@@ -122,7 +122,7 @@ function makeFortressArcher(id: string): UnitCard {
     id, cardType: 'unit', name: '城塞弓箭手', unitClass: 'common',
     faction: 'paladin', strength: 1, life: 5, cost: 2,
     attackType: 'ranged', attackRange: 3,
-    abilities: ['holy_arrow'], deckSymbols: [],
+    abilities: ['holy_arrow'], unitTags: ['citadel'], deckSymbols: [],
   };
 }
 
@@ -867,6 +867,51 @@ describe('瑟拉·艾德温 - 城塞之力 (fortress_power)', () => {
       playerId: '0',
       timestamp: fixedTimestamp,
     });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('城塞');
+  });
+
+  it('名字带城塞但没有 Citadel 标签的其它派系单位不能被城塞之力拿回', () => {
+    const state = createPaladinState();
+    clearArea(state, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+
+    const summoner = placeUnit(state, { row: 4, col: 2 }, {
+      cardId: 'test-summoner',
+      card: makePaladinSummoner('test-summoner'),
+      owner: '0',
+    });
+
+    placeUnit(state, { row: 4, col: 3 }, {
+      cardId: 'fortress-knight-board',
+      card: makeFortressKnight('fortress-knight-board'),
+      owner: '0',
+    });
+
+    const advisor = makeEnemy('yongheng-fortress-advisor-discard', {
+      name: '城塞参谋',
+      faction: 'yongheng',
+      strength: 2,
+      life: 3,
+      attackType: 'ranged',
+      attackRange: 3,
+    });
+    state.players['0'].discard.push(advisor);
+
+    state.phase = 'attack';
+    state.currentPlayer = '0';
+
+    const fullState = { core: state, sys: {} as any };
+    const result = SummonerWarsDomain.validate(fullState, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      payload: {
+        abilityId: 'fortress_power',
+        sourceUnitId: summoner.instanceId,
+        targetCardId: 'yongheng-fortress-advisor-discard',
+      },
+      playerId: '0',
+      timestamp: fixedTimestamp,
+    });
+
     expect(result.valid).toBe(false);
     expect(result.error).toContain('城塞');
   });

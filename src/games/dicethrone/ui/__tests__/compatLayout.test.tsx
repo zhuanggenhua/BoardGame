@@ -4,7 +4,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AbilityCard } from '../../types';
 import { DrawDeck } from '../DrawDeck';
 import { DiscardPile } from '../DiscardPile';
-import { HandArea } from '../HandArea';
+import {
+    isHandCardReleaseOverDiscardPile,
+    isHandCardOverDiscardPile,
+    resolveHandDragReleaseIntent,
+} from '../handDragRelease';
+import {
+    HandArea,
+} from '../HandArea';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -32,9 +39,9 @@ describe('DiceThrone compatibility sizing', () => {
     it('牌库应提供显式宽高，避免旧 WebView 塌高', () => {
         render(<DrawDeck count={18} />);
 
-        const deck = screen.getByTestId('mock-optimized-image').parentElement?.parentElement as HTMLElement | null;
-        expect(deck?.style.width).toBe('10.2vw');
-        expect(deck?.style.height).toContain('vw');
+        const deck = screen.getByTestId('dt-draw-deck-card');
+        expect(deck?.style.width).toContain('--mobile-board-shell-inline-unit');
+        expect(deck?.style.height).toContain('--mobile-board-shell-inline-unit');
     });
 
     it('牌库右下角提供手牌隐藏切换按钮', () => {
@@ -43,16 +50,21 @@ describe('DiceThrone compatibility sizing', () => {
 
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.hideHand');
-        expect(toggle.className).toContain('left-[calc(100%+0.55vw)] bottom-[0.15vw]');
-        expect(toggle.className).toContain('h-[2.65vw] min-h-[44px] w-[2.65vw] min-w-[44px]');
-        expect(toggle.className).toContain('border-2');
-        expect(toggle.className).toContain('bg-cyan-200');
-        expect(toggle.className).toContain('text-slate-950');
+        expect(toggle.style.left).toContain('--mobile-board-shell-inline-unit');
+        expect(toggle.style.width).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        expect(toggle.style.height).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        expect(toggle.style.minWidth).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        expect(toggle.style.minHeight).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        const visual = screen.getByTestId('dicethrone-hand-visibility-visual');
+        expect(visual.className).toContain('border border-cyan-200/70');
+        expect(visual.className).toContain('bg-slate-950/88');
+        expect(visual.className).toContain('text-cyan-100');
         expect(toggle.className).not.toContain('-translate-x-[34%]');
         expect(toggle.className).not.toContain('-translate-y-[34%]');
-        expect(toggle.className).not.toContain('bg-slate-950/88');
-        expect(toggle.className).not.toContain('text-cyan-100');
-        expect(toggle.querySelector('.lucide-chevron-down')).not.toBeNull();
+        const hitArea = screen.getByTestId('dicethrone-hand-visibility-hit-area');
+        expect(hitArea.style.minHeight).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        expect(hitArea.style.minWidth).toBe('calc(44px / var(--mobile-board-shell-scale, 1))');
+        expect(toggle.querySelector('.lucide-chevron-down')).toHaveClass('board-shell-fixed-icon');
         expect(toggle.querySelector('.lucide-eye')).toBeNull();
         expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
 
@@ -66,9 +78,11 @@ describe('DiceThrone compatibility sizing', () => {
         const toggle = screen.getByTestId('dicethrone-hand-visibility-toggle');
         expect(toggle).toHaveAttribute('aria-label', 'hud.showHand');
         expect(toggle).toHaveAttribute('aria-pressed', 'true');
-        expect(toggle.className).toContain('bg-amber-200');
-        expect(toggle.className).toContain('text-slate-950');
-        expect(toggle.querySelector('.lucide-chevron-up')).not.toBeNull();
+        const visual = screen.getByTestId('dicethrone-hand-visibility-visual');
+        expect(visual.className).toContain('border-amber-200/80');
+        expect(visual.className).toContain('text-amber-100');
+        expect(screen.getByTestId('dicethrone-hand-visibility-hit-area')).toBeInTheDocument();
+        expect(toggle.querySelector('.lucide-chevron-up')).toHaveClass('board-shell-fixed-icon');
         expect(toggle.querySelector('.lucide-eye')).toBeNull();
         expect(toggle.querySelector('.lucide-eye-off')).toBeNull();
     });
@@ -105,7 +119,7 @@ describe('DiceThrone compatibility sizing', () => {
         };
 
         render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -119,11 +133,50 @@ describe('DiceThrone compatibility sizing', () => {
         const handArea = screen.getByTestId('hand-area');
         const handCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
 
-        expect(handArea.className).toContain('h-[22vw]');
+        expect(handArea.style.height).toContain('--mobile-board-shell-inline-unit');
         expect(handCard).not.toBeNull();
-        expect(handCard?.style.width).toBe('12vw');
+        expect(handCard?.style.width).toContain('--mobile-board-shell-inline-unit');
         expect(handCard?.style.height).toContain('calc(');
-        expect(handCard?.style.height).toContain('vw');
+        expect(handCard?.style.height).toContain('--mobile-board-shell-inline-unit');
+    });
+
+    it('牌池选择时为手牌预留底部安全余量，保持卡牌完整落在视口内', () => {
+        vi.useFakeTimers();
+
+        const topCard: AbilityCard = {
+            id: 'c1',
+            name: 'Card',
+            cpCost: 1,
+            previewRef: { type: 'image', src: 'x' },
+            effects: [],
+        };
+
+        const { rerender } = render(
+            <HandArea handDiscardInteraction={undefined}
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+            />,
+        );
+
+        act(() => {
+            vi.runAllTimers();
+        });
+
+        const defaultCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(defaultCard?.style.bottom).toContain('* -2');
+
+        rerender(
+            <HandArea handDiscardInteraction={undefined}
+                hand={[topCard]}
+                playerCp={2}
+                canInteract={false}
+                preserveCardVisibility
+            />,
+        );
+
+        const protectedCard = document.querySelector('[data-card-id="c1"]') as HTMLElement | null;
+        expect(protectedCard?.style.bottom).toContain('* 3');
     });
 
     it('隐藏手牌时只隐藏 UI，不卸载手牌区导致重新发牌', () => {
@@ -138,7 +191,7 @@ describe('DiceThrone compatibility sizing', () => {
         };
 
         const { rerender } = render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -157,7 +210,7 @@ describe('DiceThrone compatibility sizing', () => {
         expect(firstCardKey).toBeTruthy();
 
         rerender(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -172,7 +225,7 @@ describe('DiceThrone compatibility sizing', () => {
         expect(hiddenHandCard?.getAttribute('data-card-key')).toBe(firstCardKey);
 
         rerender(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 canInteract={false}
@@ -200,7 +253,7 @@ describe('DiceThrone compatibility sizing', () => {
         const onPlayCard = vi.fn();
 
         render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 onMagnifyCard={onMagnifyCard}
@@ -220,6 +273,59 @@ describe('DiceThrone compatibility sizing', () => {
         expect(onPlayCard).not.toHaveBeenCalled();
     });
 
+    it('触控端弃牌堆投放热区放宽，桌面端仍沿用中心点命中', () => {
+        const discardRect = {
+            left: 820,
+            right: 900,
+            top: 120,
+            bottom: 240,
+            width: 80,
+            height: 120,
+        };
+        const nearLeftCardRect = {
+            left: 732,
+            right: 792,
+            top: 150,
+            bottom: 248,
+            width: 60,
+            height: 98,
+        };
+
+        expect(isHandCardOverDiscardPile(nearLeftCardRect, discardRect, { isCoarsePointer: false })).toBe(false);
+        expect(isHandCardOverDiscardPile(nearLeftCardRect, discardRect, { isCoarsePointer: true })).toBe(true);
+    });
+
+    it('反馈回归：主阶段拖牌到弃牌堆时，指针命中弃牌堆也应触发卖牌投放', () => {
+        const discardRect = {
+            left: 820,
+            right: 900,
+            top: 120,
+            bottom: 240,
+            width: 80,
+            height: 120,
+        };
+        const laggingCardRect = {
+            left: 600,
+            right: 660,
+            top: 300,
+            bottom: 398,
+            width: 60,
+            height: 98,
+        };
+
+        expect(isHandCardOverDiscardPile(laggingCardRect, discardRect, { isCoarsePointer: false })).toBe(false);
+        expect(isHandCardReleaseOverDiscardPile(
+            laggingCardRect,
+            discardRect,
+            { isCoarsePointer: false, pointerPoint: { x: 850, y: 180 } },
+        )).toBe(true);
+    });
+
+    it('反馈回归：拖到弃牌堆时应优先卖牌，不应被向上拖拽出牌阈值抢走', () => {
+        expect(resolveHandDragReleaseIntent({ overDiscard: true, yOffset: -240 })).toBe('sell');
+        expect(resolveHandDragReleaseIntent({ overDiscard: false, yOffset: -240 })).toBe('play');
+    });
+
     it('教程单击出牌模式会直接出牌并跳过预览层', () => {
         vi.useFakeTimers();
 
@@ -234,7 +340,7 @@ describe('DiceThrone compatibility sizing', () => {
         const onPlayCard = vi.fn(() => true);
 
         render(
-            <HandArea
+            <HandArea handDiscardInteraction={undefined}
                 hand={[topCard]}
                 playerCp={2}
                 onMagnifyCard={onMagnifyCard}

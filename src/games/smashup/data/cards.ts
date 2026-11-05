@@ -182,7 +182,7 @@ function registerBases(bases: BaseCardDef[]): void {
 
 // 初始化注册
 const POD_SUFFIX = '_pod';
-const KNOWN_FACTION_IDS = new Set(Object.values(SMASHUP_FACTION_IDS));
+const KNOWN_FACTION_IDS = new Set<string>(Object.values(SMASHUP_FACTION_IDS));
 
 function isPodVariantId(id: string): boolean {
     return id.endsWith(POD_SUFFIX);

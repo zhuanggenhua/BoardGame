@@ -92,6 +92,46 @@ const setTianshiDice = (
 };
 
 describe('炽天使规则分支矩阵', () => {
+    it.each([
+        { percent: 0, expected: 7 },
+        { percent: -50, expected: 4 },
+    ])('神圣惩戒先合并攻击修正再按 $percent 百分比计算', ({ percent, expected }) => {
+        const state = createTianshiState();
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'divine-punishment',
+            isDefendable: false, damage: 0, bonusDamage: 3, dazzleCheckResolved: true, dazzleDamagePercent: percent,
+        };
+        const ability = TIANSHI_ABILITIES.find(entry => entry.id === 'divine-punishment')!;
+        const events = resolveAndSettleBonus(state, resolve(state, ability.id, ability.effects ?? [], 'preDefense', [1, 2, 5, 6]));
+        const damage = events.find(event => event.type === 'DAMAGE_DEALT' && event.payload.sourceAbilityId === ability.id);
+        expect(damage?.payload).toMatchObject({ targetId: '1', amount: expected });
+    });
+
+    it('神圣惩戒奖励骰两把炽炎剑造成的 4 点伤害受到眩光减半', () => {
+        const state = createTianshiState();
+        state.core.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'divine-punishment',
+            isDefendable: false, damage: 0, dazzleCheckResolved: true, dazzleDamagePercent: -50,
+        };
+        const ability = TIANSHI_ABILITIES.find(entry => entry.id === 'divine-punishment')!;
+        const events = resolveAndSettleBonus(state, resolve(state, ability.id, ability.effects ?? [], 'preDefense', [1, 2, 5, 6]));
+        const damage = events.find(event => event.type === 'DAMAGE_DEALT' && event.payload.sourceAbilityId === ability.id);
+        expect(damage?.payload).toMatchObject({ targetId: '1', amount: 2 });
+    });
+    it.each(['card-tianshi-holy-strike', 'card-tianshi-angelic-tactics'])(
+        '攻击修正牌 %s 的奖励骰不能标记主技能奖励骰已结算', (cardId) => {
+            const state = createTianshiState();
+            state.core.pendingAttack = {
+                attackerId: '0', defenderId: '1', sourceAbilityId: 'divine-punishment',
+                isDefendable: true, damage: 0, settlementStage: 'afterDefense',
+            };
+            const card = TIANSHI_CARDS.find(entry => entry.id === cardId)!;
+            const events = resolveAndSettleBonus(state, resolve(state, card.id, card.effects, 'immediate', [1, 1, 1, 1, 1]));
+            const after = events.reduce((current, event) => reduce(current, event), state.core);
+            expect(after.pendingAttack?.bonusDiceResolved).not.toBe(true);
+            expect(after.pendingAttack?.settlementStage).toBe('afterDefense');
+        },
+    );
     it('圣刃基础版、II、III 的三档伤害按合同分别为 5/6/7、6/7/8、5/7/9', () => {
         const base = TIANSHI_ABILITIES.find(ability => ability.id === 'holy-blade');
         expect(findVariantDamageValues(base as AbilityDef)).toEqual([5, 6, 7]);

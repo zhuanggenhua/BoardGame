@@ -61,6 +61,9 @@ export const STATUS_IDS = {
 
     /** 女猎手：流血 */
     BLEED: 'bleed',
+
+    /** 蜘蛛侠：落网 */
+    WEBBED: 'webbed',
 } as const;
 
 export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
@@ -70,6 +73,12 @@ export type StatusId = (typeof STATUS_IDS)[keyof typeof STATUS_IDS];
 // ============================================================================
 
 export const TOKEN_IDS = {
+    /** 奇异博士：结束当前进攻投掷并重新开始。 */
+    DEJA_VU: 'deja-vu',
+    /** 索尔：破防、驭电与唯一同伴位置指示物。 */
+    GUARD_BREAK: 'guard_break',
+    ELECTROKINESIS: 'electrokinesis',
+    MJOLNIR: 'mjolnir',
     /** 太极 */
     TAIJI: 'taiji',
 
@@ -151,6 +160,10 @@ export const TOKEN_IDS = {
     BLOOD_POWER: 'blood_power',
     /** 吸血鬼领主：催眠 / 凝视 */
     MESMERIZE: 'mesmerize',
+
+    /** 蜘蛛侠：连击 / 隐形 */
+    COMBO: 'combo',
+    INVISIBLE: 'invisible',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -208,6 +221,12 @@ export const PYROMANCER_DICE_FACE_IDS = {
 } as const;
 
 export type PyromancerDiceFaceId = (typeof PYROMANCER_DICE_FACE_IDS)[keyof typeof PYROMANCER_DICE_FACE_IDS];
+
+export const THOR_DICE_FACE_IDS = {
+    HAMMER: 'thor_hammer',
+    WORTHY: 'thor_worthy',
+    THUNDER: 'thor_thunder',
+} as const;
 
 // ============================================================================
 // 骰面 ID（月精灵）
@@ -315,6 +334,21 @@ export const LIEREN_DICE_FACE_IDS = {
 export type LierenDiceFaceId = (typeof LIEREN_DICE_FACE_IDS)[keyof typeof LIEREN_DICE_FACE_IDS];
 
 // ============================================================================
+// 骰面 ID（蜘蛛侠）
+// ============================================================================
+
+export const ZHIZHUXIA_DICE_FACE_IDS = {
+    /** 拳：骰子 1、2、3 */
+    FIST: 'fist',
+    /** 蛛网：骰子 4、5 */
+    WEB: 'web',
+    /** 红蜘蛛：骰子 6 */
+    SPIDER: 'spider',
+} as const;
+
+export type ZhizhuxiaDiceFaceId = (typeof ZHIZHUXIA_DICE_FACE_IDS)[keyof typeof ZHIZHUXIA_DICE_FACE_IDS];
+
+// ============================================================================
 // 骰面 ID（吸血鬼领主）
 // ============================================================================
 
@@ -368,6 +402,7 @@ export type PaladinDiceFaceId = (typeof PALADIN_DICE_FACE_IDS)[keyof typeof PALA
 // ============================================================================
 
 export const DICETHRONE_COMMANDS = {
+    USE_DEJA_VU: 'USE_DEJA_VU',
     PAY_TO_REMOVE_KNOCKDOWN: 'PAY_TO_REMOVE_KNOCKDOWN',
     SELECT_DEFENDER_TARGET: 'SELECT_DEFENDER_TARGET',
     SELECT_CHARACTER: 'SELECT_CHARACTER',
@@ -386,6 +421,8 @@ export type PayToRemoveKnockdownCommandType = typeof DICETHRONE_COMMANDS.PAY_TO_
 // ============================================================================
 
 export const DICETHRONE_CARD_ATLAS_IDS = {
+    DOCTOR_STRANGE: 'dicethrone:doctor_strange-cards',
+    THOR: 'dicethrone:thor-cards',
     MONK: 'dicethrone:monk-cards',
     BARBARIAN: 'dicethrone:barbarian-cards',
     PYROMANCER: 'dicethrone:pyromancer-cards',
@@ -402,6 +439,7 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     TIANSHI: 'dicethrone:tianshi-cards',
     LIEREN: 'dicethrone:lieren-cards',
     VAMPIRE_LORD: 'dicethrone:vampire_lord-cards',
+    ZHIZHUXIA: 'dicethrone:zhizhuxia-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -410,6 +448,8 @@ export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
 } as const;
 
 export const DICETHRONE_STATUS_ATLAS_IDS = {
+    DOCTOR_STRANGE: 'dicethrone:doctor_strange-status',
+    THOR: 'dicethrone:thor-status',
     MONK: 'dicethrone:monk-status',
     BARBARIAN: 'dicethrone:barbarian-status',
     PYROMANCER: 'dicethrone:pyromancer-status',
@@ -426,4 +466,5 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     TIANSHI: 'dicethrone:tianshi-status',
     LIEREN: 'dicethrone:lieren-status',
     VAMPIRE_LORD: 'dicethrone:vampire_lord-status',
+    ZHIZHUXIA: 'dicethrone:zhizhuxia-status',
 } as const;

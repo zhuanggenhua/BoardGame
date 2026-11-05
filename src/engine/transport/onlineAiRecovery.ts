@@ -1093,6 +1093,14 @@ export function resolveForceEndTurnForStalledAi(args: {
     }
 
     if (shouldInspectSeatStatesForHiddenAiInteraction(args.sharedState)) {
+        // 共享状态已经明确阻塞但没有当前交互时，优先处理引擎从权威状态
+        // 推导出的合法收口动作。私有座位视图里的交互可能只是取消后残留，
+        // 不能抢先把真正阻塞阶段流的展示态结算再次留在未完成状态。
+        const configuredSeatLegalOnlyRecovery = resolveConfiguredSeatLegalOnlyRecovery(args);
+        if (configuredSeatLegalOnlyRecovery) {
+            return configuredSeatLegalOnlyRecovery;
+        }
+
         for (const [playerId, controller] of Object.entries(args.seatControllers)) {
             if (controller.type === 'human') continue;
             const seatState = args.seatStates[playerId];
@@ -1506,6 +1514,15 @@ export function resolveUnsatisfiableReasonFromInteraction(
         ? interaction.data.options.filter(Boolean)
         : [];
     if (options.length === 0) {
+        const data = interaction.data;
+        const meta = data?.meta && typeof data.meta === 'object'
+            ? data.meta as { dtType?: unknown }
+            : undefined;
+        const isDiceSelection = interaction.kind === 'multistep-choice'
+            && (meta?.dtType === 'selectDie' || meta?.dtType === 'modifyDie');
+        if (isDiceSelection && Array.isArray(data?.allowedDieIds) && data.allowedDieIds.length > 0) {
+            return null;
+        }
         return 'empty-options';
     }
 

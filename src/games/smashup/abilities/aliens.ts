@@ -26,6 +26,7 @@ import {
 } from '../domain/abilityHelpers';
 import { getBaseDef, getCardDef } from '../data/cards';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createBranchProgram,
     createEffectProgram,
@@ -338,6 +339,7 @@ function buildAlienOtherBaseChoices(core: SmashUpCore, fromBaseIndex: number): A
 function buildAlienTerraformPlayOptions(core: SmashUpCore, playerId: PlayerId): Array<{
     id: string;
     label: string;
+    labelKey?: string;
     value: CardOrTitanChoiceValue;
     displayMode: 'button' | 'card';
 }> {
@@ -474,17 +476,17 @@ function buildAlienCollectorTargets(
         });
 }
 
-function buildAlienMinionReturnEvent(
+function buildAlienMinionReturnEvents(
     core: SmashUpCore,
     target: AlienMinionChoice | AlienMinionPromptContext['selectedTarget'] | undefined,
     reason: string,
     sourcePlayerId: PlayerId,
     timestamp: number,
-): MinionReturnedEvent | undefined {
+): SmashUpEvent[] {
     const baseIndex = target?.baseIndex;
     const minionUid = target?.minionUid;
     if (baseIndex === undefined || !minionUid) {
-        return undefined;
+        return [];
     }
     return buildValidatedReturnEvents(core, {
         minionUid,
@@ -493,7 +495,7 @@ function buildAlienMinionReturnEvent(
         reason,
         sourcePlayerId: sourcePlayerId,
         now: timestamp,
-    })[0];
+    });
 }
 
 function canTriggerAlienScoutAfterScoring(ctx: TriggerContext): boolean {
@@ -565,11 +567,7 @@ export function registerAlienAbilities(): void {
 // 随从能力
 // ============================================================================
 
-const alienSupremeOverlordPromptProgram = createPromptProgram<
-    AlienMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienSupremeOverlordPromptProgram = createPromptProgram<AlienMinionPromptContext>({
     sourceId: 'alien_supreme_overlord',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_supreme_overlord_${alienRuntimePromptCounter++}`,
@@ -598,7 +596,7 @@ const alienSupremeOverlordPromptProgram = createPromptProgram<
         if (selected?.skip) {
             return { matchState: state, events: [] };
         }
-        const returnEvent = buildAlienMinionReturnEvent(
+        const returnEvents = buildAlienMinionReturnEvents(
             state.core,
             selected,
             'alien_supreme_overlord',
@@ -607,7 +605,7 @@ const alienSupremeOverlordPromptProgram = createPromptProgram<
         );
         return {
             matchState: state,
-            events: returnEvent ? [returnEvent] : [],
+            events: returnEvents,
         };
     },
 });
@@ -624,7 +622,7 @@ const alienSupremeOverlordProgram = createBranchProgram<
     else: createBranchProgram({
         when: (context) => !!context.selectedTarget,
         then: createEffectProgram((context) => {
-            const returnEvent = buildAlienMinionReturnEvent(
+            const returnEvents = buildAlienMinionReturnEvents(
                 context.matchState.core,
                 context.selectedTarget,
                 'alien_supreme_overlord',
@@ -632,18 +630,14 @@ const alienSupremeOverlordProgram = createBranchProgram<
                 context.now,
             );
             return {
-                events: returnEvent ? [returnEvent] : [],
+                events: returnEvents,
             };
         }),
         else: alienSupremeOverlordPromptProgram,
     }),
 });
 
-const alienCollectorPromptProgram = createPromptProgram<
-    AlienMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienCollectorPromptProgram = createPromptProgram<AlienMinionPromptContext>({
     sourceId: 'alien_collector',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_collector_${alienRuntimePromptCounter++}`,
@@ -676,7 +670,7 @@ const alienCollectorPromptProgram = createPromptProgram<
         if (selected?.skip) {
             return { matchState: state, events: [] };
         }
-        const returnEvent = buildAlienMinionReturnEvent(
+        const returnEvents = buildAlienMinionReturnEvents(
             state.core,
             selected,
             'alien_collector',
@@ -685,7 +679,7 @@ const alienCollectorPromptProgram = createPromptProgram<
         );
         return {
             matchState: state,
-            events: returnEvent ? [returnEvent] : [],
+            events: returnEvents,
         };
     },
 });
@@ -702,7 +696,7 @@ const alienCollectorProgram = createBranchProgram<
     else: createBranchProgram({
         when: (context) => !!context.selectedTarget,
         then: createEffectProgram((context) => {
-            const returnEvent = buildAlienMinionReturnEvent(
+            const returnEvents = buildAlienMinionReturnEvents(
                 context.matchState.core,
                 context.selectedTarget,
                 'alien_collector',
@@ -710,7 +704,7 @@ const alienCollectorProgram = createBranchProgram<
                 context.now,
             );
             return {
-                events: returnEvent ? [returnEvent] : [],
+                events: returnEvents,
             };
         }),
         else: alienCollectorPromptProgram,
@@ -727,11 +721,7 @@ function alienInvader(ctx: AbilityContext): AbilityResult {
     };
 }
 
-const alienScoutReturnPromptProgram = createPromptProgram<
-    AlienScoutReturnPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienScoutReturnPromptProgram = createPromptProgram<AlienScoutReturnPromptContext>({
     sourceId: 'alien_scout_return',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_scout_return_${context.scout.uid}_${context.now}`,
@@ -826,11 +816,7 @@ function alienScoutAfterScoringPerInstance(ctx: TriggerContext): SmashUpEvent[] 
 // 行动卡能力
 // ============================================================================
 
-const alienInvasionDestinationPromptProgram = createPromptProgram<
-    AlienInvasionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienInvasionDestinationPromptProgram = createPromptProgram<AlienInvasionPromptContext>({
     sourceId: 'alien_invasion_choose_base',
     buildInteraction: (context) => {
         const selectedTarget = context.selectedTarget;
@@ -878,11 +864,7 @@ const alienInvasionDestinationPromptProgram = createPromptProgram<
     },
 });
 
-const alienInvasionPromptProgram = createPromptProgram<
-    AlienInvasionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienInvasionPromptProgram = createPromptProgram<AlienInvasionPromptContext>({
     sourceId: 'alien_invasion_choose_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_invasion_${alienRuntimePromptCounter++}`,
@@ -911,7 +893,7 @@ const alienInvasionPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
@@ -921,17 +903,12 @@ const alienInvasionPromptProgram = createPromptProgram<
                     defId: selected.defId,
                     fromBaseIndex: selected.baseIndex,
                 },
-            },
-            nextProgram: alienInvasionDestinationPromptProgram,
+            }, alienInvasionDestinationPromptProgram),
         };
     },
 });
 
-const alienTerraformPlayMinionPromptProgram = createPromptProgram<
-    AlienTerraformPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienTerraformPlayMinionPromptProgram = createPromptProgram<AlienTerraformPromptContext>({
     sourceId: 'alien_terraform_play_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_terraform_play_minion_${alienRuntimePromptCounter++}`,
@@ -1013,11 +990,7 @@ const alienTerraformPlayMinionPromptProgram = createPromptProgram<
     },
 });
 
-const alienTerraformReplacementPromptProgram = createPromptProgram<
-    AlienTerraformPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienTerraformReplacementPromptProgram = createPromptProgram<AlienTerraformPromptContext>({
     sourceId: 'alien_terraform_choose_replacement',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_terraform_choose_replacement_${alienRuntimePromptCounter++}`,
@@ -1069,7 +1042,7 @@ const alienTerraformReplacementPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
@@ -1077,17 +1050,12 @@ const alienTerraformReplacementPromptProgram = createPromptProgram<
                 selectedBaseIndex: context.selectedBaseIndex,
                 oldBaseDefId: base.defId,
                 newBaseDefId: selected.newBaseDefId,
-            },
-            nextProgram: alienTerraformPlayMinionPromptProgram,
+            }, alienTerraformPlayMinionPromptProgram),
         };
     },
 });
 
-const alienTerraformPromptProgram = createPromptProgram<
-    AlienTerraformPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienTerraformPromptProgram = createPromptProgram<AlienTerraformPromptContext>({
     sourceId: 'alien_terraform',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_terraform_${alienRuntimePromptCounter++}`,
@@ -1119,15 +1087,14 @@ const alienTerraformPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
                 now: timestamp,
                 selectedBaseIndex: selected.baseIndex,
                 oldBaseDefId: targetBase.defId,
-            },
-            nextProgram: alienTerraformReplacementPromptProgram,
+            }, alienTerraformReplacementPromptProgram),
         };
     },
 });
@@ -1168,11 +1135,7 @@ const alienTerraformProgram = createBranchProgram<
     }),
 });
 
-const alienDisintegratorPromptProgram = createPromptProgram<
-    AlienMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienDisintegratorPromptProgram = createPromptProgram<AlienMinionPromptContext>({
     sourceId: 'alien_disintegrator',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_disintegrator_${alienRuntimePromptCounter++}`,
@@ -1257,11 +1220,7 @@ const alienDisintegratorProgram = createBranchProgram<
     }),
 });
 
-const alienBeamUpPromptProgram = createPromptProgram<
-    AlienMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienBeamUpPromptProgram = createPromptProgram<AlienMinionPromptContext>({
     sourceId: 'alien_beam_up',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_beam_up_${alienRuntimePromptCounter++}`,
@@ -1338,11 +1297,7 @@ const alienBeamUpProgram = createBranchProgram<
     }),
 });
 
-const alienCropCirclesPromptProgram = createPromptProgram<
-    AlienBasePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienCropCirclesPromptProgram = createPromptProgram<AlienBasePromptContext>({
     sourceId: 'alien_crop_circles',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_crop_circles_${alienRuntimePromptCounter++}`,
@@ -1393,11 +1348,7 @@ const alienCropCirclesProgram = createBranchProgram<
     else: alienCropCirclesPromptProgram,
 });
 
-const alienProbeDiscardPromptProgram = createPromptProgram<
-    AlienProbePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienProbeDiscardPromptProgram = createPromptProgram<AlienProbePromptContext>({
     sourceId: 'alien_probe',
     buildInteraction: (context) => {
         if (!context.targetPlayerId) {
@@ -1451,11 +1402,7 @@ const alienProbeDiscardPromptProgram = createPromptProgram<
     },
 });
 
-const alienProbeChooseTargetPromptProgram = createPromptProgram<
-    AlienProbePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienProbeChooseTargetPromptProgram = createPromptProgram<AlienProbePromptContext>({
     sourceId: 'alien_probe_choose_target',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_probe_choose_target_${alienRuntimePromptCounter++}`,
@@ -1499,14 +1446,13 @@ const alienProbeChooseTargetPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 matchState: state,
                 playerId,
                 now: timestamp,
                 targetPlayerId,
-            },
-            nextProgram: alienProbeDiscardPromptProgram,
+            }, alienProbeDiscardPromptProgram),
         };
     },
 });
@@ -1536,11 +1482,7 @@ const alienProbeProgram = createBranchProgram<
     }),
 });
 
-const alienAbductionPromptProgram = createPromptProgram<
-    AlienMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const alienAbductionPromptProgram = createPromptProgram<AlienMinionPromptContext>({
     sourceId: 'alien_abduction',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `alien_abduction_${alienRuntimePromptCounter++}`,
@@ -1628,7 +1570,7 @@ function buildCropCirclesReturnEvents(
     baseIndex: number,
     selectedMinionUids: string[],
     timestamp: number,
-    sourcePlayerId?: string,
+    sourcePlayerId: PlayerId,
 ): SmashUpEvent[] {
     if (selectedMinionUids.length === 0) return [];
     const base = core.bases[baseIndex];
@@ -1637,17 +1579,6 @@ function buildCropCirclesReturnEvents(
     const selectedTargets = base.minions
         .filter(minion => selectedSet.has(minion.uid))
         .map(minion => ({ minion, baseIndex }));
-    if (!sourcePlayerId) {
-        return selectedTargets.flatMap(({ minion }) => buildValidatedReturnEvents(core, {
-            minionUid: minion.uid,
-            minionDefId: minion.defId,
-            fromBaseIndex: baseIndex,
-            toPlayerId: minion.owner,
-            sourcePlayerId: sourcePlayerId,
-            reason: 'alien_crop_circles',
-            now: timestamp,
-        }) as MinionReturnedEvent[]);
-    }
     return applySemanticMinionEffectBatch(
         core,
         selectedTargets,

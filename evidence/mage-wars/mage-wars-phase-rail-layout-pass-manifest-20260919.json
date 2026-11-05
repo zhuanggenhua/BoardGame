@@ -1,0 +1,59 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-19T21:18:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "左上阶段流程必须完整显示为竖排，不能被裁切或缩成不可读角标。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Chromium 基础板 E2E 通过 5/5，覆盖 1920×1080、2560×1304 和移动横屏。",
+        "截图中左侧八个阶段均完整可见，阶段轨道保持竖排，不显示额外的“回合流程”自称标题。",
+        "原图：D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png"
+      ]
+    },
+    {
+      "requirement": "己方法师提示卡必须完整显示在阶段流程右侧，不能被流程或其它左上控件遮挡。",
+      "status": "PASS",
+      "evidence": [
+        "真实 Chromium 基础板 E2E 通过 5/5，几何断言确认己方提示卡从阶段轨道右侧独立槽位开始。",
+        "三张当前原始整屏图均能看到完整法师提示卡和独立的生命显示眼睛。",
+        "原图：D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png"
+      ]
+    },
+    {
+      "requirement": "阶段流程与提示卡必须不重叠，并按玩家可见内容的顶边对齐。",
+      "status": "PASS",
+      "evidence": [
+        "基础板 E2E 新增并通过“第一条阶段流程与己方提示卡可见顶边差值不超过 3px”断言。",
+        "基础板 E2E 的保护区域断言通过，阶段流程、己方提示卡、生命显示眼睛和悬浮球没有几何相交。",
+        "根因已修复：阶段轨道嵌入共享左上槽位时移除顶部内边距，避免外层矩形对齐但第一条可见流程向下偏移。"
+      ]
+    },
+    {
+      "requirement": "桌面、2560×1304 与移动横屏必须沿用同一左上职责关系。",
+      "status": "PASS",
+      "evidence": [
+        "基础板 E2E 通过 5/5，教程 E2E 通过 5/5。",
+        "教程响应式用例重新生成 1366×768、1920×1080、2560×1304 计划阶段截图，三种桌面视口均通过流程第一项顶边对齐断言。",
+        "当前用户展示图组包含 1920×1080、2560×1304、移动横屏三张真实入口原始截图。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png"
+  ]
+}

@@ -1,3 +1,4 @@
+import { UserGameActivityController } from './user-game-activity.controller';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthController } from './auth.controller';
@@ -6,16 +7,21 @@ import { AdminInitService } from './admin-init.service';
 import { AdminAuditLog, AdminAuditLogSchema } from './schemas/admin-audit-log.schema';
 import { User, UserSchema } from './schemas/user.schema';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
+import { MatchRecord, MatchRecordSchema } from '../admin/schemas/match-record.schema';
+import { GuestIdentityClaimService } from './guest-identity-claim.service';
+import { RefreshSession, RefreshSessionSchema } from './schemas/refresh-session.schema';
 
 @Module({
     imports: [
         MongooseModule.forFeature([
             { name: User.name, schema: UserSchema },
             { name: AdminAuditLog.name, schema: AdminAuditLogSchema },
+            { name: MatchRecord.name, schema: MatchRecordSchema },
+            { name: RefreshSession.name, schema: RefreshSessionSchema },
         ]),
     ],
-    controllers: [AuthController],
-    providers: [AuthService, AdminInitService, JwtAuthGuard],
+    controllers: [AuthController, UserGameActivityController],
+    providers: [AuthService, AdminInitService, JwtAuthGuard, GuestIdentityClaimService],
     exports: [AuthService, AdminInitService],
 })
 export class AuthModule {}

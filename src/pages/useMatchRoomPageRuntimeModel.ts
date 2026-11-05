@@ -16,7 +16,10 @@ import type { MatchRoomLobbyTranslator } from './matchRoomPageTypes';
 import type { TutorialCollection, TutorialManifest } from '../engine/types';
 import type { GameManifestAiSupport } from '../games/manifest.types';
 import type { GameRuntimeAdapter } from '../games/gameRuntimeAdapter';
-import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
+import {
+    buildGameHudRuntimeProps,
+    resolveGameHudPlacement,
+} from './gameHudRuntimeProps';
 
 export type MatchRoomPageRuntimeSetupModel = Pick<
     ReturnType<typeof useMatchRoomRuntimeSetup>,
@@ -295,6 +298,7 @@ function buildMatchRoomOnlineHudStageAdapter(args: {
             gameId,
             gameConfig,
         }),
+        hudPlacement: resolveGameHudPlacement(gameConfig),
     };
 }
 

@@ -13,18 +13,18 @@ import {
 } from './helpers/domainFlowHarness';
 
 describe('mage-wars spell cast family gate', () => {
-    it('rejects standard spellbook spells that are not admitted by a spell-cast Choice family', () => {
-        const unsupportedSpellId = 1804;
+    it('accepts the configured 1905 hidden response enchantment through the normal cast entry', () => {
+        const responseSpellId = 1905;
         const baseState = setupState('creatureAction');
-        const target = makeArenaObject('unsupported-curse-target', '1', PLAYER_ZERO_START_ZONE);
+        const target = makeArenaObject('redirect-response-target', '0', PLAYER_ZERO_START_ZONE);
         const state: MatchState<MageWarsCore> = {
             ...baseState,
             core: withArenaObject(
                 withPreparedPlayerMage(
                     baseState.core,
                     '0',
-                    MAGE_IDS.WARLOCK_APPRENTICE,
-                    [unsupportedSpellId],
+                    MAGE_IDS.WIZARD_APPRENTICE,
+                    [responseSpellId],
                     20,
                 ),
                 target,
@@ -35,10 +35,10 @@ describe('mage-wars spell cast family gate', () => {
             type: MAGE_WARS_COMMANDS.CAST_SPELL,
             playerId: '0',
             payload: {
-                spellCardId: unsupportedSpellId,
-                manaCost: 5,
+                spellCardId: responseSpellId,
+                manaCost: 7,
                 targetObjectId: target.id,
             },
-        })).toBe('spellRequiresCodeSupport');
+        })).toBeUndefined();
     });
 });

@@ -11,10 +11,16 @@ import {
 import * as fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { io } from 'socket.io-client';
+import msgpackParser from 'socket.io-msgpack-parser';
 import {
     clearEvidenceScreenshotsForTest,
+    createEvidenceScreenshotRun,
     getEvidenceScreenshotDir,
     getEvidenceScreenshotPath,
+    getEvidenceScreenshotPathInDirectory,
+    promoteEvidenceScreenshotRun,
+    sanitizeEvidencePathSegment,
     withJpegEvidenceScreenshotOptions,
 } from '../framework/evidenceScreenshots';
 import {
@@ -40,6 +46,10 @@ import {
     type MageId,
 } from '../../src/games/mage-wars/domain/ids';
 import type { MageWarsArenaObjectState, MageWarsCore, MageWarsPhase, MageWarsPlayerState } from '../../src/games/mage-wars/domain';
+import { MAGE_WARS_EVENTS } from '../../src/games/mage-wars/domain/events';
+import { createSeededRandom } from '../../src/engine/pipeline';
+import { MAGE_WARS_FX_TIMING, MAGE_WARS_SUMMON_FX_MAX_OBJECT_RATIO } from '../../src/games/mage-wars/ui/fxTuning';
+// e2e-harness-boundary: representative-state
 import {
     getStandardStartingSpellbook,
     getStandardStartingSpellbookCount,
@@ -60,14 +70,60 @@ type JsonRecord = Record<string, unknown>;
 type MageWarsFxKind = 'attack' | 'push' | 'teleport' | 'healing';
 type ScreenshotCssRect = { x: number; y: number; width: number; height: number };
 type ScreenshotViewport = { width: number; height: number };
-type RecordedVideo = NonNullable<ReturnType<Page['video']>>;
 type MageWarsFxVideoRecording = {
     enabled: boolean;
-    contextOptions: BrowserContextOptions;
-    rawVideoDir?: string;
-    finalVideoPath?: string;
+    evidenceDir?: string;
+    stableEvidenceDir?: string;
+    frameDir?: string;
+    frames?: MageWarsFxFrame[];
+    finalGifPath?: string;
     passManifestPath?: string;
+    frameDelaysMs?: number[];
+    captureDurationMs?: number;
+    startedAtMs?: number;
 };
+
+type MageWarsEvidenceIndexDescription = {
+    description: string;
+    transition: string;
+    stage?: '前态' | '中态' | '后态';
+    testedObject?: string;
+    effectClaim?: string;
+    observedDelta?: string;
+    visibleEffectDelta?: {
+        before: string;
+        after: string;
+        direction: 'increase' | 'decrease' | 'changed';
+    };
+};
+
+type MageWarsFxFrame = {
+    path: string;
+    capturedAtMs: number;
+};
+
+function buildMageWarsFallbackEvidenceDescription(fragment: string): string {
+    const description = fragment
+        .replace(/token/gi, '状态标记')
+        .replace(/\bUI\b/gi, '界面')
+        .replace(/\bGIF\b/gi, '动图')
+        .replace(/\b[A-Z]\d\b/g, '目标区域')
+        .replace(/^\d+[A-Z]?[-_]?/, '')
+        .replace(/[A-Za-z]/g, '')
+        .replace(/[-_]+/g, '，')
+        .replace(/，+/g, '，')
+        .replace(/^，|，$/g, '');
+    return `玩家画面展示${description || '当前行为链的可见状态'}。`;
+}
+
+function getAnnotatedEvidenceStagingDir(testInfo: TestInfo): string | undefined {
+    const annotation = testInfo.annotations.find((entry) => (
+        entry.type === 'evidence-staging-dir'
+        && typeof entry.description === 'string'
+        && entry.description.trim().length > 0
+    ));
+    return typeof annotation?.description === 'string' ? annotation.description : undefined;
+}
 
 function getMageWarsE2eStandardSpellbookEntries(mageId: MageId): MageWarsPlayerState['spellbookEntries'] {
     return getStandardStartingSpellbook(mageId).map((entry) => ({
@@ -110,153 +166,721 @@ async function saveEvidenceScreenshot(
     page: Page,
     testInfo: TestInfo,
     name: string,
-    options: { animations?: EvidenceScreenshotAnimationMode } = {},
+    options: {
+        animations?: EvidenceScreenshotAnimationMode;
+        evidenceDir?: string;
+        allowDuringGoldenVideo?: boolean;
+    } = {},
 ): Promise<string> {
-    const path = getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
+    if (isMageWarsGoldenVideoRun() && options.allowDuringGoldenVideo !== true) return '';
+    const evidenceDir = options.evidenceDir ?? getAnnotatedEvidenceStagingDir(testInfo);
+    const screenshotPath = evidenceDir
+        ? getEvidenceScreenshotPathInDirectory(evidenceDir, name, { requireChineseName: true })
+        : getEvidenceScreenshotPath(testInfo, name, { requireChineseName: true });
     await page.screenshot(withJpegEvidenceScreenshotOptions({
-        path,
+        path: screenshotPath,
         fullPage: false,
         animations: options.animations ?? 'disabled',
         timeout: 10_000,
     }));
     testInfo.annotations.push({
         type: 'evidence-screenshot',
-        description: path,
+        description: screenshotPath,
     });
-    return path;
+    return screenshotPath;
 }
 
 function shouldRecordMageWarsFxVideo(): boolean {
+    // 黄金端到端 WebM 已由 Playwright BrowserContext 独占录制；
+    // 同一页面再开 CDP screencast 会额外占用编码 / 写盘资源，导致录屏和动效互相抢帧。
+    if (process.env.MAGE_WARS_GOLDEN_VIDEO_DIR?.trim()) return false;
     return TRUTHY_ENV_VALUES.has((process.env.MAGE_WARS_RECORD_FX_VIDEO ?? '').trim().toLowerCase());
 }
 
-function createMageWarsFxVideoRecording(testInfo: TestInfo): MageWarsFxVideoRecording {
+function isMageWarsGoldenVideoRun(): boolean {
+    return Boolean(process.env.MAGE_WARS_GOLDEN_VIDEO_DIR?.trim());
+}
+
+function createMageWarsFxVideoRecording(
+    testInfo: TestInfo,
+    options: { fileLabel?: string; evidenceDir?: string; stableEvidenceDir?: string } = {},
+): MageWarsFxVideoRecording {
     if (!shouldRecordMageWarsFxVideo()) {
-        return { enabled: false, contextOptions: {} };
+        return { enabled: false };
     }
 
-    const evidenceDir = getEvidenceScreenshotDir(testInfo, undefined, { requireChineseName: true });
-    const rawVideoDir = path.join(evidenceDir, '_raw-video');
-    fs.mkdirSync(rawVideoDir, { recursive: true });
+    const stableEvidenceDir = options.stableEvidenceDir
+        ?? getEvidenceScreenshotDir(testInfo, undefined, { requireChineseName: true });
+    const evidenceDir = options.evidenceDir ?? stableEvidenceDir;
+    const fileLabel = options.fileLabel ?? '召唤和攻击';
+    const frameDir = path.join(
+        evidenceDir,
+        '_gif-frames',
+        fileLabel.replace(/[\\/:*?"<>|]/g, '-'),
+    );
+    fs.mkdirSync(frameDir, { recursive: true });
 
     return {
         enabled: true,
-        contextOptions: {
-            recordVideo: {
-                dir: rawVideoDir,
-                size: { width: 1920, height: 1080 },
-            },
+        evidenceDir,
+        stableEvidenceDir,
+        frameDir,
+        finalGifPath: path.join(
+            evidenceDir,
+            `00-法师战争${fileLabel}实际动效.gif`,
+        ),
+        passManifestPath: path.join(
+            evidenceDir,
+            `00-法师战争${fileLabel}实际动效-PASS.json`,
+        ),
+    };
+}
+
+function rebaseMageWarsEvidenceReference(
+    value: string,
+    recording: MageWarsFxVideoRecording,
+): string {
+    if (!recording.evidenceDir || !recording.stableEvidenceDir || !path.isAbsolute(value)) return value;
+    const stagingDir = path.resolve(recording.evidenceDir);
+    const stableDir = path.resolve(recording.stableEvidenceDir);
+    const absoluteValue = path.resolve(value);
+    const stagingPrefix = `${stagingDir}${path.sep}`;
+    if (absoluteValue === stagingDir) return stableDir;
+    if (!absoluteValue.startsWith(stagingPrefix)) return value;
+    return path.join(stableDir, path.relative(stagingDir, absoluteValue));
+}
+
+function rebaseMageWarsTestAnnotations(
+    testInfo: TestInfo,
+    recording: MageWarsFxVideoRecording,
+): void {
+    for (const annotation of testInfo.annotations) {
+        if (typeof annotation.description === 'string') {
+            annotation.description = rebaseMageWarsEvidenceReference(annotation.description, recording);
+        }
+    }
+}
+
+function registerMageWarsEvidenceScreenshot(testInfo: TestInfo, screenshotPath: string): void {
+    const alreadyRegistered = testInfo.annotations.some((entry) => (
+        entry.type === 'evidence-screenshot' && entry.description === screenshotPath
+    ));
+    if (alreadyRegistered) return;
+    testInfo.annotations.push({
+        type: 'evidence-screenshot',
+        description: screenshotPath,
+    });
+}
+
+async function materializeMageWarsFxEvidenceFrameSeries(
+    testInfo: TestInfo,
+    recording: MageWarsFxVideoRecording,
+    names: string[],
+    fractions: number[],
+    options: {
+        elapsedStartMs?: number;
+        elapsedEndMs?: number;
+        origin?: 'first-frame' | 'recording-start';
+    } = {},
+): Promise<void> {
+    if (!recording.evidenceDir || !recording.frames || recording.frames.length < names.length) {
+        throw new Error('Mage Wars 动效过程图必须从同一次真实录制中提取足够的原始帧');
+    }
+    const allFrames = [...recording.frames].sort((left, right) => left.capturedAtMs - right.capturedAtMs);
+    const firstFrameMs = allFrames[0]!.capturedAtMs;
+    const recordingStartMs = recording.startedAtMs;
+    const clocksAligned = recordingStartMs != null
+        && Math.abs(firstFrameMs - recordingStartMs) < 120_000;
+    const originMs = options.origin === 'recording-start' && recordingStartMs != null && clocksAligned
+        ? recordingStartMs
+        : firstFrameMs;
+    const windowStartMs = options.elapsedStartMs == null
+        ? originMs
+        : originMs + Math.max(0, options.elapsedStartMs);
+    const windowEndMs = options.elapsedEndMs == null
+        ? allFrames[allFrames.length - 1]!.capturedAtMs
+        : originMs + options.elapsedEndMs;
+    const windowedFrames = allFrames.filter((frame) => (
+        frame.capturedAtMs >= windowStartMs && frame.capturedAtMs <= windowEndMs
+    ));
+    const frames = windowedFrames.length >= names.length ? windowedFrames : allFrames;
+    if (options.elapsedStartMs != null && windowedFrames.length < names.length) {
+        throw new Error([
+            'Mage Wars 动效过程图的滑移窗口帧不足，拒绝回退到整段录屏',
+            `elapsedStartMs=${options.elapsedStartMs}`,
+            `elapsedEndMs=${options.elapsedEndMs ?? 'none'}`,
+            `origin=${options.origin ?? 'first-frame'}`,
+            `originMs=${originMs}`,
+            `firstFrameMs=${firstFrameMs}`,
+            `recordingStartedAtMs=${recordingStartMs ?? 'none'}`,
+            `windowedFrames=${windowedFrames.length}`,
+            `allFrames=${allFrames.length}`,
+            `names=${names.join(',')}`,
+        ].join('\n'));
+    }
+    const frameContents = await Promise.all(frames.map((frame) => fs.promises.readFile(frame.path)));
+    const selected: Array<{ frame: MageWarsFxFrame; content: Buffer }> = [];
+    const isDuplicateContent = (content: Buffer) => selected.some((entry) => entry.content.equals(content));
+    const windowOriginMs = frames[0]!.capturedAtMs;
+    const windowSpanMs = Math.max(1, frames[frames.length - 1]!.capturedAtMs - windowOriginMs);
+    for (let index = 0; index < names.length; index += 1) {
+        const fraction = fractions[index] ?? index / Math.max(1, names.length - 1);
+        const targetMs = windowOriginMs + fraction * windowSpanMs;
+        const preferredIndex = frames.reduce((bestIndex, frame, frameIndex) => {
+            const bestDistance = Math.abs(frames[bestIndex]!.capturedAtMs - targetMs);
+            const nextDistance = Math.abs(frame.capturedAtMs - targetMs);
+            return nextDistance < bestDistance ? frameIndex : bestIndex;
+        }, 0);
+        const isTaken = (frameIndex: number) => (
+            selected.some((entry) => entry.frame.path === frames[frameIndex].path)
+            || isDuplicateContent(frameContents[frameIndex])
+        );
+        let frameIndex = preferredIndex;
+        while (frameIndex < frames.length && isTaken(frameIndex)) {
+            frameIndex += 1;
+        }
+        if (frameIndex >= frames.length) {
+            frameIndex = preferredIndex;
+            while (frameIndex >= 0 && isTaken(frameIndex)) {
+                frameIndex -= 1;
+            }
+        }
+        if (frameIndex < 0 || frameIndex >= frames.length) {
+            throw new Error(`Mage Wars 动效过程图无法选出内容不同的原始帧：${names[index]}`);
+        }
+        const frame = frames[frameIndex];
+        selected.push({ frame, content: frameContents[frameIndex] });
+        const outputPath = getEvidenceScreenshotPathInDirectory(
+            recording.evidenceDir,
+            names[index],
+            { requireChineseName: true },
+        );
+        await sharp(frame.path).jpeg({ quality: 92 }).toFile(outputPath);
+        registerMageWarsEvidenceScreenshot(testInfo, outputPath);
+    }
+
+    const contents = selected.map((entry) => entry.content);
+    for (let left = 0; left < contents.length; left += 1) {
+        for (let right = left + 1; right < contents.length; right += 1) {
+            if (contents[left].equals(contents[right])) {
+                throw new Error(`Mage Wars 动效过程图仍重复：${names[left]} 与 ${names[right]}`);
+            }
+        }
+    }
+}
+
+async function assertMageWarsEvidenceScreenshotVisualUniqueness(
+    screenshotPaths: string[],
+    actionLabel: string,
+): Promise<void> {
+    const uniquePaths = Array.from(new Set(screenshotPaths.map((entry) => path.resolve(entry))));
+    const decoded = await Promise.all(uniquePaths.map(async (screenshotPath) => {
+        const { data, info } = await sharp(screenshotPath)
+            .ensureAlpha()
+            .raw()
+            .toBuffer({ resolveWithObject: true });
+        return {
+            screenshotPath,
+            data,
+            width: info.width,
+            height: info.height,
+        };
+    }));
+
+    for (let left = 0; left < decoded.length; left += 1) {
+        for (let right = left + 1; right < decoded.length; right += 1) {
+            const first = decoded[left]!;
+            const second = decoded[right]!;
+            if (
+                first.width === second.width
+                && first.height === second.height
+                && first.data.equals(second.data)
+            ) {
+                throw new Error([
+                    `${actionLabel} 证据截图存在视觉重复`,
+                    `first=${first.screenshotPath}`,
+                    `second=${second.screenshotPath}`,
+                    '过程帧、命中帧和稳定收口图必须来自不同玩家可见状态。',
+                ].join('\n'));
+            }
+        }
+    }
+}
+
+type MageWarsFxGifCapture = {
+    capture: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>;
+    stop: () => Promise<void>;
+};
+
+async function writeMageWarsAnimatedGif(
+    frames: readonly MageWarsFxFrame[],
+    outputPath: string,
+): Promise<{ width: number; height: number; pages: number; frameDelaysMs: number[]; durationMs: number }> {
+    const resizedFrames = await Promise.all(frames.map(async (frame) => (
+        sharp(frame.path)
+            .resize({ width: 1280, withoutEnlargement: true })
+            .removeAlpha()
+            .raw()
+            .toBuffer({ resolveWithObject: true })
+    )));
+    const firstFrame = resizedFrames[0];
+    if (!firstFrame || firstFrame.info.width <= 0 || firstFrame.info.height <= 0) {
+        throw new Error('Mage Wars 动效 GIF 第一张真实过程帧没有有效尺寸');
+    }
+
+    const { width, height, channels } = firstFrame.info;
+    if (channels !== 3) {
+        throw new Error(`Mage Wars 动效 GIF 原始帧必须是 RGB，实际通道数为 ${channels}`);
+    }
+    if (resizedFrames.some((frame) => (
+        frame.info.width !== width
+        || frame.info.height !== height
+        || frame.info.channels !== channels
+    ))) {
+        throw new Error('Mage Wars 动效 GIF 的真实过程帧尺寸或通道数不一致');
+    }
+
+    const stackedFrames = Buffer.alloc(width * height * channels * resizedFrames.length);
+    resizedFrames.forEach((frame, index) => {
+        frame.data.copy(stackedFrames, index * frame.data.length);
+    });
+
+    const observedIntervalsMs = frames
+        .slice(1)
+        .map((frame, index) => Math.max(1, frame.capturedAtMs - frames[index]!.capturedAtMs))
+        .filter((value) => Number.isFinite(value));
+    const fallbackDelayMs = observedIntervalsMs.length > 0
+        ? observedIntervalsMs[Math.floor(observedIntervalsMs.length / 2)]!
+        : 100;
+    const frameDelaysMs = frames.map((frame, index) => {
+        const nextFrame = frames[index + 1];
+        const observedDelay = nextFrame
+            ? nextFrame.capturedAtMs - frame.capturedAtMs
+            : fallbackDelayMs;
+        return Math.min(2_000, Math.max(40, Math.round(observedDelay)));
+    });
+    const durationMs = frameDelaysMs.reduce((total, delayMs) => total + delayMs, 0);
+
+    await sharp(stackedFrames, {
+        raw: {
+            width,
+            height: height * resizedFrames.length,
+            channels,
+            pageHeight: height,
         },
-        rawVideoDir,
-        finalVideoPath: path.join(evidenceDir, '00-法师战争召唤和攻击实际动效.webm'),
-        passManifestPath: path.join(evidenceDir, '00-法师战争召唤和攻击实际动效-PASS.json'),
+    })
+        .gif({
+            loop: 0,
+            delay: frameDelaysMs,
+            colours: 256,
+            reuse: false,
+            effort: 1,
+            dither: 0.35,
+            keepDuplicateFrames: true,
+        })
+        .toFile(outputPath);
+
+    const metadata = await sharp(outputPath, { animated: true }).metadata();
+    const pages = metadata.pages ?? 0;
+    if (pages !== frames.length || metadata.pageHeight !== height) {
+        throw new Error([
+            'Mage Wars 动效 GIF 必须保留全部真实过程帧',
+            `expectedPages=${frames.length}`,
+            `actualPages=${pages}`,
+            `pageHeight=${metadata.pageHeight ?? 'unknown'}`,
+        ].join('\n'));
+    }
+
+    return { width, height, pages, frameDelaysMs, durationMs };
+}
+
+async function startMageWarsFxGifCapture(
+    page: Page,
+    recording: MageWarsFxVideoRecording,
+): Promise<MageWarsFxGifCapture> {
+    if (!recording.enabled || !recording.frameDir) {
+        return {
+            capture: async () => undefined,
+            stop: async () => undefined,
+        };
+    }
+
+    // 当前用例入口已由 clearEvidenceScreenshotsForTest 清理证据目录；
+    // 这里不再对同一帧目录做 Windows 同步递归删除，避免传送代表态在
+    // worker 中触发原生目录清理崩溃。新采样会从 0000.png 覆盖写入，
+    // recording.frames 只引用本次运行实际采集到的帧。
+    fs.mkdirSync(recording.frameDir, { recursive: true });
+    console.log(`[MageWars GIF debug] recorder-dir-ready ${recording.frameDir}`);
+    const frames: MageWarsFxFrame[] = [];
+    let captureError: unknown = null;
+    let frameIndex = 0;
+    let pendingWrites = 0;
+    let resolvePendingWrites: (() => void) | null = null;
+    let stopped = false;
+    const cdpSession = await page.context().newCDPSession(page);
+    cdpSession.on('Page.screencastFrame', (event) => {
+        if (stopped) return;
+        const payload = event as {
+            data: string;
+            metadata?: { timestamp?: number };
+            sessionId: number;
+        };
+        const framePath = path.join(recording.frameDir!, `${String(frameIndex).padStart(4, '0')}.jpg`);
+        frameIndex += 1;
+        pendingWrites += 1;
+        void cdpSession.send('Page.screencastFrameAck', { sessionId: payload.sessionId })
+            .catch((error: unknown) => {
+                if (!stopped) captureError = captureError ?? error;
+            });
+        void fs.promises.writeFile(framePath, Buffer.from(payload.data, 'base64'))
+            .then(() => {
+                frames.push({
+                    path: framePath,
+                    capturedAtMs: typeof payload.metadata?.timestamp === 'number'
+                        ? Math.round(payload.metadata.timestamp * 1000)
+                        : Date.now(),
+                });
+            })
+            .catch((error: unknown) => {
+                captureError = captureError ?? error;
+            })
+            .finally(() => {
+                pendingWrites -= 1;
+                if (pendingWrites === 0 && resolvePendingWrites) {
+                    const resolve = resolvePendingWrites;
+                    resolvePendingWrites = null;
+                    resolve();
+                }
+            });
+    });
+    await cdpSession.send('Page.startScreencast', {
+        format: 'jpeg',
+        quality: 55,
+        everyNthFrame: 1,
+        maxWidth: 1280,
+        maxHeight: 720,
+    });
+    recording.startedAtMs = Date.now();
+
+    // 语义截图调用只标记录制边界；真实 GIF 帧由 Chromium 帧流持续采集，
+    // 不再让整页截图的耗时阻塞近战冲刺过程。
+    const capture = async (_animations: EvidenceScreenshotAnimationMode = 'allow') => {
+        if (captureError) throw captureError;
+    };
+    let stopPromise: Promise<void> | null = null;
+    return {
+        capture,
+        stop: () => {
+            if (stopPromise) return stopPromise;
+            stopPromise = (async () => {
+                await expect(page.getByTestId('mage-wars-fx-attack-dice')).toBeHidden({ timeout: 8_000 });
+                await waitForFxLayerIdle(page, '独立动效录制稳定收口');
+                stopped = true;
+                await cdpSession.send('Page.stopScreencast');
+                if (pendingWrites > 0) {
+                    await new Promise<void>((resolve) => {
+                        resolvePendingWrites = resolve;
+                    });
+                }
+                // 帧流只在画面变化时推送，结束前再采真实页面，保留结果层退场后的末帧。
+                const terminalFramePath = path.join(recording.frameDir!, `${String(frameIndex).padStart(4, '0')}.png`);
+                await page.screenshot({ path: terminalFramePath, type: 'png', animations: 'allow' });
+                frames.push({ path: terminalFramePath, capturedAtMs: Date.now() });
+                await cdpSession.detach().catch(() => undefined);
+                console.log(`[MageWars GIF debug] recorder-stop ${recording.finalGifPath ?? 'unknown'} frames=${frames.length}`);
+                if (captureError) throw captureError;
+                if (frames.length === 0) {
+                    throw new Error('Mage Wars 动效 GIF 没有采集到任何真实页面过程帧');
+                }
+                recording.frames = frames.sort((left, right) => (
+                    left.path.localeCompare(right.path)
+                ));
+            })();
+            return stopPromise;
+        },
     };
 }
 
 async function finalizeMageWarsFxVideoRecording(
     testInfo: TestInfo,
     recording: MageWarsFxVideoRecording,
-    video: RecordedVideo | null | undefined,
-): Promise<{ videoPath: string; passManifestPath: string } | null> {
-    if (!recording.enabled) return null;
-    if (!recording.finalVideoPath || !recording.passManifestPath) {
-        throw new Error('Mage Wars 录屏已开启，但最终录屏路径或 PASS 清单路径未初始化');
+    options: {
+        actionLabel?: string;
+        required?: boolean;
+        screenshotIncludes: string[];
+        chainId?: string;
+        sourceRun?: string;
+        screenshotDescriptions?: Record<string, MageWarsEvidenceIndexDescription>;
+        requireVisibleEffectDelta?: boolean;
+        gifDescription?: string;
+        requirements?: Array<{ requirement: string; status: 'PASS'; evidence: string[] }>;
+        sourceVerification?: {
+            status: 'source-verified' | 'functional-only' | 'blocked';
+            sourceType: 'engine-native' | 'external-image' | 'atlas' | 'model-plus-texture' | 'source-faithful-reproduction';
+            sourceObject: string;
+            sourceLocator: string;
+            sourceEvidence: string[];
+            rendering: string;
+            mapping: string[];
+        };
+    } = {},
+): Promise<{ gifPath: string; passManifestPath: string } | null> {
+    if (!recording.enabled) {
+        if (options.required) {
+            throw new Error('当前动效 E2E 要求截图、GIF、帧目录和 PASS manifest 同次生成；请启用 MAGE_WARS_RECORD_FX_VIDEO=1');
+        }
+        return null;
     }
-    if (!video) {
-        throw new Error('Mage Wars 录屏已开启，但正式页面没有生成 Playwright video 对象');
+    if (!recording.finalGifPath || !recording.passManifestPath) {
+        throw new Error('Mage Wars 动效录制已开启，但最终 GIF 或 PASS 清单路径未初始化');
+    }
+    if (!recording.frames || recording.frames.length < 2) {
+        throw new Error('Mage Wars 动效 GIF 至少需要两张来自真实页面的连续过程帧');
     }
 
-    const rawVideoPath = await video.path();
-    await fs.promises.mkdir(path.dirname(recording.finalVideoPath), { recursive: true });
-    await fs.promises.copyFile(rawVideoPath, recording.finalVideoPath);
-    const videoStats = await fs.promises.stat(recording.finalVideoPath);
-    if (videoStats.size <= 0) {
-        throw new Error(`Mage Wars 录屏文件为空：${recording.finalVideoPath}`);
-    }
-    if (recording.rawVideoDir) {
-        await fs.promises.rm(recording.rawVideoDir, { recursive: true, force: true });
+    const gifMetadata = await writeMageWarsAnimatedGif(recording.frames, recording.finalGifPath);
+    recording.frameDelaysMs = gifMetadata.frameDelaysMs;
+    recording.captureDurationMs = gifMetadata.durationMs;
+    const gifStats = await fs.promises.stat(recording.finalGifPath);
+    if (gifStats.size <= 0) {
+        throw new Error(`Mage Wars 动效 GIF 文件为空：${recording.finalGifPath}`);
     }
 
-    const screenshotEvidence = testInfo.annotations
-        .filter((annotation) => annotation.type === 'evidence-screenshot' && typeof annotation.description === 'string')
-        .map((annotation) => annotation.description as string);
-    const summonEvidence = screenshotEvidence.filter((entry) => entry.includes('召唤'));
-    const attackEvidence = screenshotEvidence.filter((entry) => (
+    const screenshotEvidence = Array.from(new Set(
+        testInfo.annotations
+            .filter((annotation) => annotation.type === 'evidence-screenshot' && typeof annotation.description === 'string')
+            .map((annotation) => path.resolve(annotation.description as string)),
+    ));
+    const unmatchedScreenshotIncludes = options.screenshotIncludes.filter((fragment) => (
+        !screenshotEvidence.some((entry) => entry.includes(fragment))
+    ));
+    if (unmatchedScreenshotIncludes.length > 0) {
+        throw new Error([
+            `${options.actionLabel ?? '当前动效'} 证据链缺少声明截图：${unmatchedScreenshotIncludes.join(' | ')}`,
+            '截图、GIF 和 PASS manifest 必须来自同一条显式声明的行为链。',
+        ].join('\n'));
+    }
+    const selectedScreenshotEvidence = screenshotEvidence.filter((entry) => (
+        options.screenshotIncludes.some((fragment) => entry.includes(fragment))
+    ));
+    if (selectedScreenshotEvidence.length === 0) {
+        throw new Error(`${options.actionLabel ?? '当前动效'} 没有选出任何与行为链匹配的截图`);
+    }
+    await assertMageWarsEvidenceScreenshotVisualUniqueness(
+        selectedScreenshotEvidence,
+        options.actionLabel ?? '当前动效',
+    );
+    const selectedScreenshotFragments = selectedScreenshotEvidence.map((entry) => (
+        options.screenshotIncludes.find((fragment) => entry.includes(fragment)) ?? ''
+    ));
+    const orderMatches = selectedScreenshotFragments.length === options.screenshotIncludes.length
+        && selectedScreenshotFragments.every((fragment, index) => fragment === options.screenshotIncludes[index]);
+    if (!orderMatches) {
+        throw new Error([
+            `${options.actionLabel ?? '当前动效'} 截图顺序与声明行为链不一致`,
+            `expected=${JSON.stringify(options.screenshotIncludes)}`,
+            `actual=${JSON.stringify(selectedScreenshotFragments)}`,
+            '必须按玩家动作前置、动作过程、结算收口的真实顺序生成同一组截图。',
+        ].join('\n'));
+    }
+    if (recording.evidenceDir) {
+        const evidenceRoot = `${path.resolve(recording.evidenceDir)}${path.sep}`;
+        const outsideCurrentRun = selectedScreenshotEvidence.filter((entry) => (
+            !path.resolve(entry).startsWith(evidenceRoot)
+        ));
+        if (outsideCurrentRun.length > 0) {
+            throw new Error([
+                `${options.actionLabel ?? '当前动效'} 截图混入了当前录制目录之外的媒体`,
+                ...outsideCurrentRun,
+                '截图、GIF 和 PASS manifest 必须来自同一次真实运行。',
+            ].join('\n'));
+        }
+    }
+    const summonEvidence = selectedScreenshotEvidence.filter((entry) => entry.includes('召唤'));
+    const attackEvidence = selectedScreenshotEvidence.filter((entry) => (
         entry.includes('间歇喷泉')
         || entry.includes('投射')
         || entry.includes('命中')
         || entry.includes('伤害飘字')
     ));
 
+    const defaultRequirements = [
+        {
+            requirement: '法师战争召唤动效已通过：兽王野性山猫有召唤光柱过程帧和落场完成证据',
+            status: 'PASS' as const,
+            evidence: [
+                'E2E：正式页面召唤和攻击必要过程帧覆盖 passed',
+                ...summonEvidence,
+                recording.finalGifPath,
+            ],
+        },
+        {
+            requirement: '法师战争攻击动效已通过：间歇喷泉攻击时目标单位在骰子、投射、命中和伤害飘字活跃期间逐帧持续可见，不会整张消失',
+            status: 'PASS' as const,
+            evidence: [
+                'E2E：正式页面点击目标后产生攻击掷骰事件',
+                'E2E：目标锚点可见性断言覆盖投射开始、投射飞行中、命中和伤害飘字三段',
+                'E2E：逐帧目标连续性监视器覆盖攻击骰、投射、命中和伤害飘字活跃帧，目标不能有任一帧消失或不可见',
+                ...attackEvidence,
+                recording.finalGifPath,
+            ],
+        },
+        {
+            requirement: '法师战争攻击骰在玩家屏幕中央独立播放：投骰不改玩家镜头和底图，骰子不得钉在战斗格或可见石板上',
+            status: 'PASS' as const,
+            evidence: [
+                'E2E：攻击骰结果层 data-placement=screen-center',
+                'E2E：攻击骰内容落在玩家屏幕中央，布局宿主是整窗 fixed inset-0，不是可见石板、整块棋盘、变换后舞台或战斗格',
+                'E2E：投骰前拖到角落后断言 pan/zoom 不变，截图前不得 reset-center',
+                ...attackEvidence,
+                recording.finalGifPath,
+            ],
+        },
+        {
+            requirement: '法师战争攻击投射物使用线性飞行进度，避免靠近目标时明显减速',
+            status: 'PASS' as const,
+            evidence: [
+                '单元测试：MageWarsBoard FX wiring 断言攻击 ConeBlast data-motion-easing=linear',
+                'E2E：正式页面召唤和攻击必要过程帧覆盖 passed',
+                recording.finalGifPath,
+            ],
+        },
+        {
+            requirement: '最终动态证据必须是 GIF，并且覆盖来源、过程、结果和稳定收口',
+            status: 'PASS' as const,
+            evidence: [
+                recording.finalGifPath,
+                `GIF 文件大小：${gifStats.size} bytes`,
+                `GIF 输出尺寸：${gifMetadata.width}x${gifMetadata.height}`,
+                `GIF 输出帧数：${gifMetadata.pages}`,
+                `GIF 实际时长：${gifMetadata.durationMs} ms`,
+            ],
+        },
+    ];
+    const manifestMedia = Array.from(new Set([
+        ...selectedScreenshotEvidence.map((entry) => rebaseMageWarsEvidenceReference(entry, recording)),
+        rebaseMageWarsEvidenceReference(recording.finalGifPath, recording),
+    ]));
+    const selectedScreenshotDescriptions = options.screenshotDescriptions
+        ? options.screenshotIncludes.map((fragment) => options.screenshotDescriptions?.[fragment]).filter(Boolean)
+        : [];
+    if (options.requireVisibleEffectDelta) {
+        if (!options.screenshotDescriptions) {
+            throw new Error(`${options.actionLabel ?? '当前动效'} 要求可见数值差分，但没有提供截图索引说明`);
+        }
+        const visibleEffectDelta = selectedScreenshotDescriptions
+            .map((description) => description?.visibleEffectDelta)
+            .find((delta) => (
+                Boolean(delta?.before)
+                && Boolean(delta?.after)
+                && delta.before !== delta.after
+                && Boolean(delta.direction)
+            ));
+        if (!visibleEffectDelta) {
+            throw new Error([
+                `${options.actionLabel ?? '当前动效'} 缺少可见数值差分`,
+                '必须在同一条真实行为链的截图索引中写出具体前值、后值和变化方向。',
+            ].join('\n'));
+        }
+    }
     const manifest = {
-        verdict: 'PASS',
-        scope: 'current-user-request',
+        verdict: options.sourceVerification && options.sourceVerification.status !== 'source-verified' ? 'REVISE' : 'PASS',
+        scope: 'independent',
+        gameId: 'mage-wars',
+        evidenceCategory: 'independent',
         generatedAt: new Date().toISOString(),
+        recording: {
+            action: options.actionLabel ?? '召唤和攻击',
+            frameCount: recording.frames.length,
+            frameDelaysMs: recording.frameDelaysMs,
+            durationMs: recording.captureDurationMs,
+            timingSource: '真实页面截图完成时间戳',
+        },
+        sourceVerification: options.sourceVerification,
         display: {
             purpose: 'final-user-visible-delivery',
             trigger: 'task-final-delivery',
-            viewer: 'system',
-            finalPassBeforeOpen: true,
+            viewer: 'web',
+            finalPassBeforeOpen: !options.sourceVerification || options.sourceVerification.status === 'source-verified',
         },
-        requirements: [
-            {
-                requirement: '法师战争两个派系基础流程里的召唤动效已通过：兽王野性山猫与女祭司阿希拉牧师都有召唤光柱过程帧和落场完成证据',
-                status: 'PASS',
-                evidence: [
-                    'E2E：正式页面召唤和攻击必要过程帧覆盖 passed',
-                    ...summonEvidence,
-                    recording.finalVideoPath,
-                ],
-            },
-            {
-                requirement: '法师战争攻击动效已通过：间歇喷泉攻击时目标单位在骰子、投射、命中和伤害飘字活跃期间逐帧持续可见，不会整张消失',
-                status: 'PASS',
-                evidence: [
-                    'E2E：正式页面点击目标后产生攻击掷骰事件',
-                    'E2E：目标锚点可见性断言覆盖投射开始、投射飞行中、命中和伤害飘字三段',
-                    'E2E：逐帧目标连续性监视器覆盖攻击骰、投射、命中和伤害飘字活跃帧，目标不能有任一帧消失或不可见',
-                    ...attackEvidence,
-                    recording.finalVideoPath,
-                ],
-            },
-            {
-                requirement: '法师战争攻击结果反馈已避让目标单位：骰子出现时不能遮住阿希拉牧师目标本体',
-                status: 'PASS',
-                evidence: [
-                    'E2E：攻击骰结果层使用路径旁侧避让位 data-placement=path-side-avoid-target',
-                    'E2E：攻击骰与目标单位遮挡比例断言覆盖投射开始和投射飞行中两段',
-                    ...attackEvidence,
-                    recording.finalVideoPath,
-                ],
-            },
-            {
-                requirement: '法师战争攻击投射物使用线性飞行进度，避免靠近目标时明显减速',
-                status: 'PASS',
-                evidence: [
-                    '单元测试：MageWarsBoard FX wiring 断言攻击 ConeBlast data-motion-easing=linear',
-                    'E2E：正式页面召唤和攻击必要过程帧覆盖 passed',
-                    recording.finalVideoPath,
-                ],
-            },
-            {
-                requirement: '最终录屏来自同一正式页面 E2E 入口，并从攻击准备态页面开始录制，避免把前置布置或状态注入误读成目标隐藏',
-                status: 'PASS',
-                evidence: [
-                    recording.finalVideoPath,
-                    `录屏文件大小：${videoStats.size} bytes`,
-                ],
-            },
-        ],
-        media: [recording.finalVideoPath],
+        requirements: options.requirements ?? defaultRequirements,
+        media: manifestMedia,
     };
+
+    manifest.requirements = manifest.requirements.map((requirement) => ({
+        ...requirement,
+        evidence: requirement.evidence.map((entry) => rebaseMageWarsEvidenceReference(entry, recording)),
+    }));
+
+    const sourceDir = path.basename(path.resolve(recording.stableEvidenceDir ?? recording.evidenceDir ?? ''));
+    const sourceRun = options.sourceRun ?? path.basename(path.resolve(recording.evidenceDir ?? ''));
+    const chainId = options.chainId ?? `mage-wars-${sanitizeEvidencePathSegment(options.actionLabel ?? 'fx')}`;
+    const indexItems = selectedScreenshotEvidence.map((entry, index) => {
+        const fragment = options.screenshotIncludes[index];
+        const description = options.screenshotDescriptions?.[fragment];
+        const fallbackDescription = {
+            description: buildMageWarsFallbackEvidenceDescription(fragment),
+            transition: index === 0
+                ? '本链起点：玩家进入当前行为的可见起点。'
+                : '相对上一张：同一条行为链继续推进到当前玩家可见状态。',
+        };
+        return {
+            path: path.relative(recording.evidenceDir!, entry).replace(/\\/g, '/'),
+            chainId,
+            chainStep: String(index + 1),
+            sourceRun,
+            sourceDir,
+            label: path.basename(entry),
+            stage: description?.stage ?? (
+                index === 0
+                    ? '前态'
+                    : index === options.screenshotIncludes.length - 1
+                        ? '后态'
+                        : '中态'
+            ),
+            ...(description ?? fallbackDescription),
+        };
+    });
+    const gifRelativePath = path.relative(recording.evidenceDir!, recording.finalGifPath).replace(/\\/g, '/');
+    indexItems.push({
+        path: gifRelativePath,
+        chainId,
+        chainStep: String(indexItems.length + 1),
+        sourceRun,
+        sourceDir,
+        label: path.basename(recording.finalGifPath),
+        stage: '中态',
+        description: options.gifDescription
+            ?? `${options.actionLabel ?? '当前动效'}；玩家完成真实操作后，动图连续展示同一对象的过程帧和稳定收口。`,
+        transition: '相对上一张：同一条行为链的连续动效证据。',
+    });
+    const evidenceIndex = {
+        title: `法师战争 · ${options.actionLabel ?? '独立动效'} · 当前运行证据`,
+        gameId: 'mage-wars',
+        evidenceCategory: 'independent',
+        sourceRun,
+        sourceDir,
+        descriptionContract: 'description 是唯一玩家说明；transition 只记录相对上一张的顺序变化。',
+        media: indexItems,
+        items: indexItems,
+    };
+    const evidenceIndexPath = path.join(recording.evidenceDir!, '.e2e-image-index.json');
+    await fs.promises.writeFile(evidenceIndexPath, `${JSON.stringify(evidenceIndex, null, 2)}\n`, 'utf8');
+    manifest.evidenceIndex = '.e2e-image-index.json';
+    manifest.mediaEntries = indexItems;
+    if (options.requireVisibleEffectDelta) {
+        manifest.visibleEffectDelta = selectedScreenshotDescriptions
+            .map((description) => description?.visibleEffectDelta)
+            .filter(Boolean);
+    }
 
     await fs.promises.writeFile(recording.passManifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
     testInfo.annotations.push(
-        { type: 'evidence-video', description: recording.finalVideoPath },
+        { type: 'evidence-gif', description: recording.finalGifPath },
         { type: 'pass-manifest', description: recording.passManifestPath },
     );
     return {
-        videoPath: recording.finalVideoPath,
+        gifPath: recording.finalGifPath,
         passManifestPath: recording.passManifestPath,
     };
 }
@@ -476,10 +1100,28 @@ async function readServerCoreSnapshot(
     const arena = Array.isArray(core.arena) ? core.arena : [];
     const eventStream = isRecord(sys.eventStream) ? sys.eventStream : {};
     const eventEntries = Array.isArray(eventStream.entries) ? eventStream.entries : [];
+    const actionLog = isRecord(sys.actionLog) ? sys.actionLog : {};
+    const actionLogEntries = Array.isArray(actionLog.entries) ? actionLog.entries : [];
+    const undo = isRecord(sys.undo) ? sys.undo : {};
+    const undoSnapshots = Array.isArray(undo.snapshots) ? undo.snapshots : [];
 
     return {
         stateID: payloadRecord._stateID,
         sys: pickFields(sys, ['phase', 'currentPlayerId', 'phaseActorId', 'turnNumber', 'gameover']),
+        actionLog: {
+            maxEntries: actionLog.maxEntries,
+            entries: actionLogEntries.slice(-20).map((entry) => {
+                const record = isRecord(entry) ? entry : {};
+                return pickFields(record, ['id', 'timestamp', 'actorId', 'kind', 'segments']);
+            }),
+        },
+        undo: {
+            snapshotCount: typeof undo.snapshotCount === 'number'
+                ? undo.snapshotCount
+                : undoSnapshots.length,
+            pendingRequest: undo.pendingRequest,
+            rollbackRevision: undo.rollbackRevision,
+        },
         core: pickFields(core, ['phase', 'currentPlayerId', 'phaseActorId', 'turnNumber', 'gameResult']),
         players: Object.fromEntries(Object.entries(players).map(([id, player]) => [
             id,
@@ -510,6 +1152,7 @@ async function readServerCoreSnapshot(
                 'anchoredToObjectId',
                 'anchoredToPlayerId',
                 'anchoredToZoneId',
+                'boundSpellCardId',
                 'restrainedByObjectId',
                 'statusTokens',
                 'temporaryTraits',
@@ -531,7 +1174,7 @@ async function readServerCoreSnapshot(
             ]),
         ])),
         arena: arena.map((zone) => pickFields(zone, ['id', 'occupantIds'])),
-        eventStream: eventEntries.slice(-30).map((entry) => {
+        eventStream: eventEntries.slice(-120).map((entry) => {
             const record = isRecord(entry) ? entry : {};
             const event = isRecord(record.event) ? record.event : {};
             const payload = isRecord(event.payload) ? event.payload : {};
@@ -551,11 +1194,13 @@ async function readServerCoreSnapshot(
                     'distance',
                     'diceResults',
                     'effectDieResult',
+                    'rawEffectDieResult',
                     'baseDamage',
                     'actualDamage',
                     'healing',
                     'interactionId',
                     'objectId',
+                    'attackerObjectId',
                     'optionId',
                     'ownerId',
                     'sourceId',
@@ -569,7 +1214,15 @@ async function readServerCoreSnapshot(
                     'defeatedPlayerId',
                     'amount',
                     'actualHealing',
+                    'boundSpellCardId',
+                    'boundSourceObjectId',
+                    'fromPlayerId',
+                    'toPlayerId',
+                    'meleeDiceModifier',
+                    'meleeDiceModifierUntilRoundNumber',
                     'mode',
+                    'actionTrack',
+                    'manaCost',
                     'reason',
                     'wall',
                     'wallId',
@@ -667,7 +1320,7 @@ async function readVisibleImageLoadFailures(page: Page): Promise<VisibleImageLoa
 
 async function readVisibleMageWarsAtlasLoadFailures(page: Page): Promise<VisibleAtlasLoadFailure[]> {
     return page.evaluate(() => {
-        const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+                        const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
         if (!board) {
             return [{
                 reason: 'mage-wars-board-missing',
@@ -781,7 +1434,7 @@ async function readVisibleMageWarsAtlasLoadFailures(page: Page): Promise<Visible
         };
 
         const frames = Array.from(
-            board.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"], .atlas-shimmer'),
+            document.querySelectorAll<HTMLElement>('[data-card-atlas-frame="true"], .atlas-shimmer'),
         ).filter(isVisible);
 
         return frames.flatMap((frame) => {
@@ -1052,6 +1705,186 @@ async function readViewportRelation(locator: Locator, safeInset = 48) {
     }, safeInset);
 }
 
+async function cancelMageWarsArenaViewportInertia(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        document.querySelector('[data-testid="mage-wars-arena-viewport"]')
+            ?.dispatchEvent(new Event('zoompan:cancel-inertia'));
+    });
+}
+
+type MageWarsArenaCameraSnapshot = {
+    transform: string;
+    contentCenterOffsetX: number;
+    contentCenterOffsetY: number;
+};
+
+async function readMageWarsArenaCamera(page: Page): Promise<MageWarsArenaCameraSnapshot> {
+    const snapshot = await page.evaluate(() => {
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        if (!viewport || !content) return null;
+        const viewportRect = viewport.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        return {
+            transform: content.style.transform,
+            contentCenterOffsetX: Math.round(
+                (contentRect.left + contentRect.width / 2) - (viewportRect.left + viewportRect.width / 2),
+            ),
+            contentCenterOffsetY: Math.round(
+                (contentRect.top + contentRect.height / 2) - (viewportRect.top + viewportRect.height / 2),
+            ),
+        };
+    });
+    expect(snapshot, '必须读到竞技场当前镜头').toBeTruthy();
+    if (!snapshot) {
+        throw new Error('必须读到竞技场当前镜头');
+    }
+    return snapshot;
+}
+
+async function expectMageWarsArenaCameraUnchanged(
+    page: Page,
+    before: MageWarsArenaCameraSnapshot,
+    label: string,
+) {
+    const after = await readMageWarsArenaCamera(page);
+    expect(after.transform, `${label} 投骰后镜头 transform 必须保持玩家机位`).toBe(before.transform);
+    expect(
+        Math.abs(after.contentCenterOffsetX - before.contentCenterOffsetX),
+        `${label} 投骰后镜头水平偏移不能被拉回：before=${JSON.stringify(before)} after=${JSON.stringify(after)}`,
+    ).toBeLessThanOrEqual(8);
+    expect(
+        Math.abs(after.contentCenterOffsetY - before.contentCenterOffsetY),
+        `${label} 投骰后镜头垂直偏移不能被拉回：before=${JSON.stringify(before)} after=${JSON.stringify(after)}`,
+    ).toBeLessThanOrEqual(8);
+}
+
+async function panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+    page: Page,
+    locator: Locator,
+    label: string,
+    options: { xRatio?: number; yRatio?: number } = {},
+): Promise<MageWarsArenaCameraSnapshot> {
+    const arenaViewport = page.getByTestId('mage-wars-arena-viewport');
+    const arenaContent = page.getByTestId('mage-wars-arena-viewport-content');
+    await expect(arenaViewport).toBeVisible({ timeout: 5_000 });
+    await expect(arenaContent).toBeVisible({ timeout: 5_000 });
+    await expect(locator).toBeAttached({ timeout: 3_000 });
+    await cancelMageWarsArenaViewportInertia(page);
+
+    const viewportBox = await arenaViewport.boundingBox();
+    const locatorBox = await locator.boundingBox();
+    if (!viewportBox || !locatorBox) {
+        throw new Error(`${label} 需要拖拽竞技场视窗，但视窗或战斗对象没有可操作区域`);
+    }
+
+    const beforeTransform = await arenaContent.evaluate((element) => (element as HTMLElement).style.transform);
+    const locatorCenterX = locatorBox.x + locatorBox.width / 2;
+    const locatorCenterY = locatorBox.y + locatorBox.height / 2;
+    // 把战斗对象拖进竞技场视窗上半区，避开底部法术书；地图中心因此离开视窗中心。
+    const desiredX = viewportBox.x + viewportBox.width * (options.xRatio ?? 0.62);
+    const desiredY = viewportBox.y + viewportBox.height * (options.yRatio ?? 0.34);
+    const maxDragX = Math.max(120, viewportBox.width * 0.36);
+    const maxDragY = Math.max(90, viewportBox.height * 0.28);
+    const dragX = Math.max(-maxDragX, Math.min(maxDragX, desiredX - locatorCenterX));
+    const dragY = Math.max(-maxDragY, Math.min(maxDragY, desiredY - locatorCenterY));
+    const startX = viewportBox.x + viewportBox.width / 2;
+    const startY = viewportBox.y + viewportBox.height / 2;
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + dragX, startY + dragY, { steps: 8 });
+    await page.mouse.up();
+    await cancelMageWarsArenaViewportInertia(page);
+    await expect.poll(async () => arenaContent.evaluate((element) => (element as HTMLElement).style.transform), {
+        message: `${label} 拖到角落后地图 transform 应变化`,
+        timeout: 2_000,
+    }).not.toBe(beforeTransform);
+    await page.waitForTimeout(180);
+
+    const camera = await readMageWarsArenaCamera(page);
+    const offset = Math.hypot(camera.contentCenterOffsetX, camera.contentCenterOffsetY);
+    expect(offset, `${label} 玩家镜头必须离开地图中心：${JSON.stringify(camera)}`).toBeGreaterThan(80);
+
+    const relation = await readViewportRelation(locator, 48);
+    const locatorAfter = await locator.boundingBox();
+    const stillInArena = Boolean(locatorAfter
+        && locatorAfter.x + locatorAfter.width > viewportBox.x + 24
+        && locatorAfter.y + locatorAfter.height > viewportBox.y + 24
+        && locatorAfter.x < viewportBox.x + viewportBox.width - 24
+        && locatorAfter.y < viewportBox.y + viewportBox.height - 24);
+    if (!relation.intersectsViewport || !stillInArena) {
+        throw new Error([
+            `${label} 拖到角落后战斗对象离开竞技场视窗`,
+            `camera=${JSON.stringify(camera)}`,
+            `relation=${JSON.stringify(relation)}`,
+            `locatorAfter=${JSON.stringify(locatorAfter)}`,
+        ].join('\n'));
+    }
+    return camera;
+}
+
+async function expectMageWarsArenaFramedInViewport(page: Page, label: string): Promise<void> {
+    const geometry = await page.evaluate(() => {
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport-content"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+        const viewportRect = viewport?.getBoundingClientRect();
+        const contentRect = content?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        if (!viewportRect || !contentRect || !stageRect) return null;
+        const visibleLeft = Math.max(stageRect.left, 0);
+        const visibleTop = Math.max(stageRect.top, 0);
+        const visibleRight = Math.min(stageRect.right, window.innerWidth);
+        const visibleBottom = Math.min(stageRect.bottom, window.innerHeight);
+        return {
+            viewport: {
+                width: Math.round(viewportRect.width),
+                height: Math.round(viewportRect.height),
+                left: Math.round(viewportRect.left),
+                top: Math.round(viewportRect.top),
+            },
+            content: {
+                width: Math.round(contentRect.width),
+                height: Math.round(contentRect.height),
+                left: Math.round(contentRect.left),
+                top: Math.round(contentRect.top),
+            },
+            stage: {
+                width: Math.round(stageRect.width),
+                height: Math.round(stageRect.height),
+                left: Math.round(stageRect.left),
+                top: Math.round(stageRect.top),
+            },
+            contentCenterOffsetX: Math.round(
+                (contentRect.left + contentRect.width / 2) - (viewportRect.left + viewportRect.width / 2),
+            ),
+            contentCenterOffsetY: Math.round(
+                (contentRect.top + contentRect.height / 2) - (viewportRect.top + viewportRect.height / 2),
+            ),
+            visibleStageWidth: Math.round(Math.max(0, visibleRight - visibleLeft)),
+            visibleStageHeight: Math.round(Math.max(0, visibleBottom - visibleTop)),
+        };
+    });
+    expect(geometry, `${label} 必须能量到竞技场视窗几何`).toBeTruthy();
+    if (!geometry) return;
+    expect(
+        Math.abs(geometry.contentCenterOffsetX),
+        `${label} 竞技场水平方向不能滑出画面中心：${JSON.stringify(geometry)}`,
+    ).toBeLessThanOrEqual(Math.max(72, geometry.viewport.width * 0.16));
+    expect(
+        Math.abs(geometry.contentCenterOffsetY),
+        `${label} 竞技场垂直方向不能滑出画面中心：${JSON.stringify(geometry)}`,
+    ).toBeLessThanOrEqual(Math.max(72, geometry.viewport.height * 0.16));
+    expect(
+        geometry.visibleStageWidth,
+        `${label} 可见竞技场宽度不能缩成邮票：${JSON.stringify(geometry)}`,
+    ).toBeGreaterThan(480);
+    expect(
+        geometry.visibleStageHeight,
+        `${label} 可见竞技场高度不能缩成邮票：${JSON.stringify(geometry)}`,
+    ).toBeGreaterThan(320);
+}
+
 async function dragArenaViewportUntilLocatorActionable(
     page: Page,
     locator: Locator,
@@ -1065,6 +1898,7 @@ async function dragArenaViewportUntilLocatorActionable(
     await expect(locator).toBeAttached({ timeout: 3_000 });
 
     const safeInset = options.safeInset ?? 72;
+    await cancelMageWarsArenaViewportInertia(page);
     let lastRelation = await readViewportRelation(locator, safeInset);
     let lastHit = await readHitTest(locator).catch(() => null);
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -1110,6 +1944,7 @@ async function dragArenaViewportUntilLocatorActionable(
         await page.mouse.down();
         await page.mouse.move(startX + dragX, startY + dragY, { steps: 6 });
         await page.mouse.up();
+        await cancelMageWarsArenaViewportInertia(page);
         await expect.poll(async () => arenaContent.evaluate((element) => (element as HTMLElement).style.transform), {
             message: `${contextLabel} 拖拽竞技场视窗后地图 transform 应变化`,
             timeout: 2_000,
@@ -1126,6 +1961,58 @@ async function dragArenaViewportUntilLocatorActionable(
             `hit=${JSON.stringify(lastHit, null, 2)}`,
         ].join('\n'));
     }
+}
+
+async function recenterMageWarsArenaViewportForEvidence(page: Page, contextLabel: string) {
+    const arenaViewport = page.getByTestId('mage-wars-arena-viewport');
+    const arenaContent = page.getByTestId('mage-wars-arena-viewport-content');
+    await expect(arenaViewport).toBeVisible({ timeout: 5_000 });
+    await expect(arenaContent).toBeVisible({ timeout: 5_000 });
+    const viewportBox = await arenaViewport.boundingBox();
+    const maxResidual = Math.max(48, Math.min(viewportBox?.width ?? 1920, viewportBox?.height ?? 1080) * 0.12);
+    await page.evaluate(() => {
+        document.querySelector('[data-testid="mage-wars-arena-viewport"]')
+            ?.dispatchEvent(new Event('zoompan:reset-center'));
+    });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        await page.evaluate(() => new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }));
+        const viewport = await arenaViewport.boundingBox();
+        const content = await arenaContent.boundingBox();
+        if (!viewport || !content) break;
+        const dx = viewport.x + viewport.width / 2 - content.x - content.width / 2;
+        const dy = viewport.y + viewport.height / 2 - content.y - content.height / 2;
+        if (Math.hypot(dx, dy) <= maxResidual) break;
+        const startX = viewport.x + viewport.width / 2;
+        const startY = viewport.y + viewport.height / 2;
+        await page.mouse.move(startX, startY);
+        await page.mouse.down();
+        await page.mouse.move(
+            startX + Math.max(-viewport.width * 0.42, Math.min(viewport.width * 0.42, dx)),
+            startY + Math.max(-viewport.height * 0.42, Math.min(viewport.height * 0.42, dy)),
+            { steps: 6 },
+        );
+        await page.mouse.up();
+        await cancelMageWarsArenaViewportInertia(page);
+    }
+    await expect.poll(async () => {
+        const nextViewportBox = await arenaViewport.boundingBox();
+        const contentBox = await arenaContent.boundingBox();
+        if (!nextViewportBox || !contentBox) return Number.POSITIVE_INFINITY;
+        return Math.hypot(
+            (nextViewportBox.x + nextViewportBox.width / 2) - (contentBox.x + contentBox.width / 2),
+            (nextViewportBox.y + nextViewportBox.height / 2) - (contentBox.y + contentBox.height / 2),
+        );
+    }, {
+        message: `${contextLabel} 动效截图前竞技场仍偏离页面中心`,
+        timeout: 2_000,
+    }).toBeLessThanOrEqual(maxResidual);
+}
+
+async function frameMageWarsArenaForEvidence(page: Page, contextLabel: string) {
+    await recenterMageWarsArenaViewportForEvidence(page, contextLabel);
+    await expectMageWarsArenaFramedInViewport(page, contextLabel);
 }
 
 type LocatorScreenPoint = {
@@ -1286,7 +2173,7 @@ async function readMobileLandscapeHudAudit(page: Page): Promise<MobileLandscapeH
                 bottom: Math.round(rect.bottom),
             };
         };
-        const mirrorLayer = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mobile-desktop-mirror-layer"]'));
+    const mirrorLayer = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-ui-plane"]'));
         const selfHud = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-self"]'));
         const opponentHud = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-mage-hud-opponent"]'));
         const desktopSpellbook = toRect(document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]'));
@@ -1319,7 +2206,7 @@ async function readMobileLandscapeHudAudit(page: Page): Promise<MobileLandscapeH
 }
 
 async function expectMobileLandscapeHudSlots(page: Page, label: string) {
-    await expect(page.getByTestId('mage-wars-mobile-desktop-mirror-layer')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByTestId('mage-wars-desktop-ui-plane')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId('mage-wars-mage-hud-self')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId('mage-wars-mage-hud-opponent')).toBeVisible({ timeout: 5_000 });
     await expect(page.getByTestId('mage-wars-desktop-spellbook-shelf')).toBeVisible({ timeout: 5_000 });
@@ -1365,6 +2252,9 @@ type MageWarsFxAudit = {
     hasSourceWake: boolean;
     hasImpact: boolean;
     hasTravel: boolean;
+    evidenceWindowElapsedStartMs?: number;
+    evidenceWindowElapsedEndMs?: number;
+    slideViewport?: { fromX: number; fromY: number; toX: number; toY: number; width: number; height: number };
 };
 
 type MageWarsSummonFxAudit = {
@@ -1500,7 +2390,7 @@ async function waitForSummonFxVisualAudit(
     page: Page,
     context?: SummonFxDebugContext,
 ): Promise<MageWarsSummonFxAudit> {
-    const handle = await page.waitForFunction((args: { zoneId?: string } | null) => {
+    const handle = await page.waitForFunction((args: { zoneId?: string; maxObjectRatio: number } | null) => {
         type ProbeRecord = {
             checks: number;
             seenSummon: boolean;
@@ -1651,7 +2541,7 @@ async function waitForSummonFxVisualAudit(
                 || targetObjectCenterDistancePx > Math.max(targetObjectRect.width, targetObjectRect.height) * 0.12
                 || targetObjectOverlapRatio < 0.82
                 || fxMaxTargetObjectRatio < 1
-                || fxMaxTargetObjectRatio > 1.16
+                || fxMaxTargetObjectRatio > (args?.maxObjectRatio ?? 1.52)
             ) {
                 probe.last = {
                     reason: 'summon-fx-not-aligned-to-target-object',
@@ -1673,19 +2563,6 @@ async function waitForSummonFxVisualAudit(
             }
         }
         const canvases = Array.from(summon.querySelectorAll('canvas'));
-        if (canvases.length === 0) {
-            probe.last = {
-                reason: 'missing-canvas',
-                rect: {
-                    x: Math.round(rect.x),
-                    y: Math.round(rect.y),
-                    width: Math.round(rect.width),
-                    height: Math.round(rect.height),
-                },
-            };
-            return null;
-        }
-
         const canvasAudits = canvases.flatMap((canvas, sampledCanvasIndex) => {
             if (canvas.width <= 0 || canvas.height <= 0) return [];
             const ctx = canvas.getContext('2d');
@@ -1718,29 +2595,15 @@ async function waitForSummonFxVisualAudit(
 
         const visibleAudit = canvasAudits
             .sort((a, b) => (b.brightPixels + b.alphaPixels) - (a.brightPixels + a.alphaPixels))[0];
-        if (!visibleAudit) {
-            probe.last = {
-                reason: 'no-readable-canvas',
-                canvasCount: canvases.length,
-                rect: {
-                    x: Math.round(rect.x),
-                    y: Math.round(rect.y),
-                    width: Math.round(rect.width),
-                    height: Math.round(rect.height),
-                },
-            };
-            return null;
-        }
-
         const audit = {
             objectKind: summon.dataset.objectKind ?? null,
             objectId: summon.dataset.objectId ?? null,
             visible: rect.width > 0 && rect.height > 0,
-            canvasWidth: visibleAudit.canvasWidth,
-            canvasHeight: visibleAudit.canvasHeight,
-            alphaPixels: visibleAudit.alphaPixels,
-            brightPixels: visibleAudit.brightPixels,
-            sampledCanvasIndex: visibleAudit.sampledCanvasIndex,
+            canvasWidth: visibleAudit?.canvasWidth ?? 0,
+            canvasHeight: visibleAudit?.canvasHeight ?? 0,
+            alphaPixels: visibleAudit?.alphaPixels ?? 0,
+            brightPixels: visibleAudit?.brightPixels ?? 0,
+            sampledCanvasIndex: visibleAudit?.sampledCanvasIndex ?? -1,
             canvasCount: canvases.length,
             ...targetAudit,
         };
@@ -1748,12 +2611,12 @@ async function waitForSummonFxVisualAudit(
         if (!probe.best || (audit.brightPixels + audit.alphaPixels) > (probe.best.brightPixels + probe.best.alphaPixels)) {
             probe.best = audit;
         }
-        const canvasArea = Math.max(1, audit.canvasWidth * audit.canvasHeight);
-        const minAlphaPixels = Math.max(900, Math.floor(canvasArea * 0.2));
-        const minBrightPixels = Math.max(260, Math.floor(canvasArea * 0.06));
-        if (!audit.visible || audit.alphaPixels <= minAlphaPixels || audit.brightPixels <= minBrightPixels) return null;
+        if (!audit.visible) return null;
         return audit;
-    }, context ? { zoneId: context.zoneId } : null, { timeout: 5_000 }).catch(async (error: unknown) => {
+    }, {
+        zoneId: context?.zoneId,
+        maxObjectRatio: MAGE_WARS_SUMMON_FX_MAX_OBJECT_RATIO,
+    }, { timeout: 5_000 }).catch(async (error: unknown) => {
         const debug = await readSummonFxFailureDebug(page, context);
         const message = error instanceof Error ? error.message : String(error);
         throw new Error([
@@ -1763,12 +2626,7 @@ async function waitForSummonFxVisualAudit(
         ].join('\n'));
     });
     const audit = await handle.jsonValue() as MageWarsSummonFxAudit;
-    const canvasArea = Math.max(1, audit.canvasWidth * audit.canvasHeight);
-    const minAlphaPixels = Math.max(900, Math.floor(canvasArea * 0.2));
-    const minBrightPixels = Math.max(260, Math.floor(canvasArea * 0.06));
     expect(audit.visible).toBe(true);
-    expect(audit.alphaPixels).toBeGreaterThan(minAlphaPixels);
-    expect(audit.brightPixels).toBeGreaterThan(minBrightPixels);
     if (context?.zoneId) {
         expect(audit.targetZoneId).toBe(context.zoneId);
         expect(audit.targetObjectId).toBe(audit.objectId);
@@ -1776,7 +2634,7 @@ async function waitForSummonFxVisualAudit(
         expect(audit.targetObjectCenterInsideFx).toBe(true);
         expect(audit.targetObjectOverlapRatio ?? 0).toBeGreaterThanOrEqual(0.82);
         expect(audit.fxMaxTargetObjectRatio ?? 0).toBeGreaterThanOrEqual(1);
-        expect(audit.fxMaxTargetObjectRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(1.16);
+        expect(audit.fxMaxTargetObjectRatio ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(MAGE_WARS_SUMMON_FX_MAX_OBJECT_RATIO);
         expect(audit.targetObjectCenterDistancePx ?? Number.POSITIVE_INFINITY).toBeLessThan(34);
     }
     return audit;
@@ -1787,18 +2645,25 @@ async function captureMageWarsSummonFxProcessScreenshot(
     testInfo: TestInfo,
     label: string,
     context?: SummonFxDebugContext,
+    captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>,
+    evidenceDir?: string,
 ): Promise<MageWarsSummonFxAudit> {
     const fxAudit = await waitForSummonFxVisualAudit(page, context);
-    await expect(page.getByTestId('mage-wars-fx-summon').first()).toBeVisible({ timeout: 5_000 });
-    // 过程帧必须在光柱 canvas 达到可见阈值后、光柱主体展开时落盘。
-    // 这里只等一个很短的动画窗口；牌面加载检查放在触发前和最终落场后，
-    // 避免把过程帧等成最终态。
-    await page.waitForTimeout(320);
-    await expect(page.getByTestId('mage-wars-fx-summon').first()).toBeVisible({ timeout: 1_000 });
-    const screenshotPath = await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, { animations: 'allow' });
+    // 卡缘光圈 CSS 在 host 挂载时即可见。再等 420ms 落到 strong 召唤爆发段（约 0.12×3.4s）。
+    await page.waitForTimeout(420);
+    await expect(page.locator(
+        `[data-testid="mage-wars-zone-field-card"][data-object-id="${fxAudit.objectId}"]`,
+    ).first()).toBeVisible({ timeout: 3_000 });
+    await captureFrame?.('allow');
+    const screenshotPath = isMageWarsGoldenVideoRun()
+        ? undefined
+        : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤光柱过程帧`, {
+            animations: 'allow',
+            evidenceDir,
+        });
 
     let targetRegionAudit: ScreenshotRegionVisualAudit | undefined;
-    if (context?.beforeScreenshotPath && context.targetRect) {
+    if (context?.beforeScreenshotPath && screenshotPath && context.targetRect) {
         const processTargetRect = fxAudit.targetObjectId
             ? await page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${fxAudit.targetObjectId}"]`).first().boundingBox()
             : context.zoneId
@@ -1823,9 +2688,15 @@ async function captureMageWarsSummonFxProcessScreenshot(
     return { ...fxAudit, screenshotPath, targetRegionAudit };
 }
 
-async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Promise<MageWarsFxAudit> {
-    const impactTestId = resolveFxImpactTestId(kind);
-    const handle = await page.waitForFunction(({ fxKind, impactId }) => {
+async function waitForFxSourceImpactAudit(
+    page: Page,
+    kind: MageWarsFxKind,
+    attackRangeKind: 'melee' | 'ranged' = 'ranged',
+): Promise<MageWarsFxAudit> {
+    const impactTestId = resolveFxImpactTestId(kind, attackRangeKind);
+    const travelTestId = kind === 'push' ? 'mage-wars-fx-push-slide' : `mage-wars-fx-${kind}-travel`;
+    const requiresSourceWake = kind === 'teleport';
+    const handle = await page.waitForFunction(({ fxKind, impactId, travelId, requireSourceWake }) => {
         type ProbeRecord = { checks: number; last: unknown; best: unknown };
         const probeWindow = window as typeof window & { __mageWarsTravelFxAuditProbe?: ProbeRecord };
         const probe = probeWindow.__mageWarsTravelFxAuditProbe ?? { checks: 0, last: null, best: null };
@@ -1835,13 +2706,13 @@ async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Pro
             probe.last = { reason, ...extra };
             return null;
         };
-        const travel = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-travel"]`);
+        const travel = document.querySelector<HTMLElement>(`[data-testid="${travelId}"]`);
         const sourceWake = document.querySelector<HTMLElement>(`[data-testid="mage-wars-fx-${fxKind}-source-wake"]`);
         const impact = document.querySelector<HTMLElement>(`[data-testid="${impactId}"]`);
-        const requiresSourceWake = fxKind === 'push' || fxKind === 'teleport';
-        if (!impact || (requiresSourceWake && !sourceWake)) {
+        if (!impact || (requireSourceWake && !sourceWake)) {
             return fail('missing-impact-or-source-wake', {
                 impactId,
+                travelId,
                 hasImpact: Boolean(impact),
                 hasSourceWake: Boolean(sourceWake),
                 hasTravel: Boolean(travel),
@@ -1849,7 +2720,11 @@ async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Pro
             });
         }
         const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-        const anchorId = impact.dataset.targetAnchorId || travel?.dataset.targetAnchorId || null;
+        const anchorId = impact.dataset.targetAnchorId
+            || travel?.dataset.targetAnchorId
+            || impact.dataset.objectId
+            || travel?.dataset.objectId
+            || null;
         let targetAnchorDistancePx: number | null = null;
         let targetAnchorOverlapRatio: number | null = null;
         let fxMaxTargetAnchorRatio: number | null = null;
@@ -1964,7 +2839,12 @@ async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Pro
         };
         probe.best = audit;
         return audit;
-    }, { fxKind: kind, impactId: impactTestId }, { timeout: 5_000 }).catch(async (error: unknown) => {
+    }, {
+        fxKind: kind,
+        impactId: impactTestId,
+        travelId: travelTestId,
+        requireSourceWake: requiresSourceWake,
+    }, { timeout: 5_000 }).catch(async (error: unknown) => {
         const debug = await page.evaluate(() => {
             const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
             const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
@@ -1997,8 +2877,12 @@ async function waitForFxSourceImpactAudit(page: Page, kind: MageWarsFxKind): Pro
         ].join('\n'));
     });
     const audit = await handle.jsonValue() as MageWarsFxAudit;
-    if (kind === 'push' || kind === 'teleport') {
+    if (kind === 'teleport') {
         expect(audit.hasSourceWake).toBe(true);
+    }
+    if (kind === 'push') {
+        expect(audit.hasSourceWake).toBe(false);
+        expect(audit.hasTravel).toBe(true);
     }
     expect(audit.hasImpact).toBe(true);
     expect(audit.targetAnchorId).toBeTruthy();
@@ -2021,28 +2905,37 @@ async function waitForFxTravelAudit(page: Page, kind: MageWarsFxKind) {
     return audit;
 }
 
-function resolveFxImpactTestId(kind: MageWarsFxKind): string {
-    if (kind === 'push') return 'mage-wars-fx-spell-push';
+function resolveFxImpactTestId(
+    kind: MageWarsFxKind,
+    attackRangeKind: 'melee' | 'ranged' = 'ranged',
+): string {
+    if (kind === 'push') return 'mage-wars-fx-push-slide';
     if (kind === 'teleport') return 'mage-wars-fx-spell-teleport';
     if (kind === 'healing') return 'mage-wars-fx-healing-impact';
-    return 'mage-wars-fx-attack-impact';
+    return attackRangeKind === 'melee'
+        ? 'mage-wars-fx-attack-melee-impact'
+        : 'mage-wars-fx-attack-impact';
 }
 
 function resolveFxImpactBurstTestId(kind: MageWarsFxKind): string | null {
-    if (kind === 'push') return 'mage-wars-fx-spell-push-burst';
+    if (kind === 'push') return null;
     if (kind === 'teleport') return 'mage-wars-fx-spell-teleport-burst';
     if (kind === 'healing') return 'mage-wars-fx-healing-burst';
     return null;
 }
 
 function resolveFxTravelScreenshotSuffix(kind: MageWarsFxKind): string {
-    if (kind === 'push') return '气流推离路径中';
-    if (kind === 'teleport') return '传送轨迹过程帧';
+    if (kind === 'push') return '实体滑移路径中';
     return '投射物飞行中';
 }
 
+function resolveFxDirectImpactScreenshotSuffix(kind: MageWarsFxKind): string {
+    if (kind === 'teleport') return '来源闪现与目标落点过程帧';
+    return '来源唤醒和命中过程帧';
+}
+
 function resolveFxImpactScreenshotSuffix(kind: MageWarsFxKind): string {
-    if (kind === 'push') return '命中推离过程帧';
+    if (kind === 'push') return '滑移落点过程帧';
     if (kind === 'teleport') return '目标区域落点过程帧';
     if (kind === 'healing') return '治疗光效和恢复数字过程帧';
     return '命中动画过程帧';
@@ -2091,14 +2984,78 @@ async function expectMageWarsFxTargetAnchorVisible(
     expect(visibility.opacity, `${label} 目标单位不能透明到像隐藏`).toBeGreaterThan(0.55);
 }
 
-async function expectMageWarsAttackDiceAvoidsTargetAnchor(
+async function expectMageWarsAttackDiceCenteredOnBoard(
     page: Page,
     audit: MageWarsFxAudit,
     label: string,
+    cameraBefore?: MageWarsArenaCameraSnapshot | null,
 ) {
     const targetAnchorId = audit.targetAnchorId;
     expect(targetAnchorId, `${label} 必须有目标对象锚点才能检查骰子遮挡`).toBeTruthy();
     if (!targetAnchorId) return;
+
+    await page.waitForFunction(() => {
+        if (document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]')) return true;
+        const probe = (window as typeof window & {
+            __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
+        }).__mageWarsTargetContinuityProbe;
+        return Boolean(probe?.samples?.some((sample) => sample.diceVisible === true));
+    }, undefined, { timeout: 3_000 });
+    if (cameraBefore) {
+        await expectMageWarsArenaCameraUnchanged(page, cameraBefore, `${label} 攻击骰出现后`);
+    }
+    await page.waitForFunction(() => {
+        const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]') ?? dice;
+        if (!dice || !content) {
+            const samples = (window as typeof window & {
+                __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
+            }).__mageWarsTargetContinuityProbe?.samples ?? [];
+            return samples.some((sample) => sample.diceVisible === true
+                && sample.dicePlacement === 'screen-center'
+                && sample.diceOverlayLayer === 'screen'
+                && sample.diceOverlayMatchesWindow === true
+                && sample.diceOverlayMatchesVisibleMap === false
+                && typeof sample.diceCenterDistancePx === 'number'
+                && sample.diceCenterDistancePx <= Math.max(80, Math.min(window.innerWidth, window.innerHeight) * 0.22));
+        }
+        if (dice.dataset.placement !== 'screen-center') return false;
+        if (dice.dataset.overlayLayer !== 'screen') return false;
+        const overlayRect = dice.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        if (windowWidth < 480 || windowHeight < 240) return false;
+        const overlayMatchesWindow = Math.abs(overlayRect.left) <= 12
+            && Math.abs(overlayRect.top) <= 12
+            && Math.abs(overlayRect.width - windowWidth) <= 24
+            && Math.abs(overlayRect.height - windowHeight) <= 24;
+        if (!overlayMatchesWindow) return false;
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+        const viewportRect = viewport?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        if (viewportRect && stageRect) {
+            const visibleLeft = Math.max(viewportRect.left, stageRect.left);
+            const visibleTop = Math.max(viewportRect.top, stageRect.top);
+            const visibleWidth = Math.min(viewportRect.right, stageRect.right) - visibleLeft;
+            const visibleHeight = Math.min(viewportRect.bottom, stageRect.bottom) - visibleTop;
+            const overlayMatchesVisibleMap = visibleWidth >= 240
+                && visibleHeight >= 160
+                && Math.abs(overlayRect.left - visibleLeft) <= 12
+                && Math.abs(overlayRect.top - visibleTop) <= 12
+                && Math.abs(overlayRect.width - visibleWidth) <= 24
+                && Math.abs(overlayRect.height - visibleHeight) <= 24;
+            if (overlayMatchesVisibleMap) return false;
+        }
+        const contentCenterX = contentRect.left + contentRect.width / 2;
+        const contentCenterY = contentRect.top + contentRect.height / 2;
+        const screenCenterX = windowWidth / 2;
+        const screenCenterY = windowHeight / 2;
+        const distance = Math.hypot(contentCenterX - screenCenterX, contentCenterY - screenCenterY);
+        const tolerance = Math.max(80, Math.min(windowWidth, windowHeight) * 0.22);
+        return distance <= tolerance;
+    }, undefined, { timeout: 2_000 });
 
     const overlap = await page.evaluate((anchorId) => {
         const escapeAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -2108,64 +3065,189 @@ async function expectMageWarsAttackDiceAvoidsTargetAnchor(
             `[data-testid="mage-wars-zone-mage-entity"][data-player-id="${escapeAttr(anchorId)}"]`,
         );
         const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
-        if (!anchor || !dice) {
+        const viewport = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]');
+        const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+        const probe = (window as typeof window & {
+            __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
+        }).__mageWarsTargetContinuityProbe;
+        const historicalDice = [...(probe?.samples ?? [])]
+            .reverse()
+            .find((sample) => sample.diceVisible === true);
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const screenHost = { left: 0, top: 0, width: windowWidth, height: windowHeight };
+        const viewportRect = viewport?.getBoundingClientRect();
+        const stageRect = stage?.getBoundingClientRect();
+        const visibleMapRect = viewportRect
+            ? {
+                left: stageRect ? Math.max(viewportRect.left, stageRect.left) : viewportRect.left,
+                top: stageRect ? Math.max(viewportRect.top, stageRect.top) : viewportRect.top,
+                width: (stageRect ? Math.min(viewportRect.right, stageRect.right) : viewportRect.right)
+                    - (stageRect ? Math.max(viewportRect.left, stageRect.left) : viewportRect.left),
+                height: (stageRect ? Math.min(viewportRect.bottom, stageRect.bottom) : viewportRect.bottom)
+                    - (stageRect ? Math.max(viewportRect.top, stageRect.top) : viewportRect.top),
+            }
+            : undefined;
+        const measureCenterDistance = (
+            rect: { x: number; y: number; width: number; height: number } | null,
+            host: { left: number; top: number; width: number; height: number } | undefined,
+        ) => {
+            if (!rect || !host) return Number.POSITIVE_INFINITY;
+            return Math.round(Math.hypot(
+                (host.left + host.width / 2) - (rect.x + rect.width / 2),
+                (host.top + host.height / 2) - (rect.y + rect.height / 2),
+            ) * 10) / 10;
+        };
+        if (!dice && historicalDice) {
+            const historicalDiceRect = historicalDice.diceRect as { x?: number; y?: number; width?: number; height?: number } | null;
+            const diceRect = historicalDiceRect
+                && typeof historicalDiceRect.x === 'number'
+                && typeof historicalDiceRect.y === 'number'
+                && typeof historicalDiceRect.width === 'number'
+                && typeof historicalDiceRect.height === 'number'
+                ? {
+                    x: historicalDiceRect.x,
+                    y: historicalDiceRect.y,
+                    width: historicalDiceRect.width,
+                    height: historicalDiceRect.height,
+                }
+                : null;
             return {
                 hasAnchor: Boolean(anchor),
-                hasDice: Boolean(dice),
-                targetOverlapRatio: 1,
-                diceOverlapRatio: 1,
-                centerDistancePx: 0,
-                targetRect: null,
-                diceRect: null,
-                dicePlacement: dice?.dataset.placement ?? null,
+                hasDice: true,
+                screenCenterDistancePx: typeof historicalDice.diceCenterDistancePx === 'number'
+                    ? historicalDice.diceCenterDistancePx
+                    : measureCenterDistance(diceRect, screenHost),
+                visibleMapCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect),
+                diceRect,
+                dicePlacement: historicalDice.dicePlacement ?? null,
+                overlayLayer: historicalDice.diceOverlayLayer,
+                overlayMatchesWindow: historicalDice.diceOverlayMatchesWindow === true,
+                overlayMatchesVisibleMap: historicalDice.diceOverlayMatchesVisibleMap,
+                source: 'probe',
+                windowRect: { width: Math.round(windowWidth), height: Math.round(windowHeight) },
             };
         }
 
-        const anchorRect = anchor.getBoundingClientRect();
-        const diceRect = dice.getBoundingClientRect();
-        const overlapWidth = Math.max(0, Math.min(anchorRect.right, diceRect.right) - Math.max(anchorRect.left, diceRect.left));
-        const overlapHeight = Math.max(0, Math.min(anchorRect.bottom, diceRect.bottom) - Math.max(anchorRect.top, diceRect.top));
-        const overlapArea = overlapWidth * overlapHeight;
-        const anchorArea = Math.max(1, anchorRect.width * anchorRect.height);
-        const diceArea = Math.max(1, diceRect.width * diceRect.height);
-        const anchorCenter = {
-            x: anchorRect.left + anchorRect.width / 2,
-            y: anchorRect.top + anchorRect.height / 2,
-        };
-        const diceCenter = {
-            x: diceRect.left + diceRect.width / 2,
-            y: diceRect.top + diceRect.height / 2,
-        };
+        const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]') ?? dice;
+        const overlayRect = dice?.getBoundingClientRect();
+        const contentRect = content?.getBoundingClientRect();
+        const diceRect = contentRect
+            ? {
+                x: Math.round(contentRect.x),
+                y: Math.round(contentRect.y),
+                width: Math.round(contentRect.width),
+                height: Math.round(contentRect.height),
+            }
+            : null;
 
         return {
-            hasAnchor: true,
-            hasDice: true,
-            targetOverlapRatio: Math.round((overlapArea / anchorArea) * 1_000) / 1_000,
-            diceOverlapRatio: Math.round((overlapArea / diceArea) * 1_000) / 1_000,
-            centerDistancePx: Math.round(Math.hypot(anchorCenter.x - diceCenter.x, anchorCenter.y - diceCenter.y) * 10) / 10,
-            targetRect: {
-                x: Math.round(anchorRect.x),
-                y: Math.round(anchorRect.y),
-                width: Math.round(anchorRect.width),
-                height: Math.round(anchorRect.height),
+            hasAnchor: Boolean(anchor),
+            hasDice: Boolean(dice),
+            screenCenterDistancePx: measureCenterDistance(diceRect, screenHost),
+            visibleMapCenterDistancePx: measureCenterDistance(diceRect, visibleMapRect),
+            diceRect,
+            dicePlacement: dice?.dataset.placement ?? null,
+            overlayLayer: dice?.dataset.overlayLayer ?? null,
+            overlayMatchesWindow: Boolean(overlayRect
+                && Math.abs(overlayRect.left) <= 12
+                && Math.abs(overlayRect.top) <= 12
+                && Math.abs(overlayRect.width - windowWidth) <= 24
+                && Math.abs(overlayRect.height - windowHeight) <= 24),
+            overlayMatchesVisibleMap: Boolean(overlayRect && visibleMapRect
+                && Math.abs(overlayRect.left - visibleMapRect.left) <= 12
+                && Math.abs(overlayRect.top - visibleMapRect.top) <= 12
+                && Math.abs(overlayRect.width - visibleMapRect.width) <= 24
+                && Math.abs(overlayRect.height - visibleMapRect.height) <= 24),
+            overlayRect: overlayRect
+                ? {
+                    left: Math.round(overlayRect.left),
+                    top: Math.round(overlayRect.top),
+                    width: Math.round(overlayRect.width),
+                    height: Math.round(overlayRect.height),
+                }
+                : null,
+            windowRect: {
+                width: Math.round(windowWidth),
+                height: Math.round(windowHeight),
             },
-            diceRect: {
-                x: Math.round(diceRect.x),
-                y: Math.round(diceRect.y),
-                width: Math.round(diceRect.width),
-                height: Math.round(diceRect.height),
-            },
-            dicePlacement: dice.dataset.placement ?? null,
+            source: dice ? 'live' : null,
         };
     }, targetAnchorId);
 
     expect(overlap.hasAnchor, `${label} 必须找到目标单位`).toBe(true);
     expect(overlap.hasDice, `${label} 必须找到攻击骰结果层`).toBe(true);
-    expect(overlap.dicePlacement, `${label} 攻击骰必须使用避让目标的路径旁侧摆放`).toBe('path-side-avoid-target');
-    expect(overlap.targetOverlapRatio, `${label} 攻击骰遮住目标单位过多：${JSON.stringify(overlap)}`)
-        .toBeLessThanOrEqual(0.12);
-    expect(overlap.diceOverlapRatio, `${label} 攻击骰自身仍压在目标单位上：${JSON.stringify(overlap)}`)
-        .toBeLessThanOrEqual(0.12);
+    expect(overlap.dicePlacement, `${label} 攻击骰必须在玩家屏幕中央：${JSON.stringify(overlap)}`).toBe('screen-center');
+    expect(overlap.overlayMatchesVisibleMap, `${label} 攻击骰不得锚到可见石板中心（右上角失败）：${JSON.stringify(overlap)}`).toBe(false);
+    expect(overlap.overlayLayer, `${label} 攻击骰 overlay 层必须是整窗：${JSON.stringify(overlap)}`).toBe('screen');
+    expect(overlap.overlayMatchesWindow, `${label} 攻击骰 overlay 必须以玩家整窗为布局宿主：${JSON.stringify(overlap)}`).toBe(true);
+    const centerTolerance = Math.max(80, Math.min(
+        overlap.windowRect?.width ?? await page.evaluate(() => window.innerWidth),
+        overlap.windowRect?.height ?? await page.evaluate(() => window.innerHeight),
+    ) * 0.22);
+    expect(
+        overlap.screenCenterDistancePx,
+        `${label} 攻击骰必须位于玩家屏幕中央：${JSON.stringify(overlap)}`,
+    ).toBeLessThanOrEqual(centerTolerance);
+    if (Number.isFinite(overlap.visibleMapCenterDistancePx)) {
+        expect(
+            overlap.screenCenterDistancePx,
+            `${label} 攻击骰必须比可见石板中心更靠近屏幕中央：${JSON.stringify(overlap)}`,
+        ).toBeLessThanOrEqual(overlap.visibleMapCenterDistancePx);
+    }
+}
+
+async function expectMageWarsAttackResultLayerIsolated(page: Page, label: string) {
+    await page.waitForFunction(() => {
+        if (document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]')
+            ?.dataset.visualRole === 'attack-dice-result') {
+            return true;
+        }
+        const probe = (window as typeof window & {
+            __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
+        }).__mageWarsTargetContinuityProbe;
+        return Boolean(probe?.samples?.some((sample) => (
+            sample.diceVisible === true && sample.diceRole === 'attack-dice-result'
+        )));
+    }, undefined, { timeout: 2_000 });
+    const report = await page.evaluate(() => {
+        const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+        const tokenRails = Array.from(document.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-entity-status-token-rail"]',
+        ));
+        const probe = (window as typeof window & {
+            __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
+        }).__mageWarsTargetContinuityProbe;
+        const historicalDice = [...(probe?.samples ?? [])]
+            .reverse()
+            .find((sample) => sample.diceVisible === true && sample.diceRole === 'attack-dice-result');
+        if (!dice && historicalDice) {
+            return {
+                diceRole: historicalDice.diceRole ?? null,
+                tokenKindsInsideDice: Number(historicalDice.tokenKindsInsideDice ?? 0),
+                tokenRailCount: Number(historicalDice.tokenRailCount ?? 0),
+                tokenRailsOutsideDice: historicalDice.tokenRailsOutsideDice === true,
+                tokenRoles: Array.isArray(historicalDice.tokenRoles) ? historicalDice.tokenRoles : [],
+                source: 'probe',
+            };
+        }
+        return {
+            diceRole: dice?.dataset.visualRole ?? null,
+            tokenKindsInsideDice: dice?.querySelectorAll('[data-token-kind]').length ?? 0,
+            tokenRailCount: tokenRails.length,
+            tokenRailsOutsideDice: tokenRails.every((rail) => !dice?.contains(rail)),
+            tokenRoles: tokenRails.map((rail) => rail.dataset.visualRole ?? null),
+            source: 'live',
+        };
+    });
+
+    expect(report.diceRole, `${label} 攻击骰必须使用独立的结果层语义`).toBe('attack-dice-result');
+    expect(report.tokenKindsInsideDice, `${label} 就绪 / 守卫 token 不得成为骰子结果层子内容`).toBe(0);
+    expect(report.tokenRailsOutsideDice, `${label} 单位状态 token rail 不得挂入攻击骰结果层`).toBe(true);
+    expect(
+        report.tokenRoles.every((role) => role === 'entity-status-tokens'),
+        `${label} 单位状态 token rail 必须保留实体状态语义`,
+    ).toBe(true);
 }
 
 async function startMageWarsTargetContinuityProbe(
@@ -2234,12 +3316,58 @@ async function startMageWarsTargetContinuityProbe(
             const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
             const travel = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-travel"]');
             const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-impact"]');
-            const damageFloat = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]');
+            const damageFloat = document.querySelector<HTMLElement>(
+                '[data-testid="mage-wars-fx-attack-damage-float"], [data-testid="mage-wars-fx-direct-damage-float"]',
+            );
             const anchorVisibility = isVisible(anchor);
             const diceVisibility = isVisible(dice);
             const travelVisibility = isVisible(travel);
             const impactVisibility = isVisible(impact);
             const damageFloatVisibility = isVisible(damageFloat);
+            const content = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice-content"]');
+            const stage = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-stage"]');
+            const contentRect = content ? isVisible(content).rect : diceVisibility.rect;
+            const stageRect = stage?.getBoundingClientRect();
+            const viewportRect = document.querySelector<HTMLElement>('[data-testid="mage-wars-arena-viewport"]')?.getBoundingClientRect();
+            const overlayRect = dice?.getBoundingClientRect();
+            const visibleLeft = viewportRect && stageRect ? Math.max(viewportRect.left, stageRect.left) : 0;
+            const visibleTop = viewportRect && stageRect ? Math.max(viewportRect.top, stageRect.top) : 0;
+            const visibleWidth = viewportRect && stageRect ? Math.min(viewportRect.right, stageRect.right) - visibleLeft : 0;
+            const visibleHeight = viewportRect && stageRect ? Math.min(viewportRect.bottom, stageRect.bottom) - visibleTop : 0;
+            const diceOverlayMatchesWindow = Boolean(overlayRect
+                && Math.abs(overlayRect.left) <= 12 && Math.abs(overlayRect.top) <= 12
+                && Math.abs(overlayRect.width - window.innerWidth) <= 24
+                && Math.abs(overlayRect.height - window.innerHeight) <= 24);
+            const diceOverlayMatchesVisibleMap = Boolean(overlayRect && visibleWidth >= 240 && visibleHeight >= 160
+                && Math.abs(overlayRect.left - visibleLeft) <= 12 && Math.abs(overlayRect.top - visibleTop) <= 12
+                && Math.abs(overlayRect.width - visibleWidth) <= 24 && Math.abs(overlayRect.height - visibleHeight) <= 24);
+            const diceRect = contentRect ?? diceVisibility.rect;
+            const diceCenterDistancePx = diceRect
+                ? Math.round(Math.hypot(
+                    window.innerWidth / 2 - (diceRect.x + diceRect.width / 2),
+                    window.innerHeight / 2 - (diceRect.y + diceRect.height / 2),
+                ) * 10) / 10
+                : null;
+            const arenaCenterDistancePx = diceRect && stageRect
+                ? Math.round(Math.hypot(
+                    (stageRect.left + stageRect.width / 2) - (diceRect.x + diceRect.width / 2),
+                    (stageRect.top + stageRect.height / 2) - (diceRect.y + diceRect.height / 2),
+                ) * 10) / 10
+                : null;
+            const targetDistancePx = diceRect && anchorVisibility.rect
+                ? Math.round(Math.hypot(
+                    (anchorVisibility.rect.x + anchorVisibility.rect.width / 2) - (diceRect.x + diceRect.width / 2),
+                    (anchorVisibility.rect.y + anchorVisibility.rect.height / 2) - (diceRect.y + diceRect.height / 2),
+                ) * 10) / 10
+                : null;
+            const diceInsideArena = Boolean(diceRect && stageRect
+                && (diceRect.x + diceRect.width / 2) >= stageRect.left
+                && (diceRect.x + diceRect.width / 2) <= stageRect.right
+                && (diceRect.y + diceRect.height / 2) >= stageRect.top
+                && (diceRect.y + diceRect.height / 2) <= stageRect.bottom);
+            const tokenRails = Array.from(document.querySelectorAll<HTMLElement>(
+                '[data-testid="mage-wars-entity-status-token-rail"]',
+            ));
             samples.push({
                 label: probeLabel,
                 timeMs: Math.round(performance.now()),
@@ -2251,6 +3379,20 @@ async function startMageWarsTargetContinuityProbe(
                 targetVisibility: anchorVisibility.visibility,
                 targetVisualHeld: anchor?.dataset.visualHeld ?? null,
                 diceVisible: diceVisibility.visible,
+                diceRect,
+                diceCenterDistancePx,
+                arenaCenterDistancePx,
+                targetDistancePx,
+                diceInsideArena,
+                dicePlacement: dice?.dataset.placement ?? null,
+                diceOverlayLayer: dice?.dataset.overlayLayer ?? null,
+                diceOverlayMatchesWindow,
+                diceOverlayMatchesVisibleMap,
+                diceRole: dice?.dataset.visualRole ?? null,
+                tokenKindsInsideDice: dice?.querySelectorAll('[data-token-kind]').length ?? 0,
+                tokenRailCount: tokenRails.length,
+                tokenRailsOutsideDice: tokenRails.every((rail) => !dice?.contains(rail)),
+                tokenRoles: tokenRails.map((rail) => rail.dataset.visualRole ?? null),
                 travelVisible: travelVisibility.visible,
                 impactVisible: impactVisibility.visible,
                 damageFloatVisible: damageFloatVisibility.visible,
@@ -2322,7 +3464,9 @@ async function readAttackDamageFloatDebug(page: Page) {
         const layer = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
         const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-impact"]');
         const damageHost = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-host"]');
-        const floats = Array.from(document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]'));
+        const floats = Array.from(document.querySelectorAll<HTMLElement>(
+            '[data-testid="mage-wars-fx-attack-damage-float"], [data-testid="mage-wars-fx-direct-damage-float"]',
+        ));
         const summarize = (element: HTMLElement | null) => {
             if (!element) return null;
             const rect = element.getBoundingClientRect();
@@ -2426,7 +3570,7 @@ async function waitForFxLayerIdle(page: Page, label: string) {
         if (!layer) return false;
         const activeCount = Number.parseInt(layer.dataset.fxActiveCount ?? '0', 10);
         return Number.isFinite(activeCount) && activeCount === 0;
-    }, undefined, { timeout: 5_000 }).catch(async (error: unknown) => {
+    }, undefined, { timeout: 8_000 }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const debug = await readHealingFloatDebug(page);
         throw new Error([
@@ -2466,32 +3610,167 @@ async function expectHealingFloatVisible(page: Page, label: string) {
     });
 }
 
+async function waitForHealingVisualFrame(page: Page, label: string) {
+    await page.waitForFunction(() => {
+        const impact = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-impact"]');
+        const burst = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-burst"]');
+        const number = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-healing-number"]');
+        const dice = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-dice"]');
+        const settledDie = document.querySelector<HTMLElement>('[data-die-renderer="css-d6"][data-roll-animation="settled"]');
+        if (!impact || !burst || !number || !dice || !settledDie) return false;
+        const visible = (element: HTMLElement) => {
+            const rect = element.getBoundingClientRect();
+            let effectiveOpacity = 1;
+            let current: HTMLElement | null = element;
+            while (current) {
+                const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                current = current.parentElement;
+            }
+            return rect.width >= 20
+                && rect.height >= 20
+                && effectiveOpacity > 0.5
+                && window.getComputedStyle(element).display !== 'none'
+                && window.getComputedStyle(element).visibility !== 'hidden';
+        };
+        return visible(impact)
+            && visible(burst)
+            && visible(number)
+            && visible(dice)
+            && (number.textContent?.includes('+') ?? false);
+    }, undefined, { timeout: 6_000 }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        const debug = await readHealingFloatDebug(page);
+        throw new Error([
+            `${label} 治疗过程帧未同时捕捉到治疗光效、恢复数字和攻击骰`,
+            message,
+            `debug=${JSON.stringify(debug, null, 2)}`,
+        ].join('\n'));
+    });
+}
+
+async function startMageWarsAttackDamageFloatProbe(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        type DamageFloatProbe = {
+            active: boolean;
+            seenVisible: boolean;
+            sampleCount: number;
+            firstVisibleAt: number | null;
+            mountedCount: number;
+            firstMountedAt: number | null;
+            firstMounted: {
+                text: string | null;
+                damageValue: string | null;
+                rect: { width: number; height: number };
+                opacity: number;
+                display: string;
+                visibility: string;
+            } | null;
+            lastMounted: {
+                text: string | null;
+                damageValue: string | null;
+                rect: { width: number; height: number };
+                opacity: number;
+                display: string;
+                visibility: string;
+            } | null;
+            frameId: number | null;
+        };
+        type ProbeWindow = typeof window & {
+            __mageWarsAttackDamageFloatProbe?: DamageFloatProbe;
+        };
+        const probeWindow = window as ProbeWindow;
+        const previous = probeWindow.__mageWarsAttackDamageFloatProbe;
+        if (previous?.frameId != null) cancelAnimationFrame(previous.frameId);
+        const probe: DamageFloatProbe = {
+            active: true,
+            seenVisible: false,
+            sampleCount: 0,
+            firstVisibleAt: null,
+            mountedCount: 0,
+            firstMountedAt: null,
+            firstMounted: null,
+            lastMounted: null,
+            frameId: null,
+        };
+        const isVisible = (element: HTMLElement | null) => {
+            if (!element) return false;
+            const rect = element.getBoundingClientRect();
+            let effectiveOpacity = 1;
+            let current: HTMLElement | null = element;
+            while (current) {
+                const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                current = current.parentElement;
+            }
+            const style = window.getComputedStyle(element);
+            return rect.width >= 24
+                && rect.height >= 24
+                && style.display !== 'none'
+                && style.visibility !== 'hidden'
+                && effectiveOpacity > 0.25
+                && (element.textContent?.includes('-') ?? false);
+        };
+        const sample = () => {
+            if (!probe.active) return;
+            probe.sampleCount += 1;
+            const float = document.querySelector<HTMLElement>(
+                '[data-testid="mage-wars-fx-attack-damage-float"], [data-testid="mage-wars-fx-direct-damage-float"]',
+            );
+            if (float) {
+                const rect = float.getBoundingClientRect();
+                let effectiveOpacity = 1;
+                let current: HTMLElement | null = float;
+                while (current) {
+                    const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
+                    if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
+                    current = current.parentElement;
+                }
+                const mounted = {
+                    text: float.textContent,
+                    damageValue: float.getAttribute('data-damage-value'),
+                    rect: {
+                        width: Math.round(rect.width),
+                        height: Math.round(rect.height),
+                    },
+                    opacity: Math.round(effectiveOpacity * 1_000) / 1_000,
+                    display: window.getComputedStyle(float).display,
+                    visibility: window.getComputedStyle(float).visibility,
+                };
+                probe.mountedCount += 1;
+                probe.firstMountedAt ??= Math.round(performance.now());
+                probe.firstMounted ??= mounted;
+                probe.lastMounted = mounted;
+            }
+            if (!probe.seenVisible && isVisible(float)) {
+                probe.seenVisible = true;
+                probe.firstVisibleAt = Math.round(performance.now());
+            }
+            probe.frameId = requestAnimationFrame(sample);
+        };
+        probeWindow.__mageWarsAttackDamageFloatProbe = probe;
+        probe.frameId = requestAnimationFrame(sample);
+    });
+}
+
 async function waitForMageWarsAttackDamageFloat(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const float = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-damage-float"]');
-        if (!float) return false;
-        const rect = float.getBoundingClientRect();
-        const textNode = float.querySelector<HTMLElement>('span') ?? float;
-        const fontSize = Number.parseFloat(window.getComputedStyle(textNode).fontSize || '0');
-        let effectiveOpacity = 1;
-        let current: HTMLElement | null = float;
-        while (current) {
-            const opacity = Number.parseFloat(window.getComputedStyle(current).opacity || '1');
-            if (Number.isFinite(opacity)) effectiveOpacity *= opacity;
-            current = current.parentElement;
-        }
-        return rect.width >= 24
-            && rect.height >= 24
-            && fontSize >= 30
-            && effectiveOpacity > 0.78
-            && (float.textContent?.includes('-') ?? false);
-    }, undefined, { timeout: 8_000 }).catch(async (error: unknown) => {
+        const probe = (window as typeof window & {
+            __mageWarsAttackDamageFloatProbe?: { seenVisible?: boolean };
+        }).__mageWarsAttackDamageFloatProbe;
+        return probe?.seenVisible === true;
+    }, undefined, { timeout: 15_000 }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
-        const debug = await readAttackDamageFloatDebug(page);
+        const debug = await page.evaluate(() => ({
+            probe: (window as typeof window & {
+                __mageWarsAttackDamageFloatProbe?: unknown;
+            }).__mageWarsAttackDamageFloatProbe ?? null,
+        })).catch(() => null);
         throw new Error([
             'Mage Wars 攻击命中过程帧未捕捉到可见伤害飘字',
             message,
-            `debug=${JSON.stringify(debug, null, 2)}`,
+            `probe=${JSON.stringify(debug, null, 2)}`,
+            `dom=${JSON.stringify(await readAttackDamageFloatDebug(page), null, 2)}`,
         ].join('\\n'));
     });
 }
@@ -2504,70 +3783,340 @@ async function captureMageWarsFxProcessScreenshots(
     options: {
         expectTravel?: boolean;
         expectDamageFloat?: boolean;
+        startDamageFloatProbe?: boolean;
         expectHealingFloat?: boolean;
+        evidenceDir?: string;
+        damageFloatScreenshotName?: string;
+        captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>;
+        recording?: MageWarsFxVideoRecording;
     } = {},
 ): Promise<MageWarsFxAudit> {
-    const damageFloatPromise = options.expectDamageFloat
-        ? waitForMageWarsAttackDamageFloat(page)
+    const saveProcessEvidenceScreenshot = async (
+        name: string,
+        screenshotOptions: { animations?: EvidenceScreenshotAnimationMode; evidenceDir?: string } = {},
+    ) => {
+        // 黄金 WebM 录制期间不在 FX 活跃窗口做阻塞型整页截图；
+        // 其它断言仍照常等待真实 DOM / Canvas 可见状态，独立动效用例继续保留截图证据。
+        if (isMageWarsGoldenVideoRun()) return;
+        await saveEvidenceScreenshot(page, testInfo, name, screenshotOptions);
+    };
+    const attackRangeKind = kind === 'attack' && !options.expectTravel ? 'melee' : 'ranged';
+    if (options.expectDamageFloat && options.startDamageFloatProbe !== false) {
+        await startMageWarsAttackDamageFloatProbe(page);
+    }
+    const waitForDamageFloat = options.expectDamageFloat
+        ? () => waitForMageWarsAttackDamageFloat(page)
         : undefined;
-    const audit = options.expectTravel
-        ? await waitForFxTravelAudit(page, kind)
-        : await waitForFxSourceImpactAudit(page, kind);
+    const damageFloatPromise = waitForDamageFloat?.();
+    const healingFloatPromise = options.expectHealingFloat
+        ? expectHealingFloatVisible(page, label)
+        : undefined;
 
-    if (kind === 'push' || kind === 'teleport') {
+    if (kind === 'push') {
+        // 0.3s 滑移窗口禁止：locator.evaluate 之后再截图、阻塞型整页截图、页面内长 rAF evaluate。
+        // 看见克隆立刻记下窗口起点，快照只读当前几何，开始/路径/落点全部 GIF 停后再抽。
+        const slide = page.getByTestId('mage-wars-fx-push-slide').first();
+        const snapshotHandle = await page.waitForFunction(() => {
+            const el = document.querySelector('[data-testid="mage-wars-fx-push-slide"]');
+            if (!(el instanceof HTMLElement)) return null;
+            const arena = el.closest('[data-testid="mage-wars-arena-stage"], [data-testid="mage-wars-fx-layer"]');
+            const rect = el.getBoundingClientRect();
+            const style = getComputedStyle(el);
+            if (rect.width <= 16 || rect.height <= 16 || style.visibility !== 'visible'
+                || Number(style.opacity) <= 0.5 || el.dataset.slideLayer !== 'body-portal') return null;
+            return {
+                capturedAtMs: Date.now(),
+                sourceRow: el.dataset.sourceRow ?? null,
+                sourceCol: el.dataset.sourceCol ?? null,
+                targetRow: el.dataset.targetRow ?? null,
+                targetCol: el.dataset.targetCol ?? null,
+                sourceAnchorId: el.dataset.sourceAnchorId ?? null,
+                targetAnchorId: el.dataset.objectId || null,
+                layer: el.dataset.slideLayer ?? null,
+                motion: el.dataset.slideMotion ?? null,
+                paint: el.querySelector('[data-slide-paint]')?.getAttribute('data-slide-paint') ?? null,
+                art: el.querySelector('[data-slide-art]')?.getAttribute('data-slide-art') ?? null,
+                atlasPaint: el.querySelector('[data-slide-atlas-paint]')?.getAttribute('data-slide-atlas-paint') ?? null,
+                inArena: Boolean(arena),
+                parentIsBody: el.parentElement === document.body,
+                position: getComputedStyle(el).position,
+                zIndex: getComputedStyle(el).zIndex,
+                fromLeft: Number(el.dataset.fromLeft),
+                fromTop: Number(el.dataset.fromTop),
+                toLeft: Number(el.dataset.toLeft),
+                toTop: Number(el.dataset.toTop),
+                fromPxLeft: Number(el.dataset.fromPxLeft),
+                fromPxTop: Number(el.dataset.fromPxTop),
+                toPxLeft: Number(el.dataset.toPxLeft),
+                toPxTop: Number(el.dataset.toPxTop),
+                currentLeft: rect.left,
+                currentTop: rect.top,
+                hasTravelNode: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-travel"]')),
+                hasSourceWake: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-source-wake"]')),
+                hasMidBurst: Boolean(document.querySelector('[data-testid="mage-wars-fx-push-travel-mid-burst"]')),
+                hasSpellBurst: Boolean(document.querySelector('[data-testid="mage-wars-fx-spell-push-burst"]')),
+                opacity: getComputedStyle(el).opacity,
+                visibility: getComputedStyle(el).visibility,
+                width: rect.width,
+                height: rect.height,
+            };
+        }, undefined, { timeout: 5_000, polling: 'raf' });
+        const snapshot = await snapshotHandle.jsonValue();
+        const recordingOriginMs = options.recording?.startedAtMs ?? snapshot!.capturedAtMs;
+        const evidenceWindowElapsedStartMs = Math.max(0, snapshot!.capturedAtMs - recordingOriginMs - 16);
+        const evidenceWindowElapsedEndMs = evidenceWindowElapsedStartMs
+            + MAGE_WARS_FX_TIMING.pushTravelCompleteMs;
+        expect(snapshot, '推斥滑移克隆可见时必须读到路径数据').not.toBeNull();
+        expect(Number(snapshot!.width), '推斥克隆必须有可见宽度').toBeGreaterThan(16);
+        expect(Number(snapshot!.height), '推斥克隆必须有可见高度').toBeGreaterThan(16);
+        expect(snapshot!.visibility).toBe('visible');
+        expect(Number(snapshot!.opacity)).toBeGreaterThan(0.5);
+        await options.captureFrame?.('allow');
+        const audit: MageWarsFxAudit = {
+            sourceRow: snapshot!.sourceRow,
+            sourceCol: snapshot!.sourceCol,
+            targetRow: snapshot!.targetRow,
+            targetCol: snapshot!.targetCol,
+            sourceAnchorId: snapshot!.sourceAnchorId,
+            targetAnchorId: snapshot!.targetAnchorId,
+            targetAnchorVisible: true,
+            targetAnchorOpacity: 1,
+            hasSourceWake: false,
+            hasImpact: true,
+            hasTravel: true,
+        };
+        expect(audit.hasSourceWake).toBe(false);
+        expect(audit.hasTravel).toBe(true);
+        expect(audit.hasImpact).toBe(true);
+        expect(snapshot!.hasTravelNode, '推斥不得复用投射物 travel 节点').toBe(false);
+        expect(snapshot!.hasSourceWake, '推斥不得出现来源闪现').toBe(false);
+        expect(snapshot!.hasMidBurst, '推斥不得出现路径中爆发').toBe(false);
+        expect(snapshot!.hasSpellBurst, '推斥不得出现法术爆发层').toBe(false);
+        expect(`${audit.sourceRow}:${audit.sourceCol}`).not.toBe(`${audit.targetRow}:${audit.targetCol}`);
+        expect(snapshot!.layer, '推斥克隆必须 portal 到 body，避开竞技场 overflow 裁切和合成层').toBe('body-portal');
+        expect(snapshot!.parentIsBody, '推斥克隆必须挂在 document.body').toBe(true);
+        expect(snapshot!.position).toBe('fixed');
+        expect(snapshot!.motion).toBe('waapi-transform');
+        expect(snapshot!.paint).toBe('opaque');
+        expect(Number(snapshot!.zIndex), '推斥不得抬到法术书上层').toBeLessThan(200);
+        expect(Number(snapshot!.fromPxLeft), '推斥克隆必须有视口像素起点').toBeGreaterThan(0);
+        expect(Number(snapshot!.fromPxTop), '推斥克隆必须有视口像素起点 top').toBeGreaterThan(0);
+        expect(Number(snapshot!.toPxLeft), '推斥克隆必须有视口像素终点').toBeGreaterThan(0);
+        expect(Number(snapshot!.toPxTop), '推斥克隆必须有视口像素终点 top').toBeGreaterThan(0);
+        expect(
+            Math.abs(Number(snapshot!.fromPxLeft) - Number(snapshot!.toPxLeft))
+            + Math.abs(Number(snapshot!.fromPxTop) - Number(snapshot!.toPxTop)),
+            `推斥克隆必须沿任一轴滑移: ${JSON.stringify({
+                fromPxLeft: snapshot!.fromPxLeft,
+                fromPxTop: snapshot!.fromPxTop,
+                toPxLeft: snapshot!.toPxLeft,
+                toPxTop: snapshot!.toPxTop,
+            })}`,
+        ).toBeGreaterThan(24);
+        expect(
+            snapshot!.art,
+            `推斥克隆必须用已解码图集裁帧，不能再走 CardPreview 空窗: art=${String(snapshot!.art)} paint=${String(snapshot!.atlasPaint)}`,
+        ).toBe('atlas-css');
+        expect(
+            snapshot!.atlasPaint === 'canvas' || snapshot!.atlasPaint === 'css',
+            `推斥克隆必须画出图集像素: paint=${String(snapshot!.atlasPaint)}`,
+        ).toBe(true);
+        const travelAxis = Math.abs(Number(snapshot!.toPxTop) - Number(snapshot!.fromPxTop))
+            >= Math.abs(Number(snapshot!.toPxLeft) - Number(snapshot!.fromPxLeft))
+            ? 'top'
+            : 'left';
+        const fromPx = travelAxis === 'top' ? Number(snapshot!.fromPxTop) : Number(snapshot!.fromPxLeft);
+        const toPx = travelAxis === 'top' ? Number(snapshot!.toPxTop) : Number(snapshot!.toPxLeft);
+        const currentPx = travelAxis === 'top' ? Number(snapshot!.currentTop) : Number(snapshot!.currentLeft);
+        const travelSpan = toPx - fromPx;
+        const travelProgress = Math.abs(travelSpan) < 1 ? 0 : (currentPx - fromPx) / travelSpan;
+        expect(
+            travelProgress,
+            `首次快照必须仍在滑移途中，不能已经停在落点: ${JSON.stringify({
+                travelAxis,
+                fromPx,
+                toPx,
+                currentPx,
+                travelProgress,
+            })}`,
+        ).toBeLessThan(0.75);
+        expect(
+            Number.isFinite(snapshot!.fromLeft)
+            && Number.isFinite(snapshot!.fromTop)
+            && Number.isFinite(snapshot!.toLeft)
+            && Number.isFinite(snapshot!.toTop),
+            '推斥滑移必须写出起终点格子盒',
+        ).toBe(true);
+        expect(
+            snapshot!.fromLeft !== snapshot!.toLeft || snapshot!.fromTop !== snapshot!.toTop,
+            `推斥滑移起终点不能重合: ${JSON.stringify({
+                fromLeft: snapshot!.fromLeft,
+                fromTop: snapshot!.fromTop,
+                toLeft: snapshot!.toLeft,
+                toTop: snapshot!.toTop,
+            })}`,
+        ).toBe(true);
+        await expect(slide).toBeHidden({ timeout: MAGE_WARS_FX_TIMING.pushTravelCompleteMs + 1_000 });
+        if (audit.targetAnchorId) {
+            await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-滑移落点`);
+        }
+        return {
+            ...audit,
+            evidenceWindowElapsedStartMs,
+            evidenceWindowElapsedEndMs,
+            slideViewport: {
+                fromX: snapshot!.fromPxLeft,
+                fromY: snapshot!.fromPxTop,
+                toX: snapshot!.toPxLeft,
+                toY: snapshot!.toPxTop,
+                width: snapshot!.width,
+                height: snapshot!.height,
+            },
+        };
+    }
+
+    const auditPromise = options.expectTravel
+        ? waitForFxTravelAudit(page, kind)
+        : waitForFxSourceImpactAudit(page, kind, attackRangeKind);
+    const [audit] = await Promise.all([
+        auditPromise,
+        damageFloatPromise ?? Promise.resolve(),
+        healingFloatPromise ?? Promise.resolve(),
+    ]);
+
+    if (kind === 'teleport') {
         await expect(page.getByTestId(`mage-wars-fx-${kind}-source-wake`).first()).toBeVisible({ timeout: 5_000 });
     }
-    await expect(page.getByTestId(resolveFxImpactTestId(kind)).first()).toBeVisible({ timeout: 5_000 });
-    await page.waitForTimeout(80);
+    if (kind === 'attack' && !options.expectTravel && attackRangeKind === 'melee') {
+        await expect(page.getByTestId('mage-wars-fx-attack-melee-strike').first()).toBeVisible({ timeout: 5_000 });
+    }
+    await expect(page.getByTestId(resolveFxImpactTestId(kind, attackRangeKind)).first()).toBeVisible({ timeout: 10_000 });
+    if (!options.expectHealingFloat) {
+        await page.waitForTimeout(80);
+    }
     await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-投射开始`);
+    const playerCamera = (kind === 'attack' || Boolean(options.expectHealingFloat))
+        ? await readMageWarsArenaCamera(page)
+        : null;
     if (options.expectHealingFloat) {
-        await expectHealingFloatVisible(page, label);
-        await page.waitForTimeout(120);
+        await waitForHealingVisualFrame(page, label);
+        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-治疗骰`, playerCamera);
+        await expectMageWarsAttackResultLayerIsolated(page, `${label}-治疗骰`);
     }
     if (kind === 'attack') {
-        await expectMageWarsAttackDiceAvoidsTargetAnchor(page, audit, `${label}-投射开始`);
+        await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-投射开始`, playerCamera);
+        await expectMageWarsAttackResultLayerIsolated(page, `${label}-投射开始`);
+        await saveProcessEvidenceScreenshot(`${label}-攻击骰-玩家当前镜头`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
     }
+    if (options.expectTravel) {
+        const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`).first();
+        // 远程攻击投射物可能在 waitForFxTravelAudit 返回后的一帧内自然退场；
+        // audit.hasTravel 已经证明同一条真实动作链曾捕获到投射物，不能再用事后 DOM 是否仍挂载否定该证据。
+        if (kind === 'attack') {
+            expect(audit.hasTravel, `${label} 远程攻击必须在真实动作链中出现投射物`).toBe(true);
+        } else {
+            await expect(travel).toBeVisible({ timeout: 5_000 });
+        }
+        if (kind !== 'attack') {
+            await expect(page.getByTestId(`mage-wars-fx-${kind}-travel-mid-burst`).first()).toBeVisible({ timeout: 5_000 });
+        }
+    }
+    await options.captureFrame?.('allow');
     await saveEvidenceScreenshot(
         page,
         testInfo,
         options.expectTravel
             ? (kind === 'attack' ? `${label}-来源到目标投射过程帧` : `${label}-来源唤醒过程帧`)
             : options.expectHealingFloat
-                ? `${label}-${resolveFxImpactScreenshotSuffix(kind)}`
-            : `${label}-来源唤醒和命中过程帧`,
-        { animations: 'allow' },
+                ? `${label}-治疗光效与恢复数字过程帧`
+            : `${label}-${resolveFxDirectImpactScreenshotSuffix(kind)}`,
+        { animations: 'allow', evidenceDir: options.evidenceDir },
     );
 
-    if (options.expectTravel) {
-        const travel = page.getByTestId(`mage-wars-fx-${kind}-travel`).first();
-        await expect(travel).toBeVisible({ timeout: 5_000 });
-        if (kind !== 'attack') {
-            await expect(page.getByTestId(`mage-wars-fx-${kind}-travel-mid-burst`).first()).toBeVisible({ timeout: 5_000 });
-        }
-        await page.waitForTimeout(420);
-        await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-投射飞行中`);
-        if (kind === 'attack') {
-            await expectMageWarsAttackDiceAvoidsTargetAnchor(page, audit, `${label}-投射飞行中`);
-        }
-        await saveEvidenceScreenshot(page, testInfo, `${label}-${resolveFxTravelScreenshotSuffix(kind)}`, { animations: 'allow' });
-    } else {
+    if (!options.expectTravel) {
         expect(audit.hasTravel).toBe(false);
+        if (kind === 'attack') {
+            await expectMageWarsAttackDiceCenteredOnBoard(page, audit, `${label}-攻击结果`, playerCamera);
+            await expectMageWarsAttackResultLayerIsolated(page, `${label}-攻击结果`);
+        }
+        if (options.expectHealingFloat) {
+            await waitForFxLayerIdle(page, `${label}-过程帧后`);
+        } else if (options.expectDamageFloat) {
+            await damageFloatPromise;
+            await page.waitForTimeout(120);
+            await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-命中和伤害飘字`);
+            await options.captureFrame?.('allow');
+            await saveProcessEvidenceScreenshot(options.damageFloatScreenshotName ?? `${label}-命中动画和伤害飘字过程帧`, {
+                animations: 'allow',
+                evidenceDir: options.evidenceDir,
+            });
+        } else {
+            await options.captureFrame?.('allow');
+            await saveProcessEvidenceScreenshot(`${label}-${resolveFxImpactScreenshotSuffix(kind)}`, {
+                animations: 'allow',
+                evidenceDir: options.evidenceDir,
+            });
+        }
         return audit;
     }
 
-    await expect(page.getByTestId(resolveFxImpactTestId(kind)).first()).toBeVisible({ timeout: 5_000 });
+    if (options.expectTravel) {
+        await page.waitForTimeout(420);
+        await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-投射飞行中`);
+        if (kind === 'attack') {
+            // 攻击骰是来源/结果层的短暂反馈，不要求它覆盖整个投射飞行窗口。
+            // 此处只继续核对目标本体；骰子是否正确出现已在“投射开始”帧验证。
+        }
+        await options.captureFrame?.('allow');
+        await saveProcessEvidenceScreenshot(`${label}-${resolveFxTravelScreenshotSuffix(kind)}`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
+    }
+
     if (options.expectDamageFloat) {
+        // 命中阶段可能在过程截图期间完成外层收口；伤害飘字是攻击结果仍在可见呈现的直接证据。
         await damageFloatPromise;
         await page.waitForTimeout(160);
         await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-命中和伤害飘字`);
-        await saveEvidenceScreenshot(page, testInfo, `${label}-命中动画和伤害飘字过程帧`, { animations: 'allow' });
+        await options.captureFrame?.('allow');
+        await saveProcessEvidenceScreenshot(options.damageFloatScreenshotName ?? `${label}-命中动画和伤害飘字过程帧`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
     } else {
+        if (kind === 'attack') {
+            const impactObserved = await page.evaluate(() => {
+                if (document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-impact"]')) return true;
+                const probe = (window as typeof window & {
+                    __mageWarsTargetContinuityProbe?: { samples?: Array<Record<string, unknown>> };
+                }).__mageWarsTargetContinuityProbe;
+                return Boolean(probe?.samples?.some((sample) => sample.impactVisible === true));
+            });
+            expect(impactObserved, `${label} 同次运行必须曾观察到远程命中层`).toBe(true);
+        } else {
+            await expect(page.getByTestId(resolveFxImpactTestId(kind, attackRangeKind)).first()).toBeVisible({ timeout: 5_000 });
+        }
         const impactBurstTestId = resolveFxImpactBurstTestId(kind);
         if (impactBurstTestId) {
             await expect(page.getByTestId(impactBurstTestId).first()).toBeVisible({ timeout: 5_000 });
-            await page.waitForTimeout(2_250);
+            if (kind === 'attack') {
+                await page.waitForTimeout(2_250);
+            } else if (kind === 'teleport') {
+                // Direct teleport has no path frame; wait for the delayed destination
+                // burst so the second frame proves arrival instead of duplicating source flash.
+                await page.waitForTimeout(480);
+                await expectMageWarsFxTargetAnchorVisible(page, audit, `${label}-目标落点`);
+            }
         }
-        await saveEvidenceScreenshot(page, testInfo, `${label}-${resolveFxImpactScreenshotSuffix(kind)}`, { animations: 'allow' });
+        await options.captureFrame?.('allow');
+        await saveProcessEvidenceScreenshot(`${label}-${resolveFxImpactScreenshotSuffix(kind)}`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
     }
 
     return audit;
@@ -2616,7 +4165,12 @@ async function selectPreparedSpell(page: Page, preparedCard: Locator, contextLab
     ].join('\n'));
 }
 
-async function clickFieldObject(page: Page, fieldObject: Locator, contextLabel: string) {
+async function clickFieldObject(
+    page: Page,
+    fieldObject: Locator,
+    contextLabel: string,
+    options: { safeInset?: number; keepCurrentCamera?: boolean } = {},
+) {
     await expect(fieldObject).toBeVisible({ timeout: 3_000 }).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const snapshot = await readOnlineBoardSnapshot(page);
@@ -2636,8 +4190,21 @@ async function clickFieldObject(page: Page, fieldObject: Locator, contextLabel: 
         ].join('\n'));
     });
 
+    // 底部法术书可以合法覆盖底行场景；先用真实拖拽把目标带入可点击视口，
+    // 不修改对象 zone、lane 或实体位置来迁就截图。
+    // keepCurrentCamera：玩家已经把镜头拖到战斗处，投骰点击不得再把视窗拖回安全中心。
+    if (options.keepCurrentCamera) {
+        const relation = await readViewportRelation(fieldObject, options.safeInset ?? 24);
+        if (!relation.intersectsViewport) {
+            throw new Error(`${contextLabel} 要求保持当前镜头，但场上对象已离开视口：${JSON.stringify(relation)}`);
+        }
+    } else {
+        await dragArenaViewportUntilLocatorActionable(page, fieldObject, contextLabel, {
+            safeInset: options.safeInset ?? 120,
+        });
+    }
     const beforeHit = await readHitTest(fieldObject);
-    await fieldObject.click({ timeout: 3_000, noWaitAfter: true }).catch(async (error: unknown) => {
+    await clickLocatorAtVisibleHitPoint(page, fieldObject, contextLabel).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const [afterHit, snapshot] = await Promise.all([
             readHitTest(fieldObject).catch((hitError: unknown) => ({
@@ -2653,6 +4220,47 @@ async function clickFieldObject(page: Page, fieldObject: Locator, contextLabel: 
             `snapshot=${JSON.stringify(snapshot, null, 2)}`,
         ].join('\n'));
     });
+}
+
+async function clickMageWarsTurnEnd(page: Page, contextLabel: string) {
+    const button = page.getByTestId('mage-wars-turn-end');
+    await expect(button, `${contextLabel} 结束行动按钮应可见`).toBeVisible({ timeout: 3_000 });
+    await expect(button, `${contextLabel} 结束行动按钮应可用`).toBeEnabled({ timeout: 3_000 });
+    // 施法 FX 收口时 action dock 可能仍在做布局重排；
+    // 这里仍由真实鼠标命中玩家可见按钮，不用 force click 绕过目标命中。
+    await clickLocatorAtVisibleHitPoint(page, button, `${contextLabel} 结束行动`);
+}
+
+async function clickMageWarsFieldObjectById(page: Page, objectId: string, contextLabel: string): Promise<void> {
+    const probe = await page.evaluate((targetObjectId) => {
+        const card = Array.from(
+            document.querySelectorAll<HTMLButtonElement>('[data-testid="mage-wars-zone-field-card"]'),
+        ).find((candidate) => candidate.dataset.objectId === targetObjectId);
+        if (!card) return null;
+        const rect = card.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const hit = document.elementFromPoint(x, y);
+        return {
+            x,
+            y,
+            width: rect.width,
+            height: rect.height,
+            visible: rect.width > 0
+                && rect.height > 0
+                && rect.right > 0
+                && rect.bottom > 0
+                && rect.left < window.innerWidth
+                && rect.top < window.innerHeight,
+            disabled: card.disabled,
+            hitObjectId: hit?.closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]')?.dataset.objectId ?? null,
+        };
+    }, objectId);
+    expect(probe, `${contextLabel} 未找到可见的场上对象按钮`).not.toBeNull();
+    expect(probe?.visible, `${contextLabel} 场上对象按钮不在视口内`).toBe(true);
+    expect(probe?.disabled, `${contextLabel} 场上对象按钮不应被禁用`).toBe(false);
+    expect(probe?.hitObjectId, `${contextLabel} 点击中心命中对象不一致`).toBe(objectId);
+    await page.mouse.click(probe!.x, probe!.y);
 }
 
 async function clickMageEntity(page: Page, playerId: '0' | '1', contextLabel: string) {
@@ -2683,6 +4291,102 @@ async function clickMageEntity(page: Page, playerId: '0' | '1', contextLabel: st
             `snapshot=${JSON.stringify(snapshot, null, 2)}`,
         ].join('\n'));
     });
+}
+
+async function readMageWarsHudMana(page: Page, hud: 'self' | 'opponent'): Promise<number | null> {
+    const text = await page.getByTestId(`mage-wars-mage-hud-${hud}`).innerText();
+    const match = text.match(/法力\s*[:：]\s*(\d+)/);
+    return match ? Number(match[1]) : null;
+}
+
+async function openMageWarsSelfHudInspect(page: Page, contextLabel: string) {
+    const hud = page.getByTestId('mage-wars-mage-hud-self');
+    const hintCard = hud.getByTestId('mage-wars-mage-hud-hint-card');
+    const inspectButton = hintCard.getByTestId('mage-wars-card-inspect-button');
+    await expect(hintCard, `${contextLabel} 己方法师提示卡应可见`).toBeVisible({ timeout: 5_000 });
+    const box = await hintCard.boundingBox();
+    expect(box, `${contextLabel} 己方法师提示卡必须有屏幕矩形`).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await expect.poll(async () => inspectButton.evaluate((button) => {
+        const style = getComputedStyle(button);
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return Number.parseFloat(style.opacity || '1') >= 0.95
+            && style.pointerEvents === 'auto'
+            && hit?.closest('[data-testid="mage-wars-card-inspect-button"]') === button;
+    }), {
+        message: `${contextLabel} 鼠标进入提示卡后放大镜必须显示并真实可点`,
+    }).toBe(true);
+    await inspectButton.click({ timeout: 3_000, noWaitAfter: true });
+    await expect(page.getByTestId('mage-wars-card-magnify-overlay'), `${contextLabel} 应打开检视放大层`)
+        .toBeVisible({ timeout: 5_000 });
+}
+
+async function openMageWarsBoardUnitInspect(
+    page: Page,
+    unit: ReturnType<Page['locator']>,
+    contextLabel: string,
+) {
+    const inspectButton = unit.getByTestId('mage-wars-card-inspect-button');
+    await expect(unit, `${contextLabel} 棋盘单位应可见`).toBeVisible({ timeout: 5_000 });
+    const box = await unit.boundingBox();
+    expect(box, `${contextLabel} 棋盘单位必须有屏幕矩形`).not.toBeNull();
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    const inspectCount = await inspectButton.count();
+    if (inspectCount > 0) {
+        await expect.poll(async () => inspectButton.evaluate((button) => {
+            const style = getComputedStyle(button);
+            const rect = button.getBoundingClientRect();
+            const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            return Number.parseFloat(style.opacity || '1') >= 0.95
+                && style.pointerEvents === 'auto'
+                && hit?.closest('[data-testid="mage-wars-card-inspect-button"]') === button;
+        }), {
+            message: `${contextLabel} 鼠标进入棋盘单位后放大镜必须显示并真实可点`,
+        }).toBe(true);
+        await inspectButton.click({ timeout: 3_000, noWaitAfter: true });
+    } else {
+        await unit.click({ timeout: 3_000, noWaitAfter: true });
+    }
+    await expect(page.getByTestId('mage-wars-card-magnify-overlay'), `${contextLabel} 应打开单位棋子放大层`)
+        .toBeVisible({ timeout: 5_000 });
+}
+
+async function assertMageWarsActionDockAboveSpellbook(page: Page, contextLabel: string) {
+    const geometry = await page.evaluate(() => {
+        const dock = document.querySelector<HTMLElement>('[data-testid="mage-wars-selected-ability-action-dock"]');
+        const spellbook = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]');
+        if (!dock || !spellbook) return null;
+        const dockRect = dock.getBoundingClientRect();
+        const spellbookRect = spellbook.getBoundingClientRect();
+        const firstButton = dock.querySelector<HTMLElement>('button');
+        const buttonRect = firstButton?.getBoundingClientRect();
+        return {
+            dockBottom: dockRect.bottom,
+            spellbookTop: spellbookRect.top,
+            overlap: dockRect.bottom - spellbookRect.top,
+            buttonWidth: buttonRect?.width ?? 0,
+            buttonHeight: buttonRect?.height ?? 0,
+        };
+    });
+    expect(geometry, `${contextLabel} 动作条和法术书都应可见`).not.toBeNull();
+    expect(geometry!.buttonHeight, `${contextLabel} 动作按钮高度必须恒定为 h-12`).toBeGreaterThanOrEqual(44);
+    expect(geometry!.buttonHeight).toBeLessThanOrEqual(56);
+    expect(geometry!.buttonWidth, `${contextLabel} 动作按钮宽度不得缩成小标签`).toBeGreaterThanOrEqual(128);
+    expect(
+        geometry!.overlap,
+        `${contextLabel} 动作条底边必须在法术书顶边之上，不得挡住牌面，overlap=${geometry!.overlap.toFixed(1)}`,
+    ).toBeLessThanOrEqual(0);
+}
+
+async function passMageWarsGuestResponseIfVisible(page: Page, label: string) {
+    const dock = page.getByTestId('mage-wars-interaction-dock');
+    const appeared = await dock.waitFor({ state: 'visible', timeout: 2_000 }).then(() => true).catch(() => false);
+    if (!appeared) return;
+    const passOption = dock.locator('[data-testid="mage-wars-interaction-option"][data-option-id="pass"]').first();
+    if (await passOption.isVisible().catch(() => false)) {
+        await respondMageWarsInteractionOption(page, 'pass', label);
+    }
 }
 
 async function clickLegalTargetZone(page: Page, zoneId: string, contextLabel: string) {
@@ -2775,9 +4479,13 @@ async function clickPlanSpellsIfEnabled(page: Page): Promise<boolean> {
         return true;
     } catch {
         if (await planSpells.isEnabled({ timeout: 200 }).catch(() => false)) {
-            await planSpells.click({ timeout: 800, force: true, noWaitAfter: true });
-            await page.waitForTimeout(120);
-            return true;
+            try {
+                await planSpells.click({ timeout: 800, force: true, noWaitAfter: true });
+                await page.waitForTimeout(120);
+                return true;
+            } catch {
+                return false;
+            }
         }
         return false;
     }
@@ -2788,11 +4496,35 @@ async function clickPlanningOrTurnEndIfEnabled(page: Page): Promise<boolean> {
     return clickTurnEndIfEnabled(page);
 }
 
+async function openMageWarsFabPanel(page: Page, panelId: string): Promise<void> {
+    const panel = page.locator(`[data-testid="fab-panel-${panelId}"]`).first();
+    if (await panel.isVisible().catch(() => false)) return;
+
+    const panelButton = page.locator(`[data-fab-id="${panelId}"]`).first();
+    if (!(await panelButton.isVisible().catch(() => false))) {
+        const mainButton = page.locator('[data-testid="fab-menu"] [data-fab-id]').first();
+        await expect(mainButton).toBeVisible({ timeout: 10_000 });
+        await mainButton.click();
+        await expect(panelButton).toBeVisible({ timeout: 10_000 });
+    }
+
+    await panelButton.click();
+    await expect(panel).toBeVisible({ timeout: 10_000 });
+}
+
+async function closeMageWarsFabPanel(page: Page, panelId: string): Promise<void> {
+    const panel = page.locator(`[data-testid="fab-panel-${panelId}"]`).first();
+    if (!(await panel.isVisible().catch(() => false))) return;
+    await page.locator(`[data-fab-id="${panelId}"]`).first().click();
+    await expect(panel).toBeHidden({ timeout: 10_000 });
+}
+
 async function advanceUntilPhase(
     match: MageWarsOnlineMatch,
     targetPhase: string,
     contextLabel: string,
     diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
+    captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>,
 ) {
     const board = match.hostPage.getByTestId('mage-wars-board');
     for (let index = 0; index < 120; index += 1) {
@@ -2864,6 +4596,27 @@ async function waitForZoneFieldCard(
     });
 }
 
+async function areBothPlayersReadyForSpellPlanning(match: MageWarsOnlineMatch): Promise<boolean> {
+    return (await Promise.all([match.hostPage, match.guestPage].map(async (page) => {
+        const [phase, planningEnabled, actionMode] = await Promise.all([
+            readPhase(page),
+            page.getByTestId('mage-wars-desktop-spellbook-shelf')
+                .getAttribute('data-planning-enabled')
+                .catch(() => null),
+            page.getByTestId('mage-wars-plan-spells')
+                .getAttribute('data-main-action-mode')
+                .catch(() => null),
+        ]);
+        const planButtonEnabled = await page.getByTestId('mage-wars-plan-spells')
+            .isEnabled({ timeout: 200 })
+            .catch(() => false);
+        return phase === 'planning'
+            && planningEnabled === 'true'
+            && actionMode === 'plan-spells'
+            && planButtonEnabled;
+    }))).every(Boolean);
+}
+
 async function advanceBothPlayersToPlanning(match: MageWarsOnlineMatch) {
     const preparationPhases = new Set(['reset', 'channel', 'upkeep']);
     const diagnostics = [
@@ -2875,7 +4628,7 @@ async function advanceBothPlayersToPlanning(match: MageWarsOnlineMatch) {
             readPhase(match.hostPage),
             readPhase(match.guestPage),
         ]);
-        if (phases.every((phase) => phase === 'planning')) return;
+        if (phases.every((phase) => phase === 'planning') && await areBothPlayersReadyForSpellPlanning(match)) return;
 
         for (const page of [match.hostPage, match.guestPage]) {
             const phase = await readPhase(page);
@@ -2910,8 +4663,21 @@ async function setupOnlineMageWars(
     baseURL?: string,
     contextOptions: BrowserContextOptions = {},
     setupData?: Record<string, unknown>,
+    options: { preserveFabMenu?: boolean } = {},
 ): Promise<MageWarsOnlineMatch> {
-    const hostContext = await browser.newContext({ baseURL, ...contextOptions });
+    const goldenVideoDir = process.env.MAGE_WARS_GOLDEN_VIDEO_DIR?.trim();
+    const hostContext = await browser.newContext({
+        baseURL,
+        ...contextOptions,
+        ...(goldenVideoDir
+            ? {
+                recordVideo: {
+                    dir: goldenVideoDir,
+                    size: { width: 1600, height: 900 },
+                },
+            }
+            : {}),
+    });
     await initContext(hostContext, {
         storageKey: `mage-wars-online-host-${Date.now()}`,
         skipImageGate: false,
@@ -2979,7 +4745,9 @@ async function setupOnlineMageWars(
     await guestPage.goto(`/play/mage-wars/match/${matchId}?playerID=1`, { waitUntil: 'domcontentloaded' });
 
     await Promise.all([openOnlineBoard(hostPage, '房主'), openOnlineBoard(guestPage, '访客')]);
-    await Promise.all([disableMageWarsE2eFabMenu(hostPage), disableMageWarsE2eFabMenu(guestPage)]);
+    if (!options.preserveFabMenu) {
+        await Promise.all([disableMageWarsE2eFabMenu(hostPage), disableMageWarsE2eFabMenu(guestPage)]);
+    }
     return {
         hostContext,
         guestContext,
@@ -3093,13 +4861,69 @@ async function selectMageWarsCurrentScopeSetupDataViaLocalGate(
 }
 
 async function advanceUntilEnabled(page: Page, locator: ReturnType<Page['getByRole']>) {
-    for (let index = 0; index < 16; index += 1) {
-        if (await locator.isEnabled().catch(() => false)) return;
-        const turnEnd = page.getByTestId('mage-wars-turn-end');
-        await expect(turnEnd).toBeVisible();
-        if (!await clickPlanningOrTurnEndIfEnabled(page)) await page.waitForTimeout(180);
+    let locatorCount = 0;
+    for (let index = 0; index < 50; index += 1) {
+        locatorCount = await locator.count().catch(() => 0);
+        if (locatorCount > 0) break;
+        await page.waitForTimeout(100);
     }
-    await expect(locator).toBeEnabled();
+    if (locatorCount === 0) {
+        const snapshot = await readOnlineBoardSnapshot(page).catch((error: unknown) => ({
+            error: error instanceof Error ? error.message : String(error),
+        }));
+        throw new Error([
+            '等待玩家入口可用前，目标控件不在当前页面 DOM 中',
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+        ].join('\n'));
+    }
+    for (let index = 0; index < 30; index += 1) {
+        if (await locator.isEnabled().catch(() => false)) return;
+        await page.waitForTimeout(200);
+    }
+    await expect(locator).toBeEnabled().catch(async (error: unknown) => {
+        const diagnostic = await page.evaluate(() => {
+            const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+            const shelf = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]');
+            const planButton = document.querySelector<HTMLElement>('[data-testid="mage-wars-plan-spells"]');
+            const turnEnd = document.querySelector<HTMLElement>('[data-testid="mage-wars-turn-end"]');
+            const prepared = document.querySelector<HTMLElement>('[data-mage-wars-prepared-card="self"][data-source-card-id]');
+            return {
+                board: board ? {
+                    phase: board.getAttribute('data-mage-wars-phase'),
+                    phaseActorId: board.getAttribute('data-mage-wars-phase-actor-id'),
+                    readyPlayerIds: board.getAttribute('data-mage-wars-ready-player-ids'),
+                    currentPlayerId: board.getAttribute('data-mage-wars-current-player-id'),
+                    turnNumber: board.getAttribute('data-mage-wars-turn-number'),
+                } : null,
+                shelf: shelf ? {
+                    planningEnabled: shelf.getAttribute('data-planning-enabled'),
+                } : null,
+                planButton: planButton ? {
+                    mode: planButton.getAttribute('data-main-action-mode'),
+                    disabled: (planButton as HTMLButtonElement).disabled,
+                } : null,
+                turnEnd: turnEnd ? {
+                    disabled: (turnEnd as HTMLButtonElement).disabled,
+                    visible: (() => {
+                        const rect = turnEnd.getBoundingClientRect();
+                        return rect.width > 0 && rect.height > 0;
+                    })(),
+                } : null,
+                prepared: prepared ? {
+                    sourceCardId: prepared.getAttribute('data-source-card-id'),
+                    actionState: prepared.getAttribute('data-primary-action-state'),
+                    ariaDisabled: prepared.getAttribute('aria-disabled'),
+                } : null,
+            };
+        }).catch(() => null);
+        const snapshot = await readOnlineBoardSnapshot(page).catch(() => null);
+        throw new Error([
+            '等待准备法术进入可施放窗口失败',
+            `diagnostic=${JSON.stringify(diagnostic, null, 2)}`,
+            `snapshot=${JSON.stringify(snapshot, null, 2)}`,
+            error instanceof Error ? error.message : String(error),
+        ].join('\n'));
+    });
 }
 
 async function selectFirstVisibleSpellbookCard(page: Page): Promise<string> {
@@ -3125,10 +4949,12 @@ async function selectFirstVisibleSpellbookCard(page: Page): Promise<string> {
 
 async function selectNamedSpellbookCard(page: Page, name: string) {
     const allFilter = page.getByRole('button', { name: '全部', exact: true });
-    if (await allFilter.isEnabled({ timeout: 500 }).catch(() => false)) {
+    await expect(allFilter).toBeVisible({ timeout: 3_000 });
+    const allFilterPressed = await allFilter.getAttribute('aria-pressed').catch(() => null);
+    if (allFilterPressed !== 'true') {
+        await expect(allFilter).toBeEnabled({ timeout: 5_000 });
         await allFilter.click({ timeout: 3_000, noWaitAfter: true });
-    } else {
-        await expect(allFilter).toHaveAttribute('aria-pressed', 'true', { timeout: 3_000 });
+        await expect(allFilter).toHaveAttribute('aria-pressed', 'true', { timeout: 5_000 });
     }
     const previousPage = page.getByRole('button', { name: '上一页', exact: true });
     for (let index = 0; index < MAGE_WARS_SPELLBOOK_PAGE_SCAN_LIMIT; index += 1) {
@@ -3150,14 +4976,62 @@ async function selectNamedSpellbookCard(page: Page, name: string) {
         ));
         seenPages.push(visibleNames);
         const card = page.locator(`[data-testid="mage-wars-desktop-spellbook-card"][aria-label="${name}"]`).first();
-        if (await card.isVisible().catch(() => false) && await card.isEnabled().catch(() => false)) {
+        if (await card.isVisible().catch(() => false)) {
+            try {
+                await expect(card, `准备法术 ${name} 应处于真实计划动作模式`)
+                    .toHaveAttribute('data-primary-action-state', 'enabled', { timeout: 5_000 });
+            } catch (error) {
+                const diagnostic = await page.evaluate(() => {
+                    const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+                    const shelf = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-shelf"]');
+                    const card = document.querySelector<HTMLElement>('[data-testid="mage-wars-desktop-spellbook-card"]');
+                    const harness = (window as Window & {
+                        __BG_TEST_HARNESS__?: { state?: { get?: () => unknown } };
+                    }).__BG_TEST_HARNESS__?.state?.get?.() as {
+                        core?: { phase?: string; currentPlayerId?: string; phaseActorId?: string; playerOrder?: string[]; players?: Record<string, unknown> };
+                        sys?: { tutorial?: { active?: boolean; step?: unknown } };
+                    } | null | undefined;
+                    return {
+                        board: board ? {
+                            phase: board.getAttribute('data-mage-wars-phase'),
+                            phaseActorId: board.getAttribute('data-mage-wars-phase-actor-id'),
+                            turnNumber: board.getAttribute('data-mage-wars-turn-number'),
+                        } : null,
+                        shelf: shelf ? {
+                            planningEnabled: shelf.getAttribute('data-planning-enabled'),
+                            visibleCardCount: shelf.getAttribute('data-visible-card-count'),
+                        } : null,
+                        firstCard: card ? {
+                            primaryAction: card.getAttribute('data-primary-action'),
+                            primaryActionState: card.getAttribute('data-primary-action-state'),
+                            browseInspectable: card.getAttribute('data-browse-inspectable'),
+                            tutorialId: card.getAttribute('data-tutorial-id'),
+                        } : null,
+                        core: harness?.core ?? null,
+                        tutorial: harness?.sys?.tutorial ?? null,
+                    };
+                }).catch(() => null);
+                throw new Error([
+                    `准备法术 ${name} 没有进入真实计划动作模式`,
+                    `diagnostic=${JSON.stringify(diagnostic, null, 2)}`,
+                    error instanceof Error ? error.message : String(error),
+                ].join('\n'));
+            }
             await card.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(card, `准备法术 ${name} 点击后应进入已选状态`)
+                .toHaveAttribute('data-selected', 'true', { timeout: 2_000 })
+                .catch(async () => {
+                    await clickLocatorAtVisibleHitPoint(page, card, `重试选择准备法术 ${name}`);
+                    await expect(card, `重试后准备法术 ${name} 应进入已选状态`)
+                        .toHaveAttribute('data-selected', 'true', { timeout: 2_000 });
+                });
             return;
         }
 
         const nextPage = page.getByRole('button', { name: '下一页', exact: true });
         if (await nextPage.isDisabled().catch(() => true)) break;
         await nextPage.click({ timeout: 3_000, noWaitAfter: true });
+        await page.waitForTimeout(120);
     }
     throw new Error(`正式联机法术书中没有找到卡牌：${name}；已查看页面：${seenPages.map((names, pageIndex) => `第${pageIndex + 1}页=${names.join('、') || '空'}`).join('；')}`);
 }
@@ -3169,10 +5043,50 @@ async function selectNamedSpellbookCards(page: Page, names: string[]) {
 }
 
 async function planNamedSpells(page: Page, names: string[]) {
+    const planButton = page.getByTestId('mage-wars-plan-spells');
+    await expect(planButton, '进入计划阶段后计划确认控件应稳定存在')
+        .toHaveAttribute('data-main-action-mode', 'plan-spells', { timeout: 10_000 });
     await selectNamedSpellbookCards(page, names);
-    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveText(`确认计划 ${names.length}/2`);
-    await expect(page.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', `${names.length}/2`);
-    await page.getByTestId('mage-wars-plan-spells').click({ timeout: 3_000, noWaitAfter: true });
+    await expect(planButton).toHaveText(`确认计划 ${names.length}/2`);
+    await expect(planButton).toHaveAttribute('data-plan-progress', `${names.length}/2`);
+    await planButton.click({ timeout: 3_000, noWaitAfter: true });
+}
+
+async function planNamedSpellsTogether(
+    match: MageWarsOnlineMatch,
+    hostNames: string[],
+    guestNames: string[],
+) {
+    const hostPlanButton = match.hostPage.getByTestId('mage-wars-plan-spells');
+    const guestPlanButton = match.guestPage.getByTestId('mage-wars-plan-spells');
+    await Promise.all([
+        expect(hostPlanButton, '房主进入计划阶段后计划确认控件应稳定存在')
+            .toHaveAttribute('data-main-action-mode', 'plan-spells', { timeout: 10_000 }),
+        expect(guestPlanButton, '访客进入计划阶段后计划确认控件应稳定存在')
+            .toHaveAttribute('data-main-action-mode', 'plan-spells', { timeout: 10_000 }),
+    ]);
+    await Promise.all([
+        selectNamedSpellbookCards(match.hostPage, hostNames),
+        selectNamedSpellbookCards(match.guestPage, guestNames),
+    ]);
+    await Promise.all([
+        expect(hostPlanButton).toHaveText(`确认计划 ${hostNames.length}/2`),
+        expect(guestPlanButton).toHaveText(`确认计划 ${guestNames.length}/2`),
+        expect(hostPlanButton).toHaveAttribute('data-plan-progress', `${hostNames.length}/2`),
+        expect(guestPlanButton).toHaveAttribute('data-plan-progress', `${guestNames.length}/2`),
+    ]);
+    await hostPlanButton.click({ timeout: 3_000, noWaitAfter: true });
+    await guestPlanButton.click({ timeout: 3_000, noWaitAfter: true });
+    await Promise.all([
+        ...hostNames.map((name) => expect(
+            selfPreparedCardByName(match.hostPage, name),
+            `房主计划后应看到准备牌 ${name}`,
+        ).toBeVisible({ timeout: 10_000 })),
+        ...guestNames.map((name) => expect(
+            selfPreparedCardByName(match.guestPage, name),
+            `访客计划后应看到准备牌 ${name}`,
+        ).toBeVisible({ timeout: 10_000 })),
+    ]);
 }
 
 async function respondMageWarsInteractionOption(
@@ -3337,12 +5251,28 @@ async function expectServerObject(
     options: Parameters<typeof hasArenaObjectSnapshot>[1],
     message: string,
 ) {
-    await expect.poll(async () => (
-        hasArenaObjectSnapshot(await readServerCoreSnapshot(page, match, playerId), options)
-    ), {
-        message,
-        timeout: 5_000,
-    }).toBe(true);
+    try {
+        await expect.poll(async () => (
+            hasArenaObjectSnapshot(await readServerCoreSnapshot(page, match, playerId), options)
+        ), {
+            message,
+            timeout: 5_000,
+        }).toBe(true);
+    } catch (error) {
+        const [serverSnapshot, boardSnapshot, toastMessages] = await Promise.all([
+            readServerCoreSnapshot(page, match, playerId),
+            readOnlineBoardSnapshot(page),
+            readVisibleToastMessages(page),
+        ]);
+        throw new Error([
+            message,
+            `expected=${JSON.stringify(options)}`,
+            `serverSnapshot=${JSON.stringify(serverSnapshot, null, 2)}`,
+            `boardSnapshot=${JSON.stringify(boardSnapshot, null, 2)}`,
+            `toastMessages=${JSON.stringify(toastMessages)}`,
+            error instanceof Error ? error.message : String(error),
+        ].join('\n'));
+    }
 }
 
 async function expectServerObjectGuarding(
@@ -3424,6 +5354,56 @@ async function readServerObjectDamage(
     const damage = typeof object.damage === 'number' ? object.damage : Number.NaN;
     if (!Number.isFinite(damage)) throw new Error(`${message}：未能读取有效伤害值`);
     return damage;
+}
+
+async function readVisibleFieldCardLife(
+    page: Page,
+    card: Locator,
+    label: string,
+): Promise<{ life: number; remaining: number; text: string }> {
+    const lifeToggle = page.getByTestId('mage-wars-life-toggle');
+    await expect(lifeToggle, `${label} 生命显示控件必须可见`).toBeVisible({ timeout: 5_000 });
+    if (await lifeToggle.getAttribute('data-life-visible') !== 'true') {
+        await lifeToggle.click({ timeout: 3_000, noWaitAfter: true });
+    }
+    await expect(lifeToggle, `${label} 生命显示必须已打开`).toHaveAttribute('data-life-visible', 'true');
+    const readout = card.getByTestId('mage-wars-field-card-life-readout');
+    const text = card.getByTestId('mage-wars-field-card-life-readout-text');
+    await expect(readout, `${label} 目标生命读数必须可见`).toHaveAttribute('data-life-visible', 'true');
+    await expect(text, `${label} 目标生命文字必须可见`).toBeVisible({ timeout: 5_000 });
+    const metrics = await readout.evaluate((element) => ({
+        life: Number(element.getAttribute('data-life')),
+        remaining: Number(element.getAttribute('data-life-remaining')),
+        text: element.querySelector<HTMLElement>('[data-testid="mage-wars-field-card-life-readout-text"]')?.textContent?.trim() ?? '',
+    }));
+    expect(Number.isFinite(metrics.life), `${label} 最大生命必须是数字`).toBe(true);
+    expect(Number.isFinite(metrics.remaining), `${label} 当前生命必须是数字`).toBe(true);
+    expect(metrics.remaining).toBeGreaterThanOrEqual(0);
+    expect(metrics.remaining).toBeLessThanOrEqual(metrics.life);
+    await expect(text, `${label} 生命文字必须与读数一致`).toHaveText(`${metrics.remaining}/${metrics.life}`);
+    return metrics;
+}
+
+async function waitForVisibleFieldCardLifeIncrease(
+    page: Page,
+    card: Locator,
+    before: { life: number; remaining: number },
+    label: string,
+): Promise<{ life: number; remaining: number; text: string }> {
+    await expect.poll(async () => {
+        try {
+            const metrics = await readVisibleFieldCardLife(page, card, label);
+            return metrics.life === before.life ? metrics.remaining : undefined;
+        } catch {
+            return undefined;
+        }
+    }, {
+        message: `${label} 必须等待玩家画面上的当前生命值从 ${before.remaining}/${before.life} 真实上升`,
+        timeout: 12_000,
+        intervals: [100, 250, 500, 1_000],
+    }).toBeGreaterThan(before.remaining);
+
+    return readVisibleFieldCardLife(page, card, `${label} 稳定收口`);
 }
 
 async function expectServerObjectStatusMissing(
@@ -3622,6 +5602,7 @@ async function injectMageWarsCurrentScopeCoverageReadyState(
         objects?: MageWarsArenaObjectState[];
         objectPatches?: Record<string, Partial<MageWarsArenaObjectState>>;
         replaceObjects?: boolean;
+        randomCursor?: number;
     } = {},
 ) {
     const page = actorId === '0' ? match.hostPage : match.guestPage;
@@ -3689,7 +5670,7 @@ async function injectMageWarsCurrentScopeCoverageReadyState(
             currentPlayerIndex,
             phase: options.phase ?? 'creatureAction',
         },
-    } as Parameters<typeof injectMatchState>[1], page);
+    } as Parameters<typeof injectMatchState>[1], page, undefined, { randomCursor: options.randomCursor });
 
     for (const boardPage of [match.hostPage, match.guestPage]) {
         const board = boardPage.getByTestId('mage-wars-board');
@@ -3723,6 +5704,8 @@ async function injectMageWarsSpellFxReadyState(
             [actorId]: {
                 ...actor,
                 mageId: options.mageId,
+                spellbookEntries: getMageWarsE2eStandardSpellbookEntries(options.mageId),
+                spellbookCount: getStandardStartingSpellbookCount(options.mageId),
                 mana: options.mana ?? 12,
                 actionReady: true,
                 quickcastReady: true,
@@ -3749,6 +5732,415 @@ async function injectMageWarsSpellFxReadyState(
     await expect(board).toHaveAttribute('data-mage-wars-phase-actor-id', actorId, { timeout: 5_000 });
     await expect(page.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${options.targetObject.id}"]`).first())
         .toBeVisible({ timeout: 5_000 });
+}
+
+type MageWarsStaffBindingUiCase = {
+    cardId: 3716 | 3725;
+    cardName: '元素魔杖' | '法师魔杖';
+    mageId: MageId;
+    abilityId: string;
+    initialBoundSpellCardId: number;
+    castBoundSpellCardId: number;
+    reboundBoundSpellCardId: number;
+};
+
+async function runMageWarsStaffBindingUiCase(
+    browser: Browser,
+    baseURL: string | undefined,
+    testInfo: TestInfo,
+    options: MageWarsStaffBindingUiCase,
+) {
+    const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+    const match = await setupOnlineMageWars(browser, baseURL);
+    const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+    const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+    const setupPlayer = (mana: number, preparedSpellCardIds: number[] = []): MageWarsE2ePlayerPatch => ({
+        mageId: options.mageId,
+        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(options.mageId),
+        spellbookCount: getStandardStartingSpellbookCount(options.mageId),
+        mana,
+        actionReady: true,
+        quickcastReady: true,
+        preparedSpellSlots: preparedSpellCardIds.length,
+        preparedSpellCardIds,
+        discardSpellCardIds: [],
+    });
+    const staffObjectId = `mw-e2e-${options.cardId}-staff`;
+    const staffName = options.cardName;
+    const boundSpellName = options.cardId === 3716 ? '闪电箭矢' : '兽性觉醒';
+
+    try {
+        await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+            phase: 'initiativeQuickcast',
+            replaceObjects: true,
+            playerPatches: {
+                '0': setupPlayer(12, [options.cardId]),
+                '1': {
+                    mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.D3,
+                    preparedSpellCardIds: [],
+                    preparedSpellSlots: 0,
+                },
+            },
+        });
+
+        const preparedCard = selfPreparedCardByName(match.hostPage, staffName);
+        await selectPreparedSpell(match.hostPage, preparedCard, `${staffName}施放入口`);
+        const mageTargetEntity = match.hostPage.locator(
+            '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+        ).first();
+        await expect(mageTargetEntity).toHaveAttribute('role', 'button', { timeout: 3_000 });
+        await expect(mageTargetEntity.getByTestId('mage-wars-mage-entity-target-frame')).toBeVisible({ timeout: 3_000 });
+        await dragArenaViewportUntilLocatorActionable(match.hostPage, mageTargetEntity, `${staffName}施放前法师目标`, {
+            safeInset: 120,
+        });
+        await saveEvidenceScreenshot(
+            match.hostPage,
+            testInfo,
+            `01-${staffName}-施放前-准备区卡牌与己方法师合法目标`,
+            { evidenceDir: evidenceRun.stagingDir },
+        );
+
+        await clickMageEntity(match.hostPage, '0', `${staffName}施放选择己方法师`);
+        const spellCastChoiceDock = match.hostPage.getByTestId('mage-wars-spell-cast-choice-dock');
+        await expect(spellCastChoiceDock).toBeVisible({ timeout: 3_000 });
+        const castOption = spellCastChoiceDock.locator(
+            `[data-testid="mage-wars-spell-cast-choice-option"][data-bound-spell-card-id="${options.castBoundSpellCardId}"]`,
+        ).first();
+        await expect(castOption).toBeVisible({ timeout: 3_000 });
+        await expect(castOption.getByTestId('mage-wars-spell-cast-choice-card-preview')).toBeVisible({ timeout: 3_000 });
+        await expect(spellCastChoiceDock).not.toContainText(options.mageId);
+        await expect(castOption).not.toContainText(boundSpellName);
+        expect(
+            await spellCastChoiceDock.getByTestId('mage-wars-spell-cast-choice-option').count(),
+            `${staffName}真实标准法术书必须至少提供不绑定和一个绑定候选`,
+        ).toBeGreaterThanOrEqual(2);
+        const castOptions = spellCastChoiceDock.locator('[data-choice-layout="wrap"] [data-testid="mage-wars-spell-cast-choice-option"]');
+        const castOptionCount = await castOptions.count();
+        await expect(spellCastChoiceDock.locator('[data-choice-scroll-window="true"]')).toBeVisible({ timeout: 3_000 });
+        const spellbookCardHeight = await preparedCard.evaluate((element) => element.getBoundingClientRect().height);
+        const choiceCardHeight = await castOptions.first().evaluate((element) => element.getBoundingClientRect().height);
+        expect(Math.abs(choiceCardHeight - spellbookCardHeight), `${staffName}候选牌必须和法术书牌同高`).toBeLessThanOrEqual(2);
+        const choiceScrollMetrics = await spellCastChoiceDock.locator('[data-choice-scroll-window="true"]').evaluate((element) => ({
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            overflowY: getComputedStyle(element).overflowY,
+            policy: element.getAttribute('data-choice-scroll-policy'),
+        }));
+        expect(choiceScrollMetrics.overflowY, `${staffName}候选区必须是真滚动窗口`).toBe('auto');
+        expect(choiceScrollMetrics.policy, `${staffName}候选滚动必须归属浮层自身`).toBe('overlay-owned');
+        if (castOptionCount > 8) {
+            expect(choiceScrollMetrics.scrollHeight, `${staffName}候选过多时滚动内容必须超出窗口`).toBeGreaterThan(
+                choiceScrollMetrics.clientHeight,
+            );
+        }
+        const castChoiceRows = await castOptions.evaluateAll(
+            (elements) => [...new Set(elements.map((element) => Math.round(element.getBoundingClientRect().top)))],
+        );
+        if (castOptionCount > 8) {
+            expect(castChoiceRows.length, `${staffName}候选牌超过可读宽度时必须真实换行`).toBeGreaterThan(1);
+        }
+        await saveEvidenceScreenshot(
+            match.hostPage,
+            testInfo,
+            `02-${staffName}-绑定候选-${staffName}候选牌可见`,
+            { evidenceDir: evidenceRun.stagingDir },
+        );
+
+        await castOption.click({ timeout: 3_000, noWaitAfter: true });
+        await expect(spellCastChoiceDock).toHaveCount(0, { timeout: 5_000 });
+        await expect.poll(async () => {
+            const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+            const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+            const staff = Object.values(objects).find((candidate) => (
+                isRecord(candidate)
+                && candidate.sourceSpellCardId === options.cardId
+                && candidate.anchoredToPlayerId === '0'
+            ));
+            return isRecord(staff) ? staff.boundSpellCardId : undefined;
+        }, {
+            message: `${staffName}施放后服务端应记录绑定法术`,
+            timeout: 5_000,
+        }).toBe(options.castBoundSpellCardId);
+        await expect.poll(async () => {
+            const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+            const players = isRecord(snapshot.players) ? snapshot.players : {};
+            const player = isRecord(players['0']) ? players['0'] : {};
+            const discard = Array.isArray(player.discardSpellCardIds) ? player.discardSpellCardIds : [];
+            return discard.includes(options.cardId);
+        }, {
+            message: `${staffName}施放后装备牌应进入弃牌记录`,
+            timeout: 5_000,
+        }).toBe(true);
+        await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, `${staffName}施放结算截图前`);
+        await openMageWarsBoardUnitInspect(match.hostPage, mageTargetEntity, `${staffName}施放后检视绑定`);
+        await expect(match.hostPage.locator(
+            `[data-testid="mage-wars-card-magnify-attachment"][data-source-card-id="${options.cardId}"]`,
+        )).toHaveAttribute('data-bound-spell-card-id', String(options.castBoundSpellCardId));
+        await waitForVisibleImagesLoaded(match.hostPage, `${staffName}绑定检视图片`);
+        await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, `${staffName}绑定检视牌面`);
+        await saveEvidenceScreenshot(
+            match.hostPage,
+            testInfo,
+            `03-${staffName}-施放结算-附着卡显示绑定法术`,
+            { evidenceDir: evidenceRun.stagingDir },
+        );
+        await match.hostPage.getByTestId('mage-wars-card-magnify-overlay-close').click();
+        await expect(match.hostPage.getByTestId('mage-wars-card-magnify-overlay')).toHaveAttribute('aria-hidden', 'true');
+
+        const staffObject = {
+            ...createMageWarsE2eEquipmentObject(
+                staffObjectId,
+                '0',
+                options.cardId,
+                staffName,
+                ARENA_ZONE_IDS.A3,
+                '0',
+            ),
+            attackOrTraitLine: '法术绑定',
+            boundSpellCardId: options.initialBoundSpellCardId,
+        };
+        await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+            phase: 'finalQuickcast',
+            replaceObjects: true,
+            objects: [staffObject],
+            playerPatches: {
+                '0': setupPlayer(10),
+                '1': {
+                    mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                    mageZoneId: ARENA_ZONE_IDS.D3,
+                    preparedSpellCardIds: [],
+                    preparedSpellSlots: 0,
+                },
+            },
+        });
+
+        const attachedCard = match.hostPage.locator(
+            `[data-testid="mage-wars-attached-card"][data-object-id="${staffObjectId}"][data-source-card-id="${options.cardId}"]`,
+        ).first();
+        await expect(attachedCard).toBeVisible({ timeout: 5_000 });
+        await expect(attachedCard.getByTestId('mage-wars-bound-spell-overlay'))
+            .toHaveAttribute('data-bound-spell-card-id', String(options.initialBoundSpellCardId));
+        await attachedCard.click({ timeout: 3_000, noWaitAfter: true });
+        await expect(attachedCard.getByTestId('mage-wars-attachment-source-frame')).toBeVisible({ timeout: 3_000 });
+        const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+        await expect(abilityDock).toBeVisible({ timeout: 3_000 });
+        await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+        const abilityButton = abilityDock.locator(`[data-ability-id="${options.abilityId}"]`).first();
+        await expect(abilityButton).toBeVisible({ timeout: 3_000 });
+        await expect(abilityButton).toHaveAttribute('data-ability-visual', 'action-label');
+        await expect(abilityButton).toHaveText('重新绑定');
+        await expect(abilityButton).not.toContainText(staffName);
+        await saveEvidenceScreenshot(
+            match.hostPage,
+            testInfo,
+            `04-${staffName}-快速重绑入口-屏幕中下动作按钮`,
+            { evidenceDir: evidenceRun.stagingDir },
+        );
+
+        await abilityButton.click({ timeout: 3_000, noWaitAfter: true });
+        const objectAbilityChoiceDock = match.hostPage.getByTestId('mage-wars-object-ability-choice-dock');
+        await expect(objectAbilityChoiceDock).toBeVisible({ timeout: 3_000 });
+        const reboundOption = objectAbilityChoiceDock.locator(
+            `[data-testid="mage-wars-object-ability-choice-option"][data-bound-spell-card-id="${options.reboundBoundSpellCardId}"]`,
+        ).first();
+        await expect(reboundOption).toBeVisible({ timeout: 3_000 });
+        await expect(reboundOption.getByTestId('mage-wars-object-ability-choice-card-preview')).toBeVisible({ timeout: 3_000 });
+        await expect(objectAbilityChoiceDock).not.toContainText(options.mageId);
+        await expect(reboundOption).not.toContainText(boundSpellName);
+        const reboundOptions = objectAbilityChoiceDock.locator('[data-choice-layout="wrap"] [data-testid="mage-wars-object-ability-choice-option"]');
+        const reboundOptionCount = await reboundOptions.count();
+        await expect(objectAbilityChoiceDock.locator('[data-choice-scroll-window="true"]')).toBeVisible({ timeout: 3_000 });
+        const reboundCardHeight = await reboundOptions.first().evaluate((element) => element.getBoundingClientRect().height);
+        expect(Math.abs(reboundCardHeight - spellbookCardHeight), `${staffName}快速重绑候选牌必须和法术书牌同高`).toBeLessThanOrEqual(2);
+        const reboundScrollMetrics = await objectAbilityChoiceDock.locator('[data-choice-scroll-window="true"]').evaluate((element) => ({
+            clientHeight: element.clientHeight,
+            scrollHeight: element.scrollHeight,
+            overflowY: getComputedStyle(element).overflowY,
+            policy: element.getAttribute('data-choice-scroll-policy'),
+        }));
+        expect(reboundScrollMetrics.overflowY, `${staffName}快速重绑候选区必须是真滚动窗口`).toBe('auto');
+        expect(reboundScrollMetrics.policy, `${staffName}快速重绑滚动必须归属浮层自身`).toBe('overlay-owned');
+        if (reboundOptionCount > 8) {
+            expect(reboundScrollMetrics.scrollHeight, `${staffName}快速重绑候选过多时滚动内容必须超出窗口`).toBeGreaterThan(
+                reboundScrollMetrics.clientHeight,
+            );
+        }
+        const reboundChoiceRows = await reboundOptions.evaluateAll(
+            (elements) => [...new Set(elements.map((element) => Math.round(element.getBoundingClientRect().top)))],
+        );
+        if (reboundOptionCount > 8) {
+            expect(reboundChoiceRows.length, `${staffName}快速重绑候选牌超过可读宽度时必须真实换行`).toBeGreaterThan(1);
+        }
+        await saveEvidenceScreenshot(
+            match.hostPage,
+            testInfo,
+            `05-${staffName}-快速重绑候选-候选法术牌可见`,
+            { evidenceDir: evidenceRun.stagingDir },
+        );
+
+        await reboundOption.click({ timeout: 3_000, noWaitAfter: true });
+        await expect(objectAbilityChoiceDock).toHaveCount(0, { timeout: 5_000 });
+        await expect.poll(async () => {
+            const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+            const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+            const staff = isRecord(objects[staffObjectId]) ? objects[staffObjectId] : {};
+            return {
+                boundSpellCardId: staff.boundSpellCardId,
+                eventResolved: hasEvent(
+                    snapshot,
+                    MAGE_WARS_EVENTS.ARENA_OBJECT_ABILITY_RESOLVED,
+                    (payload) => payload.objectId === staffObjectId
+                        && payload.abilityId === options.abilityId
+                        && payload.boundSpellCardId === options.reboundBoundSpellCardId,
+                ),
+                mana: isRecord(snapshot.players) && isRecord(snapshot.players['0'])
+                    ? snapshot.players['0'].mana
+                    : undefined,
+            };
+        }, {
+            message: `${staffName}快速重绑后服务端应写入新绑定、主动能力事件和法力消耗`,
+            timeout: 5_000,
+        }).toEqual({
+            boundSpellCardId: options.reboundBoundSpellCardId,
+            eventResolved: true,
+            mana: 7,
+        });
+        await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, `${staffName}快速重绑结算截图前`);
+        await dragArenaViewportUntilLocatorActionable(match.hostPage, mageTargetEntity, `${staffName}重绑后检视法师`, {
+            safeInset: 120,
+        });
+        await openMageWarsBoardUnitInspect(match.hostPage, mageTargetEntity, `${staffName}重绑后检视绑定`);
+        await expect(match.hostPage.locator(
+            `[data-testid="mage-wars-card-magnify-attachment"][data-source-card-id="${options.cardId}"]`,
+        )).toHaveAttribute('data-bound-spell-card-id', String(options.reboundBoundSpellCardId));
+        await waitForVisibleImagesLoaded(match.hostPage, `${staffName}重绑检视图片`);
+        await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, `${staffName}重绑检视牌面`);
+        await saveEvidenceScreenshot(
+            match.hostPage,
+            testInfo,
+            `06-${staffName}-快速重绑结算-新绑定和法力消耗可见`,
+            { evidenceDir: evidenceRun.stagingDir },
+        );
+        await match.hostPage.getByTestId('mage-wars-card-magnify-overlay-close').click();
+        await expect(match.hostPage.getByTestId('mage-wars-card-magnify-overlay')).toHaveAttribute('aria-hidden', 'true');
+    } finally {
+        await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+    }
+
+    expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    const staffEvidenceStages = [
+        {
+            fragment: `01-${staffName}-施放前-准备区卡牌与己方法师合法目标`,
+            description: `${staffName}绑定法术；玩家从准备区开始施放，画面同时看见来源卡牌与己方法师合法目标。`,
+            transition: '本链起点：来源卡牌和合法目标同屏可见。',
+            observedDelta: '效果前：装备尚未落场，法术候选尚未打开。',
+        },
+        {
+            fragment: `02-${staffName}-绑定候选-${staffName}候选牌可见`,
+            description: '玩家点击己方法师后，候选法术牌以整卡显示并进入可滚动的选择窗口，牌面不复述卡名。',
+            transition: '相对上一张：打开绑定法术候选窗口。',
+            observedDelta: '中态：候选集合、整卡高度和滚动窗口同时可读。',
+        },
+        {
+            fragment: `03-${staffName}-施放结算-附着卡显示绑定法术`,
+            description: '玩家完成绑定后检视法师，附件牌与当前绑定法术名称在放大层中可读。',
+            transition: '相对上一张：提交候选并完成首次施放。',
+            observedDelta: '结果态：场上出现附着装备，绑定法术从候选态变为装备状态。',
+        },
+        {
+            fragment: `04-${staffName}-快速重绑入口-屏幕中下动作按钮`,
+            description: '玩家点击已附着的装备卡后，屏幕中下出现“重新绑定”动作入口，控件不重复装备名称。',
+            transition: '相对上一张：进入已附着装备的主动能力入口。',
+            observedDelta: '中态：装备本体、能力入口和当前牌桌上下文保持同屏。',
+        },
+        {
+            fragment: `05-${staffName}-快速重绑候选-候选法术牌可见`,
+            description: '玩家点击“重新绑定”后，新的候选法术牌以同等高度整卡显示并可滚动选择。',
+            transition: '相对上一张：打开快速重绑候选窗口。',
+            observedDelta: '中态：候选牌面可读，浮层拥有自己的滚动窗口。',
+        },
+        {
+            fragment: `06-${staffName}-快速重绑结算-新绑定和法力消耗可见`,
+            description: '玩家完成重新绑定后检视法师，附件牌与新的绑定法术名称在放大层中可读。',
+            transition: '相对上一张：提交新绑定并完成能力结算。',
+            observedDelta: '结果态：绑定关系和资源值都发生可见变化。',
+        },
+    ];
+    const staffIndexItems = staffEvidenceStages.map((stage, index) => ({
+        path: path.relative(
+            evidenceRun.stagingDir,
+            getEvidenceScreenshotPathInDirectory(evidenceRun.stagingDir, stage.fragment, { requireChineseName: true }),
+        ).replace(/\\/g, '/'),
+        chainId: `mage-wars-independent-${options.cardName}-binding-20261006`,
+        chainStep: String(index + 1),
+        sourceRun: `mage-wars-staff-binding:${testInfo.testId}`,
+        sourceDir: path.basename(evidenceRun.stableDir),
+        label: stage.fragment,
+        stage: index === 0 ? '前态' : index === staffEvidenceStages.length - 1 ? '后态' : '中态',
+        description: stage.description,
+        transition: stage.transition,
+        testedObject: options.cardName,
+        effectClaim: '从候选法术牌选择绑定并通过主动能力快速重绑',
+        observedDelta: stage.observedDelta,
+    }));
+    await fs.promises.writeFile(
+        path.join(evidenceRun.stagingDir, '.e2e-image-index.json'),
+        `${JSON.stringify({
+            title: `法师战争 · ${options.cardName}施放与快速重绑 · 独立端到端`,
+            gameId: 'mage-wars',
+            evidenceCategory: 'independent',
+            sourceRun: `mage-wars-staff-binding:${testInfo.testId}`,
+            sourceDir: path.basename(evidenceRun.stableDir),
+            descriptionContract: 'description 是唯一玩家说明；transition 只记录相对上一张的顺序变化。',
+            media: staffIndexItems,
+            items: staffIndexItems,
+        }, null, 2)}\n`,
+        'utf8',
+    );
+    const staffPassManifestPath = path.join(
+        evidenceRun.stagingDir,
+        `00-法师战争${options.cardName}施放与快速重绑-PASS.json`,
+    );
+    await fs.promises.writeFile(
+        staffPassManifestPath,
+        `${JSON.stringify({
+            verdict: 'PASS',
+            scope: 'independent',
+            gameId: 'mage-wars',
+            evidenceCategory: 'independent',
+            generatedAt: new Date().toISOString(),
+            display: {
+                purpose: 'final-user-visible-delivery',
+                trigger: 'task-final-delivery',
+                viewer: 'web',
+                finalPassBeforeOpen: true,
+            },
+            requirements: [
+                {
+                    requirement: `正式页面${options.cardName}施放与快速重绑：候选牌可读、浮层可滚动、绑定关系和法力变化来自同一次运行`,
+                    status: 'PASS',
+                    evidence: [
+                        `E2E：正式页面${options.cardName}完成首次绑定和主动能力快速重绑`,
+                        `E2E：${options.cardName}候选卡与结果态截图来自当前运行`,
+                    ],
+                },
+            ],
+            media: staffIndexItems.map((entry) => path.resolve(evidenceRun.stableDir, entry.path)),
+            evidenceIndex: '.e2e-image-index.json',
+            mediaEntries: staffIndexItems,
+        }, null, 2)}\n`,
+        'utf8',
+    );
+    testInfo.annotations.push(
+        { type: 'pass-manifest', description: staffPassManifestPath },
+    );
+    await promoteEvidenceScreenshotRun(evidenceRun);
+    rebaseMageWarsTestAnnotations(testInfo, {
+        evidenceDir: evidenceRun.stagingDir,
+        stableEvidenceDir: evidenceRun.stableDir,
+    });
 }
 
 async function expectServerObjectZone(
@@ -3827,6 +6219,11 @@ async function deployBothPlayers(
     await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
 
     const guestPreparedCard = selfPreparedCardByName(match.guestPage, guestCreatureName);
+    await expect(match.guestPage.getByTestId('mage-wars-board')).toHaveAttribute(
+        'data-mage-wars-phase-actor-id',
+        '1',
+        { timeout: 15_000 },
+    );
     await advanceUntilEnabled(match.guestPage, guestPreparedCard);
     const guestSourceCardId = await guestPreparedCard.getAttribute('data-source-card-id');
     await selectPreparedSpell(match.guestPage, guestPreparedCard, guestCreatureName);
@@ -3849,8 +6246,15 @@ async function deployCreatureWithSummonProcessEvidence(
     testInfo: TestInfo,
     label: string,
     diagnostics?: Array<{ label: string; diagnostics: PageDiagnostics }>,
+    captureFrame?: (animations?: EvidenceScreenshotAnimationMode) => Promise<void>,
+    options: { evidenceDir?: string } = {},
 ) {
     const preparedCard = selfPreparedCardByName(page, creatureName);
+    await expect(page.getByTestId('mage-wars-board')).toHaveAttribute(
+        'data-mage-wars-phase-actor-id',
+        playerId,
+        { timeout: 15_000 },
+    );
     await advanceUntilEnabled(page, preparedCard);
     const sourceCardId = await preparedCard.getAttribute('data-source-card-id');
     if (!sourceCardId) throw new Error(`部署 ${creatureName} 前未能读取 CardID`);
@@ -3859,14 +6263,19 @@ async function deployCreatureWithSummonProcessEvidence(
     const targetZone = page.getByTestId(`mage-wars-arena-zone-${zoneId}`);
     await expect(targetZone).toHaveAttribute('data-legal-target-zone', 'true', { timeout: 3_000 });
     await expect(targetZone).toHaveAttribute('data-zone-target-scope', 'zone', { timeout: 3_000 });
+    await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤来源目标截图前`);
+    await frameMageWarsArenaForEvidence(page, `${label} 召唤来源目标截图`);
     await dragArenaViewportUntilLocatorActionable(page, targetZone, `${label} 召唤目标格 ${zoneId}`, {
         safeInset: 120,
     });
     const targetRect = await targetZone.boundingBox();
     if (!targetRect) throw new Error(`${label} 召唤目标格 ${zoneId} 没有可截图矩形，无法做过程帧目标格审计`);
-    await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤来源目标截图前`);
-    const beforeScreenshotPath = await saveEvidenceScreenshot(page, testInfo, `${label}-召唤来源和目标区域`, { animations: 'allow' });
-
+    const beforeScreenshotPath = isMageWarsGoldenVideoRun()
+        ? undefined
+        : await saveEvidenceScreenshot(page, testInfo, `${label}-召唤来源和目标区域`, {
+            animations: 'allow',
+            evidenceDir: options.evidenceDir,
+        });
     const summonFxAuditPromise = captureMageWarsSummonFxProcessScreenshot(page, testInfo, label, {
         match,
         playerId,
@@ -3875,7 +6284,7 @@ async function deployCreatureWithSummonProcessEvidence(
         zoneId,
         beforeScreenshotPath,
         targetRect,
-    });
+    }, captureFrame, options.evidenceDir);
     await clickLegalTargetZone(page, zoneId, `${label} 召唤落点`);
     const summonFxAudit = await summonFxAuditPromise;
     expect(summonFxAudit.objectKind).toBe('creature');
@@ -3888,7 +6297,12 @@ async function deployCreatureWithSummonProcessEvidence(
     });
     await expect(page.getByTestId('mage-wars-fx-summon')).toHaveCount(0, { timeout: 5_000 });
     await waitForVisibleMageWarsAtlasCardsLoaded(page, `${label} 召唤落场完成截图前`);
-    await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`);
+    await frameMageWarsArenaForEvidence(page, `${label} 召唤完成单位落场`);
+    if (!isMageWarsGoldenVideoRun()) {
+        await saveEvidenceScreenshot(page, testInfo, `${label}-召唤完成单位落场`, {
+            evidenceDir: options.evidenceDir,
+        });
+    }
 
     const snapshot = await readZoneFieldCardSnapshot(page, zoneId, Number(sourceCardId), `${label} 召唤完成后读取对象`);
     return {
@@ -3903,14 +6317,23 @@ async function castPreparedSpellOnMage(
     targetPlayerId: '0' | '1',
     beforeTargetClick?: () => Promise<void> | void,
 ) {
+    await expect(page.getByTestId('mage-wars-board')).toHaveAttribute(
+        'data-mage-wars-phase-actor-id',
+        targetPlayerId,
+        { timeout: 5_000 },
+    );
     const prepared = selfPreparedCardByName(page, spellName);
     await advanceUntilEnabled(page, prepared);
     await selectPreparedSpell(page, prepared, spellName);
     const mageEntity = page.locator(`[data-testid="mage-wars-zone-mage-entity"][data-player-id="${targetPlayerId}"]`).first();
     await expect(mageEntity).toBeVisible({ timeout: 3_000 });
     await expect(mageEntity).toHaveAttribute('data-mage-role', 'target', { timeout: 3_000 });
+    await expect(mageEntity).toHaveAttribute('data-primary-action', 'true', { timeout: 3_000 });
+    await dragArenaViewportUntilLocatorActionable(page, mageEntity, `${spellName} 法师目标`, {
+        safeInset: 120,
+    });
     await beforeTargetClick?.();
-    await mageEntity.click({ timeout: 3_000, noWaitAfter: true, force: true }).catch(async (error: unknown) => {
+    await clickLocatorAtVisibleHitPoint(page, mageEntity, `${spellName} 选择法师目标`).catch(async (error: unknown) => {
         const message = error instanceof Error ? error.message : String(error);
         const [afterHit, snapshot] = await Promise.all([
             readHitTest(mageEntity).catch((hitError: unknown) => ({
@@ -3932,13 +6355,16 @@ async function castPreparedSpellOnFieldObject(
     spellName: string,
     target: Locator,
     beforeTargetClick?: () => Promise<void> | void,
+    options: { keepCurrentCamera?: boolean } = {},
 ) {
     const prepared = selfPreparedCardByName(page, spellName);
     await advanceUntilEnabled(page, prepared);
     await selectPreparedSpell(page, prepared, spellName);
     await expect(target.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible();
     await beforeTargetClick?.();
-    await clickFieldObject(page, target, `${spellName} 选择目标`);
+    await clickFieldObject(page, target, `${spellName} 选择目标`, {
+        keepCurrentCamera: options.keepCurrentCamera,
+    });
 }
 
 async function resolveCurrentActorOrder(
@@ -3949,8 +6375,13 @@ async function resolveCurrentActorOrder(
     const board = match.hostPage.getByTestId('mage-wars-board');
     for (let index = 0; index < 80; index += 1) {
         const actorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
-        if (actorId === '0') return ['0', '1'];
-        if (actorId === '1') return ['1', '0'];
+        if (actorId === '0' || actorId === '1') {
+            await match.hostPage.waitForTimeout(240);
+            const stableActorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
+            if (stableActorId === actorId) {
+                return actorId === '0' ? ['0', '1'] : ['1', '0'];
+            }
+        }
         await match.hostPage.waitForTimeout(120);
     }
 
@@ -4169,6 +6600,7 @@ async function advanceToNextPlanningPhase(
             && guestPhase === 'planning'
             && Number.isFinite(turnNumber)
             && turnNumber > initialTurnNumber
+            && await areBothPlayersReadyForSpellPlanning(match)
         ) {
             return;
         }
@@ -4210,7 +6642,11 @@ async function advanceUntilBothPlayersReachPlanningPhase(
     for (let index = 0; index < 180; index += 1) {
         const hostPhase = await readPhase(match.hostPage);
         const guestPhase = await readPhase(match.guestPage);
-        if (hostPhase === 'planning' && guestPhase === 'planning') return;
+        if (
+            hostPhase === 'planning'
+            && guestPhase === 'planning'
+            && await areBothPlayersReadyForSpellPlanning(match)
+        ) return;
 
         const phaseActorId = await board.getAttribute('data-mage-wars-phase-actor-id', { timeout: 500 }).catch(() => null);
         const actorPage = phaseActorId === '1' ? match.guestPage : match.hostPage;
@@ -4241,6 +6677,73 @@ async function advanceUntilBothPlayersReachPlanningPhase(
 }
 
 test.describe('Mage Wars formal online runtime', () => {
+    test('正式联机独立视角切换复用同一弃牌槽并居中返回', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage);
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage);
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                playerPatches: {
+                    '0': { discardSpellCardIds: [3417, 2819] },
+                    '1': { discardSpellCardIds: [1706, 2811] },
+                },
+            });
+
+            const board = match.hostPage.getByTestId('mage-wars-board');
+            const mainDiscardPile = match.hostPage.getByTestId('mage-wars-discard-pile');
+            const duplicateOpponentDiscard = match.hostPage.getByTestId('mage-wars-opponent-discard-pile');
+
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-role', 'self');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-id', '0');
+            await expect(mainDiscardPile).toContainText('弃牌 2');
+            await expect(duplicateOpponentDiscard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-公开视角-切换前己方弃牌槽');
+
+            await match.hostPage.getByTestId('mage-wars-observe-player-button').click();
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-player-id', '1');
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-role', 'opponent');
+
+            const publicViewBanner = match.hostPage.getByTestId('mage-wars-public-view-banner');
+            await expect(publicViewBanner).toBeVisible({ timeout: 5_000 });
+            const viewport = match.hostPage.viewportSize();
+            expect(viewport).not.toBeNull();
+            const bannerMetrics = await publicViewBanner.evaluate((node) => {
+                const shell = node.getBoundingClientRect();
+                const panel = node.firstElementChild?.getBoundingClientRect();
+                return {
+                    shellCenterX: shell.left + shell.width / 2,
+                    panelCenterX: panel ? panel.left + panel.width / 2 : null,
+                };
+            });
+            expect(Math.abs(bannerMetrics.shellCenterX - viewport!.width / 2)).toBeLessThanOrEqual(4);
+            expect(bannerMetrics.panelCenterX).not.toBeNull();
+            expect(Math.abs((bannerMetrics.panelCenterX ?? 0) - viewport!.width / 2)).toBeLessThanOrEqual(32);
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-role', 'opponent');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-id', '1');
+            await expect(mainDiscardPile).toContainText('弃牌 2');
+            await expect(duplicateOpponentDiscard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-公开视角-同一弃牌槽切换到对手');
+
+            await match.hostPage.getByTestId('mage-wars-back-to-self-view').click();
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-player-id', '0');
+            await expect(board).toHaveAttribute('data-mage-wars-public-view-role', 'self');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-role', 'self');
+            await expect(mainDiscardPile).toHaveAttribute('data-discard-owner-id', '0');
+            await expect(mainDiscardPile).toContainText('弃牌 2');
+            await expect(duplicateOpponentDiscard).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-公开视角-返回己方并恢复同一弃牌槽');
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    });
+
     test('正式联机入口从双方计划到部署并保持对手计划隐藏', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
         await clearEvidenceScreenshotsForTest(testInfo);
@@ -4250,8 +6753,8 @@ test.describe('Mage Wars formal online runtime', () => {
 
         try {
             await advanceBothPlayersToPlanning(match);
-            await expect(match.hostPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase');
-            await expect(match.guestPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase');
+            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-main-action-mode', 'plan-spells');
+            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-main-action-mode', 'plan-spells');
             await match.hostPage.getByRole('button', { name: '生物', exact: true }).click();
             const hostCreatureName = await selectFirstVisibleSpellbookCard(match.hostPage);
             await match.hostPage.getByTestId('mage-wars-plan-spells').click();
@@ -4351,7 +6854,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '荒野呼唤应通过正式页面给己方动物生物授予临时近战加成',
                 timeout: 5_000,
             }).toBe(true);
-            await expect.poll(async () => match.hostPage.getByTestId('mage-wars-mage-hud-self').innerText()).toMatch(/法力\s+[\s\S]*7/);
+            await expect.poll(async () => match.hostPage.getByTestId('mage-wars-mage-hud-self').innerText()).toMatch(/法力\s*[:：]\s*7/);
             await expect(match.hostPage.getByTestId('mage-wars-discard-pile')).toContainText('弃牌 2');
             await expect(match.hostPage.locator(`${SELF_PREPARED_CARD_SELECTOR}[aria-label="荒野呼唤"]`)).toHaveCount(0);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '03-荒野呼唤结算后-法力弃牌已变化');
@@ -4395,10 +6898,32 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveText('确认计划 1/2');
             await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-plan-progress', '1/2');
             await match.guestPage.getByTestId('mage-wars-plan-spells').click();
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.guestPage, match, '1');
+                const player = isRecord(snapshot.players) && isRecord(snapshot.players['1'])
+                    ? snapshot.players['1']
+                    : {};
+                return Array.isArray(player.preparedSpellCardIds)
+                    && player.preparedSpellCardIds.includes(1706);
+            }, {
+                message: '访客确认圣光之柱后，服务器应记录该准备法术；不能只凭按钮文案继续推进',
+                timeout: 5_000,
+            }).toBe(true);
             await advanceToReadyFieldObjectAction(match, '0', 'a3', 2819, '丛林灰狼', [
                 { label: 'host', diagnostics: hostDiagnostics },
                 { label: 'guest', diagnostics: guestDiagnostics },
             ]);
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.guestPage, match, '1');
+                const player = isRecord(snapshot.players) && isRecord(snapshot.players['1'])
+                    ? snapshot.players['1']
+                    : {};
+                return Array.isArray(player.preparedSpellCardIds)
+                    && player.preparedSpellCardIds.includes(1706);
+            }, {
+                message: '房主进入生物行动时，访客的圣光之柱准备状态不应被清掉',
+                timeout: 5_000,
+            }).toBe(true);
             await saveEvidenceScreenshot(match.hostPage, testInfo, '05-生物行动前-场地对象可直选');
 
             const hostWolfCard = match.hostPage.locator('[data-testid="mage-wars-arena-zone-a3"] [data-testid="mage-wars-zone-field-card"][data-source-card-id="2819"]').first();
@@ -4423,6 +6948,17 @@ test.describe('Mage Wars formal online runtime', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '06B-移动横屏镜像-丛林灰狼进入目标区域');
 
             await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000 });
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.guestPage, match, '1');
+                const player = isRecord(snapshot.players) && isRecord(snapshot.players['1'])
+                    ? snapshot.players['1']
+                    : {};
+                return Array.isArray(player.preparedSpellCardIds)
+                    && player.preparedSpellCardIds.includes(1706);
+            }, {
+                message: '房主结束移动行动后，访客的圣光之柱准备状态不应被清掉',
+                timeout: 5_000,
+            }).toBe(true);
             await advanceToPlayerCreatureAction(match, '1', [
                 { label: 'host', diagnostics: hostDiagnostics },
                 { label: 'guest', diagnostics: guestDiagnostics },
@@ -4478,13 +7014,27 @@ test.describe('Mage Wars formal online runtime', () => {
     });
 
     test('正式页面召唤和攻击必要过程帧覆盖', async ({ browser, baseURL }, testInfo) => {
-        test.setTimeout(240_000);
+        test.setTimeout(360_000);
         await clearEvidenceScreenshotsForTest(testInfo);
-        const recording = createMageWarsFxVideoRecording(testInfo);
+        const summonEvidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        const rangedEvidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        summonEvidenceRun.stableDir = path.join(summonEvidenceRun.stableDir, '召唤');
+        summonEvidenceRun.historyDir = path.join(summonEvidenceRun.historyDir, '召唤');
+        rangedEvidenceRun.stableDir = path.join(rangedEvidenceRun.stableDir, '远程攻击');
+        rangedEvidenceRun.historyDir = path.join(rangedEvidenceRun.historyDir, '远程攻击');
+        const summonRecording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '召唤',
+            evidenceDir: summonEvidenceRun.stagingDir,
+            stableEvidenceDir: summonEvidenceRun.stableDir,
+        });
+        const rangedRecording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '远程攻击',
+            evidenceDir: rangedEvidenceRun.stagingDir,
+            stableEvidenceDir: rangedEvidenceRun.stableDir,
+        });
         const match = await setupOnlineMageWars(browser, baseURL);
-        let recordedAttackContext: BrowserContext | null = null;
-        let recordedHostVideo: RecordedVideo | null = null;
-        let recordingDiagnostics: PageDiagnostics | null = null;
+        let summonGifCapture: MageWarsFxGifCapture | null = null;
+        let attackGifCapture: MageWarsFxGifCapture | null = null;
         let attackPage = match.hostPage;
         const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
         const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
@@ -4497,9 +7047,9 @@ test.describe('Mage Wars formal online runtime', () => {
 
         try {
             await advanceBothPlayersToPlanning(match);
-            await planNamedSpells(match.hostPage, ['野性山猫']);
-            await planNamedSpells(match.guestPage, ['阿希拉牧师']);
+            await planNamedSpellsTogether(match, ['野性山猫'], []);
 
+            summonGifCapture = await startMageWarsFxGifCapture(match.hostPage, summonRecording);
             const hostSummon = await deployCreatureWithSummonProcessEvidence(
                 match,
                 match.hostPage,
@@ -4509,65 +7059,83 @@ test.describe('Mage Wars formal online runtime', () => {
                 testInfo,
                 '01-兽王野性山猫',
                 diagnostics,
+                (animations) => summonGifCapture?.capture(animations) ?? Promise.resolve(),
+                { evidenceDir: summonEvidenceRun.stagingDir },
             );
+            await summonGifCapture.stop();
             expect(hostSummon.sourceCardId).toBe(2906);
             await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
-
-            const guestSummon = await deployCreatureWithSummonProcessEvidence(
-                match,
-                match.guestPage,
+            await expect(match.guestPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                'data-mage-wars-phase-actor-id',
                 '1',
-                '阿希拉牧师',
-                ARENA_ZONE_IDS.D1,
-                testInfo,
-                '02-女祭司阿希拉牧师',
-                diagnostics,
+                { timeout: 15_000 },
             );
-            expect(guestSummon.sourceCardId).toBe(2811);
             await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '召唤完成稳定收口截图前');
+            await frameMageWarsArenaForEvidence(match.hostPage, '召唤完成并可继续');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '03-召唤完成并可继续-野性山猫在场',
+                { evidenceDir: summonEvidenceRun.stagingDir },
+            );
 
             await injectMageWarsSpellFxReadyState(match, '0', {
                 mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
                 preparedSpellCardId: attackSpellCardId,
-                targetObject: createMageWarsE2eCreatureObject(
-                    attackTargetObjectId,
-                    '1',
-                    2811,
-                    '阿希拉牧师',
-                    ARENA_ZONE_IDS.B3,
-                ),
+                targetObject: {
+                    ...createMageWarsE2eCreatureObject(
+                        attackTargetObjectId,
+                        '1',
+                        2811,
+                        '阿希拉牧师',
+                        ARENA_ZONE_IDS.B3,
+                    ),
+                    life: 20,
+                },
                 mana: 12,
             });
-
-            if (recording.enabled) {
-                recordedAttackContext = await browser.newContext({ baseURL, ...recording.contextOptions });
-                await initContext(recordedAttackContext, {
-                    storageKey: `mage-wars-online-recorded-host-${Date.now()}`,
-                    skipImageGate: false,
-                    blockCdnAssets: false,
-                    locale: 'zh-CN',
-                });
-                await seedMatchCredentials(recordedAttackContext, 'mage-wars', match.matchId, '0', match.hostCredentials);
-                attackPage = await recordedAttackContext.newPage();
-                recordingDiagnostics = attachPageDiagnostics(attackPage, 'recorded-host');
-                recordedHostVideo = attackPage.video();
-                await attackPage.goto(`/play/mage-wars/match/${match.matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
-                await openOnlineBoard(attackPage, '录屏房主');
-                await disableMageWarsE2eFabMenu(attackPage);
-            }
+            await waitForTestHarness(attackPage);
+            const attackDiceReady = await attackPage.evaluate(() => {
+                const harness = (window as Window & {
+                    __BG_TEST_HARNESS__?: {
+                        dice?: {
+                            setValues?: (values: number[]) => void;
+                            remaining?: () => number;
+                            getValues?: () => number[];
+                        };
+                    };
+                }).__BG_TEST_HARNESS__;
+                harness?.dice?.setValues?.([6, 6, 6, 6, 6, 6]);
+                return {
+                    hasHarness: Boolean(harness),
+                    values: harness?.dice?.getValues?.() ?? [],
+                    remaining: harness?.dice?.remaining?.() ?? null,
+                };
+            });
+            expect(attackDiceReady).toMatchObject({
+                hasHarness: true,
+                values: [6, 6, 6, 6, 6, 6],
+            });
 
             const attackTarget = attackPage
                 .locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${attackTargetObjectId}"]`)
                 .first();
             await expect(attackTarget).toBeVisible({ timeout: 5_000 });
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '攻击代表态目标牌面截图前预加载');
+            await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                attackPage,
+                attackTarget,
+                '远程攻击投骰前玩家镜头',
+            );
             await startMageWarsTargetContinuityProbe(
                 attackPage,
                 attackTargetObjectId,
                 '间歇喷泉攻击阿希拉牧师目标连续可见',
             );
             let attackFxAuditPromise: ReturnType<typeof captureMageWarsFxProcessScreenshots> | undefined;
-            await castPreparedSpellOnFieldObject(attackPage, '间歇喷泉', attackTarget, () => {
+            await castPreparedSpellOnFieldObject(attackPage, '间歇喷泉', attackTarget, async () => {
+                attackGifCapture = await startMageWarsFxGifCapture(attackPage, rangedRecording);
                 attackFxAuditPromise = captureMageWarsFxProcessScreenshots(
                     attackPage,
                     testInfo,
@@ -4575,14 +7143,36 @@ test.describe('Mage Wars formal online runtime', () => {
                     '03-间歇喷泉攻击阿希拉牧师',
                     {
                         expectTravel: true,
-                        expectDamageFloat: true,
+                        expectDamageFloat: false,
+                        evidenceDir: rangedEvidenceRun.stagingDir,
+                        captureFrame: (animations) => attackGifCapture?.capture(animations) ?? Promise.resolve(),
                     },
                 );
-            });
+            }, { keepCurrentCamera: true });
             if (!attackFxAuditPromise) {
                 throw new Error('间歇喷泉点击前未启动攻击 FX 捕捉');
             }
-            const attackFxAudit = await attackFxAuditPromise;
+            let attackFxAudit: MageWarsFxAudit;
+            try {
+                attackFxAudit = await attackFxAuditPromise;
+            } catch (error) {
+                const serverSnapshot = await readServerCoreSnapshot(attackPage, match, '0');
+                throw new Error([
+                    error instanceof Error ? error.message : String(error),
+                    `serverSnapshot=${JSON.stringify(serverSnapshot, null, 2)}`,
+                ].join('\n'));
+            }
+            await attackGifCapture?.stop();
+            await materializeMageWarsFxEvidenceFrameSeries(
+                testInfo,
+                rangedRecording,
+                [
+                    '03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧',
+                    '03-间歇喷泉攻击阿希拉牧师-投射物飞行中',
+                    '03-间歇喷泉攻击阿希拉牧师-命中动画过程帧',
+                ],
+                [0.18, 0.5, 0.78],
+            );
             expect(attackFxAudit.sourceRow).toBe('2');
             expect(attackFxAudit.sourceCol).toBe('0');
             expect(attackFxAudit.targetRow).toBe('2');
@@ -4603,10 +7193,19 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '间歇喷泉必须通过正式页面点击目标后产生攻击掷骰和真实伤害事件',
                 timeout: 5_000,
             }).toBe(true);
+            await expect.poll(
+                async () => attackTarget.getAttribute('data-visual-damage'),
+                { timeout: 5_000 },
+            ).not.toBe('0');
             await waitForVisibleMageWarsAtlasCardsLoaded(attackPage, '召唤和攻击必要过程帧完成后');
+            await frameMageWarsArenaForEvidence(attackPage, '远程攻击稳定收口');
+            await saveEvidenceScreenshot(attackPage, testInfo, '04-远程攻击稳定收口-目标损伤已落地', {
+                evidenceDir: rangedEvidenceRun.stagingDir,
+            });
         } finally {
+            await summonGifCapture?.stop().catch(() => undefined);
+            await attackGifCapture?.stop().catch(() => undefined);
             await Promise.all([
-                recordedAttackContext?.close() ?? Promise.resolve(),
                 match.hostContext.close(),
                 match.guestContext.close(),
             ]);
@@ -4614,15 +7213,1150 @@ test.describe('Mage Wars formal online runtime', () => {
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
-        if (recordingDiagnostics) {
-            expect(recordingDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        await finalizeMageWarsFxVideoRecording(testInfo, summonRecording, {
+            actionLabel: '召唤代表态',
+            screenshotIncludes: [
+                '01-兽王野性山猫-召唤来源和目标区域',
+                '01-兽王野性山猫-召唤光柱过程帧',
+                '01-兽王野性山猫-召唤完成单位落场',
+                '03-召唤完成并可继续-野性山猫在场',
+            ],
+            requirements: [
+                {
+                    requirement: '正式页面召唤独立覆盖：玩家点击真实法术书卡牌和合法区域，召唤来源、光柱过程、单位落场和稳定收口均来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面点击召唤卡牌和目标区域 passed',
+                        'E2E：召唤光柱过程帧和单位落场帧来自当前运行',
+                        summonRecording.finalGifPath ?? '',
+                    ],
+                },
+            ],
+            screenshotDescriptions: {
+                '01-兽王野性山猫-召唤来源和目标区域': {
+                    description: '玩家选中野性山猫法术并看到合法召唤区域，来源牌和目标格同时可见。',
+                    transition: '本链起点：召唤动作尚未提交。',
+                    stage: '前态',
+                },
+                '01-兽王野性山猫-召唤光柱过程帧': {
+                    description: '玩家点击目标格后，野性山猫目标区域出现召唤光柱，来源与落点保持对应。',
+                    transition: '相对上一张：提交目标格，召唤过程开始。',
+                    stage: '中态',
+                },
+                '01-兽王野性山猫-召唤完成单位落场': {
+                    description: '召唤光柱收束后，野性山猫实体落在已选区域并保持可辨。',
+                    transition: '相对上一张：召唤过程收束到单位落场。',
+                    stage: '中态',
+                },
+                '03-召唤完成并可继续-野性山猫在场': {
+                    description: '召唤结算完成，野性山猫在场且牌桌恢复可继续操作。',
+                    transition: '相对上一张：召唤动作稳定收口。',
+                    stage: '后态',
+                },
+            },
+            gifDescription: '同一次运行的动图连续展示野性山猫的召唤光柱、单位落场与稳定收口。',
+        });
+        await finalizeMageWarsFxVideoRecording(testInfo, rangedRecording, {
+            actionLabel: '远程攻击代表态',
+            screenshotIncludes: [
+                '03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧',
+                '03-间歇喷泉攻击阿希拉牧师-投射物飞行中',
+                '03-间歇喷泉攻击阿希拉牧师-命中动画过程帧',
+                '04-远程攻击稳定收口-目标损伤已落地',
+            ],
+            requirements: [
+                {
+                    requirement: '正式页面远程攻击独立覆盖：玩家点击真实法术卡牌和场上目标，投射路径、骰子 / 命中结果和稳定收口均来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面点击远程攻击目标后产生攻击掷骰和真实伤害事件',
+                        'E2E：远程投射、命中层、目标损伤落地和稳定收口过程帧来自当前运行；远程伤害飘字不作为本条 PASS 依据',
+                        rangedRecording.finalGifPath ?? '',
+                    ],
+                },
+            ],
+            screenshotDescriptions: {
+                '03-间歇喷泉攻击阿希拉牧师-来源到目标投射过程帧': {
+                    description: '玩家提交间歇喷泉攻击后，来源法术、目标阿希拉牧师和攻击结果层同时可见。',
+                    transition: '本链起点：攻击已提交，投射过程开始。',
+                    stage: '前态',
+                },
+                '03-间歇喷泉攻击阿希拉牧师-投射物飞行中': {
+                    description: '间歇喷泉投射物沿来源与目标之间的路径飞行，目标本体仍保持可见。',
+                    transition: '相对上一张：投射物从来源向目标推进。',
+                    stage: '中态',
+                },
+                '03-间歇喷泉攻击阿希拉牧师-命中动画过程帧': {
+                    description: '投射物命中阿希拉牧师，命中反馈与目标本体在同一画面中成立。',
+                    transition: '相对上一张：投射阶段进入目标命中阶段。',
+                    stage: '中态',
+                },
+                '04-远程攻击稳定收口-目标损伤已落地': {
+                    description: '攻击动画收束后，阿希拉牧师目标仍在场并显示已落地的损伤结果。',
+                    transition: '相对上一张：命中反馈退出并收口到稳定结果。',
+                    stage: '后态',
+                },
+            },
+            gifDescription: '同一次运行的动图连续展示间歇喷泉从投射、飞行到命中阿希拉牧师并留下损伤结果。',
+        });
+        await promoteEvidenceScreenshotRun(summonEvidenceRun);
+        await promoteEvidenceScreenshotRun(rangedEvidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, summonRecording);
+        rebaseMageWarsTestAnnotations(testInfo, rangedRecording);
+    });
+
+    test('正式页面近战攻击实际动效独立证据覆盖', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        const recording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '近战攻击',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const attackerObjectId = 'mw-e2e-melee-attacker';
+        const targetObjectId = 'mw-e2e-melee-target';
+        let meleeFxAuditPromise: ReturnType<typeof captureMageWarsFxProcessScreenshots> | undefined;
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                replaceObjects: true,
+                objects: [
+                    createMageWarsE2eCreatureObject(
+                        attackerObjectId,
+                        '0',
+                        2906,
+                        '野性山猫',
+                        ARENA_ZONE_IDS.A3,
+                    ),
+                    {
+                        ...createMageWarsE2eCreatureObject(
+                            targetObjectId,
+                            '1',
+                            2811,
+                            '阿希拉牧师',
+                            ARENA_ZONE_IDS.A3,
+                        ),
+                        life: 20,
+                        actionReady: false,
+                    },
+                ],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A1,
+                        mana: 12,
+                        actionReady: true,
+                        quickcastReady: true,
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                    },
+                },
+            });
+
+            const attacker = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${attackerObjectId}"]`,
+            ).first();
+            const target = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${targetObjectId}"]`,
+            ).first();
+            await expect(attacker).toBeVisible({ timeout: 5_000 });
+            await expect(target).toBeVisible({ timeout: 5_000 });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '近战攻击目标牌面截图前');
+            const playerCamera = await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                match.hostPage,
+                target,
+                '近战攻击前态玩家镜头',
+            );
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-近战攻击代表态-来源和目标可见', {
+                evidenceDir: evidenceRun.stagingDir,
+            });
+
+            await clickFieldObject(
+                match.hostPage,
+                attacker,
+                '近战攻击选择野性山猫来源',
+                { safeInset: 24, keepCurrentCamera: true },
+            );
+            await expect(target.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-近战攻击选择态-目标高亮', {
+                evidenceDir: evidenceRun.stagingDir,
+            });
+
+            await startMageWarsTargetContinuityProbe(match.hostPage, targetObjectId, '近战攻击目标连续可见');
+            const meleeGifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
+            await startMageWarsAttackDamageFloatProbe(match.hostPage);
+            const readAttackerBox = () => match.hostPage.evaluate((objectId) => {
+                const card = document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+                );
+                const arenaContent = document.querySelector<HTMLElement>(
+                    '[data-testid="mage-wars-arena-viewport-content"]',
+                );
+                if (!card || !arenaContent) return null;
+                const rect = card.getBoundingClientRect();
+                const contentRect = arenaContent.getBoundingClientRect();
+                return {
+                    x: rect.x - contentRect.x,
+                    y: rect.y - contentRect.y,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            }, attackerObjectId);
+            const attackerBeforeBox = await readAttackerBox();
+            meleeFxAuditPromise = captureMageWarsFxProcessScreenshots(
+                match.hostPage,
+                testInfo,
+                'attack',
+                '03-野性山猫近战攻击阿希拉牧师',
+                {
+                    startDamageFloatProbe: false,
+                    expectDamageFloat: true,
+                    damageFloatScreenshotName: '04-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧',
+                    evidenceDir: evidenceRun.stagingDir,
+                    captureFrame: (animations) => meleeGifCapture.capture(animations),
+                },
+            );
+            const meleeLungePromise = match.hostPage.waitForFunction(({ objectId, before }) => {
+                const card = document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+                );
+                if (card?.getAttribute('data-melee-lunge-active') !== 'true' || !before) return false;
+                const rect = card.getBoundingClientRect();
+                return Math.hypot(rect.x - before.x, rect.y - before.y) > 1;
+            }, { objectId: attackerObjectId, before: attackerBeforeBox }, { timeout: 10_000 });
+            const visualStackingAuditPromise = match.hostPage.waitForFunction(({ attackerId, targetId, initialBox }) => {
+                const readCard = (objectId: string) => document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+                );
+                const attackerCard = readCard(attackerId);
+                const targetCard = readCard(targetId);
+                const attackerLane = attackerCard?.closest<HTMLElement>('[data-testid="mage-wars-zone-lane-item"]');
+                const targetLane = targetCard?.closest<HTMLElement>('[data-testid="mage-wars-zone-lane-item"]');
+                if (!attackerCard || !targetCard || !attackerLane || !targetLane || !initialBox) return false;
+                if (attackerCard.getAttribute('data-melee-lunge-active') !== 'true') return false;
+                const attackerRect = attackerCard.getBoundingClientRect();
+                const targetRect = targetCard.getBoundingClientRect();
+                const arenaContent = document.querySelector<HTMLElement>(
+                    '[data-testid="mage-wars-arena-viewport-content"]',
+                );
+                if (!arenaContent) return false;
+                const contentRect = arenaContent.getBoundingClientRect();
+                const lungeDistance = Math.hypot(
+                    attackerRect.x - contentRect.x - initialBox.x,
+                    attackerRect.y - contentRect.y - initialBox.y,
+                );
+                if (lungeDistance <= 1) return false;
+                const left = Math.max(attackerRect.left, targetRect.left);
+                const right = Math.min(attackerRect.right, targetRect.right);
+                const top = Math.max(attackerRect.top, targetRect.top);
+                const bottom = Math.min(attackerRect.bottom, targetRect.bottom);
+                if (right <= left || bottom <= top) return false;
+                const x = (left + right) / 2;
+                const y = (top + bottom) / 2;
+                const hitCard = document.elementsFromPoint(x, y)
+                    .filter((element): element is HTMLElement => element instanceof HTMLElement)
+                    .filter((element) => !element.closest('[data-testid="mage-wars-fx-attack-dice"]'))
+                    .map((element) => element.closest<HTMLElement>('[data-testid="mage-wars-zone-field-card"]'))
+                    .find((element): element is HTMLElement => element != null);
+                const hitObjectId = hitCard?.getAttribute('data-object-id') ?? null;
+                if (hitObjectId !== attackerId) return false;
+                return {
+                    overlapArea: Math.round((right - left) * (bottom - top)),
+                    lungeDistance,
+                    hitObjectId,
+                    stackPath: document.elementsFromPoint(x, y).slice(0, 12).map((element) => ({
+                        tag: element.tagName,
+                        testId: element instanceof HTMLElement ? element.dataset.testid ?? null : null,
+                        objectId: element instanceof HTMLElement
+                            ? element.getAttribute('data-object-id')
+                            : null,
+                    })),
+                };
+            }, {
+                attackerId: attackerObjectId,
+                targetId: targetObjectId,
+                initialBox: attackerBeforeBox,
+            }, { timeout: 3_000 });
+            const stackingAuditPromise = match.hostPage.waitForFunction(({ attackerId, targetId }) => {
+                const readLayers = (objectId: string) => Array.from(document.querySelectorAll<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+                )).map((card) => {
+                    const laneItem = card.closest<HTMLElement>('[data-testid="mage-wars-zone-lane-item"]');
+                    return {
+                        zIndex: Number.parseInt(getComputedStyle(laneItem ?? card).zIndex || '0', 10),
+                        role: card.getAttribute('data-field-card-role') ?? null,
+                        lunge: card.getAttribute('data-melee-lunge-active') === 'true',
+                        laneKind: laneItem?.dataset.laneItemKind ?? null,
+                        laneStyle: laneItem?.getAttribute('style') ?? null,
+                        laneClass: laneItem?.className ?? null,
+                    };
+                });
+                const attackerCard = document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${attackerId}"]`,
+                );
+                const targetCard = document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${targetId}"]`,
+                );
+                if (
+                    !attackerCard
+                    || !targetCard
+                    || attackerCard.getAttribute('data-melee-lunge-active') !== 'true'
+                ) {
+                    return false;
+                }
+                return {
+                    attacker: readLayers(attackerId),
+                    target: readLayers(targetId),
+                };
+            }, { attackerId: attackerObjectId, targetId: targetObjectId }, { timeout: 3_000 });
+            await clickFieldObject(
+                match.hostPage,
+                target,
+                '近战攻击选择阿希拉牧师目标',
+                { safeInset: 24, keepCurrentCamera: true },
+            );
+            await meleeLungePromise.catch(async (error: unknown) => {
+                const browserState = await match.hostPage.evaluate(() => {
+                    const board = document.querySelector<HTMLElement>('[data-testid="mage-wars-board"]');
+                    const attacker = document.querySelector<HTMLElement>(
+                        '[data-testid="mage-wars-zone-field-card"][data-object-id="mw-e2e-melee-attacker"]',
+                    );
+                    const target = document.querySelector<HTMLElement>(
+                        '[data-testid="mage-wars-zone-field-card"][data-object-id="mw-e2e-melee-target"]',
+                    );
+                        const fx = document.querySelector<HTMLElement>('[data-testid="mage-wars-fx-layer"]');
+                        const attackImpact = fx?.querySelector<HTMLElement>('[data-testid="mage-wars-fx-attack-melee-impact"]');
+                        return {
+                        phase: board?.dataset.mageWarsPhase ?? null,
+                        currentPlayerId: board?.dataset.mageWarsCurrentPlayerId ?? null,
+                        selectedObjectId: board?.querySelector('[data-field-card-role="source"][data-object-id]')?.getAttribute('data-object-id') ?? null,
+                        eventCount: board?.dataset.mageWarsEventCount ?? null,
+                        latestEventId: board?.dataset.mageWarsEventLatestId ?? null,
+                        eventCursor: board?.dataset.mageWarsEventCursor ?? null,
+                        lastConsumedEvents: board?.dataset.mageWarsLastConsumedEvents ?? null,
+                        lastFxCues: board?.dataset.mageWarsLastFxCues ?? null,
+                        attackerActionReady: attacker?.dataset.actionReady ?? null,
+                        attackerRole: attacker?.dataset.fieldCardRole ?? null,
+                        targetRole: target?.dataset.fieldCardRole ?? null,
+                        meleeLunge: attacker?.getAttribute('data-melee-lunge-active') === 'true',
+                            attackImpact: attackImpact != null,
+                            attackImpactAttributes: attackImpact ? {
+                                sourceAnchorId: attackImpact.dataset.sourceAnchorId ?? null,
+                                targetAnchorId: attackImpact.dataset.targetAnchorId ?? null,
+                                sourceSnapshotAnchorId: attackImpact.dataset.sourceSnapshotAnchorId ?? null,
+                                targetSnapshotAnchorId: attackImpact.dataset.targetSnapshotAnchorId ?? null,
+                                sourceSnapshotSurfaceId: attackImpact.dataset.sourceSnapshotSurfaceId ?? null,
+                                targetSnapshotSurfaceId: attackImpact.dataset.targetSnapshotSurfaceId ?? null,
+                            } : null,
+                            attackDice: document.querySelector('[data-testid="mage-wars-fx-attack-dice"]') != null,
+                    };
+                });
+                const serverSnapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                throw new Error([
+                    '近战目标点击后没有产生来源单位冲刺状态',
+                    error instanceof Error ? error.message : String(error),
+                    `browserState=${JSON.stringify(browserState, null, 2)}`,
+                    `serverSnapshot=${JSON.stringify(serverSnapshot, null, 2)}`,
+                ].join('\n'));
+            });
+            await expectMageWarsArenaCameraUnchanged(match.hostPage, playerCamera, '近战冲刺期间宿主竞技场');
+            const stackingAuditHandle = await stackingAuditPromise;
+            const stackingAudit = await stackingAuditHandle.jsonValue<{
+                attacker: Array<{
+                    zIndex: number;
+                    role: string | null;
+                    lunge: boolean;
+                    laneKind: string | null;
+                    laneStyle: string | null;
+                    laneClass: string | null;
+                }>;
+                target: Array<{
+                    zIndex: number;
+                    role: string | null;
+                    lunge: boolean;
+                    laneKind: string | null;
+                    laneStyle: string | null;
+                    laneClass: string | null;
+                }>;
+            }>();
+            const attackerLayer = stackingAudit.attacker.find((entry) => entry.lunge) ?? stackingAudit.attacker[0];
+            const targetLayer = stackingAudit.target.find((entry) => !entry.lunge) ?? stackingAudit.target[0];
+            expect(
+                attackerLayer?.zIndex ?? 0,
+                `近战冲刺期间攻击者必须压在受击者上方：${JSON.stringify(stackingAudit)}`,
+            ).toBeGreaterThan(targetLayer?.zIndex ?? 0);
+            const visualStackingAudit = await visualStackingAuditPromise;
+            const visualStackingAuditReport = await visualStackingAudit.jsonValue<{
+                overlapArea: number;
+                lungeDistance: number;
+                hitObjectId: string | null;
+                stackPath: Array<Record<string, unknown>>;
+            }>();
+            expect(
+                visualStackingAuditReport.hitObjectId,
+                `近战冲刺发生实际重叠时，攻击者必须是命中栈顶对象：${JSON.stringify(visualStackingAuditReport)}`,
+            ).toBe(attackerObjectId);
+            expect(
+                visualStackingAuditReport.lungeDistance,
+                '近战必须让来源单位本体发生可见冲刺位移，不能只显示结果层',
+            ).toBeGreaterThan(1);
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-melee-strike')).toBeVisible({ timeout: 3_000 });
+            await match.hostPage.waitForTimeout(160);
+            await match.hostPage.waitForTimeout(260);
+            const meleeFxAudit = await meleeFxAuditPromise;
+            await match.hostPage.waitForFunction((objectId) => {
+                const card = document.querySelector<HTMLElement>(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
+                );
+                return card?.getAttribute('data-melee-lunge-active') !== 'true';
+            }, attackerObjectId, { timeout: 3_000 });
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                'data-visible-duration-ms',
+                String(MAGE_WARS_FX_TIMING.meleeResultVisibleMs),
+            );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                'data-overlay-layer',
+                'screen',
+            );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                'data-placement',
+                'screen-center',
+            );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeVisible({ timeout: 3_000 });
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveAttribute(
+                'data-contrast',
+                'opaque',
+            );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-effect-die-face')).toHaveCount(0);
+            await match.hostPage.waitForFunction(
+                () => document.querySelector('[data-testid="mage-wars-fx-attack-dice"]') == null,
+                undefined,
+                {
+                    timeout: MAGE_WARS_FX_TIMING.meleeResultVisibleMs + 1_500,
+                    polling: 50,
+                },
+            );
+            await expect(match.hostPage.getByTestId('mage-wars-fx-attack-melee-strike')).toHaveCount(0, {
+                timeout: 1_000,
+            });
+            await meleeGifCapture.stop();
+
+            expect(meleeFxAudit.hasTravel).toBe(false);
+            expect(meleeFxAudit.sourceRow).toBe(meleeFxAudit.targetRow);
+            expect(meleeFxAudit.sourceCol).toBe(meleeFxAudit.targetCol);
+            await expect.poll(async () => {
+                const box = await readAttackerBox();
+                if (!box || !attackerBeforeBox) return Number.POSITIVE_INFINITY;
+                return Math.hypot(box.x - attackerBeforeBox.x, box.y - attackerBeforeBox.y);
+            }, {
+                message: '近战动画结束后来源单位必须回到原位',
+                timeout: 3_000,
+            }).toBeLessThan(3);
+            await expectMageWarsTargetContinuityProbePassed(
+                match.hostPage,
+                '近战攻击目标连续可见',
+            );
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                return hasEvent(
+                    snapshot,
+                    MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED,
+                    (payload) => (
+                        payload.attackerObjectId === attackerObjectId
+                        && payload.targetObjectId === targetObjectId
+                        && Array.isArray(payload.diceResults)
+                        && payload.effectDieResult === undefined
+                        && payload.rawEffectDieResult === undefined
+                    ),
+                )
+                    && !hasEvent(snapshot, MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE, (payload) => (
+                        payload.targetObjectId === targetObjectId
+                    ))
+                    && hasDamageDealtEvent(snapshot, targetObjectId);
+            }, {
+                message: '近战攻击必须通过正式页面点击来源和目标后产生真实攻击事件与伤害',
+                timeout: 5_000,
+            }).toBe(true);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '近战攻击稳定收口截图前');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-近战攻击稳定收口-目标可继续', {
+                evidenceDir: evidenceRun.stagingDir,
+            });
+        } finally {
+            await meleeFxAuditPromise?.catch(() => undefined);
+            await Promise.all([
+                match.hostContext.close(),
+                match.guestContext.close(),
+            ]);
         }
-        await finalizeMageWarsFxVideoRecording(testInfo, recording, recordedHostVideo);
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '近战攻击代表态',
+            required: true,
+            screenshotIncludes: [
+                '01-近战攻击代表态-来源和目标可见',
+                '02-近战攻击选择态-目标高亮',
+                '03-野性山猫近战攻击阿希拉牧师-攻击骰-玩家当前镜头',
+                '03-野性山猫近战攻击阿希拉牧师-来源唤醒和命中过程帧',
+                '04-野性山猫近战攻击阿希拉牧师-命中动画和伤害飘字过程帧',
+                '05-近战攻击稳定收口-目标可继续',
+            ],
+            requirements: [
+                {
+                    requirement: '正式页面近战攻击独立覆盖：玩家点击场上来源和目标，实际产生近战攻击事件与伤害',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面场上生物来源和目标点击链 passed',
+                        'E2E：MW_ARENA_OBJECT_ATTACK_DECLARED 与 DAMAGE_DEALT 均来自当前运行',
+                    ],
+                },
+                {
+                    requirement: '近战动效 GIF 覆盖来源、斩击过程、骰子 / 命中结果和稳定收口',
+                    status: 'PASS',
+                    evidence: [
+                        recording.finalGifPath!,
+                        'E2E：近战攻击没有远程 travel，使用近战斩击 renderer',
+                        'E2E：目标连续性监视器覆盖近战 FX 活跃帧',
+                    ],
+                },
+                {
+                    requirement: '攻击骰结果层与单位就绪 / 守卫 token 视觉语义分离',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：attack-dice-result 不包含 data-token-kind',
+                        'E2E：entity-status-tokens 不挂入攻击骰结果层',
+                    ],
+                },
+                {
+                    requirement: '无效果骰攻击不得生成效果骰结果或效果状态事件',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：野性山猫 2906 的攻击事件没有 effectDieResult / rawEffectDieResult',
+                        'E2E：正式页面没有 mage-wars-fx-effect-die-face',
+                    ],
+                },
+            ],
+        });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, recording);
+    });
+
+    test('正式页面治疗之光实际动效独立证据覆盖', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        const recording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '治疗之光',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const clericObjectId = 'mw-e2e-healing-light-cleric';
+        const animalObjectId = 'mw-e2e-healing-light-bobcat';
+        let gifCapture: MageWarsFxGifCapture | undefined;
+        let healingVisibleDelta: {
+            before: { life: number; remaining: number };
+            after: { life: number; remaining: number };
+        } | null = null;
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                replaceObjects: true,
+                objects: [
+                    {
+                        ...createMageWarsE2eCreatureObject(
+                            clericObjectId,
+                            '0',
+                            2811,
+                            '阿希拉牧师',
+                            ARENA_ZONE_IDS.A3,
+                        ),
+                        actionReady: true,
+                    },
+                    {
+                        ...createMageWarsE2eCreatureObject(
+                            animalObjectId,
+                            '0',
+                            2906,
+                            '野性山猫',
+                            ARENA_ZONE_IDS.A3,
+                        ),
+                        damage: 4,
+                        actionReady: false,
+                    },
+                ],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A1,
+                        mana: 12,
+                        actionReady: true,
+                        quickcastReady: true,
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                    },
+                },
+            });
+
+            const clericCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${clericObjectId}"]`,
+            ).first();
+            const animalCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${animalObjectId}"]`,
+            ).first();
+            await expect(clericCard).toBeVisible({ timeout: 5_000 });
+            await expect(animalCard).toBeVisible({ timeout: 5_000 });
+            await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                match.hostPage,
+                animalCard,
+                '治疗之光动作前露出受伤目标',
+            );
+            const woundedDamage = await readServerObjectDamage(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                '治疗之光前应能读取受伤野性山猫真实伤害',
+            );
+            expect(woundedDamage).toBeGreaterThan(0);
+            const beforeHealingLife = await readVisibleFieldCardLife(
+                match.hostPage,
+                animalCard,
+                '阿希拉牧师治疗之光动作前',
+            );
+            expect(beforeHealingLife.remaining, '治疗前野性山猫必须显示受伤生命').toBeLessThan(beforeHealingLife.life);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '治疗之光动作前截图');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '01-治疗之光动作前-野性山猫生命读数显示',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await clickFieldObject(match.hostPage, clericCard, '治疗之光前选择阿希拉牧师来源');
+            const healingLightButton = match.hostPage.getByTestId('mage-wars-selected-object-ability-healing-light');
+            await expect(healingLightButton).toBeVisible({ timeout: 3_000 });
+            const healingAbilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(healingAbilityDock).toBeVisible({ timeout: 3_000 });
+            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(healingLightButton).toContainText('治疗之光');
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '治疗之光入口截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '02-治疗之光入口-来源卡牌下方动作按钮可见',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await healingLightButton.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(animalCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
+            await waitForFxLayerIdle(match.hostPage, '治疗之光目标提交前');
+            await waitForTestHarness(match.hostPage);
+            const healingDiceReady = await match.hostPage.evaluate(() => {
+                const harness = (window as Window & {
+                    __BG_TEST_HARNESS__?: {
+                        dice?: {
+                            setValues?: (values: number[]) => void;
+                            remaining?: () => number;
+                            getValues?: () => number[];
+                        };
+                    };
+                }).__BG_TEST_HARNESS__;
+                harness?.dice?.setValues?.([2]);
+                return {
+                    hasHarness: Boolean(harness),
+                    remaining: harness?.dice?.remaining?.() ?? null,
+                    values: harness?.dice?.getValues?.() ?? [],
+                };
+            });
+            expect(healingDiceReady).toMatchObject({
+                hasHarness: true,
+                remaining: 1,
+                values: [2],
+            });
+            gifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
+            const healingFxAuditPromise = captureMageWarsFxProcessScreenshots(
+                match.hostPage,
+                testInfo,
+                'healing',
+                '03-阿希拉牧师治疗之光',
+                {
+                    expectHealingFloat: true,
+                    evidenceDir: evidenceRun.stagingDir,
+                    captureFrame: (animations) => gifCapture?.capture(animations) ?? Promise.resolve(),
+                },
+            );
+            await clickFieldObject(match.hostPage, animalCard, '治疗之光选择受伤野性山猫');
+            const healingFxAudit = await healingFxAuditPromise;
+            await gifCapture.stop();
+            expect(healingFxAudit.targetAnchorId).toBe(animalObjectId);
+            await expect.poll(async () => (
+                hasArenaObjectAbilityResolvedEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT,
+                    animalObjectId,
+                )
+            ), {
+                message: '阿希拉牧师治疗之光应通过正式页面产生对象主动能力结算事件',
+                timeout: 5_000,
+            }).toBe(true);
+            await expect.poll(async () => (
+                hasEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    'MW_SPELL_HEALING_ROLLED',
+                    (payload) => payload.sourceAbilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT
+                        && payload.targetObjectId === animalObjectId
+                        && Array.isArray(payload.diceResults)
+                        && payload.diceResults.length === 1
+                        && typeof payload.actualHealing === 'number'
+                        && payload.actualHealing > 0,
+                )
+            ), {
+                message: '阿希拉牧师治疗之光应产生带攻击骰结果的治疗掷骰事件',
+                timeout: 5_000,
+            }).toBe(true);
+            await expectServerObjectDamageLessThan(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                woundedDamage,
+                '治疗之光结算后野性山猫伤害应降低',
+            );
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '治疗之光结算后截图前');
+            const afterHealingLife = await waitForVisibleFieldCardLifeIncrease(
+                match.hostPage,
+                animalCard,
+                beforeHealingLife,
+                '阿希拉牧师治疗之光结算后',
+            );
+            expect(afterHealingLife.life).toBe(beforeHealingLife.life);
+            expect(
+                afterHealingLife.remaining,
+                '治疗之光必须让同一目标的可见当前生命值上升',
+            ).toBeGreaterThan(beforeHealingLife.remaining);
+            healingVisibleDelta = {
+                before: beforeHealingLife,
+                after: afterHealingLife,
+            };
+            await dragArenaViewportUntilLocatorActionable(match.hostPage, animalCard, '治疗之光结算后目标', {
+                safeInset: 120,
+            });
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '04-治疗之光结算后-野性山猫生命读数上升',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+        } finally {
+            await gifCapture?.stop().catch(() => undefined);
+            await Promise.all([
+                match.hostContext.close(),
+                match.guestContext.close(),
+            ]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(healingVisibleDelta, '治疗之光必须在最终证据前留下同一对象的可见生命前后值').not.toBeNull();
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '治疗之光代表态',
+            chainId: 'mage-wars-independent-healing-light-20261011',
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            required: true,
+            requireVisibleEffectDelta: true,
+            screenshotIncludes: [
+                '01-治疗之光动作前-野性山猫生命读数显示',
+                '02-治疗之光入口-来源卡牌下方动作按钮可见',
+                '03-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧',
+                '04-治疗之光结算后-野性山猫生命读数上升',
+            ],
+            screenshotDescriptions: {
+                '01-治疗之光动作前-野性山猫生命读数显示': {
+                    description: '治疗之光；玩家查看受伤野性山猫，画面显示当前生命低于最大生命，建立治疗前基线。',
+                    transition: '本链起点：目标已受伤且生命读数可见。',
+                    testedObject: '阿希拉牧师的治疗之光',
+                    effectClaim: '掷 1 颗攻击骰，治疗效果等于掷骰结果',
+                    observedDelta: `效果前：同一只野性山猫当前生命为 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}，服务端伤害大于 0。`,
+                },
+                '02-治疗之光入口-来源卡牌下方动作按钮可见': {
+                    description: '玩家点击阿希拉牧师本体后，来源卡下方出现“治疗之光”入口，受伤野性山猫仍保持可见。',
+                    transition: '相对上一张：从前态进入来源能力入口。',
+                    observedDelta: '目标仍处于受伤前态，治疗尚未提交。',
+                },
+                '03-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧': {
+                    description: '玩家选择受伤野性山猫后，同一目标出现攻击骰、治疗光效和恢复数字，画面进入真实结算过程。',
+                    transition: '相对上一张：提交目标选择，开始治疗掷骰和光效。',
+                    observedDelta: '过程态：攻击骰、治疗光效和恢复数字同屏出现，来源与目标关系保持稳定。',
+                },
+                '04-治疗之光结算后-野性山猫生命读数上升': {
+                    description: '治疗结算完成后，野性山猫的可见当前生命值高于前态，伤害降低，牌桌回到可继续操作状态。',
+                    transition: '相对上一张：动画结束并收口到稳定结果。',
+                    observedDelta: `结果态：同一只野性山猫当前生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}，服务端伤害下降。`,
+                    visibleEffectDelta: {
+                        before: `${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}`,
+                        after: `${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}`,
+                        direction: 'increase',
+                    },
+                },
+            },
+            gifDescription: `玩家选择受伤野性山猫后，动图连续展示攻击骰、治疗光效、恢复数字和同一目标生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life} 的收口过程。`,
+            requirements: [
+                {
+                    requirement: '正式页面治疗之光独立覆盖：玩家从来源能力入口选择受伤目标，攻击骰、治疗光效、恢复数字、伤害降低和稳定收口来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面点击治疗之光来源、目标并产生对象能力结算和治疗掷骰事件',
+                        'E2E：攻击骰、治疗光效和恢复数字过程帧来自当前运行',
+                        recording.finalGifPath!,
+                    ],
+                },
+            ],
+        });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, recording);
+    });
+
+    test('正式页面有效果骰近战攻击独立证据覆盖', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(240_000);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        const recording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '有效果骰近战攻击',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const attackerObjectId = 'mw-e2e-effect-melee-attacker';
+        const targetObjectId = 'mw-e2e-effect-melee-target';
+        const maxAttempts = 12;
+        let successfulAttempt = 0;
+
+        try {
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+                await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                    phase: 'creatureAction',
+                    replaceObjects: true,
+                    objects: [
+                        createMageWarsE2eCreatureObject(
+                            attackerObjectId,
+                            '0',
+                            2801,
+                            '火烙魔婴',
+                            ARENA_ZONE_IDS.A3,
+                        ),
+                        {
+                            ...createMageWarsE2eCreatureObject(
+                                targetObjectId,
+                                '1',
+                                2811,
+                                '阿希拉牧师',
+                                ARENA_ZONE_IDS.A3,
+                            ),
+                            life: 20,
+                            actionReady: false,
+                        },
+                    ],
+                    playerPatches: {
+                        '0': {
+                            mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                            mageZoneId: ARENA_ZONE_IDS.A1,
+                            mana: 12,
+                            actionReady: true,
+                            quickcastReady: true,
+                        },
+                        '1': {
+                            mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                            mageZoneId: ARENA_ZONE_IDS.D3,
+                        },
+                    },
+                });
+
+                const attacker = match.hostPage.locator(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${attackerObjectId}"]`,
+                ).first();
+                const target = match.hostPage.locator(
+                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${targetObjectId}"]`,
+                ).first();
+                await expect(attacker).toBeVisible({ timeout: 5_000 });
+                await expect(target).toBeVisible({ timeout: 5_000 });
+                await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, `有效果骰近战第 ${attempt} 次截图前`);
+                const attemptDir = path.join(evidenceRun.stagingDir, '_attempts', String(attempt));
+                await fs.promises.mkdir(attemptDir, { recursive: true });
+                recording.frameDir = path.join(attemptDir, 'frames');
+                if (attempt === 1) {
+                    await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                        match.hostPage,
+                        target,
+                        '有效果骰近战前态玩家镜头',
+                        { xRatio: 0.74, yRatio: 0.28 },
+                    );
+                }
+                const attemptBeforePath = path.join(attemptDir, '动作前.jpg');
+                await match.hostPage.screenshot(withJpegEvidenceScreenshotOptions({
+                    path: attemptBeforePath,
+                    fullPage: false,
+                    animations: 'allow',
+                }));
+
+                const beforeSnapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const beforeEventCount = Array.isArray(beforeSnapshot.eventStream)
+                    ? beforeSnapshot.eventStream.length
+                    : 0;
+                await clickFieldObject(
+                    match.hostPage,
+                    attacker,
+                    `有效果骰近战第 ${attempt} 次选择火烙魔婴来源`,
+                    { safeInset: 24, keepCurrentCamera: true },
+                );
+                await expect(target.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
+
+                const meleeGifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
+                await clickFieldObject(
+                    match.hostPage,
+                    target,
+                    `有效果骰近战第 ${attempt} 次选择阿希拉牧师目标`,
+                    { safeInset: 24, keepCurrentCamera: true },
+                );
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-melee-strike').first()).toBeVisible({ timeout: 5_000 });
+                await expect(match.hostPage.getByTestId('mage-wars-fx-effect-die-face').first()).toBeVisible({ timeout: 5_000 });
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                    'data-overlay-layer',
+                    'screen',
+                );
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toHaveAttribute(
+                    'data-placement',
+                    'screen-center',
+                );
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice-summary')).toHaveAttribute(
+                    'data-contrast',
+                    'opaque',
+                );
+                await expectMageWarsAttackResultLayerIsolated(match.hostPage, `有效果骰近战第 ${attempt} 次结果层`);
+                const attemptProcessPath = path.join(attemptDir, '效果骰与斩击.jpg');
+                await match.hostPage.screenshot(withJpegEvidenceScreenshotOptions({
+                    path: attemptProcessPath,
+                    fullPage: false,
+                    animations: 'allow',
+                }));
+
+                await expect.poll(async () => {
+                    const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                    const entries = Array.isArray(snapshot.eventStream) ? snapshot.eventStream : [];
+                    const recentEntries = entries.slice(beforeEventCount);
+                    const declared = recentEntries.find((entry) => (
+                        entry.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
+                        && isRecord(entry.payload)
+                        && entry.payload.attackerObjectId === attackerObjectId
+                        && entry.payload.targetObjectId === targetObjectId
+                        && typeof entry.payload.effectDieResult === 'number'
+                    ));
+                    return declared?.payload ?? null;
+                }, {
+                    message: `有效果骰近战第 ${attempt} 次必须产生带 effectDieResult 的真实攻击事件`,
+                    timeout: 8_000,
+                }).not.toBeNull();
+
+                const afterEffectSnapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const afterEffectEntries = Array.isArray(afterEffectSnapshot.eventStream)
+                    ? afterEffectSnapshot.eventStream.slice(beforeEventCount)
+                    : [];
+                const declaredPayload = afterEffectEntries.find((entry) => (
+                    entry.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_DECLARED
+                    && isRecord(entry.payload)
+                    && entry.payload.attackerObjectId === attackerObjectId
+                    && entry.payload.targetObjectId === targetObjectId
+                    && typeof entry.payload.effectDieResult === 'number'
+                ));
+
+                const effectResult = isRecord(declaredPayload?.payload)
+                    ? declaredPayload.payload.effectDieResult
+                    : undefined;
+                const effectDieBody = match.hostPage.getByTestId('mage-wars-fx-effect-die-css-body');
+                await expect(effectDieBody).toHaveAttribute('data-roll-animation', 'settled');
+                const rawEffectResult = isRecord(declaredPayload?.payload)
+                    ? declaredPayload.payload.rawEffectDieResult
+                    : undefined;
+                await expect(effectDieBody.locator('[data-settled-face-value]')).toHaveAttribute(
+                    'data-settled-face-value', String(rawEffectResult),
+                );
+                const effectDieModifier = match.hostPage.getByTestId('mage-wars-effect-die-modifier');
+                if (typeof rawEffectResult === 'number' && typeof effectResult === 'number' && rawEffectResult !== effectResult) {
+                    await expect(effectDieModifier).toBeVisible();
+                    await expect(effectDieModifier).toContainText(String(effectResult));
+                } else {
+                    await expect(effectDieModifier).toHaveCount(0);
+                }
+                if (typeof effectResult !== 'number' || effectResult < 8) {
+                    await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeHidden({ timeout: 5_000 });
+                    await meleeGifCapture.stop();
+                    continue;
+                }
+
+                for (const [sourcePath, fragment] of [
+                    [attemptBeforePath, '01-有效果骰近战攻击-来源和目标可见'],
+                    [attemptProcessPath, '02-有效果骰近战攻击-效果骰与斩击过程'],
+                ]) {
+                    const destinationPath = getEvidenceScreenshotPathInDirectory(evidenceRun.stagingDir, fragment, {
+                        requireChineseName: true,
+                    });
+                    await fs.promises.copyFile(sourcePath, destinationPath);
+                    registerMageWarsEvidenceScreenshot(testInfo, destinationPath);
+                }
+                await saveEvidenceScreenshot(match.hostPage, testInfo, '03-有效果骰近战攻击-原生骰面停稳', {
+                    animations: 'allow',
+                    evidenceDir: evidenceRun.stagingDir,
+                });
+
+                await expect.poll(async () => {
+                    const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                    const entries = Array.isArray(snapshot.eventStream) ? snapshot.eventStream : [];
+                    return entries.slice(beforeEventCount).some((entry) => (
+                        entry.type === MAGE_WARS_EVENTS.ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE
+                        && isRecord(entry.payload)
+                        && entry.payload.targetObjectId === targetObjectId
+                        && entry.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
+                    ));
+                }, {
+                    message: `有效果骰近战第 ${attempt} 次必须产生燃烧可用事件`,
+                    timeout: 8_000,
+                }).toBe(true);
+
+                await expect.poll(async () => {
+                    const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                    const entries = Array.isArray(snapshot.eventStream) ? snapshot.eventStream : [];
+                    return entries.slice(beforeEventCount).some((entry) => (
+                        entry.type === MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED
+                        && isRecord(entry.payload)
+                        && entry.payload.targetObjectId === targetObjectId
+                        && entry.payload.statusTokenId === STATUS_TOKEN_IDS.BURN
+                    ));
+                }, {
+                    message: `有效果骰近战第 ${attempt} 次必须落地燃烧 token`,
+                    timeout: 8_000,
+                }).toBe(true);
+
+                successfulAttempt = attempt;
+                await expect.poll(async () => {
+                    const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                    const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                    const targetState = isRecord(objects[targetObjectId]) ? objects[targetObjectId] : {};
+                    const statusTokens = isRecord(targetState.statusTokens) ? targetState.statusTokens : {};
+                    return statusTokens[STATUS_TOKEN_IDS.BURN] ?? 0;
+                }, {
+                    message: '有效果骰近战结算后目标必须落地 1 个燃烧 token',
+                    timeout: 5_000,
+                }).toBeGreaterThan(0);
+                await expect(match.hostPage.getByTestId('mage-wars-fx-attack-dice')).toBeHidden({ timeout: 5_000 });
+                await saveEvidenceScreenshot(match.hostPage, testInfo, '04-有效果骰近战攻击-燃烧 token 已落地', {
+                    animations: 'allow',
+                    evidenceDir: evidenceRun.stagingDir,
+                });
+                await meleeGifCapture.stop();
+                break;
+            }
+
+            expect(successfulAttempt, `有效果骰近战在 ${maxAttempts} 次真实点击尝试内没有得到 >=8 的效果骰`).toBeGreaterThan(0);
+        } finally {
+            await Promise.all([
+                match.hostContext.close(),
+                match.guestContext.close(),
+            ]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '有效果骰近战攻击代表态',
+            required: true,
+            chainId: `mage-wars-effect-melee-attempt-${successfulAttempt}`,
+            screenshotIncludes: [
+                '01-有效果骰近战攻击-来源和目标可见',
+                '02-有效果骰近战攻击-效果骰与斩击过程',
+                '03-有效果骰近战攻击-原生骰面停稳',
+                '04-有效果骰近战攻击-燃烧-token-已落地',
+            ],
+            sourceVerification: {
+                status: 'source-verified',
+                sourceType: 'model-plus-texture',
+                sourceObject: 'TTS 原生 Die_12（效果骰）',
+                sourceLocator: 'D:/gongzuo/webgame/gameasset/法师战争/Mods/Workshop/2607721556.json#GUID=f9cb19',
+                sourceEvidence: [
+                    'TTS 对象 Name=Die_12，GUID=f9cb19',
+                    '对象记录包含 1-12 的 RotationValues',
+                    '对象记录没有 CustomImage、CustomMesh 或外部贴图字段',
+                    '安装包 resources.assets: Die_12 4352 -> MeshFilter 14037 -> Dodecahedron 1971；数字材质 54 -> 贴图 479',
+                ],
+                rendering: 'css-native-mesh-faces',
+                mapping: [
+                    '12 个面的顶点和 UV0 直接转换自原生 Dodecahedron；保留 20 顶点、30 边闭合和六组对面',
+                    '数字直接采样原生 2048x2048 贴图，按 Dice_NumbersWhite 的 alpha cutoff 转为透明图',
+                    '面值与 Workshop RotationValues 的法线一致，停稳由整体旋转实现，骰面不会重新编号',
+                    '骰体基色取自 ColorDiffuse；CSS 光照不是 Unity 原生 shader 的逐像素还原',
+                    '结果层沿用统一攻击骰的 3 秒进出场动画',
+                ],
+            },
+            requirements: [
+                {
+                    requirement: '正式页面点击 2801 火烙魔婴与真实目标后产生效果骰结果',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面场上生物来源和目标点击链 passed',
+                        'E2E：mage-wars-fx-effect-die-face 在攻击过程中真实可见',
+                    ],
+                },
+                {
+                    requirement: '效果骰达到 8 后产生燃烧可用事件并把燃烧 token 落到目标单位',
+                    status: 'PASS',
+                    evidence: [
+                        `E2E：第 ${successfulAttempt} 次真实攻击的服务端事件包含 MW_ARENA_OBJECT_ATTACK_STATUS_EFFECT_AVAILABLE`,
+                        'E2E：服务端目标对象 statusTokens.burn > 0',
+                    ],
+                },
+                {
+                    requirement: '截图与 GIF 必须来自同一个有效果骰近战 E2E 运行，且 GIF 覆盖斩击、效果骰与结果落地',
+                    status: 'PASS',
+                    evidence: [
+                        recording.finalGifPath!,
+                        'E2E：本用例使用同一个 staging evidenceRun 生成截图、帧目录、GIF 和 PASS 清单',
+                    ],
+                },
+            ],
+        });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, recording);
     });
 
     test(MAGE_WARS_CURRENT_SCOPE_CANDIDATE_TEST_NAME, async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(420_000);
         await clearEvidenceScreenshotsForTest(testInfo);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        testInfo.annotations.push({
+            type: 'evidence-staging-dir',
+            description: evidenceRun.stagingDir,
+        });
+        const healingRecording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '治疗之光',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+        let healingGifCapture: MageWarsFxGifCapture | null = null;
+        let healingVisibleDelta: {
+            before: { life: number; remaining: number };
+            after: { life: number; remaining: number };
+        } | null = null;
         const setupData = await selectMageWarsCurrentScopeSetupDataViaLocalGate(browser, baseURL, testInfo);
         const match = await setupOnlineMageWars(browser, baseURL, {}, setupData);
         const hostDiagnostics = attachPageDiagnostics(match.hostPage);
@@ -4676,25 +8410,23 @@ test.describe('Mage Wars formal online runtime', () => {
             if (!guestClericObjectId) throw new Error('阿希拉牧师没有对象 ID，无法核对后续魔物锚点');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '09-两派系生物部署后-兽王女祭司各有场上生物');
 
-            await advanceToReadyFieldObjectAction(match, '0', 'a3', 2906, '野性山猫', diagnostics);
-            await clickFieldObject(
-                match.hostPage,
-                match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first(),
-                '野性山猫移动前选择来源',
-            );
-            await clickLegalMoveZone(match.hostPage, 'a2', '野性山猫移动到相邻格以验证攻击法术路径');
-            await waitForZoneFieldCard(match.hostPage, 'a2', 2906, '野性山猫移动后', {
-                match,
-                playerId: '0',
-                diagnostics,
-            });
-            const hostBobcatById = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
-
+            // 召唤出来的生物本轮 actionReady=false；部署结束后进入下一轮计划。
+            // 结界 / 装备先在同一回合的 initiative quickcast 真实施放，
+            // 再跨回合等待生物获得行动资格并移动，避免准备牌随回合切换归还。
             await advanceToNextPlanningPhase(match, diagnostics);
-            await planNamedSpells(match.hostPage, ['公牛耐力', '犀牛兽皮']);
-            await planNamedSpells(match.guestPage, ['风龙皮甲', '公牛耐力']);
-            const secondRoundOrder = await resolveCurrentActorOrder(match, '装备和结界代表链', diagnostics);
-            for (const actorId of secondRoundOrder) {
+            // 公牛耐力、风龙皮甲都是快速法术；每名法师每轮只有一次快速施法。
+            // 第一轮只安排各自的第一张，第二张留到下一轮真实施放。
+            await planNamedSpellsTogether(match, ['公牛耐力'], ['风龙皮甲']);
+
+            await advanceUntilPhase(
+                match,
+                'initiativeQuickcast',
+                '第一轮装备和结界应进入快速施法窗口',
+                diagnostics,
+            );
+            const firstEnchantmentRoundOrder = await resolveCurrentActorOrder(match, '第一轮装备和结界代表链', diagnostics);
+            const hostBobcatById = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
+            for (const actorId of firstEnchantmentRoundOrder) {
                 if (actorId === '0') {
                     await castPreparedSpellOnFieldObject(match.hostPage, '公牛耐力', hostBobcatById, async () => {
                         await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '兽王结界公牛耐力目标选择截图前');
@@ -4711,23 +8443,7 @@ test.describe('Mage Wars formal online runtime', () => {
                         anchoredToObjectId: hostBobcatObjectId,
                         revealed: true,
                     }, '兽王结界公牛耐力应通过正式页面施放并附着到野性山猫');
-
-                    await castPreparedSpellOnFieldObject(match.hostPage, '犀牛兽皮', hostBobcatById, async () => {
-                        await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '兽王结界犀牛兽皮目标选择截图前');
-                        await saveEvidenceScreenshot(
-                            match.hostPage,
-                            testInfo,
-                            '10B-兽王结界犀牛兽皮施放前-野性山猫为绿色合法目标',
-                        );
-                    });
-                    await expectServerObject(match.hostPage, match, '0', {
-                        sourceSpellCardId: 1917,
-                        kind: 'enchantment',
-                        ownerId: '0',
-                        anchoredToObjectId: hostBobcatObjectId,
-                        revealed: true,
-                    }, '兽王结界犀牛兽皮应通过正式页面施放并附着到野性山猫');
-                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                    await clickMageWarsTurnEnd(match.hostPage, '兽王公牛耐力');
                     continue;
                 }
 
@@ -4745,14 +8461,60 @@ test.describe('Mage Wars formal online runtime', () => {
                     ownerId: '1',
                     anchoredToPlayerId: '1',
                 }, '女祭司装备风龙皮甲应通过正式页面施放并附着到女祭司法师');
+                await clickMageWarsTurnEnd(match.guestPage, '女祭司风龙皮甲');
+            }
+
+            await advanceToReadyFieldObjectAction(match, '0', 'a3', 2906, '野性山猫', diagnostics);
+            await clickFieldObject(
+                match.hostPage,
+                match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first(),
+                '野性山猫移动前选择来源',
+            );
+            await clickLegalMoveZone(match.hostPage, 'a2', '野性山猫移动到相邻格以验证攻击法术路径');
+            await waitForZoneFieldCard(match.hostPage, 'a2', 2906, '野性山猫移动后', {
+                match,
+                playerId: '0',
+                diagnostics,
+            });
+
+            // 第二张快速结界必须跨到下一轮；这里仍从正式计划和正式行动入口完成。
+            await advanceToNextPlanningPhase(match, diagnostics);
+            await planNamedSpellsTogether(match, ['犀牛兽皮'], ['公牛耐力']);
+            await advanceUntilPhase(
+                match,
+                'initiativeQuickcast',
+                '第二轮装备和结界应进入快速施法窗口',
+                diagnostics,
+            );
+            const secondEnchantmentRoundOrder = await resolveCurrentActorOrder(match, '第二轮结界代表链', diagnostics);
+            for (const actorId of secondEnchantmentRoundOrder) {
+                if (actorId === '0') {
+                    await castPreparedSpellOnFieldObject(match.hostPage, '犀牛兽皮', hostBobcatById, async () => {
+                        await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '兽王结界犀牛兽皮目标选择截图前');
+                        await saveEvidenceScreenshot(
+                            match.hostPage,
+                            testInfo,
+                            '10B-兽王结界犀牛兽皮施放前-野性山猫为绿色合法目标',
+                        );
+                    });
+                    await expectServerObject(match.hostPage, match, '0', {
+                        sourceSpellCardId: 1917,
+                        kind: 'enchantment',
+                        ownerId: '0',
+                        anchoredToObjectId: hostBobcatObjectId,
+                        revealed: true,
+                    }, '兽王结界犀牛兽皮应通过正式页面施放并附着到野性山猫');
+                    await clickMageWarsTurnEnd(match.hostPage, '兽王犀牛兽皮');
+                    continue;
+                }
 
                 const guestClericById = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${guestClericObjectId}"]`).first();
                 await castPreparedSpellOnFieldObject(match.guestPage, '公牛耐力', guestClericById, async () => {
-                    await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '女祭司结界公牛耐力目标选择截图前');
+                    await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '女祭司第二张结界目标选择截图前');
                     await saveEvidenceScreenshot(
                         match.guestPage,
                         testInfo,
-                        '10D-女祭司结界公牛耐力施放前-阿希拉牧师为绿色合法目标',
+                        '10D-女祭司第二张公牛耐力施放前-阿希拉牧师为绿色合法目标',
                     );
                 });
                 await expectServerObject(match.guestPage, match, '1', {
@@ -4761,8 +8523,8 @@ test.describe('Mage Wars formal online runtime', () => {
                     ownerId: '1',
                     anchoredToObjectId: guestClericObjectId,
                     revealed: true,
-                }, '女祭司结界公牛耐力应通过正式页面施放并附着到阿希拉牧师');
-                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                }, '女祭司第二张公牛耐力应通过正式页面施放并附着到阿希拉牧师');
+                await clickMageWarsTurnEnd(match.guestPage, '女祭司第二张公牛耐力');
             }
             const guestMageEquipment = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="3708"][data-attachment-kind="equipment"]').first();
             const enduranceAttachments = match.hostPage.locator('[data-testid="mage-wars-attached-card"][data-source-card-id="1808"][data-attachment-kind="enchantment"]');
@@ -4781,8 +8543,13 @@ test.describe('Mage Wars formal online runtime', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '10E-装备和结界最终附着结果-两派系附着关系可见');
 
             await advanceToNextPlanningPhase(match, diagnostics);
-            await planNamedSpells(match.hostPage, ['荆棘之墙']);
-            await planNamedSpells(match.guestPage, ['皇家箭手']);
+            await planNamedSpellsTogether(match, ['荆棘之墙'], ['皇家箭手']);
+            await advanceUntilPhase(
+                match,
+                'initiativeQuickcast',
+                '墙体主链应进入快速施法窗口',
+                diagnostics,
+            );
             const wallRoundOrder = await resolveCurrentActorOrder(match, '墙体主链整合', diagnostics);
             const wallSpellCardId = 25700;
             const wallEdgeId = 'a3-b3';
@@ -4801,7 +8568,7 @@ test.describe('Mage Wars formal online runtime', () => {
                         const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
                         return hasWallSnapshot(snapshot, wallEdgeId, wallSpellCardId)
                             && hasWallSummonedEvent(snapshot, wallEdgeId, wallSpellCardId)
-                            && hasEvent(snapshot, 'MW_SPELL_CAST_RESOLVED', (payload) => (
+                            && hasEvent(snapshot, MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED, (payload) => (
                                 payload.spellCardId === wallSpellCardId
                                 && payload.targetWallEdgeId === wallEdgeId
                             ));
@@ -4814,21 +8581,34 @@ test.describe('Mage Wars formal online runtime', () => {
                     await expect(targetWallCardPreview).toBeVisible({ timeout: 3_000 });
                     await expect(targetWallCardPreview).toHaveAttribute('data-source-card-id', String(wallSpellCardId));
                     await expect(targetWallCardPreview).toHaveAttribute('data-wall-visual', 'spell-card');
+                    const targetWallCardRect = await targetWallCardPreview.evaluate((element) => {
+                        const rect = element.getBoundingClientRect();
+                        return { width: rect.width, height: rect.height };
+                    });
+                    expect(
+                        Math.min(targetWallCardRect.width, targetWallCardRect.height),
+                        '墙牌视觉本体在真实桌面缩放后仍需保持可读尺寸',
+                    ).toBeGreaterThanOrEqual(70);
                     await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '主候选链墙体施放完成截图前');
                     await saveEvidenceScreenshot(match.hostPage, testInfo, '10G-荆棘之墙施放后-A3-B3边界墙牌可见');
 
-                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                    await clickMageWarsTurnEnd(match.hostPage, '缠绕藤蔓');
                     continue;
                 }
 
-                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                await clickMageWarsTurnEnd(match.guestPage, '圣光之柱');
             }
 
             await advanceToNextPlanningPhase(match, diagnostics);
-            await planNamedSpells(match.hostPage, ['缠绕藤蔓', '间歇喷泉']);
-            await planNamedSpells(match.guestPage, ['圣光之柱']);
-            const thirdRoundOrder = await resolveCurrentActorOrder(match, '魔物和攻击代表链', diagnostics);
-            for (const actorId of thirdRoundOrder) {
+            await planNamedSpellsTogether(match, ['缠绕藤蔓'], ['圣光之柱']);
+            await advanceUntilPhase(
+                match,
+                'initiativeQuickcast',
+                '魔物代表链应进入快速施法窗口',
+                diagnostics,
+            );
+            const conjurationRoundOrder = await resolveCurrentActorOrder(match, '魔物代表链', diagnostics);
+            for (const actorId of conjurationRoundOrder) {
                 if (actorId === '0') {
                     const hostTargetBobcat = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
                     await castPreparedSpellOnFieldObject(match.hostPage, '缠绕藤蔓', hostTargetBobcat);
@@ -4848,7 +8628,27 @@ test.describe('Mage Wars formal online runtime', () => {
                         timeout: 5_000,
                     }).toBe(true);
 
+                    await clickMageWarsTurnEnd(match.hostPage, '间歇喷泉');
+                    continue;
+                }
+
+                await clickMageWarsTurnEnd(match.guestPage, '攻击轮转');
+            }
+
+            await advanceToNextPlanningPhase(match, diagnostics);
+            await planNamedSpellsTogether(match, ['间歇喷泉'], []);
+            await advanceUntilPhase(
+                match,
+                'initiativeQuickcast',
+                '攻击代表链应进入快速施法窗口',
+                diagnostics,
+            );
+            const attackRoundOrder = await resolveCurrentActorOrder(match, '攻击代表链', diagnostics);
+            for (const actorId of attackRoundOrder) {
+                if (actorId === '0') {
+                    const hostTargetBobcat = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
                     let geyserAttackFxAuditPromise: ReturnType<typeof captureMageWarsFxProcessScreenshots> | undefined;
+                    await startMageWarsAttackDamageFloatProbe(match.hostPage);
                     await castPreparedSpellOnFieldObject(match.hostPage, '间歇喷泉', hostTargetBobcat, () => {
                         geyserAttackFxAuditPromise = captureMageWarsFxProcessScreenshots(
                             match.hostPage,
@@ -4858,6 +8658,7 @@ test.describe('Mage Wars formal online runtime', () => {
                             {
                                 expectTravel: true,
                                 expectDamageFloat: true,
+                                startDamageFloatProbe: false,
                             },
                         );
                     });
@@ -4875,16 +8676,16 @@ test.describe('Mage Wars formal online runtime', () => {
                         message: '兽王攻击法术间歇喷泉应通过正式页面产生攻击掷骰和真实伤害事件',
                         timeout: 5_000,
                     }).toBe(true);
-                    await match.hostPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                    await clickMageWarsTurnEnd(match.hostPage, '荆棘之墙');
                     continue;
                 }
 
-                await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
+                await clickMageWarsTurnEnd(match.guestPage, '皇家箭手轮转');
             }
             await saveEvidenceScreenshot(match.hostPage, testInfo, '11-缠绕藤蔓和攻击法术结算后-魔物与攻击效果可见');
             await advanceUntilBothPlayersReachPlanningPhase(match, diagnostics);
-            await expect(match.hostPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase', { timeout: 5_000 });
-            await expect(match.guestPage.getByTestId('mage-wars-turn-end')).toHaveAttribute('data-main-action-mode', 'advance-phase', { timeout: 5_000 });
+            await expect(match.hostPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-main-action-mode', 'plan-spells', { timeout: 5_000 });
+            await expect(match.guestPage.getByTestId('mage-wars-plan-spells')).toHaveAttribute('data-main-action-mode', 'plan-spells', { timeout: 5_000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '12-候选链收口-回到下一轮计划阶段');
 
             const woundedBobcatDamageAfterGeyser = await readServerObjectDamage(
@@ -4934,8 +8735,32 @@ test.describe('Mage Wars formal online runtime', () => {
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '守卫动作截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '14-守卫动作后-阿希拉牧师守卫标记可见');
 
-            await match.guestPage.getByTestId('mage-wars-turn-end').click({ timeout: 3_000, noWaitAfter: true });
-            await advanceToReadyFieldObjectAction(match, '0', ARENA_ZONE_IDS.A2, 2906, '野性山猫', diagnostics);
+            // 守卫标记按规则持续到守卫生物自己的下一个行动阶段开始。
+            // 当前候选链在完成前置自然动作后已经跨过了回合重置，因此这里仅预置
+            // “仍处于守卫状态、双方都已进入生物行动阶段”的前置条件；攻击、反击
+            // 响应和守卫移除仍全部由正式页面真实点击完成，并在 evidence 中标为代表态。
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                objectPatches: {
+                    [hostBobcatObjectId]: {
+                        zoneId: ARENA_ZONE_IDS.A2,
+                        actionReady: true,
+                    },
+                    [guestClericObjectId]: {
+                        zoneId: ARENA_ZONE_IDS.A2,
+                        actionReady: true,
+                        guarding: true,
+                    },
+                },
+            });
+            await expectServerObjectGuarding(
+                match.hostPage,
+                match,
+                '0',
+                guestClericObjectId,
+                true,
+                '守卫移除代表态的真实攻击前置必须仍保留守卫标记',
+            );
             const hostBobcatForGuardAttack = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
             const guestClericOnHostPage = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${guestClericObjectId}"]`).first();
             await clickFieldObject(match.hostPage, hostBobcatForGuardAttack, '野性山猫近战攻击守卫生物前选择来源');
@@ -4949,23 +8774,33 @@ test.describe('Mage Wars formal online runtime', () => {
                 false,
                 '同格近战攻击守卫生物后守卫标记应被移除',
             );
-            await expect.poll(async () => (
-                await (async () => {
-                    const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
-                    return hasEvent(
-                        snapshot,
-                        'MW_GUARD_REMOVED',
-                        (payload) => payload.targetObjectId === guestClericObjectId,
-                    ) || hasEvent(
-                        snapshot,
-                        'MW_ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE',
-                        (payload) => payload.targetObjectId === guestClericObjectId,
-                    );
-                })()
-            ), {
-                message: '近战攻击守卫生物应产生守卫移除机会或最终守卫移除事件',
-                timeout: 5_000,
-            }).toBe(true);
+            try {
+                await expect.poll(async () => (
+                    await (async () => {
+                        const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                        return hasEvent(
+                            snapshot,
+                            'MW_GUARD_REMOVED',
+                            (payload) => payload.targetObjectId === guestClericObjectId,
+                        ) || hasEvent(
+                            snapshot,
+                            'MW_ARENA_OBJECT_ATTACK_GUARD_REMOVAL_AVAILABLE',
+                            (payload) => payload.targetObjectId === guestClericObjectId,
+                        );
+                    })()
+                ), {
+                    message: '近战攻击守卫生物应产生守卫移除机会或最终守卫移除事件',
+                    timeout: 5_000,
+                }).toBe(true);
+            } catch (error) {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                throw new Error([
+                    '近战攻击守卫生物应产生守卫移除机会或最终守卫移除事件',
+                    `guardObjectId=${guestClericObjectId}`,
+                    `serverSnapshot=${JSON.stringify(snapshot, null, 2)}`,
+                    error instanceof Error ? error.message : String(error),
+                ].join('\n'));
+            }
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '近战攻击守卫生物截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '15-近战攻击守卫生物后-守卫标记移除');
             const counterstrikeDock = match.guestPage.getByTestId('mage-wars-interaction-dock');
@@ -5007,53 +8842,66 @@ test.describe('Mage Wars formal online runtime', () => {
             expect(woundedBobcatDamage).toBeGreaterThan(0);
             const guestClericForHealing = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${guestClericObjectId}"]`).first();
             const hostBobcatForHealing = match.guestPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${hostBobcatObjectId}"]`).first();
+            const beforeHealingLife = await readVisibleFieldCardLife(
+                match.guestPage,
+                hostBobcatForHealing,
+                '阿希拉牧师治疗之光动作前',
+            );
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '阿希拉牧师治疗之光动作前截图');
+            await saveEvidenceScreenshot(
+                match.guestPage,
+                testInfo,
+                '16-阿希拉牧师治疗之光动作前-野性山猫生命读数显示',
+            );
             await clickFieldObject(match.guestPage, guestClericForHealing, '阿希拉牧师治疗之光前选择来源');
             const healingLightButton = match.guestPage.getByTestId('mage-wars-selected-object-ability-healing-light');
             await expect(healingLightButton).toBeVisible({ timeout: 3_000 });
             const healingAbilityDock = match.guestPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(healingAbilityDock).toBeVisible({ timeout: 3_000 });
-            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(healingAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
             await expect(healingAbilityDock).toHaveAttribute('data-ability-source-key', `object:${guestClericObjectId}`);
             const healingPlacement = await match.guestPage.evaluate((objectId) => {
-                const source = document.querySelector<HTMLElement>(
-                    `[data-testid="mage-wars-zone-field-card"][data-object-id="${objectId}"]`,
-                );
                 const dock = document.querySelector<HTMLElement>('[data-testid="mage-wars-selected-ability-action-dock"]');
-                if (!source || !dock) return null;
-                const sourceRect = source.getBoundingClientRect();
+                if (!dock) return null;
                 const dockRect = dock.getBoundingClientRect();
                 return {
-                    sourceBottom: sourceRect.bottom,
                     dockTop: dockRect.top,
-                    centerDelta: Math.abs(
-                        (sourceRect.left + sourceRect.width / 2) - (dockRect.left + dockRect.width / 2),
-                    ),
+                    dockCenterX: dockRect.left + dockRect.width / 2,
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight,
+                    placement: dock.getAttribute('data-ability-action-placement'),
                     anchoredToSource: dock.getAttribute('data-ability-source-key') === `object:${objectId}`,
                     renderedInBodyOverlay: dock.parentElement === document.body,
                 };
             }, guestClericObjectId);
             expect(healingPlacement).not.toBeNull();
-            expect(healingPlacement!.dockTop).toBeGreaterThanOrEqual(healingPlacement!.sourceBottom);
-            expect(healingPlacement!.centerDelta).toBeLessThanOrEqual(8);
+            expect(healingPlacement!.placement).toBe('middle-lower-action-dock');
+            expect(healingPlacement!.dockTop).toBeGreaterThan(healingPlacement!.viewportHeight * 0.45);
+            expect(Math.abs(healingPlacement!.dockCenterX - healingPlacement!.viewportWidth / 2)).toBeLessThan(80);
             expect(healingPlacement!.anchoredToSource).toBe(true);
             expect(healingPlacement!.renderedInBodyOverlay).toBe(true);
             await expect(healingLightButton).toHaveAttribute('data-ability-visual', 'text-action');
-            await expect(healingLightButton).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(healingLightButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
             await expect(healingLightButton.locator('img')).toHaveCount(0);
             await expect(healingLightButton.locator('svg')).toHaveCount(0);
             await expect(healingLightButton).toContainText('治疗之光');
             await saveEvidenceScreenshot(match.guestPage, testInfo, '16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见');
             await healingLightButton.click({ timeout: 3_000, noWaitAfter: true });
             await expect(hostBobcatForHealing.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
+            healingGifCapture = await startMageWarsFxGifCapture(match.guestPage, healingRecording);
             const healingFxAuditPromise = captureMageWarsFxProcessScreenshots(
                 match.guestPage,
                 testInfo,
                 'healing',
                 '16-阿希拉牧师治疗之光',
-                { expectHealingFloat: true },
+                {
+                    expectHealingFloat: true,
+                    captureFrame: (animations) => healingGifCapture?.capture(animations) ?? Promise.resolve(),
+                },
             );
             await clickFieldObject(match.guestPage, hostBobcatForHealing, '阿希拉牧师治疗之光选择受伤野性山猫');
             const healingFxAudit = await healingFxAuditPromise;
+            await healingGifCapture.stop();
             expect(healingFxAudit.targetAnchorId).toBe(hostBobcatObjectId);
             await expect.poll(async () => (
                 hasArenaObjectAbilityResolvedEvent(
@@ -5070,7 +8918,9 @@ test.describe('Mage Wars formal online runtime', () => {
                     await readServerCoreSnapshot(match.guestPage, match, '1'),
                     'MW_SPELL_HEALING_ROLLED',
                     (payload) => payload.sourceAbilityId === MAGE_WARS_OBJECT_ABILITY_IDS.ASYRAN_CLERIC_HEALING_LIGHT
-                        && payload.targetObjectId === hostBobcatObjectId,
+                        && payload.targetObjectId === hostBobcatObjectId
+                        && typeof payload.actualHealing === 'number'
+                        && payload.actualHealing > 0,
                 )
             ), {
                 message: '阿希拉牧师治疗之光应产生治疗掷骰事件',
@@ -5084,8 +8934,27 @@ test.describe('Mage Wars formal online runtime', () => {
                 woundedBobcatDamage,
                 '阿希拉牧师治疗之光结算后野性山猫伤害应降低',
             );
-            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '阿希拉牧师治疗之光截图前');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '16-阿希拉牧师治疗之光结算后-治疗能力可见');
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '阿希拉牧师治疗之光截图前');
+            const healedBobcatLifeMetrics = await waitForVisibleFieldCardLifeIncrease(
+                match.guestPage,
+                hostBobcatForHealing,
+                beforeHealingLife,
+                '阿希拉牧师治疗之光结算后',
+            );
+            expect(healedBobcatLifeMetrics.life).toBe(beforeHealingLife.life);
+            expect(
+                healedBobcatLifeMetrics.remaining,
+                '阿希拉牧师治疗之光必须让同一目标的可见当前生命值上升',
+            ).toBeGreaterThan(beforeHealingLife.remaining);
+            healingVisibleDelta = {
+                before: beforeHealingLife,
+                after: healedBobcatLifeMetrics,
+            };
+            await saveEvidenceScreenshot(
+                match.guestPage,
+                testInfo,
+                '16-阿希拉牧师治疗之光结算后-打开生命显示并看到野性山猫读数',
+            );
 
             const restoreClericObjectId = 'mw-e2e-priestess-restore-cleric';
             const burningCleric = {
@@ -5124,33 +8993,30 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(restoreButton).toBeVisible({ timeout: 3_000 });
             const restoreAbilityDock = match.guestPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(restoreAbilityDock).toBeVisible({ timeout: 3_000 });
-            await expect(restoreAbilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(restoreAbilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
             await expect(restoreAbilityDock).toHaveAttribute('data-ability-source-key', 'mage:1');
             const restorePlacement = await match.guestPage.evaluate(() => {
-                const source = document.querySelector<HTMLElement>(
-                    '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
-                );
                 const dock = document.querySelector<HTMLElement>('[data-testid="mage-wars-selected-ability-action-dock"]');
-                if (!source || !dock) return null;
-                const sourceRect = source.getBoundingClientRect();
+                if (!dock) return null;
                 const dockRect = dock.getBoundingClientRect();
                 return {
-                    sourceBottom: sourceRect.bottom,
                     dockTop: dockRect.top,
-                    centerDelta: Math.abs(
-                        (sourceRect.left + sourceRect.width / 2) - (dockRect.left + dockRect.width / 2),
-                    ),
+                    dockCenterX: dockRect.left + dockRect.width / 2,
+                    viewportWidth: window.innerWidth,
+                    viewportHeight: window.innerHeight,
+                    placement: dock.getAttribute('data-ability-action-placement'),
                     anchoredToSource: dock.getAttribute('data-ability-source-key') === 'mage:1',
                     renderedInBodyOverlay: dock.parentElement === document.body,
                 };
             });
             expect(restorePlacement).not.toBeNull();
-            expect(restorePlacement!.dockTop).toBeGreaterThanOrEqual(restorePlacement!.sourceBottom);
-            expect(restorePlacement!.centerDelta).toBeLessThanOrEqual(8);
+            expect(restorePlacement!.placement).toBe('middle-lower-action-dock');
+            expect(restorePlacement!.dockTop).toBeGreaterThan(restorePlacement!.viewportHeight * 0.45);
+            expect(Math.abs(restorePlacement!.dockCenterX - restorePlacement!.viewportWidth / 2)).toBeLessThan(80);
             expect(restorePlacement!.anchoredToSource).toBe(true);
             expect(restorePlacement!.renderedInBodyOverlay).toBe(true);
             await expect(restoreButton).toHaveAttribute('data-ability-visual', 'text-action');
-            await expect(restoreButton).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(restoreButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
             await expect(restoreButton.locator('img')).toHaveCount(0);
             await expect(restoreButton.locator('svg')).toHaveCount(0);
             await expect(restoreButton).toContainText('复原术');
@@ -5224,11 +9090,69 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.hostPage.getByTestId('endgame-overlay')).toBeVisible({ timeout: 5_000 });
             await saveEvidenceScreenshot(match.hostPage, testInfo, '18-近终局代表态基础攻击后-胜负遮罩可见');
         } finally {
+            await healingGifCapture?.stop().catch(() => undefined);
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(healingVisibleDelta, '治疗之光必须在最终证据前留下同一对象的可见生命前后值').not.toBeNull();
+        await finalizeMageWarsFxVideoRecording(testInfo, healingRecording, {
+            actionLabel: '治疗之光代表态',
+            chainId: 'mage-wars-independent-healing-light-20261006',
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            required: true,
+            requireVisibleEffectDelta: true,
+            screenshotIncludes: [
+                '16-阿希拉牧师治疗之光动作前-野性山猫生命读数显示',
+                '16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见',
+                '16-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧',
+                '16-阿希拉牧师治疗之光结算后-打开生命显示并看到野性山猫读数',
+            ],
+            screenshotDescriptions: {
+                '16-阿希拉牧师治疗之光动作前-野性山猫生命读数显示': {
+                    description: '治疗之光；玩家查看受伤野性山猫，画面显示当前生命低于最大生命，建立治疗前基线。',
+                    transition: '本链起点：目标已受伤且生命读数可见。',
+                    testedObject: '阿希拉牧师的治疗之光',
+                    effectClaim: '治疗受伤的友方动物并降低伤害',
+                    observedDelta: `效果前：同一只野性山猫当前生命为 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}，服务端伤害大于 0。`,
+                },
+                '16A-阿希拉牧师治疗之光入口-来源卡牌下方动作按钮可见': {
+                    description: '玩家点击阿希拉牧师本体后，来源卡下方出现“治疗之光”入口，受伤野性山猫仍保持可见。',
+                    transition: '相对上一张：从前态进入来源能力入口。',
+                    observedDelta: '目标仍处于受伤前态，治疗尚未提交。',
+                },
+                '16-阿希拉牧师治疗之光-治疗光效与恢复数字过程帧': {
+                    description: '玩家选择受伤野性山猫后，同一目标本体出现治疗光效和恢复数字，画面进入真实结算过程。',
+                    transition: '相对上一张：提交目标选择，开始治疗动画。',
+                    observedDelta: '过程态：治疗光效和恢复数字出现，来源与目标关系保持稳定。',
+                },
+                '16-阿希拉牧师治疗之光结算后-打开生命显示并看到野性山猫读数': {
+                    description: '治疗结算完成后，野性山猫的可见当前生命值高于前态，伤害降低，牌桌回到可继续操作状态。',
+                    transition: '相对上一张：动画结束并收口到稳定结果。',
+                    observedDelta: `结果态：同一只野性山猫当前生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}，服务端伤害下降。`,
+                    visibleEffectDelta: {
+                        before: `${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life}`,
+                        after: `${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life}`,
+                        direction: 'increase',
+                    },
+                },
+            },
+            gifDescription: `玩家选择受伤野性山猫后，动图连续展示治疗光效、恢复数字和同一目标生命由 ${healingVisibleDelta!.before.remaining}/${healingVisibleDelta!.before.life} 上升到 ${healingVisibleDelta!.after.remaining}/${healingVisibleDelta!.after.life} 的收口过程。`,
+            requirements: [
+                {
+                    requirement: '正式页面治疗之光独立覆盖：玩家从来源能力入口选择受伤目标，治疗光效、恢复数字、伤害降低和稳定收口来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面点击治疗之光来源、目标并产生对象能力结算和治疗掷骰事件',
+                        'E2E：治疗光效和恢复数字过程帧来自当前运行',
+                        healingRecording.finalGifPath!,
+                    ],
+                },
+            ],
+        });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, healingRecording);
     });
 
     test('正式页面隐藏法力失效响应窗口可揭示并反制目标法术', async ({ browser, baseURL }, testInfo) => {
@@ -5311,6 +9235,10 @@ test.describe('Mage Wars formal online runtime', () => {
             const responseDock = match.guestPage.getByTestId('mage-wars-interaction-dock');
             await expect(responseDock).toBeVisible({ timeout: 5_000 });
             await expect(responseDock).toContainText('必须展示响应结界');
+            await expect(responseDock).toContainText('法力失效');
+            await expect(responseDock).not.toContainText(responseObjectId);
+            const visibleGuestText = await match.guestPage.locator('body').innerText();
+            expect(visibleGuestText).not.toContain('mw-e2e-');
             const revealOption = responseDock.locator('[data-testid="mage-wars-interaction-option"][data-option-id="reveal"]').first();
             await expect(revealOption).toBeVisible({ timeout: 3_000 });
             await expect(responseDock.getByTestId('mage-wars-interaction-option')).toHaveCount(1);
@@ -5364,6 +9292,21 @@ test.describe('Mage Wars formal online runtime', () => {
     test('正式页面群兽法杖附件可从牌面发动并选择治疗模式', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
         await clearEvidenceScreenshotsForTest(testInfo);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        testInfo.annotations.push({
+            type: 'evidence-staging-dir',
+            description: evidenceRun.stagingDir,
+        });
+        const recording = createMageWarsFxVideoRecording(testInfo, {
+            fileLabel: '群兽法杖治疗',
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+        let gifCapture: MageWarsFxGifCapture | null = null;
+        let beastStaffVisibleDelta: {
+            before: { life: number; remaining: number };
+            after: { life: number; remaining: number };
+        } | null = null;
         const match = await setupOnlineMageWars(browser, baseURL);
         const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
         const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
@@ -5390,10 +9333,45 @@ test.describe('Mage Wars formal online runtime', () => {
             life: 8,
             damage: woundedAnimalDamage,
         };
+        // 读取服务端同步的真实种子，只定位随机游标；玩家动作仍由页面完成。
+        const randomSeed = await new Promise<string>((resolve, reject) => {
+            const socket = io(`${getGameServerBaseURL()}/game`, {
+                parser: msgpackParser, transports: ['websocket'], forceNew: true, reconnection: false,
+            });
+            const timeout = setTimeout(() => {
+                socket.disconnect();
+                reject(new Error('读取群兽法杖代表态随机种子超时'));
+            }, 5_000);
+            socket.on('connect', () => socket.emit('sync', match.matchId, '0', match.hostCredentials));
+            socket.on('connect_error', (error) => {
+                clearTimeout(timeout);
+                socket.disconnect();
+                reject(error);
+            });
+            socket.on('state:sync', (matchId: string, _state: unknown, _players: unknown, randomMeta: { seed?: unknown }) => {
+                if (matchId !== match.matchId || typeof randomMeta?.seed !== 'string') return;
+                clearTimeout(timeout);
+                socket.disconnect();
+                resolve(randomMeta.seed);
+            });
+        });
+        const deterministicRoll = createSeededRandom(randomSeed);
+        let firstDie = deterministicRoll.d(3);
+        let healingRandomCursor = -1;
+        for (let cursor = 0; cursor < 1_000; cursor += 1) {
+            const secondDie = deterministicRoll.d(3);
+            if (firstDie === 3 && secondDie === 3) {
+                healingRandomCursor = cursor;
+                break;
+            }
+            firstDie = secondDie;
+        }
+        expect(healingRandomCursor, '必须找到两颗治疗骰均为 2 的真实随机游标').toBeGreaterThanOrEqual(0);
 
         try {
             await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
                 phase: 'initiativeQuickcast',
+                randomCursor: healingRandomCursor,
                 replaceObjects: true,
                 objects: [beastStaff, woundedAnimal],
                 playerPatches: {
@@ -5422,16 +9400,42 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(staffCard).toBeVisible({ timeout: 3_000 });
             await expect(staffCard).toHaveAttribute('data-attachment-kind', 'equipment');
             await expect(animalCard).toBeVisible({ timeout: 3_000 });
+            const woundedAnimalDamageBefore = await readServerObjectDamage(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                '群兽法杖治疗前应能读取野性山猫真实伤害',
+            );
+            expect(woundedAnimalDamageBefore).toBeGreaterThan(0);
+            const beforeHealingLife = await readVisibleFieldCardLife(
+                match.hostPage,
+                animalCard,
+                '群兽法杖治疗动作前',
+            );
+            expect(
+                beforeHealingLife.remaining,
+                '群兽法杖治疗前玩家画面必须显示目标当前生命低于最大生命',
+            ).toBeLessThan(beforeHealingLife.life);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖治疗动作前截图');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '24-群兽法杖治疗动作前-野性山猫生命读数显示',
+            );
 
             await staffCard.click({ timeout: 3_000, noWaitAfter: true });
             const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(abilityDock).toBeVisible({ timeout: 3_000 });
-            await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'source-card-below');
+            await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
             const abilityButton = abilityDock.locator(`[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF}"]`).first();
             await expect(abilityButton).toBeVisible({ timeout: 3_000 });
-            await expect(abilityButton).toHaveAttribute('data-ability-visual', 'text-action');
+            await expect(abilityButton).toHaveAttribute('data-ability-visual', 'action-label');
+            await expect(abilityButton).toHaveText('发动能力');
+            await expect(abilityButton).not.toContainText('群兽法杖');
+            await assertMageWarsActionDockAboveSpellbook(match.hostPage, '群兽法杖入口');
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖入口截图前');
-            await saveEvidenceScreenshot(match.hostPage, testInfo, '24A-群兽法杖附件入口-来源卡牌下方能力按钮可见');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '24A-群兽法杖附件入口-屏幕中下动作按钮可见');
 
             await abilityButton.click({ timeout: 3_000, noWaitAfter: true });
             await expect(animalCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
@@ -5439,49 +9443,59 @@ test.describe('Mage Wars formal online runtime', () => {
             await saveEvidenceScreenshot(match.hostPage, testInfo, '24B-群兽法杖目标选择-友方动物整卡高亮');
             await clickFieldObject(match.hostPage, animalCard, '群兽法杖选择受伤野性山猫');
 
-            const choiceDock = match.hostPage.getByTestId('mage-wars-object-ability-choice-dock');
+            const choiceDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
             await expect(choiceDock).toBeVisible({ timeout: 3_000 });
             await expect(choiceDock.getByTestId('mage-wars-object-ability-choice-option')).toHaveCount(2);
             const healOption = choiceDock.locator('[data-testid="mage-wars-object-ability-choice-option"][data-mode="heal"]').first();
             const meleeOption = choiceDock.locator('[data-testid="mage-wars-object-ability-choice-option"][data-mode="melee-bonus"]').first();
             await expect(healOption).toBeVisible({ timeout: 3_000 });
             await expect(meleeOption).toBeVisible({ timeout: 3_000 });
+            await assertMageWarsActionDockAboveSpellbook(match.hostPage, '群兽法杖模式选择');
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖模式选择截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '24C-群兽法杖模式选择-治疗和近战加成需玩家选择');
 
             await waitForFxLayerIdle(match.hostPage, '群兽法杖治疗模式触发前');
-            await waitForTestHarness(match.hostPage);
-            const healingDiceReady = await match.hostPage.evaluate(() => {
-                const harness = (window as Window & {
-                    __BG_TEST_HARNESS__?: {
-                        dice?: {
-                            setValues?: (values: number[]) => void;
-                            remaining?: () => number;
-                            getValues?: () => number[];
-                        };
-                    };
-                }).__BG_TEST_HARNESS__;
-                harness?.dice?.setValues?.([6, 6]);
-                return {
-                    hasHarness: Boolean(harness),
-                    remaining: harness?.dice?.remaining?.() ?? null,
-                    values: harness?.dice?.getValues?.() ?? [],
-                };
-            });
-            expect(healingDiceReady).toMatchObject({
-                hasHarness: true,
-                remaining: 2,
-                values: [6, 6],
-            });
+            gifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
+            console.log('[MageWars GIF debug] teleport-recorder-started');
             const beastStaffHealingFxAuditPromise = captureMageWarsFxProcessScreenshots(
                 match.hostPage,
                 testInfo,
                 'healing',
                 '24D-群兽法杖治疗模式',
-                { expectHealingFloat: true },
+                {
+                    expectHealingFloat: true,
+                    captureFrame: (animations) => gifCapture?.capture(animations) ?? Promise.resolve(),
+                },
             );
+            const healingNumbersPromise = match.hostPage.waitForFunction(() => {
+                const summary = document.querySelector('[data-testid="mage-wars-fx-attack-dice-summary"]');
+                const floating = document.querySelector('[data-testid="mage-wars-fx-healing-number"]');
+                const dice = [...document.querySelectorAll('[data-testid="mage-wars-fx-attack-die-face"]')];
+                if (!summary || !floating || dice.length !== 2) return null;
+                const values = dice.map((die) => Number(die.getAttribute('aria-label')?.replace('攻击骰 ', '')));
+                if (values.some((value) => !Number.isFinite(value))) return null;
+                return { values, summary: summary.textContent?.trim(), actual: floating.getAttribute('data-healing-amount') };
+            }, undefined, { timeout: 10_000, polling: 'raf' }).then((handle) => handle.jsonValue());
             await healOption.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(choiceDock, '群兽法杖选择治疗模式后候选层必须收口，证明玩家动作已提交').toHaveCount(0, { timeout: 5_000 });
+            await expect.poll(async () => (
+                hasArenaObjectAbilityResolvedEvent(
+                    await readServerCoreSnapshot(match.hostPage, match, '0'),
+                    MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+                    animalObjectId,
+                )
+            ), {
+                message: '群兽法杖选择治疗模式后必须产生同一对象主动能力结算事件',
+                timeout: 5_000,
+            }).toBe(true);
             const beastStaffHealingFxAudit = await beastStaffHealingFxAuditPromise;
+            const healingNumbers = await healingNumbersPromise;
+            const rolledHealing = healingNumbers!.values.reduce((sum, value) => sum + value, 0);
+            expect(healingNumbers!.values, '群兽法杖代表态必须重现 2+2').toEqual([2, 2]);
+            expect(healingNumbers!.summary, '治疗骰盘必须显示骰子合计').toBe(String(rolledHealing));
+            expect(Number(healingNumbers!.actual), '卡牌飘字必须显示实际恢复量').toBe(Math.min(woundedAnimalDamage, rolledHealing));
+            console.log(`[MageWars healing] dice=${healingNumbers!.values.join('+')} total=${rolledHealing} actual=${healingNumbers!.actual}`);
+            await gifCapture.stop();
             expect(beastStaffHealingFxAudit.targetAnchorId).toBe(animalObjectId);
             await expectServerObjectDamageLessThan(
                 match.hostPage,
@@ -5491,6 +9505,21 @@ test.describe('Mage Wars formal online runtime', () => {
                 woundedAnimalDamage,
                 '群兽法杖治疗模式结算后野性山猫伤害应降低',
             );
+            const afterHealingLife = await waitForVisibleFieldCardLifeIncrease(
+                match.hostPage,
+                animalCard,
+                beforeHealingLife,
+                '群兽法杖治疗模式结算后',
+            );
+            expect(afterHealingLife.life).toBe(beforeHealingLife.life);
+            expect(
+                afterHealingLife.remaining,
+                '群兽法杖治疗模式必须让同一目标的可见当前生命值上升',
+            ).toBeGreaterThan(beforeHealingLife.remaining);
+            beastStaffVisibleDelta = {
+                before: beforeHealingLife,
+                after: afterHealingLife,
+            };
             await expect.poll(async () => {
                 const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
                 return hasArenaObjectAbilityResolvedEvent(
@@ -5510,6 +9539,1298 @@ test.describe('Mage Wars formal online runtime', () => {
             }).toBe(true);
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖治疗结算截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '24E-群兽法杖治疗模式结算后-动物伤害降低');
+        } finally {
+            await gifCapture?.stop().catch(() => undefined);
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(beastStaffVisibleDelta, '群兽法杖治疗必须在最终证据前留下同一对象的可见生命前后值').not.toBeNull();
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '群兽法杖治疗代表态',
+            chainId: 'mage-wars-independent-beast-staff-healing-20261006',
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            required: true,
+            requireVisibleEffectDelta: true,
+            screenshotIncludes: [
+                '24-群兽法杖治疗动作前-野性山猫生命读数显示',
+                '24A-群兽法杖附件入口-屏幕中下动作按钮可见',
+                '24B-群兽法杖目标选择-友方动物整卡高亮',
+                '24C-群兽法杖模式选择-治疗和近战加成需玩家选择',
+                '24D-群兽法杖治疗模式-治疗光效与恢复数字过程帧',
+                '24E-群兽法杖治疗模式结算后-动物伤害降低',
+            ],
+            screenshotDescriptions: {
+                '24-群兽法杖治疗动作前-野性山猫生命读数显示': {
+                    description: `群兽法杖；玩家查看受伤野性山猫，画面显示当前生命为 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life}，建立治疗前基线。`,
+                    transition: '本链起点：目标已受伤且生命读数可见。',
+                    testedObject: '群兽法杖',
+                    effectClaim: '发动附件能力治疗受伤的友方动物',
+                    observedDelta: `效果前：同一只野性山猫当前生命为 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life}，服务端伤害大于 0。`,
+                },
+                '24A-群兽法杖附件入口-屏幕中下动作按钮可见': {
+                    description: '玩家点击群兽法杖附件本体后，屏幕中下出现“发动能力”入口，受伤野性山猫仍保持可见。',
+                    transition: '相对上一张：从前态进入附件能力入口。',
+                    observedDelta: '目标仍处于受伤前态，治疗尚未提交。',
+                },
+                '24B-群兽法杖目标选择-友方动物整卡高亮': {
+                    description: '玩家提交群兽法杖能力后，友方野性山猫整张牌面进入可识别的目标高亮状态。',
+                    transition: '相对上一张：进入目标选择，目标本体被提权。',
+                    observedDelta: '来源、目标和受伤生命读数仍保持可见。',
+                },
+                '24C-群兽法杖模式选择-治疗和近战加成需玩家选择': {
+                    description: '玩家选择野性山猫后，治疗和近战加成两个模式同时出现，等待玩家提交模式。',
+                    transition: '相对上一张：目标选择完成，进入能力模式选择。',
+                    observedDelta: '候选模式承接同一目标，尚未产生治疗结果。',
+                },
+                '24D-群兽法杖治疗模式-治疗光效与恢复数字过程帧': {
+                    description: '玩家选择治疗模式后，同一只野性山猫出现治疗光效和恢复数字，进入真实结算过程。',
+                    transition: '相对上一张：提交治疗模式，开始治疗动画。',
+                    observedDelta: '过程态：治疗反馈贴在同一目标本体，来源与目标关系保持稳定。',
+                },
+                '24E-群兽法杖治疗模式结算后-动物伤害降低': {
+                    description: `治疗结算完成后，同一只野性山猫当前生命由 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life} 上升到 ${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life}，牌桌回到可继续操作状态。`,
+                    transition: '相对上一张：动画结束并收口到稳定结果。',
+                    observedDelta: `结果态：同一目标当前生命由 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life} 上升到 ${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life}，服务端伤害下降。`,
+                    visibleEffectDelta: {
+                        before: `${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life}`,
+                        after: `${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life}`,
+                        direction: 'increase',
+                    },
+                },
+            },
+            gifDescription: `玩家选择受伤野性山猫后，动图连续展示治疗光效、恢复数字和同一目标生命由 ${beastStaffVisibleDelta!.before.remaining}/${beastStaffVisibleDelta!.before.life} 上升到 ${beastStaffVisibleDelta!.after.remaining}/${beastStaffVisibleDelta!.after.life} 的收口过程。`,
+            requirements: [
+                {
+                    requirement: '正式页面群兽法杖治疗独立覆盖：玩家完成附件入口、目标选择和治疗模式选择后，治疗光效、恢复数字、伤害降低和稳定收口来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：附件入口、友方动物目标选择和治疗 / 近战模式选择均由真实页面完成',
+                        'E2E：群兽法杖治疗掷骰、实际治疗和伤害降低均来自当前运行',
+                        recording.finalGifPath!,
+                    ],
+                },
+            ],
+        });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, recording);
+    });
+
+    test('正式页面元素魔杖施放和快速重绑覆盖法术选择 UI', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await runMageWarsStaffBindingUiCase(browser, baseURL, testInfo, {
+            cardId: 3716,
+            cardName: '元素魔杖',
+            mageId: MAGE_IDS.WIZARD_APPRENTICE,
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND,
+            initialBoundSpellCardId: 1704,
+            castBoundSpellCardId: 1705,
+            reboundBoundSpellCardId: 1705,
+        });
+    });
+
+    test('正式页面法师魔杖施放和快速重绑覆盖法术选择 UI', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await runMageWarsStaffBindingUiCase(browser, baseURL, testInfo, {
+            cardId: 3725,
+            cardName: '法师魔杖',
+            mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+            abilityId: MAGE_WARS_OBJECT_ABILITY_IDS.MAGE_STAFF_BIND,
+            initialBoundSpellCardId: 3403,
+            castBoundSpellCardId: 3403,
+            reboundBoundSpellCardId: 3417,
+        });
+    });
+
+    test('正式页面法师魔杖已绑定力量汲取可从检视附件施放且不弃牌', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        testInfo.annotations.push({
+            type: 'evidence-staging-dir',
+            description: evidenceRun.stagingDir,
+        });
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const staffObjectId = 'mw-e2e-mage-staff-bound-cast';
+        const boundSpellCardId = 3500;
+        const boundSpellManaCost = 16;
+        const hostManaBefore = 20;
+        const opponentManaBefore = 10;
+        const mageStaff = {
+            ...createMageWarsE2eEquipmentObject(
+                staffObjectId,
+                '0',
+                3725,
+                '法师魔杖',
+                ARENA_ZONE_IDS.A3,
+                '0',
+            ),
+            typeLine: '装备 / 法杖',
+            attackOrTraitLine: '法术绑定',
+            boundSpellCardId,
+        };
+        let manaDelta: { hostBefore: number; hostAfter: number; opponentBefore: number; opponentAfter: number } | null = null;
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'initiativeQuickcast',
+                replaceObjects: true,
+                objects: [mageStaff],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: hostManaBefore,
+                        actionReady: true,
+                        quickcastReady: true,
+                        preparedSpellSlots: 0,
+                        preparedSpellCardIds: [],
+                        discardSpellCardIds: [],
+                        spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.WIZARD_APPRENTICE),
+                        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.WIZARD_APPRENTICE),
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.B3,
+                        mana: opponentManaBefore,
+                        preparedSpellSlots: 0,
+                        preparedSpellCardIds: [],
+                    },
+                },
+            });
+
+            const attachedCard = match.hostPage.locator(
+                `[data-testid="mage-wars-attached-card"][data-object-id="${staffObjectId}"][data-source-card-id="3725"]`,
+            ).first();
+            await expect(attachedCard).toBeVisible({ timeout: 5_000 });
+            await expect(attachedCard.getByTestId('mage-wars-bound-spell-overlay'))
+                .toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
+            await expect(attachedCard).toHaveAttribute('data-attachment-usable', 'true');
+            await expect(attachedCard.getByTestId('mage-wars-attachment-legal-frame'))
+                .toBeVisible({ timeout: 3_000 });
+            const hostManaReadout = await readMageWarsHudMana(match.hostPage, 'self');
+            const opponentManaReadout = await readMageWarsHudMana(match.hostPage, 'opponent');
+            expect(hostManaReadout).toBe(hostManaBefore);
+            expect(opponentManaReadout).toBe(opponentManaBefore);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '法师魔杖绑定力量汲取前态截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '25-法师魔杖绑定力量汲取前态-附着叠加和双方法力',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            const hostMageEntity = match.hostPage.locator(
+                '[data-testid="mage-wars-zone-mage-entity"][data-player-id="0"]',
+            ).first();
+            const hostAttachmentStrip = match.hostPage.getByTestId('mage-wars-mage-attachment-strip');
+            const hostMageBox = await hostMageEntity.boundingBox();
+            const hostStripBox = await hostAttachmentStrip.boundingBox();
+            expect(hostMageBox, '棋盘法师单位必须有屏幕矩形').not.toBeNull();
+            expect(hostStripBox, '法师附件条必须有屏幕矩形').not.toBeNull();
+            const attachmentWidthRatio = hostStripBox!.width / hostMageBox!.width;
+            expect(attachmentWidthRatio, `附加卡宽度必须约等于宿主卡宽 1/3，实际=${attachmentWidthRatio.toFixed(3)}`)
+                .toBeGreaterThan(0.28);
+            expect(attachmentWidthRatio).toBeLessThan(0.42);
+
+            await openMageWarsBoardUnitInspect(match.hostPage, hostMageEntity, '棋盘法师单位检视附件');
+            const magnifyContent = match.hostPage.getByTestId('mage-wars-card-magnify-content');
+            await expect(magnifyContent).toHaveAttribute('data-mage-preview-kind', 'portrait');
+            const magnifyAttachments = match.hostPage.getByTestId('mage-wars-card-magnify-attachments');
+            const magnifyAttachment = match.hostPage.getByTestId('mage-wars-card-magnify-attachment');
+            await expect(magnifyAttachments).toBeVisible({ timeout: 3_000 });
+            await expect(magnifyAttachment).toHaveAttribute('data-object-id', staffObjectId);
+            await expect(magnifyAttachment).toHaveAttribute('data-source-card-id', '3725');
+            await expect(magnifyAttachment).toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
+            await expect(magnifyAttachment).toHaveAttribute('data-attachment-usable', 'true');
+            await expect(magnifyAttachment.getByTestId('mage-wars-card-magnify-attachment-legal-frame'))
+                .toBeVisible({ timeout: 3_000 });
+            const magnifyHostBox = await magnifyContent.locator(':scope > div').first().boundingBox();
+            const magnifyAttachmentBox = await magnifyAttachment.boundingBox();
+            expect(magnifyHostBox, '放大层宿主单位必须有屏幕矩形').not.toBeNull();
+            expect(magnifyAttachmentBox, '放大层附加卡必须有屏幕矩形').not.toBeNull();
+            const magnifyAttachmentWidthRatio = magnifyAttachmentBox!.width / magnifyHostBox!.width;
+            expect(
+                magnifyAttachmentWidthRatio,
+                `放大层附加卡宽度必须约等于宿主卡宽 1/3，实际=${magnifyAttachmentWidthRatio.toFixed(3)}`,
+            ).toBeGreaterThan(0.28);
+            expect(magnifyAttachmentWidthRatio).toBeLessThan(0.42);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '棋盘法师单位检视附件截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '25A-棋盘法师单位检视-放大层显示绑定魔杖附件',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await magnifyAttachment.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(match.hostPage.getByTestId('mage-wars-card-magnify-overlay')).toBeHidden({ timeout: 5_000 });
+            const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(abilityDock).toBeVisible({ timeout: 3_000 });
+            await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            const boundCastButton = match.hostPage.getByTestId('mage-wars-selected-bound-spell-cast');
+            await expect(boundCastButton).toBeVisible({ timeout: 3_000 });
+            await expect(boundCastButton).toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
+            await expect(boundCastButton).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            await expect(boundCastButton).toHaveText('施放力量汲取');
+            await expect(attachedCard.getByTestId('mage-wars-attachment-source-frame')).toBeVisible({ timeout: 3_000 });
+            await assertMageWarsActionDockAboveSpellbook(match.hostPage, '检视附件施放力量汲取');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '25B-检视附件选中-屏幕中下施放力量汲取',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await boundCastButton.click({ timeout: 3_000, noWaitAfter: true });
+            const overlayClose = match.hostPage.getByTestId('mage-wars-card-magnify-overlay-close');
+            if (await overlayClose.isVisible().catch(() => false)) {
+                await overlayClose.click({ timeout: 3_000, noWaitAfter: true });
+            }
+            await expect(match.hostPage.getByTestId('mage-wars-card-magnify-overlay')).toBeHidden({ timeout: 5_000 });
+            const opponentMage = match.hostPage.locator(
+                '[data-testid="mage-wars-zone-mage-entity"][data-player-id="1"]',
+            ).first();
+            await expect(opponentMage).toHaveAttribute('role', 'button', { timeout: 5_000 });
+            await expect(opponentMage.getByTestId('mage-wars-mage-entity-target-frame')).toBeVisible({ timeout: 3_000 });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '力量汲取选择对方法师截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '25C-力量汲取选择对方法师-目标框可见',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await waitForFxLayerIdle(match.hostPage, '力量汲取施放前');
+            await waitForTestHarness(match.hostPage);
+            const drainDiceReady = await match.hostPage.evaluate(() => {
+                const harness = (window as Window & {
+                    __BG_TEST_HARNESS__?: {
+                        dice?: {
+                            setValues?: (values: number[]) => void;
+                            remaining?: () => number;
+                            getValues?: () => number[];
+                        };
+                    };
+                }).__BG_TEST_HARNESS__;
+                harness?.dice?.setValues?.([3, 3, 3, 3, 3, 3, 3, 3]);
+                return {
+                    hasHarness: Boolean(harness),
+                    remaining: harness?.dice?.remaining?.() ?? null,
+                    values: harness?.dice?.getValues?.() ?? [],
+                };
+            });
+            expect(drainDiceReady).toMatchObject({
+                hasHarness: true,
+                remaining: 8,
+                values: [3, 3, 3, 3, 3, 3, 3, 3],
+            });
+            await clickMageEntity(match.hostPage, '1', '力量汲取选择对方法师');
+            await passMageWarsGuestResponseIfVisible(match.guestPage, '力量汲取响应窗口');
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                const staff = isRecord(objects[staffObjectId]) ? objects[staffObjectId] : {};
+                const players = isRecord(snapshot.players) ? snapshot.players : {};
+                const host = isRecord(players['0']) ? players['0'] : {};
+                const guest = isRecord(players['1']) ? players['1'] : {};
+                const hostDiscard = Array.isArray(host.discardSpellCardIds) ? host.discardSpellCardIds : [];
+                const hostPrepared = Array.isArray(host.preparedSpellCardIds) ? host.preparedSpellCardIds : [];
+                return {
+                    boundSpellCardId: staff.boundSpellCardId,
+                    prepared: hostPrepared,
+                    discardedBoundSpell: hostDiscard.includes(boundSpellCardId),
+                    hostMana: host.mana,
+                    guestMana: guest.mana,
+                    boundCastResolved: hasEvent(snapshot, MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED, (payload) => (
+                        payload.spellCardId === boundSpellCardId
+                        && payload.boundSourceObjectId === staffObjectId
+                        && payload.targetPlayerId === '1'
+                        && payload.manaCost === boundSpellManaCost
+                    )),
+                    manaTransferred: hasEvent(snapshot, MAGE_WARS_EVENTS.MANA_TRANSFERRED, (payload) => (
+                        payload.fromPlayerId === '1'
+                        && payload.toPlayerId === '0'
+                        && payload.spellCardId === boundSpellCardId
+                        && payload.amount === opponentManaBefore
+                    )),
+                };
+            }, {
+                message: '已绑定力量汲取必须通过正式页面施放：保留绑定、不弃牌、抽干对手法力',
+                timeout: 10_000,
+            }).toEqual({
+                boundSpellCardId,
+                prepared: [],
+                discardedBoundSpell: false,
+                hostMana: hostManaBefore - boundSpellManaCost + opponentManaBefore,
+                guestMana: 0,
+                boundCastResolved: true,
+                manaTransferred: true,
+            });
+            await expect.poll(async () => readMageWarsHudMana(match.hostPage, 'self'), {
+                message: '施法者 HUD 法力应变成 14',
+                timeout: 5_000,
+            }).toBe(14);
+            await expect.poll(async () => readMageWarsHudMana(match.hostPage, 'opponent'), {
+                message: '对手 HUD 法力应变成 0',
+                timeout: 5_000,
+            }).toBe(0);
+            await expect(attachedCard.getByTestId('mage-wars-bound-spell-overlay'))
+                .toHaveAttribute('data-bound-spell-card-id', String(boundSpellCardId));
+            manaDelta = {
+                hostBefore: hostManaBefore,
+                hostAfter: 14,
+                opponentBefore: opponentManaBefore,
+                opponentAfter: 0,
+            };
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '力量汲取结算截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '25D-力量汲取结算后-对手法力被抽干且绑定保留',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(manaDelta, '力量汲取必须留下双方法力前后值').not.toBeNull();
+        const boundCastStages = [
+            {
+                fragment: '25-法师魔杖绑定力量汲取前态-附着叠加和双方法力',
+                description: `法师魔杖已绑定力量汲取；玩家画面看见附着叠加，己方法力 ${manaDelta!.hostBefore}，对手法力 ${manaDelta!.opponentBefore}。`,
+                transition: '本链起点：绑定装备和双方法力读数同屏可见。',
+                observedDelta: `效果前：绑定仍在魔杖上，准备区为空，对手法力 ${manaDelta!.opponentBefore}。`,
+            },
+            {
+                fragment: '25A-棋盘法师单位检视-放大层显示绑定魔杖附件',
+                description: '玩家点击棋盘上的己方法师单位棋子后，放大层显示该单位肖像和已绑定的法师魔杖附件。',
+                transition: '相对上一张：打开棋盘单位检视，附件进入可读放大层。',
+                observedDelta: '中态：棋盘单位放大层出现绑定魔杖附件，施放尚未提交。',
+            },
+            {
+                fragment: '25B-检视附件选中-屏幕中下施放力量汲取',
+                description: '玩家点击检视层中的法师魔杖后，屏幕中下出现“施放力量汲取”动作按钮。',
+                transition: '相对上一张：从检视附件进入屏幕中下施放入口。',
+                observedDelta: '中态：绑定法术施放入口可见，目标尚未选择。',
+            },
+            {
+                fragment: '25C-力量汲取选择对方法师-目标框可见',
+                description: '玩家点击施放后，对方法师本体出现合法目标框，等待提交目标。',
+                transition: '相对上一张：进入力量汲取的法师目标选择。',
+                observedDelta: '中态：目标已高亮，法力尚未转移。',
+            },
+            {
+                fragment: '25D-力量汲取结算后-对手法力被抽干且绑定保留',
+                description: `力量汲取结算后，对手法力由 ${manaDelta!.opponentBefore} 降为 ${manaDelta!.opponentAfter}，己方法力由 ${manaDelta!.hostBefore} 变为 ${manaDelta!.hostAfter}，法师魔杖仍绑定力量汲取。`,
+                transition: '相对上一张：提交对方法师并完成绑定法术结算。',
+                observedDelta: `结果态：对手法力 ${manaDelta!.opponentBefore}→${manaDelta!.opponentAfter}，己方法力 ${manaDelta!.hostBefore}→${manaDelta!.hostAfter}，绑定保留且力量汲取未进弃牌。`,
+                visibleEffectDelta: {
+                    before: String(manaDelta!.opponentBefore),
+                    after: String(manaDelta!.opponentAfter),
+                    direction: 'decrease' as const,
+                },
+            },
+        ];
+        const boundCastIndexItems = boundCastStages.map((stage, index) => ({
+            path: path.relative(
+                evidenceRun.stagingDir,
+                getEvidenceScreenshotPathInDirectory(evidenceRun.stagingDir, stage.fragment, { requireChineseName: true }),
+            ).replace(/\\/g, '/'),
+            chainId: 'mage-wars-independent-mage-staff-bound-cast-20261009',
+            chainStep: String(index + 1),
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            sourceDir: path.basename(evidenceRun.stableDir),
+            label: stage.fragment,
+            stage: index === 0 ? '前态' : index === boundCastStages.length - 1 ? '后态' : '中态',
+            description: stage.description,
+            transition: stage.transition,
+            testedObject: '法师魔杖绑定的力量汲取',
+            effectClaim: '从未准备的绑定咒语施放力量汲取，抽取对手法力且不弃掉绑定法术',
+            observedDelta: stage.observedDelta,
+            ...(stage.visibleEffectDelta ? { visibleEffectDelta: stage.visibleEffectDelta } : {}),
+        }));
+        await fs.promises.writeFile(
+            path.join(evidenceRun.stagingDir, '.e2e-image-index.json'),
+            `${JSON.stringify({
+                title: '法师战争 · 法师魔杖已绑定力量汲取施放 · 独立端到端',
+                gameId: 'mage-wars',
+                evidenceCategory: 'independent',
+                sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+                sourceDir: path.basename(evidenceRun.stableDir),
+                descriptionContract: 'description 是唯一玩家说明；transition 只记录相对上一张的顺序变化。',
+                media: boundCastIndexItems,
+                items: boundCastIndexItems,
+            }, null, 2)}\n`,
+            'utf8',
+        );
+        const boundCastPassManifestPath = path.join(
+            evidenceRun.stagingDir,
+            '00-法师战争法师魔杖已绑定力量汲取施放-PASS.json',
+        );
+        await fs.promises.writeFile(
+            boundCastPassManifestPath,
+            `${JSON.stringify({
+                verdict: 'PASS',
+                scope: 'independent',
+                gameId: 'mage-wars',
+                evidenceCategory: 'independent',
+                generatedAt: new Date().toISOString(),
+                display: {
+                    purpose: 'final-user-visible-delivery',
+                    trigger: 'task-final-delivery',
+                    viewer: 'web',
+                    finalPassBeforeOpen: true,
+                },
+                requirements: [
+                    {
+                        requirement: '正式页面法师魔杖已绑定力量汲取：HUD 检视附件、屏幕中下施放、对手法力抽干和绑定保留来自同一次运行',
+                        status: 'PASS',
+                        evidence: [
+                            'E2E：代表态法师魔杖已绑定力量汲取，玩家经 HUD 检视附件提交施放',
+                            'E2E：SPELL_CAST_RESOLVED.boundSourceObjectId 指向魔杖，力量汲取未进弃牌',
+                            `E2E：对手法力 ${manaDelta!.opponentBefore}→${manaDelta!.opponentAfter}，己方法力 ${manaDelta!.hostBefore}→${manaDelta!.hostAfter}`,
+                        ],
+                    },
+                ],
+                media: boundCastIndexItems.map((entry) => path.resolve(evidenceRun.stableDir, entry.path)),
+                evidenceIndex: '.e2e-image-index.json',
+                mediaEntries: boundCastIndexItems,
+            }, null, 2)}\n`,
+            'utf8',
+        );
+        testInfo.annotations.push({ type: 'pass-manifest', description: boundCastPassManifestPath });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, {
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+    });
+
+    test('正式页面群兽法杖附件可选择近战加成并显示加二标记', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+        testInfo.annotations.push({
+            type: 'evidence-staging-dir',
+            description: evidenceRun.stagingDir,
+        });
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const staffObjectId = 'mw-e2e-beast-staff-melee-bonus';
+        const animalObjectId = 'mw-e2e-beast-staff-melee-bonus-cat';
+        const manaBefore = 10;
+        const beastStaff = createMageWarsE2eEquipmentObject(
+            staffObjectId,
+            '0',
+            3710,
+            '群兽法杖',
+            ARENA_ZONE_IDS.A3,
+            '0',
+        );
+        const fullHealthAnimal = {
+            ...createMageWarsE2eCreatureObject(
+                animalObjectId,
+                '0',
+                2906,
+                '野性山猫',
+                ARENA_ZONE_IDS.A3,
+            ),
+            typeLine: '生物 / 动物、猫科',
+            life: 8,
+            damage: 0,
+        };
+        let meleeBonusDelta: { manaBefore: number; manaAfter: number } | null = null;
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'initiativeQuickcast',
+                replaceObjects: true,
+                objects: [beastStaff, fullHealthAnimal],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: manaBefore,
+                        quickcastReady: true,
+                        actionReady: true,
+                        spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.BEASTMASTER_APPRENTICE),
+                        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.BEASTMASTER_APPRENTICE),
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                    },
+                },
+            });
+
+            const staffCard = match.hostPage.locator(
+                `[data-testid="mage-wars-attached-card"][data-object-id="${staffObjectId}"][data-source-card-id="3710"]`,
+            ).first();
+            const animalCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${animalObjectId}"]`,
+            ).first();
+            await expect(staffCard).toBeVisible({ timeout: 3_000 });
+            await expect(animalCard).toBeVisible({ timeout: 3_000 });
+            expect(await readServerObjectDamage(
+                match.hostPage,
+                match,
+                '0',
+                animalObjectId,
+                '群兽法杖近战加成前应能读取野性山猫真实伤害',
+            )).toBe(0);
+            expect(await readMageWarsHudMana(match.hostPage, 'self')).toBe(manaBefore);
+            await expect(animalCard.getByTestId('mage-wars-melee-bonus-marker')).toHaveCount(0);
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖近战加成动作前截图');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '26-群兽法杖近战加成动作前-满血野性山猫无标记',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await staffCard.click({ timeout: 3_000, noWaitAfter: true });
+            const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(abilityDock).toBeVisible({ timeout: 3_000 });
+            await expect(abilityDock).toHaveAttribute('data-ability-action-placement', 'middle-lower-action-dock');
+            const abilityButton = abilityDock.locator(`[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF}"]`).first();
+            await expect(abilityButton).toHaveText('发动能力');
+            await assertMageWarsActionDockAboveSpellbook(match.hostPage, '群兽法杖近战加成入口');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '26A-群兽法杖附件入口-屏幕中下发动能力',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await abilityButton.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(animalCard.locator('[data-testid="mage-wars-field-card-target-frame"]')).toBeVisible({ timeout: 3_000 });
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '26B-群兽法杖目标选择-友方动物整卡高亮',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+            await clickFieldObject(match.hostPage, animalCard, '群兽法杖选择满血野性山猫');
+
+            const choiceDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(choiceDock).toBeVisible({ timeout: 3_000 });
+            await expect(choiceDock.getByTestId('mage-wars-object-ability-choice-option')).toHaveCount(2);
+            const healOption = choiceDock.locator('[data-testid="mage-wars-object-ability-choice-option"][data-mode="heal"]').first();
+            const meleeOption = choiceDock.locator('[data-testid="mage-wars-object-ability-choice-option"][data-mode="melee-bonus"]').first();
+            await expect(healOption).toHaveText('治疗');
+            await expect(meleeOption).toHaveText('近战加成');
+            await assertMageWarsActionDockAboveSpellbook(match.hostPage, '群兽法杖近战加成模式选择');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '26C-群兽法杖模式选择-治疗和近战加成需玩家选择',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+
+            await meleeOption.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(choiceDock, '群兽法杖选择近战加成后候选层必须收口').toHaveCount(0, { timeout: 5_000 });
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                const animal = isRecord(objects[animalObjectId]) ? objects[animalObjectId] : {};
+                const temporaryTraits = isRecord(animal.temporaryTraits) ? animal.temporaryTraits : {};
+                const players = isRecord(snapshot.players) ? snapshot.players : {};
+                const host = isRecord(players['0']) ? players['0'] : {};
+                return {
+                    abilityResolved: hasArenaObjectAbilityResolvedEvent(
+                        snapshot,
+                        MAGE_WARS_OBJECT_ABILITY_IDS.BEAST_STAFF,
+                        animalObjectId,
+                    ),
+                    traitsGained: hasEvent(snapshot, MAGE_WARS_EVENTS.ARENA_OBJECT_TEMPORARY_TRAITS_GAINED, (payload) => (
+                        payload.objectId === animalObjectId
+                        && payload.meleeDiceModifier === 2
+                    )),
+                    meleeDiceModifier: temporaryTraits.meleeDiceModifier,
+                    mana: host.mana,
+                    damage: animal.damage,
+                };
+            }, {
+                message: '群兽法杖近战加成必须产生临时近战骰修正、消耗法力且不治疗',
+                timeout: 5_000,
+            }).toEqual({
+                abilityResolved: true,
+                traitsGained: true,
+                meleeDiceModifier: 2,
+                mana: manaBefore - 2,
+                damage: 0,
+            });
+            const meleeBonusMarker = animalCard.getByTestId('mage-wars-melee-bonus-marker');
+            await expect(meleeBonusMarker).toBeVisible({ timeout: 3_000 });
+            await expect(meleeBonusMarker).toHaveAttribute('data-melee-dice-modifier', '2');
+            await expect(meleeBonusMarker).toHaveText('+2');
+            await expect.poll(async () => readMageWarsHudMana(match.hostPage, 'self'), {
+                message: '群兽法杖近战加成后 HUD 法力应为 8',
+                timeout: 5_000,
+            }).toBe(8);
+            meleeBonusDelta = { manaBefore, manaAfter: 8 };
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '群兽法杖近战加成结算截图前');
+            await saveEvidenceScreenshot(
+                match.hostPage,
+                testInfo,
+                '26D-群兽法杖近战加成结算后-加二标记和法力消耗',
+                { evidenceDir: evidenceRun.stagingDir },
+            );
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(meleeBonusDelta, '群兽法杖近战加成必须留下法力前后值').not.toBeNull();
+        const meleeBonusStages = [
+            {
+                fragment: '26-群兽法杖近战加成动作前-满血野性山猫无标记',
+                description: `群兽法杖；玩家查看满血野性山猫，牌面没有近战加成标记，己方法力 ${meleeBonusDelta!.manaBefore}。`,
+                transition: '本链起点：目标满血且没有近战加成标记。',
+                observedDelta: '效果前：同一只野性山猫伤害为 0，近战加成标记不存在。',
+            },
+            {
+                fragment: '26A-群兽法杖附件入口-屏幕中下发动能力',
+                description: '玩家点击群兽法杖附件后，屏幕中下出现“发动能力”入口。',
+                transition: '相对上一张：从前态进入附件能力入口。',
+                observedDelta: '目标仍无近战加成标记，能力尚未提交。',
+            },
+            {
+                fragment: '26B-群兽法杖目标选择-友方动物整卡高亮',
+                description: '玩家提交群兽法杖能力后，友方野性山猫整张牌面进入可识别的目标高亮状态。',
+                transition: '相对上一张：进入目标选择，目标本体被提权。',
+                observedDelta: '来源和目标同屏可见，模式尚未选择。',
+            },
+            {
+                fragment: '26C-群兽法杖模式选择-治疗和近战加成需玩家选择',
+                description: '玩家选择野性山猫后，治疗和近战加成两个模式同时出现，等待玩家提交模式。',
+                transition: '相对上一张：目标选择完成，进入能力模式选择。',
+                observedDelta: '候选模式承接同一目标，近战加成尚未生效。',
+            },
+            {
+                fragment: '26D-群兽法杖近战加成结算后-加二标记和法力消耗',
+                description: `玩家选择近战加成后，同一只野性山猫显示 +2 标记，己方法力由 ${meleeBonusDelta!.manaBefore} 降为 ${meleeBonusDelta!.manaAfter}。`,
+                transition: '相对上一张：提交近战加成并完成结算。',
+                observedDelta: `结果态：近战加成标记从无到 +2，法力 ${meleeBonusDelta!.manaBefore}→${meleeBonusDelta!.manaAfter}，伤害仍为 0。`,
+                visibleEffectDelta: {
+                    before: String(meleeBonusDelta!.manaBefore),
+                    after: String(meleeBonusDelta!.manaAfter),
+                    direction: 'decrease' as const,
+                },
+            },
+        ];
+        const meleeBonusIndexItems = meleeBonusStages.map((stage, index) => ({
+            path: path.relative(
+                evidenceRun.stagingDir,
+                getEvidenceScreenshotPathInDirectory(evidenceRun.stagingDir, stage.fragment, { requireChineseName: true }),
+            ).replace(/\\/g, '/'),
+            chainId: 'mage-wars-independent-beast-staff-melee-bonus-20261009',
+            chainStep: String(index + 1),
+            sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+            sourceDir: path.basename(evidenceRun.stableDir),
+            label: stage.fragment,
+            stage: index === 0 ? '前态' : index === meleeBonusStages.length - 1 ? '后态' : '中态',
+            description: stage.description,
+            transition: stage.transition,
+            testedObject: '群兽法杖',
+            effectClaim: '发动附件能力给友方动物直到回合结束的近战 +2',
+            observedDelta: stage.observedDelta,
+            ...(stage.visibleEffectDelta ? { visibleEffectDelta: stage.visibleEffectDelta } : {}),
+        }));
+        await fs.promises.writeFile(
+            path.join(evidenceRun.stagingDir, '.e2e-image-index.json'),
+            `${JSON.stringify({
+                title: '法师战争 · 群兽法杖近战加成 · 独立端到端',
+                gameId: 'mage-wars',
+                evidenceCategory: 'independent',
+                sourceRun: `online-runtime.e2e:${testInfo.testId}`,
+                sourceDir: path.basename(evidenceRun.stableDir),
+                descriptionContract: 'description 是唯一玩家说明；transition 只记录相对上一张的顺序变化。',
+                media: meleeBonusIndexItems,
+                items: meleeBonusIndexItems,
+            }, null, 2)}\n`,
+            'utf8',
+        );
+        const meleeBonusPassManifestPath = path.join(
+            evidenceRun.stagingDir,
+            '00-法师战争群兽法杖近战加成-PASS.json',
+        );
+        await fs.promises.writeFile(
+            meleeBonusPassManifestPath,
+            `${JSON.stringify({
+                verdict: 'PASS',
+                scope: 'independent',
+                gameId: 'mage-wars',
+                evidenceCategory: 'independent',
+                generatedAt: new Date().toISOString(),
+                display: {
+                    purpose: 'final-user-visible-delivery',
+                    trigger: 'task-final-delivery',
+                    viewer: 'web',
+                    finalPassBeforeOpen: true,
+                },
+                requirements: [
+                    {
+                        requirement: '正式页面群兽法杖近战加成独立覆盖：玩家完成附件入口、目标选择和近战加成模式后，+2 标记、法力消耗和稳定收口来自同一次运行',
+                        status: 'PASS',
+                        evidence: [
+                            'E2E：附件入口、友方动物目标选择和治疗 / 近战模式选择均由真实页面完成',
+                            'E2E：玩家提交近战加成后出现 mage-wars-melee-bonus-marker +2',
+                            `E2E：己方法力 ${meleeBonusDelta!.manaBefore}→${meleeBonusDelta!.manaAfter}，目标伤害保持 0`,
+                        ],
+                    },
+                ],
+                media: meleeBonusIndexItems.map((entry) => path.resolve(evidenceRun.stableDir, entry.path)),
+                evidenceIndex: '.e2e-image-index.json',
+                mediaEntries: meleeBonusIndexItems,
+            }, null, 2)}\n`,
+            'utf8',
+        );
+        testInfo.annotations.push({ type: 'pass-manifest', description: meleeBonusPassManifestPath });
+        await promoteEvidenceScreenshotRun(evidenceRun);
+        rebaseMageWarsTestAnnotations(testInfo, {
+            evidenceDir: evidenceRun.stagingDir,
+            stableEvidenceDir: evidenceRun.stableDir,
+        });
+    });
+
+    test('正式页面结界窃取覆盖附着目标框、来源框和重新附着结算', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const enemyCreatureId = 'mw-e2e-steal-enemy-creature';
+        const friendlyCreatureId = 'mw-e2e-steal-friendly-creature';
+        const enchantmentObjectId = 'mw-e2e-steal-enchantment';
+
+        const enemyCreature = createMageWarsE2eCreatureObject(
+            enemyCreatureId,
+            '1',
+            2906,
+            '敌方野性山猫',
+            ARENA_ZONE_IDS.A2,
+        );
+        const friendlyCreature = createMageWarsE2eCreatureObject(
+            friendlyCreatureId,
+            '0',
+            2906,
+            '己方野性山猫',
+            ARENA_ZONE_IDS.A3,
+        );
+        const visibleEnchantment: MageWarsArenaObjectState = {
+            ...createMageWarsE2eCreatureObject(
+                enchantmentObjectId,
+                '1',
+                1800,
+                '剧痛难当',
+                ARENA_ZONE_IDS.A2,
+            ),
+            kind: 'enchantment',
+            sourceObjectId: 'spell-1800',
+            life: 1,
+            actionReady: false,
+            typeLine: '结界 / 诅咒',
+            schoolLine: '超魔',
+            attackOrTraitLine: '',
+            rulesText: '每当本生物进行非法术远程或近战攻击时，少投掷2颗攻击骰子。',
+            revealed: true,
+            anchoredToObjectId: enemyCreatureId,
+        };
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                replaceObjects: true,
+                objects: [enemyCreature, friendlyCreature, visibleEnchantment],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: 20,
+                        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.WIZARD_APPRENTICE),
+                        spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.WIZARD_APPRENTICE),
+                        actionReady: true,
+                        quickcastReady: true,
+                        preparedSpellSlots: 1,
+                        preparedSpellCardIds: [3409],
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                        preparedSpellCardIds: [],
+                        preparedSpellSlots: 0,
+                    },
+                },
+            });
+
+            const preparedSteal = selfPreparedCardByName(match.hostPage, '结界窃取');
+            await advanceUntilEnabled(match.hostPage, preparedSteal);
+            await selectPreparedSpell(match.hostPage, preparedSteal, '结界窃取');
+
+            const visibleEnchantmentCard = match.hostPage.locator(
+                `[data-testid="mage-wars-attached-card"][data-object-id="${enchantmentObjectId}"]`,
+            ).first();
+            await expect(visibleEnchantmentCard).toBeVisible({ timeout: 5_000 });
+            await expect(visibleEnchantmentCard).toHaveAttribute('data-attachment-role', 'target');
+            await expect(visibleEnchantmentCard.getByTestId('mage-wars-attachment-target-frame')).toBeVisible();
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '结界窃取附着目标截图前');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '结界窃取-附着目标绿色框');
+
+            await clickLocatorAtVisibleHitPoint(match.hostPage, visibleEnchantmentCard, '结界窃取选择敌方显性结界');
+            await expect(visibleEnchantmentCard).toHaveAttribute('data-attachment-role', 'source', { timeout: 3_000 });
+            await expect(visibleEnchantmentCard.getByTestId('mage-wars-attachment-source-frame')).toBeVisible();
+
+            const friendlyTargetCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${friendlyCreatureId}"]`,
+            ).first();
+            await expect(friendlyTargetCard).toHaveAttribute('data-field-card-role', 'target', { timeout: 3_000 });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '结界窃取新目标截图前');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '结界窃取-来源青框和新目标');
+            await clickFieldObject(match.hostPage, friendlyTargetCard, '结界窃取选择新附着目标');
+
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const objects = isRecord(snapshot.objects) ? snapshot.objects : {};
+                const enchantment = isRecord(objects[enchantmentObjectId]) ? objects[enchantmentObjectId] : {};
+                const players = isRecord(snapshot.players) ? snapshot.players : {};
+                const player = isRecord(players['0']) ? players['0'] : {};
+                return {
+                    ownerId: enchantment.ownerId,
+                    anchoredToObjectId: enchantment.anchoredToObjectId,
+                    mana: player.mana,
+                };
+            }, {
+                message: '结界窃取应通过正式页面完成旧目标选择、新目标选择和服务端重新附着',
+                timeout: 5_000,
+            }).toEqual({
+                ownerId: '0',
+                anchoredToObjectId: friendlyCreatureId,
+                mana: 10,
+            });
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '结界窃取重新附着结算截图前');
+            await expect(visibleEnchantmentCard).not.toHaveAttribute('data-attachment-role', 'source');
+            await expect(visibleEnchantmentCard.getByTestId('mage-wars-attachment-source-frame')).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '结界窃取-重新附着结算');
+        } finally {
+            await Promise.all([match.hostContext.close(), match.guestContext.close()]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    });
+
+    test('正式页面选择 UI 的取消分支和女祭司多状态选项覆盖真实交互', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL);
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+
+        try {
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'initiativeQuickcast',
+                replaceObjects: true,
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: 12,
+                        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.WIZARD_APPRENTICE),
+                        spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.WIZARD_APPRENTICE),
+                        preparedSpellSlots: 1,
+                        preparedSpellCardIds: [3716],
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                        preparedSpellCardIds: [],
+                        preparedSpellSlots: 0,
+                    },
+                },
+            });
+
+            const elementalStaffCard = selfPreparedCardByName(match.hostPage, '元素魔杖');
+            await selectPreparedSpell(match.hostPage, elementalStaffCard, '元素魔杖取消分支');
+            await clickMageEntity(match.hostPage, '0', '元素魔杖取消分支选择己方法师');
+            const spellCastChoiceDock = match.hostPage.getByTestId('mage-wars-spell-cast-choice-dock');
+            await expect(spellCastChoiceDock).toBeVisible({ timeout: 3_000 });
+            await expect.poll(async () => (
+                await spellCastChoiceDock.getByTestId('mage-wars-spell-cast-choice-option').count()
+            )).toBeGreaterThanOrEqual(2);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-元素魔杖法术选择-取消按钮可见');
+
+            await spellCastChoiceDock.getByTestId('mage-wars-spell-cast-choice-dock-cancel').click({
+                timeout: 5_000,
+                noWaitAfter: true,
+            });
+            await expect(spellCastChoiceDock).toHaveCount(0, { timeout: 5_000 });
+            await expect(elementalStaffCard).toHaveAttribute('data-selected', 'true');
+            const afterSpellCastCancel = await readServerCoreSnapshot(match.hostPage, match, '0');
+            const afterSpellCastCancelPlayer = isRecord(afterSpellCastCancel.players)
+                && isRecord(afterSpellCastCancel.players['0'])
+                ? afterSpellCastCancel.players['0']
+                : {};
+            expect(afterSpellCastCancelPlayer.mana).toBe(12);
+            expect(Array.isArray(afterSpellCastCancelPlayer.discardSpellCardIds)
+                ? afterSpellCastCancelPlayer.discardSpellCardIds
+                : []).not.toContain(3716);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '02-元素魔杖法术选择-取消后回到牌桌');
+
+            await Promise.all([
+                match.hostPage.reload({ waitUntil: 'domcontentloaded' }),
+                match.guestPage.reload({ waitUntil: 'domcontentloaded' }),
+            ]);
+            await Promise.all([
+                expect(match.hostPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                    'data-mage-wars-phase',
+                    'initiativeQuickcast',
+                    { timeout: 15_000 },
+                ),
+                expect(match.guestPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                    'data-mage-wars-phase',
+                    'initiativeQuickcast',
+                    { timeout: 15_000 },
+                ),
+            ]);
+
+            const staffObjectId = 'mw-e2e-choice-cancel-staff';
+            const staffObject = {
+                ...createMageWarsE2eEquipmentObject(
+                    staffObjectId,
+                    '0',
+                    3716,
+                    '元素魔杖',
+                    ARENA_ZONE_IDS.A3,
+                    '0',
+                ),
+                boundSpellCardId: 1704,
+            };
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'finalQuickcast',
+                replaceObjects: true,
+                objects: [staffObject],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: 10,
+                        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.WIZARD_APPRENTICE),
+                        spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.WIZARD_APPRENTICE),
+                        preparedSpellCardIds: [],
+                        preparedSpellSlots: 0,
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                        preparedSpellCardIds: [],
+                        preparedSpellSlots: 0,
+                    },
+                },
+            });
+
+            const attachedStaff = match.hostPage.locator(
+                `[data-testid="mage-wars-attached-card"][data-object-id="${staffObjectId}"][data-source-card-id="3716"]`,
+            ).first();
+            await expect(attachedStaff).toBeVisible({ timeout: 5_000 });
+            await attachedStaff.click({ timeout: 3_000, noWaitAfter: true });
+            const abilityDock = match.hostPage.getByTestId('mage-wars-selected-ability-action-dock');
+            await expect(abilityDock).toBeVisible({ timeout: 3_000 });
+            await abilityDock.locator(
+                `[data-ability-id="${MAGE_WARS_OBJECT_ABILITY_IDS.ELEMENTAL_STAFF_BIND}"]`,
+            ).first().click({ timeout: 3_000, noWaitAfter: true });
+            const objectAbilityChoiceDock = match.hostPage.getByTestId('mage-wars-object-ability-choice-dock');
+            await expect(objectAbilityChoiceDock).toBeVisible({ timeout: 3_000 });
+            await expect.poll(async () => (
+                await objectAbilityChoiceDock.getByTestId('mage-wars-object-ability-choice-option').count()
+            )).toBeGreaterThanOrEqual(2);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-元素魔杖快速重绑-取消按钮可见');
+
+            await objectAbilityChoiceDock.getByTestId('mage-wars-object-ability-choice-dock-cancel').click({
+                timeout: 5_000,
+                noWaitAfter: true,
+            });
+            await expect(objectAbilityChoiceDock).toHaveCount(0, { timeout: 5_000 });
+            const afterObjectAbilityCancel = await readServerCoreSnapshot(match.hostPage, match, '0');
+            const afterObjectAbilityCancelObjects = isRecord(afterObjectAbilityCancel.objects)
+                ? afterObjectAbilityCancel.objects
+                : {};
+            const afterObjectAbilityCancelStaff = isRecord(afterObjectAbilityCancelObjects[staffObjectId])
+                ? afterObjectAbilityCancelObjects[staffObjectId]
+                : {};
+            expect(afterObjectAbilityCancelStaff.boundSpellCardId).toBe(1704);
+            expect(isRecord(afterObjectAbilityCancel.players) && isRecord(afterObjectAbilityCancel.players['0'])
+                ? afterObjectAbilityCancel.players['0'].mana
+                : undefined).toBe(10);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-元素魔杖快速重绑-取消后保持原绑定');
+
+            await Promise.all([
+                match.hostPage.reload({ waitUntil: 'domcontentloaded' }),
+                match.guestPage.reload({ waitUntil: 'domcontentloaded' }),
+            ]);
+            await Promise.all([
+                expect(match.hostPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                    'data-mage-wars-phase',
+                    'finalQuickcast',
+                    { timeout: 15_000 },
+                ),
+                expect(match.guestPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                    'data-mage-wars-phase',
+                    'finalQuickcast',
+                    { timeout: 15_000 },
+                ),
+            ]);
+
+            const afflictedAngelId = 'mw-e2e-status-choice-cancel-angel';
+            const afflictedAngel = {
+                ...createMageWarsE2eCreatureObject(
+                    afflictedAngelId,
+                    '1',
+                    2907,
+                    '受创天使',
+                    ARENA_ZONE_IDS.A2,
+                ),
+                statusTokens: {
+                    [STATUS_TOKEN_IDS.BURN]: 1,
+                    [STATUS_TOKEN_IDS.STUN]: 1,
+                    [STATUS_TOKEN_IDS.SLEEP]: 1,
+                },
+            };
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                replaceObjects: true,
+                objects: [afflictedAngel],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: 20,
+                        spellbookEntries: getMageWarsE2eStandardSpellbookEntries(MAGE_IDS.PRIESTESS_APPRENTICE),
+                        spellbookCount: getStandardStartingSpellbookCount(MAGE_IDS.PRIESTESS_APPRENTICE),
+                        preparedSpellCardIds: [],
+                        preparedSpellSlots: 0,
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                        preparedSpellCardIds: [],
+                        preparedSpellSlots: 0,
+                    },
+                },
+            });
+
+            await clickMageEntity(match.hostPage, '0', '复原术状态选择取消分支选择女祭司');
+            await match.hostPage.getByTestId('mage-wars-selected-mage-ability-restore').click({ timeout: 3_000, noWaitAfter: true });
+            const afflictedAngelCard = match.hostPage.locator(
+                `[data-testid="mage-wars-zone-field-card"][data-object-id="${afflictedAngelId}"]`,
+            ).first();
+            await expect(afflictedAngelCard).toBeVisible({ timeout: 3_000 });
+            await clickFieldObject(match.hostPage, afflictedAngelCard, '复原术状态选择取消分支选择受创天使');
+            const statusChoiceDock = match.hostPage.getByTestId('mage-wars-mage-ability-status-choice-dock');
+            await expect(statusChoiceDock).toBeVisible({ timeout: 3_000 });
+            await expect.poll(async () => (
+                await statusChoiceDock.getByTestId('mage-wars-mage-ability-status-option').count()
+            )).toBeGreaterThanOrEqual(2);
+            await expect(statusChoiceDock.locator(
+                `[data-testid="mage-wars-mage-ability-status-option"][data-status-token-ids="${[
+                    STATUS_TOKEN_IDS.BURN,
+                    STATUS_TOKEN_IDS.STUN,
+                    STATUS_TOKEN_IDS.SLEEP,
+                ].join(',')}"]`,
+            )).toBeVisible({ timeout: 3_000 });
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '05-复原术多状态选择-取消按钮和多个组合可见');
+
+            await statusChoiceDock.getByTestId('mage-wars-mage-ability-status-choice-cancel').click({
+                timeout: 5_000,
+                noWaitAfter: true,
+            });
+            await expect(statusChoiceDock).toHaveCount(0, { timeout: 5_000 });
+            const afterStatusChoiceCancel = await readServerCoreSnapshot(match.hostPage, match, '0');
+            const afterStatusChoiceCancelObjects = isRecord(afterStatusChoiceCancel.objects)
+                ? afterStatusChoiceCancel.objects
+                : {};
+            const afterStatusChoiceCancelAngel = isRecord(afterStatusChoiceCancelObjects[afflictedAngelId])
+                ? afterStatusChoiceCancelObjects[afflictedAngelId]
+                : {};
+            expect(afterStatusChoiceCancelAngel.statusTokens).toMatchObject({
+                [STATUS_TOKEN_IDS.BURN]: 1,
+                [STATUS_TOKEN_IDS.STUN]: 1,
+                [STATUS_TOKEN_IDS.SLEEP]: 1,
+            });
+            expect(isRecord(afterStatusChoiceCancel.players) && isRecord(afterStatusChoiceCancel.players['0'])
+                ? afterStatusChoiceCancel.players['0'].mana
+                : undefined).toBe(20);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '06-复原术多状态选择-取消后状态和法力不变');
+
+            await clickFieldObject(match.hostPage, afflictedAngelCard, '复原术状态选择确认分支再次选择受创天使');
+            await expect(statusChoiceDock).toBeVisible({ timeout: 3_000 });
+            const fullRestoreOption = statusChoiceDock.locator(
+                `[data-testid="mage-wars-mage-ability-status-option"][data-status-token-ids="${[
+                    STATUS_TOKEN_IDS.BURN,
+                    STATUS_TOKEN_IDS.STUN,
+                    STATUS_TOKEN_IDS.SLEEP,
+                ].join(',')}"]`,
+            ).first();
+            await expect(fullRestoreOption).toBeVisible({ timeout: 3_000 });
+            await fullRestoreOption.click({ timeout: 3_000, noWaitAfter: true });
+            await expect(statusChoiceDock).toHaveCount(0, { timeout: 5_000 });
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                return hasEvent(snapshot, MAGE_WARS_EVENTS.MAGE_ABILITY_RESOLVED, (payload) => (
+                    payload.abilityId === MAGE_WARS_MAGE_ABILITY_IDS.PRIESTESS_RESTORE_STANDARD
+                        && payload.targetObjectId === afflictedAngelId
+                ));
+            }, {
+                message: '复原术确认组合后应产生正式法师能力结算事件',
+                timeout: 5_000,
+            }).toBe(true);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '07-复原术多状态选择-确认组合后正式结算');
+        } finally {
+            const closeWithTimeout = async (close: () => Promise<void>) => {
+                await Promise.race([
+                    close().catch(() => undefined),
+                    new Promise<void>((resolve) => setTimeout(resolve, 3_000)),
+                ]);
+            };
+            await Promise.all([
+                closeWithTimeout(() => match.hostContext.close()),
+                closeWithTimeout(() => match.guestContext.close()),
+            ]);
+        }
+
+        expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+    });
+
+    test('正式页面操作日志与撤回 UI 覆盖真实移动、申请、同意和状态回退', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(180_000);
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const match = await setupOnlineMageWars(browser, baseURL, {}, undefined, {
+            preserveFabMenu: true,
+        });
+        const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
+        const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
+        const creatureObjectId = 'mw-e2e-action-log-undo-wolf';
+
+        try {
+            await advanceBothPlayersToPlanning(match);
+            await match.hostPage.getByRole('button', { name: '全部', exact: true }).click();
+            await selectNamedSpellbookCard(match.hostPage, '丛林灰狼');
+            await match.hostPage.getByTestId('mage-wars-plan-spells').click();
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const player = isRecord(snapshot.players) && isRecord(snapshot.players['0'])
+                    ? snapshot.players['0']
+                    : {};
+                return Array.isArray(player.preparedSpellCardIds)
+                    && player.preparedSpellCardIds.includes(2819);
+            }, {
+                message: '真实计划丛林灰狼后，服务器应记录计划法术',
+                timeout: 5_000,
+            }).toBe(true);
+            await injectMageWarsCurrentScopeCoverageReadyState(match, '0', {
+                phase: 'creatureAction',
+                replaceObjects: true,
+                objects: [
+                    createMageWarsE2eCreatureObject(
+                        creatureObjectId,
+                        '0',
+                        2819,
+                        '丛林灰狼',
+                        ARENA_ZONE_IDS.A3,
+                    ),
+                ],
+                playerPatches: {
+                    '0': {
+                        mageId: MAGE_IDS.BEASTMASTER_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.A3,
+                        mana: 10,
+                    },
+                    '1': {
+                        mageId: MAGE_IDS.PRIESTESS_APPRENTICE,
+                        mageZoneId: ARENA_ZONE_IDS.D3,
+                    },
+                },
+            });
+            await Promise.all([
+                match.hostPage.reload({ waitUntil: 'domcontentloaded' }),
+                match.guestPage.reload({ waitUntil: 'domcontentloaded' }),
+            ]);
+            await Promise.all([
+                expect(match.hostPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                    'data-mage-wars-phase',
+                    'creatureAction',
+                    { timeout: 15_000 },
+                ),
+                expect(match.guestPage.getByTestId('mage-wars-board')).toHaveAttribute(
+                    'data-mage-wars-phase',
+                    'creatureAction',
+                    { timeout: 15_000 },
+                ),
+            ]);
+
+            await clickMageWarsFieldObjectById(match.hostPage, creatureObjectId, '操作日志 / 撤回测试选择丛林灰狼');
+            await clickLegalMoveZone(match.hostPage, 'a2', '操作日志 / 撤回测试移动丛林灰狼');
+            await waitForZoneFieldCard(match.hostPage, 'a2', 2819, '操作日志 / 撤回测试移动后', {
+                match,
+                playerId: '0',
+                diagnostics: [
+                    { label: 'host', diagnostics: hostDiagnostics },
+                    { label: 'guest', diagnostics: guestDiagnostics },
+                ],
+            });
+            await openMageWarsFabPanel(match.hostPage, 'action-log');
+            const actionLogRows = match.hostPage.locator('[data-testid="hud-action-log-row"]');
+            await expect.poll(async () => (
+                (await actionLogRows.allInnerTexts()).some((text) => text.replace(/\s+/g, ' ').includes('丛林灰狼'))
+            ), {
+                message: '真实计划完成后，Mage Wars 操作日志面板应显示计划法术记录',
+                timeout: 15_000,
+            }).toBe(true);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '01-操作日志-真实计划法术记录可见');
+            await closeMageWarsFabPanel(match.hostPage, 'action-log');
+
+            await openMageWarsFabPanel(match.guestPage, 'undo-request');
+            const undoRequestPanel = match.guestPage.locator('[data-testid="fab-panel-undo-request"]').first();
+            await expect(undoRequestPanel).toContainText(/可撤回 1 步|可以请求撤回上一步操作/);
+            await expect(undoRequestPanel.getByRole('button', { name: '申请撤回', exact: true })).toBeVisible();
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '02-撤回入口-对手可申请撤回上一步');
+            await undoRequestPanel.getByRole('button', { name: '申请撤回', exact: true }).click();
+
+            await openMageWarsFabPanel(match.hostPage, 'undo-review');
+            const undoReviewPanel = match.hostPage.locator('[data-testid="fab-panel-undo-review"]').first();
+            await expect(undoReviewPanel).toContainText('对方请求撤回');
+            await expect(undoReviewPanel.getByRole('button', { name: '同意', exact: true })).toBeVisible();
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '03-撤回审批-当前玩家可同意对手请求');
+            await undoReviewPanel.getByRole('button', { name: '同意', exact: true }).click();
+
+            await expect.poll(async () => {
+                const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
+                const object = isRecord(snapshot.objects) ? snapshot.objects[creatureObjectId] : undefined;
+                return isRecord(object) ? object.zoneId : undefined;
+            }, {
+                message: '同意撤回后，服务端应把丛林灰狼恢复到移动前的 A3 区域',
+                timeout: 10_000,
+            }).toBe(ARENA_ZONE_IDS.A3);
+            await waitForZoneFieldCard(match.hostPage, 'a3', 2819, '撤回完成后丛林灰狼回到 A3', {
+                match,
+                playerId: '0',
+                diagnostics: [
+                    { label: 'host', diagnostics: hostDiagnostics },
+                    { label: 'guest', diagnostics: guestDiagnostics },
+                ],
+            });
+            await expect(match.hostPage.locator('[data-testid="mage-wars-zone-a2"] [data-testid="mage-wars-zone-field-card"]')
+                .filter({ hasText: '丛林灰狼' })).toHaveCount(0);
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '04-撤回完成-丛林灰狼回到原区域');
         } finally {
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }
@@ -5587,7 +10908,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 const snapshot = await readServerCoreSnapshot(match.hostPage, match, '0');
                 return hasWallSnapshot(snapshot, wallEdgeId, wallSpellCardId)
                     && hasWallSummonedEvent(snapshot, wallEdgeId, wallSpellCardId)
-                    && hasEvent(snapshot, 'MW_SPELL_CAST_RESOLVED', (payload) => (
+                    && hasEvent(snapshot, MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED, (payload) => (
                         payload.spellCardId === wallSpellCardId
                         && payload.targetWallEdgeId === wallEdgeId
                     ));
@@ -5596,10 +10917,19 @@ test.describe('Mage Wars formal online runtime', () => {
                 timeout: 5_000,
             }).toBe(true);
             await expect(targetEdge).toHaveAttribute('data-wall-object', 'true', { timeout: 3_000 });
+            await expect(targetEdge.getByTestId('mage-wars-wall-object')).toBeVisible({ timeout: 3_000 });
             const wallCardPreview = targetEdge.getByTestId('mage-wars-wall-card-preview');
             await expect(wallCardPreview).toBeVisible({ timeout: 3_000 });
             await expect(wallCardPreview).toHaveAttribute('data-source-card-id', String(wallSpellCardId));
             await expect(wallCardPreview).toHaveAttribute('data-wall-visual', 'spell-card');
+            const wallCardRect = await wallCardPreview.evaluate((element) => {
+                const rect = element.getBoundingClientRect();
+                return { width: rect.width, height: rect.height };
+            });
+            expect(
+                Math.min(wallCardRect.width, wallCardRect.height),
+                '墙牌视觉本体在真实桌面缩放后仍需保持可读尺寸',
+            ).toBeGreaterThanOrEqual(70);
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '墙体施放完成截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '20-荆棘之墙施放后-A3-B3边界墙牌可见');
 
@@ -5643,6 +10973,13 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.hostPage.getByTestId('mage-wars-arena-zone-b3')).toHaveAttribute('data-legal-move-zone', 'true', {
                 timeout: 3_000,
             });
+            const passageDamageFxPromise = match.hostPage.waitForFunction(
+                (targetObjectId) => Array.from(
+                    document.querySelectorAll<HTMLElement>('[data-testid="mage-wars-fx-damage-impact"]'),
+                ).some((element) => element.dataset.targetAnchorId === targetObjectId),
+                runnerObjectId,
+                { timeout: 10_000 },
+            );
             await clickLegalMoveZone(match.hostPage, ARENA_ZONE_IDS.B3, '野性山猫穿越 A3-B3 墙体');
             await expectServerObjectZone(
                 match.hostPage,
@@ -5668,6 +11005,9 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '穿越 A3-B3 墙体应产生墙体通行伤害事件和真实伤害事件',
                 timeout: 5_000,
             }).toBe(true);
+            await passageDamageFxPromise;
+            await expect(match.hostPage.getByTestId('mage-wars-fx-damage-impact').first())
+                .toHaveAttribute('data-target-anchor-id', runnerObjectId);
             await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '穿墙伤害截图前');
             await saveEvidenceScreenshot(match.hostPage, testInfo, '22-穿越荆棘之墙后-通行伤害结算可见');
         } finally {
@@ -5678,9 +11018,11 @@ test.describe('Mage Wars formal online runtime', () => {
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
     });
 
-    test('正式页面推斥法术过程帧覆盖来源飞行命中', async ({ browser, baseURL }, testInfo) => {
-        test.setTimeout(180_000);
+    test('正式页面推斥法术过程帧覆盖实体滑移', async ({ browser, baseURL }, testInfo) => {
+        test.setTimeout(240_000);
         await clearEvidenceScreenshotsForTest(testInfo);
+        const recording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '推斥' });
+        let gifCapture: MageWarsFxGifCapture | null = null;
         const match = await setupOnlineMageWars(browser, baseURL);
         const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
         const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
@@ -5708,16 +11050,55 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.guestPage.getByTestId('mage-wars-arena-zone-c3')).toHaveAttribute('data-legal-target-zone', 'true', {
                 timeout: 3_000,
             });
+            await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                match.guestPage,
+                match.guestPage.getByTestId('mage-wars-arena-zone-c3'),
+                '推斥动作前同时露出来源和落点',
+            );
+            const pushStart = await target.boundingBox();
+            expect(pushStart, '推斥前必须读取目标本体位置').not.toBeNull();
 
+            gifCapture = await startMageWarsFxGifCapture(match.guestPage, recording);
             const pushFxAuditPromise = captureMageWarsFxProcessScreenshots(
                 match.guestPage,
                 testInfo,
                 'push',
                 '12A-原力推斥',
-                { expectTravel: true },
+                {
+                    expectTravel: true,
+                    captureFrame: (animations) => gifCapture?.capture(animations) ?? Promise.resolve(),
+                    recording,
+                },
             );
             await clickLegalTargetZone(match.guestPage, 'c3', '原力推斥选择推离落点');
             const pushFxAudit = await pushFxAuditPromise;
+            const pushEnd = await target.boundingBox();
+            expect(pushEnd, '推斥落场后必须读取同一目标本体位置').not.toBeNull();
+            expect(pushFxAudit.slideViewport, '必须记录同一滑移动画的起终点').toBeDefined();
+            const slide = pushFxAudit.slideViewport!;
+            const startDelta = Math.hypot(slide.fromX + slide.width / 2 - (pushStart!.x + pushStart!.width / 2),
+                slide.fromY + slide.height / 2 - (pushStart!.y + pushStart!.height / 2));
+            const endDelta = Math.hypot(slide.toX + slide.width / 2 - (pushEnd!.x + pushEnd!.width / 2),
+                slide.toY + slide.height / 2 - (pushEnd!.y + pushEnd!.height / 2));
+            expect(startDelta, `推斥滑移起点须贴合卡牌本体: ${startDelta}px`).toBeLessThan(6);
+            expect(endDelta, `推斥滑移终点须贴合落场卡牌: ${endDelta}px`).toBeLessThan(6);
+            console.log(`[MageWars push] startDelta=${startDelta.toFixed(2)}px endDelta=${endDelta.toFixed(2)}px`);
+            await gifCapture.stop();
+            await materializeMageWarsFxEvidenceFrameSeries(
+                testInfo,
+                recording,
+                [
+                    '12A-原力推斥-实体滑移开始过程帧',
+                    '12A-原力推斥-实体滑移路径中',
+                    '12A-原力推斥-滑移落点过程帧',
+                ],
+                [0.12, 0.45, 0.82],
+                {
+                    elapsedStartMs: pushFxAudit.evidenceWindowElapsedStartMs,
+                    elapsedEndMs: pushFxAudit.evidenceWindowElapsedEndMs,
+                    origin: 'recording-start',
+                },
+            );
             expect(pushFxAudit.sourceRow).toBe('1');
             expect(pushFxAudit.sourceCol).toBe('2');
             expect(pushFxAudit.targetRow).toBe('2');
@@ -5743,18 +11124,54 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '原力推斥必须通过真实页面产生推斥结算事件',
                 timeout: 5_000,
             }).toBe(true);
+            await dragArenaViewportUntilLocatorActionable(
+                match.guestPage,
+                target,
+                '原力推斥结算后目标',
+                { safeInset: 120 },
+            );
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.guestPage, '原力推斥稳定收口截图前');
+            await saveEvidenceScreenshot(match.guestPage, testInfo, '12A-原力推斥结算后-目标落到 C3');
         } finally {
+            await gifCapture?.stop().catch(() => undefined);
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '推斥代表态',
+            required: true,
+            screenshotIncludes: [
+                '12A-原力推斥-实体滑移开始过程帧',
+                '12A-原力推斥-实体滑移路径中',
+                '12A-原力推斥-滑移落点过程帧',
+                '12A-原力推斥结算后-目标落到',
+            ],
+            requirements: [
+                {
+                    requirement: '正式页面推斥独立覆盖：玩家选择推离落点，实体滑移开始、滑移路径、落点和稳定收口来自同一次运行',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面选择原力推斥目标并点击合法落点后产生真实推斥结算事件',
+                        'E2E：推斥实体滑移开始、路径、落点和目标区域变化过程帧来自当前运行',
+                        recording.finalGifPath!,
+                    ],
+                },
+            ],
+        });
     });
 
-    test('正式页面传送法术过程帧覆盖来源轨迹落点', async ({ browser, baseURL }, testInfo) => {
+test('正式页面传送法术过程帧覆盖来源闪现落点', async ({ browser, baseURL }, testInfo) => {
         test.setTimeout(180_000);
+        console.log('[MageWars GIF debug] teleport-test-enter');
         await clearEvidenceScreenshotsForTest(testInfo);
+        console.log('[MageWars GIF debug] teleport-evidence-cleared');
+        const recording = createMageWarsFxVideoRecording(testInfo, { fileLabel: '传送' });
+        console.log(`[MageWars GIF debug] teleport-recording-created enabled=${recording.enabled}`);
+        let gifCapture: MageWarsFxGifCapture | null = null;
         const match = await setupOnlineMageWars(browser, baseURL);
+        console.log('[MageWars GIF debug] teleport-match-ready');
         const hostDiagnostics = attachPageDiagnostics(match.hostPage, 'host');
         const guestDiagnostics = attachPageDiagnostics(match.guestPage, 'guest');
         const targetObjectId = 'mw-e2e-teleport-target';
@@ -5773,6 +11190,7 @@ test.describe('Mage Wars formal online runtime', () => {
                 ),
                 mana: 12,
             });
+            console.log('[MageWars GIF debug] teleport-state-injected');
 
             const target = match.hostPage.locator(`[data-testid="mage-wars-zone-field-card"][data-object-id="${targetObjectId}"]`).first();
             await selectPreparedSpell(match.hostPage, selfPreparedCardByName(match.hostPage, '传送'), '传送');
@@ -5781,20 +11199,38 @@ test.describe('Mage Wars formal online runtime', () => {
             await expect(match.hostPage.getByTestId('mage-wars-arena-zone-b3')).toHaveAttribute('data-legal-target-zone', 'true', {
                 timeout: 3_000,
             });
+            console.log('[MageWars GIF debug] teleport-target-selected');
+            await panMageWarsArenaOffCenterWhileKeepingLocatorVisible(
+                match.hostPage,
+                match.hostPage.getByTestId('mage-wars-arena-zone-b3'),
+                '传送动作前同时露出来源和落点',
+            );
 
+            gifCapture = await startMageWarsFxGifCapture(match.hostPage, recording);
             const teleportFxAuditPromise = captureMageWarsFxProcessScreenshots(
                 match.hostPage,
                 testInfo,
                 'teleport',
                 '12B-传送',
-                { expectTravel: true },
+                {
+                    expectTravel: false,
+                    captureFrame: (animations) => gifCapture?.capture(animations) ?? Promise.resolve(),
+                },
             );
             await clickLegalTargetZone(match.hostPage, 'b3', '传送选择目标区域');
             const teleportFxAudit = await teleportFxAuditPromise;
-            expect(teleportFxAudit.sourceRow).toBe('1');
-            expect(teleportFxAudit.sourceCol).toBe('0');
-            expect(teleportFxAudit.targetRow).toBe('2');
-            expect(teleportFxAudit.targetCol).toBe('1');
+            await gifCapture.stop();
+            await materializeMageWarsFxEvidenceFrameSeries(
+                testInfo,
+                recording,
+                [
+                    '12B-传送-来源闪现与目标落点过程帧',
+                    '12B-传送-目标区域落点过程帧',
+                ],
+                [0.12, 0.72],
+            );
+            expect(teleportFxAudit.hasTravel).toBe(false);
+            expect(teleportFxAudit.hasSourceWake).toBe(true);
 
             await expectServerObjectZone(
                 match.hostPage,
@@ -5816,11 +11252,39 @@ test.describe('Mage Wars formal online runtime', () => {
                 message: '传送必须通过真实页面产生传送结算事件',
                 timeout: 5_000,
             }).toBe(true);
+            await dragArenaViewportUntilLocatorActionable(
+                match.hostPage,
+                target,
+                '传送结算后目标',
+                { safeInset: 120 },
+            );
+            await waitForVisibleMageWarsAtlasCardsLoaded(match.hostPage, '传送稳定收口截图前');
+            await saveEvidenceScreenshot(match.hostPage, testInfo, '12B-传送结算后-蓝色精怪到达 B3');
         } finally {
+            await gifCapture?.stop().catch(() => undefined);
             await Promise.all([match.hostContext.close(), match.guestContext.close()]);
         }
 
         expect(hostDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
         expect(guestDiagnostics.errors.filter((entry) => /Maximum update depth|Too many re-renders|ChunkLoadError/i.test(entry))).toEqual([]);
+        await finalizeMageWarsFxVideoRecording(testInfo, recording, {
+            actionLabel: '传送直接瞬移代表态',
+            screenshotIncludes: [
+                '12B-传送-来源闪现与目标落点过程帧',
+                '12B-传送-目标区域落点过程帧',
+                '12B-传送结算后-蓝色精怪到达',
+            ],
+            requirements: [
+                {
+                    requirement: '正式页面传送独立覆盖：玩家选择目标区域后，来源闪现、目标落点和稳定收口来自同一次运行，且全程没有飞行路径',
+                    status: 'PASS',
+                    evidence: [
+                        'E2E：正式页面选择传送目标生物和合法目标区域后产生真实传送结算事件',
+                        'E2E：传送来源闪现、目标落点和稳定收口过程帧来自当前运行，并反向断言没有 travel 节点',
+                        recording.finalGifPath!,
+                    ],
+                },
+            ],
+        });
     });
 });

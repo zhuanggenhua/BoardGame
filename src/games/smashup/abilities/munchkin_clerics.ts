@@ -247,6 +247,7 @@ function turnerModeOptions(state: SmashUpCore, baseIndex: number, playerId: stri
     const options: Array<{
         id: string;
         label: string;
+        labelKey?: string;
         value: TurnerModeChoice;
         displayMode: 'button';
     }> = [];

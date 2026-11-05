@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, ZoomIn } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import type { MageWarsConfigSpellCard } from '../data/configPackage';
@@ -65,7 +65,8 @@ const TYPE_FILTER_LABEL_KEYS: Record<Exclude<TypeFilter, 'all'>, string> = {
 const SPELL_CARD_BACK_PATH = 'mage-wars/cards/backs/spell-card-back';
 const WALL_CARD_BACK_PATH = 'mage-wars/cards/backs/wall-card-back';
 const SPELL_CARD_BACK_RATIO = 992 / 1391;
-const WALL_CARD_BACK_RATIO = 1386 / 992;
+const WALL_CARD_BACK_RATIO = SPELL_CARD_BACK_RATIO;
+const ROTATED_WALL_CARD_WIDTH_PERCENT = `${(100 / SPELL_CARD_BACK_RATIO).toFixed(2)}%`;
 
 function cx(...classes: Array<string | false | null | undefined>): string {
     return classes.filter(Boolean).join(' ');
@@ -190,6 +191,48 @@ function SpellCardArt({
             title={spell.name}
             data-card-fallback={isWallSpell(spell) ? 'wall-card-back' : 'spell-card-back'}
         />
+    );
+}
+
+function SpellCardDisplay({
+    spell,
+    className,
+}: {
+    spell: MageWarsConfigSpellCard;
+    className?: string;
+}) {
+    const sourceAspectRatio = getCardAspectRatio(spell);
+    const wallCard = isWallSpell(spell);
+
+    if (!wallCard) {
+        return (
+            <div
+                className={cx('overflow-hidden bg-black/45', className)}
+                style={{ aspectRatio: sourceAspectRatio }}
+                data-card-display-orientation="portrait"
+            >
+                <SpellCardArt spell={spell} />
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className={cx('relative overflow-hidden bg-black/45', className)}
+            style={{ aspectRatio: SPELL_CARD_BACK_RATIO }}
+            data-card-display-orientation="portrait-rotated-wall"
+        >
+            <div
+                className="absolute left-1/2 top-1/2 block"
+                style={{
+                    width: ROTATED_WALL_CARD_WIDTH_PERCENT,
+                    aspectRatio: sourceAspectRatio,
+                    transform: 'translate(-50%, -50%) rotate(90deg)',
+                }}
+            >
+                <SpellCardArt spell={spell} />
+            </div>
+        </div>
     );
 }
 
@@ -444,7 +487,14 @@ export function MageWarsSpellbookBuilderPanel({
             data-saved-spellbook-count={savedSpellbookTotalCount}
             data-saved-spellbook-limit={MAGE_WARS_SAVED_SPELLBOOK_LIMIT}
         >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_12%,rgba(146,98,38,0.25),transparent_30%),radial-gradient(circle_at_76%_16%,rgba(69,105,119,0.19),transparent_29%),linear-gradient(135deg,#211712_0%,#2b211b_52%,#111414_100%)]" />
+            <OptimizedImage
+                src="mage-wars/board/standard-arena"
+                alt=""
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 h-full w-full max-w-none object-cover opacity-32"
+                placeholder={false}
+            />
+            <div className="pointer-events-none absolute inset-0 bg-black/68" />
             <div className="relative z-10 grid h-full min-h-0 grid-rows-[4.625rem_minmax(0,1fr)] gap-2.5 px-5 pb-5 pt-3">
                 <header
                     className="builder-topbar grid min-h-0 grid-cols-[15.25rem_minmax(0,1fr)_21rem_auto] items-stretch gap-2.5"
@@ -483,7 +533,13 @@ export function MageWarsSpellbookBuilderPanel({
                                 data-testid="mage-wars-spellbook-builder-mage-detail-cue"
                                 aria-hidden="true"
                             >
-                                <ZoomIn size={14} strokeWidth={2.2} />
+                                <svg aria-hidden="true" viewBox="0 0 20 20" className="h-3.5 w-3.5 fill-current">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
                             </span>
                         </button>
                     </section>
@@ -918,7 +974,6 @@ export function MageWarsSpellbookBuilderPanel({
                                                 'group relative min-w-0 border bg-black/20 p-1.5 transition',
                                                 currentCount > 0 ? 'border-amber-200/80 shadow-[0_0_0_2px_rgba(232,187,102,0.14)]' : 'border-white/15 hover:border-amber-200/65',
                                                 restricted && 'opacity-55 saturate-50',
-                                                isWallSpell(spell) && 'col-span-2',
                                             )}
                                             data-testid="mage-wars-spellbook-builder-card"
                                             data-source-card-id={spell.spellCardId}
@@ -929,9 +984,7 @@ export function MageWarsSpellbookBuilderPanel({
                                             aria-label={t('spellbookBuilder.cardAria', { name: spell.name, status })}
                                             onClick={() => addSpell(spell)}
                                         >
-                                            <div className="mx-auto w-full overflow-hidden bg-black/45" style={{ aspectRatio: getCardAspectRatio(spell) }}>
-                                                <SpellCardArt spell={spell} className="transition duration-150 group-hover:scale-[1.018]" />
-                                            </div>
+                                            <SpellCardDisplay spell={spell} className="mx-auto w-full" />
                                             <span
                                                 className={cx(
                                                     'absolute bottom-2 left-1/2 min-w-[4.6rem] -translate-x-1/2 border px-2 py-1 text-center text-[0.63rem] font-black leading-none opacity-0 shadow-[0_6px_16px_rgba(0,0,0,0.42)] transition-opacity group-active:opacity-100 group-focus-visible:opacity-100 group-hover:opacity-100',
@@ -985,12 +1038,7 @@ export function MageWarsSpellbookBuilderPanel({
                                         data-testid="mage-wars-spellbook-builder-deck-row"
                                         data-source-card-id={entry.spellCardId}
                                     >
-                                        <div
-                                            className={cx('overflow-hidden bg-black/45', isWallSpell(spell) ? 'h-6 w-[2.1rem]' : 'h-11 w-[2.1rem]')}
-                                            style={{ aspectRatio: getCardAspectRatio(spell) }}
-                                        >
-                                            <SpellCardArt spell={spell} />
-                                        </div>
+                                        <SpellCardDisplay spell={spell} className="h-11 w-[2.1rem]" />
                                         <div className="min-w-0">
                                             <div className="truncate text-[0.69rem] font-black leading-tight text-stone-50">{spell.name}</div>
                                             <div className="mt-1 truncate text-[0.58rem] font-semibold leading-none text-stone-200/55">
@@ -1041,7 +1089,20 @@ export function MageWarsSpellbookBuilderPanel({
                     data-testid="mage-wars-spellbook-builder-mage-detail"
                     aria-label={t('spellbookBuilder.mageDetailAria')}
                 >
-                    <div className="grid max-h-[calc(100vh-5rem)] w-[min(63rem,calc(100vw-5rem))] grid-cols-[22.5rem_minmax(0,1fr)] gap-5 overflow-auto border border-amber-200/45 bg-[#18110c] p-4 shadow-[0_38px_90px_rgba(0,0,0,0.64)]">
+                    <div
+                        className="relative grid max-h-[calc(100vh-5rem)] w-fit max-w-[calc(100vw-5rem)] grid-cols-[22.5rem_minmax(15rem,18rem)] gap-5 overflow-auto border border-amber-200/45 bg-[#18110c] p-4 pr-16 shadow-[0_38px_90px_rgba(0,0,0,0.64)]"
+                        data-testid="mage-wars-spellbook-builder-mage-detail-panel"
+                    >
+                        <button
+                            type="button"
+                            className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full border border-amber-100/55 bg-black/65 text-amber-50 shadow-lg transition hover:border-amber-50 hover:bg-black/85 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-100"
+                            data-testid="mage-wars-spellbook-builder-mage-detail-close"
+                            aria-label={t('spellbookBuilder.close')}
+                            title={t('spellbookBuilder.close')}
+                            onClick={() => setDetailOpen(false)}
+                        >
+                            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2.5} />
+                        </button>
                         <div className="overflow-hidden border border-white/20 bg-black/40" style={{ aspectRatio: 744 / 1040 }}>
                             <CardPreview
                                 previewRef={getMageWarsMagePreviewRef(mageId, 'card')}
@@ -1051,10 +1112,9 @@ export function MageWarsSpellbookBuilderPanel({
                             />
                         </div>
                         <div className="grid content-start gap-3">
-                            <h2 className="m-0 text-2xl font-black leading-tight">{currentSetup.displayName}</h2>
-                            <p className="m-0 text-sm font-semibold leading-relaxed text-stone-200/72">
-                                {t('spellbookBuilder.mageDetailDescription')}
-                            </p>
+                            <div className="text-xs font-black uppercase tracking-[0.14em] text-amber-200/72">
+                                {t('spellbookBuilder.builderConstraints')}
+                            </div>
                             <div className="grid gap-2">
                                 <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] border border-white/12 bg-white/[0.045] p-2 text-sm">
                                     <span className="font-black text-stone-100/70">
@@ -1069,14 +1129,6 @@ export function MageWarsSpellbookBuilderPanel({
                                     <strong>{trainingProfile.opposedSchools.join(' / ') || t('spellbookBuilder.none')}</strong>
                                 </div>
                             </div>
-                            <button
-                                type="button"
-                                className="mt-2 w-max border border-amber-200/60 bg-amber-300 px-5 py-2 text-sm font-black text-stone-950"
-                                data-testid="mage-wars-spellbook-builder-mage-detail-close"
-                                onClick={() => setDetailOpen(false)}
-                            >
-                                {t('spellbookBuilder.close')}
-                            </button>
                         </div>
                     </div>
                 </section>

@@ -83,12 +83,6 @@
       "kind": "status-token"
     },
     {
-      "id": "effect-die-d12-face",
-      "path": "mage-wars/dice/effect-die-d12-face",
-      "kind": "die-texture",
-      "description": "效果骰 D12 面参考"
-    },
-    {
       "id": "guard-token",
       "path": "mage-wars/tokens/status/guard-token",
       "kind": "status-token"
@@ -554,6 +548,12 @@
       "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2224",
       "kind": "atlas-frame",
       "description": "缠绕藤蔓"
+    },
+    {
+      "id": "spell-card-2303-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#2303",
+      "kind": "atlas-frame",
+      "description": "生命巨树默克塔利"
     },
     {
       "id": "spell-card-2500-frame",
@@ -1090,6 +1090,30 @@
       "description": "摩洛王的折磨"
     },
     {
+      "id": "spell-card-3800-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3800",
+      "kind": "atlas-frame",
+      "description": "月光项链"
+    },
+    {
+      "id": "spell-card-3801-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3801",
+      "kind": "atlas-frame",
+      "description": "阿希拉之戒"
+    },
+    {
+      "id": "spell-card-3802-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3802",
+      "kind": "atlas-frame",
+      "description": "群兽之戒"
+    },
+    {
+      "id": "spell-card-3803-frame",
+      "path": "atlas://public/assets/atlas-configs/mage-wars/apprentice-spell-atlases.json#3803",
+      "kind": "atlas-frame",
+      "description": "诅咒之戒"
+    },
+    {
       "id": "spell-card-back",
       "path": "mage-wars/cards/backs/spell-card-back",
       "kind": "card-back",
@@ -1557,9 +1581,6 @@
       "tags": [
         "effect",
         "random-source"
-      ],
-      "assetRefs": [
-        "effect-die-d12-face"
       ],
       "data": {
         "rulesObject": "effect-die"
@@ -2205,19 +2226,29 @@
       "id": "spell-1707",
       "objectType": "card",
       "name": "烈焰之环",
+      "cost": {
+        "mana": 9,
+        "raw": "9"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-17",
         "攻击"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "攻击区域中除施法者以外的所有对象。",
       "data": {
         "cardId": 1707,
         "spellType": "攻击",
-        "typeLine": "攻击",
+        "spellActionSpeed": "standard",
+        "typeLine": "攻击 / 火焰",
+        "level": 2,
+        "range": "0-0",
+        "targetRule": "区域",
+        "attackOrTraitLine": "5 颗攻击骰；效果骰 `7-10=燃烧`、`11+=燃烧x2`；`无法回避`、`除霜`",
+        "printCode": "MW1A12",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "烈焰之环",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -2243,19 +2274,29 @@
       "id": "spell-1708",
       "objectType": "card",
       "name": "怒雷箭矢",
+      "cost": {
+        "mana": 10,
+        "raw": "10"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-17",
         "攻击"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "无额外规则正文，正文区为风味引文",
       "data": {
         "cardId": 1708,
         "spellType": "攻击",
-        "typeLine": "攻击",
+        "spellActionSpeed": "standard",
+        "typeLine": "攻击 / 闪电",
+        "level": 3,
+        "range": "0-3",
+        "targetRule": "生物或魔物",
+        "attackOrTraitLine": "6 颗攻击骰；效果骰 `4-6=眩晕`、`7+=昏迷`；`以太`",
+        "printCode": "MW1A13",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "怒雷箭矢",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -2599,8 +2640,16 @@
           "height": 0.25
         },
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
-        "requiresCodeSupport": true,
+        "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          }
+        },
         "rawCost": "2 + 3",
         "manaCost": 5,
         "standardStartingRulesName": "法师祸咒",
@@ -2686,34 +2735,59 @@
       "id": "spell-1807",
       "objectType": "card",
       "name": "剧痛锁链",
+      "cost": {
+        "raw": "2 + 1"
+      },
       "tags": [
+        "apprentice-spell",
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每次本生物执行移动行动时，其受到1点直接伤害。",
       "data": {
         "cardId": 1807,
         "spellType": "结界",
-        "typeLine": "结界",
-        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
-        "standardStartingRulesName": "剧痛锁链",
-        "standardStartingMageIds": [
-          "warlock_apprentice"
-        ],
-        "mappingStatus": "single-candidate",
-        "deck": 18,
-        "slot": 7,
+        "typeLine": "结界 / 诅咒",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1E04",
+        "contractStatus": "locked",
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1807,
+        "deck": 18,
+        "slot": 7,
         "frame": {
           "left": 0,
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "movementEffects": [
+            {
+              "kind": "direct-damage",
+              "amount": 1,
+              "damageType": "aether"
+            }
+          ]
+        },
+        "standardStartingRulesName": "剧痛锁链",
+        "standardStartingMageIds": [
+          "warlock_apprentice"
+        ],
+        "mappingStatus": "single-candidate"
       },
       "assetRefs": [
         "spell-card-1807-frame",
@@ -2858,19 +2932,28 @@
       "id": "spell-1810",
       "objectType": "card",
       "name": "闪电之环",
+      "cost": {
+        "raw": "2 + 4"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师绑定+2。本生物获得反伤屏障。",
       "data": {
         "cardId": 1810,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 闪电、屏障",
+        "level": 2,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "attackOrTraitLine": "电流冲涌：2 颗攻击骰；效果骰 `7-10=眩晕`、`11+=昏迷`；`以太`、`无法回避`",
+        "limitOrDefense": "法师绑定+2；反伤屏障",
+        "printCode": "MW1E06",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "闪电之环",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -2880,6 +2963,26 @@
         "slot": 10,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1810,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 4",
+        "manaCost": 6,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          }
+        },
+        "combatTraits": {
+          "damageBarrier": {
+            "diceCount": 2,
+            "damageTypes": ["闪电"],
+            "unavoidable": true,
+            "lethal": false,
+            "oncePerAttackerPerRound": true
+          }
+        },
         "frame": {
           "left": 0.428571,
           "top": 0.25,
@@ -2896,28 +2999,47 @@
       "id": "spell-1811",
       "objectType": "card",
       "name": "诱饵",
+      "cost": {
+        "raw": "2 + 0"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "初级。展示时摧毁；本法术被摧毁时，即使未展示，其控制方获得2点法力。",
       "data": {
         "cardId": 1811,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 幻像",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "区域或对象",
+        "limitOrDefense": "初级",
+        "printCode": "MW1E10",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "诱饵",
         "standardStartingMageIds": [
           "wizard_apprentice"
         ],
         "mappingStatus": "single-candidate",
+        "semantics": {
+          "abilityKind": "hidden-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "hidden",
+            "anchor": "object-or-zone"
+          }
+        },
         "deck": 18,
         "slot": 11,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1811,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 0",
+        "manaCost": 2,
         "frame": {
           "left": 0.571429,
           "top": 0.25,
@@ -2934,19 +3056,27 @@
       "id": "spell-1812",
       "objectType": "card",
       "name": "神力干涉",
+      "cost": {
+        "raw": "2 + 10"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "限定神圣法师·史诗。当本法术被展示时，你可以将本生物传送到竞技场的任意区域，然后摧毁神力干涉。",
       "data": {
         "cardId": 1812,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 加护",
+        "level": 3,
+        "range": "0-2",
+        "targetRule": "活体生物",
+        "limitOrDefense": "限定神圣法师·史诗",
+        "printCode": "MW1E11",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "神力干涉",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -2956,6 +3086,18 @@
         "slot": 12,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1812,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 10",
+        "manaCost": 12,
+        "semantics": {
+          "abilityKind": "hidden-response-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "hidden",
+            "anchor": "creature"
+          },
+          "responseKind": "target-spell-counter"
+        },
         "frame": {
           "left": 0.714286,
           "top": 0.25,
@@ -3036,19 +3178,27 @@
       "id": "spell-1814",
       "objectType": "card",
       "name": "雄鹰之翼",
+      "cost": {
+        "raw": "2 + 4"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本生物获得飞行特性。",
       "data": {
         "cardId": 1814,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 加护",
+        "level": 2,
+        "range": "0-2",
+        "targetRule": "非法师活体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1E13",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "雄鹰之翼",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -3058,6 +3208,18 @@
         "slot": 14,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1814,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 4",
+        "manaCost": 6,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "grants": [{"trait": "flying"}]
+        },
         "frame": {
           "left": 0,
           "top": 0.5,
@@ -3270,19 +3432,27 @@
       "id": "spell-1819",
       "objectType": "card",
       "name": "原力法球",
+      "cost": {
+        "raw": "2 + 3"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师绑定+1。本生物获得防御，该防御不会因本生物所处于的状态而失效，包括瘫痪、束缚和眩晕。",
       "data": {
         "cardId": 1819,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 原力、防御",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "limitOrDefense": "防御图标 `8+ / 1x`；法师绑定+1",
+        "printCode": "MW1E17",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "原力法球",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -3292,6 +3462,21 @@
         "slot": 19,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1819,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 3",
+        "manaCost": 5,
+        "combatProfiles": {
+          "attacks": [],
+          "defenses": [{"id":"defense-0","minRoll":8,"usesPerRound":1,"ignoresStatus":true}]
+        },
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          }
+        },
         "frame": {
           "left": 0.714286,
           "top": 0.5,
@@ -3373,19 +3558,27 @@
       "id": "spell-1821",
       "objectType": "card",
       "name": "法力融合",
+      "cost": {
+        "raw": "2 + 2"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师绑定+2；法力融合只能将具有聚魔属性的对象作为目标。本对象获得聚魔+1。",
       "data": {
         "cardId": 1821,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 法力",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "对象",
+        "limitOrDefense": "法师绑定+2",
+        "printCode": "MW1E20",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "法力融合",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -3395,6 +3588,18 @@
         "slot": 21,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1821,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 2",
+        "manaCost": 4,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "grants": [{"trait":"channeling","value":1}]
+        },
         "frame": {
           "left": 0,
           "top": 0.75,
@@ -3411,19 +3616,27 @@
       "id": "spell-1822",
       "objectType": "card",
       "name": "猎鹰之眼",
+      "cost": {
+        "raw": "2 + 1"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本生物获得远程+1特性。",
       "data": {
         "cardId": 1822,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 加护",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "活体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1E21",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "猎鹰之眼",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -3433,6 +3646,18 @@
         "slot": 22,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1822,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 1",
+        "manaCost": 3,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "continuousModifiers": [{"stat":"rangedDice","operation":"add","value":1}]
+        },
         "frame": {
           "left": 0.142857,
           "top": 0.75,
@@ -3449,19 +3674,28 @@
       "id": "spell-1823",
       "objectType": "card",
       "name": "狱火陷阱",
+      "cost": {
+        "raw": "2 + 2"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "只能将不具有敌方生物的区域作为目标；当一个敌方生物进入本区域时，必须展示狱火陷阱，立即攻击该生物，然后摧毁狱火陷阱。",
       "data": {
         "cardId": 1823,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 陷阱、火焰",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "区域",
+        "attackOrTraitLine": "陷阱攻击：4 颗火焰攻击骰；效果骰 `5-8=燃烧`、`9+=燃烧x2`；`无法回避`、`除霜`",
+        "limitOrDefense": "只能将不具有敌方生物的区域作为目标",
+        "printCode": "MW1E22",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "狱火陷阱",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -3471,6 +3705,17 @@
         "slot": 23,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1823,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 2",
+        "manaCost": 4,
+        "semantics": {
+          "abilityKind": "visible-area-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
+        },
         "frame": {
           "left": 0.285714,
           "top": 0.75,
@@ -3487,19 +3732,27 @@
       "id": "spell-1824",
       "objectType": "card",
       "name": "折翼",
+      "cost": {
+        "raw": "2 + 3"
+      },
       "tags": [
         "standard-starting-spell",
         "deck-18",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本生物失去飞行特性。",
       "data": {
         "cardId": 1824,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 诅咒",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1E25",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "折翼",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -3509,6 +3762,18 @@
         "slot": 24,
         "atlasId": "spell-enchantment-core-a-atlas",
         "atlasCardId": 1824,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 3",
+        "manaCost": 5,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "grants": [{"trait":"remove-flying"}]
+        },
         "frame": {
           "left": 0.428571,
           "top": 0.75,
@@ -3654,14 +3919,36 @@
         "deck-19",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本生物获得遁逸特性。",
+      "cost": {
+        "raw": "2 + 3",
+        "mana": 5
+      },
       "data": {
         "cardId": 1900,
         "spellType": "结界",
         "typeLine": "结界",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "活体生物",
+        "rulesText": "本生物获得遁逸特性。",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 3",
+        "manaCost": 5,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "grants": [
+            { "trait": "elusive" }
+          ]
+        },
         "standardStartingRulesName": "猫鼬灵步",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -3753,14 +4040,36 @@
         "deck-19",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本生物获得有限生命特性。",
+      "cost": {
+        "raw": "2 + 3",
+        "mana": 5
+      },
       "data": {
         "cardId": 1902,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 诅咒、毒素",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "活体生物",
+        "rulesText": "本生物获得有限生命特性。",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 3",
+        "manaCost": 5,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "grants": [
+            { "trait": "limited-life" }
+          ]
+        },
         "standardStartingRulesName": "毒血攻心",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -3807,6 +4116,7 @@
         "level": 1,
         "range": "0-2",
         "targetRule": "实体生物",
+        "rulesText": "本生物的快速行动近战攻击获得反击特性。它首次进行反击时，摧毁反戈一击。",
         "limitOrDefense": "无",
         "printCode": "MW1E33",
         "contractStatus": "locked",
@@ -3914,14 +4224,34 @@
         "deck-19",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "当本生物成为对手控制的咒语或结界类法术的目标时，你必须在法术反制步骤中展示魔法逆转。将其重新指向施法者，成为该法术的目标。你成为该法术的施法者，控制该法术，并可以重新决定该法术的效果。如果新费用高于原本的费用，你必须支付该差额。然后，摧毁魔法逆转。",
+      "cost": {
+        "raw": "2 + 5",
+        "mana": 7
+      },
       "data": {
         "cardId": 1905,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 超魔",
+        "level": 2,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "rulesText": "当本生物成为对手控制的咒语或结界类法术的目标时，你必须在法术反制步骤中展示魔法逆转。将其重新指向施法者，成为该法术的目标。你成为该法术的施法者，控制该法术，并可以重新决定该法术的效果。如果新费用高于原本的费用，你必须支付该差额。然后，摧毁魔法逆转。",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 5",
+        "manaCost": 7,
+        "semantics": {
+          "abilityKind": "hidden-response-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "hidden",
+            "anchor": "object"
+          },
+          "responseKind": "target-spell-redirect"
+        },
         "standardStartingRulesName": "魔法逆转",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -3952,14 +4282,32 @@
         "deck-19",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "传送陷阱仅能将不具有敌方生物的区域作为目标。当一个敌方生物进入本区域时，你必须展示传送陷阱。该敌方生物被立即传送到离本区域2格之内的由你选择的区域中。然后，摧毁传送陷阱。",
+      "cost": {
+        "raw": "2 + 2",
+        "mana": 4
+      },
       "data": {
         "cardId": 1907,
         "spellType": "结界",
-        "typeLine": "结界",
+        "typeLine": "结界 / 陷阱、传送",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "区域",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 2",
+        "manaCost": 4,
+        "semantics": {
+          "abilityKind": "visible-area-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
+        },
         "standardStartingRulesName": "传送陷阱",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -4368,14 +4716,36 @@
         "deck-19",
         "结界"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本生物获得迅捷特性。",
+      "cost": {
+        "raw": "2 + 3",
+        "mana": 5
+      },
       "data": {
         "cardId": 1915,
         "spellType": "结界",
         "typeLine": "结界",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "活体生物",
+        "rulesText": "本生物获得迅捷特性。",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "rawCost": "2 + 3",
+        "manaCost": 5,
+        "semantics": {
+          "abilityKind": "visible-object-enchantment",
+          "attachment": {
+            "kind": "enchantment",
+            "visibility": "revealed",
+            "anchor": "object"
+          },
+          "grants": [
+            { "trait": "swift" }
+          ]
+        },
         "standardStartingRulesName": "猎豹之速",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -4537,14 +4907,13 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每回合最多两次，你可以令一个友方牧师生物使用一个标准行动，以放置1点法力到阿希拉神殿上。在部署阶段中，如果阿希拉神殿上具有2点或更多法力，其可以召唤一个神圣生物。",
       "data": {
         "cardId": 2203,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 神殿、传送门",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
         "standardStartingRulesName": "阿希拉神殿",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -4559,12 +4928,48 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 3,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "再生点·区域独占；史诗·限定神圣法师",
+        "printCode": "MW1J23",
+        "rawCost": "10",
+        "manaCost": 10,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
+        },
+        "spellcastingSource": {
+          "abilityId": "mw.source.2203.spawn-point",
+          "kind": "spawn-point",
+          "phase": "deployment",
+          "allowedSpellTypes": [
+            "生物"
+          ],
+          "allowedSchoolLineIncludes": [
+            "圣光"
+          ],
+          "minimumMana": 2,
+          "channeling": 0
+        },
+        "requiresCodeSupport": false
       },
       "assetRefs": [
         "spell-card-2203-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "10",
+        "mana": 10
+      },
+      "stats": {
+        "life": 9,
+        "armor": 3
+      }
     },
     {
       "id": "spell-2206",
@@ -4575,14 +4980,25 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "所有动物生物的近战攻击获得穿刺+1特性。",
       "data": {
         "cardId": 2206,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 图腾",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          },
+          "grants": [
+            { "trait": "melee-pierce", "value": 1 }
+          ]
+        },
         "standardStartingRulesName": "尖齿与利爪",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -4597,12 +5013,26 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 2,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "区域独占",
+        "printCode": "MW1J03",
+        "rawCost": "7",
+        "manaCost": 7
       },
       "assetRefs": [
         "spell-card-2206-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "7",
+        "mana": 7
+      },
+      "stats": {
+        "life": 7,
+        "armor": 2
+      }
     },
     {
       "id": "spell-2207",
@@ -4613,14 +5043,25 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "所有动物生物获得冲锋+1特性。",
       "data": {
         "cardId": 2207,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 图腾",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          },
+          "grants": [
+            { "trait": "charge", "value": 1 }
+          ]
+        },
         "standardStartingRulesName": "拉贾恩之怒",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -4635,12 +5076,26 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 2,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "区域独占",
+        "printCode": "MW1J01",
+        "rawCost": "7",
+        "manaCost": 7
       },
       "assetRefs": [
         "spell-card-2207-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "7",
+        "mana": 7
+      },
+      "stats": {
+        "life": 7,
+        "armor": 2
+      }
     },
     {
       "id": "spell-2208",
@@ -4651,14 +5106,35 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每个维持阶段，所有位于毒气云雾所在区域的活体生物受到2点直接毒素伤害。如果一个活体生物进入本区域，或在本区域开始它的行动阶段，则它回合不可以执行多于一次的移动行动。",
       "data": {
         "cardId": 2208,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 云雾、毒素",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          },
+          "upkeepEffects": [
+            {
+              "kind": "direct-damage",
+              "amount": 2,
+              "damageType": "毒素"
+            }
+          ],
+          "movementRestrictions": [
+            {
+              "kind": "max-movement-actions-per-turn",
+              "maxActions": 1
+            }
+          ]
+        },
         "standardStartingRulesName": "毒气云雾",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -4673,12 +5149,26 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 2,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "虚体·风力+2",
+        "printCode": "MW1J18",
+        "rawCost": "8",
+        "manaCost": 8
       },
       "assetRefs": [
         "spell-card-2208-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "8",
+        "mana": 8
+      },
+      "stats": {
+        "life": 5,
+        "armor": 0
+      }
     },
     {
       "id": "spell-2209",
@@ -4689,14 +5179,13 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每次一个不同的敌方生物被一个友方生物攻击并受到伤害时，放置1点法力到五星魔阵上。五星魔阵每回合可以以此方式最多获得2点法力。在部署阶段中，如果五星魔阵上具有2点或更多法力，其可以召唤一个黑暗活体生物。",
       "data": {
         "cardId": 2209,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 传送门、符文",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
         "standardStartingRulesName": "五星魔阵",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -4711,12 +5200,48 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 4,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "再生点·区域独占·虚体；史诗·限定邪术师",
+        "printCode": "MW1J17",
+        "rawCost": "14",
+        "manaCost": 14,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
+        },
+        "spellcastingSource": {
+          "abilityId": "mw.source.2209.spawn-point",
+          "kind": "spawn-point",
+          "phase": "deployment",
+          "allowedSpellTypes": [
+            "生物"
+          ],
+          "allowedSchoolLineIncludes": [
+            "黑暗"
+          ],
+          "minimumMana": 2,
+          "channeling": 0
+        },
+        "requiresCodeSupport": false
       },
       "assetRefs": [
         "spell-card-2209-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "14",
+        "mana": 14
+      },
+      "stats": {
+        "life": 10,
+        "armor": 1
+      }
     },
     {
       "id": "spell-2212",
@@ -4727,14 +5252,14 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "在部署阶段中，战斗锻炉可以施放一个装备类法术。",
       "data": {
         "cardId": 2212,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 装置",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "战斗锻炉",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -4749,12 +5274,35 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
+        },
+        "level": 1,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "再生点·区域独占；火焰免疫·水流+3",
+        "printCode": "MW1J04",
+        "rawCost": "8",
+        "manaCost": 8,
+        "spellcastingSource": {
+          "abilityId": "mw.source.2212.spawn-point",
+          "kind": "spawn-point",
+          "phase": "deployment",
+          "allowedSpellTypes": [
+            "装备"
+          ],
+          "channeling": 0
         }
       },
       "assetRefs": [
         "spell-card-2212-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "8",
+        "mana": 8
+      },
+      "stats": {
+        "life": 6,
+        "armor": 1
+      }
     },
     {
       "id": "spell-2218",
@@ -4788,6 +5336,7 @@
         "attackOrTraitLine": "非活体；精神免疫；无法移动；聚魔4",
         "sourceContract": "docs/games/mage-wars/rule/familiar-spellcasting-card-contract.md",
         "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "atlasId": "spell-conjuration-core-atlas",
         "atlasCardId": 2218,
         "deck": 22,
@@ -4826,14 +5375,14 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每回合一次，在任意友方生物的行动阶段之前或之后，你可以以一个活体生物为目标，使其获得护甲+1特性直到本回合结束，或者你可以为其治疗1点伤害。使用一枚就绪标记来记录本能力。",
       "data": {
         "cardId": 2219,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 神殿",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "宾·莎拉之手",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -4848,12 +5397,34 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
+        },
+        "level": 1,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "区域独占·独有",
+        "printCode": "MW1J08",
+        "rawCost": "5",
+        "manaCost": 5,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
         }
       },
       "assetRefs": [
         "spell-card-2219-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "5",
+        "mana": 5
+      },
+      "stats": {
+        "life": 5,
+        "armor": 2
+      }
     },
     {
       "id": "spell-2221",
@@ -4864,14 +5435,25 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "控制方获得聚魔+1。",
       "data": {
         "cardId": 2221,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 法力",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          },
+          "grants": [
+            { "trait": "channeling", "value": 1 }
+          ]
+        },
         "standardStartingRulesName": "法力水晶",
         "standardStartingMageIds": [
           "warlock_apprentice",
@@ -4887,12 +5469,26 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 1,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "区域独占·火焰免疫",
+        "printCode": "MW1J12",
+        "rawCost": "5",
+        "manaCost": 5
       },
       "assetRefs": [
         "spell-card-2221-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "5",
+        "mana": 5
+      },
+      "stats": {
+        "life": 6,
+        "armor": 2
+      }
     },
     {
       "id": "spell-2222",
@@ -4903,14 +5499,25 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "控制方获得聚魔+1。",
       "data": {
         "cardId": 2222,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "typeLine": "魔物 / 法力、植物",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          },
+          "grants": [
+            { "trait": "channeling", "value": 1 }
+          ]
+        },
         "standardStartingRulesName": "法力灵花",
         "standardStartingMageIds": [
           "beastmaster_apprentice",
@@ -4926,12 +5533,26 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 1,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "区域独占·重生2·活体；火焰+2·水流免疫",
+        "printCode": "MW1J13",
+        "rawCost": "5",
+        "manaCost": 5
       },
       "assetRefs": [
         "spell-card-2222-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "5",
+        "mana": 5
+      },
+      "stats": {
+        "life": 6,
+        "armor": 0
+      }
     },
     {
       "id": "spell-2223",
@@ -4942,14 +5563,26 @@
         "deck-22",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "当法力虹吸进场时，选择距离本法术最多2格区域之内并在视线中的一名法师。只要法力虹吸在场，该法师获得聚魔-2，并且与被选择法师所在竞技场的位置无关。",
       "data": {
         "cardId": 2223,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "spellActionSpeed": "quick",
+        "typeLine": "魔物 / 传送门、法力",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          },
+          "grants": [
+            { "trait": "channeling", "value": -2 }
+          ]
+        },
         "standardStartingRulesName": "法力虹吸",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -4964,12 +5597,26 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "level": 3,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "区域独占·虚体·史诗",
+        "printCode": "MW1J14",
+        "rawCost": "12",
+        "manaCost": 12
       },
       "assetRefs": [
         "spell-card-2223-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "12",
+        "mana": 12
+      },
+      "stats": {
+        "life": 9,
+        "armor": 0
+      }
     },
     {
       "id": "spell-2224",
@@ -5035,14 +5682,26 @@
         "deck-23",
         "魔物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "cost": {
+        "mana": 8,
+        "raw": "8"
+      },
+      "stats": {
+        "life": 8,
+        "armor": 2
+      },
+      "text": "重生2·活体·传奇；火焰+2·水流免疫。所有位于生命巨树默克塔利所在区域的友方活体生物获得重生2特性。",
       "data": {
         "cardId": 2303,
         "spellType": "魔物",
-        "typeLine": "魔物",
+        "spellActionSpeed": "quick",
+        "typeLine": "魔物 / 植物、树木",
+        "level": 2,
+        "targetRule": "0-1` / 区域",
+        "attackOrTraitLine": "重生2·活体·传奇；火焰+2·水流免疫",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "生命巨树默克塔利",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -5050,8 +5709,27 @@
         "mappingStatus": "single-candidate",
         "deck": 23,
         "slot": 3,
-        "assetStatus": "blocked-missing-runtime-atlas"
-      }
+        "atlasId": "spell-conjuration-core-b-atlas",
+        "atlasCardId": 2303,
+        "frame": {
+          "left": 0.428571,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "semantics": {
+          "abilityKind": "visible-area-conjuration",
+          "attachment": {
+            "kind": "conjuration",
+            "visibility": "revealed",
+            "anchor": "zone"
+          }
+        }
+      },
+      "assetRefs": [
+        "spell-card-2303-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-2500",
@@ -5587,14 +6265,14 @@
         "deck-28",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "所有与头狼赤爪位于同一区域的其它友方大科生物获得护甲+1和近战+1特性。",
       "data": {
         "cardId": 2806,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 动物、大科",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "头狼赤爪",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -5609,12 +6287,43 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "自然",
+        "level": 4,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "嗥吠：快速近战 5 骰",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "嗥吠",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 5,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C29",
+        "spellActionSpeed": "standard",
+        "rawCost": "16",
+        "manaCost": 16
       },
       "assetRefs": [
         "spell-card-2806-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 16,
+        "raw": "16"
+      },
+      "stats": {
+        "life": 12,
+        "armor": 3
+      }
     },
     {
       "id": "spell-2807",
@@ -6336,14 +7045,14 @@
         "deck-28",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每回合一次，如果一个友方生物被敌方生物攻击并摧毁，放置一个怒气记号到闪电天使瓦尔莎拉上，最多累积4个记号。闪电天使瓦尔莎拉上每有一个怒气记号，她获得近战+1。",
       "data": {
         "cardId": 2817,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 天使",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "闪电天使瓦尔莎拉",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -6358,12 +7067,59 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "圣光",
+        "level": 5,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "闪电剑刃：快速近战闪电 4 骰，效果骰 `7-8=眩晕`、`9+=昏迷`；以太",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "闪电剑刃",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 4,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": [
+                "闪电",
+                "aether"
+              ],
+              "statusEffects": [
+                {
+                  "statusTokenId": "daze",
+                  "minEffectDie": 7,
+                  "maxEffectDie": 8,
+                  "amount": 1
+                },
+                {
+                  "statusTokenId": "stun",
+                  "minEffectDie": 9,
+                  "amount": 1
+                }
+              ]
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C39",
+        "spellActionSpeed": "standard",
+        "rawCost": "21",
+        "manaCost": 21
       },
       "assetRefs": [
         "spell-card-2817-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 21,
+        "raw": "21"
+      },
+      "stats": {
+        "life": 14,
+        "armor": 1
+      }
     },
     {
       "id": "spell-2818",
@@ -6374,14 +7130,14 @@
         "deck-28",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "无额外规则正文。",
       "data": {
         "cardId": 2818,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 恶魔",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "火焰领主阿德拉梅莱克",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -6396,12 +7152,83 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "黑暗",
+        "level": 4,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "狱火镰刀：快速近战火焰 6 骰，效果骰 `5-9=燃烧`、`10+=燃烧x2`，除霜；狱火扫割：完整行动近战火焰 4 骰，效果骰 `7-10=燃烧`、`11+=燃烧x2`，横扫，除霜；飞行；火焰免疫；传奇",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "狱火镰刀",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 6,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": [
+                "火焰"
+              ],
+              "statusEffects": [
+                {
+                  "statusTokenId": "burn",
+                  "minEffectDie": 5,
+                  "maxEffectDie": 9,
+                  "amount": 1
+                },
+                {
+                  "statusTokenId": "burn",
+                  "minEffectDie": 10,
+                  "amount": 2
+                }
+              ]
+            },
+            {
+              "id": "attack-1",
+              "name": "狱火扫割",
+              "action": "full",
+              "rangeKind": "melee",
+              "diceCount": 4,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": [
+                "火焰"
+              ],
+              "statusEffects": [
+                {
+                  "statusTokenId": "burn",
+                  "minEffectDie": 7,
+                  "maxEffectDie": 10,
+                  "amount": 1
+                },
+                {
+                  "statusTokenId": "burn",
+                  "minEffectDie": 11,
+                  "amount": 2
+                }
+              ]
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C01",
+        "spellActionSpeed": "standard",
+        "rawCost": "24",
+        "manaCost": 24
       },
       "assetRefs": [
         "spell-card-2818-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 24,
+        "raw": "24"
+      },
+      "stats": {
+        "life": 14,
+        "armor": 3
+      }
     },
     {
       "id": "spell-2819",
@@ -6552,14 +7379,14 @@
         "deck-28",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "无额外规则正文，正文区为风味引文。",
       "data": {
         "cardId": 2821,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 动物",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "雪貂伙伴索斯鲁柯",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -6574,12 +7401,50 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "自然",
+        "level": 2,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "噬咬：快速近战 2 骰，效果骰 `7+=眩晕`；遁逸；小型；传奇；限定兽王",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "噬咬",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 2,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": [],
+              "statusEffects": [
+                {
+                  "statusTokenId": "daze",
+                  "minEffectDie": 7,
+                  "amount": 1
+                }
+              ]
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C33",
+        "spellActionSpeed": "standard",
+        "rawCost": "7",
+        "manaCost": 7
       },
       "assetRefs": [
         "spell-card-2821-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 7,
+        "raw": "7"
+      },
+      "stats": {
+        "life": 5,
+        "armor": 0
+      }
     },
     {
       "id": "spell-2822",
@@ -6969,14 +7834,14 @@
         "deck-29",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "当本生物被激活时，你可以支付1点法力，以给予她飞行特性直到她的行动阶段结束。",
       "data": {
         "cardId": 2902,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 吸血鬼",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "死魂吸血鬼",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -6991,12 +7856,43 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "黑暗",
+        "level": 4,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "尖牙：快速近战 5 骰，吸血；霜冻-2",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "尖牙",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 5,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C26",
+        "spellActionSpeed": "standard",
+        "rawCost": "16",
+        "manaCost": 16
       },
       "assetRefs": [
         "spell-card-2902-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 16,
+        "raw": "16"
+      },
+      "stats": {
+        "life": 15,
+        "armor": 2
+      }
     },
     {
       "id": "spell-2903",
@@ -7007,14 +7903,14 @@
         "deck-29",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "无额外规则正文，正文区为风味引文。",
       "data": {
         "cardId": 2903,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 动物、猿类",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "高山猩猩",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -7029,12 +7925,43 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "自然",
+        "level": 4,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "拳击：快速近战 4 骰；攀爬；狂怒+3",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "拳击",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 4,
+              "pierce": 0,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C25",
+        "spellActionSpeed": "standard",
+        "rawCost": "16",
+        "manaCost": 16
       },
       "assetRefs": [
         "spell-card-2903-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 16,
+        "raw": "16"
+      },
+      "stats": {
+        "life": 16,
+        "armor": 2
+      }
     },
     {
       "id": "spell-2904",
@@ -7045,14 +7972,14 @@
         "deck-29",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "无额外规则正文，正文区为风味引文。",
       "data": {
         "cardId": 2904,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 妖精",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "月光妖精",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -7067,12 +7994,43 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "自然",
+        "level": 2,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "电击：快速近战 2 骰，以太，对抗非活体+2；飞行；小型",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "电击",
+              "action": "quick",
+              "rangeKind": "melee",
+            "diceCount": 2,
+            "pierce": 0,
+            "strikeCount": 1,
+            "damageTypes": ["aether"]
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C27",
+        "spellActionSpeed": "standard",
+        "rawCost": "8",
+        "manaCost": 8
       },
       "assetRefs": [
         "spell-card-2904-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 8,
+        "raw": "8"
+      },
+      "stats": {
+        "life": 5,
+        "armor": 0
+      }
     },
     {
       "id": "spell-2906",
@@ -7251,8 +8209,24 @@
         "level": 3,
         "targetRule": "0-0` / 区域",
         "attackOrTraitLine": "乌鸦：快速近战1骰，穿刺+1；飞行；小型；传奇",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "乌鸦",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 1,
+              "pierce": 1,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
         "sourceContract": "docs/games/mage-wars/rule/familiar-spellcasting-card-contract.md",
         "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "atlasId": "spell-creature-core-b-atlas",
         "atlasCardId": 2908,
         "deck": 29,
@@ -7365,14 +8339,14 @@
         "deck-29",
         "生物"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "每个维持阶段，所有位于玛拉寇达所在区域的活体生物受到2点直接毒素伤害。",
       "data": {
         "cardId": 2910,
         "spellType": "生物",
-        "typeLine": "生物",
+        "typeLine": "生物 / 恶魔",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "玛拉寇达",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -7387,12 +8361,43 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "schoolLine": "黑暗",
+        "level": 4,
+        "targetRule": "0-0` / 区域",
+        "attackOrTraitLine": "钩爪：快速近战 4 骰，穿刺+1；迟缓；毒素免疫；传奇",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "钩爪",
+              "action": "quick",
+              "rangeKind": "melee",
+              "diceCount": 4,
+              "pierce": 1,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1C23",
+        "spellActionSpeed": "standard",
+        "rawCost": "16",
+        "manaCost": 16
       },
       "assetRefs": [
         "spell-card-2910-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 16,
+        "raw": "16"
+      },
+      "stats": {
+        "life": 13,
+        "armor": 3
+      }
     },
     {
       "id": "spell-3400",
@@ -7740,7 +8745,7 @@
         "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
         "requiresCodeSupport": false,
         "spellActionSpeed": "quick",
-        "rawCost": "X"
+      "rawCost": "X"
       }
     },
     {
@@ -7998,14 +9003,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "将你控制的目标结界移至一个新的合法目标上。结界和新目标必须都处于范围与视线内。如果是隐性结界，则X等于1。如果是显性结界，则X等于结界的等级。",
       "data": {
         "cardId": 3412,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 超魔",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "结界迁移",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -8020,12 +9025,22 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "结界和新目标",
+        "limitOrDefense": "无",
+        "printCode": "MW1I25",
+        "rawCost": "X"
       },
       "assetRefs": [
         "spell-card-3412-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "X"
+      }
     },
     {
       "id": "spell-3413",
@@ -8036,14 +9051,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "将目标生物传送至竞技场外。放置3个放逐记号物到该生物上。在每个维持阶段移除1个放逐记号物。当最后一个放逐记号物被移除时，将该生物返回最后离场的区域。当生物在竞技场外时，其不能执行任何行动，它的行动标记保持不变，并仅能被所附属的法术、状态或其自身特性和能力影响。",
       "data": {
         "cardId": 3413,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 传送",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "放逐",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -8058,12 +9073,24 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 3,
+        "range": "0-2",
+        "targetRule": "非法师生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I01",
+        "rawCost": "14",
+        "manaCost": 14
       },
       "assetRefs": [
         "spell-card-3413-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 14,
+        "raw": "14"
+      }
     },
     {
       "id": "spell-3414",
@@ -8074,14 +9101,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "摧毁一个隐性结界。一旦反隐驱散被施放，目标结界的控制方不能展示目标结界。",
       "data": {
         "cardId": 3414,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 超魔",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "反隐驱散",
         "standardStartingMageIds": [
           "warlock_apprentice",
@@ -8097,12 +9124,24 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "隐性结界",
+        "limitOrDefense": "无",
+        "printCode": "MW1I24",
+        "rawCost": "2",
+        "manaCost": 2
       },
       "assetRefs": [
         "spell-card-3414-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      }
     },
     {
       "id": "spell-3415",
@@ -8113,14 +9152,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "从你的弃牌堆中选择一个被摧毁的活体生物，并将其召唤至施法者所在区域。X等于目标法术的法力费用与其法术等级之和。",
       "data": {
         "cardId": 3415,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 治疗",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "起死回生",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -8135,12 +9174,22 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "standard",
+        "level": 4,
+        "range": "0-0",
+        "targetRule": "被摧毁的活体生物",
+        "limitOrDefense": "史诗；限定神圣法师",
+        "printCode": "MW1I22",
+        "rawCost": "X"
       },
       "assetRefs": [
         "spell-card-3415-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "X"
+      }
     },
     {
       "id": "spell-3416",
@@ -8151,14 +9200,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本回合中，目标生物进行下一次近战攻击时，如果该攻击不是反击，则在该攻击行动后，其可以立即进行另一次快速行动的近战攻击。本次额外的攻击视为同一次攻击行动的一部分。每回合你只能对同一生物施放一次战斗怒火。",
       "data": {
         "cardId": 3416,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 律令",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "战斗怒火",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -8173,12 +9222,24 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I02",
+        "rawCost": "5",
+        "manaCost": 5
       },
       "assetRefs": [
         "spell-card-3416-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 5,
+        "raw": "5"
+      }
     },
     {
       "id": "spell-3417",
@@ -8240,14 +9301,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "从目标上移除你希望的任意数量毒素状态，为每个被移除的状态支付移除费用。然后，从目标上摧毁你希望的任意数量显性毒素结界，为每个被摧毁的结界支付结界法力总费用（施法费用与展示费用）。",
       "data": {
         "cardId": 3418,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 治疗",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "毒素净化",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -8262,12 +9323,22 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "活体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I20",
+        "rawCost": "X"
       },
       "assetRefs": [
         "spell-card-3418-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "raw": "X"
+      }
     },
     {
       "id": "spell-3419",
@@ -8321,14 +9392,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "摧毁目标对象上附属的所有结界（隐性和显性）。",
       "data": {
         "cardId": 3420,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 超魔",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "魔法净化",
         "standardStartingMageIds": [
           "priestess_apprentice",
@@ -8344,12 +9415,24 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 3,
+        "range": "0-1",
+        "targetRule": "生物或魔物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I21",
+        "rawCost": "12",
+        "manaCost": 12
       },
       "assetRefs": [
         "spell-card-3420-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 12,
+        "raw": "12"
+      }
     },
     {
       "id": "spell-3421",
@@ -8360,14 +9443,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本回合中目标的下一次近战攻击获得穿刺+3特性。",
       "data": {
         "cardId": 3421,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 律令",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "穿刺突击",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -8382,12 +9465,24 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I19",
+        "rawCost": "2",
+        "manaCost": 2
       },
       "assetRefs": [
         "spell-card-3421-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      }
     },
     {
       "id": "spell-3422",
@@ -8398,14 +9493,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "本回合中目标的下一次近战攻击获得无法回避特性。",
       "data": {
         "cardId": 3422,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 律令",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "完美一击",
         "standardStartingMageIds": [
           "beastmaster_apprentice",
@@ -8421,12 +9516,24 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I18",
+        "rawCost": "2",
+        "manaCost": 2
       },
       "assetRefs": [
         "spell-card-3422-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      }
     },
     {
       "id": "spell-3423",
@@ -8437,14 +9544,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "治疗目标生物，投掷12颗攻击骰子结算治疗效果。支付状态的移除费用，从目标生物上移除你希望的任意数量状态标记。",
       "data": {
         "cardId": 3423,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 治疗",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "圣疗神恩",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -8459,12 +9566,24 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "standard",
+        "level": 3,
+        "range": "0-0",
+        "targetRule": "非巫师活体生物",
+        "limitOrDefense": "史诗；限定神圣法师",
+        "printCode": "MW1I16",
+        "rawCost": "9",
+        "manaCost": 9
       },
       "assetRefs": [
         "spell-card-3423-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 9,
+        "raw": "9"
+      }
     },
     {
       "id": "spell-3424",
@@ -8475,14 +9594,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "目标处于瘫痪直到其下一个行动阶段开始，或直到本回合结束，以率先结算为准。击倒对稳固的生物无效。",
       "data": {
         "cardId": 3424,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 原力",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "击倒",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -8497,12 +9616,24 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I15",
+        "rawCost": "3",
+        "manaCost": 3
       },
       "assetRefs": [
         "spell-card-3424-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 3,
+        "raw": "3"
+      }
     },
     {
       "id": "spell-3425",
@@ -8565,14 +9696,14 @@
         "deck-34",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "目标获得遁逸特性直到本回合结束。",
       "data": {
         "cardId": 3426,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 律令",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "神行无阻",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -8587,12 +9718,24 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 1,
+        "range": "0-2",
+        "targetRule": "实体生物",
+        "limitOrDefense": "无",
+        "printCode": "MW1I10",
+        "rawCost": "3",
+        "manaCost": 3
       },
       "assetRefs": [
         "spell-card-3426-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 3,
+        "raw": "3"
+      }
     },
     {
       "id": "spell-3500",
@@ -8603,14 +9746,14 @@
         "deck-35",
         "咒语"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师专用。投掷8颗攻击骰子。目标从他的法力池中失去等量的法力。施法者获得所失去的等量法力。",
       "data": {
         "cardId": 3500,
         "spellType": "咒语",
-        "typeLine": "咒语",
+        "typeLine": "咒语 / 法力",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "力量汲取",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -8625,12 +9768,24 @@
           "top": 0,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "level": 3,
+        "range": "0-2",
+        "targetRule": "法师",
+        "limitOrDefense": "法师专用",
+        "printCode": "MW1I09",
+        "rawCost": "16",
+        "manaCost": 16
       },
       "assetRefs": [
         "spell-card-3500-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 16,
+        "raw": "16"
+      }
     },
     {
       "id": "spell-3523",
@@ -9069,7 +10224,7 @@
               "diceCount": 4,
               "pierce": 0,
               "strikeCount": 1,
-              "damageTypes": [],
+              "damageTypes": ["aether"],
               "manaDrain": 1
             },
             {
@@ -9084,7 +10239,7 @@
               "diceCount": 3,
               "pierce": 0,
               "strikeCount": 1,
-              "damageTypes": [],
+              "damageTypes": ["aether"],
               "manaDrain": 1
             }
           ],
@@ -9210,7 +10365,8 @@
               "pierce": 0,
               "strikeCount": 1,
               "damageTypes": [
-                "圣光"
+                "圣光",
+                "aether"
               ],
               "statusEffects": [
                 {
@@ -9257,19 +10413,27 @@
       "id": "spell-3707",
       "objectType": "card",
       "name": "重生腰带",
+      "cost": {
+        "mana": 6,
+        "raw": "6"
+      },
       "tags": [
+        "apprentice-spell",
         "standard-starting-spell",
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师获得重生2特性。",
       "data": {
         "cardId": 3707,
         "spellType": "装备",
-        "typeLine": "装备",
-        "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "typeLine": "装备 / 腰带",
+        "schoolLine": "自然",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法师获得重生2特性",
+        "printCode": "MW1Q23",
+        "contractStatus": "locked",
         "standardStartingRulesName": "重生腰带",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -9284,7 +10448,12 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "sourceContract": "docs/games/mage-wars/rule/apprentice-card-field-contract.md",
+        "requiresCodeSupport": false,
+        "spellActionSpeed": "quick",
+        "rawCost": "6",
+        "manaCost": 6
       },
       "assetRefs": [
         "spell-card-3707-frame",
@@ -9534,14 +10703,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "限定女祭司。每回合一次，作为一个快速法术，本法师可以支付2点法力，以放置一个护甲+1记号到距离其最多1格区域之内的非法师活体生物目标上。这些记号可以叠加。",
       "data": {
         "cardId": 3712,
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 加护",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "天护皇冠",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -9556,12 +10725,24 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "圣光",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "护甲+1",
+        "printCode": "MW1Q03",
+        "rawCost": "1",
+        "manaCost": 1
       },
       "assetRefs": [
         "spell-card-3712-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 1,
+        "raw": "1"
+      }
     },
     {
       "id": "spell-3713",
@@ -9572,14 +10753,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "限定巫师。每回合一次，当本法师施放或展示一个超魔或法力法术时可以少支付1点法力。结界仅能在被展示时获得本减免费用。",
       "data": {
         "cardId": 3713,
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 法力",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "奥术戒指",
         "standardStartingMageIds": [
           "wizard_apprentice"
@@ -9594,12 +10775,32 @@
           "top": 0.25,
           "width": 0.142857,
           "height": 0.25
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "超魔",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法术费用-1",
+        "printCode": "MW1Q01",
+        "rawCost": "2",
+        "manaCost": 2,
+        "equipmentTraits": {
+          "spellCostReduction": {
+            "amount": 1,
+            "oncePerRound": true,
+            "schoolLineIncludes": ["超魔", "法力"],
+            "revealOnlyForEnchantments": true
+          }
         }
       },
       "assetRefs": [
         "spell-card-3713-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      }
     },
     {
       "id": "spell-3714",
@@ -9610,14 +10811,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师进行所有圣光伤害的攻击获得近战+1和远程+1特性。",
       "data": {
         "cardId": 3714,
         "spellType": "装备",
         "typeLine": "装备",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "破晓指环",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -9632,12 +10833,24 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "圣光",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "圣光攻击：近战+1；远程+1",
+        "printCode": "MW1Q27",
+        "rawCost": "3",
+        "manaCost": 3
       },
       "assetRefs": [
         "spell-card-3714-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 3,
+        "raw": "3"
+      }
     },
     {
       "id": "spell-3715",
@@ -9761,14 +10974,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法师进行所有火焰伤害的攻击获得近战+1和远程+1特性。",
       "data": {
         "cardId": 3719,
         "spellType": "装备",
         "typeLine": "装备",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "塑火指环",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -9783,12 +10996,24 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "火焰",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "火焰攻击：近战+1；远程+1",
+        "printCode": "MW1Q10",
+        "rawCost": "3",
+        "manaCost": 3
       },
       "assetRefs": [
         "spell-card-3719-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 3,
+        "raw": "3"
+      }
     },
     {
       "id": "spell-3720",
@@ -9799,14 +11024,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "限定邪术师。每当本法师成为一次近战攻击（反击除外）的目标时，在宣告攻击步骤开始时，投掷9颗骰子。掷出9+的攻击骰取消，并且在本回合后续中攻击方不可以攻击本法师（反击除外）。同时，攻击方可以立即对不同的目标进行相同的攻击，作为原本攻击行动的一部分。如果这是本次攻击行动的首次攻击，攻击方能取消整个攻击行动并使用守卫代替。具有非活体或精神免疫特性的攻击免疫恐惧头盔的效果。",
       "data": {
         "cardId": 3720,
         "spellType": "装备",
         "typeLine": "装备",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "恐惧头盔",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -9821,12 +11046,24 @@
           "top": 0.5,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "黑暗",
+        "level": 2,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "限定邪术师",
+        "printCode": "MW1Q12",
+        "rawCost": "8",
+        "manaCost": 8
       },
       "assetRefs": [
         "spell-card-3720-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 8,
+        "raw": "8"
+      }
     },
     {
       "id": "spell-3721",
@@ -9888,14 +11125,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "无额外规则正文，正文区为风味引文。",
       "data": {
         "cardId": 3722,
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 武器",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "野银长弓",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -9910,12 +11147,43 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "圣光",
+        "level": 2,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "伏特力之箭：完整行动远程 `1-2` 4 骰，穿刺+1",
+        "combatProfiles": {
+          "attacks": [
+            {
+              "id": "attack-0",
+              "name": "伏特力之箭",
+              "action": "full",
+              "rangeKind": "ranged",
+              "range": {
+                "min": 1,
+                "max": 2
+              },
+              "diceCount": 4,
+              "pierce": 1,
+              "strikeCount": 1,
+              "damageTypes": []
+            }
+          ],
+          "defenses": []
+        },
+        "printCode": "MW1Q13",
+        "rawCost": "8",
+        "manaCost": 8
       },
       "assetRefs": [
         "spell-card-3722-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 8,
+        "raw": "8"
+      }
     },
     {
       "id": "spell-3725",
@@ -9926,14 +11194,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "法术绑定。你可以从你的法术书中绑定一个非史诗咒语类法术到法师魔杖上。作为一个快速法术，你可以支付3点法力，以更换绑定的法术。",
       "data": {
         "cardId": 3725,
         "spellType": "装备",
         "typeLine": "装备",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "法师魔杖",
         "standardStartingMageIds": [
           "beastmaster_apprentice",
@@ -9950,12 +11218,24 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
-        }
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "超魔",
+        "level": 2,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法术绑定",
+        "printCode": "MW1Q19",
+        "rawCost": "5",
+        "manaCost": 5
       },
       "assetRefs": [
         "spell-card-3725-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 5,
+        "raw": "5"
+      }
     },
     {
       "id": "spell-3726",
@@ -9966,14 +11246,14 @@
         "deck-37",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "text": "限定邪术师。在维持阶段中，你可以为每个至少附属有一个你控制的诅咒的生物支付1点法力，以对该生物造成1点直接伤害。",
       "data": {
         "cardId": 3726,
         "spellType": "装备",
         "typeLine": "装备",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "摩洛王的折磨",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -9988,12 +11268,34 @@
           "top": 0.75,
           "width": 0.142857,
           "height": 0.25
+        },
+        "spellActionSpeed": "quick",
+        "schoolLine": "黑暗",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "限定邪术师",
+        "printCode": "MW1Q21",
+        "rawCost": "3",
+        "manaCost": 3,
+        "equipmentTraits": {
+          "upkeepEffects": [
+            {
+              "kind": "direct-damage",
+              "target": "creature-with-controlled-curse",
+              "amount": 1,
+              "damageType": "aether"
+            }
+          ]
         }
       },
       "assetRefs": [
         "spell-card-3726-frame",
         "spell-card-back"
-      ]
+      ],
+      "cost": {
+        "mana": 3,
+        "raw": "3"
+      }
     },
     {
       "id": "spell-3800",
@@ -10004,14 +11306,22 @@
         "deck-38",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "cost": {
+        "mana": 6,
+        "raw": "6"
+      },
+      "text": "法师获得聚魔+1特性。",
       "data": {
         "cardId": 3800,
+        "spellActionSpeed": "quick",
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 法力",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法师获得聚魔+1",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "月光项链",
         "standardStartingMageIds": [
           "priestess_apprentice",
@@ -10020,8 +11330,22 @@
         "mappingStatus": "single-candidate",
         "deck": 38,
         "slot": 0,
-        "assetStatus": "blocked-missing-runtime-atlas"
-      }
+        "atlasId": "spell-equipment-core-b-atlas",
+        "atlasCardId": 3800,
+        "frame": {
+          "left": 0,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "equipmentTraits": {
+          "channeling": 1
+        }
+      },
+      "assetRefs": [
+        "spell-card-3800-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3801",
@@ -10032,14 +11356,22 @@
         "deck-38",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      },
+      "text": "限定女祭司。每回合一次，当本法师施放或展示一个神圣结界或咒语时可以少支付1点法力。结界仅能在被展示时获得本减免费用。",
       "data": {
         "cardId": 3801,
+        "spellActionSpeed": "quick",
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 法力",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法术费用-1",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "阿希拉之戒",
         "standardStartingMageIds": [
           "priestess_apprentice"
@@ -10047,8 +11379,27 @@
         "mappingStatus": "single-candidate",
         "deck": 38,
         "slot": 1,
-        "assetStatus": "blocked-missing-runtime-atlas"
-      }
+        "atlasId": "spell-equipment-core-b-atlas",
+        "atlasCardId": 3801,
+        "frame": {
+          "left": 0.142857,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "equipmentTraits": {
+          "spellCostReduction": {
+            "amount": 1,
+            "oncePerRound": true,
+            "schoolLineIncludes": ["圣光"],
+            "revealOnlyForEnchantments": true
+          }
+        }
+      },
+      "assetRefs": [
+        "spell-card-3801-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3802",
@@ -10059,14 +11410,22 @@
         "deck-38",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      },
+      "text": "限定兽王。每回合一次，当本法师施放一个动物生物法术时可以少支付1点法力。",
       "data": {
         "cardId": 3802,
+        "spellActionSpeed": "quick",
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 法力",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法术费用-1",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "群兽之戒",
         "standardStartingMageIds": [
           "beastmaster_apprentice"
@@ -10074,8 +11433,27 @@
         "mappingStatus": "single-candidate",
         "deck": 38,
         "slot": 2,
-        "assetStatus": "blocked-missing-runtime-atlas"
-      }
+        "atlasId": "spell-equipment-core-b-atlas",
+        "atlasCardId": 3802,
+        "frame": {
+          "left": 0.285714,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "equipmentTraits": {
+          "spellCostReduction": {
+            "amount": 1,
+            "oncePerRound": true,
+            "spellType": "生物",
+            "typeLineIncludes": ["动物"]
+          }
+        }
+      },
+      "assetRefs": [
+        "spell-card-3802-frame",
+        "spell-card-back"
+      ]
     },
     {
       "id": "spell-3803",
@@ -10086,14 +11464,22 @@
         "deck-38",
         "装备"
       ],
-      "text": "标准起始法术书对象池登记；完整卡面字段、目标细则与机制实现待从正式素材合同补齐。",
+      "cost": {
+        "mana": 2,
+        "raw": "2"
+      },
+      "text": "限定邪术师。每回合一次，当本法师施放或展示一个诅咒法术时可以少支付1点法力。结界仅能在被展示时获得本减免费用。",
       "data": {
         "cardId": 3803,
+        "spellActionSpeed": "quick",
         "spellType": "装备",
-        "typeLine": "装备",
+        "typeLine": "装备 / 法力",
+        "level": 1,
+        "targetRule": "0-2` / 法师",
+        "attackOrTraitLine": "法术费用-1",
         "sourceContract": "docs/games/mage-wars/rule/standard-starting-spellbooks.md",
-        "contractStatus": "blocked",
-        "requiresCodeSupport": true,
+        "contractStatus": "locked",
+        "requiresCodeSupport": false,
         "standardStartingRulesName": "诅咒之戒",
         "standardStartingMageIds": [
           "warlock_apprentice"
@@ -10101,8 +11487,27 @@
         "mappingStatus": "single-candidate",
         "deck": 38,
         "slot": 3,
-        "assetStatus": "blocked-missing-runtime-atlas"
-      }
+        "atlasId": "spell-equipment-core-b-atlas",
+        "atlasCardId": 3803,
+        "frame": {
+          "left": 0.428571,
+          "top": 0,
+          "width": 0.142857,
+          "height": 0.25
+        },
+        "equipmentTraits": {
+          "spellCostReduction": {
+            "amount": 1,
+            "oncePerRound": true,
+            "typeLineIncludes": ["诅咒"],
+            "revealOnlyForEnchantments": true
+          }
+        }
+      },
+      "assetRefs": [
+        "spell-card-3803-frame",
+        "spell-card-back"
+      ]
     }
   ],
   "decks": [

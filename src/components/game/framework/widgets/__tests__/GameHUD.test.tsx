@@ -1,8 +1,12 @@
 /* @vitest-environment happy-dom */
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { GameHUD } from '../GameHUD';
+
+const toastMocks = vi.hoisted(() => ({
+    warning: vi.fn(),
+}));
 
 vi.mock('../../../../../contexts/UndoContext', () => ({
     useUndo: () => ({ canUndo: false, undo: vi.fn() }),
@@ -19,6 +23,7 @@ vi.mock('../../../../system/FabMenu', () => ({
         items,
         position,
         storageKey,
+        initialOffset,
     }: {
         items: Array<{
             id: string;
@@ -27,6 +32,7 @@ vi.mock('../../../../system/FabMenu', () => ({
         }>;
         position?: string;
         storageKey?: string;
+        initialOffset?: {top?:number};
     }) => {
         const renderContent = (
             content?: React.ReactNode | ((context: { closePanel: () => void }) => React.ReactNode),
@@ -39,6 +45,7 @@ vi.mock('../../../../system/FabMenu', () => ({
                 data-testid="fab-menu-stub"
                 data-fab-position={position}
                 data-fab-storage-key={storageKey}
+                data-fab-offset-top={initialOffset?.top}
             >
                 {items.map((item) => (
                     <div key={item.id}>
@@ -66,7 +73,7 @@ vi.mock('../../../../system/FeedbackModal', () => ({
 }));
 
 vi.mock('../../../../../contexts/ToastContext', () => ({
-    useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }),
+    useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: toastMocks.warning }),
 }));
 
 vi.mock('../../../../../contexts/AuthContext', () => ({
@@ -262,6 +269,33 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('fab-action-force-actions')).toBeInTheDocument();
     });
 
+    it('强制结束 AI 阶段失败时会把服务端 busy 原因反馈给玩家', async () => {
+        const onForceEndAiPhase = vi.fn(async () => ({
+            accepted: false as const,
+            reason: 'busy' as const,
+        }));
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="dicethrone"
+                myPlayerId="0"
+                isPregameSetupPhase={true}
+                showForceEndAiPhase={true}
+                onForceEndAiPhase={onForceEndAiPhase}
+            />,
+        );
+
+        const action = screen.getByTestId('fab-action-force-actions');
+        expect(action).toBeInTheDocument();
+        screen.getByTestId('hud-force-end-ai-phase').click();
+
+        await vi.waitFor(() => {
+            expect(onForceEndAiPhase).toHaveBeenCalledTimes(1);
+            expect(toastMocks.warning).toHaveBeenCalledWith('hud.ai.forceEndPhaseBusy');
+        });
+    });
+
     it('联机赛前 setup 阶段不因普通弹窗强关单独显示强制操作入口', () => {
         renderHud(
             <GameHUD
@@ -309,6 +343,48 @@ describe('GameHUD', () => {
         expect(screen.getByTestId('fab-action-display-theme')).toBeInTheDocument();
     });
 
+    it('Betrayal setup 阶段将悬浮菜单移到右上角，避开角色确认区', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="betrayal"
+                myPlayerId="0"
+                isPregameSetupPhase={true}
+            />,
+        );
+
+        const fabMenu = screen.getByTestId('fab-menu-stub');
+        expect(fabMenu).toHaveAttribute('data-fab-position', 'top-right');
+        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:betrayal:v2');
+    });
+
+    it('七大恨教程将悬浮菜单放在右上角，避开右下方的对局操作区', () => {
+        renderHud(
+            <GameHUD
+                mode="tutorial"
+                matchId="match-1"
+                gameId="qidahen"
+                myPlayerId="0"
+                isPregameSetupPhase={false}
+            />,
+        );
+
+        const fabMenu = screen.getByTestId('fab-menu-stub');
+        expect(fabMenu).toHaveAttribute('data-fab-position', 'top-right');
+        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:qidahen:tutorial:v1');
+        expect(screen.getByTestId('fab-action-chat')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-settings')).toBeInTheDocument();
+    });
+
+    it('Fate 悬浮菜单避开右下阶段圆钮并隔离旧位置缓存', () => {
+        renderHud(<GameHUD mode="local" gameId="fate-domination" myPlayerId="0"/>);
+        const fab = screen.getByTestId('fab-menu-stub');
+        expect(fab).toHaveAttribute('data-fab-position','bottom-right');
+        expect(fab).toHaveAttribute('data-fab-offset-top','-120');
+        expect(fab).toHaveAttribute('data-fab-storage-key','game_hud_fab_position:fate-domination:v2');
+    });
+
     it('Mage Wars 游戏内悬浮菜单默认避开底部准备牌区', () => {
         renderHud(
             <GameHUD
@@ -322,7 +398,7 @@ describe('GameHUD', () => {
 
         const fabMenu = screen.getByTestId('fab-menu-stub');
         expect(fabMenu).toHaveAttribute('data-fab-position', 'top-left');
-        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:mage-wars');
+        expect(fabMenu).toHaveAttribute('data-fab-storage-key', 'game_hud_fab_position:mage-wars:v4');
         expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
         expect(screen.getByTestId('fab-action-display-theme')).toBeInTheDocument();
     });
@@ -343,5 +419,49 @@ describe('GameHUD', () => {
 
         expect(screen.getByTestId('fab-content-settings')).toBeInTheDocument();
         expect(screen.getByTestId('runtime-settings-slot')).toHaveTextContent('runtime settings');
+    });
+
+    it('局内悬浮菜单不应把操作指南作为子项', () => {
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="fantasyrealms"
+                myPlayerId="0"
+                isPregameSetupPhase={false}
+            />,
+        );
+
+        expect(screen.queryByTestId('fab-action-operation-guide')).toBeNull();
+        expect(screen.queryByTestId('operation-guide-common-list')).toBeNull();
+        expect(screen.getByTestId('fab-action-chat')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-settings')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-action-log')).toBeInTheDocument();
+        expect(screen.getByTestId('fab-action-feedback')).toBeInTheDocument();
+    });
+
+    it('观战退出使用返回大厅文案，不走强制清理', () => {
+        const onLeave = vi.fn();
+        const onForceExit = vi.fn();
+        renderHud(
+            <GameHUD
+                mode="online"
+                matchId="match-1"
+                gameId="tictactoe"
+                myPlayerId={null}
+                onLeave={onLeave}
+                onForceExit={onForceExit}
+            />,
+        );
+
+        expect(screen.getByTestId('fab-action-exit')).toHaveTextContent(/退出观战|leaveSpectate/);
+        const exitContent = screen.getByTestId('fab-content-exit');
+        expect(exitContent).toHaveTextContent(/退出观战|leaveSpectate/);
+        expect(exitContent).not.toHaveTextContent(/强制清理|forceExit/);
+        expect(exitContent).not.toHaveTextContent(/彻底离开房间|leaveRoomHint/);
+
+        fireEvent.click(exitContent.querySelector('button') as HTMLButtonElement);
+        expect(onLeave).toHaveBeenCalledTimes(1);
+        expect(onForceExit).not.toHaveBeenCalled();
     });
 });

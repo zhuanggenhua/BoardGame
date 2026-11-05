@@ -1,5 +1,11 @@
 # 半场战争扩玩法对象级验证（2026-07-28）
 
+## 2026-09-18 当前审计回写
+
+- 本轮复核对象：忍者神龟 `adolescent_epic_geckos`、特种部队杰拉尔德 `gi_gerald`、宇宙的巨人希曼 `rulers_of_the_cosmos`、珍珠和幻像 `pearl_and_the_images`；主源为 `src/games/smashup/data/factions/half_the_battle.ts`、本文 L2 矩阵和 `smashup-half-the-battle-four-factions.e2e.ts`。
+- 当前结论继续为 `representative_only / in_progress`：半场战争领域测试与 3 条真实入口代表链通过，但没有把派系选择页、希瑞、玩乐一整夜三条链外推为四派系全部对象的 direct L3/L4；本地源 PNG 与远端资源发布链也仍未闭合。
+- 本轮没有修改四派系状态，也没有把“旧完成口径失效”重新解释成“当前完整审计已完成”；最小后续动作仍是为非代表对象补真实入口或明确共享流程判等依据，并补资源主源回查。
+
 ## 2026-08-19 状态回写：半场战争扩四派系实施中
 
 - 结论等级：`旧结论失效` / `代表性验证` / `仍有残余范围`。

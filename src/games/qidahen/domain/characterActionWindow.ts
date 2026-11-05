@@ -592,7 +592,7 @@ export const applyQidahenCharacterActionWindowEffectsWithFocus = (
     if (!handledEffectIds.has('mongol-choghtu-taiji')) {
         if (dependencies.hasActiveCharacter(nextState, 'mongol', 'mongol-choghtu-taiji')) {
             const targetRegion = nextState.regions.find((region) => !region.isLogicalRegion && region.id === 'city-region-2');
-            if (targetRegion && canPlaceRegularTroopsInRegion(targetRegion, 'mongol')) {
+            if (targetRegion && canPlaceRegularTroopsInRegion(targetRegion, 'mongol', nextState)) {
                 const updatedRegions = dependencies.refreshRuntimeRegionRules(nextState.regions.map((region) => {
                     if (region.isLogicalRegion || region.id !== targetRegion.id) {
                         return region;

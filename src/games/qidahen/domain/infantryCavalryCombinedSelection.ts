@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState';
 import { computeQidahenAttackPressure } from './attackRules';
 import {
@@ -209,8 +210,7 @@ export const resolveQidahenInfantryCavalryCombinedSelection = (
         ...state,
         pendingTargetAction: nextPending,
         infantryCavalryCombinedSelection: null,
-        handCards: state.handCards.filter((card) => card.id !== selection.cardId),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [selection.cardId]),
         lastSeasonSummary: {
             id: `summary-${timestamp}`,
             title: '战术牌',

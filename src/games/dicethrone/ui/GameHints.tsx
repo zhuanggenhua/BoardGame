@@ -3,7 +3,7 @@
  * 
  * 统一管理游戏中所有的提示和状态消息，包括：
  * - 弃牌阶段提示
- * - 骰子交互提示
+ * - 手牌弃置交互提示
  * - 对手思考中提示
  * - 响应窗口提示
  */
@@ -11,8 +11,16 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
-import type { InteractionDescriptor, TurnPhase } from '../domain/types';
+import type { HandDiscardInteractionContract } from './handDiscardInteractionContract';
+import type { DiceInteractionContract } from './diceInteractionContract';
+import type { InteractionHint } from './interactionPresentationContract';
 import { UI_Z_INDEX, HudPortal } from '../../../core';
+
+const dtViewportInlineUnit = (multiplier: number) =>
+    `calc(var(--mobile-board-shell-inline-unit, 1vw) * var(--mobile-board-shell-scale, 1) * ${multiplier})`;
+const dtViewportBlockUnit = (multiplier: number) =>
+    `calc(var(--mobile-board-shell-block-unit, 1vh) * var(--mobile-board-shell-scale, 1) * ${multiplier})`;
+const HAND_DISCARD_HINT_TOP_UNITS = 5.6;
 
 export interface GameHintsProps {
     /** 是否处于弃牌模式 */
@@ -20,12 +28,11 @@ export interface GameHintsProps {
     /** 必须弃牌数量 */
     mustDiscardCount: number;
 
-    /** 是否为骰子交互 */
-    isDiceInteraction: boolean;
-    /** 是否为交互所有者 */
-    isInteractionOwner: boolean;
-    /** 待处理交互 */
-    pendingInteraction?: InteractionDescriptor;
+    /** 手牌弃置的提示、合法候选和动作来自同一交互合同；无此交互时显式传 undefined。 */
+    handDiscardInteraction: HandDiscardInteractionContract | undefined;
+
+    /** 当前骰子交互的同一份合同；普通状态显式传 undefined，交互状态不得漏接。 */
+    diceInteraction: DiceInteractionContract | undefined;
 
     /** 是否在等待对手 */
     isWaitingOpponent: boolean;
@@ -39,9 +46,6 @@ export interface GameHintsProps {
         passLabel?: string;
     };
 
-    /** 当前阶段 */
-    currentPhase: TurnPhase;
-
     /** 是否处于被动重掷选择模式 */
     isPassiveRerollSelecting?: boolean;
 }
@@ -54,21 +58,29 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount 
 
     return (
         <div
-            className="absolute bottom-[14vw] left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
             style={{
                 zIndex: UI_Z_INDEX.hint,
+                bottom: dtViewportInlineUnit(14),
                 left: '50%',
                 transform: 'translateX(-50%)',
             }}
         >
-            <div className="px-[2vw] py-[0.8vw] rounded-xl bg-gradient-to-r from-red-900/90 to-orange-900/90 border-2 border-red-500/60 shadow-[0_0_2vw_rgba(239,68,68,0.4)] backdrop-blur-sm">
-                <div className="flex items-center gap-[1vw]">
-                    <Trash2 className="w-[1.5vw] h-[1.5vw] text-red-200" />
+            <div
+                className="rounded-xl bg-gradient-to-r from-red-900/90 to-orange-900/90 border-2 border-red-500/60 backdrop-blur-sm"
+                style={{
+                    paddingInline: dtViewportInlineUnit(2),
+                    paddingBlock: dtViewportInlineUnit(0.8),
+                    boxShadow: `0 0 ${dtViewportInlineUnit(2)} rgba(239,68,68,0.4)`,
+                }}
+            >
+                <div className="flex items-center" style={{ gap: dtViewportInlineUnit(1) }}>
+                    <Trash2 className="text-red-200" style={{ width: dtViewportInlineUnit(1.5), height: dtViewportInlineUnit(1.5) }} />
                     <div className="flex flex-col">
-                        <span className="text-red-200 text-[1vw] font-black tracking-wider">
+                        <span className="text-red-200 font-black tracking-wider" style={{ fontSize: dtViewportInlineUnit(1) }}>
                             {t('discard.mustDiscard')}
                         </span>
-                        <span className="text-orange-300 text-[0.8vw] font-bold">
+                        <span className="text-orange-300 font-bold" style={{ fontSize: dtViewportInlineUnit(0.8) }}>
                             {t('discard.selectToDiscard', { count: mustDiscardCount })}
                         </span>
                     </div>
@@ -78,21 +90,47 @@ const DiscardHint: React.FC<{ mustDiscardCount: number }> = ({ mustDiscardCount 
     );
 };
 
-/**
- * 骰子交互提示（画面顶部中央）
- */
-const DiceInteractionHint: React.FC<{ pendingInteraction: InteractionDescriptor }> = ({ pendingInteraction }) => {
+const HandDiscardHint: React.FC<{
+    interaction: HandDiscardInteractionContract;
+}> = ({ interaction }) => {
     const { t } = useTranslation('game-dicethrone');
+    const cancelAction = interaction.actions.cancel;
 
     return (
         <div
-            className="absolute top-[6vw] left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
-            style={{ zIndex: UI_Z_INDEX.hint }}
+            data-testid="dicethrone-hand-discard-hint"
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+            style={{
+                zIndex: UI_Z_INDEX.hint,
+                top: dtViewportInlineUnit(HAND_DISCARD_HINT_TOP_UNITS),
+                left: '50%',
+                transform: 'translateX(-50%)',
+            }}
         >
-            <div className="bg-amber-600/90 backdrop-blur-sm rounded-xl px-[2vw] py-[0.6vw] border border-amber-400/60 shadow-lg text-center">
-                <span className="text-white font-bold text-[1vw] tracking-wide">
-                    {t(pendingInteraction.titleKey, { count: pendingInteraction.selectCount })}
+            <div
+                className="flex items-center rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-900/95 to-orange-900/95 backdrop-blur-sm"
+                style={{
+                    gap: dtViewportInlineUnit(1),
+                    paddingInline: dtViewportInlineUnit(1.4),
+                    paddingBlock: dtViewportInlineUnit(0.7),
+                    boxShadow: `0 0 ${dtViewportInlineUnit(2)} rgba(239,68,68,0.4)`,
+                }}
+            >
+                <Trash2 className="shrink-0 text-red-200" style={{ width: dtViewportInlineUnit(1.5), height: dtViewportInlineUnit(1.5) }} />
+                <span className="whitespace-nowrap text-red-100 font-black" style={{ fontSize: dtViewportInlineUnit(0.95) }}>
+                    {t(interaction.hint.key, interaction.hint.params)}
                 </span>
+                {cancelAction && (
+                    <button
+                        type="button"
+                        data-testid="dicethrone-hand-discard-cancel"
+                        onClick={cancelAction.onActivate}
+                        className="pointer-events-auto rounded-lg border border-red-200/70 bg-black/30 px-3 py-2 text-white font-bold hover:bg-black/50"
+                        style={{ minHeight: 44, fontSize: dtViewportInlineUnit(0.85) }}
+                    >
+                        {t(cancelAction.labelKey)}
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -127,11 +165,17 @@ const OpponentThinkingHint: React.FC<{ opponentName: string }> = ({ opponentName
             style={{ zIndex: UI_Z_INDEX.overlayRaised }}
         >
             <div className="text-center">
-                <div className="text-amber-400 text-[2vw] font-bold tracking-wider drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]">
+                <div
+                    className="text-amber-400 font-bold tracking-wider drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]"
+                    style={{ fontSize: dtViewportInlineUnit(2) }}
+                >
                     {opponentName}
                 </div>
 
-                <div className="text-amber-300/80 text-[1.2vw] font-medium mt-[0.3vw] drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">
+                <div
+                    className="text-amber-300/80 font-medium drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                    style={{ fontSize: dtViewportInlineUnit(1.2), marginTop: dtViewportInlineUnit(0.3) }}
+                >
                     <span>{t('waiting.thinkingMessage')}</span>
                     <span className="inline-flex items-baseline">
                         <ThinkingDot delayMs={0} />
@@ -162,7 +206,8 @@ const ResponseWindowHint: React.FC<{
     onResponsePass?: () => void;
     kind: 'card' | 'token';
     passLabel?: string;
-}> = ({ onResponsePass, kind, passLabel }) => {
+    hint?: InteractionHint;
+}> = ({ onResponsePass, kind, passLabel, hint }) => {
     const { t } = useTranslation('game-dicethrone');
 
     const handleClick = React.useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -181,7 +226,7 @@ const ResponseWindowHint: React.FC<{
             style={{
                 zIndex: UI_Z_INDEX.hint,
                 position: 'fixed',
-                bottom: 'clamp(10rem, 42vh, 26rem)',
+                bottom: `clamp(10rem, ${dtViewportBlockUnit(42)}, 26rem)`,
                 left: '50%',
                 transform: 'translateX(-50%)',
                 pointerEvents: onResponsePass ? 'auto' : 'none',
@@ -207,12 +252,15 @@ const ResponseWindowHint: React.FC<{
                 </div>
                 <div
                     data-testid="dicethrone-response-window-hint-panel"
-                    className="relative z-10 flex items-center gap-[0.9vw] rounded-full border border-[#ffe16d] bg-[#2b1837] px-[1.15vw] py-[0.62vw]"
+                    className="relative z-10 flex items-center rounded-full border border-[#ffe16d] bg-[#2b1837]"
                     style={{
                         border: '1.5px solid rgba(255,225,109,0.9)',
                         borderRadius: '9999px',
                         backgroundColor: '#2b1837',
                         boxShadow: 'none',
+                        gap: dtViewportInlineUnit(0.9),
+                        paddingInline: dtViewportInlineUnit(1.15),
+                        paddingBlock: dtViewportInlineUnit(0.62),
                     }}
                 >
                     <style>{`
@@ -224,8 +272,11 @@ const ResponseWindowHint: React.FC<{
                             [data-testid="dicethrone-response-orbit-track"] { animation: none !important; }
                         }
                     `}</style>
-                    <span className="relative z-10 text-[#fff3bd] text-[0.95vw] font-black tracking-wider">
-                        {t('response.yourTurn')}
+                    <span
+                        className="relative z-10 text-[#fff3bd] font-black tracking-wider"
+                        style={{ fontSize: dtViewportInlineUnit(0.95) }}
+                    >
+                        {t(hint?.key ?? 'response.yourTurn', hint?.params)}
                     </span>
                     {onResponsePass && (
                         <button
@@ -233,7 +284,7 @@ const ResponseWindowHint: React.FC<{
                             data-testid="dicethrone-response-pass-button"
                             data-tutorial-id="response-pass-button"
                             onClick={handleClick}
-                            className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] px-[1vw] text-[0.78vw] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
+                            className="relative z-10 min-h-[44px] rounded-lg border-2 border-[#fff0ae] bg-[#9b7118] font-black tracking-wider text-white transition-[background-color] duration-150 hover:bg-[#b88720] active:bg-[#865f14]"
                             style={{
                                 minHeight: 44,
                                 border: '2px solid #fff0ae',
@@ -241,6 +292,8 @@ const ResponseWindowHint: React.FC<{
                                 backgroundColor: '#9b7118',
                                 boxShadow: 'none',
                                 pointerEvents: 'auto',
+                                paddingInline: dtViewportInlineUnit(1),
+                                fontSize: dtViewportInlineUnit(0.78),
                             }}
                         >
                             {passLabel ?? t('response.pass')}
@@ -260,11 +313,14 @@ const PassiveRerollHint: React.FC = () => {
 
     return (
         <div
-            className="absolute top-[6vw] left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
-            style={{ zIndex: UI_Z_INDEX.hint }}
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none animate-pulse"
+            style={{ zIndex: UI_Z_INDEX.hint, top: dtViewportInlineUnit(6) }}
         >
-            <div className="bg-emerald-600/90 backdrop-blur-sm rounded-xl px-[2vw] py-[0.6vw] border border-emerald-400/60 shadow-lg text-center">
-                <span className="text-white font-bold text-[1vw] tracking-wide">
+            <div
+                className="bg-emerald-600/90 backdrop-blur-sm rounded-xl border border-emerald-400/60 shadow-lg text-center"
+                style={{ paddingInline: dtViewportInlineUnit(2), paddingBlock: dtViewportInlineUnit(0.6) }}
+            >
+                <span className="text-white font-bold tracking-wide" style={{ fontSize: dtViewportInlineUnit(1) }}>
                     {t('passive.selectDieHint')}
                 </span>
             </div>
@@ -278,14 +334,20 @@ const PassiveRerollHint: React.FC = () => {
 export const GameHints: React.FC<GameHintsProps> = ({
     isDiscardMode,
     mustDiscardCount,
-    isDiceInteraction,
-    isInteractionOwner,
-    pendingInteraction,
+    handDiscardInteraction,
+    diceInteraction,
     isWaitingOpponent,
     opponentName,
     responsePrompt,
     isPassiveRerollSelecting,
 }) => {
+    const tokenResponseSettlement = diceInteraction?.kind === 'tokenResponseSettlement'
+        ? diceInteraction
+        : undefined;
+    const visibleResponsePrompt = responsePrompt ?? (tokenResponseSettlement
+        ? { kind: tokenResponseSettlement.responseKind, onPass: undefined, passLabel: undefined }
+        : undefined);
+
     return (
         <HudPortal>
             {/* 弃牌阶段提示 Banner */}
@@ -293,9 +355,10 @@ export const GameHints: React.FC<GameHintsProps> = ({
                 <DiscardHint mustDiscardCount={mustDiscardCount} />
             )}
 
-            {/* 骰子交互提示（画面顶部中央） */}
-            {isDiceInteraction && isInteractionOwner && pendingInteraction && (
-                <DiceInteractionHint pendingInteraction={pendingInteraction} />
+            {handDiscardInteraction && (
+                <HandDiscardHint
+                    interaction={handDiscardInteraction}
+                />
             )}
 
             {/* 被动重掷选择提示 */}
@@ -309,11 +372,12 @@ export const GameHints: React.FC<GameHintsProps> = ({
             )}
 
             {/* 响应窗口：当前玩家可响应 */}
-            {responsePrompt && (
+            {visibleResponsePrompt && (
                 <ResponseWindowHint
-                    onResponsePass={responsePrompt.onPass}
-                    kind={responsePrompt.kind}
-                    passLabel={responsePrompt.passLabel}
+                    onResponsePass={visibleResponsePrompt.onPass}
+                    kind={visibleResponsePrompt.kind}
+                    passLabel={visibleResponsePrompt.passLabel}
+                    hint={tokenResponseSettlement?.hint}
                 />
             )}
         </HudPortal>

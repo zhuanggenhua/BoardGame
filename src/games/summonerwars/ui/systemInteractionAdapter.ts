@@ -40,6 +40,9 @@ export const ACTIVATED_ABILITY_IDS = [
   'vanish',
   'mogu_blood_infusion',
   'shadow_return_to_shadow',
+  'zhongcai_erase',
+  'zhongcai_inspire',
+  'zhongcai_word',
 ] as const;
 
 type ActivatedAbilityId = typeof ACTIVATED_ABILITY_IDS[number];
@@ -623,6 +626,20 @@ export function listSystemAbilityPositionTargets(
       .filter((position): position is CellCoord => !!position);
   }
 
+  if (abilityMode.abilityId === 'zhongcai_word' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options
+      .map((option) => {
+        const value = option.value as {
+          action?: string;
+          newPosition?: CellCoord;
+        } | undefined;
+        return value?.action === 'activated_ability_target' && isCellCoord(value.newPosition)
+          ? value.newPosition
+          : null;
+      })
+      .filter((position): position is CellCoord => !!position);
+  }
+
   if (abilityMode.abilityId === 'mogu_fanatical_fungus' && abilityMode.step === 'selectPosition') {
     return swInteraction.options
       .map((option) => {
@@ -810,6 +827,15 @@ export function findSystemAbilityPositionOption(
     }) ?? null;
   }
 
+  if (abilityMode.abilityId === 'zhongcai_word' && abilityMode.step === 'selectPosition') {
+    return swInteraction.options.find((option) => {
+      const value = option.value as { action?: string; newPosition?: CellCoord } | undefined;
+      return value?.action === 'activated_ability_target'
+        && value.newPosition?.row === position.row
+        && value.newPosition?.col === position.col;
+    }) ?? null;
+  }
+
   const shourenInteraction = getShourenPositionInteraction(swInteraction.type);
   if (shourenInteraction?.abilityId === abilityMode.abilityId && abilityMode.step === 'selectPosition') {
     return swInteraction.options.find((option) => {
@@ -983,6 +1009,20 @@ export function findSystemAbilityUnitOptionByPosition(
     );
   }
 
+  if (
+    (abilityMode.abilityId === 'zhongcai_erase'
+      || abilityMode.abilityId === 'zhongcai_inspire'
+      || abilityMode.abilityId === 'zhongcai_word')
+    && swInteraction.type === 'activated_ability_target'
+  ) {
+    return findActivatedAbilityTargetOptionByPosition(
+      swInteraction,
+      abilityMode.abilityId,
+      position,
+      'selectUnit',
+    );
+  }
+
   if (abilityMode.abilityId === 'shadow_return_to_shadow') {
     return findActivatedAbilityTargetOptionByPosition(
       swInteraction,
@@ -1026,6 +1066,20 @@ export function findSystemAbilityUnitOptionByPosition(
         && value.targetPosition?.row === position.row
         && value.targetPosition?.col === position.col;
     }) ?? null;
+  }
+
+  if (
+    (abilityMode.abilityId === 'zhongcai_erase'
+      || abilityMode.abilityId === 'zhongcai_inspire'
+      || abilityMode.abilityId === 'zhongcai_word')
+    && swInteraction.type === 'activated_ability_target'
+  ) {
+    return findActivatedAbilityTargetOptionByPosition(
+      swInteraction,
+      abilityMode.abilityId,
+      position,
+      'selectUnit',
+    );
   }
 
   if (abilityMode.abilityId === 'yongheng_mental_invasion' && swInteraction.type === 'yongheng_mental_invasion') {
@@ -1101,6 +1155,7 @@ export function getSystemAbilityUiRoute(
     || (abilityMode.abilityId === 'shadow_shadow_summon' && abilityMode.step === 'selectPosition')
     || (abilityMode.abilityId === 'shadow_shadow_summon' && abilityMode.step === 'selectNewPosition')
     || (abilityMode.abilityId === 'shadow_sudden_assault' && abilityMode.step === 'selectPosition')
+    || (abilityMode.abilityId === 'zhongcai_word' && abilityMode.step === 'selectPosition')
     || (
       abilityMode.step === 'selectPosition'
       && Object.values(SHOUREN_POSITION_INTERACTIONS).some(({ abilityId }) => abilityId === abilityMode.abilityId)
@@ -1131,6 +1186,9 @@ export function getSystemAbilityUiRoute(
       || abilityMode.abilityId === 'shadow_return_to_shadow'
       || abilityMode.abilityId === 'shadow_judgment'
       || abilityMode.abilityId === 'shadow_tear_the_veil'
+      || abilityMode.abilityId === 'zhongcai_erase'
+      || abilityMode.abilityId === 'zhongcai_inspire'
+      || abilityMode.abilityId === 'zhongcai_word'
     )
   ) {
     return 'board-cell-unit';
@@ -1146,6 +1204,7 @@ export function getSystemAbilityUiRoute(
       abilityMode.abilityId === 'yongheng_draw'
       || abilityMode.abilityId === 'yongheng_continuance'
       || abilityMode.abilityId === 'shadow_judgment'
+      || abilityMode.abilityId === 'zhongcai_decree'
     )
   ) {
     return 'status-banner-choice';
@@ -1195,6 +1254,20 @@ export function deriveSystemAbilityMode(
       sourceUnitId: 'ice_ram',
       structurePosition: isCellCoord(meta.structurePosition) ? meta.structurePosition : undefined,
       targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+    };
+  }
+
+  if (swInteraction.type === 'zhongcai_decree_discard') {
+    if (typeof meta.sourceUnitId !== 'string') return null;
+    return {
+      abilityId: 'zhongcai_decree',
+      step: 'selectChoice',
+      sourceUnitId: meta.sourceUnitId,
+      systemChoiceOptions: swInteraction.options.map((option) => ({
+        id: option.id,
+        label: typeof option.label === 'string' ? option.label : undefined,
+        labelKey: typeof option.labelKey === 'string' ? option.labelKey : undefined,
+      })),
     };
   }
 
@@ -1545,7 +1618,23 @@ export function deriveSystemAbilityMode(
   }
 
   if (swInteraction.type === 'activated_ability_target' && isActivatedAbilityId(meta.abilityId)) {
+    if (
+      (meta.abilityId === 'zhongcai_erase'
+        || meta.abilityId === 'zhongcai_inspire'
+        || meta.abilityId === 'zhongcai_word')
+      && (meta.step === 'selectUnit' || meta.step === 'selectPosition')
+    ) {
+      if (typeof meta.sourceUnitId !== 'string') return null;
+      return {
+        abilityId: meta.abilityId,
+        step: meta.step === 'selectPosition' ? 'selectPosition' : 'selectUnit',
+        sourceUnitId: meta.sourceUnitId,
+        targetPosition: isCellCoord(meta.targetPosition) ? meta.targetPosition : undefined,
+      };
+    }
+
     if (meta.abilityId === 'shadow_return_to_shadow' && meta.step === 'selectUnit') {
+      if (typeof meta.sourceUnitId !== 'string') return null;
       return {
         abilityId: 'shadow_return_to_shadow',
         step: 'selectUnit',

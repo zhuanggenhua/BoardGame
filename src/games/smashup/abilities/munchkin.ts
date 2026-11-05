@@ -13,8 +13,10 @@ import {
     buildValidatedReturnEvents,
     grantExtraAction,
     grantExtraMinion,
+    minionHasEffectiveName,
     recoverCardsFromDiscard,
     revealHand,
+    createSkipOption,
 } from '../domain/abilityHelpers';
 import { buildValidatedOngoingDetachEvents, findLiveOngoingCardLocation } from '../domain/ongoingDetach';
 import {
@@ -45,6 +47,8 @@ const CROSSBOW = 'munchkin_treasure_crossbow';
 const CROSSBOW_CHOOSE_FACTION_SOURCE_ID = 'munchkin_treasure_crossbow_choose_faction';
 const DUNGEON_RULEBOOK = 'munchkin_treasure_dungeon_rulebook';
 const DUNGEON_RULEBOOK_DESTROY_SOURCE_ID = 'munchkin_treasure_dungeon_rulebook_destroy';
+const TIGER_STEED = 'munchkin_treasure_tiger_steed';
+const TIGER_STEED_DESTROY_SOURCE_ID = 'munchkin_treasure_tiger_steed_destroy';
 const MAGIC_MISSILE = 'munchkin_treasure_magic_missile';
 const MAGIC_MISSILE_DESTROY_SOURCE_ID = 'munchkin_treasure_magic_missile_destroy';
 const POTION_OF_HALITOSIS = 'munchkin_treasure_potion_of_halitosis';
@@ -133,6 +137,16 @@ type MagicMissileMinionChoice = {
 type MagicMissileInteractionData = {
     fromBaseIndex?: unknown;
     sourceCardUid?: unknown;
+};
+type TigerSteedMinionChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    skip?: true;
+};
+type TigerSteedInteractionData = {
+    sourceCardUid?: unknown;
+    sourceBaseIndex?: unknown;
 };
 type CrossbowFactionChoice = {
     factionId?: string;
@@ -517,8 +531,10 @@ function lastCallSpecial(ctx: AbilityContext): AbilityResult {
 }
 
 function pestlingExtraMinion(ctx: AbilityContext | TriggerContext): AbilityResult {
-    const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
-    const playerId = ctx.playerId ?? ctx.sourceControllerId;
+    const sourceBaseIndex = 'sourceBaseIndex' in ctx ? ctx.sourceBaseIndex : undefined;
+    const sourceControllerId = 'sourceControllerId' in ctx ? ctx.sourceControllerId : undefined;
+    const baseIndex = ctx.baseIndex ?? sourceBaseIndex;
+    const playerId = ctx.playerId ?? sourceControllerId;
     if (baseIndex === undefined || !playerId) return { events: [] };
     return {
         events: [grantExtraMinion(playerId, HALFLINGS_PESTLING, ctx.now, baseIndex)],
@@ -589,8 +605,10 @@ function shireMarshalTalent(ctx: AbilityContext): AbilityResult {
 }
 
 function bardlingExtraMinion(ctx: AbilityContext | TriggerContext): AbilityResult {
-    const baseIndex = ctx.baseIndex ?? ctx.sourceBaseIndex;
-    const playerId = ctx.playerId ?? ctx.sourceControllerId;
+    const sourceBaseIndex = 'sourceBaseIndex' in ctx ? ctx.sourceBaseIndex : undefined;
+    const sourceControllerId = 'sourceControllerId' in ctx ? ctx.sourceControllerId : undefined;
+    const baseIndex = ctx.baseIndex ?? sourceBaseIndex;
+    const playerId = ctx.playerId ?? sourceControllerId;
     if (baseIndex === undefined || !playerId) return { events: [] };
     if (!hasOpponentMorePowerAtBase(ctx.state, baseIndex, playerId)) return { events: [] };
     return {
@@ -1189,6 +1207,58 @@ function dungeonRulebookOnPlay(ctx: AbilityContext): AbilityResult {
                 ...interaction.data,
                 sourceCardUid: ctx.cardUid,
             },
+        }),
+    };
+}
+
+function tigerSteedTargetOptions(state: SmashUpCore, baseIndex: number, sourcePlayerId: string) {
+    const candidates = (state.bases[baseIndex]?.minions ?? [])
+        .filter(minion => getEffectivePower(state, minion, baseIndex) <= 2)
+        .map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: getCardDef(minion.defId)?.name ?? minion.defId,
+        }));
+    return buildActionMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId,
+        sourceDefId: TIGER_STEED,
+        effectType: 'destroy',
+    });
+}
+
+function tigerSteedOnPlay(ctx: AbilityContext): AbilityResult {
+    const baseIndex = ctx.baseIndex ?? ctx.targetBaseIndex;
+    if (baseIndex === undefined) return { events: [] };
+    const options = tigerSteedTargetOptions(ctx.state, baseIndex, ctx.playerId);
+    if (options.length === 0) return { events: [] };
+
+    const interaction = createSimpleChoice<TigerSteedMinionChoice>(
+        `${TIGER_STEED_DESTROY_SOURCE_ID}_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '虎骑士：选择要摧毁的力量2或更少的仆从',
+        [...options, createSkipOption('跳过（不摧毁）', 'ui.munchkin_tiger_steed_skip_destroy_option')],
+        {
+            sourceId: TIGER_STEED_DESTROY_SOURCE_ID,
+            targetType: 'minion',
+            titleKey: 'ui.munchkin_tiger_steed_destroy_title',
+            responseValidationMode: 'live',
+            autoRefresh: 'field',
+            autoResolveIfSingle: false,
+            displayCard: { defId: TIGER_STEED, cardUid: ctx.cardUid },
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) => [
+        ...tigerSteedTargetOptions(latestState.core as SmashUpCore, baseIndex, ctx.playerId),
+        createSkipOption('跳过（不摧毁）', 'ui.munchkin_tiger_steed_skip_destroy_option'),
+    ];
+
+    return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, {
+            ...interaction,
+            data: { ...interaction.data, sourceCardUid: ctx.cardUid, sourceBaseIndex: baseIndex },
         }),
     };
 }
@@ -1828,7 +1898,7 @@ function pickpocketOnPlay(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     const hasAnotherPickpocket = base?.minions.some(minion =>
         minion.uid !== ctx.cardUid
-        && minion.defId === THIEVES_PICKPOCKET
+        && minionHasEffectiveName(ctx.state, minion, THIEVES_PICKPOCKET)
     ) ?? false;
 
     return hasAnotherPickpocket
@@ -2193,6 +2263,7 @@ function thievesGuildOnActionPlayed(ctx: BaseAbilityContext): BaseAbilityResult 
     if (triggerDef?.type !== 'action' || triggerDef.faction !== MUNCHKIN_TREASURE_FACTION_ID) {
         return { events: [] };
     }
+    if (!ctx.random) throw new Error('Thieves Guild draw trigger requires the command random source');
     return {
         events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
     };
@@ -2227,8 +2298,9 @@ function anythingForMoneyOnPlay(ctx: AbilityContext): AbilityResult {
         },
     );
     interaction.data.optionsGenerator = (latestState, data) => {
-        const sourceCardUid = typeof (data as AnythingForMoneyInteractionData).sourceCardUid === 'string'
-            ? (data as AnythingForMoneyInteractionData).sourceCardUid
+        const candidateSourceCardUid = (data as AnythingForMoneyInteractionData).sourceCardUid;
+        const sourceCardUid = typeof candidateSourceCardUid === 'string'
+            ? candidateSourceCardUid
             : undefined;
         return buildAnythingForMoneyDiscardOptions(
             latestState.core as SmashUpCore,
@@ -3136,6 +3208,7 @@ export function registerMunchkinAbilities(): void {
     registerMunchkinOrcsAbilities();
     registerMunchkinWarriorsAbilities();
     registerAbility('munchkin_treasure_halfling_hireling', 'onPlay', halflingHirelingOnPlay);
+    registerAbility(TIGER_STEED, 'onPlay', tigerSteedOnPlay);
     registerAbility(HALFLINGS_SHIRE_MARSHAL, 'talent', {
         execute: shireMarshalTalent,
         validateUse: shireMarshalValidateUse,
@@ -3503,7 +3576,7 @@ export function registerMunchkinInteractionHandlers(): void {
         const data = interactionData as DungeonRulebookInteractionData | undefined;
         const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
         const targetCardUid = typeof choice?.cardUid === 'string' ? choice.cardUid : undefined;
-        if (!sourceCardUid || !targetCardUid) return { state, events: [] };
+        if (!sourceCardUid || !choice || !targetCardUid) return { state, events: [] };
 
         const player = state.core.players[playerId];
         if (!player?.discard.some((card) => card.uid === sourceCardUid && card.defId === DUNGEON_RULEBOOK)) {
@@ -3541,7 +3614,7 @@ export function registerMunchkinInteractionHandlers(): void {
         const data = interactionData as NoMyPreciousInteractionData | undefined;
         const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
         const targetCardUid = typeof choice?.cardUid === 'string' ? choice.cardUid : undefined;
-        if (!sourceCardUid || !targetCardUid) return { state, events: [] };
+        if (!sourceCardUid || !choice || !targetCardUid) return { state, events: [] };
 
         const player = state.core.players[playerId];
         if (!player?.discard.some((card) => card.uid === sourceCardUid && card.defId === DWARVES_NO_MY_PRECIOUS)) {
@@ -3637,6 +3710,7 @@ export function registerMunchkinInteractionHandlers(): void {
             || targetBaseIndex === undefined
             || !minionUid
             || !minionDefId
+            || !choice
             || fromBaseIndex !== targetBaseIndex
             || toBaseIndex === undefined
             || toBaseIndex === fromBaseIndex
@@ -4560,6 +4634,43 @@ export function registerMunchkinInteractionHandlers(): void {
                     sourceKind: 'action',
                 }),
             ],
+        };
+    });
+
+    registerInteractionHandler(TIGER_STEED_DESTROY_SOURCE_ID, (state, playerId, value, interactionData, _random, timestamp) => {
+        const choice = value as TigerSteedMinionChoice | undefined;
+        const data = interactionData as TigerSteedInteractionData | undefined;
+        const sourceCardUid = typeof data?.sourceCardUid === 'string' ? data.sourceCardUid : undefined;
+        const sourceBaseIndex = typeof data?.sourceBaseIndex === 'number' ? data.sourceBaseIndex : undefined;
+        if (!sourceCardUid || sourceBaseIndex === undefined || choice?.skip) return { state, events: [] };
+
+        const source = state.core.bases[sourceBaseIndex]?.minions.find(minion =>
+            minion.uid === sourceCardUid
+            && minion.defId === TIGER_STEED
+            && minion.controller === playerId
+        );
+        const targetUid = typeof choice?.minionUid === 'string' ? choice.minionUid : undefined;
+        const target = targetUid
+            ? state.core.bases[sourceBaseIndex]?.minions.find(minion => minion.uid === targetUid)
+            : undefined;
+        if (!source || !target || getEffectivePower(state.core, target, sourceBaseIndex) > 2) return { state, events: [] };
+
+        return {
+            state,
+            events: buildValidatedDestroyEvents(state.core, {
+                minionUid: target.uid,
+                minionDefId: target.defId,
+                fromBaseIndex: sourceBaseIndex,
+                destroyerId: playerId,
+                reason: TIGER_STEED,
+                now: timestamp,
+                sourcePlayerId: playerId,
+                sourceCardUid,
+                sourceDefId: TIGER_STEED,
+                sourceControllerId: playerId,
+                sourceBaseIndex,
+                sourceKind: 'nonAction',
+            }),
         };
     });
 

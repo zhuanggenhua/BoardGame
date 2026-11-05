@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { CardPreview } from '../../../common/media/CardPreview';
+import { CardPreview, getCardPreviewAspectRatio } from '../../../common/media/CardPreview';
 import { MagnifyOverlay } from '../../../common/overlays/MagnifyOverlay';
+import { useResolvedOverlayTooltipZIndex } from '../../../common/overlays/overlayLayer';
 import { UI_Z_INDEX, type CardPreviewRef } from '../../../../core';
 
 interface CardPreviewTooltipProps {
@@ -13,6 +14,8 @@ interface CardPreviewTooltipProps {
     locale?: string;
     /** 预览最大尺寸（像素），默认 308 */
     maxDim?: number;
+    /** 自定义 z-index，父级浮层需要抬高时传入 */
+    zIndex?: number;
 }
 
 function buildMagnifyFrameStyle(width: string, maxWidth: string, aspectRatio: number): React.CSSProperties {
@@ -35,11 +38,16 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
     children,
     locale,
     maxDim: maxDimProp,
+    zIndex,
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isMagnified, setIsMagnified] = useState(false);
     const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
     const anchorRef = useRef<HTMLSpanElement>(null);
+    const resolvedZIndex = Math.max(
+        UI_Z_INDEX.cardPreviewTooltip,
+        useResolvedOverlayTooltipZIndex(zIndex),
+    );
 
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
@@ -64,7 +72,9 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
 
     // 根据卡牌宽高比动态计算预览尺寸
     // aspectRatio > 1 = 横向卡牌，aspectRatio < 1 = 竖向卡牌
-    const aspectRatio = 'aspectRatio' in previewRef ? previewRef.aspectRatio : undefined;
+    const aspectRatio = 'aspectRatio' in previewRef
+        ? previewRef.aspectRatio
+        : getCardPreviewAspectRatio(previewRef, locale);
     const previewSize = useMemo(() => {
         const maxDim = maxDimProp ?? 308; // 预览最大尺寸（像素）
         const ar = aspectRatio ?? (192 / 308); // 默认竖向卡牌比例
@@ -107,6 +117,7 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
             <span
                 ref={anchorRef}
                 className="underline decoration-dotted decoration-white/40 hover:decoration-white/80 cursor-zoom-in transition-colors"
+                data-testid="card-preview-tooltip-anchor"
                 onMouseEnter={() => {
                     setIsHovered(true);
                     updateAnchorRect();
@@ -128,10 +139,11 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
             {isHovered && portalRoot && previewPosition && createPortal(
                 <div
                     className="fixed pointer-events-none"
+                    data-testid="card-preview-tooltip"
                     style={{
                         left: previewPosition.left,
                         top: previewPosition.top,
-                        zIndex: UI_Z_INDEX.cardPreviewTooltip,
+                        zIndex: resolvedZIndex,
                         filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5))',
                     }}
                 >

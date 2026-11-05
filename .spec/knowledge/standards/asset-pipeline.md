@@ -1,16 +1,18 @@
 ---
 name: asset-pipeline
-description: 图片资源与发布总规范：资源目录、manifest、上传和运行时加载——改素材链路时查
+description: 运行时素材与发布总规范：图片、图集、模型/贴图、引擎内置对象、manifest、上传和运行时加载——改素材链路时查
 metadata:
   type: doc
   status: 已交付
 ---
 
-# 图片资源与发布总规范
+# 运行时素材与发布总规范
 
 本文件只规定运行时媒体资源的准入、路径、压缩、manifest、上传和移动包边界。首屏预加载见 [`critical-image-preload`](critical-image-preload.md)，音频细则见 [`audio-assets`](audio-assets.md)。
 
 ## 资源准入
+
+- **程序化承载不进入图片链**：如果规则合同把对象锁定为内置物件、程序化绘制、CSS / SVG 或运行时几何，配置不得为它建立图片 assetRef，也不得把同名图片放进正式图片 manifest 作为“备用真相”。需要展示参考图时只能放 docs/** / evidence/** 并标为 reference，不得被运行时路径消费。
 
 - 规则、组件清单、用户素材或官方素材已经证明存在的卡牌、地图/区域、token、棋子、骰面、角色板、提示板、读本页等对象，必须走正式资源链。
 - 正式资源链最低闭合：`真相源 -> 语义命名 -> 正式目录 -> 压缩产物 -> manifest / 索引 -> 运行时引用 -> 测试或截图消费证据`。
@@ -18,6 +20,17 @@ metadata:
 - 图包 intake 必须先做“规则数量 vs 素材实测数量”对账：正面、背面、空格、非对象、复用 alias、缺口和争议分别登记。对不上且不能解释时，状态只能是 `blocked / disputed`。
 - HTML/CSS 假图、文字牌、程序化 token、插件默认样式、emoji、临时 SVG、截图裁片和 mock 图片都不是正式素材。除非用户明确批准并写入合同，否则只能标为 `temporary-placeholder`。
 - 缺素材时必须写清缺哪个现实对象、已查哪里、为什么不能闭合、最小补源动作；不能用“后续美术优化”或“先跑通 E2E”冒充完成。
+
+## 源素材与自创替代禁令（全项目）
+
+本节是“源对象存在时必须直接使用，禁止自行创造替代”的唯一项目级主源。新游戏、已有游戏重构、现有功能修复、素材替换、FX 改造和 E2E 录制都适用；专项 workflow 只能做阶段适配、合同填充和证据记录，不得另写相反规则。
+
+- 在创建或修改运行时视觉前，必须先锁定源对象本体、来源定位、承载类型和运行时 owner。不能只问“有没有图片”，还要检查图片、atlas、模型、贴图、TTS / Workshop 对象字段、官方文件、已有运行时资源以及引擎内置对象。
+- 只要源对象存在，固定顺序是：①直接接入源图片、atlas、模型/贴图、官方文件或引擎内置对象；②若直接接入确实不可行，记录尝试过的路径、技术阻塞和现实影响；③只有此时才允许来源忠实复现；④仍不能来源忠实时保持 `blocked`，不得用临时简陋产物推进。
+- 对象合同必须标明承载类型：`external-image`、`atlas`、`model-plus-texture`、`engine-native`、`source-locked-programmatic`、`source-faithful-reproduction` 或 `blocked`。`engine-native` / `source-locked-programmatic` 只表示源对象本身就是内置或程序化承载，不表示“没有外部文件所以可以随便画”。
+- 对 `engine-native` / `source-locked-programmatic` 对象，如果 TTS / Workshop / 官方对象记录明确没有 `CustomImage`、`CustomMesh` 或外部贴图，且直接接入该原生对象不可行，可以登记为 `source-faithful-reproduction`，使用 CSS / Canvas / WebGL 复现其可验证的几何、面数、面值映射、旋转 / 停稳映射、材质和动画语义。必须保留源对象定位、字段证据和映射表；不能额外捏造图案、纹理、符号或规则效果。
+- CSS 图形、渐变、纯数字、emoji、普通圆点、普通 D6、默认插件皮肤、文字壳、临时 HTML、相似占位物或无来源自创 renderer 仍不能替代已经存在的 `external-image` / `atlas` / `model-plus-texture` 正式素材。未完成来源忠实映射时，它们最多作为明确标注的诊断 / 阻塞显示，不能进入正式资源链，也不能升级为来源视觉 PASS。
+- 测试通过、截图存在、文件生成成功或页面能显示，只能证明链路触发；不能替代源对象样式、材质、面值、符号、归属和用法的一致性验收。
 
 ## 目录与路径
 
@@ -55,6 +68,8 @@ metadata:
 
 ## Manifest
 
+- manifest 校验必须扫描不同逻辑键之间的 sha256 重复。不同语义对象共享 hash 默认是录入 / 接线错误并阻塞；只有配置中显式登记的 alias 才能例外。程序化对象不应在 manifest 中出现，若出现必须回到配置和资源合同清理引用，而不是只修文件名。
+
 - 默认 `npm run assets:manifest` / `npm run assets:validate` 是增量模式：更新本地存在的资源，保留 manifest 中已有但本地缺失的远端资源条目。
 - 只有确认本地拥有完整资源镜像时，才用 `npm run assets:manifest:full` / `npm run assets:validate:full`；full 模式会把 manifest 当成本地目录快照。
 - 语言目录内的游戏级 manifest 必须用对应语言根生成，例如 `--root public/assets/i18n/zh-CN --id <gameId>`，确保 `basePrefix` 指向 `official/i18n/<locale>/<gameId>/`。
@@ -67,6 +82,7 @@ metadata:
 - 上传完成不等于交付完成。收口至少抽查主资源和代表性子资源的公开 URL，确认本次大小、哈希或 `200`。
 - 若用户问题发生在线上、手机、已安装包或官方资源包，本地文件、manifest 和截图只能算本地准备；最终修复必须闭合到服务器对象、App file-index / manifest 或真机下载证据。
 - 上传失败必须明说未上传资源、失败原因和当前运行风险。`--asset-prefix` 指定后 0 个对象视为失败，不能解释成“已经传过”。
+- 对 `408`、`425`、`429`、`5xx`、`524` 以及连接重置/临时网络错误等传输级失败，`assets:upload` 必须先自动重试；若仍失败，自动降级为 `128 KiB` 分块、单并发再重试一次。只有恢复尝试全部失败，才能中断并报告实际未上传的对象；鉴权、路径、权限和对象 key 错误不得被吞掉或伪装成可恢复超时。
 - 服务器发布成功后 `current` 原子切换；历史 release 默认只保留最近 5 个，且必须保留当前 `current`。空间不足先核对 release 占用并清历史快照，再重跑原发布流程。
 - `npm run assets:download -- --game <gameId>` 只按游戏拉取运行时对象、语言目录、atlas 配置和共享运行时依赖；`--list`、无明确游戏目标和共享测试不得扩大为全站下载。
 - `dev:lite` 只证明本地代码和内存游戏服可跑；运行时媒体默认可走公开资源域名，不要求本地完整素材镜像。

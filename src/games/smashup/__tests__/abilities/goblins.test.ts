@@ -384,4 +384,56 @@ describe('哥布林能力', () => {
         expect(after.specialLimitUsed?.goblins_blaster).toEqual([0]);
         expect(isSpecialLimitBlocked(after, 'goblins_blaster', 0)).toBe(true);
     });
+
+    it('反馈回归：爆破手反面移动后本回合不能在新基地再次触发移动循环', () => {
+        const blaster = makeMinion('blaster-feedback-loop', 'goblins_blaster', '0', 3);
+        const core = makeState({
+            turnNumber: 14,
+            scoringEligibleBaseIndices: [0, 1],
+            bases: [
+                makeBase({ defId: 'base_goblin_town', minions: [blaster], ongoingActions: [] }),
+                makeBase({ defId: 'base_isis_swingin_pad', minions: [], ongoingActions: [] }),
+            ],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'scoreBases';
+        const random = randomSequence([0.1]);
+
+        const firstMove = runCommand(matchState, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'blaster-feedback-loop', baseIndex: 0, targetBaseIndex: 1 },
+        } as any, random);
+
+        expect(firstMove.success).toBe(true);
+        expect(firstMove.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_MOVED,
+                payload: expect.objectContaining({
+                    minionUid: 'blaster-feedback-loop',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                }),
+            }),
+        ]));
+        expect(firstMove.finalState.core.bases[1].minions.find(
+            minion => minion.uid === 'blaster-feedback-loop',
+        )?.metadata?.goblinsBlasterUsedTurn).toBe(14);
+
+        const followupState = makeMatchState({
+            ...firstMove.finalState.core,
+            currentPlayerIndex: 0,
+            turnOrder: ['0', '1'],
+            scoringEligibleBaseIndices: [0, 1],
+        });
+        followupState.sys.phase = 'scoreBases';
+        const secondMove = runCommand(followupState, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'blaster-feedback-loop', baseIndex: 1, targetBaseIndex: 0 },
+        } as any, randomSequence([0.1]));
+
+        expect(secondMove.success).toBe(false);
+        expect(secondMove.error).toContain('该爆破手本回合已使用过特殊能力');
+    });
 });

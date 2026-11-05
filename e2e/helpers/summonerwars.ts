@@ -29,6 +29,7 @@ export const SUMMONERWARS_FACTION_INDEX: Record<string, number> = {
   shouren: 8,
   yongheng: 9,
   shadow: 10,
+  zhongcai: 11,
 };
 
 // ============================================================================

@@ -1,8 +1,10 @@
 import type { AudioEvent, AudioRuntimeContext, GameAudioConfig, SoundKey } from '../../lib/audio/types';
 import type { BetrayalCore } from './game';
+import { resolveBetrayalRoomSoundSurface, type BetrayalRoomSoundSurface } from './roomSurfaceConfig';
 
-export const BETRAYAL_MOVE_KEY =
-    'foley.analogue_gear_sound_fx_pack_vol.handling.wooden_component_handle_d';
+export const BETRAYAL_TURN_BELL_KEY =
+    'system.general.casual_mobile_sound_fx_pack_vol.buttons.misc_buttons.cowbell_button_b';
+
 export const BETRAYAL_EXPLORE_KEY =
     'foley.analogue_gear_sound_fx_pack_vol.handling.wooden_component_handle_b';
 export const BETRAYAL_EXPLORE_EVENT_KEY =
@@ -47,6 +49,41 @@ export const BETRAYAL_EXORCISE_FAILURE_KEY =
     'ambient.water_sound_fx_pack_vol.designed.impact_b';
 export const BETRAYAL_SCENARIO_COMPLETED_KEY =
     'retro.retro_gaming_sound_fx_pack_vol.16_bit.ui.jingle_win_001';
+
+export const BETRAYAL_FOOTSTEP_CARPET_KEYS = [
+    'footsteps.kenney_impact_sounds.footstep_carpet_000',
+    'footsteps.kenney_impact_sounds.footstep_carpet_001',
+] as const satisfies readonly SoundKey[];
+export const BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS = [
+    'footsteps.kenney_impact_sounds.footstep_concrete_000',
+    'footsteps.kenney_impact_sounds.footstep_concrete_001',
+] as const satisfies readonly SoundKey[];
+export const BETRAYAL_FOOTSTEP_WOOD_KEYS = [
+    'footsteps.kenney_impact_sounds.footstep_wood_000',
+    'footsteps.kenney_impact_sounds.footstep_wood_001',
+] as const satisfies readonly SoundKey[];
+
+/** Generic means neutral hard-ground footsteps; it does not assert a room's material. */
+export const BETRAYAL_FOOTSTEP_SOUND_POOLS: Record<BetrayalRoomSoundSurface, readonly SoundKey[]> = {
+    carpet: BETRAYAL_FOOTSTEP_CARPET_KEYS,
+    wood: BETRAYAL_FOOTSTEP_WOOD_KEYS,
+    'hard-ground': BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS,
+    generic: BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS,
+};
+
+export const BETRAYAL_FOOTSTEP_KEYS: readonly SoundKey[] = [
+    ...BETRAYAL_FOOTSTEP_CARPET_KEYS,
+    ...BETRAYAL_FOOTSTEP_HARD_GROUND_KEYS,
+    ...BETRAYAL_FOOTSTEP_WOOD_KEYS,
+];
+
+export function selectBetrayalFootstepKey(roomId: string, visualId: string, variantIndex = 0): SoundKey {
+    const surface = resolveBetrayalRoomSoundSurface(roomId, visualId);
+    const pool = BETRAYAL_FOOTSTEP_SOUND_POOLS[surface];
+    const integerIndex = Number.isFinite(variantIndex) ? Math.trunc(variantIndex) : 0;
+    const index = ((integerIndex % pool.length) + pool.length) % pool.length;
+    return pool[index];
+}
 
 export const BETRAYAL_BGM_PRE_HAUNT_KEY =
     'bgm.horror_music_pack_vol.tip_toe_rt_5.horror_vol9_tip_toe_main';
@@ -109,7 +146,7 @@ const resolveAttackRewardSound = (event: AudioEvent) => {
 
 export const BETRAYAL_AUDIO_CONFIG: GameAudioConfig = {
     criticalSounds: [
-        BETRAYAL_MOVE_KEY,
+        ...BETRAYAL_FOOTSTEP_KEYS,
         BETRAYAL_EXPLORE_KEY,
         BETRAYAL_EXPLORE_EVENT_KEY,
         BETRAYAL_EXPLORE_OMEN_KEY,
@@ -162,7 +199,9 @@ export const BETRAYAL_AUDIO_CONFIG: GameAudioConfig = {
             case 'SCENARIO_STARTED':
                 return BETRAYAL_START_SCENARIO_KEY;
             case 'EXPLORER_MOVED':
-                return BETRAYAL_MOVE_KEY;
+            case 'MONSTER_MOVED':
+            case 'HELPING_HANDS_TROLL_HAND_MOVED':
+                return null;
             case 'ROOM_EXPLORED':
                 return resolveExploreSound(event);
             case 'EVENT_CHOICE_RESOLVED':
@@ -193,9 +232,6 @@ export const BETRAYAL_AUDIO_CONFIG: GameAudioConfig = {
                 return BETRAYAL_HAUNT_KEY;
             case 'MONSTER_MOVEMENT_GROUP_ROLLED':
                 return BETRAYAL_REROLL_KEY;
-            case 'MONSTER_MOVED':
-            case 'HELPING_HANDS_TROLL_HAND_MOVED':
-                return BETRAYAL_MOVE_KEY;
             case 'BLOOD_FROM_STONE_MONSTER_TURN_ENDED':
             case 'HELPING_HANDS_MONSTER_TURN_ENDED':
                 return BETRAYAL_END_TURN_KEY;

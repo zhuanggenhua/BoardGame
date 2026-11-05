@@ -1,16 +1,19 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ActionLogSegment } from '../../../../engine/types';
+import type { ActionLogInteractiveParam, ActionLogSegment } from '../../../../engine/types';
 import { CardPreviewTooltip } from './CardPreviewTooltip';
 import { BreakdownTooltip } from '../../../common/overlays/BreakdownTooltip';
 import type { CardPreviewRef } from '../../../../core';
 import { buildSpriteBackgroundImage } from '../../../../core/SpriteAssetResolver';
+import type { CardPreviewLookupContext } from '../../registry/cardPreviewRegistry';
 
 interface ActionLogSegmentsProps {
     segments: ActionLogSegment[];
     locale?: string;
+    playerId?: string | number;
+    characterId?: string;
     /** 获取卡牌的 previewRef（由游戏层提供） */
-    getCardPreviewRef?: (cardId: string) => CardPreviewRef | null;
+    getCardPreviewRef?: (cardId: string, context?: CardPreviewLookupContext) => CardPreviewRef | null;
     /** 卡牌预览最大尺寸（像素） */
     cardPreviewMaxDim?: number;
     /** breakdown tooltip 层级，父级浮层需要抬高时传入 */
@@ -25,7 +28,8 @@ const I18nSegment: React.FC<{
     i18nKey: string;
     params?: Record<string, string | number>;
     paramI18nKeys?: string[];
-}> = ({ ns, i18nKey, params, paramI18nKeys }) => {
+    interactiveParams?: Record<string, ActionLogInteractiveParam>;
+}> = ({ ns, i18nKey, params, paramI18nKeys, interactiveParams }) => {
     const { t } = useTranslation(ns);
     // 先翻译 paramI18nKeys 中指定的参数值（它们本身是同 ns 下的 i18n key）
     const resolvedParams = { ...params };
@@ -37,7 +41,52 @@ const I18nSegment: React.FC<{
             }
         }
     }
-    return <span>{t(i18nKey, resolvedParams)}</span>;
+    const translatedText = t(i18nKey, resolvedParams);
+    let renderedParts: React.ReactNode[] = [translatedText];
+    for (const [paramKey, interactiveParam] of Object.entries(interactiveParams ?? {})) {
+        const targetText = String(resolvedParams[paramKey] ?? interactiveParam.text);
+        if (!targetText) {
+            continue;
+        }
+        const nextParts: React.ReactNode[] = [];
+        renderedParts.forEach((part, partIndex) => {
+            if (typeof part !== 'string') {
+                nextParts.push(part);
+                return;
+            }
+            const pieces = part.split(targetText);
+            pieces.forEach((piece, pieceIndex) => {
+                if (piece) {
+                    nextParts.push(piece);
+                }
+                if (pieceIndex < pieces.length - 1) {
+                    const label = interactiveParam.tooltip ?? interactiveParam.text;
+                    nextParts.push(
+                        interactiveParam.previewRef ? (
+                            <CardPreviewTooltip
+                                key={`${paramKey}-${partIndex}-${pieceIndex}`}
+                                previewRef={interactiveParam.previewRef}
+                                locale={undefined}
+                            >
+                                {targetText}
+                            </CardPreviewTooltip>
+                        ) : (
+                            <span
+                                key={`${paramKey}-${partIndex}-${pieceIndex}`}
+                                className="cursor-help underline decoration-dotted decoration-1 underline-offset-2"
+                                title={label}
+                                aria-label={label}
+                            >
+                                {targetText}
+                            </span>
+                        ),
+                    );
+                }
+            });
+        });
+        renderedParts = nextParts;
+    }
+    return <span>{renderedParts}</span>;
 };
 
 /**
@@ -46,15 +95,17 @@ const I18nSegment: React.FC<{
 const CardSegmentRenderer: React.FC<{
     segment: Extract<ActionLogSegment, { type: 'card' }>;
     locale?: string;
-    getCardPreviewRef?: (cardId: string) => CardPreviewRef | null;
+    playerId?: string | number;
+    characterId?: string;
+    getCardPreviewRef?: (cardId: string, context?: CardPreviewLookupContext) => CardPreviewRef | null;
     maxDim?: number;
-}> = ({ segment, locale, getCardPreviewRef, maxDim }) => {
+}> = ({ segment, locale, playerId, characterId, getCardPreviewRef, maxDim }) => {
     const ns = segment.previewTextNs || '';
     const { t } = useTranslation(ns || undefined);
     const rawText = segment.previewText || segment.cardId;
     const displayText = segment.previewTextNs ? t(rawText, { defaultValue: rawText }) : rawText;
     // 优先使用 segment 内联的 previewRef，其次走 registry 查找
-    const previewRef = segment.previewRef ?? getCardPreviewRef?.(segment.cardId) ?? null;
+    const previewRef = segment.previewRef ?? getCardPreviewRef?.(segment.cardId, { playerId, characterId }) ?? null;
 
     if (!previewRef) {
         return <span>{displayText}</span>;
@@ -117,6 +168,8 @@ const DiceResultSegment: React.FC<{
 export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
     segments,
     locale,
+    playerId,
+    characterId,
     getCardPreviewRef,
     cardPreviewMaxDim,
     breakdownZIndex,
@@ -140,6 +193,7 @@ export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
                             i18nKey={segment.key}
                             params={segment.params}
                             paramI18nKeys={segment.paramI18nKeys}
+                            interactiveParams={segment.interactiveParams}
                         />
                     );
                 }
@@ -150,6 +204,8 @@ export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
                             key={index}
                             segment={segment}
                             locale={locale}
+                            playerId={playerId}
+                            characterId={characterId}
                             getCardPreviewRef={getCardPreviewRef}
                             maxDim={cardPreviewMaxDim}
                         />

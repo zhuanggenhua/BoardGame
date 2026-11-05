@@ -62,6 +62,7 @@
 
 - 通用卡定义集中在 `src/games/dicethrone/domain/commonCards.ts` 的 `COMMON_CARDS`。
 - 各英雄不能手写 18 张通用卡的 `previewRef`，必须统一走 `injectCommonCardPreviewRefs(...)` 注入。
+- 每个英雄的实际牌库必须和本英雄 `ability-cards` 物理卡槽对账；先逐格找该通用牌在本英雄图集里的真实卡槽并写入专属索引。只有完整图集复核确认确实不存在时，才允许把该牌排除出该英雄起始牌库；不能因为旧共享映射冲突或某个 slot 被占用就直接删牌，也不能退回到其它英雄的通用卡图。
 
 当前通用卡 atlas 映射分两类：
 
@@ -75,6 +76,7 @@
 - `src/games/dicethrone/ui/cardPreviewHelper.ts` 会遍历每个英雄的 `getStartingDeck()` 建立预览映射。
 - 通用卡在不同英雄图集里的索引可能不同，所以只知道 `cardId` 不够，优先传 `characterId` 给 `getDiceThroneCardPreviewRef(cardId, characterId)`。
 - 任何新 UI 如果直接按 `cardId` 反查预览，都要先确认是否会误用到别的英雄的通用卡索引。
+- 预览查询只能服务“真实在该角色牌库中的卡”；如果某卡没有进入该角色 `getStartingDeck()`，不能为了补图而显示其它角色同名公共牌。
 
 ## 4. 枪手 / 武士新增规则
 
@@ -162,8 +164,8 @@ Dice Throne 新英雄录入时，至少要区分下面三层，禁止混写：
 - 注册逻辑：
   - 遍历 `DICETHRONE_CARD_ATLAS_IDS`
   - 用 `ASSETS.CARDS_ATLAS(charId)` 作为图片路径
-  - 默认绑定 `ability-cards-common.atlas.json`
-  - 当前全部角色绑定 `ability-cards-common.atlas.json`
+  - 通过 `getHeroAtlasConfig(charId)` 选择对应 atlas 配置
+  - 只有未登记专属配置的旧角色才回退到 `ability-cards-common.atlas.json`；枪手、树精、忍者、战术家、咒缚海盗、工匠、天使、女猎手和吸血鬼等已登记角色必须使用本英雄实际图集配置
 
 ### 5.2 状态图标 atlas
 
@@ -198,7 +200,7 @@ Dice Throne 新英雄录入时，至少要区分下面三层，禁止混写：
    - `statusAtlasPath`
 3. 在 `heroes/<hero>/cards.ts`：
    - 专属卡逐张写 `previewRef`
-   - 通用卡统一 `...injectCommonCardPreviewRefs(COMMON_CARDS, atlasId, indexMap?)`
+   - 通用卡统一 `...injectCommonCardPreviewRefs(COMMON_CARDS, atlasId, indexMap?)`；若逐格复核确认本英雄图集确实缺少某张通用牌，才使用有证据的过滤列表，并在角色卡牌录入核对里记录缺口和处置依据
 4. 如涉及升级叠加显示或槽位高亮，更新对应的 UI 槽位映射文件，而不是在卡牌数据里偷塞布局状态
 
 ### 6.3 索引核对
@@ -218,6 +220,7 @@ Dice Throne 新英雄录入时，至少要区分下面三层，禁止混写：
 
 - `previewRef` 是否都指向 `atlas`
 - 通用卡是否走统一注入，而不是手写散落
+- 实际牌库里的每张牌是否都有本英雄图集的 `previewRef`，不得存在“能抽到 / 能打出但没有卡图”的牌
 - 新英雄是否错误复用了别的英雄通用牌索引
 - 是否残留 `hand-cards-atlas`、单卡运行时裁图或过期路径
 - 若存在复合排版，是否已经明确共享索引合同，而不是又被代码偷偷拆成半张 frame
@@ -240,6 +243,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/basic-
 - 禁止把 `public/assets/.../crops/**` 当成“后处理图的正式归宿”
 - 禁止按代码顺序猜 atlas 索引
 - 禁止给通用卡逐张手写 `previewRef`
+- 禁止未完整复核图集就把通用牌从英雄实际牌库过滤掉；确实没有本英雄物理卡槽的公共牌，才不得保留为无图牌
 - 禁止在新 UI 里只按 `cardId` 反查通用卡预览，却不传 `characterId`
 - 禁止把原图 slot、技能子集或技能变体误当成手牌卡图索引
 

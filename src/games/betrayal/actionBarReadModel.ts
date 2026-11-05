@@ -18,6 +18,7 @@ export type BetrayalBoardActionItemsInput = {
   t: ActionText;
   phase: BetrayalCore["phase"];
   movesRemaining: number;
+  hasLegalMoveTargets: boolean;
   currentExplorerInventoryCount: number;
   interactionMode: PreviewState["interactionMode"];
   turnEndedByDiscovery: boolean;
@@ -45,6 +46,7 @@ export type BetrayalBoardActionItemsInput = {
   helpingHandsMonsterTurnActive: boolean;
   helpingHandsTrollHandMoveEntryCount: number;
   isDeadTraitorJackSpiritControlTurn: boolean;
+  hasControlledMoveMonster: boolean;
   pendingBloodFromStoneSetupPlacementCount: number;
   selectedBloodFromStoneStoneCherubRoomCount: number;
   isBloodFromStoneSetupPlacementMode: boolean;
@@ -57,6 +59,7 @@ export type BetrayalBoardActionItemsInput = {
 
 export type BetrayalBoardActionItems = {
   visibleActionDisabledReason: string | null;
+  formalActionItems: ActionBarAction[];
   visibleActionItems: ActionBarAction[];
 };
 
@@ -64,6 +67,7 @@ export function resolveBetrayalBoardActionItems({
   t,
   phase,
   movesRemaining,
+  hasLegalMoveTargets,
   currentExplorerInventoryCount,
   interactionMode,
   turnEndedByDiscovery,
@@ -91,6 +95,7 @@ export function resolveBetrayalBoardActionItems({
   helpingHandsMonsterTurnActive,
   helpingHandsTrollHandMoveEntryCount,
   isDeadTraitorJackSpiritControlTurn,
+  hasControlledMoveMonster,
   pendingBloodFromStoneSetupPlacementCount,
   selectedBloodFromStoneStoneCherubRoomCount,
   isBloodFromStoneSetupPlacementMode,
@@ -125,7 +130,12 @@ export function resolveBetrayalBoardActionItems({
         interactionMode === "move"
           ? t("board.actions.cancelMove")
           : t("board.actions.move"),
-      disabled: hasPendingPlayerAgreement || movesRemaining <= 0,
+      disabled:
+        hasPendingPlayerAgreement ||
+        (interactionMode !== "move" &&
+          ((turnEndedByDiscovery && !hasControlledMoveMonster) ||
+            movesRemaining <= 0 ||
+            !hasLegalMoveTargets)),
       variant: "secondary",
     },
     {
@@ -368,7 +378,7 @@ export function resolveBetrayalBoardActionItems({
         ]
       : helpingHandsMonsterTurnActive
         ? helpingHandsMonsterTurnActionItems
-        : isDeadTraitorJackSpiritControlTurn
+        : isDeadTraitorJackSpiritControlTurn || hasControlledMoveMonster
           ? monsterActionItemsWithHauntAction.length > 0
             ? monsterActionItemsWithHauntAction
             : actionItems.filter(
@@ -397,6 +407,7 @@ export function resolveBetrayalBoardActionItems({
 
   return {
     visibleActionDisabledReason,
+    formalActionItems: actionItems,
     visibleActionItems,
   };
 }

@@ -9,20 +9,22 @@ import manifest2 from './dicethrone/manifest';
 import { engineConfig as engineConfig2 } from './dicethrone/game';
 import manifest3 from './fantasyrealms/manifest';
 import { engineConfig as engineConfig3 } from './fantasyrealms/game';
-import manifest4 from './mage-wars/manifest';
-import { engineConfig as engineConfig4 } from './mage-wars/game';
-import manifest5 from './qidahen/manifest';
-import { engineConfig as engineConfig5 } from './qidahen/game';
-import manifest6 from './smashup/manifest';
-import { engineConfig as engineConfig6 } from './smashup/game';
-import manifest7 from './splendor/manifest';
-import { engineConfig as engineConfig7 } from './splendor/game';
-import manifest8 from './summonerwars/manifest';
-import { engineConfig as engineConfig8 } from './summonerwars/game';
-import manifest9 from './the-gang/manifest';
-import { engineConfig as engineConfig9 } from './the-gang/game';
-import manifest10 from './tictactoe/manifest';
-import { engineConfig as engineConfig10 } from './tictactoe/game';
+import manifest4 from './fate-domination/manifest';
+import { engineConfig as engineConfig4 } from './fate-domination/game';
+import manifest5 from './mage-wars/manifest';
+import { engineConfig as engineConfig5 } from './mage-wars/game';
+import manifest6 from './qidahen/manifest';
+import { engineConfig as engineConfig6 } from './qidahen/game';
+import manifest7 from './smashup/manifest';
+import { engineConfig as engineConfig7 } from './smashup/game';
+import manifest8 from './splendor/manifest';
+import { engineConfig as engineConfig8 } from './splendor/game';
+import manifest9 from './summonerwars/manifest';
+import { engineConfig as engineConfig9 } from './summonerwars/game';
+import manifest10 from './the-gang/manifest';
+import { engineConfig as engineConfig10 } from './the-gang/game';
+import manifest11 from './tictactoe/manifest';
+import { engineConfig as engineConfig11 } from './tictactoe/game';
 
 const entry0: GameServerManifestEntry = {
     manifest: manifest0,
@@ -79,6 +81,11 @@ const entry10: GameServerManifestEntry = {
     engineConfig: engineConfig10,
 };
 
+const entry11: GameServerManifestEntry = {
+    manifest: manifest11,
+    engineConfig: engineConfig11,
+};
+
 export const GAME_SERVER_MANIFEST: GameServerManifestEntry[] = [
     entry0,
     entry1,
@@ -91,6 +98,7 @@ export const GAME_SERVER_MANIFEST: GameServerManifestEntry[] = [
     entry8,
     entry9,
     entry10,
+    entry11,
 ];
 
 export const GAME_SERVER_MANIFEST_BY_ID: Record<string, GameServerManifestEntry> = Object.fromEntries(

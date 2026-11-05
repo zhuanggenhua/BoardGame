@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
-import { fireTriggers, isCardSuppressed, isMinionProtected, isOperationRestricted } from '../../domain/ongoingEffects';
+import { collectTriggers, fireTriggers, isCardSuppressed, isMinionProtected, isOperationRestricted } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { EXPLORERS_CARDS, GRANNIES_CARDS, ROCK_STARS_CARDS, TEDDY_BEARS_CARDS, WHAT_WERE_WE_THINKING_BASES } from '../../data/factions/what_were_we_thinking';
 import {
@@ -515,6 +516,47 @@ describe('我们到底在想什么？摇滚明星代表性玩法行为', () => {
         const after = applyEvents(core, triggered.events);
 
         expect(after.players['0'].hand.map(card => card.uid)).toEqual(['draw-1']);
+    });
+
+    it('火热场地回合结束响应提交后抽 1 张牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('draw-response', 'rock_stars_groupie', 'minion', '0')],
+                    minionsPlayedPerBase: { 0: 1 } as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_lake_minnetonka',
+                ongoingActions: [{ uid: 'venue', defId: 'rock_stars_hot_venue', ownerId: '0' }],
+            })],
+        });
+
+        const queued = collectTriggers(core, 'onTurnEnd', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            random: FIXED_RANDOM,
+            now: 11,
+        }, { sourceDefIds: ['rock_stars_hot_venue'] });
+        expect(queued).toBeDefined();
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: queued!.payload.triggers } as any),
+            FIXED_RANDOM,
+            11,
+        );
+        const resolved = respondToPromptOption(
+            prompted!.state,
+            option => option.value?.triggerId === queued!.payload.triggers[0].id,
+            '火热场地可选触发',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-response']);
+        expect(resolved.finalState.core.triggerQueue).toBeUndefined();
     });
 
     it('明尼通卡湖给打出或移入这里的随从 +1 临时力量', () => {
@@ -1892,6 +1934,57 @@ describe('我们到底在想什么？探险家代表性玩法行为', () => {
             restrictToBase: 1,
             specificCardUid: 'looter',
         });
+    });
+
+    it('古墓掠夺者响应提交后写入只限自身的额外随从额度', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('looter', 'explorers_crypt_looter', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_palooza'), makeBase('base_city_of_gold')],
+        });
+
+        const queued = collectTriggers(core, 'onBaseRevealed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 1,
+            random: FIXED_RANDOM,
+            now: 11,
+        }, { sourceDefIds: ['explorers_crypt_looter'] });
+        expect(queued).toBeDefined();
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: queued!.payload.triggers } as any),
+            FIXED_RANDOM,
+            11,
+        );
+        const resolved = respondToPromptOption(
+            prompted!.state,
+            option => option.value?.triggerId === queued!.payload.triggers[0].id,
+            '古墓掠夺者可选触发',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: expect.objectContaining({
+                playerId: '0',
+                limitType: 'minion',
+                reason: 'explorers_crypt_looter',
+                restrictToBase: 1,
+                specificCardUid: 'looter',
+            }),
+        }));
+        expect(resolved.finalState.core.players['0'].specificExtraMinionPlays).toEqual([
+            expect.objectContaining({
+                cardUid: 'looter',
+                reason: 'explorers_crypt_looter',
+                restrictToBase: 1,
+            }),
+        ]);
     });
 
     it('逐名猎犬把一张展示基地留顶并把另一张置底', () => {

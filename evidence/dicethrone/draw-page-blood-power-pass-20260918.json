@@ -1,0 +1,58 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-18T22:50:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": true
+  },
+  "requirements": [
+    {
+      "requirement": "抽牌页标题按交互传入的数量动态显示，不把洗牌等后续结算规则混进标题",
+      "status": "PASS",
+      "evidence": [
+        "当前真实截图显示“从牌库选择 1 张牌加入手牌”。",
+        "InteractionOverlay 单测覆盖 selectCount=2 的动态标题。",
+        "英文与中文文案均已同步为动态数量表达。"
+      ]
+    },
+    {
+      "requirement": "大牌库抽牌页默认可见两排卡牌，更多卡牌通过纵向滚动查看，手牌继续可见且不被抽牌面板遮挡",
+      "status": "PASS",
+      "evidence": [
+        "真实抽牌页截图显示大牌库两排卡面、纵向浏览区域和下方仍可见的手牌。",
+        "真实 E2E 通过两排布局、纵向浏览、面板与手牌间距及无交叠几何断言。",
+        "本次真实几何读数修正后，面板底边已落在手牌顶部之前，安全间距满足断言。"
+      ]
+    },
+    {
+      "requirement": "真实入口支持搜索、空结果、命中血流如注、选中和确认加入手牌",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 依次覆盖大牌库、空搜索、血流如注命中、选中待确认和确认结算。",
+        "对应截图 02 至 05 保留了搜索框、候选卡面、确认按钮和手牌上下文。"
+      ]
+    },
+    {
+      "requirement": "抽牌结算后进入主要阶段 2，吸血按钮按最近一次攻击伤害高亮，点击后恢复生命并消耗 4 个鲜血之力",
+      "status": "PASS",
+      "evidence": [
+        "真实 E2E 用例“血色杀戮造成伤害后应通过真实入口允许花费4个鲜血之力吸血”通过。",
+        "截图 06 显示主要阶段 2 和高亮的吸血按钮；截图 07 显示生命恢复、鲜血之力归零和按钮收口。",
+        "E2E 断言治疗量等于最近一次攻击记录，并产生治疗与资源消耗事件。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\01-起点-五个血滴大招可点.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\02-抽牌页-大牌库两排且手牌可见.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\03-抽牌页-空搜索仍保留手牌.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\04-抽牌页-血流如注命中.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\05-抽牌页-选中待确认.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\06-主要阶段二-吸血按钮高亮.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\draw-page-blood-power-pass-20260918\\07-吸血结算-生命恢复且血力归零.jpg"
+  ]
+}

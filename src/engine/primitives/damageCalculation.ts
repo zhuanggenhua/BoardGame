@@ -14,7 +14,7 @@
  */
 
 import type { GameEvent, PlayerId } from '../types';
-import type { ModifierDef, ModifierStack } from './modifier';
+import type { ModifierDef, ModifierStack, ModifierType } from './modifier';
 import {
   createModifierStack,
   addModifier,
@@ -74,7 +74,31 @@ export interface AttackDamageContext {
  * 游戏层实现此接口，注入到 DamageCalculationConfig 中，
  * 使引擎层能处理 custom 类型的 PassiveTrigger 动作而不直接依赖游戏层代码。
  */
-export interface PassiveTriggerHandler {
+export type DamageCalculationSideEffectEvent =
+  | GameEvent<'STATUS_REMOVED', { targetId: PlayerId; statusId: string; stacks: number }>
+  | GameEvent<'TOKEN_CONSUMED', { playerId: PlayerId; tokenId: string; amount: number; newTotal: number }>;
+
+export interface DamageCalculationDamagePayload {
+  targetId: PlayerId;
+  amount: number;
+  actualDamage: number;
+  sourceAbilityId?: string;
+  modifiers: Array<{
+    type: ModifierType;
+    value: number;
+    sourceId?: string;
+    sourceName?: string;
+  }>;
+  breakdown: DamageBreakdown;
+  damageScope?: 'attack' | 'direct';
+}
+
+export type DamageCalculationEvent<TCustomEvent extends GameEvent = GameEvent> =
+  | TCustomEvent
+  | DamageCalculationSideEffectEvent
+  | GameEvent<'DAMAGE_DEALT', DamageCalculationDamagePayload>;
+
+export interface PassiveTriggerHandler<TCustomEvent extends GameEvent = GameEvent> {
   /** 处理 custom 类型的 passiveTrigger 动作 */
   handleCustomAction(
     actionId: string,
@@ -89,13 +113,13 @@ export interface PassiveTriggerHandler {
       tokenId: string;
       tokenStacks: number;
     }
-  ): { events: GameEvent[]; preventAmount: number };
+  ): { events: TCustomEvent[]; preventAmount: number };
 }
 
 /**
  * 伤害计算配置
  */
-export interface DamageCalculationConfig extends DamageContext {
+export interface DamageCalculationConfig<TCustomEvent extends GameEvent = GameEvent> extends DamageContext {
   /** 基础伤害值 */
   baseDamage: number;
   
@@ -118,7 +142,7 @@ export interface DamageCalculationConfig extends DamageContext {
   autoCollectBonusDamage?: boolean;
   
   /** PassiveTrigger handler（游戏层注入） */
-  passiveTriggerHandler?: PassiveTriggerHandler;
+  passiveTriggerHandler?: PassiveTriggerHandler<TCustomEvent>;
 
   /** 伤害来源范围（用于区分攻击伤害与直接伤害） */
   damageScope?: 'attack' | 'direct';
@@ -163,13 +187,13 @@ export interface DamageBreakdown {
 /**
  * 伤害计算结果
  */
-export interface DamageResult {
+export interface DamageResult<TCustomEvent extends GameEvent = GameEvent> {
   /** 基础伤害 */
   baseDamage: number;
   
   /** 应用的修正列表（不含 base） */
   modifiers: Array<{
-    type: string;
+    type: ModifierType;
     value: number;
     sourceId: string;
     sourceName?: string;
@@ -185,7 +209,7 @@ export interface DamageResult {
   breakdown: DamageBreakdown;
   
   /** 副作用事件（PassiveTrigger 的 removeStatus/custom 产生） */
-  sideEffectEvents: GameEvent[];
+  sideEffectEvents: Array<TCustomEvent | DamageCalculationSideEffectEvent>;
 }
 
 export interface DamageCalculationToEventsOptions {
@@ -203,11 +227,11 @@ interface PendingOnDamageReceivedCustomAction {
 // ============================================================================
 
 
-export class DamageCalculation {
-  private config: DamageCalculationConfig;
+export class DamageCalculation<TCustomEvent extends GameEvent = GameEvent> {
+  private config: DamageCalculationConfig<TCustomEvent>;
   private modifierStack: ModifierStack<DamageContext>;
   /** 收集阶段累积的副作用事件（removeStatus / custom handler 产生） */
-  private collectedSideEffects: GameEvent[] = [];
+  private collectedSideEffects: Array<TCustomEvent | DamageCalculationSideEffectEvent> = [];
 
   /**
    * 统一获取核心状态。
@@ -253,7 +277,7 @@ export class DamageCalculation {
     return true;
   }
   
-  constructor(config: DamageCalculationConfig) {
+  constructor(config: DamageCalculationConfig<TCustomEvent>) {
     this.config = config;
     this.modifierStack = createModifierStack<DamageContext>();
     this.initializeModifiers();
@@ -404,7 +428,7 @@ export class DamageCalculation {
           },
           sourceCommandType: 'ABILITY_EFFECT',
           timestamp,
-        } as GameEvent);
+        });
         continue;
       }
 
@@ -420,7 +444,7 @@ export class DamageCalculation {
           },
           sourceCommandType: 'ABILITY_EFFECT',
           timestamp,
-        } as GameEvent);
+        });
       }
     }
   }
@@ -512,7 +536,7 @@ export class DamageCalculation {
               },
               sourceCommandType: 'ABILITY_EFFECT',
               timestamp,
-            } as GameEvent);
+            });
             break;
           }
           
@@ -540,7 +564,7 @@ export class DamageCalculation {
           },
           sourceCommandType: 'ABILITY_EFFECT',
           timestamp,
-        } as GameEvent);
+        });
         continue;
       }
 
@@ -556,7 +580,7 @@ export class DamageCalculation {
           },
           sourceCommandType: 'ABILITY_EFFECT',
           timestamp,
-        } as GameEvent);
+        });
       }
     }
 
@@ -670,7 +694,7 @@ export class DamageCalculation {
   /**
    * 计算最终伤害
    */
-  public resolve(): DamageResult {
+  public resolve(): DamageResult<TCustomEvent> {
     // 应用所有修正（从 0 开始累加）
     const result = applyModifiers(this.modifierStack, 0, this.config);
     
@@ -752,10 +776,10 @@ export class DamageCalculation {
   /**
    * 生成 DAMAGE_DEALT 事件
    */
-  public toEvents(options: DamageCalculationToEventsOptions = {}): GameEvent[] {
+  public toEvents(options: DamageCalculationToEventsOptions = {}): DamageCalculationEvent<TCustomEvent>[] {
     const result = this.resolve();
 
-    const damageEvent: GameEvent = {
+    const damageEvent: GameEvent<'DAMAGE_DEALT', DamageCalculationDamagePayload> = {
       type: 'DAMAGE_DEALT',
       payload: {
         targetId: this.config.target.playerId,
@@ -763,7 +787,7 @@ export class DamageCalculation {
         actualDamage: result.actualDamage,
         sourceAbilityId: this.config.source.abilityId,
         modifiers: result.modifiers.map(m => ({
-          type: m.type as any,
+          type: m.type,
           value: m.value,
           sourceId: m.sourceId,
           sourceName: m.sourceName,
@@ -827,20 +851,20 @@ export class DamageCalculation {
 /**
  * 创建伤害计算实例
  */
-export function createDamageCalculation(
-  config: DamageCalculationConfig
-): DamageCalculation {
-  return new DamageCalculation(config);
+export function createDamageCalculation<TCustomEvent extends GameEvent = GameEvent>(
+  config: DamageCalculationConfig<TCustomEvent>
+): DamageCalculation<TCustomEvent> {
+  return new DamageCalculation<TCustomEvent>(config);
 }
 
 /**
  * 批量计算多个目标的伤害（AOE 技能优化）
  */
-export function createBatchDamageCalculation(
-  config: Omit<DamageCalculationConfig, 'target'> & {
+export function createBatchDamageCalculation<TCustomEvent extends GameEvent = GameEvent>(
+  config: Omit<DamageCalculationConfig<TCustomEvent>, 'target'> & {
     targets: DamageTarget[];
   }
-): DamageCalculation[] {
+): DamageCalculation<TCustomEvent>[] {
   return config.targets.map(target => 
     new DamageCalculation({
       ...config,

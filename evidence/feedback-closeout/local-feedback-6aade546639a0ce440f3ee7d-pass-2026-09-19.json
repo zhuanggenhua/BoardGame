@@ -1,0 +1,66 @@
+{
+  "verdict": "PASS",
+  "scope": "local-feedback-closeout",
+  "feedbackId": "6aade546639a0ce440f3ee7d",
+  "feedbackSource": "local Mongo boardgame.feedbacks",
+  "feedbackContent": "改骰子的过程怎么日志里没有，还有改骰的提示信息，应该文本框自适应，现在文本都被截断了",
+  "game": "DiceThrone",
+  "caseLock": {
+    "entry": "吸血鬼领主真实入口测试场景",
+    "effect": "催眠改对手进攻骰",
+    "operation": "对手确认 5 颗进攻骰后，把第 4 颗骰从 5 改为 4",
+    "notUsedAsEvidence": [
+      "evidence/dicethrone/dicethrone-die-modification-pass-20260919.json",
+      "弹一手改骰截图",
+      "防御投掷或 2 颗骰子的催眠截图"
+    ]
+  },
+  "changes": [
+    {
+      "area": "改骰提示框",
+      "result": "提示框按内容自适应宽度，允许中文换行，取消固定高度和内部滚动截断，并保持在视口内。",
+      "source": "src/games/dicethrone/ui/RightSidebar.tsx"
+    },
+    {
+      "area": "行动日志",
+      "result": "改骰 / 重投事件使用稳定的事件身份生成日志 ID，避免同一时间戳下的事件互相去重；真实日志显示“重投骰子 #4：5 → 4”。",
+      "source": "src/games/dicethrone/game.ts"
+    }
+  ],
+  "verification": [
+    {
+      "command": "node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/vampire-lord-real-entry.e2e.ts \"催眠应在对手进攻投掷确认后打开响应窗口，重掷后仍允许对手声明攻击\"",
+      "result": "1 passed"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "assertions": [
+        "提示框完整显示“选择对手的骰子（0/1）”",
+        "提示框没有内部滚动截断且位于视口内",
+        "行动日志出现“重投骰子 #4：5 → 4”",
+        "改骰后对手仍能继续声明攻击"
+      ]
+    }
+  ],
+  "screenshots": [
+    "test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d/01-催眠改第4颗骰-提示完整.jpg",
+    "test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d/02-催眠改第4颗骰-行动日志5到4.jpg"
+  ],
+  "latestDirectory": "test-results/evidence-screenshots/dicethrone/feedback/6aade546639a0ce440f3ee7d",
+  "specReview": {
+    "updated": false,
+    "reason": "现有反馈收口规范已经要求原始反馈、真实入口、玩家可见症状和截图证据一一对应；本轮问题是执行时选错案例，不是规范缺口。"
+  },
+  "statusWriteback": {
+    "target": "boardgame.feedbacks",
+    "expectedStatus": "resolved",
+    "mirror": "temp/feedback-closeout/status-board.json"
+  }
+}

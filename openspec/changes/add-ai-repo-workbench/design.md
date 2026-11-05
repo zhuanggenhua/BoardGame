@@ -883,6 +883,39 @@ MVP **不** 让 `LocalRuntime` 负责：
 3. **恢复时重建 prompt，而不是尝试“接着上次脑内推理继续”**。
 4. **任何可能产生副作用的节点都必须幂等化**，避免重试时重复改文件、重复跑命令、重复生成证据。
 
+## Card Effect Authoring Template Boundary
+
+### Decision: 卡牌效果 authoring 作为固定模板适配层，不成为第二套规则真相
+
+外部 `ygopro-scripting-workflow` 的可迁移价值已经沉淀到项目 skill [`card-effect-authoring`](../../../.spec/skills/card-effect-authoring/SKILL.md) 和 ADR [`0003-card-effect-authoring-workflow`](../../../.spec/decisions/0003-card-effect-authoring-workflow.md)。后续 `ai-repo-workbench` 如果接入卡牌效果模板，节点应复用现有领域对象和审计主源：
+
+```text
+lock-source
+→ build-entry-contract
+→ decompose-atomic-semantics
+→ find-shared-flow
+→ draft-card-definition
+→ implement-effect
+→ validate-ai-and-interaction
+→ run-focused-tests
+→ publish-artifact-bundle
+```
+
+节点输入 / 输出边界固定如下：
+
+- `lock-source` 输出来源索引和合同状态；未 `locked` 时只能进入 `waiting_decision` 或 `blocked`。
+- `build-entry-contract` 输出触发、主体、权限、target/material/reference、选择和清理语义。
+- `find-shared-flow` 输出参考对象、`sharedFlowId`、共享配置 schema、允许配置差异和新增职责判定；若已有流程可复用，不得为单卡复制实现。
+- `draft-card-definition` 输出卡牌数据、i18n、资源消费映射、差异字段和未消费字段去向。
+- `implement-effect` 优先实现或复用共享流程；只把卡牌差异写入配置，只有新增职责时才扩展独立实现，并记录 prompt、diff 和失败状态。
+- `validate-ai-and-interaction` 必须检查 `validate()`、`execute()`、AI legal actions、interaction / response-window 收口和最终权威状态。
+- `run-focused-tests` 负责共享流程主测试、负向路径、配置差异的最小边界测试、必要的真实入口验证和覆盖缺口汇总；不得按卡牌复制整套测试。
+- `publish-artifact-bundle` 汇总来源、语义、实现、测试、证据和残余范围；不能把测试通过改写成规则合同已锁定。
+
+该模板只负责工作流编排。规则语义仍由目标游戏合同、`description-to-implementation-audit`、`game-ai-adaptation` 和对应能力 spec 持有；Flowise / LangGraph / Codex 只负责 shell、编排或一次性执行，不接管领域真相。
+
+卡牌级绑定规则：共享流程负责通用实现和主测试，卡牌只声明差异字段并补差异边界。新增独立实现或完整独立测试必须能指出新增的触发时机、资源、状态生命周期、交互、AI 合法动作或最终权威状态；仅数值、数量、文案或目标集合变化不得触发复制。
+
 ## Selection Validity / Risks / Optimizations
 
 ### Decision: 当前技术选型仍成立，但必须带着风险表推进

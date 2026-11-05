@@ -156,7 +156,7 @@ export const CARDIA_AUDIO_CONFIG: GameAudioConfig = {
         
         // 其他事件使用基础 resolver
         const baseResolver = createFeedbackResolver(CARDIA_EVENTS);
-        return baseResolver(event, context);
+        return baseResolver(event);
     },
 
     // BGM 切换规则（单一 BGM，无需切换）

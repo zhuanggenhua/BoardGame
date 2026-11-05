@@ -754,8 +754,8 @@ describe('被动能力运行时验证 (Section 8)', () => {
     it('[fortress_elite] 2格内友方城塞单位+1战力', () => {
         const card = mkUnit('fe-unit', { abilities: ['fortress_elite'], strength: 2, faction: 'frost' });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
-        // 放一个友方城塞单位在2格内（card.id 包含 'fortress'）
-        const fortressCard = mkUnit('fortress-guard', { strength: 3, faction: 'frost' });
+        // 放一个带城塞 / Citadel 标签的友方单位在2格内
+        const fortressCard = mkUnit('fortress-guard', { strength: 3, faction: 'frost', unitTags: ['citadel'] });
         putUnit(core, { row: 3, col: 3 }, fortressCard, '0');
         const str = getEffectiveStrengthValue(unit, core);
         expect(str).toBe(3); // 2 base + 1 fortress unit
@@ -765,10 +765,10 @@ describe('被动能力运行时验证 (Section 8)', () => {
         const card = mkUnit('fe-unit2', { abilities: ['fortress_elite'], strength: 2, faction: 'frost' });
         const unit = putUnit(core, { row: 4, col: 3 }, card, '0');
 
-        putUnit(core, { row: 3, col: 3 }, mkUnit('fortress-ally', { faction: 'frost' }), '0');
+        putUnit(core, { row: 3, col: 3 }, mkUnit('fortress-ally', { faction: 'frost', unitTags: ['citadel'] }), '0');
         putUnit(core, { row: 4, col: 4 }, mkUnit('regular-ally', { faction: 'frost' }), '0');
-        putUnit(core, { row: 4, col: 2 }, mkUnit('fortress-enemy', { faction: 'frost' }), '1');
-        putUnit(core, { row: 5, col: 5 }, mkUnit('fortress-far', { faction: 'frost' }), '0');
+        putUnit(core, { row: 4, col: 2 }, mkUnit('fortress-enemy', { faction: 'frost', unitTags: ['citadel'] }), '1');
+        putUnit(core, { row: 5, col: 5 }, mkUnit('fortress-far', { faction: 'frost', unitTags: ['citadel'] }), '0');
 
         expect(getEffectiveStrengthValue(unit, core)).toBe(3);
     });

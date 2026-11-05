@@ -1,0 +1,20 @@
+{
+  "title": "Mage Wars 阶段轨道与辅助控件修复截图",
+  "items": [
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+      "label": "1920 桌面：阶段轨道无自称标题，眼睛在右侧避让",
+      "transition": "起点：真实入口桌面牌桌，阶段列表只显示阶段名，不再写“回合流程”。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+      "label": "2560x1304 宽屏：阶段轨道按视口自然放大",
+      "transition": "从 1920 切到宽屏：阶段轨道、眼睛和缩放读数分槽，不互相压住。"
+    },
+    {
+      "path": "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png",
+      "label": "移动横屏：同一真实入口的移动对照",
+      "transition": "从桌面切到移动横屏：触控布局仍来自同一真实牌桌链路。"
+    }
+  ]
+}

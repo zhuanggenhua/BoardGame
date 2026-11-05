@@ -244,7 +244,9 @@ export function resolveBetrayalEventRollFinalizedPayload(
             ? cloneUponReflectionRuntimeState(pending.uponReflectionSetup)
             : undefined,
         hauntRoll: pending.hauntRoll ? { ...pending.hauntRoll } : undefined,
-        logText: pending.requiresAcknowledgement === false
+        logText: pending.requiresPlayerAdvance
+            ? `${actor.displayName}承接${pending.sourceTitle}的下一规则阶段`
+            : pending.requiresAcknowledgement === false
             ? `${pending.sourceTitle}的最终投骰结果已自动结算`
             : `${actor.displayName}确认${pending.sourceTitle}的最终投骰结果（${acknowledgedPlayerIds.length}/${requiredPlayerIds.length}）`,
     };

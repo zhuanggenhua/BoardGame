@@ -42,6 +42,8 @@ import type {
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionReturnedEvent,
+    MinionOnBase,
+    BaseAbilityUsedEvent,
     MinionControlChangedEvent,
     BuriedCardReturnedToHandEvent,
     CardRecoveredFromDiscardEvent,
@@ -72,6 +74,7 @@ import {
     drawCards,
     getActionLikeResponseWindowTiming,
     getMinionLikeResponseWindowLimitGroup,
+    findSpecificExtraActionPlay,
     isCardMinionLike,
     matchesDefId,
 } from './utils';
@@ -79,7 +82,7 @@ import { autoMulligan } from '../../../engine/primitives/mulligan';
 import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
 import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy, resolveOngoingActivation } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
-import { triggerActiveBaseAbility } from './baseAbilities';
+import { getActiveBaseAbilitySources, triggerActiveBaseAbilities } from './baseAbilities';
 import { collectExtendedBaseAbilityTriggers } from './baseAbilityQueue';
 import { fireTriggers, collectTriggers } from './ongoingEffects';
 import { getEffectivePower } from './ongoingModifiers';
@@ -417,7 +420,7 @@ function executeCommand(
                 )
                 : undefined;
             const card = replacementCard ?? originalCard;
-            if (!card) return state;
+            if (!card) return { events: [] };
             const minionDef = getMinionDef(card.defId);
             const reactionWindow = getSmashUpReactionWindowContext(state);
             const baseIndex = command.payload.baseIndex;
@@ -541,6 +544,12 @@ function executeCommand(
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             const events: SmashUpEvent[] = [];
             let updatedState: MatchState<SmashUpCore> | undefined;
+            const specificExtraActionPlay = findSpecificExtraActionPlay(workingState.core.players[command.playerId], {
+                cardUid: card.uid,
+                defId: card.defId,
+                targetBaseIndex: command.payload.targetBaseIndex,
+                targetMinionUid: command.payload.targetMinionUid,
+            });
 
             const event = buildActionPlayedEvent({
                 playerId: command.playerId,
@@ -549,7 +558,11 @@ function executeCommand(
                 ownerId: card.owner,
                 targetBaseIndex: command.payload.targetBaseIndex,
                 targetMinionUid: command.payload.targetMinionUid,
-                isExtraAction: fromStored || discardActionPlay?.consumesNormalLimit === false || command.payload.consumesNormalLimit === false || undefined,
+                isExtraAction: fromStored
+                    || specificExtraActionPlay !== undefined
+                    || discardActionPlay?.consumesNormalLimit === false
+                    || command.payload.consumesNormalLimit === false
+                    || undefined,
                 fromDiscard,
                 fromStored,
                 discardPlaySourceId: discardActionPlay?.sourceId ?? command.payload.discardPlaySourceId,
@@ -568,6 +581,7 @@ function executeCommand(
                 targetMinionUid: command.payload.targetMinionUid,
                 fromDiscard,
                 fromStored,
+                destroyAttachedActionAtTurnEnd: specificExtraActionPlay?.entry.destroyAttachedActionAtTurnEnd === true,
                 now,
             });
             const counterWindowState = maybeQueueActionCounterWindow(workingState, pendingResolution, now);
@@ -728,27 +742,30 @@ function executeCommand(
 
             const events: SmashUpEvent[] = [];
 
-            // 记录“本回合已使用”，用于 oncePerTurn 门禁（与 USE_TALENT 的语义对齐：一旦发动即消耗次数）
-            const usedEvt: BaseAbilityUsedEvent = {
-                type: SU_EVENTS.BASE_ABILITY_USED,
-                payload: {
-                    playerId: command.playerId,
-                    baseIndex,
-                    baseDefId: base.defId,
-                },
-                sourceCommandType: command.type,
-                timestamp: now,
-            };
-            events.push(usedEvt);
+            const activeSources = getActiveBaseAbilitySources(core, baseIndex);
+            for (const sourceDefId of activeSources) {
+                const usedEvt: BaseAbilityUsedEvent = {
+                    type: SU_EVENTS.BASE_ABILITY_USED,
+                    payload: {
+                        playerId: command.playerId,
+                        baseIndex,
+                        baseDefId: sourceDefId,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: now,
+                };
+                events.push(usedEvt);
+            }
 
-            const result = triggerActiveBaseAbility(base.defId, {
+            const result = triggerActiveBaseAbilities({
                 state: core,
                 matchState: state,
                 baseIndex,
-                baseDefId: base.defId,
+                baseDefId: activeSources[0] ?? base.defId,
                 playerId: command.playerId,
                 targetBaseIndex,
                 targetMinionUid,
+                random,
                 now,
             });
             events.push(...result.events);
@@ -1039,7 +1056,7 @@ function executeCommand(
                 state: core,
                 matchState: state,
                 playerId: command.playerId,
-                cardUid: spUid,
+                cardUid: spMinion.uid,
                 defId: spMinion.defId,
                 baseIndex: spIdx,
                 targetBaseIndex: spTargetBaseIndex,
@@ -1107,7 +1124,7 @@ function executeCommand(
 function filterProtectedMinionEvents(
     events: SmashUpEvent[],
     core: SmashUpCore,
-    sourcePlayerId: PlayerId,
+    sourcePlayerId: PlayerId | undefined,
     protectedEventType: typeof SU_EVENTS.MINION_DESTROYED | typeof SU_EVENTS.MINION_MOVED,
 ): SmashUpEvent[] {
     const result: SmashUpEvent[] = [];
@@ -1160,7 +1177,7 @@ function filterProtectedMinionEvents(
     return result;
 }
 
-function buildAffectEventSourceKey(event: SmashUpEvent, fallbackSourcePlayerId: PlayerId): string | undefined {
+function buildAffectEventSourceKey(event: SmashUpEvent, fallbackSourcePlayerId: PlayerId | undefined): string | undefined {
     const payload = (event as { payload?: Record<string, unknown> }).payload;
     if (!payload) return undefined;
     const sourceParts = [
@@ -1183,7 +1200,7 @@ function buildAffectEventSourceKey(event: SmashUpEvent, fallbackSourcePlayerId: 
 export function filterProtectedDestroyEvents(
     events: SmashUpEvent[],
     core: SmashUpCore,
-    sourcePlayerId: PlayerId,
+    sourcePlayerId: PlayerId | undefined,
 ): SmashUpEvent[] {
     return filterProtectedMinionEvents(events, core, sourcePlayerId, SU_EVENTS.MINION_DESTROYED);
 }
@@ -1415,6 +1432,7 @@ export function processDestroyTriggers(
             powerCounters: 0,
             powerModifier: 0,
             tempPowerModifier: 0,
+            talentUsed: false,
             attachedActions: [],
             metadata: undefined,
         };
@@ -2486,7 +2504,7 @@ export function processAffectTriggers(
     let ms: MatchState<SmashUpCore> | undefined;
 
     const skipEnsignRedirect = (event: SmashUpEvent): boolean => (
-        ((event as { payload?: { skipEnsignRedirect?: boolean } }).payload?.skipEnsignRedirect ?? false) === true
+        'skipEnsignRedirect' in event.payload && event.payload.skipEnsignRedirect === true
     );
 
     eventLoop:

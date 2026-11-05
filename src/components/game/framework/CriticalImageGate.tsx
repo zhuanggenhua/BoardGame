@@ -16,6 +16,7 @@ import { AudioManager } from '../../../lib/audio/AudioManager';
 import type { SoundKey } from '../../../lib/audio/types';
 import { COMMON_AUDIO_BASE_PATH, loadCommonAudioRegistry } from '../../../lib/audio/commonRegistry';
 import { criticalImageGateReadyRunKeys } from './CriticalImageGateCache';
+import { useGameMode } from '../../../contexts/GameModeContext';
 
 export interface CriticalImageGateProps {
     gameId?: string;
@@ -54,6 +55,7 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     onBlockingChange,
     children,
 }) => {
+    const gameMode = useGameMode();
     useEffect(() => {
         if (typeof document === 'undefined') return;
         const onVisibilityChange = () => {
@@ -72,7 +74,11 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
     // E2E 测试可通过 window.__E2E_SKIP_IMAGE_GATE__ 跳过图片预加载门禁
     const skipGate = typeof window !== 'undefined'
         && (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ === true;
-    const effectiveEnabled = enabled && !skipGate;
+    const tutorialState = (gameState as { sys?: { tutorial?: { active?: boolean } } } | null | undefined)
+        ?.sys?.tutorial;
+    const shouldDeferTutorialPreStartPreload = gameMode?.mode === 'tutorial'
+        && tutorialState?.active !== true;
+    const effectiveEnabled = enabled && !skipGate && !shouldDeferTutorialPreStartPreload;
 
     const { t } = useTranslation('lobby');
     const [ready, setReady] = useState(!effectiveEnabled);
@@ -97,11 +103,14 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
 
     const stateKey = gameState ? 'ready' : 'empty';
 
-    const phaseKey = useMemo(() => {
-        if (!effectiveEnabled || !gameId || !gameState) return '';
-        const resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
-        return resolved.phaseKey ?? '';
+    const resolvedPlan = useMemo(() => {
+        if (!effectiveEnabled || !gameId || !gameState) return undefined;
+        return resolveCriticalImages(gameId, gameState, locale, playerID);
     }, [effectiveEnabled, gameId, gameState, locale, playerID]);
+    const phaseKey = resolvedPlan?.phaseKey ?? '';
+    const preserveMountedScene = resolvedPlan?.preserveMountedScene === true;
+    const [shownSceneGameId, setShownSceneGameId] = useState<string | undefined>(undefined);
+    const hasShownScene = shownSceneGameId === gameId;
 
     const runKey = `${gameId ?? ''}:${locale ?? ''}:${phaseKey}:${stateKey}`;
     // eslint-disable-next-line react-hooks/refs
@@ -326,6 +335,9 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         onBlockingChangeRef.current?.(false);
     }, []);
 
+    useEffect(() => { if (preserveMountedScene && !shouldBlock) setShownSceneGameId(gameId); }, [preserveMountedScene, shouldBlock, gameId]);
+
+    let loadingScreen: React.ReactNode = null;
     if (shouldBlock) {
         const useViewportAnchor = typeof document !== 'undefined'
             && document.documentElement.getAttribute('data-mobile-layout-preset') === 'board-shell';
@@ -333,14 +345,22 @@ export const CriticalImageGate: React.FC<CriticalImageGateProps> = ({
         const progressText = loadingProgress
             ? t('matchRoom.loadingProgress.loadingAssets', { loaded: loadingProgress.loaded, total: loadingProgress.total })
             : undefined;
-        const loadingScreen = (
+        const screen = (
             <LoadingScreen anchor={loadingAnchor} description={loadingDescription} progressText={progressText} />
         );
-        if (loadingAnchor === 'viewport') {
-            return <HudPortal>{loadingScreen}</HudPortal>;
-        }
-        return loadingScreen;
+        loadingScreen = loadingAnchor === 'viewport' ? <HudPortal>{screen}</HudPortal> : screen;
     }
 
-    return <>{children}</>;
+    if (preserveMountedScene) {
+        // Stable parent position preserves component state. Consumers opting in must
+        // dismiss portaled transient controls when their actor/phase changes.
+        return <>
+            <div style={{display:'contents',visibility:shouldBlock?'hidden':undefined}}
+                aria-hidden={shouldBlock || undefined} inert={shouldBlock || undefined}>
+                {(!shouldBlock || hasShownScene) ? children : null}
+            </div>
+            {loadingScreen}
+        </>;
+    }
+    return shouldBlock ? loadingScreen : <>{children}</>;
 };

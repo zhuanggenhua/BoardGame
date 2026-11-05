@@ -6,6 +6,7 @@
 
 ## 留档规则
 
+- 用户当轮说出的明确要求，必须先写入用户故事，再继续设计或实现。没写进用户故事的明确要求，不能当成已经记住的口径。
 - 项目级通用需求放在 `project/`。
 - 游戏级需求统一放在对应游戏目录下的 `docs/games/<gameId>/user-stories/`。
 - 若用户故事要求偏离图片、规则书或既有实现，必须写清：
@@ -20,6 +21,8 @@
 - 项目级：`project/image-first-source-priority.md`
 - 项目级：`project/mobile-ota-mandatory-update-policy-2026-07-10.md`
 - 项目级：`project/seat-emote-recipient-first-acceptance.md`
+- 项目级：`project/upload-game-link-auto-check.md`
+- 项目级：`project/profile-activity-list-organization.md`
 
 游戏级用户故事不在本入口维护手写清单；用以下命令查当前真实文件：
 

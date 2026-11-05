@@ -1,0 +1,89 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-15T15:39:00.000Z",
+  "source": "node scripts/infra/run-e2e-single.mjs ci e2e/betrayal/betrayal-tutorial.e2e.ts \"主线教程会从基础回合自然推进到第一次英雄目标行动\" passed on 2026-09-15T15:36Z",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "pureref",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "探索教学只能高亮可探索的盖着房间，不能把已翻开的房间也当成探索目标。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 重新跑完整主线教程并通过。",
+        "截图 01：evidence/betrayal-tutorial/20-山屋惊魂-教程-探索目标房间.jpg 显示探索目标是盖着的房间，已翻开的门厅/大阶梯没有同类探索目标高亮。"
+      ]
+    },
+    {
+      "requirement": "兔脚选骰时可选区域必须清楚，候选和选中高亮不能遮挡骰面，也不能和骰子产生大间隙。",
+      "status": "PASS",
+      "evidence": [
+        "截图 02：evidence/betrayal-tutorial/27-山屋惊魂-教程-点击兔脚后选择骰子.jpg 显示候选区域贴近骰体且骰面可读。",
+        "截图 03：evidence/betrayal-tutorial/28-山屋惊魂-教程-兔脚选中改骰高亮.jpg 显示选中高亮围绕骰体且不压住骰面。",
+        "E2E 断言选骰热区绑定骰子本体，DOM 层没有候选底线或候选框残留。"
+      ]
+    },
+    {
+      "requirement": "兔脚重投必须有真实过程帧，并且重投结束后仍停在确认骰面，不能直接吞掉确认。",
+      "status": "PASS",
+      "evidence": [
+        "截图 04：evidence/betrayal-tutorial/29-山屋惊魂-教程-兔脚重投动画进行中.jpg 截到重投中间帧。",
+        "截图 05：evidence/betrayal-tutorial/30-山屋惊魂-教程-兔脚重投后确认新骰面.jpg 显示重投后仍为确认 0/1。",
+        "E2E 日志显示刷新前和刷新恢复后的兔脚结果都停在 rabbit-foot-result，按钮文字均为确认 0/1。"
+      ]
+    },
+    {
+      "requirement": "队友翻出狗或面具时，教程必须说明现实归属，当前玩家不能在无提示状态下卡住。",
+      "status": "PASS",
+      "evidence": [
+        "截图 06：evidence/betrayal-tutorial/main-flow-rebuilt/36-队友二翻出狗未触发.jpg 显示狗结果卡、骰子、等待确认和教程说明同屏可读。",
+        "截图 07：evidence/betrayal-tutorial/main-flow-rebuilt/42-队友一翻出面具并等待确认.jpg 显示面具结果卡、等待确认和教程说明同屏可读。"
+      ]
+    },
+    {
+      "requirement": "图书馆目标必须有前因，且可点击移动目标必须是已翻开的图书馆，不能表现成移动到 UPPER 盖牌。",
+      "status": "PASS",
+      "evidence": [
+        "截图 08：evidence/betrayal-tutorial/main-flow-rebuilt/45-英雄剧本书目标页说明图书馆原因.jpg 显示英雄剧本书先解释图书馆目标。",
+        "截图 09：evidence/betrayal-tutorial/main-flow-rebuilt/49-图书馆成为可点击移动目标.jpg 显示图书馆为正面已发现房间，移动高亮贴着图书馆本体，不是 UPPER 盖牌。"
+      ]
+    },
+    {
+      "requirement": "找到真名后必须回到正式牌桌并出现下一步可执行入口，不能继续卡在确认或无提示状态。",
+      "status": "PASS",
+      "evidence": [
+        "截图 10：evidence/betrayal-tutorial/main-flow-rebuilt/52-确认后回到牌桌可结束回合.jpg 显示确认后回到牌桌，结束回合入口可见。",
+        "Playwright 用例“主线教程会从基础回合自然推进到第一次英雄目标行动”重新通过，耗时 2.8m。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/20-山屋惊魂-教程-探索目标房间.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/27-山屋惊魂-教程-点击兔脚后选择骰子.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/28-山屋惊魂-教程-兔脚选中改骰高亮.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/29-山屋惊魂-教程-兔脚重投动画进行中.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/30-山屋惊魂-教程-兔脚重投后确认新骰面.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/main-flow-rebuilt/36-队友二翻出狗未触发.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/main-flow-rebuilt/42-队友一翻出面具并等待确认.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/main-flow-rebuilt/45-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/main-flow-rebuilt/49-图书馆成为可点击移动目标.jpg",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/main-flow-rebuilt/52-确认后回到牌桌可结束回合.jpg"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/01-labeled-20-山屋惊魂-教程-探索目标房间.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/02-labeled-27-山屋惊魂-教程-点击兔脚后选择骰子.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/03-labeled-28-山屋惊魂-教程-兔脚选中改骰高亮.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/04-labeled-29-山屋惊魂-教程-兔脚重投动画进行中.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/05-labeled-30-山屋惊魂-教程-兔脚重投后确认新骰面.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/06-labeled-36-队友二翻出狗未触发.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/07-labeled-42-队友一翻出面具并等待确认.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/08-labeled-45-英雄剧本书目标页说明图书馆原因.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/09-labeled-49-图书馆成为可点击移动目标.png",
+    "D:/gongzuo/webgame/BoardGame/evidence/betrayal-tutorial/_labeled-for-pureref/20260915-main-flow-rerun/10-labeled-52-确认后回到牌桌可结束回合.png"
+  ]
+}

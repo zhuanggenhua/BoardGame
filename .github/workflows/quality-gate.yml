@@ -30,3 +30,6 @@ jobs:
         env:
           QUALITY_GATE_BASE: origin/${{ github.base_ref }}
         run: npm run quality:changed -- ci
+
+      - name: Android archive backpressure regression
+        run: node --test scripts/mobile/android-package-archive.test.mjs

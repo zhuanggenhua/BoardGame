@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { PulseGlow } from '../common/animations/PulseGlow';
-import { UI_Z_INDEX } from '../../core';
+import { getHudPortalRoot, UI_Z_INDEX } from '../../core';
 import { OverlayLayerProvider } from '../common/overlays/OverlayLayerContext';
 import { MOBILE_MAX_VIEWPORT_WIDTH } from '../../shared/mobileSupport';
 import { useDocumentScrollLock } from '../../hooks/ui/useDocumentScrollLock';
@@ -14,6 +14,11 @@ import { readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } f
 import { shouldAllowFabDragFromTarget } from './fabDrag';
 import { resolveExpandedFabLayout } from './fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from './fabPosition';
+import {
+    readBoardShellCanvasSizeValue,
+    readBoardShellOffsetPixelValue,
+    readBoardShellScaleValue,
+} from '../../shared/runtimeLayoutUnits';
 
 export interface FabAction {
     id: string;
@@ -25,7 +30,7 @@ export interface FabAction {
     active?: boolean;    // 通知提示
     onActivate?: (isActive: boolean) => void;
     preview?: ReactNode; // 通知简略信息
-    mobilePopoverVerticalAnchor?: 'button' | 'column';
+    mobilePopoverVerticalAnchor?: 'button' | 'column' | 'viewport';
 }
 
 export type FabPanelRenderContext = {
@@ -35,14 +40,17 @@ export type FabPanelRenderContext = {
 export type FabMenuPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 interface FabMenuProps {
+    className?: string;
     items: FabAction[];
     position?: FabMenuPosition;
+    initialOffset?: { left?: number; top?: number };
     isDark?: boolean;
     /** 覆盖悬浮球整体层级（默认 UI_Z_INDEX.hud） */
     zIndex?: number;
     /** 可选的位置存储键；游戏内特殊布局可用独立键，避免共享位置挡住主操作区。 */
     storageKey?: string;
     legacyOffsetStorageKey?: string;
+    hudPlacement?: 'in-shell' | 'portal';
 }
 
 type FabAlignment = { v: 'top' | 'bottom'; h: 'left' | 'right' };
@@ -69,9 +77,9 @@ export type FabLayerZIndex = {
 export const resolveFabLayerZIndex = (baseZIndex: number = UI_Z_INDEX.hud): FabLayerZIndex => ({
     panel: baseZIndex + 1,
     root: baseZIndex + 2,
-    sheetBackdrop: baseZIndex + 1,
-    sheet: baseZIndex + 2,
-    floatingText: baseZIndex + 3,
+    sheetBackdrop: baseZIndex + 3,
+    sheet: baseZIndex + 4,
+    floatingText: baseZIndex + 5,
 });
 
 export interface FabAction {
@@ -79,6 +87,13 @@ export interface FabAction {
 }
 
 export const resolveFabSatellitesToRender = <T,>(items: T[]) => [...items].reverse();
+
+/** board-shell 缩放时，固定尺寸 SVG 也需要按 inverse scale 补偿。 */
+export const resolveFabIconScale = (isMobileViewport: boolean, layoutScale: number) => {
+    if (!isMobileViewport) return 1;
+    const resolvedLayoutScale = Number.isFinite(layoutScale) && layoutScale > 0 ? layoutScale : 1;
+    return 0.92 / resolvedLayoutScale;
+};
 
 export const resolveMobileFabOverflowWarning = (
     items: Array<Pick<FabAction, 'id' | 'label'>>,
@@ -120,12 +135,15 @@ export const areFabAnchorRectsEqual = (left: FabAnchorRect | null, right: FabAnc
 };
 
 export const FabMenu = ({
+    className = '',
     items,
     position: initialPosition = 'bottom-right',
+    initialOffset,
     isDark = true,
     zIndex = UI_Z_INDEX.hud,
     storageKey = HUD_FAB_POSITION_KEY,
     legacyOffsetStorageKey = HUD_FAB_LEGACY_OFFSET_KEY,
+    hudPlacement,
 }: FabMenuProps) => {
     // 响应式尺寸
     const viewport = useRuntimeViewport();
@@ -133,12 +151,44 @@ export const FabMenu = ({
     const viewportHeight = viewport.height;
     const safeAreaInsets: SafeAreaInsets = viewport.safeArea;
     const isMobileViewport = viewportWidth > 0 && viewportWidth <= MOBILE_MAX_VIEWPORT_WIDTH;
-    const dockedButtonSize = isMobileViewport ? 44 : 48;
-    const dockedButtonGap = isMobileViewport ? 8 : 12;
+    const layoutScale = hudPlacement === 'in-shell' ? readBoardShellScaleValue() : 1;
+    const layoutOrigin = hudPlacement === 'in-shell' ? readBoardShellOffsetPixelValue() : { x: 0, y: 0 };
+    const boardShellCanvasSize = hudPlacement === 'in-shell' ? readBoardShellCanvasSizeValue() : { width: undefined, height: undefined };
+    const iconScale = resolveFabIconScale(isMobileViewport, layoutScale);
+    const layoutViewportWidth = viewportWidth / layoutScale;
+    const layoutViewportHeight = viewportHeight / layoutScale;
+    const layoutSafeAreaInsets: SafeAreaInsets = {
+        top: safeAreaInsets.top / layoutScale,
+        right: safeAreaInsets.right / layoutScale,
+        bottom: safeAreaInsets.bottom / layoutScale,
+        left: safeAreaInsets.left / layoutScale,
+    };
+    const shellBounds = useMemo(() => (
+        isMobileViewport && boardShellCanvasSize.width && boardShellCanvasSize.height
+            ? {
+                left: layoutOrigin.x / layoutScale,
+                top: layoutOrigin.y / layoutScale,
+                right: layoutOrigin.x / layoutScale + boardShellCanvasSize.width,
+                bottom: layoutOrigin.y / layoutScale + boardShellCanvasSize.height,
+            }
+            : null
+    ), [boardShellCanvasSize.height, boardShellCanvasSize.width, isMobileViewport, layoutOrigin.x, layoutOrigin.y, layoutScale]);
+    const layoutBounds = useMemo(() => shellBounds ?? ({
+        left: 0,
+        top: 0,
+        right: layoutViewportWidth,
+        bottom: layoutViewportHeight,
+    }), [layoutViewportHeight, layoutViewportWidth, shellBounds]);
+    const layoutInsets = useMemo(() => shellBounds
+        ? { top: 0, right: 0, bottom: 0, left: 0 }
+        : layoutSafeAreaInsets, [layoutSafeAreaInsets.bottom, layoutSafeAreaInsets.left, layoutSafeAreaInsets.right, layoutSafeAreaInsets.top, shellBounds]);
+    const dockedButtonSize = (isMobileViewport ? 44 : 48) / layoutScale;
+    const dockedButtonGap = (isMobileViewport ? 8 : 12) / layoutScale;
     const expandedButtonSize = dockedButtonSize;
     const expandedButtonGap = dockedButtonGap;
-    const edgePadding = isMobileViewport ? 12 : 32;
-    const edgePeekSize = isMobileViewport ? FAB_EDGE_PEEK_SIZE_MOBILE : FAB_EDGE_PEEK_SIZE_DESKTOP;
+    const edgePadding = (isMobileViewport ? 12 : 32) / layoutScale;
+    const screenEdgePadding = isMobileViewport ? 12 : 32;
+    const edgePeekSize = (isMobileViewport ? FAB_EDGE_PEEK_SIZE_MOBILE : FAB_EDGE_PEEK_SIZE_DESKTOP) / layoutScale;
     
     const [isOpen, setIsOpen] = useState(false);
     const [activeItemId, setActiveItemId] = useState<string | null>(null);
@@ -179,58 +229,63 @@ export const FabMenu = ({
         target: FabPosition,
         options?: { allowOverflow?: boolean; resolvedButtonSize?: number },
     ) => {
-        if (viewportWidth <= 0 || viewportHeight <= 0) {
+        if (layoutViewportWidth <= 0 || layoutViewportHeight <= 0) {
             return target;
         }
         const allowOverflow = options?.allowOverflow ?? true;
         const resolvedButtonSize = options?.resolvedButtonSize ?? dockedButtonSize;
         const minLeft = allowOverflow
-            ? edgePeekSize - resolvedButtonSize
-            : edgePadding + safeAreaInsets.left;
+            ? layoutBounds.left + edgePeekSize - resolvedButtonSize
+            : layoutBounds.left + edgePadding + layoutInsets.left;
         const minTop = allowOverflow
-            ? edgePeekSize - resolvedButtonSize
-            : edgePadding + safeAreaInsets.top;
+            ? layoutBounds.top + edgePeekSize - resolvedButtonSize
+            : layoutBounds.top + edgePadding + layoutInsets.top;
         const maxLeft = allowOverflow
-            ? Math.max(minLeft, viewportWidth - edgePeekSize)
-            : Math.max(minLeft, viewportWidth - resolvedButtonSize - edgePadding - safeAreaInsets.right);
+            ? Math.max(minLeft, layoutBounds.right - edgePeekSize)
+            : Math.max(minLeft, layoutBounds.right - resolvedButtonSize - edgePadding - layoutInsets.right);
         const maxTop = allowOverflow
-            ? Math.max(minTop, viewportHeight - edgePeekSize)
-            : Math.max(minTop, viewportHeight - resolvedButtonSize - edgePadding - safeAreaInsets.bottom);
-        return {
+            ? Math.max(minTop, layoutBounds.bottom - edgePeekSize)
+            : Math.max(minTop, layoutBounds.bottom - resolvedButtonSize - edgePadding - layoutInsets.bottom);        return {
             left: Math.min(Math.max(target.left, minLeft), maxLeft),
             top: Math.min(Math.max(target.top, minTop), maxTop),
         };
-    }, [dockedButtonSize, edgePadding, edgePeekSize, safeAreaInsets.bottom, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top, viewportHeight, viewportWidth]);
-
+    }, [dockedButtonSize, edgePadding, edgePeekSize, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top, layoutInsets.bottom, layoutInsets.left, layoutInsets.right, layoutInsets.top, layoutViewportHeight, layoutViewportWidth]);
     const getAlignmentForPosition = useCallback((target: FabPosition, resolvedButtonSize = dockedButtonSize): FabAlignment => {
-        const centerY = viewportHeight / 2;
-        const centerX = viewportWidth / 2;
+        const centerY = (layoutBounds.top + layoutBounds.bottom) / 2;
+        const centerX = (layoutBounds.left + layoutBounds.right) / 2;
         const anchorX = target.left + resolvedButtonSize / 2;
         const anchorY = target.top + resolvedButtonSize / 2;
         const v: FabAlignment['v'] = anchorY < centerY ? 'top' : 'bottom';
         const h: FabAlignment['h'] = anchorX < centerX ? 'right' : 'left';
         return { v, h };
-    }, [dockedButtonSize, viewportHeight, viewportWidth]);
+    }, [dockedButtonSize, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top]);
 
     const getInitialPosition = useCallback(() => {
-        if (viewportWidth <= 0 || viewportHeight <= 0) {
+        if (layoutViewportWidth <= 0 || layoutViewportHeight <= 0) {
             return { left: 0, top: 0 };
         }
-        const minLeft = edgePadding + safeAreaInsets.left;
-        const minTop = edgePadding + safeAreaInsets.top;
-        const maxLeft = Math.max(minLeft, viewportWidth - dockedButtonSize - edgePadding - safeAreaInsets.right);
-        const maxTop = Math.max(minTop, viewportHeight - dockedButtonSize - edgePadding - safeAreaInsets.bottom);
+        const minLeft = layoutBounds.left + edgePadding + layoutInsets.left;
+        const minTop = layoutBounds.top + edgePadding + layoutInsets.top;
+        const maxLeft = Math.max(minLeft, layoutBounds.right - dockedButtonSize - edgePadding - layoutInsets.right);
+        const maxTop = Math.max(minTop, layoutBounds.bottom - dockedButtonSize - edgePadding - layoutInsets.bottom);
         // 默认位置往内偏移，不贴边
         const DEFAULT_INSET = Math.max(dockedButtonSize, 48);
-        if (initialPosition === 'bottom-right') return { left: maxLeft - DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
-        if (initialPosition === 'bottom-left') return { left: minLeft + DEFAULT_INSET, top: maxTop - DEFAULT_INSET };
-        if (initialPosition === 'top-right') return { left: maxLeft - DEFAULT_INSET, top: minTop + DEFAULT_INSET };
-        return { left: minLeft + DEFAULT_INSET, top: minTop + DEFAULT_INSET };
-    }, [dockedButtonSize, edgePadding, initialPosition, safeAreaInsets.bottom, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top, viewportHeight, viewportWidth]);
+        const basePosition = initialPosition === 'bottom-right'
+            ? { left: maxLeft - DEFAULT_INSET, top: maxTop - DEFAULT_INSET }
+            : initialPosition === 'bottom-left'
+                ? { left: minLeft + DEFAULT_INSET, top: maxTop - DEFAULT_INSET }
+                : initialPosition === 'top-right'
+                    ? { left: maxLeft - DEFAULT_INSET, top: minTop + DEFAULT_INSET }
+                    : { left: minLeft + DEFAULT_INSET, top: minTop + DEFAULT_INSET };
+        return clampPosition({
+            left: basePosition.left + (initialOffset?.left ?? 0),
+            top: basePosition.top + (initialOffset?.top ?? 0),
+        }, { allowOverflow: false });
+    }, [clampPosition, dockedButtonSize, edgePadding, initialOffset?.left, initialOffset?.top, initialPosition, layoutBounds.bottom, layoutBounds.left, layoutBounds.right, layoutBounds.top, layoutInsets.bottom, layoutInsets.left, layoutInsets.right, layoutInsets.top, layoutViewportHeight, layoutViewportWidth]);
 
     // 加载保存的位置（支持百分比格式，兼容旧绝对坐标）
     useEffect(() => {
-        if (viewportWidth <= 0 || viewportHeight <= 0) {
+        if (layoutViewportWidth <= 0 || layoutViewportHeight <= 0) {
             return undefined;
         }
         const frameId = window.requestAnimationFrame(() => {
@@ -238,8 +293,8 @@ export const FabMenu = ({
                 const resolved = resolveFabStoredPosition({
                     savedPosition: readLocalStorageItem(storageKey),
                     legacyOffset: readLocalStorageItem(legacyOffsetStorageKey),
-                    viewportWidth,
-                    viewportHeight,
+                    viewportWidth: layoutViewportWidth,
+                    viewportHeight: layoutViewportHeight,
                     basePosition: getInitialPosition(),
                     normalizePosition,
                     clampPosition,
@@ -259,14 +314,14 @@ export const FabMenu = ({
         });
 
         return () => window.cancelAnimationFrame(frameId);
-    }, [clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, legacyOffsetStorageKey, normalizePosition, storageKey, viewportHeight, viewportWidth]);
+    }, [clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, layoutViewportHeight, layoutViewportWidth, legacyOffsetStorageKey, normalizePosition, storageKey]);
 
     const handleDragEnd = (_: any, info: any) => {
-        if (!fabPosition || viewportWidth <= 0 || viewportHeight <= 0) return;
+        if (!fabPosition || layoutViewportWidth <= 0 || layoutViewportHeight <= 0) return;
         setIsDragging(false);
         const next = normalizePosition({
-            left: fabPosition.left + info.offset.x,
-            top: fabPosition.top + info.offset.y,
+            left: fabPosition.left + (info.offset.x / layoutScale),
+            top: fabPosition.top + (info.offset.y / layoutScale),
         });
         flushSync(() => {
             setFabPosition(next);
@@ -278,7 +333,7 @@ export const FabMenu = ({
         // 保存为百分比格式
         writeLocalStorageItem(
             storageKey,
-            JSON.stringify(serializeFabPositionPercent(next, viewportWidth, viewportHeight)),
+            JSON.stringify(serializeFabPositionPercent(next, layoutViewportWidth, layoutViewportHeight)),
         );
     };
 
@@ -290,8 +345,8 @@ export const FabMenu = ({
 
     const handleDrag = (_: any, info: any) => {
         setLiveDragOffset({
-            x: info.offset.x,
-            y: info.offset.y,
+            x: info.offset.x / layoutScale,
+            y: info.offset.y / layoutScale,
         });
     };
 
@@ -341,7 +396,11 @@ export const FabMenu = ({
                 setActiveItemId(item.id);
             }
         } else {
-            if (item.onClick) item.onClick();
+            if (item.onClick) {
+                setIsOpen(false);
+                setActiveItemId(null);
+                item.onClick();
+            }
         }
     };
 
@@ -363,15 +422,15 @@ export const FabMenu = ({
     }, [activeItemId, isOpen]);
 
     useEffect(() => {
-        if (!fabPosition || viewportWidth <= 0 || viewportHeight <= 0) return;
+        if (!fabPosition || layoutViewportWidth <= 0 || layoutViewportHeight <= 0) return;
         const handleResize = () => {
             // 从 localStorage 读取百分比，按新尺寸重新计算
             try {
                 const resolved = resolveFabStoredPosition({
                     savedPosition: readLocalStorageItem(storageKey),
                     legacyOffset: null,
-                    viewportWidth,
-                    viewportHeight,
+                    viewportWidth: layoutViewportWidth,
+                    viewportHeight: layoutViewportHeight,
                     basePosition: fabPosition,
                     normalizePosition,
                     clampPosition,
@@ -393,7 +452,7 @@ export const FabMenu = ({
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [clampPosition, dockedButtonSize, fabPosition, getAlignmentForPosition, normalizePosition, storageKey, viewportHeight, viewportWidth]);
+    }, [clampPosition, dockedButtonSize, fabPosition, getAlignmentForPosition, layoutViewportHeight, layoutViewportWidth, normalizePosition, storageKey]);
 
     useEffect(() => {
         if (prevActiveItemIdRef.current === activeItemId) return;
@@ -438,9 +497,11 @@ export const FabMenu = ({
             satelliteCount: Math.max(items.length - 1, 0),
             buttonSize: expandedButtonSize,
             buttonGap: expandedButtonGap,
-            viewportHeight,
-            safeAreaTop: safeAreaInsets.top,
-            safeAreaBottom: safeAreaInsets.bottom,
+            viewportHeight: shellBounds ? layoutBounds.bottom : layoutViewportHeight,
+            safeAreaTop: shellBounds ? layoutBounds.top : layoutSafeAreaInsets.top,
+            safeAreaBottom: shellBounds
+                ? Math.max(0, layoutViewportHeight - layoutBounds.bottom)
+                : layoutSafeAreaInsets.bottom,
             getHorizontalAlignment: (resolvedPosition, resolvedButtonSize) => (
                 getAlignmentForPosition(resolvedPosition, resolvedButtonSize).h
             ),
@@ -452,9 +513,12 @@ export const FabMenu = ({
         expandedButtonSize,
         getAlignmentForPosition,
         normalizePosition,
-        safeAreaInsets.bottom,
-        safeAreaInsets.top,
-        viewportHeight,
+        layoutSafeAreaInsets.bottom,
+        layoutSafeAreaInsets.top,
+        layoutBounds.bottom,
+        layoutBounds.top,
+        layoutViewportHeight,
+        shellBounds,
     ]);
 
     const renderLayout = useMemo(() => {
@@ -482,6 +546,18 @@ export const FabMenu = ({
         top: renderPosition.top + liveDragOffset.y,
     };
     const renderAlignment = renderLayout.alignment;
+    // 主球和所有卫星共用屏幕坐标包围盒，portal面板从整列外侧展开。
+    const columnSpan = (renderLayout.columnCount - 1) * renderLayout.columnGap;
+    const menuLeft = liveRenderPosition.left - (renderAlignment.h === 'left' ? columnSpan : 0);
+    const menuRight = liveRenderPosition.left + renderButtonSize + (renderAlignment.h === 'right' ? columnSpan : 0);
+    const menuRowsHeight = isOpen ? Math.min(items.length - 1, renderLayout.itemsPerColumn) * (renderButtonSize + renderButtonGap) : 0;
+    const menuTop = liveRenderPosition.top - (renderAlignment.v === 'bottom' ? menuRowsHeight : 0);
+    const menuBottom = liveRenderPosition.top + renderButtonSize + (renderAlignment.v === 'top' ? menuRowsHeight : 0);
+    const panelReferenceRect = {
+        left: menuLeft * layoutScale, right: menuRight * layoutScale,
+        top: menuTop * layoutScale, bottom: menuBottom * layoutScale,
+        width: (menuRight - menuLeft) * layoutScale, height: (menuBottom - menuTop) * layoutScale,
+    };
     const satellitesToRender = resolveFabSatellitesToRender(items.slice(1));
     const layerZIndex = resolveFabLayerZIndex(zIndex);
 
@@ -489,10 +565,10 @@ export const FabMenu = ({
     // 波纹/辉光颜色跟随"选中态"同色系，避免不明显
     const glowColor = isDark ? 'rgba(0, 243, 255, 0.55)' : 'rgba(140, 123, 100, 0.85)';
 
-    return (
+    const fabMenu = (
         <motion.div
             ref={containerRef}
-            className="fixed font-sans"
+            className={`fixed font-sans ${className}`}
             initial={false}
             drag
             dragMomentum={false}
@@ -501,16 +577,19 @@ export const FabMenu = ({
             onDragEnd={handleDragEnd}
             onPointerDownCapture={handlePointerDownCapture}
             style={{
-                left: renderPosition.left,
-                top: renderPosition.top,
+                left: renderPosition.left - layoutOrigin.x / layoutScale,
+                top: renderPosition.top - layoutOrigin.y / layoutScale,
                 x: dragX,
                 y: dragY,
                 zIndex: layerZIndex.root,
                 touchAction: 'none',
+                pointerEvents: 'auto',
             }}
             data-testid="fab-menu"
+            data-feedback-exclude="true"
             data-fab-position={initialPosition}
             data-fab-storage-key={storageKey}
+            data-hud-placement={hudPlacement}
         >
             {/* 主球：锚点，位置固定 */}
             <FabButtonSlot
@@ -526,12 +605,14 @@ export const FabMenu = ({
                 isDragging={isDragging}
                 buttonSize={renderButtonSize}
                 buttonGap={renderButtonGap}
-                edgePadding={edgePadding}
+                edgePadding={screenEdgePadding}
                 safeAreaInsets={safeAreaInsets}
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 viewportHeight={viewportHeight}
+                iconScale={iconScale}
                 panelAnchorPosition={liveRenderPosition}
+                panelReferenceRect={panelReferenceRect}
                 layerZIndex={layerZIndex}
                 onRequestClose={() => {
                     setIsOpen(false);
@@ -551,21 +632,52 @@ export const FabMenu = ({
                 glowColor={glowColor}
                 isDragging={isDragging}
                 fabPosition={liveRenderPosition}
+                panelReferenceRect={panelReferenceRect}
                 listOffset={renderLayout.listOffset}
                 columnCount={renderLayout.columnCount}
                 itemsPerColumn={renderLayout.itemsPerColumn}
                 columnGap={renderLayout.columnGap}
                 buttonSize={renderButtonSize}
                 buttonGap={renderButtonGap}
-                edgePadding={edgePadding}
+                edgePadding={screenEdgePadding}
                 safeAreaInsets={safeAreaInsets}
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 viewportHeight={viewportHeight}
+                iconScale={iconScale}
                 layerZIndex={layerZIndex}
             />
         </motion.div>
     );
+
+    if (hudPlacement === 'in-shell') {
+        const portalRoot = getHudPortalRoot();
+        if (portalRoot) {
+            return createPortal(
+                <div
+                    className="fixed"
+                    data-feedback-exclude="true"
+                    data-testid="fab-menu-shell-portal"
+                    style={{
+                        left: layoutOrigin.x,
+                        top: layoutOrigin.y,
+                        width: boardShellCanvasSize.width ?? layoutViewportWidth,
+                        height: boardShellCanvasSize.height ?? layoutViewportHeight,
+                        transform: `scale(${layoutScale})`,
+                        transformOrigin: 'top left',
+                        // Above the game/endgame overlays, but below regular dialogs.
+                        zIndex: UI_Z_INDEX.globalHudFab,
+                        pointerEvents: 'none',
+                    }}
+                >
+                    {fabMenu}
+                </div>,
+                portalRoot,
+            );
+        }
+    }
+
+    return fabMenu;
 };
 
 const SatelliteList = ({
@@ -590,7 +702,9 @@ const SatelliteList = ({
     isMobileViewport,
     viewportWidth,
     viewportHeight,
+    iconScale,
     layerZIndex,
+    panelReferenceRect,
 }: any) => {
     const isButtonBottom = alignment.v === 'bottom';
     const isRightOpening = alignment.h === 'right';
@@ -600,33 +714,18 @@ const SatelliteList = ({
     const itemGroups = Array.from({ length: columnCount }, (_, columnIndex) => (
         items.slice(columnIndex * itemsPerColumn, (columnIndex + 1) * itemsPerColumn)
     )).filter((group) => group.length > 0);
-    const effectiveColumnCount = Math.max(1, itemGroups.length);
     const flexDirection = isButtonBottom ? 'flex-col-reverse' : 'flex-col';
     const rowDirection = isRightOpening ? 'row' : 'row-reverse';
     const alignItems = alignment.h === 'right' ? 'items-start' : 'items-end';
     const offset = buttonSize + buttonGap;
-    const columnHeights = itemGroups.map((group) => group.length * (buttonSize + buttonGap));
-    const visibleColumnTop = isButtonBottom
-        ? fabPosition.top + (listOffset?.y ?? 0) - Math.max(...columnHeights, buttonSize)
-        : fabPosition.top + (listOffset?.y ?? 0) + offset;
-    const visibleColumnBottom = isButtonBottom
-        ? fabPosition.top + (listOffset?.y ?? 0) - offset + buttonSize
-        : fabPosition.top + (listOffset?.y ?? 0) + Math.max(...columnHeights, buttonSize) + offset;
-    const panelReferenceRect = {
-        left: fabPosition.left + (listOffset?.x ?? 0),
-        right: fabPosition.left + (listOffset?.x ?? 0) + buttonSize + ((effectiveColumnCount - 1) * columnGap),
-        top: visibleColumnTop,
-        bottom: visibleColumnBottom,
-        width: buttonSize + ((effectiveColumnCount - 1) * columnGap),
-        height: Math.max(visibleColumnBottom - visibleColumnTop, buttonSize),
-    };
 
     return (
         <AnimatePresence>
             {isOpen && (
                 <motion.div
-                    className={`absolute left-0 flex ${alignItems}`}
+                    className={`absolute flex ${isButtonBottom ? 'items-end' : 'items-start'}`}
                     style={{
+                        [isRightOpening ? 'left' : 'right']: 0,
                         [isButtonBottom ? 'bottom' : 'top']: offset,
                         flexDirection: rowDirection,
                         columnGap: itemGroups.length > 1 ? columnGap - buttonSize : 0,
@@ -678,6 +777,7 @@ const SatelliteList = ({
                                         isMobileViewport={isMobileViewport}
                                         viewportWidth={viewportWidth}
                                         viewportHeight={viewportHeight}
+                                        iconScale={iconScale}
                                         panelAnchorPosition={anchorPosition}
                                         panelReferenceRect={panelReferenceRect}
                                         layerZIndex={layerZIndex}
@@ -711,6 +811,7 @@ const FabButtonSlot = ({
     isMobileViewport,
     viewportWidth,
     viewportHeight,
+    iconScale,
     panelAnchorPosition,
     panelReferenceRect,
     layerZIndex,
@@ -755,6 +856,7 @@ const FabButtonSlot = ({
                 isMobileViewport={isMobileViewport}
                 viewportWidth={viewportWidth}
                 anchorPosition={panelAnchorPosition}
+                iconScale={iconScale}
                 onRectChange={setAnchorRect}
             />
         </div>
@@ -790,18 +892,20 @@ const Panel = ({
     };
     const resolvedAnchor = anchorRect ?? logicalAnchor;
     const resolvedReference = referenceRect ?? resolvedAnchor;
+    const resolvedHorizontalAnchor = resolvedReference;
     const verticalAnchorMode = item.mobilePopoverVerticalAnchor === 'column' ? 'column' : 'button';
     const resolvedVerticalAnchor = verticalAnchorMode === 'column' ? resolvedReference : resolvedAnchor;
-    const panelAnchorOffset = resolvedAnchor.width + panelGap;
+    const useViewportHeight = item.mobilePopoverVerticalAnchor === 'viewport' && viewportHeight < 480;
+    const panelAnchorOffset = resolvedHorizontalAnchor.width + panelGap;
     const isMobileSheetPanel = isMobileViewport && item.mobilePanelVariant === 'sheet';
     const panelWidth = isMobileViewport ? 260 : 300;
     const spaceRight = Math.max(
         0,
-        Math.floor(viewportWidth - resolvedAnchor.right - panelGap - safeAreaInsets.right - edgePadding),
+        Math.floor(viewportWidth - resolvedHorizontalAnchor.right - panelGap - safeAreaInsets.right - edgePadding),
     );
     const spaceLeft = Math.max(
         0,
-        Math.floor(resolvedAnchor.left - panelGap - safeAreaInsets.left - edgePadding),
+        Math.floor(resolvedHorizontalAnchor.left - panelGap - safeAreaInsets.left - edgePadding),
     );
     const anchorSpaceBelow = Math.max(
         0,
@@ -815,17 +919,19 @@ const Panel = ({
     const horizontalPlacement: FabAlignment['h'] = referenceRect
         ? (spaceRight === spaceLeft ? alignment.h : (spaceRight >= spaceLeft ? 'right' : 'left'))
         : alignment.h;
-    const verticalPlacement: FabAlignment['v'] = anchorSpaceBelow === anchorSpaceAbove
+    const verticalPlacement: FabAlignment['v'] = useViewportHeight ? 'top' : anchorSpaceBelow === anchorSpaceAbove
         ? alignment.v
         : (anchorSpaceBelow >= anchorSpaceAbove ? 'top' : 'bottom');
     const safeAvailableWidth = horizontalPlacement === 'right' ? spaceRight : spaceLeft;
-    const safeAvailableHeight = verticalPlacement === 'top' ? anchorSpaceBelow : anchorSpaceAbove;
+    const safeAvailableHeight = useViewportHeight
+        ? Math.max(0, viewportHeight - safeAreaInsets.top - safeAreaInsets.bottom - edgePadding * 2)
+        : verticalPlacement === 'top' ? anchorSpaceBelow : anchorSpaceAbove;
     const panelContainerTopMin = safeAreaInsets.top;
     const panelContainerTopMax = Math.max(
         panelContainerTopMin,
         viewportHeight - safeAreaInsets.bottom - resolvedVerticalAnchor.height,
     );
-    const panelContainerTop = Math.min(
+    const panelContainerTop = useViewportHeight ? safeAreaInsets.top + edgePadding : Math.min(
         Math.max(resolvedVerticalAnchor.top, panelContainerTopMin),
         panelContainerTopMax,
     );
@@ -833,7 +939,7 @@ const Panel = ({
     const panelMaxWidth = safeAvailableWidth > 0 ? `${safeAvailableWidth}px` : undefined;
     const panelMaxHeight = safeAvailableHeight > 0 ? `${safeAvailableHeight}px` : undefined;
     const panelHeading = (
-        <div className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
+        <div data-fab-panel-heading className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
             {item.label}
         </div>
     );
@@ -908,7 +1014,7 @@ const Panel = ({
                         data-testid={`fab-panel-${item.id}`}
                     >
                         <div className="px-4 pt-4">
-                            <div className="truncate border-b border-white/10 pb-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-70">
+                            <div data-fab-panel-heading className="truncate border-b border-white/10 pb-2 text-[11px] font-bold uppercase tracking-[0.22em] opacity-70">
                                 {item.label}
                             </div>
                         </div>
@@ -931,9 +1037,9 @@ const Panel = ({
             <div
                 style={{
                     position: 'fixed',
-                    left: resolvedAnchor.left,
+                    left: resolvedHorizontalAnchor.left,
                     top: panelContainerTop,
-                    width: resolvedAnchor.width,
+                    width: resolvedHorizontalAnchor.width,
                     height: resolvedVerticalAnchor.height,
                     zIndex: layerZIndex.panel,
                     pointerEvents: 'none',
@@ -953,6 +1059,8 @@ const Panel = ({
                         width: resolvedPanelWidth,
                         maxWidth: panelMaxWidth,
                         maxHeight: panelMaxHeight,
+                        // 供内部滚动面板使用同一份可用高度，避免外层裁切输入区。
+                        ...({ '--fab-panel-content-height': `${Math.max(0, safeAvailableHeight - 76)}px` } as CSSProperties),
                         minWidth: 0,
                         pointerEvents: 'auto',
                         [horizontalPlacement === 'right' ? 'left' : 'right']: panelAnchorOffset,
@@ -988,6 +1096,7 @@ const MenuButton = ({
     isMobileViewport,
     viewportWidth,
     anchorPosition,
+    iconScale,
     onRectChange,
 }: any) => {
     const [isHovered, setIsHovered] = useState(false);
@@ -1182,7 +1291,9 @@ const MenuButton = ({
                 >
                     <div
                         className="flex h-full w-full items-center justify-center"
-                        style={{ transform: isMobileViewport ? 'scale(0.92)' : undefined }}
+                        style={{
+                            transform: iconScale === 1 ? undefined : `scale(${iconScale})`,
+                        }}
                     >
                         {item.icon}
                     </div>

@@ -8,6 +8,9 @@
 import type { Socket } from 'socket.io-client';
 import { createScopedLogger } from '../lib/logger';
 import { lobbySocket } from './lobbySocket';
+import { MATCH_CHAT_EVENTS, type MatchChatIdentity, type MatchChatChannel, type MatchChatMessage, type MatchChatResult } from '../shared/chat';
+export { MATCH_CHAT_EVENTS } from '../shared/chat';
+export type { MatchChatMessage } from '../shared/chat';
 
 const log = createScopedLogger('MatchSocket');
 
@@ -20,13 +23,6 @@ export const REMATCH_EVENTS = {
     DEBUG_NEW_ROOM: 'debug:newRoom',
 } as const;
 
-export const MATCH_CHAT_EVENTS = {
-    JOIN: 'matchChat:join',
-    LEAVE: 'matchChat:leave',
-    SEND: 'matchChat:send',
-    MESSAGE: 'matchChat:message',
-    HISTORY: 'matchChat:history',
-} as const;
 
 export const MATCH_EMOTE_EVENTS = {
     JOIN: 'matchEmote:join',
@@ -42,14 +38,6 @@ export interface RematchVoteState {
     revision: number;
 }
 
-export interface MatchChatMessage {
-    id: string;
-    matchId: string;
-    senderId?: string;
-    senderName: string;
-    text: string;
-    createdAt: string;
-}
 
 export interface MatchEmoteEvent {
     matchId: string;
@@ -82,6 +70,7 @@ class MatchSocketService {
     private currentMatchId: string | null = null;
     private currentPlayerId: string | null = null;
     private currentChatMatchId: string | null = null;
+    private currentChatIdentity: MatchChatIdentity = {};
     private currentEmoteMatchId: string | null = null;
     private currentEmotePlayerId: string | null = null;
     private currentAutoAcceptedPlayerIds: string[] = [];
@@ -228,7 +217,7 @@ class MatchSocketService {
         }
 
         if (this.currentChatMatchId) {
-            this.socket.emit(MATCH_CHAT_EVENTS.JOIN, { matchId: this.currentChatMatchId });
+            this.socket.emit(MATCH_CHAT_EVENTS.JOIN, { matchId: this.currentChatMatchId, ...this.currentChatIdentity });
         }
 
         if (this.currentEmoteMatchId && this.currentEmotePlayerId) {
@@ -367,12 +356,13 @@ class MatchSocketService {
         this.releaseConnectionIfIdle();
     }
 
-    joinChat(matchId: string): void {
+    joinChat(matchId: string, identity: MatchChatIdentity = {}): void {
         if (this.currentChatMatchId && this.currentChatMatchId !== matchId && this.socket?.connected) {
             this.socket.emit(MATCH_CHAT_EVENTS.LEAVE);
         }
 
         this.currentChatMatchId = matchId;
+        this.currentChatIdentity = identity;
         const socket = this.ensureSocketConnection();
         if (!socket?.connected) {
             this.isConnected = false;
@@ -382,7 +372,7 @@ class MatchSocketService {
 
         this.isConnected = true;
         this.isConnecting = false;
-        socket.emit(MATCH_CHAT_EVENTS.JOIN, { matchId });
+        socket.emit(MATCH_CHAT_EVENTS.JOIN, { matchId, ...identity });
     }
 
     leaveChat(): void {
@@ -391,10 +381,17 @@ class MatchSocketService {
         }
 
         this.currentChatMatchId = null;
+        this.currentChatIdentity = {};
         this.releaseConnectionIfIdle();
     }
 
-    sendChat(text: string, senderId?: string, senderName?: string): { ok: boolean; reason?: 'not_connected' | 'not_joined' } {
+    isOwnChatMessage(message: MatchChatMessage): boolean {
+        return message.senderRole === 'spectator'
+            ? message.senderId === this.socket?.id
+            : message.senderId === this.currentChatIdentity.playerId;
+    }
+
+    async sendChat(text: string, channel: MatchChatChannel, clientMessageId?: string): Promise<MatchChatResult> {
         if (!this.socket?.connected) {
             return { ok: false, reason: 'not_connected' };
         }
@@ -403,12 +400,9 @@ class MatchSocketService {
             return { ok: false, reason: 'not_joined' };
         }
 
-        this.socket.emit(MATCH_CHAT_EVENTS.SEND, {
-            text,
-            senderId,
-            senderName,
-        });
-        return { ok: true };
+        try {
+            return await this.socket.timeout(5000).emitWithAck(MATCH_CHAT_EVENTS.SEND, { text, channel, clientMessageId });
+        } catch { return { ok: false, reason: 'unavailable' }; }
     }
 
     joinEmotes(matchId: string, playerId: string): void {

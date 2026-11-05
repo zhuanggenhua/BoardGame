@@ -1,22 +1,30 @@
-import type { TutorialManifest, TutorialEventMatcher } from '../../engine/types';
-import { TOKEN_IDS, STATUS_IDS } from './domain/ids';
+import { withDiceThroneTutorialSurfaces } from './tutorialLayout';
+import type { TutorialCollection, TutorialHiddenAutomationContract, TutorialManifest, TutorialEventMatcher } from '../../engine/types';
+import { TOKEN_IDS } from './domain/ids';
 import { MONK_CARDS } from './heroes/monk/cards';
+import { DiceThroneDiscardPractice } from './tutorialPractices';
+
+const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
+    kind: 'setup-precondition',
+    reason,
+});
 
 // ============================================================================
 // 牌组配置
 // ============================================================================
 
-/** 玩家起手牌（教程流程顺序） */
+/** 玩家起手牌：主阶段行动牌、即时牌、掷骰响应牌与出售对象各有用途。 */
 const TUTORIAL_STARTING_HAND = [
-    'card-deep-thought',   // 弃牌+撤回教学用（卖掉后撤回）
-    'card-play-six',
-    'card-enlightenment',
-    'card-inner-peace',
+    'card-one-throw-fortune', // M 标记主阶段行动：掷 1 骰获得 CP
+    'card-double',            // 即时牌抽到升级牌
+    'card-give-hand',         // 对手确认攻击骰后重掷 1 骰
+    'card-palm-strike',       // 主阶段出售，筹出响应牌费用
 ];
 
-/** 牌库顶部顺序（起手牌之后，income 阶段依次抽到） */
+/** 加倍抽到与本次进攻能力对应的升级牌；之后仍使用同一合法牌库。 */
 const TUTORIAL_DECK_TOP = [
-    'card-meditation-2',   // Turn 2 income 抽到，用于升级清修
+    'card-thrust-punch-2', // 加倍抽到；主要阶段花 2 CP 升级冲拳
+    'card-inner-peace',
 ];
 
 /** AI 起手牌（保证 card-palm-strike 在手中） */
@@ -64,38 +72,37 @@ const MATCH_PHASE_MAIN2: TutorialEventMatcher = {
     match: { to: 'main2' },
 };
 
-const MATCH_RESPONSE_WINDOW_CLOSED: TutorialEventMatcher = {
-    type: 'RESPONSE_WINDOW_CLOSED',
-};
-
 // ============================================================================
 // 教程定义
 // ============================================================================
 
 export const DiceThroneTutorial: TutorialManifest = {
     id: 'dicethrone-basic',
+    playerId: '0',
+    revision: 19,
     randomPolicy: {
         mode: 'fixed',
         values: [6],
     },
     stepValidator: (state, step) => {
-        if (step.id !== 'inner-peace-response') return true;
-        return Boolean(state.sys.responseWindow?.current);
+        const core = state.core as import('./domain/types').DiceThroneCore;
+        if (step.id === 'opponent-token-response') return core.pendingDamage?.responderId === '1';
+        if (step.id === 'token-response') return core.pendingDamage?.responderId === '0' && (core.players['0'].tokens[TOKEN_IDS.TAIJI] ?? 0) > 0;
+        if (step.id === 'sale-branch-recovery') return !core.players['0'].hand.some(card => card.id === 'card-give-hand');
+        if (step.id === 'ability-branch-recovery') return state.sys.phase === 'main2' && !core.pendingAttack;
+        if (step.id === 'double-play') return core.players['0'].hand.some(card => card.id === 'card-double');
+        return true;
     },
-    steps: [
-        // ==== 段 A：初始化 + UI 介绍 ====
+    steps: withDiceThroneTutorialSurfaces([
         {
-            id: 'setup',
-            content: 'game-dicethrone:tutorial.steps.setup',
-            position: 'center',
-            requireAction: false,
-            showMask: true,
+            id: 'setup', content: 'game-dicethrone:tutorial.steps.setup', position: 'center', requireAction: false, showMask: true,
             aiActions: [
                 { commandType: 'SELECT_CHARACTER', playerId: '0', payload: { characterId: 'monk', initialDeckCardIds: TUTORIAL_INITIAL_DECK } },
                 { commandType: 'SELECT_CHARACTER', playerId: '1', payload: { characterId: 'monk', initialDeckCardIds: AI_TUTORIAL_DECK } },
                 { commandType: 'PLAYER_READY', playerId: '1', payload: {} },
                 { commandType: 'HOST_START_GAME', playerId: '0', payload: {} },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal Dice Throne tutorial match before the first visible step.'),
             advanceOnEvents: [
                 { type: 'HOST_STARTED' },
                 { type: 'SYS_PHASE_CHANGED', match: { to: 'upkeep' } },
@@ -103,321 +110,145 @@ export const DiceThroneTutorial: TutorialManifest = {
                 { type: 'SYS_PHASE_CHANGED', match: { to: 'main1' } },
             ],
         },
+        { id: 'intro', content: 'game-dicethrone:tutorial.steps.intro', highlightTarget: 'opponent-health', position: 'bottom', requireAction: false, showMask: true, infoStep: true },
         {
-            id: 'intro',
-            content: 'game-dicethrone:tutorial.steps.intro',
-            position: 'center',
-            requireAction: false,
-            showMask: true,
-            infoStep: true,
+            id: 'double-play', content: 'game-dicethrone:tutorial.steps.doublePlay', highlightTarget: 'hand-card-card-double', highlightFrame: 'none',
+            position: 'top', requireAction: true, allowedCommands: ['PLAY_CARD'],
+            advanceOnEvents: [{ type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-double' } }],
         },
         {
-            id: 'stats',
-            content: 'game-dicethrone:tutorial.steps.stats',
-            highlightTarget: 'player-stats',
-            position: 'right',
-            infoStep: true,
+            id: 'one-throw-play', randomPolicy: { mode: 'fixed', values: [1] },
+            content: 'game-dicethrone:tutorial.steps.one-throw-play', highlightTarget: 'hand-card-card-one-throw-fortune', highlightFrame: 'none',
+            position: 'top', requireAction: true, allowedCommands: ['PLAY_CARD'],
+            advanceOnEvents: [{ type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-one-throw-fortune' } }],
         },
         {
-            id: 'phases',
-            content: 'game-dicethrone:tutorial.steps.phases',
-            highlightTarget: 'phase-indicator',
-            position: 'right',
-            infoStep: true,
+            id: 'one-throw-confirm', randomPolicy: { mode: 'fixed', values: [1] },
+            content: 'game-dicethrone:tutorial.steps.one-throw-confirm', highlightTarget: 'dice-confirm-button',
+            position: 'left', requireAction: true, allowedCommands: ['CONFIRM_ROLL', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
+            advanceOnEvents: [{ type: 'BONUS_DICE_SETTLED' }],
         },
         {
-            id: 'player-board',
-            content: 'game-dicethrone:tutorial.steps.playerBoard',
-            highlightTarget: 'player-board',
-            position: 'right',
-            infoStep: true,
+            id: 'upgrade-card', content: 'game-dicethrone:tutorial.steps.upgradeCard', highlightTarget: 'hand-card-card-thrust-punch-2', highlightFrame: 'none',
+            position: 'top', requireAction: true, allowedCommands: ['PLAY_CARD', 'PLAY_UPGRADE_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
+            advanceOnEvents: [{ type: 'ABILITY_REPLACED', match: { playerId: '0', oldAbilityId: 'fist-technique' } }],
+        },
+        { id: 'advance', content: 'game-dicethrone:tutorial.steps.advance', highlightTarget: 'advance-phase-button', position: 'left', requireAction: true, allowedCommands: ['ADVANCE_PHASE'], advanceOnEvents: [MATCH_PHASE_OFFENSIVE] },
+        {
+            id: 'dice-play', randomPolicy: { mode: 'sequence', values: [1, 1, 1, 1, 3, 4] },
+            content: 'game-dicethrone:tutorial.steps.dice-play', highlightTarget: 'dice-tray', position: 'left', requireAction: true, allowManualSkip: false,
+            allowedCommands: ['ROLL_DICE'], advanceOnEvents: [{ type: 'DICE_ROLLED', match: { rollerId: '0' } }],
         },
         {
-            id: 'tip-board',
-            content: 'game-dicethrone:tutorial.steps.tipBoard',
-            highlightTarget: 'tip-board',
-            position: 'right',
-            infoStep: true,
+            id: 'dice-reroll', randomPolicy: { mode: 'sequence', values: [1, 1, 1, 1, 3, 4] },
+            content: 'game-dicethrone:tutorial.steps.dice-reroll', highlightTarget: 'dice-tray', position: 'left', requireAction: true, allowManualSkip: false,
+            allowedCommands: ['TOGGLE_DIE_LOCK', 'ROLL_DICE', 'CONFIRM_ROLL'], advanceOnEvents: [{ type: 'ROLL_CONFIRMED' }],
         },
         {
-            id: 'hand',
-            content: 'game-dicethrone:tutorial.steps.hand',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            infoStep: true,
+            id: 'abilities', content: 'game-dicethrone:tutorial.steps.abilities', highlightTarget: 'ability-slot-fist', highlightFrame: 'none', position: 'right', tooltipMaxWidth: 280,
+            requireAction: true, allowedCommands: ['SELECT_ABILITY', 'ADVANCE_PHASE'], advanceOnEvents: [{ type: 'ABILITY_ACTIVATED' }, MATCH_PHASE_MAIN2],
         },
         {
-            id: 'discard',
-            content: 'game-dicethrone:tutorial.steps.discard',
-            highlightTarget: 'discard-pile',
-            position: 'left',
-            infoStep: true,
+            id: 'ability-branch-recovery', content: '', aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
+            hiddenAutomation: { kind: 'branch-recovery', recoveryStepId: 'abilities', reason: '不发动能力是合法选择；恢复同一骰面，让首次攻防仍由玩家完成。' },
         },
         {
-            id: 'status-tokens',
-            content: 'game-dicethrone:tutorial.steps.statusTokens',
-            highlightTarget: 'status-tokens',
-            position: 'right',
-            infoStep: true,
-        },
-
-        // ==== 段 A2：弃牌教学（Turn 1 P0 main1，起手就有 4 张牌） ====
-        {
-            id: 'sell-card-intro',
-            content: 'game-dicethrone:tutorial.steps.sellCardIntro',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['SELL_CARD'],
-            advanceOnEvents: [
-                { type: 'CARD_SOLD', match: { playerId: '0' } },
-            ],
-        },
-        // 撤回弃牌教学：告知玩家可以撤回最近一张弃牌
-        {
-            id: 'undo-sell-intro',
-            content: 'game-dicethrone:tutorial.steps.undoSellIntro',
-            highlightTarget: 'discard-pile',
-            position: 'left',
-            infoStep: true,
+            id: 'resolve-attack', content: 'game-dicethrone:tutorial.steps.resolveAttack', highlightTarget: 'advance-phase-button', position: 'left',
+            requireAction: true, allowedCommands: ['ADVANCE_PHASE'], advanceOnEvents: [MATCH_PHASE_DEFENSE, MATCH_PHASE_MAIN2],
         },
         {
-            id: 'undo-sell',
-            content: 'game-dicethrone:tutorial.steps.undoSell',
-            highlightTarget: 'discard-pile',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['UNDO_SELL_CARD'],
-            advanceOnEvents: [
-                { type: 'SELL_UNDONE', match: { playerId: '0' } },
-            ],
-        },
-
-        // ==== 段 B：首次攻击 (Turn 1, P0) ====
-        {
-            id: 'advance',
-            content: 'game-dicethrone:tutorial.steps.advance',
-            highlightTarget: 'advance-phase-button',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['ADVANCE_PHASE'],
-            advanceOnEvents: [
-                MATCH_PHASE_OFFENSIVE,
-            ],
-        },
-        {
-            id: 'dice-tray',
-            content: 'game-dicethrone:tutorial.steps.dice',
-            highlightTarget: 'dice-tray',
-            position: 'left',
-            infoStep: true,
-        },
-        {
-            id: 'dice-roll',
-            content: 'game-dicethrone:tutorial.steps.rollButton',
-            highlightTarget: 'dice-roll-button',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['ROLL_DICE'],
-            advanceOnEvents: [{ type: 'DICE_ROLLED' }],
-        },
-        {
-            id: 'play-six',
-            content: 'game-dicethrone:tutorial.steps.playSix',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['PLAY_CARD'],
-            advanceOnEvents: [
-                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-play-six' } },
-            ],
-        },
-        {
-            id: 'play-six-modify',
-            content: 'game-dicethrone:tutorial.steps.playSixModify',
-            highlightTarget: 'dice-tray',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['MODIFY_DIE', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
-            advanceOnEvents: [
-                { type: 'DIE_MODIFIED' },
-            ],
-        },
-        {
-            id: 'dice-confirm',
-            content: 'game-dicethrone:tutorial.steps.confirmButton',
-            highlightTarget: 'dice-confirm-button',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['CONFIRM_ROLL', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
-            advanceOnEvents: [{ type: 'ROLL_CONFIRMED' }],
-        },
-        {
-            id: 'abilities',
-            content: 'game-dicethrone:tutorial.steps.abilities',
-            highlightTarget: 'ability-slots',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['SELECT_ABILITY'],
-            advanceOnEvents: [{ type: 'ABILITY_ACTIVATED' }],
-        },
-        {
-            id: 'resolve-attack',
-            content: 'game-dicethrone:tutorial.steps.resolveAttack',
-            highlightTarget: 'advance-phase-button',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['ADVANCE_PHASE'],
-            advanceOnEvents: [MATCH_PHASE_DEFENSE, MATCH_PHASE_MAIN2],
-        },
-        {
-            id: 'opponent-defense',
-            content: 'game-dicethrone:tutorial.steps.opponentDefense',
-            position: 'center',
-            requireAction: false,
-            allowManualSkip: false,
+            id: 'opponent-defense', randomPolicy: { mode: 'fixed', values: [4] }, content: 'game-dicethrone:tutorial.steps.opponentDefense', position: 'center',
+            requireAction: false, allowManualSkip: true, infoStep: true,
             aiActions: [
                 { commandType: 'ROLL_DICE', playerId: '1', payload: {} },
                 { commandType: 'CONFIRM_ROLL', playerId: '1', payload: {} },
+                { commandType: 'RESPONSE_PASS', playerId: '0', payload: {} },
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
+                { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: { __tutorialChoiceCandidateId: 'skip' } },
             ],
-            advanceOnEvents: [MATCH_PHASE_MAIN2],
-        },
-
-        // ==== 段 C：main2 阶段打出顿悟和静心 ====
-        // 顿悟 timing='main'，只能在 main1/main2 打出
-        // 此时处于 P0 的 main2 阶段，正确时机
-        {
-            id: 'main2-intro',
-            content: 'game-dicethrone:tutorial.steps.main2Intro',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            infoStep: true,
+            autoAdvanceAfterAi: false,
         },
         {
-            id: 'enlightenment-play',
-            content: 'game-dicethrone:tutorial.steps.enlightenmentPlay',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
-            advanceOnEvents: [
-                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-enlightenment' } },
-            ],
+            id: 'sell-card-intro', content: 'game-dicethrone:tutorial.steps.sellCardIntro', highlightTarget: 'hand-card-card-palm-strike', position: 'top',
+            requireAction: true, allowedCommands: ['SELL_CARD'],
+            advanceOnEvents: [{ type: 'CARD_SOLD', match: { playerId: '0' } }],
         },
         {
-            id: 'enlightenment-confirm',
-            content: 'game-dicethrone:tutorial.steps.enlightenmentConfirm',
-            highlightTarget: 'dice-confirm-button',
-            position: 'left',
-            requireAction: true,
-            allowedCommands: ['CONFIRM_ROLL', 'SKIP_BONUS_DICE_REROLL'],
-            advanceOnEvents: [
-                { type: 'BONUS_DICE_SETTLED' },
-            ],
+            id: 'sale-branch-recovery', content: '', aiActions: [{ commandType: 'SYS_TUTORIAL_PREVIOUS', playerId: '0', payload: {} }],
+            hiddenAutomation: { kind: 'branch-recovery', recoveryStepId: 'sell-card-intro', reason: '出售了后续响应所需的牌，恢复出售前完整检查点；正常主线只出售掌击筹费。' },
+        },
+        { id: 'response-control', content: 'game-dicethrone:tutorial.steps.response-control', highlightTarget: 'response-toggle', position: 'center', tooltipMaxWidth: 360, infoStep: true },
+        {
+            id: 'end-turn', content: 'game-dicethrone:tutorial.steps.end-turn', highlightTarget: 'advance-phase-button', position: 'left',
+            requireAction: true, allowManualSkip: false, allowedCommands: ['ADVANCE_PHASE'], advanceOnEvents: [{ type: 'TURN_CHANGED' }],
         },
         {
-            id: 'inner-peace',
-            content: 'game-dicethrone:tutorial.steps.innerPeace',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
-            advanceOnEvents: [
-                { type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-inner-peace' } },
-            ],
-        },
-        {
-            id: 'inner-peace-response',
-            content: 'game-dicethrone:tutorial.steps.innerPeaceResponse',
-            highlightTarget: 'response-pass-button',
-            position: 'top',
-            requireAction: true,
-            allowManualSkip: false,
-            allowedCommands: ['RESPONSE_PASS'],
-            advanceOnEvents: [MATCH_RESPONSE_WINDOW_CLOSED],
-        },
-
-        // ==== 段 D：AI 回合（P0 main2 已操作完，推进到 AI 回合） ====
-        // infoStep 作为缓冲，避免 AI_CONSUMED 清除下一个有 aiActions 步骤的数据
-        {
-            id: 'ai-turn-intro',
-            content: 'game-dicethrone:tutorial.steps.aiTurnIntro',
-            position: 'center',
-            infoStep: true,
-        },
-        {
-            id: 'ai-turn',
-            content: 'game-dicethrone:tutorial.steps.aiTurn',
-            position: 'center',
-            requireAction: false,
+            id: 'opponent-roll', randomPolicy: { mode: 'fixed', values: [1] }, content: 'game-dicethrone:tutorial.steps.opponent-roll', position: 'center',
+            requireAction: false, allowManualSkip: true, infoStep: true, autoAdvanceAfterAi: false,
             aiActions: [
-                // 结束 P0 当前回合 (main2 → discard → auto-chain → P1 main1)
-                { commandType: 'ADVANCE_PHASE', playerId: '0', payload: {} },
-                { commandType: 'ADVANCE_PHASE', playerId: '0', payload: {} },
-                // AI 在 main1 打出掌击（对 P0 施加击倒 + 触发卡牌特写）
-                { commandType: 'PLAY_CARD', playerId: '1', payload: { cardId: 'card-palm-strike' } },
-                // AI 推进到攻击掷骰
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-                // AI 掷骰 + 确认（全6 = 5拳 → 拳法-5, 8伤害）
                 { commandType: 'ROLL_DICE', playerId: '1', payload: {} },
                 { commandType: 'CONFIRM_ROLL', playerId: '1', payload: {} },
-                { commandType: 'SELECT_ABILITY', playerId: '1', payload: { abilityId: 'fist-technique-5' } },
-                // 进入防御（自动选中清修），P0 掷骰防御
+            ],
+        },
+        {
+            id: 'interference-play', content: 'game-dicethrone:tutorial.steps.interference-play', highlightTarget: 'hand-card-card-give-hand', highlightFrame: 'none',
+            position: 'top', requireAction: true, allowedCommands: ['PLAY_CARD'],
+            advanceOnEvents: [{ type: 'CARD_PLAYED', match: { playerId: '0', cardId: 'card-give-hand' } }],
+        },
+        {
+            id: 'interference-target', randomPolicy: { mode: 'fixed', values: [6] },
+            content: 'game-dicethrone:tutorial.steps.interference-target', highlightTarget: 'dice-tray', position: 'left', requireAction: true, allowManualSkip: false,
+            allowedCommands: ['REROLL_DIE', 'SYS_INTERACTION_CONFIRM'],
+            advanceOnEvents: [{ type: 'DIE_REROLLED', match: { playerId: '0', sourceCardId: 'card-give-hand' } }],
+        },
+        {
+            id: 'defense-start', content: 'game-dicethrone:tutorial.steps.defense-start', highlightTarget: 'defense-start-button', position: 'left',
+            requireAction: true, allowManualSkip: true, allowedCommands: ['CONFIRM_ROLL', 'SELECT_ABILITY', 'ADVANCE_PHASE', 'REROLL_DIE'],
+            aiActions: [
+                { commandType: 'CONFIRM_ROLL', playerId: '1', payload: {} },
+                { commandType: 'SELECT_ABILITY', playerId: '1', payload: { abilityId: 'fist-technique-4' } },
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
-                { commandType: 'ROLL_DICE', playerId: '0', payload: {} },
-                { commandType: 'CONFIRM_ROLL', playerId: '0', payload: {} },
-                // 结算攻击（halt: 因 P0 有 Token 触发响应窗口）→ P0 跳过 Token 响应
-                { commandType: 'ADVANCE_PHASE', playerId: '0', payload: {} },
-                { commandType: 'SKIP_TOKEN_RESPONSE', playerId: '0', payload: { __tutorialChoiceCandidateId: 'skip' } },
-                // 结束 AI 回合 (main2 → discard → auto-chain → P0 main1)
+            ],
+            autoAdvanceAfterAi: false,
+        },
+        {
+            id: 'defense-roll', randomPolicy: { mode: 'fixed', values: [4] }, content: 'game-dicethrone:tutorial.steps.defense-roll', highlightTarget: 'dice-roll-button',
+            position: 'left', requireAction: true, allowManualSkip: false,
+            allowedCommands: ['ROLL_DICE', 'CONFIRM_ROLL'], advanceOnEvents: [{ type: 'ROLL_CONFIRMED' }],
+        },
+        {
+            id: 'defense-resolve', content: 'game-dicethrone:tutorial.steps.defenseResolve', highlightTarget: 'advance-phase-button', position: 'left',
+            requireAction: true, allowManualSkip: false, allowedCommands: ['ADVANCE_PHASE'], advanceOnEvents: [{ type: 'TOKEN_RESPONSE_REQUESTED' }],
+        },
+        {
+            id: 'opponent-token-response', content: 'game-dicethrone:tutorial.steps.opponent-token-response', position: 'center',
+            requireAction: false, allowManualSkip: true, infoStep: true, autoAdvanceAfterAi: false,
+            aiActions: [{ commandType: 'SKIP_TOKEN_RESPONSE', playerId: '1', payload: { __tutorialChoiceCandidateId: 'skip' } }],
+        },
+        {
+            id: 'token-response', content: 'game-dicethrone:tutorial.steps.token-response', highlightTarget: 'status-tokens', position: 'left',
+            requireAction: true, allowManualSkip: false,
+            allowedCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'SYS_INTERACTION_RESPOND', 'SYS_INTERACTION_CONFIRM'],
+            advanceOnEvents: [{ type: 'TOKEN_RESPONSE_CLOSED' }],
+        },
+        {
+            id: 'income-result', content: 'game-dicethrone:tutorial.steps.income-result', highlightTarget: 'hand-area', position: 'top', infoStep: true, allowManualSkip: true,
+            aiActions: [
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
                 { commandType: 'ADVANCE_PHASE', playerId: '1', payload: {} },
             ],
-            advanceOnEvents: [
-                { type: 'SYS_TUTORIAL_AI_CONSUMED', match: { stepId: 'ai-turn' } },
-            ],
+            autoAdvanceAfterAi: false,
         },
-
-        // ==== 段 E：净化教程 + 升级（Turn 2 P0 main1） ====
-        {
-            id: 'knockdown-explain',
-            content: 'game-dicethrone:tutorial.steps.knockdownExplain',
-            highlightTarget: 'status-tokens',
-            position: 'right',
-            infoStep: true,
-        },
-        {
-            id: 'purify-use',
-            content: 'game-dicethrone:tutorial.steps.purifyUse',
-            highlightTarget: 'status-tokens',
-            position: 'right',
-            requireAction: true,
-            allowManualSkip: false,
-            allowedCommands: ['USE_PURIFY', 'USE_TOKEN'],
-            advanceOnEvents: [
-                { type: 'TOKEN_USED', match: { playerId: '0', tokenId: TOKEN_IDS.PURIFY, effectType: 'removeDebuff' } },
-                { type: 'STATUS_REMOVED', match: { targetId: '0', statusId: STATUS_IDS.KNOCKDOWN } },
-            ],
-        },
-        {
-            id: 'meditation-2',
-            content: 'game-dicethrone:tutorial.steps.meditation2',
-            highlightTarget: 'hand-area',
-            position: 'top',
-            requireAction: true,
-            allowedCommands: ['PLAY_CARD', 'PLAY_UPGRADE_CARD', 'SELL_CARD', 'REORDER_CARD_TO_END'],
-            advanceOnEvents: [
-                { type: 'ABILITY_REPLACED', match: { playerId: '0', oldAbilityId: 'meditation' } },
-            ],
-        },
-        {
-            id: 'finish',
-            content: 'game-dicethrone:tutorial.steps.finish',
-            position: 'center',
-            infoStep: true,
-        },
-    ],
+    ]),
 };
 
-export default DiceThroneTutorial;
+const DiceThroneTutorials: TutorialCollection = {
+    defaultTutorialId: DiceThroneTutorial.id,
+    tutorials: {
+        [DiceThroneTutorial.id]: { titleKey: 'tutorial.chapters.basic', manifest: DiceThroneTutorial },
+        [DiceThroneDiscardPractice.id]: { titleKey: 'tutorial.chapters.limit', manifest: DiceThroneDiscardPractice },
+    },
+};
+
+export default DiceThroneTutorials;

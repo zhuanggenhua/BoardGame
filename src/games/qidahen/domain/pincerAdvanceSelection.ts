@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import { computeQidahenAttackPressure } from './attackRules';
 import { createQidahenBattleForceCommitment, getQidahenBattleForceCommitments } from './battleForceCommitments';
 import {
@@ -284,8 +285,7 @@ export const resolveQidahenPincerAdvanceSelection = (
             resolutionHint: `${pending.resolutionHint} · 分进合击 ${sourceNames} 增援 ${selectedChoices.length}`,
         },
         pincerAdvanceSelection: null,
-        handCards: state.handCards.filter((card) => card.id !== selection.cardId),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [selection.cardId]),
         lastSeasonSummary: {
             id: `summary-${timestamp}`,
             title: '战术牌',

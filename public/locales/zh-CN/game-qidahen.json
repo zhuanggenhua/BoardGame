@@ -71,33 +71,66 @@
       "summaryScenario": "剧本",
       "noExtraChoices": "进入棋盘后将先处理剧本介绍与房主选择。",
       "confirm": "进入棋盘"
+    },
+    "specialCards": {
+      "label": "特典扩展牌",
+      "disabled": "关闭 · 基础规则",
+      "enabled": "启用 · 9 张特典牌"
     }
   },
   "board": {
-    "magnifyButton": "看",
+    "handScroll": {
+      "previous": "向左翻看手牌",
+      "next": "向右翻看手牌"
+    },
     "magnifyCardAria": "查看 {{card}}",
+    "operation": {
+      "discardHand": "选择弃置的手牌"
+    },
     "handInteraction": {
-      "actionPaymentStatus": "需弃 {{cost}} 张 · 已选 {{selected}} 张",
-      "actionPaymentHint": "点击底部手牌选择要弃掉的牌；再次点击已选手牌可取消该张。",
+      "actionPaymentStatus": "支付进度：已选 {{selected}} / {{cost}} 张",
+      "actionPaymentSelectedCards": "已选牌：{{cards}}",
+      "selectedSeal": "已选",
       "confirmExecute": "确认执行",
       "cancelAction": "取消本次行动",
       "handLimitTitle": "{{factionName}} · 检查手牌上限",
       "handLimitStatus": "手牌 {{handCount}}/{{handLimit}} · 需弃 {{requiredDiscardCount}} · 已择 {{selected}}",
-      "handLimitHint": "点击底部手牌选择要弃掉的牌。",
       "confirmDiscard": "确认弃牌",
       "sunYuanhuaStatus": "需弃 {{requiredCardCount}} 张 · 已择 {{selected}}",
-      "sunYuanhuaHint": "点击底部手牌选择要弃掉的牌。",
       "confirmSunYuanhua": "确认打科技",
       "skipSunYuanhua": "跳过孙元化科技",
-      "armamentPaymentStatus": "需选 {{cost}} 张军备牌 · 已选 {{selected}} 张",
-      "armamentPaymentHint": "点选要使用的军备牌；先作为升级军备打出，结算后才进入弃牌堆。",
+      "armamentPaymentStatus": "已选 {{selected}} / 2 · 含 1 张军备牌 + 弃 1 张手牌",
       "confirmUseArmament": "使用并升级",
       "selectedTacticCard": "已选战术牌「{{card}}」",
       "tacticCardHint": "点击“打出战术牌”确认；再次点击这张手牌可取消选中。",
       "confirmTacticCard": "打出战术牌",
       "cancelTacticCard": "取消",
       "raidPaymentTarget": "目标：{{targetRegionName}} · {{resolutionHint}}",
-      "raidPaymentInvalidTarget": "当前地区不能发动突袭，请在地图上选择高亮的合法目标"
+      "raidPaymentInvalidTarget": "在地图上选择目标地区",
+      "wheelDispatchPaymentTitle": "进攻调度 · 弃牌",
+      "wheelDispatchPaymentStatus": "需弃 {{required}} 张 · 已选 {{selected}} 张",
+      "raidPaymentSelectSource": "在地图上选择出兵地区"
+    },
+    "inspect": {
+      "factionHeader": "势力详情",
+      "regionHeader": "地点详情",
+      "close": "关闭",
+      "factionStats": "VP {{vp}} · 手牌 {{handCount}}/{{handLimit}} · 兵力 {{troops}} · 粮 {{grain}}",
+      "statVp": "胜利点",
+      "statHand": "手牌",
+      "statTroops": "兵力",
+      "statGrain": "粮",
+      "statPopulation": "人口",
+      "armamentsTitle": "军备",
+      "charactersTitle": "人物",
+      "charactersEmpty": "场上暂无人物",
+      "discardTitle": "弃牌堆",
+      "discardAlt": "{{name}}弃牌堆",
+      "discardCount": "{{count}} 张",
+      "discardHint": "弃牌只显示张数，不公开具体牌面。",
+      "missing": "当前没有可查看的详情。",
+      "openHint": "点击查看军备与弃牌堆",
+      "armamentFallbackSummary": "已开发军备。"
     },
     "player": {
       "armamentsUndeveloped": "未开发",
@@ -105,21 +138,27 @@
       "characterCount": "人物 {{count}}",
       "prestigeBonus": "汉城+{{bonus}}",
       "armaments": "军备 {{summary}}",
+      "armamentsInspect": "军备详情",
       "defeatMarkers": "败×{{count}}",
       "current": "当前"
     },
     "map": {
       "mainMapAlt": "七大恨主地图",
+      "mainMapLoadError": "七大恨地图加载失败",
       "armyBackAlt": "部队背面",
       "regionSelectionAria": "七大恨地图区域选择",
       "regionTroopsPopulation": "兵力 {{troops}} · 人口 {{population}}",
-      "regionSpecialTroops": "特殊 {{summary}}",
+      "regionPopulation": "人口 {{population}}",
+      "statPopulation": "人口",
       "regionPassages": "接边 {{summary}}",
-      "regionReachable": "调度可达 {{summary}}",
       "sharedPrintedRegion": "同图块",
       "selectionGuideSource": "起",
       "selectionContinueHint": "选择目标",
-      "clickableRegionSummary": "目标：{{summary}}"
+      "clickableRegionSummary": "目标：{{summary}}",
+      "regionTroopChange": "{{regionName}}部队：{{before}} → {{after}}",
+      "grantPardonSourceSelected": "已选来源",
+      "inspectHint": "点击查看地点详情",
+      "unitLevel": "等级 {{level}}"
     },
     "wheel": {
       "aria": "七大恨行动轮盘",
@@ -129,7 +168,74 @@
       "centerRight": "轮",
       "centerLeft": "盘",
       "centerBottom": "动",
-      "currentMarker": "轮盘行动标记当前位置"
+      "currentMarker": "轮盘行动标记当前位置",
+      "chooseOpponent": "选择一名对手抽牌",
+      "militaryFarmTarget": "军屯建军地：{{region}}",
+      "sectors": {
+        "reclaim": {
+          "name": "开垦",
+          "detail": "每个己方控制区可放置 1 人口，最多 5 区，不超过人口上限。"
+        },
+        "militaryFarm": {
+          "name": "军屯",
+          "detail": "抽 2 张手牌，并在己方本土建立 1 个等级 2 正规军。"
+        },
+        "recruitTrain": {
+          "name": "征兵训练",
+          "detail": "弃 1 张手牌，最多可进行 4 次征兵或训练；每额外弃 1 张牌，可额外进行 1 次训练。年中或新年时，只能进行训练行动。"
+        },
+        "attackDispatch": {
+          "name": "进攻调度",
+          "detail": "弃 1 张手牌，指挥最多 6 个部队移动；进入非己方或友好区会触发战斗。"
+        },
+        "diplomacyHire": {
+          "name": "外交雇佣",
+          "detail": "对邻近控制标记区外交（友好/附庸/移除）；可弃牌建立雇佣军。"
+        },
+        "midyear": {
+          "name": "年中",
+          "detail": "必须停留。结算土地税赋、江南漕运和人物判定。"
+        },
+        "newYear": {
+          "name": "新年",
+          "detail": "必须停留。结算朝鲜朝贡、防线维护、兵力耗损，并翻开下年纪年卡。"
+        }
+      }
+    },
+    "wheelRecruitTrain": {
+      "recruitAction": "征兵",
+      "recruitActionDetail": "选择本土区域，建立 1 个等级 2 正规军部队。",
+      "trainingAction": "训练",
+      "trainingActionDetail": "选择一支部队提升 1 级；本回合每支部队只能提升 1 次。",
+      "extraTraining": "额外训练 · 弃 1 张手牌",
+      "extraTrainingDetail": "额外弃 1 张手牌，增加 1 次训练。",
+      "finish": "完成征兵训练",
+      "finishDetail": "结束本次征兵训练。",
+      "recruitTargetDetail": "建立 1 个等级 2 正规军部队。",
+      "regularTroop": "正规军",
+      "auxiliaryTroop": "雇佣军",
+      "artillery": "炮兵",
+      "cavalry": "骑兵",
+      "infantry": "步兵",
+      "trainingTarget": "{{regionName}} · {{unit}} {{level}}级 → {{targetLevel}}级",
+      "trainingTargetDetail": "选择这支部队训练 1 级。",
+      "fieldUnit": "野战部队",
+      "cityUnit": "城内部队",
+      "duplicateTarget": "目标 {{index}}",
+      "khanTitle": "大汗令箭 · 征兵训练",
+      "title": "征兵训练",
+      "progress": "已完成 {{completed}} / 4 次；额外训练 {{extra}} 次",
+      "trainingOnlyHint": "年中或新年时，只能进行训练行动。",
+      "chooseActionHint": "选择征兵或训练；额外弃牌可增加训练次数。",
+      "chooseRecruitTargetHint": "选择一个本土区域建立正规军。",
+      "chooseTrainingTargetHint": "选择一支本回合尚未训练过的部队。",
+      "scrollHint": "需要时可在列表内滚动，查看其余部队。",
+      "extraPaymentTitle": "额外训练 · 弃牌",
+      "paymentTitle": "征兵训练 · 弃牌",
+      "extraPaymentStatus": "额外弃 1 张手牌，增加 1 次训练。",
+      "paymentStatus": "弃 1 张手牌，最多进行 4 次征兵或训练。",
+      "recruitTargetTitle": "选择建军地区",
+      "trainingTargetTitle": "选择训练部队"
     },
     "korea": {
       "drawPile": "朝鲜牌库",
@@ -160,21 +266,22 @@
       "mapClickable": "选择目标",
       "mapDirectClickHint": "点击目标继续。",
       "currentClickableRegions": "目标地区",
-      "status": {
-        "used": "已用",
-        "unused": "未用"
-      },
-      "turnStatus": "{{year}} · 轮盘 {{wheelStatus}} · 手牌行动 {{factionStatus}}",
-      "scenarioBlocked": "剧本待决项尚未确认，当前只可处理剧本选择。",
-      "scenarioVoteBlocked": "局内剧本选择尚未完成，当前只可处理剧本介绍与房主选择。",
-      "primaryActionSelectPrompt": "手牌行动",
       "grantPardon": {
-        "mapFirstHint": "主路径：点击地图上的金色高亮接收区完成招安；下方列表只作备用选择。{{summary}}",
+        "targetRegionHint": "点击地图上高亮的{{factionName}}控制区作为接收区；若接收区唯一对应一名对手，系统会自动锁定该对手。",
+        "opponentHint": "同一接收区对应多个对手；执行方先选择其中一方，随后由该玩家选择部队。",
+        "troopHint": "请{{factionName}}玩家点击地图上高亮的一支部队；接收区已自动锁定该对手，点击后直接移入{{regionName}}。",
+        "derivedOpponentLabel": "接收区已自动锁定对手：{{factionName}}",
+        "mapTargetTitle": "选择接收区",
+        "mapTargetHint": "点击地图上高亮的{{factionName}}控制区作为接收区；唯一对应的对手会自动锁定",
+        "mapTargetBadge": "接收区",
+        "mapOpponentTitle": "指定部队所属对手",
+        "mapOpponentHint": "同一接收区对应多个对手；执行方先选择其中一方，随后由该玩家选择部队。",
+        "mapOpponentBadge": "指定对手",
+        "mapTroopTitle": "选择部队",
+        "mapTroopHint": "{{factionName}}玩家点击高亮部队；对手已由接收区自动锁定，该部队将直接转入{{regionName}}",
+        "mapTroopBadge": "选择部队",
         "fallbackListLabel": "备用选择"
       },
-      "wheelNextStepBadge": "轮盘",
-      "wheelNextStepTitle": "公共轮盘推进",
-      "wheelNextStepHint": "选择推进几格",
       "wheelExecutePrompt": "选择轮盘格",
       "directExecute": "直接执行",
       "victoryAchieved": "{{winnerName}} 已达成{{condition}}",
@@ -199,8 +306,7 @@
       "cancel": "取消",
       "wuzhenChaoha": {
         "hint": "点击绿色步兵牌，指定其提前在炮兵阶段攻击。",
-        "artilleryTechLabel": "销毁《火炮技术》：",
-        "artilleryTechCount": "{{count}} 张"
+        "techBonus": "已研发 {{count}} 张火炮技术：掷骰点数 +{{count}}"
       },
       "instigateDefection": {
         "hint": "点击绿色兵牌选择要策反的敌方次级部队。"
@@ -238,7 +344,8 @@
       "recruit": {
         "title": "征召军队",
         "summary": "选择建军方式",
-        "mapFirstHint": "先点击地图上的建军地区，再选择建军方式。"
+        "mapFirstHint": "先点击地图上的建军地区，再选择建军方式。",
+        "selectRegionTitle": "选择建军地区"
       },
       "maShiTrade": {
         "title": "马市贸易",
@@ -274,7 +381,12 @@
         "actualCommittedTroops": "实际投入",
         "actualCommittedTroopsMapFirst": "实际出兵：点击地图上的源地区兵牌切换数量",
         "attackerCasualtyLabel": "攻方承伤",
-        "defenderCasualtyLabel": "守方承伤"
+        "defenderCasualtyLabel": "守方承伤",
+        "selectedTroopsTitle": "出兵部队",
+        "chooseTroops": "尚未选择",
+        "battleWidthTitle": "战场宽度",
+        "selectSourceTroops": "点击地图上的{{region}}部队选择出兵。",
+        "tacticLevelBonus": "{{troop}}骰子等级{{bonus}}"
       },
       "postBattle": {
         "summary": "{{summary}} · 幸存 {{survivingTroops}}",
@@ -286,8 +398,10 @@
         "besiegeTitle": "围城方式",
         "withdrawTitle": "撤回路线",
         "back": "返回",
+        "scrollHint": "滚动列表查看全部选项。",
         "confirm": "确认战后处理"
-      }
+      },
+      "returnToWheel": "返回轮盘行动"
     },
     "setup": {
       "eyebrow": "局内开局设置",
@@ -322,10 +436,13 @@
     "scenarioVote": {
       "eyebrow": "局内剧本选择",
       "title": "房主选择本局剧本",
+      "overlayTitle": "起始剧本设置卡",
       "selectCard": "选择一张剧本卡",
       "description": "创建房间只决定人数与 AI。进入棋盘后，房主在这里阅读剧本并直接选择；其他席位只等待结果。",
       "playerCount": "{{count}} 人房间",
+      "playerCountShort": "{{count}} 人",
       "unavailableForPlayerCount": "当前 {{count}} 人房不可投，适用 {{supported}} 人",
+      "unavailableForPlayerCountShort": "当前 {{count}} 人房不可投",
       "voteCount": "{{count}} 项",
       "supportedPlayers": "适用 {{count}} 人",
       "orderBadge": "战局 {{orderNo}}",
@@ -349,11 +466,16 @@
       "hostMayPick": "点选采用",
       "waitingHost": "等待房主选择",
       "waitingHostShort": "等待房主",
-      "waitingHint": "等待房主点选剧本。"
+      "waitingHint": "等待房主点选剧本。",
+      "close": "关闭"
     },
     "factionSelection": {
       "eyebrow": "局内开局设置",
       "title": "选择你的阵营",
+      "scenarioMenu": "剧本",
+      "confirmedFaction": "已确认 {{factionName}}",
+      "unavailableInScenario": "本剧本无此势力",
+      "factionActions": "势力行动",
       "youConfirmed": "你已确认",
       "pendingConfirm": "待确认",
       "occupiedBy": "{{playerName}} 已确认",
@@ -363,12 +485,43 @@
       "confirmedStatus": "已确认",
       "pendingStatus": "待确认",
       "chooseAvailable": "请选择一个未被占用的阵营",
+      "confirmScenarioFirst": "请先确认起始剧本设置卡",
       "confirmedCount": "已确认 {{confirmed}} / {{total}}",
       "confirmFaction": "确认阵营"
+    },
+    "battleRoll": {
+      "report": "战报",
+      "total": "合计 {{total}}",
+      "inflictedDamage": "造成 {{damage}} 损伤",
+      "attacker": "攻方",
+      "defender": "守方",
+      "totals": "骰点合计：攻方 {{attacker}} · 守方 {{defender}}",
+      "damage": "攻方造成 {{attacker}} 损伤，守方造成 {{defender}} 损伤",
+      "phase": {
+        "artillery": "炮兵阶段",
+        "cavalry": "骑兵阶段",
+        "infantry": "步兵阶段",
+        "melee": "近身混战"
+      }
+    },
+    "turnChoice": {
+      "skipRemainingWheel": "放弃剩余轮盘行动",
+      "finishWheel": "完成轮盘行动",
+      "endTurn": "结束回合",
+      "skipHandAndEndTurn": "放弃手牌行动并结束回合",
+      "selectedSupport": "已选 {{cards}} 张手牌、{{units}} 支部队",
+      "selectedTroops": "已选 {{units}} 支",
+      "supportOrRemove": "选择手牌支持，或选择部队移除",
+      "selectHand": "从手牌中选择",
+      "confirm": "确认",
+      "selectedCards": "已选 {{cards}} 张手牌",
+      "selectedUnit": "{{regionName}} · {{label}} {{level}}级"
     }
   },
   "battle": {
     "pendingTargetChoice": {
+      "fight": "开始战斗",
+      "defenderFight": "应战",
       "rearGuard": "断后",
       "rout": "溃退",
       "cavalryPlunderAttacker": "抽己方牌堆",
@@ -378,211 +531,295 @@
     }
   },
   "tutorial": {
-    "basic": {
-      "title": "开局、轮盘与首回合",
-      "description": "正式开局依次处理手牌上限、公共轮盘推进、一次手牌行动和一次轮盘落点行动。",
+    "annual": {
       "steps": {
-        "welcome": "七大恨有三种赢法：新年时控制 16 个区域、攻下对手首都，或先拿到 3 点威望。",
-        "handLimit": "每回合开始先检查手牌上限。大明上限 15，后金和蒙古上限 10；底部手牌区选出超出的牌并确认弃牌。",
-        "handResource": "手牌就是主要资源。事件牌打出就结算，军备牌打出后还要再弃 1 张，战术牌只在战斗中使用，银两牌只当支付。",
-        "wheelFirst": "手牌上限处理完后，现在轮到公共轮盘。轮盘还没推进；它可以走 1、2、3 格，会决定别人是否摸牌，也决定本回合的轮盘落点行动。",
-        "wheelMove": "现在选择公共轮盘推进几格。这里只是在转轮盘，不是在执行落点行动；先点免费走 1 看一次最小推进。",
-        "afterWheel": "公共轮盘推进完后，这回合还要做两件事：一次手牌行动、一次轮盘落点行动。先做哪一个，由当前玩家决定。",
-        "pickAction": "手牌行动：赐印招安。先选择这项行动，进入弃牌支付；费用付完后，招安效果才会要求你在地图上选接收区。",
-        "payCards": "先弃 3 张手牌支付赐印招安。支付是行动费用，不是效果结果；确认后才会触发地图上的招安选择。",
-        "chooseGrantPardonTarget": "费用已经付完。现在在地图高亮处直接点击山海关，表示从锦州拉走 1 个后金部队并转入这个相邻的大明控制区。",
-        "actionResult": "锦州的敌军减少，山海关的大明部队增加。手牌资源换成了直接的版图控制。",
-        "moraleLevel": "木块顶部的数字既是部队等级，也是士气。等级越高，战斗掷出的骰子越强；等级掉到 0，这支部队才会溃散。",
-        "wheelAction": "轮盘落点行动已经完成。公共轮盘所在的位置，会把你带到开垦军屯、外交雇佣、进攻调度或征兵训练。",
-        "finish": "首回合骨架就是：检查手牌上限，推进公共轮盘，再完成一次手牌行动和一次轮盘落点行动。"
+        "frontier-goal": "你执掌大明，每张纪年卡计1点威望，先得3点即可获胜。新年按下一张纪年卡的条件决定领取资格；眼前的条件是增加最多控制区域。这一年从辽北夺取叶赫部，争取第一张纪年卡。",
+        "opening-move": "三方共用这个行动轮盘。前进1格免费；前进2格须指定一名对手抽2张牌，前进3格则所有对手各抽2张。这次前进1格，利用开垦、军屯准备前线。",
+        "farm-action": "要从辽北出兵，先补充当地部队和手牌。军屯：抽2张手牌，并且建立1个等级2的正规军部队。",
+        "reclaim-action": "同格的开垦也可以执行。每个己方控制区域可增加1人口，一次最多选5处，不得超过当地人口上限。人口决定当地供养能力，也影响年中税赋。",
+        "reclaim-target": "人口多于部队、且未被围城的控制区域，年中可收1张手牌。辽东现在3人口、3支部队；在这里开垦，便能取得这份收入。",
+        "recruit-action": "本回合还可执行一次手牌行动。利用刚补充的手牌征召军队，既准备进攻叶赫部，也留下部队守住辽北。 大明的征召军队：弃1张手牌，建立6个等级2部队，或2个等级4的川兵部队。选择征召军队。",
+        "recruit-payment": "银两没有特殊效果，只能弃牌作为资源使用。用这张银两支付，保留其它牌；点击放大镜可查看整张手牌。",
+        "recruit-source": "正规军只能在自己的本土建立。辽北是这次进攻的出发地，在这里征召。",
+        "recruit-troops": "这次建立6支2级部队，两支用于跨河，其余留守。等级决定每支部队的骰子：2级投八面骰，4级投十二面骰。军队超过当地人口的部分，新年须弃牌补给或减员。",
+        "midyear": "轮盘经过年中、新年时必须停留；当前玩家可择一执行格内行动，也可放弃，随后全体结算。年中每个符合税赋条件的区域收1张手牌，大明另抽5张漕运牌；刚才开垦的辽东也贡献了收入。年中还检查人物的判定条件。",
+        "hand-limit": "收入带来了更多选择，但大明的手牌上限是15张，回合开始须弃掉超出的部分。保留接下来作战所需的鸳鸯阵和火炮技术，选择高亮的6张弃牌。",
+        "battle-move": "前线兵力已经备好。前进1格到进攻调度，这回合从辽北渡河进攻叶赫部，为本年的控制增长争取优势。",
+        "upgrade-card": "辽北炮兵将参加这场战斗。先用本回合手牌行动研发火炮技术，再执行轮盘上的进攻。手牌行动和轮盘行动的先后由玩家决定。 军备牌打出后还需另弃1张手牌，随后留在己方场上。每张已研发的火炮技术使炮兵骰点加1，并提高炮兵可训练的等级上限。打出「火炮技术」加强炮兵。",
+        "upgrade-payment": "打出的火炮技术不是费用牌。另选这张银两弃掉，完成研发。",
+        "dispatch-action": "进攻调度：弃1张手牌，指挥最多6个部队移动。步兵、炮兵移动1格，骑兵移动2格；进入非己方或友好势力控制的区域触发战斗。执行调度，向叶赫部推进。",
+        "dispatch-payment": "这笔弃牌支付的是轮盘行动，之前的军备手牌行动已用过。用这张牌支付，留下鸳鸯阵用于战斗。",
+        "dispatch-troops": "野战以存活的步兵、骑兵数量判胜负，同数时守方胜。辽北到叶赫部隔河，战场宽度为2，炮兵不占宽度。选两支2级步兵和原有的1级炮兵，再确认。",
+        "dispatch-target": "部队已选好，选择叶赫部作为目标。这里有蒙古驻军，进攻提交后先由守方决定是否避战。",
+        "defender-response": "守方骑兵可撤往其它己方控制区域避战；蒙古选择迎战。每3点骰值通常造成1损伤，但它已研发骑兵铁甲，本次需要4点。接下来由双方决定是否使用战术牌。",
+        "tactic-card": "每场战斗通常只能打出1张战术牌。鸳鸯阵使这两支2级步兵改投十面骰，不改变部队等级；不用这张牌时，它们各投八面骰。选择并确认打出，增强这次进攻。",
+        "battle-roll": "野战依炮兵、骑兵、步兵的顺序，双方同阶段同时结算。每支参战部队掷自己的骰子；1级炮兵投六面骰。损伤先由最高等级部队承受，步骑每受1损伤降1级，降至0移除；炮兵不承伤。开始战斗，观察骰果如何改变守军。",
+        "occupy": "要把这次胜利计入控制区域的增长，必须留下部队占领。选择不劫掠占领，保留叶赫部人口。野战败方的人物还会获得战败标记，留待年中判定。",
+        "diplomacy-move": "叶赫部已拿下，接着照顾西线。大同邻接外喀尔喀部，当地的蒙古友好标记允许其安全通行、驻守。前进1格到外交、雇佣，取消这项资格并加强大同驻军。",
+        "diplomacy-action": "外交可影响最多3个邻接己方控制区域的区域。没有控制标记的本土、有正规军驻守的区域及朝鲜不能成为目标。选择外交，处理外喀尔喀部的蒙古标记。",
+        "diplomacy-target": "反面标记表示友好，仍是中立区域；正面才是附庸控制区。选择外喀尔喀部，移除蒙古的反面标记；这会取消友好关系，不会让大明取得控制。",
+        "diplomacy-finish": "本回合只需处理这处友好关系。结束外交，转去补强相邻的大同。",
+        "hire-action": "大同目前只有一支1级守军。同一格还可以雇佣：首次弃1张手牌，在己方控制区域建立2支2级雇佣军；继续雇佣时，每张牌只能再建1支。",
+        "hire-target": "在大同建立两支新守军。它们将和旧守军一起超过当地2人口；新年可用手牌支持差额，也可撤去旧兵。雇佣军可在任意己方控制区域建立，不限本土。",
+        "save-hand": "新年将至，防线、驻军和领取纪年卡都需要手牌。这回合保留手牌，不再执行手牌行动。",
+        "new-year": "新年先按控制的朝鲜区域标记抽取朝鲜牌；这些牌使用、弃掉后须回到独立的朝鲜弃牌堆。随后依序维护防线、处理耗损、领取纪年卡、打出新年度人物。现在的选择会影响还能留多少牌领取纪年卡。",
+        "maintain-shanhai": "山海关维持辽西、蓟镇之间的城防；破败后这条边界按平原处理。保留山海关，把其余手牌分给前线补给和纪年卡。",
+        "abandon-jinzhou": "锦州、宁远若不维护，会视为城市不存在。保留这些城防也要花手牌；本年把资源留给已出战的军队和纪年卡，放弃维护锦州，随后同样处理宁远。",
+        "abandon-inner-wall": "从长城凸面进攻时，战场宽度为1；破败后变为3。放弃内、外长城维护会失去这项防御。本年保留手牌，选择放弃维护。",
+        "upkeep-datong": "人口少于部队时，差额每支须弃1张手牌支持，或移除一支部队。大同已雇来两支2级守军；撤去原来的1级兵，让新守军由当地人口供养，保留手牌。",
+        "upkeep-yehe": "叶赫部是非汉人区域，大明正规军不能接受当地人口补给。刚夺取的前线需要留下守军，每支各弃1张手牌支持；这次为三支驻军支付。",
+        "upkeep-xianxing": "朝鲜不放人口，也不能就地补给任何军队。每支驻军完全由手牌支持；这次弃1张牌，保留咸兴驻军。",
+        "upkeep-liaobei": "辽北留下的预备队超过当地人口4支。扩军的补给代价现在兑现：支付4张手牌保留它们，而不是因部队留在本土就免除差额。",
+        "upkeep-pyongyang": "还要为纪年卡留出手牌。本次撤去平壤、随后撤去汉城的雇佣军，不再支付这两处驻军的补给；移除部队不会自动改变控制权。",
+        "claim-year": "年初看到的控制增长条件现在结算：占领叶赫部使大明取得领取资格；同分时原顺位靠后者优先。弃一半手牌、向上取整，领取本年纪年卡和1点威望；放弃则资格顺延。",
+        "new-order": "领走的是本年纪年卡；刚用于评分的下一张接任本年卡，决定新顺位和可出场人物。新顺位是蒙古、大明、后金。蒙古选完人物后轮到大明，全部出场完成才翻开再下一张。",
+        "year-character": "人物由本年的纪年卡限定，不进入手牌，出场后的能力持续生效。点击放大镜查看杨镐：调度、进攻可指挥10个部队，且不受其它人物效果影响。选择他，为后续动员留下指挥余量。",
+        "training-move": "人物出场完成后，新公开的纪年条件是本年新建最多部队。现在轮到大明，前进1格到征兵训练：先强化叶赫部驻军，再建立新兵，开始争取下一次领取资格。",
+        "training-action": "弃1张手牌，最多可进行4次征兵或训练。征兵每次建立1个等级2正规军；训练每次使一支部队提升1级。本次用三次训练强化前线，再用一次征兵补充辽东。",
+        "training-payment": "用朝贡后保留的这张朝鲜手牌支付一次费用，开始征兵训练。",
+        "training-target": "每支部队每回合只能提升1级，炮兵等级上限须由军备提高。之前的火炮技术已把上限提高到2；选择参加过叶赫之战的1级炮兵，训练到2级。",
+        "training-second-target": "继续训练两支参战步兵，仍使用同一次费用的基础次数。2级升到3级后，通常投掷的骰子由八面变为十面，不必再靠鸳鸯阵临时改变。",
+        "training-recruit-kind": "三次训练已强化前线，最后一次用于征兵。训练不算新建部队；征兵才能增加这次纪年条件所统计的建军数量。",
+        "training-recruit-target": "辽东此前开垦后有4人口、3支部队。在这里建立1支2级正规军，可由当地人口供养；人口与部队相等后，这里不再符合年中税赋条件。",
+        "training-finish": "4次基础行动已用完。额外训练每次还需弃1张手牌；这次保留最后一张，不再追加训练。",
+        "finish": "叶赫部仍在大明控制下，第一点威望已经取得。接下来比较本年新建部队，继续扩军时也要为新年留下补给和领取纪年的手牌。率先取得3点威望即可获胜；攻下对手首都，或新年控制至少16个非朝鲜区域，也能获胜。"
+      }
+    },
+    "basic": {
+      "title": "连续入门：从扩军到新年",
+      "description": "沿一局真实对局，完成扩军、战斗、补给、年中与新年结算。",
+      "steps": {
+        "frontier": "本回合进攻叶赫部。先在辽北军屯，为前线补兵。",
+        "selectFarmRegion": "正规军只能在本土区域建立。选择辽北。",
+        "wheelMove": "指定一名对手抽2张牌并向前走2格。轮盘停在军屯时，抽2张手牌，并建立1支等级2的正规军部队。选择前进2格。",
+        "wheelOpponent": "指定后金抽2张牌。",
+        "chooseTarget": "选择叶赫部作为突袭目标。",
+        "chooseRaid": "突袭作战：弃1张手牌，执行进攻行动（不能执行调度）。点击「突袭作战」。",
+        "payRaid": "选择银两支付这次突袭，保留鸳鸯阵用于战斗。查看卡面：点击放大镜，或在触屏上长按。",
+        "confirmRaidPayment": "确认弃掉选中的银两。",
+        "battleOpen": "双方公开部队，最上方的点数表示等级。1级掷6面骰，2级掷8面骰，3级掷10面骰。辽北与叶赫部隔河，战场宽度为2；炮兵不受边界限制。",
+        "playTactic": "鸳鸯阵：不能在攻城、守城时使用；战斗中我方步兵骰子等级+1。现在是野战，打出这张战术牌。",
+        "resolveBattle": "点击辽北的第4支部队，选出4支部队，再点击「开始战斗」。",
+        "battleResult": "野战按炮兵、骑兵、步兵顺序，同阶段双方同时结算；每3点造成1损伤。损伤使步骑兵降低等级，归零才移除。\n\n剩余部队数较多的一方获胜，不计算炮兵；相同则守方获胜。查看本次掷骰与幸存部队，再处理叶赫部的占领。",
+        "occupy": "攻方获胜后可以占领，也可以撤回而不改变控制权。这次选择占领叶赫部。",
+        "finish": "霸权胜利要求在新年时控制至少16个非朝鲜区域。教程结束，继续本局对战。"
       }
     },
     "attackAndBattle": {
       "title": "进攻与野战",
       "description": "突袭作战会从手牌行动进入野战，再处理战术牌、承伤结算和战败撤退。",
       "steps": {
-        "overview": "这一章从大明的正常行动窗口开始。先执行一次手牌行动「突袭作战」，付出 1 张手牌后，马上看见它怎样带出一场野战。",
-        "chooseAction": "点击「突袭作战」。这是大明的势力行动：弃 1 张手牌，执行一次进攻行动，但不走轮盘调度。",
-        "payRaid": "现在从手牌里弃 1 张作为费用。费用付完，突袭作战才会真正触发，并把相邻战场推进到待结算状态。",
-        "borderWidth": "突袭作战已经把战场带到察哈尔。右侧会显示本次从克什克腾部到察哈尔的战场宽度：平原能展开 3 个部队，宽度决定真正能上场打的人数。",
-        "battleOpen": "接下来进入待结算战斗。先看双方公开出来的部队，再决定要不要打战术牌；战术牌只在这种战斗窗口里使用。",
-        "tacticWindow": "现在看底部手牌，点击「骑兵冲锋」选中，再点“打出战术牌”确认。选中的牌会抬起；如果点错，再点同一张牌可以取消。",
-        "battleDamage": "战术牌已经进场。点击右侧战斗面板里的「断后」完成本次战斗结算；系统会按炮兵、骑兵、步兵顺序掷骰，每 3 点造成 1 点损伤。",
-        "battleResult": "这场野战打完后，要比较双方剩下的步兵和骑兵数量；如果数量相同，守方赢。当前结果已经进入战后处理。",
-        "retreatAndDefeat": "战后处理里，败方要在断后和溃退之间选一种撤退方式，并获得战败标记。战败标记会留到年中人物判定时处理。",
-        "finish": "这条基础进攻链路是：选择突袭作战，弃牌支付，进入战场，打战术牌，结算损伤，再处理胜负和撤退。"
+        "overview": "现在进入大明手牌行动。",
+        "actionOverview": "右侧列出大明的四个同层势力行动：突袭作战、征召军队、赐印招安、驱虎吞狼。每回合从中选择 1 项。",
+        "chooseAction": "现在选择「突袭作战」。规则：弃 1 张手牌，执行进攻行动，不能执行调度。",
+        "payRaid": "在地图上选择察哈尔部，然后选择 1 张手牌并确认支付。",
+        "borderWidth": "进攻从克什克腾部进入察哈尔部。查看战场宽度 3。",
+        "battleOpen": "部队进入敌方区域后进入野战。双方公开部队，再进入战术牌时机。",
+        "tacticWindow": "点击「骑兵冲锋」，再点击「打出战术牌」确认。",
+        "battleDamage": "现在点击「断后」结算野战。战斗按炮兵、骑兵、步兵顺序结算；每 3 点造成 1 点损伤。",
+        "battleResult": "野战结算完成：察哈尔部队从 1 支变为 0 支。再看战后面板中的幸存部队和下一项处理。",
+        "retreatAndDefeat": "战败方要在「断后」和「溃退」中选择一种撤退方式。",
+        "postBattleChoice": "现在查看战后面板，选择战后处理。",
+        "finish": "野战、撤退和战后处理已完成，回到地图结果。"
       }
     },
     "siege": {
       "title": "攻城与围城",
       "description": "攻城包含守军退城、城战结算、围城选择和占领选择。",
       "steps": {
-        "overview": "这一章从大明进攻山海关开始。城战不是野战的另一个名字：守军可以退进城里，攻方打赢后还要决定围城还是占领。",
-        "defendCity": "现在点「守城避战」。守方会把最多 2 个部队和 2 个人口退进山海关城内，城外剩下的单位继续被打。",
+        "overview": "进入山海关城战。先处理守方守城选择，再处理城战和围城、占领或撤回。",
+        "defendCity": "选择「守城避战」。守方把部队和人口退入城内。",
         "cityBattle": "守军退入城内后，点击右侧战斗面板里的「断后」结算城战。城战先算炮兵，再算骑兵和步兵；骑兵在城战里要减 1。",
-        "cityResult": "城战结果会告诉你城内守军是否被清空。就算攻方打赢，也还要在围城和占领之间收口。",
-        "besiegeChoice": "现在点「围城该区」。围城代表大明把压力留在城外，但山海关控制权暂时还在守方手里。",
-        "occupyChoice": "对照占领结果：如果选择占领，山海关才会真正改成大明控制，城内和围城状态也会清空。",
-        "finish": "攻城这章要记住：打赢城战只是前半段，最后选择围城还是占领，才决定这座城的状态。"
+        "cityResult": "城战结算完成。战后面板可选择围城、占领或撤回。",
+        "postBattleOutcome": "围城保留后金控制和城内守军；占领改由大明控制并清除守军；撤回会放弃占领，让幸存部队返回相邻友方区域。选择一种处理方式，再选对应目标。",
+        "besiegeResult": "围城完成：山海关仍由后金控制，城内守军保留；明军围城部队留在城外。",
+        "occupyResult": "占领完成：山海关改由大明控制，城内守军清除。",
+        "withdrawResult": "撤回完成：山海关仍由后金控制；幸存部队退回相邻友方区域。",
+        "finish": "战后处理完成；围城、占领或撤回分别决定山海关控制权、城市状态和幸存部队去向。"
       }
     },
     "retreatAndRout": {
       "title": "战败撤退",
       "description": "野战败方在断后和溃退之间选择撤退方式。",
       "steps": {
-        "overview": "这一段接着野战失败后的撤退处理。败方不是自动消失，而是要在断后和溃退之间选一种代价。",
-        "chooseRout": "现在点“溃退”。这会让败方用更大损失换撤退收口。",
-        "routResult": "溃退后，出发区的残部被清空，大明再获得 1 个战败标记。",
-        "finish": "断后会留下残部，溃退会赔更多兵；两者都会影响后面的年中人物判定。"
+        "overview": "进入野战败方的撤退选择：断后或溃退。",
+        "chooseRout": "选择「溃退」并确认。",
+        "routResult": "溃退后，顶部玩家信息中的战败标记增加 1 个；地图出发区不再保留这支部队。",
+        "finish": "地图显示部队结果，顶部玩家信息显示战败标记。"
       }
     },
     "cavalryPlunder": {
       "title": "骑兵劫掠",
       "description": "骑兵可以改走劫掠：先承受炮骑反击，再按幸存骑兵劫掠人口并撤回。",
       "steps": {
-        "overview": "骑兵在野战里不一定只参与常规攻击。符合条件时，可以宣告劫掠。",
-        "choosePlunder": "点击“骑兵劫掠”。这里劫掠守方牌堆，结算后会移除人口、抽牌并让骑兵撤回。",
-        "plunderResult": "劫掠结果已经写进结算摘要：人口被移除，牌堆和手牌同步变化。",
-        "finish": "骑兵劫掠是战斗中的待结算选择，不是战后说明文字。"
+        "overview": "进入骑兵劫掠选择。劫掠先处理反击，再处理人口、抽牌和撤退。",
+        "choosePlunder": "选择「骑兵劫掠」。",
+        "plunderResult": "劫掠完成：目标区人口减少，骑兵撤回，牌堆变化已同步。",
+        "finish": "骑兵劫掠已完成。"
       }
     },
     "cavalryEvasion": {
       "title": "骑兵避战",
       "description": "守方骑兵可以从野战撤往相邻友方区，不按战败撤退处理。",
       "steps": {
-        "overview": "骑兵在野战里也可以避战。守方骑兵撤走后，原战场继续结算攻方是否打穿。",
-        "chooseEvasion": "点击高亮的撤退目标，把守方骑兵撤到相邻友方区。",
-        "evasionResult": "避战结果已经写进结算摘要：骑兵离开战场并进入撤退目标区。",
-        "finish": "骑兵避战是战斗中的待结算选择，会先改变战场上的部队位置。"
+        "overview": "进入守方骑兵避战选择。",
+        "chooseEvasion": "点击高亮的相邻友方区，移动守方骑兵。",
+        "evasionResult": "守方骑兵已离开原战场；原战场继续结算。",
+        "finish": "避战只改变部队位置，不产生战败撤退惩罚。"
       }
     },
     "neutralInvasion": {
       "title": "中立入侵",
       "description": "进攻无人驻守但有人口的中立区时，会临时生成中立守军参与结算。",
       "steps": {
-        "overview": "中立区不是空地。区域没人驻守但有人口时，调度进攻会在结算时临时生成中立守军。",
-        "resolveNeutral": "点击待结算按钮。这里攻入土默特部，结算会把人口转成中立守军。",
-        "neutralResult": "结算摘要已经写出中立守军：攻方没有突破，区域仍保持中立控制。",
-        "finish": "中立入侵是战斗结算规则，不是单纯地图说明；是否改控制要看有没有真正打穿。"
+        "overview": "进入中立区战斗结算。无人驻守但有人口的中立区会按规则生成中立守军。",
+        "resolveNeutral": "现在点击战斗结算。按土默特部人口生成中立守军。",
+        "neutralResult": "回到地图查看土默特部：中立守军已经出现，进攻方未能击败守军，控制标记仍保持中立。",
+        "finish": "中立守军是否改控制，取决于战斗结果。"
       }
     },
     "waterDispatch": {
       "title": "水路调度",
       "description": "大明可以通过船锚区域之间的海岸水路调度；骑兵调度能走更远，但每条水路一次仍最多投入 2 个部队。",
       "steps": {
-        "overview": "水路不是单纯地图说明。这里从皮岛通过海岸/水路解围东江，并展示水路后只能继续走水路。",
-        "chooseWaterTarget": "点击调度候选里的东江。候选会写明海岸/水路、耗 2、限 2；后续候选不会把水路再接成陆路。",
-        "waterBoundary": "待结算已经锁到水路边界：即使是骑兵调度，这条水路战场宽度也是 2，最多投入 2 个部队。",
-        "finish": "水路调度已经进入待结算战斗；后续能否突破仍按正常战斗结算处理。"
+        "overview": "进入水路调度。大明通过船锚区域之间的海岸水路移动部队。",
+        "chooseWaterTarget": "点击东江作为水路目标。每条水路一次最多投入 2 个部队，不能接回陆路。",
+        "waterBoundary": "水路边界战场宽度为 2，一次最多 2 个部队参战。",
+        "finish": "水路只改变移动路径和战场宽度，仍按正常战斗规则结算。"
       }
     },
     "wheelSharedCost": {
       "title": "轮盘分支与发展行动",
       "description": "公共轮盘走远会让对手补牌，并把回合落点带到进攻、调度、外交或雇佣等系统。",
       "steps": {
-        "overview": "公共轮盘不是白走。走得越远，越会把手牌补给对手，也越会改变本回合的落点入口。",
-        "chooseMove": "选择公共轮盘“所有对手抽 2，走 3”。这里仍是推进轮盘，不是直接开战。",
-        "drawResult": "公共轮盘一走三格，蒙古和后金都各补了 2 张手牌。",
-        "dispatchReady": "代价付出后，本回合的轮盘落点是进攻调度。重点不是立刻开战，而是公共轮盘怎样把回合带进另一个系统入口。",
-        "finish": "公共轮盘不只是在轨道上前进；它决定本回合会进入哪一种落点行动，也决定谁会因轮盘推进补回手牌。"
+        "overview": "进入公共轮盘的 3 格分支。该走法会让两家对手各摸 2 张牌，并进入进攻调度。",
+        "chooseMove": "点击轮盘上高亮的“进攻调度”区域。",
+        "drawResult": "轮盘走三格后，查看蒙古和后金的手牌：两家的手牌数各增加 2。",
+        "dispatchRule": "进攻调度：弃 1 张手牌。",
+        "payDispatch": "选择 1 张手牌并确认支付。",
+        "finish": "弃牌完成，地图上的部队调度选择已可继续。"
       }
     },
     "wheelReclaim": {
-      "title": "轮盘开垦",
+      "title": "开垦",
       "description": "轮盘开垦会直接把人口加到己方控制区。",
       "steps": {
-        "overview": "开垦不是回合外奖励，它就是轮盘带来的正式发展结果。",
-        "chooseMove": "点击轮盘的“免费走 1”，把公共轮盘推进到开垦。",
-        "result": "轮盘停在开垦后，会给宣府加 1 人口。人口以后决定税赋、补给和你能否继续养兵。",
-        "finish": "开垦的意义，不是立刻多出部队，而是先把后面的税赋和补给底子垫厚。"
+        "overview": "进入轮盘开垦结算。",
+        "chooseMove": "点击轮盘上高亮的“开垦”区域。",
+        "result": "开垦完成：宣府人口增加 1。",
+        "finish": "开垦已完成。"
       }
     },
     "wheelMilitaryFarm": {
-      "title": "轮盘军屯",
-      "description": "轮盘军屯会同时补牌并加兵。",
+      "title": "军屯",
+      "description": "通过军屯补牌并建立正规军。",
       "steps": {
-        "overview": "军屯和开垦不同，它会把人口基础直接换成当前回合的兵力和手牌。",
-        "chooseMove": "点击轮盘的“免费走 1”，把公共轮盘从开垦推进到军屯。",
-        "result": "轮盘军屯会抽 2 张牌，再在宣府建立 1 个等级 2 正规军。它既补资源，也补当前战线的兵。",
-        "finish": "军屯是轮盘里最直接的滚雪球动作：手牌变多，场上的正规军也跟着上来。"
+        "overview": "军屯行动：抽2张手牌，并建立1个等级2的正规军部队。",
+        "chooseMove": "点击轮盘上高亮的“军屯”区域。",
+        "result": "军屯完成：宣府出现 1 个等级 2 正规军，手牌已补充。",
+        "finish": "军屯已完成。"
       }
     },
     "wheelRecruitTrain": {
-      "title": "轮盘征兵训练",
-      "description": "轮盘征兵训练会直接补兵，并按军备等级训练炮兵。",
+      "title": "征兵训练",
+      "description": "亲自支付手牌，选择征兵或训练，并查看部队变化。",
       "steps": {
-        "overview": "轮盘征兵训练不是只把木块摆上去，它还会吃到你已经研发好的军备等级。",
-        "chooseMove": "点击轮盘的“免费走 1”，把公共轮盘从军屯推进到征兵训练。",
-        "result": "轮盘征兵训练会在宣府建立 2 个等级 2 正规军；若火炮技术已经升级，现有炮兵也会一起被训练到更高等级。",
-        "finish": "轮盘不只是推系统名词，它会把军备、兵力和当前战线一起接到现实结果上。"
+        "overview": "从军屯再前进 1 格，会进入征兵训练。",
+        "paymentRule": "弃一张手牌，最多可进行4 次的征兵或训练行动",
+        "chooseMove": "点击轮盘上高亮的“征兵训练”区域，进入征兵训练选择。",
+        "payInitial": "选择 1 张手牌并确认弃牌。",
+        "actionsRule": "-  征兵行动：直接建立 1 个等级 2 的正规军部队。\n-  训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。",
+        "chooseTraining": "先选择“训练”。",
+        "chooseTrainingTarget": "选择宣府的 1 级炮兵。火炮技术为 2 级，因此这支炮兵可升至 2 级。",
+        "trainingResult": "宣府的炮兵已从 1 级升至 2 级；本次训练计为 1 次行动。",
+        "chooseRecruit": "接着选择“征兵”。",
+        "homelandRule": "且必须在本土(深色)区域才能建立。",
+        "artilleryRule": "(注意炮兵的等级上限须由军备来提升)",
+        "chooseRecruitTarget": "在候选区域中选择一个本土区域。",
+        "recruitResult": "已在所选本土区域建立 1 支等级 2 正规军。",
+        "extraTrainingRule": "可透过弃手牌进行额外的训练行动，每张弃牌可额外进行 1 次训练。",
+        "chooseExtraTraining": "点击“额外训练”，再弃 1 张手牌。",
+        "payExtra": "选择 1 张手牌并确认弃牌。",
+        "chooseExtraTrainingTarget": "选择宣府尚未训练过的正规军，将它从 2 级升至 3 级。",
+        "extraTrainingResult": "额外弃牌已增加 1 次训练；宣府这支正规军已升至 3 级。",
+        "finishAction": "点击“完成征兵训练”，结束本次征兵训练。",
+        "result": "征兵、训练与额外训练的结算已列在本次行动摘要中；轮盘和手牌行动可以继续。",
+        "finish": "征兵训练已完成。"
       }
     },
     "armamentUpgrade": {
       "title": "升级军备",
       "description": "升级军备消耗手牌，并同步更新军备等级。",
       "steps": {
-        "overview": "军备不是常驻被动词条，它也要靠手牌投入才能继续升级。",
-        "chooseAction": "点击手牌里的“火炮技术”，进入升级军备；再弃 1 张手牌，对应军备才会升 1 级。",
-        "payCards": "在底部手牌里选 2 张支付，再确认执行。",
-        "result": "升级已经落地：大明的火炮技术从 1 级升到了 2 级，玩家条里的军备摘要也跟着更新。",
-        "finish": "军备升级换来的不是地图控制，而是后面战斗会继续吃到的军备等级。"
+        "overview": "现在进入大明手牌行动。",
+        "actionOverview": "升级军备：打出军备牌，弃 1 张手牌，升级该军备。",
+        "chooseAction": "现在点击手牌里的“火炮技术”。",
+        "payCards": "打出「火炮技术」后，再弃 1 张手牌并确认。",
+        "result": "火炮技术从 1 级升到 2 级。",
+        "finish": "升级军备完成，火炮技术已升至 2 级。"
       }
     },
     "eventAction": {
       "title": "大汗令箭",
       "description": "大汗令箭是蒙古势力行动，行动链是支付、选效果、落结果；弃牌和地图变化会一起落地。",
       "steps": {
-        "overview": "蒙古的势力行动也要靠手牌支付。大汗令箭发动后，会把这次行动转成征兵训练或外交雇佣。",
-        "chooseAction": "点击右侧“大汗令箭”势力行动。发动后，再弃 1 张手牌，才会进入效果选择。",
-        "payCards": "在底部手牌里选 1 张支付，再确认执行。",
-        "chooseEffect": "先在地图上点山海关，确认这次大汗令箭要把兵加到哪里；再选择“征兵训练”结算加兵。",
-        "result": "大汗令箭把山海关的蒙古兵力从 2 提到 4，事件效果已经直接改了地图上的实力。",
-        "finish": "势力行动的节奏，就是先弃牌发动，再按行动效果把局势直接改到新状态。"
+        "overview": "现在进入蒙古手牌行动。",
+        "actionOverview": "右侧列出蒙古的三个同层势力行动：突袭作战、马市贸易、大汗令箭。每回合从中选择 1 项。",
+        "chooseAction": "现在点击右侧「大汗令箭」。弃 1 张手牌后，选择「征兵训练」或「外交雇佣」。",
+        "payCards": "弃 1 张手牌并确认。",
+        "chooseEffect": "选择目标区域，再选择「征兵训练」进入征兵或训练选择。",
+        "recruitTrainActionsRule": "-  征兵行动：直接建立 1 个等级 2 的正规军部队。\n-  训练行动：将部队向上转 1 级，在一回合中每个部队只能各提升 1 级。",
+        "chooseRecruit": "选择“征兵”。",
+        "recruitHomelandRule": "且必须在本土(深色)区域才能建立。",
+        "chooseRecruitTarget": "点击一个候选本土区域。",
+        "recruitResult": "已在所选本土区域建立 1 个等级 2 正规军部队。",
+        "finishRecruitTrain": "点击“完成征兵训练”，结束大汗令箭的征兵训练效果。",
+        "result": "大汗令箭的征兵行动已结算；查看本次行动摘要与地图结果。",
+        "finish": "大汗令箭的征兵训练效果已完成。"
       }
     },
     "diplomacy": {
       "title": "外交与雇佣",
       "description": "从真实轮盘入口进入一次外交雇佣，看到控制标记与雇佣军一起结算。",
       "steps": {
-        "overview": "外交决定的是地区关系，不只是翻一面标记；雇佣决定的是新兵力能落到哪里。",
-        "wheelEntry": "轮盘推进到外交雇佣后，处理的是控制关系和驻军空间，不是战斗。",
-        "chooseTarget": "外交目标是地图地区。只能点邻近己方控制区的目标，也不能对没有控制标记的本土区、朝鲜区和有正规军驻守的区域使用。",
+        "overview": "进入轮盘外交雇佣。",
+        "wheelEntry": "点击轮盘上高亮的“外交雇佣”区域。",
+        "chooseTarget": "外交目标必须与己方控制区相邻；本土区、朝鲜区和有正规军的区域不能作为目标。",
         "friendlyMark": "在地图上点宁远放置友好标记。反面标记代表友好区，军队可以通行、驻守，但该区还不算真正的控制区。",
         "tributeMark": "把刚放下的友好标记翻为附庸。正面标记才算你的控制区；中立区被战斗占下后，也会直接变成这种状态。",
         "removeMark": "在地图上点东江，移除已有的他方控制标记。外交不只会放自己的标记，也能把别人已经放下的标记往回推。",
-        "hireOnly": "雇佣军只能建在控制区里。它和正规军不同，不能直接在普通中立地凭空出现。",
-        "finish": "外交和雇佣连在一起时，你看到的是两种收益同时发生：地图关系变了，兵力结构也变了。"
+        "finish": "外交标记和雇佣部队已结算。"
       }
     },
     "yearAndCharacters": {
       "title": "年中、新年与纪年",
       "description": "年中税赋、人物判定、新年维护、兵力耗损、纪年卡争分和顺位刷新构成年度结算。",
       "steps": {
-        "overview": "这一章先把公共轮盘推进到年中，再推进到新年，看税赋、人物判定、防线维护和兵力耗损如何连续结算。",
-        "advanceMidyear": "点击轮盘的“指定一个对手抽 2，走 2”，把行动标记推进到年中。",
-        "midyearTax": "年中税赋会先结算。这里宣府人口多于部队，会把资源重新送回你手里；被围城的控制区拿不到这份税赋。",
-        "midyearCharacters": "接着是人物判定。符合条件的人物要掷骰结算；战败标记也会在人物判定里逐枚处理。",
-        "advanceNewYear": "年中结完后，点击轮盘的“免费走 1”，把行动标记推进到新年。",
-        "newYearTribute": "新年朝鲜朝贡：控制朝鲜区域的玩家，会按地图标记抽对应数量的朝鲜牌。",
-        "newYearMaintenance": "然后点“自动支付”处理防线维护。长城、山海关、宁远、锦州保不住，就会破败，边界和城市效果也会跟着失效。",
-        "newYearAttrition": "维护之后还要看兵力耗损。人口供不起的部队，要么弃牌硬养，要么自己裁掉。",
-        "chronologyScore": "纪年卡不只是年份牌。分数最高的人要付出一半手牌，才拿得到这一年的威望；不付，就把资格让给下一名。",
-        "turnOrderRefresh": "纪年卡结算后，新顺位和新人物会一起刷新，下一年的行动节奏也会跟着改。",
-        "finish": "一年过去，你失去和得到的，从来不只是几张牌，而是整张地图的资源、人物和顺位都被重排。"
+        "overview": "进入年中与新年结算，按顺序查看税赋、人物、防线、耗损、纪年和顺位。",
+        "advanceMidyear": "指定一个对手抽 2 张牌并向前走 2 格。点击轮盘上高亮的 2 格走法，再选择一名对手。",
+        "midyearTax": "年中税赋完成：查看顶部玩家信息中的资源；被围城区不收税。",
+        "midyearCharacters": "人物判定完成：查看顶部玩家信息中的人物和战败标记。",
+        "advanceNewYear": "年中结算后，点击轮盘上方高亮的“新年”位置。",
+        "newYearTribute": "新年朝贡：控制朝鲜区域的玩家按图标抽朝鲜牌。",
+        "newYearMaintenance": "点击“尽量维护防线”，按防线优先级自动支付可承担的维护费；未能维护的防线会破败。",
+        "newYearAttrition": "维护完成：查看地图和顶部玩家信息中的耗损结果。",
+        "chronologyScore": "纪年卡结算：最高分玩家支付一半手牌取得威望，否则顺延。",
+        "turnOrderRefresh": "纪年结算完成：纪年卡、当前行动人和人物状态已刷新。",
+        "finish": "年度结算完成。"
       }
     },
     "koreaSpecial": {
       "title": "朝鲜与地图特例",
       "description": "朝鲜、汉城、水路和山海关是会直接改变玩法的地图特例。",
       "steps": {
-        "overview": "这一章按地图上的朝鲜、汉城、水路和山海关逐个看特例，再用新年维护把朝鲜耗损接上。",
-        "koreaRegion": "先看朝鲜区。地图上的朝贡图标决定新年能抽多少朝鲜牌，控制权决定谁拿得到这份收益。",
-        "hanseongVp": "再看玩家条上的汉城威望。大明失去初始控制后，谁控制汉城，谁就等于多拿 1 点威望。",
-        "waterLimit": "船锚区域之间的水路，一次最多只能运 2 个部队；骑兵避战时也不能靠水路脱身。",
-        "newYearMaintenance": "现在点“自动支付”处理新年维护。维护结算后，朝鲜上的部队也会一起进入耗损结算。",
-        "koreaAttrition": "朝鲜区没有人口补给。留在朝鲜的部队，到了新年只能靠手牌硬养；养不起，就会直接触发朝鲜耗损。",
-        "shanhaiguan": "山海关既是城市，也是蓟镇与辽西之间的特殊边界。它在，边界就窄；它一旦破败，边界就会塌成平原。",
-        "finish": "这些特例不是补充说明，而是会直接改掉你能不能守住、防住和抢到关键威望的正式规则。"
+        "overview": "进入朝鲜、汉城、水路和山海关特例。",
+        "koreaRegion": "朝贡图标决定新年抽牌数，控制权决定收取者。",
+        "hanseongVp": "汉城控制权对应 1 点威望；查看顶部玩家信息。",
+        "waterLimit": "船锚水路一次最多移动 2 个部队；骑兵不能用水路避战。",
+        "newYearMaintenance": "点击“尽量维护防线”，进入新年维护。",
+        "koreaAttrition": "朝鲜区不提供人口补给；维护后查看朝鲜部队耗损。",
+        "shanhaiguan": "山海关是城市和特殊边界；完整时边界窄，破败后边界变宽。",
+        "finish": "朝贡、汉城、水路和山海关特例已经结算。"
       }
     }
   },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import type { RandomFn } from '../../../engine/types';
 import { getCardPreviewGetter } from '../../../components/game/registry/cardPreviewRegistry';
@@ -48,6 +48,35 @@ const toCompressedAssetPath = (relativePath: string): string => {
     );
 };
 
+const MAGE_WARS_ASSET_MANIFEST_PATH = path.join(
+    process.cwd(),
+    'public',
+    'assets',
+    'i18n',
+    'zh-CN',
+    'mage-wars',
+    'assets-manifest.json',
+);
+const mageWarsAssetManifest = JSON.parse(readFileSync(MAGE_WARS_ASSET_MANIFEST_PATH, 'utf8')) as {
+    files: Record<string, {
+        variants?: Record<string, {
+            bytes?: number;
+            mime?: string;
+        }>;
+    }>;
+};
+
+const toMageWarsManifestKey = (relativePath: string): string => {
+    const gameRelativePath = relativePath.startsWith('mage-wars/')
+        ? relativePath.slice('mage-wars/'.length)
+        : relativePath;
+    const withoutExtension = gameRelativePath.replace(/\.(avif|webp|png|jpe?g|gif)$/i, '');
+    const slashIndex = withoutExtension.lastIndexOf('/');
+    const dir = slashIndex >= 0 ? withoutExtension.slice(0, slashIndex) : '';
+    const filename = slashIndex >= 0 ? withoutExtension.slice(slashIndex + 1) : withoutExtension;
+    return path.posix.join(dir, 'compressed', filename);
+};
+
 describe('mage-wars foundation', () => {
     test('manifest declares enabled foundation entry with required runtime metadata', () => {
         expect(manifest.id).toBe('mage-wars');
@@ -60,6 +89,7 @@ describe('mage-wars foundation', () => {
         expect(manifest.mobileLayoutPreset).toBe('board-shell');
         expect(manifest.mobileBoardShellLayout).toEqual({
             designWidth: 1920,
+            designHeight: 1080,
         });
         expect(manifest.ai).toMatchObject({
             capture: true,
@@ -105,12 +135,25 @@ describe('mage-wars foundation', () => {
         expect(result.critical).toContain('mage-wars/board/standard-arena');
         expect(result.critical).toContain('mage-wars/cards/mages/mages-core-atlas');
         expect(result.critical).toContain('mage-wars/cards/backs/spell-card-back');
+        expect(result.critical).toContain('mage-wars/cards/spells/spell-equipment-core-atlas');
         expect(result.warm).toContain('mage-wars/cards/spells/spell-attack-core-atlas');
         expect(result.warm).toContain('mage-wars/cards/spells/spell-equipment-core-atlas');
 
         for (const imagePath of [...result.critical, ...result.warm]) {
             expect(imagePath).not.toContain('/compressed/');
-            expect(existsSync(toCompressedAssetPath(imagePath))).toBe(true);
+            const manifestKey = toMageWarsManifestKey(imagePath);
+            const manifestFile = mageWarsAssetManifest.files[manifestKey];
+            expect(manifestFile, `Mage Wars 图片未登记到游戏 assets manifest: ${manifestKey}`).toBeDefined();
+            const webpVariant = manifestFile?.variants?.webp;
+            expect(webpVariant, `Mage Wars 图片缺少 WebP 发布变体: ${manifestKey}`).toMatchObject({
+                mime: 'image/webp',
+            });
+
+            const compressedPath = toCompressedAssetPath(imagePath);
+            if (existsSync(compressedPath)) {
+                expect(statSync(compressedPath).size, `Mage Wars 本地压缩图片大小与发布清单不符: ${compressedPath}`)
+                    .toBe(webpVariant?.bytes);
+            }
         }
     });
 
@@ -139,12 +182,24 @@ describe('mage-wars foundation', () => {
         expect(previewGetter).toBeDefined();
 
         const registeredSpellCardIds = getMageWarsRegisteredSpellCardIds();
-        expect(registeredSpellCardIds).toHaveLength(152);
+        expect(registeredSpellCardIds).toHaveLength(157);
         expect(getMageWarsSpellCardName(1700)).toBe('火球术');
         expect(getMageWarsSpellCardPreviewRef(1700)).toEqual({
             type: 'atlas',
             atlasId: 'mage-wars:spell-attack-core-atlas',
             index: 0,
+        });
+        expect(getMageWarsSpellCardName(1707)).toBe('烈焰之环');
+        expect(getMageWarsSpellCardPreviewRef(1707)).toEqual({
+            type: 'atlas',
+            atlasId: 'mage-wars:spell-attack-core-atlas',
+            index: 7,
+        });
+        expect(getMageWarsSpellCardName(1708)).toBe('怒雷箭矢');
+        expect(getMageWarsSpellCardPreviewRef(1708)).toEqual({
+            type: 'atlas',
+            atlasId: 'mage-wars:spell-attack-core-atlas',
+            index: 8,
         });
         expect(previewGetter?.('3700')).toEqual({
             type: 'atlas',
@@ -183,15 +238,13 @@ describe('mage-wars foundation', () => {
             }
         }
 
-        const missingRuntimeAtlasCardIds = new Set(['2303', '3800', '3801', '3802', '3803']);
-        const previewableSpellbookCardIds = [...spellbookCardIds]
-            .filter((cardId) => !missingRuntimeAtlasCardIds.has(cardId));
+        const previewableSpellbookCardIds = [...spellbookCardIds];
 
         expect(spellbookCardIds).toHaveLength(153);
         expect(registeredSpellCardIds).toEqual(expect.arrayContaining(previewableSpellbookCardIds));
         expect([...spellbookCardIds]
             .filter((cardId) => getMageWarsSpellCardPreviewRef(Number(cardId)) === null)
-            .sort((left, right) => Number(left) - Number(right))).toEqual([...missingRuntimeAtlasCardIds]);
+            .sort((left, right) => Number(left) - Number(right))).toEqual([]);
         for (const cardId of previewableSpellbookCardIds) {
             expect(previewGetter?.(cardId)).toMatchObject({ type: 'atlas' });
         }

@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
-import type { ViteDevServer } from 'vite'
+import type { Plugin, ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -20,7 +20,9 @@ import type {
   QidahenRegionMaskSaveResult,
 } from './src/games/qidahen/regionMaskWorkspaceBridge.ts'
 import { normalizeQidahenRegionMaskSaveScope } from './src/games/qidahen/regionMaskWorkspaceBridge.ts'
+import { loadDevRuntimePorts } from './scripts/infra/dev-port-runtime.js'
 import { readyCheckPlugin } from './vite-plugins/ready-check.ts'
+import { e2eSourceIdentityPlugin } from './vite-plugins/e2e-source-identity.mjs'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
 const packageJson = JSON.parse(fs.readFileSync(path.resolve(configDir, 'package.json'), 'utf-8')) as {
@@ -53,7 +55,18 @@ const STABLE_OPTIMIZE_DEPS = [
   'howler',
   'pixi.js',
   'normalize-wheel',
+  // Home library news renders changelog markdown. With noDiscovery enabled,
+  // keep its CJS style parser in Vite's ESM prebundle instead of serving it raw.
+  'react-markdown',
+  'style-to-js',
+  // 后台图表的传递依赖包含 CJS；显式预构建整个入口，覆盖懒加载路由。
+  'recharts',
   'socket.io-msgpack-parser',
+  // Pixi 8 ships CommonJS internals through eventemitter3; prebundle the full
+  // chain so Vite dev/E2E does not load the nested CJS file as a raw ESM module.
+  'pixi.js',
+  '@pixi/react',
+  'eventemitter3',
 ] as const
 const QIDAHEN_REGION_MASK_SAVE_ROUTE = '/devtools/qidahen-region-mask/save'
 const QIDAHEN_REGION_MASK_LOAD_ROUTE = '/devtools/qidahen-region-mask/load'
@@ -173,22 +186,32 @@ const createAndroidBuildMetaPlugin = (
   backendUrl: string,
   homeV2DraftEnabled: boolean,
   env: Record<string, string>,
-) => ({
+): Plugin => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
     if (mode !== 'android') return
 
-    const appId = process.env.VITE_CAPACITOR_APP_ID?.trim() || process.env.CAPACITOR_APP_ID?.trim() || ''
+    const appId = env.VITE_CAPACITOR_APP_ID?.trim()
+      || env.CAPACITOR_APP_ID?.trim()
+      || process.env.VITE_CAPACITOR_APP_ID?.trim()
+      || process.env.CAPACITOR_APP_ID?.trim()
+      || ''
     const appName = process.env.CAPACITOR_APP_NAME?.trim() || ''
     const forceBuiltinBundle = /^(1|true|yes|on)$/i.test(
       process.env.VITE_ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || process.env.ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || '',
     )
-    const otaEnabled = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ENABLED?.trim() || '')
+    const otaConfigured = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ENABLED?.trim() || '')
+    const otaAllowDebugApp = /^(1|true|yes|on)$/i.test(env.VITE_ANDROID_OTA_ALLOW_DEBUG_APP?.trim() || '')
     const otaManifestUrl = env.VITE_ANDROID_OTA_MANIFEST_URL?.trim() || ''
     const otaChannel = env.VITE_ANDROID_OTA_CHANNEL?.trim() || 'stable'
+    const isDebugApp = Boolean(appId) && isNonReleaseAndroidAppId(appId)
+    if (isDebugApp && otaConfigured && otaAllowDebugApp && (otaChannel.toLowerCase() === 'stable' || /\/stable(?:\/|\.json(?:$|\?))/i.test(otaManifestUrl))) {
+      throw new Error(`debug Android 包禁止连接 stable OTA：appId=${appId}, channel=${otaChannel}, manifest=${otaManifestUrl}`)
+    }
+    const otaEnabled = otaConfigured && (!isDebugApp || otaAllowDebugApp)
     // Android shell root already treats Home V2 as the default homepage.
     // Keep the packaged build metadata aligned with the web/router contract.
     const homeV2EnabledForAndroidBuild = mode === 'android' || homeV2DraftEnabled
@@ -217,7 +240,7 @@ const createAndroidBuildMetaPlugin = (
   },
 })
 
-const createIosBuildMetaPlugin = (mode: string, backendUrl: string, env: Record<string, string>) => ({
+const createIosBuildMetaPlugin = (mode: string, backendUrl: string, env: Record<string, string>): Plugin => ({
   name: 'ios-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -623,8 +646,21 @@ export default defineConfig(({ mode }) => {
     || process.env.BG_DEV_STRICT_PORTS === '1'
   const serverHost = cliHost || '0.0.0.0'
   const hmrHost = cliHost && cliHost !== '0.0.0.0' ? cliHost : 'localhost'
-  const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
-  const apiServerPort = Number(env.API_SERVER_PORT) || 18001
+  const liveRuntimePorts = mode === 'development' ? loadDevRuntimePorts() : null
+  const gameServerPort = Number(env.GAME_SERVER_PORT)
+    || Number(process.env.GAME_SERVER_PORT)
+    || liveRuntimePorts?.gameServer
+    || 18000
+  const apiServerPort = Number(env.API_SERVER_PORT)
+    || Number(process.env.API_SERVER_PORT)
+    || liveRuntimePorts?.apiServer
+    || 18001
+  const gameServerProxyTarget = env.GAME_SERVER_PROXY_TARGET
+    || process.env.GAME_SERVER_PROXY_TARGET
+    || `http://127.0.0.1:${gameServerPort}`
+  const apiServerProxyTarget = env.API_SERVER_PROXY_TARGET
+    || process.env.API_SERVER_PROXY_TARGET
+    || `http://127.0.0.1:${apiServerPort}`
   const suppressE2EProxyNoise = env.E2E_PROXY_QUIET === 'true'
   const useStableE2EOptimizeDeps = forceInlineVite || suppressE2EProxyNoise
   const useStableOptimizeDeps = mode === 'development' || useStableE2EOptimizeDeps
@@ -673,6 +709,7 @@ export default defineConfig(({ mode }) => {
       'globalThis.__APP_RELEASE_CHANNEL__': JSON.stringify(appReleaseChannel),
     },
     plugins: [
+      e2eSourceIdentityPlugin(Boolean(process.env.PW_RUNTIME_SCOPE || process.env.PW_E2E_SESSION_ID)),
       {
         name: 'suppress-public-dir-warning',
         enforce: 'pre' as const,
@@ -755,7 +792,7 @@ export default defineConfig(({ mode }) => {
             // 入口模块图过宽时，自动发现会在空缓存首次访问中扫描整个 src。
             // 开发与 E2E 共用同一份关键 CJS 依赖清单，避免两种运行模式各自漂移。
             noDiscovery: true,
-            include: STABLE_OPTIMIZE_DEPS,
+            include: [...STABLE_OPTIMIZE_DEPS],
             // 依赖已完全显式列出，无需等静态导入爬取结束才返回首批优化结果。
             holdUntilCrawlEnd: false,
             entries: undefined,
@@ -811,7 +848,7 @@ export default defineConfig(({ mode }) => {
           },
       proxy: {
         '/games': {
-          target: `http://127.0.0.1:${gameServerPort}`,
+          target: gameServerProxyTarget,
           changeOrigin: true,
           bypass: (req) => {
             const pathname = (req.url || '/').split('?')[0] || '/'
@@ -822,7 +859,7 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/socket.io': {
-          target: `http://127.0.0.1:${gameServerPort}`,
+          target: gameServerProxyTarget,
           changeOrigin: true,
           ws: true,
           configure: (proxy) => {
@@ -832,7 +869,7 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/lobby-socket': {
-          target: `http://127.0.0.1:${gameServerPort}`,
+          target: gameServerProxyTarget,
           changeOrigin: true,
           ws: true,
           configure: (proxy) => {
@@ -842,31 +879,31 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/auth': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/game-changelogs': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/admin-api': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/feedback': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/sponsors': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/notifications': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/social-socket': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
           ws: true,
           configure: (proxy) => {
@@ -876,23 +913,23 @@ export default defineConfig(({ mode }) => {
           },
         },
         '/ugc': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/assets/ugc': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/assets/avatars': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/layout': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
         '/devtools/ai-repo-workbench': {
-          target: `http://127.0.0.1:${apiServerPort}`,
+          target: apiServerProxyTarget,
           changeOrigin: true,
         },
       },

@@ -18,17 +18,17 @@ import {
     getQidahenPostBattleSelectionForCore,
     getQidahenWheelDispatchSelectionForCore,
 } from './domain';
-import {
-    getQidahenDiplomacySelectionForCore,
-    getQidahenFortificationMaintenanceSelectionForCore,
-    getQidahenHandLimitDiscardSelectionForCore,
-    getQidahenInternalDispatchSelectionForCore,
-    getQidahenKhanEdictSelectionForCore,
-    getQidahenMaShiTradeSelectionForCore,
-    getQidahenRecruitSelectionForCore,
-} from './domain/interactionSelectionAccessors';
+import { getQidahenDiplomacySelectionForCore, getQidahenHandLimitDiscardSelectionForCore, getQidahenInternalDispatchSelectionForCore, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenRecruitSelectionForCore } from './domain/interactionSelectionAccessors';
 import { hasRemainingFactionAction } from './domain/factionActionWindow';
 import { getFactionIdByPlayerId } from './domain/factionTurnAccessors';
+import {
+    isQidahenWheelDispatchPaymentPending,
+    QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED,
+} from './domain/wheelDispatchPayment';
+import {
+    getQidahenWheelRecruitTrainChoices,
+    isQidahenWheelRecruitTrainPaymentPending,
+} from './domain/wheelRecruitTrain';
 import { buildPendingTargetChoiceOptions } from './domain/pendingTargetChoiceOptions';
 import type { QidahenCore, QidahenFactionId } from './domain/types';
 
@@ -101,6 +101,29 @@ const getFactionIdForPlayer = (
     core: QidahenCore,
     playerId: string,
 ): QidahenFactionId => getFactionIdByPlayerId(core, playerId);
+
+const buildFactionSelectionActions = (
+    state: QidahenState,
+    playerId: string,
+): AiLegalAction[] => {
+    const selection = state.core.factionSelection;
+    if (!selection || selection.selections[playerId] != null) {
+        return [];
+    }
+
+    const actions: AiLegalAction[] = [];
+    for (const factionId of selection.availableFactionIds) {
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('faction-selection', factionId),
+            kind: 'faction-selection',
+            label: `确认阵营：${factionId}`,
+            commandType: QIDAHEN_COMMANDS.SELECT_FACTION,
+            payload: { factionId },
+            metadata: { factionId },
+        }));
+    }
+    return actions;
+};
 
 const buildScenarioChoiceActions = (
     state: QidahenState,
@@ -628,11 +651,139 @@ const buildDiplomacyActions = (
     return actions;
 };
 
+const buildWheelDispatchPaymentActions = (
+    state: QidahenState,
+    playerId: string,
+): AiLegalAction[] => {
+    const actions: AiLegalAction[] = [];
+    if (!isQidahenWheelDispatchPaymentPending(state.core)) {
+        return actions;
+    }
+    if (state.core.selectedPaymentCardIds.length >= QIDAHEN_WHEEL_DISPATCH_PAYMENT_REQUIRED) {
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('wheel-dispatch-confirm-payment', 'confirm'),
+            kind: 'wheel-dispatch-confirm-payment',
+            label: '确认进攻调度弃牌',
+            commandType: QIDAHEN_COMMANDS.CONFIRM_WHEEL_DISPATCH_PAYMENT,
+            payload: {},
+        }));
+        return actions;
+    }
+    const currentFactionId = getFactionIdByPlayerId(state.core, playerId);
+    const nextCard = state.core.handCards.find((card) => (
+        card.faction === currentFactionId
+        && card.status !== 'disabled'
+        && !state.core.selectedPaymentCardIds.includes(card.id)
+    ));
+    if (!nextCard) {
+        return actions;
+    }
+    appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+        actionId: createAiLegalActionId('wheel-dispatch-select-payment', nextCard.id),
+        kind: 'wheel-dispatch-select-payment',
+        label: `弃牌 ${nextCard.label}`,
+        commandType: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+        payload: { cardId: nextCard.id },
+        metadata: { cardId: nextCard.id },
+    }));
+    return actions;
+};
+
+const buildWheelRecruitTrainActions = (
+    state: QidahenState,
+    playerId: string,
+): AiLegalAction[] => {
+    const core = state.core;
+    const progress = core.wheelRecruitTrainProgress;
+    if (!progress) return [];
+
+    if (isQidahenWheelRecruitTrainPaymentPending(core)) {
+        if (core.selectedPaymentCardIds.length >= 1) {
+            const purpose = progress.paymentPurpose === 'extra' ? '额外训练' : '征兵训练';
+            const action = createSingleCommandAction(playerId, {
+                actionId: createAiLegalActionId('wheel-recruit-train-confirm-payment', purpose),
+                kind: 'wheel-recruit-train-confirm-payment',
+                label: `确认${purpose}弃牌`,
+                commandType: QIDAHEN_COMMANDS.CONFIRM_WHEEL_RECRUIT_TRAIN_PAYMENT,
+                payload: {},
+            });
+            const actions: AiLegalAction[] = [];
+            appendIfValid(actions, state, playerId, action);
+            return actions;
+        }
+
+        const factionId = getFactionIdForPlayer(core, playerId);
+        const nextCard = core.handCards.find((card) => (
+            card.faction === factionId
+            && card.status !== 'disabled'
+            && !core.selectedPaymentCardIds.includes(card.id)
+        ));
+        if (!nextCard) return [];
+        const actions: AiLegalAction[] = [];
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('wheel-recruit-train-select-payment', nextCard.id),
+            kind: 'wheel-recruit-train-select-payment',
+            label: `弃牌 ${nextCard.label}`,
+            commandType: QIDAHEN_COMMANDS.SELECT_PAYMENT_CARD,
+            payload: { cardId: nextCard.id },
+            metadata: { cardId: nextCard.id, paymentPurpose: progress.paymentPurpose },
+        }));
+        return actions;
+    }
+
+    const choiceLabel = (choiceId: string, choice: ReturnType<typeof getQidahenWheelRecruitTrainChoices>[number]) => {
+        if (choiceId === 'action:recruit') return '执行征兵';
+        if (choiceId === 'action:train') return '执行训练';
+        if (choiceId === 'extra-training') return '额外训练';
+        if (choiceId === 'finish') return '完成征兵训练';
+        if (choice.kind === 'recruit-target') return `在${choice.regionName ?? '本土区域'}征兵`;
+        if (choice.kind === 'training-target') {
+            const troopKind = choice.troopKind === 'artillery' ? '炮兵' : choice.troopKind === 'cavalry' ? '骑兵' : '步兵';
+            return `训练${choice.regionName ?? ''}${troopKind}至${choice.targetLevel}级`;
+        }
+        return choiceId;
+    };
+
+    const choices = getQidahenWheelRecruitTrainChoices(core);
+    if (progress.phase === 'choose-action') {
+        const choiceOrder: Record<string, number> = {
+            action: 0,
+            finish: 1,
+            'extra-training': 2,
+        };
+        choices.sort((left, right) => (
+            (choiceOrder[left.kind] ?? 0) - (choiceOrder[right.kind] ?? 0)
+        ));
+    }
+
+    const actions: AiLegalAction[] = [];
+    for (const choice of choices) {
+        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
+            actionId: createAiLegalActionId('wheel-recruit-train-choice', choice.id),
+            kind: 'wheel-recruit-train-choice',
+            label: choiceLabel(choice.id, choice),
+            commandType: QIDAHEN_COMMANDS.RESOLVE_WHEEL_RECRUIT_TRAIN_CHOICE,
+            payload: { choiceId: choice.id },
+            metadata: {
+                choiceId: choice.id,
+                kind: choice.kind,
+                regionId: choice.regionId,
+                pieceId: choice.pieceId,
+                targetLevel: choice.targetLevel,
+            },
+        }));
+    }
+    return actions;
+};
+
 const buildWheelDispatchActions = (
     state: QidahenState,
     playerId: string,
 ): AiLegalAction[] => {
     const actions: AiLegalAction[] = [];
+    if (isQidahenWheelDispatchPaymentPending(state.core)) {
+        return actions;
+    }
     const selection = getQidahenWheelDispatchSelectionForCore(state.core, state.sys.interaction?.current);
     if (!selection) {
         return actions;
@@ -727,34 +878,7 @@ const buildPostBattleActions = (
     return actions;
 };
 
-const buildFortificationMaintenanceActions = (
-    state: QidahenState,
-    playerId: string,
-): AiLegalAction[] => {
-    const actions: AiLegalAction[] = [];
-    const selection = getQidahenFortificationMaintenanceSelectionForCore(state.core, state.sys.interaction?.current);
-    if (!selection) {
-        return actions;
-    }
 
-    const orderedChoices = [...selection.choices].sort((left, right) => {
-        const leftScore = left.id === 'auto-pay' ? 0 : 1;
-        const rightScore = right.id === 'auto-pay' ? 0 : 1;
-        return leftScore - rightScore;
-    });
-    for (const choice of orderedChoices) {
-        appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
-            actionId: createAiLegalActionId('fortification-maintenance', choice.id),
-            kind: 'fortification-maintenance',
-            label: choice.label,
-            commandType: QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE,
-            payload: { choiceId: choice.id },
-            metadata: { choiceId: choice.id },
-        }));
-    }
-
-    return actions;
-};
 
 const buildActionWindowActions = (
     state: QidahenState,
@@ -764,16 +888,25 @@ const buildActionWindowActions = (
     const core = state.core;
 
     if (!core.wheelActionUsed) {
+        const currentFactionId = getFactionIdForPlayer(core, playerId);
+        const opponentFactionId = Object.entries(core.factions).find(([factionId, faction]) => (
+            factionId !== currentFactionId
+            && !faction.playerId.startsWith('qidahen-neutral-')
+        ))?.[0] as QidahenFactionId | undefined;
         for (const choice of core.wheelMoveChoices) {
+            const opponentPayload = choice.id === 'move-2-one-opponent' && opponentFactionId
+                ? { opponentFactionId }
+                : {};
             appendIfValid(actions, state, playerId, createSingleCommandAction(playerId, {
                 actionId: createAiLegalActionId('wheel-move', choice.id),
                 kind: 'wheel-move',
                 label: choice.label,
                 commandType: QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE,
-                payload: { moveId: choice.id },
+                payload: { moveId: choice.id, ...opponentPayload },
                 metadata: {
                     moveId: choice.id,
                     steps: choice.steps,
+                    ...(opponentPayload.opponentFactionId ? { opponentFactionId: opponentPayload.opponentFactionId } : {}),
                 },
             }));
         }
@@ -810,6 +943,14 @@ export function buildQidahenAiLegalActions(args: {
         return [];
     }
 
+    const factionSelectionActions = buildFactionSelectionActions(state, args.playerId);
+    if (factionSelectionActions.length > 0) {
+        return factionSelectionActions;
+    }
+    if (core.factionSelection) {
+        return [];
+    }
+
     const scenarioVoteActions = buildScenarioVoteActions(state, args.playerId);
     if (scenarioVoteActions.length > 0) {
         return scenarioVoteActions;
@@ -839,6 +980,11 @@ export function buildQidahenAiLegalActions(args: {
         return [];
     }
 
+    const wheelRecruitTrainActions = buildWheelRecruitTrainActions(state, args.playerId);
+    if (wheelRecruitTrainActions.length > 0 || core.wheelRecruitTrainProgress != null) {
+        return wheelRecruitTrainActions;
+    }
+
     const phaseActions = [
         ...buildHandLimitDiscardActions(state, args.playerId),
         ...buildSunYuanhuaTechActions(state, args.playerId),
@@ -851,8 +997,8 @@ export function buildQidahenAiLegalActions(args: {
         ...buildDiplomacyActions(state, args.playerId),
         ...buildPendingActionResolutionActions(state, args.playerId),
         ...buildPostBattleActions(state, args.playerId),
+        ...buildWheelDispatchPaymentActions(state, args.playerId),
         ...buildWheelDispatchActions(state, args.playerId),
-        ...buildFortificationMaintenanceActions(state, args.playerId),
     ];
 
     if (phaseActions.length > 0) {

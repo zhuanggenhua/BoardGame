@@ -18,6 +18,7 @@ import {
     grantExtraMinion,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -140,14 +141,14 @@ function destroyTarget(
         destroyerId?: PlayerId;
         reason: string;
         now: number;
-        sourcePlayerId?: PlayerId;
+        sourcePlayerId: PlayerId;
         sourceDefId?: string;
         sourceControllerId?: PlayerId;
         sourceBaseIndex?: number;
         sourceKind?: 'action' | 'nonAction';
     },
 ): SmashUpEvent[] {
-    return buildValidatedDestroyEvents(state, {
+    return buildValidatedDestroyEvents('core' in state ? state.core : state, {
         minionUid: target.minionUid,
         minionDefId: target.defId,
         fromBaseIndex: target.baseIndex,
@@ -170,7 +171,7 @@ function collectPowerTargets(state: SmashUpCore, powerMax: number, baseIndex?: n
     });
 }
 
-const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, SmashUpCore, SmashUpEvent>({
+const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext>({
     sourceId: 'sharks_destroy_prompt',
     interactionSourceIds: [
         'sharks_megalodon',
@@ -207,9 +208,9 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
             destroyerId: context.destroyerId ?? playerId,
             reason: context.sourceId,
             now: timestamp,
-            sourcePlayerId: context.sourceDefId ? playerId : undefined,
+            sourcePlayerId: playerId,
             sourceDefId: context.sourceDefId,
-            sourceControllerId: context.sourceDefId ? playerId : undefined,
+            sourceControllerId: playerId,
             sourceKind: context.sourceKind,
         });
         if (
@@ -272,7 +273,7 @@ function sharksFeedingFrenzy(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyContext, SmashUpCore, SmashUpEvent>({
+const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyContext>({
     sourceId: 'sharks_multi_destroy_prompt',
     interactionSourceIds: ['sharks_feeding_frenzy'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -309,7 +310,7 @@ const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyCo
                     destroyerId: context.destroyerId ?? playerId,
                     reason: context.sourceId,
                     now: timestamp,
-                    sourcePlayerId: context.sourceDefId ? playerId : undefined,
+                    sourcePlayerId: playerId,
                     sourceDefId: context.sourceDefId,
                     sourceControllerId: context.sourceDefId ? playerId : undefined,
                     sourceKind: context.sourceKind,
@@ -318,7 +319,7 @@ const sharksMultiDestroyPromptProgram = createPromptProgram<SharksMultiDestroyCo
     },
 });
 
-const sharksMegalodonBeforeScoringPromptProgram = createPromptProgram<SharksMegalodonBeforeScoringContext, SmashUpCore, SmashUpEvent>({
+const sharksMegalodonBeforeScoringPromptProgram = createPromptProgram<SharksMegalodonBeforeScoringContext>({
     sourceId: 'sharks_megalodon_before_scoring',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sharks_megalodon_before_scoring_${context.source.uid}_${context.now}`,
@@ -372,7 +373,7 @@ const sharksMegalodonBeforeScoringPromptProgram = createPromptProgram<SharksMega
     },
 });
 
-const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThenDestroyContext, SmashUpCore, SmashUpEvent>({
+const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThenDestroyContext>({
     sourceId: 'sharks_move_then_destroy_base',
     interactionSourceIds: ['sharks_great_white', 'sharks_air_jaws_destination'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -398,7 +399,7 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
             toBaseDefId: choice.baseDefId,
             reason: context.sourceId,
             now: timestamp,
-            sourcePlayerId: context.sourceDefId ? playerId : undefined,
+            sourcePlayerId: playerId,
             sourceDefId: context.sourceDefId,
             sourceControllerId: context.sourceDefId ? playerId : undefined,
             sourceBaseIndex: context.sourceBaseIndex,
@@ -408,7 +409,7 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
         if (targets.length === 0) return { events: moveEvents };
         return {
             events: moveEvents,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
@@ -419,13 +420,12 @@ const sharksMoveThenDestroyBasePromptProgram = createPromptProgram<SharksBaseThe
                 destroyPowerMax: context.destroyPowerMax,
                 sourceDefId: context.sourceDefId,
                 sourceKind: context.sourceKind,
-            } satisfies SharksDestroyAfterMoveContext,
-            nextProgram: sharksDestroyAfterMovePromptProgram,
+            } satisfies SharksDestroyAfterMoveContext, sharksDestroyAfterMovePromptProgram),
         };
     },
 });
 
-const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAfterMoveContext, SmashUpCore, SmashUpEvent>({
+const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAfterMoveContext>({
     sourceId: 'sharks_destroy_after_move',
     interactionSourceIds: ['sharks_great_white_destroy', 'sharks_air_jaws_destroy'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -454,7 +454,7 @@ const sharksDestroyAfterMovePromptProgram = createPromptProgram<SharksDestroyAft
             destroyerId: playerId,
             reason: context.sourceId,
             now: timestamp,
-            sourcePlayerId: context.sourceDefId ? playerId : undefined,
+            sourcePlayerId: playerId,
             sourceDefId: context.sourceDefId,
             sourceControllerId: context.sourceDefId ? playerId : undefined,
             sourceBaseIndex: context.destinationBaseIndex,
@@ -483,7 +483,7 @@ function sharksGreatWhite(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContext, SmashUpCore, SmashUpEvent>({
+const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContext>({
     sourceId: 'sharks_air_jaws',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sharks_air_jaws_${context.now}`,
@@ -548,7 +548,7 @@ function sharksAirJaws(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const sharksLaserPromptProgram = createPromptProgram<SharksLaserContext, SmashUpCore, SmashUpEvent>({
+const sharksLaserPromptProgram = createPromptProgram<SharksLaserContext>({
     sourceId: 'sharks_freakin_laser_beam',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sharks_freakin_laser_beam_${context.now}`,
@@ -603,7 +603,7 @@ function sharksFreakinLaserBeam(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const sharksDangerousWatersPromptProgram = createPromptProgram<SharksDangerousWatersContext, SmashUpCore, SmashUpEvent>({
+const sharksDangerousWatersPromptProgram = createPromptProgram<SharksDangerousWatersContext>({
     sourceId: 'sharks_dangerous_waters',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sharks_dangerous_waters_${context.now}`,
@@ -805,7 +805,7 @@ type SharksCounterPromptContext = PromptContext & {
     targets: MinionTarget[];
 };
 
-const sharksCounterPromptProgram = createPromptProgram<SharksCounterPromptContext, SmashUpCore, SmashUpEvent>({
+const sharksCounterPromptProgram = createPromptProgram<SharksCounterPromptContext>({
     sourceId: 'sharks_counter_prompt',
     interactionSourceIds: ['base_shark_reef'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(

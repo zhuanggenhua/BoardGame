@@ -25,7 +25,7 @@ import {
     type BonusDiceSettlementHandlerContext,
     type BonusDiceSettlementHandlerResult,
 } from '../bonusDiceSettlement';
-import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
+import { createDiceThroneDamageCalculation as createDamageCalculation } from '../effects';
 
 
 // ============================================================================

@@ -17,8 +17,11 @@ export function mergeEventTraitChoices(
 }
 
 export function resolveEventTraitChoices(
-  effect: UseEffectProfile,
+    effect: UseEffectProfile,
 ): BetrayalTraitKey[] {
+  if (effect.mode === "allTraitChecks") {
+    return effect.traits;
+  }
   if (effect.mode === "chooseTraitRoll") {
     return effect.allowedTraits;
   }
@@ -85,6 +88,9 @@ export function resolveEventTargetRooms(
         }
         if (effect.targetRoomScope === "anyDiscovered") {
           return true;
+        }
+        if (effect.targetRoomScope === "upperDiscovered") {
+          return room.floor === "upper";
         }
         if (effect.targetRoomScope === "groundDiscovered") {
           return room.floor === "ground";
@@ -508,10 +514,13 @@ export function resolveBetrayalPendingEventChoiceReadModel({
     (!pendingEventTargetRooms.length || Boolean(selectedEventTargetRoomId)) &&
     (!pendingEventDamageChoice ||
       selectedEventDamageTraits.length === pendingEventDamageChoice.amount);
+  const pendingEventHasUnresolvedAllTraitChecks =
+    pendingEventChoice?.effect.mode === "allTraitChecks" &&
+    (!pendingEventChoice.effect.results ||
+      pendingEventChoice.effect.results.length <
+        pendingEventChoice.effect.traits.length);
   const shouldShowPendingEventAcceptButton =
-    Boolean(pendingEventChoice) &&
-    (Boolean(pendingEventChoice.declineLabel) ||
-      !pendingEventNeedsAcceptSelection);
+    Boolean(pendingEventChoice) && !pendingEventHasUnresolvedAllTraitChecks;
   const pendingEventAwaitsMapTargetClick =
     pendingEventTargetRooms.length > 0 &&
     !selectedEventTargetRoomId &&

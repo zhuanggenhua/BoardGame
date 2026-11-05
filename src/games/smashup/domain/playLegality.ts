@@ -1,6 +1,7 @@
 import type { ValidationResult } from '../../../engine/types';
 import type { ActionCardDef, FusionCardDef, PlayConstraint, SmashUpCore } from './types';
 import { getCardDef, getFusionDef, getMinionDef, getMinionLikePower } from '../data/cards';
+import { getMinionTargetBlockInfo } from './effectSemantics';
 import { hasPlayerTurnRestriction, isOperationRestricted } from './ongoingEffects';
 import { getEffectivePower, getPlayerEffectivePowerOnBase } from './ongoingModifiers';
 import {
@@ -83,6 +84,31 @@ function validateMegaAttackTarget(
     }
 
     return { valid: true };
+}
+
+function validateActionMinionTargetProtection(
+    core: SmashUpCore,
+    playerId: string,
+    defId: string,
+    baseIndex: number,
+    targetMinion: SmashUpCore['bases'][number]['minions'][number],
+): ValidationResult {
+    // 入侵的直点只用于进入交互；具体随从由后续选项过滤并验证。
+    if (defId === 'alien_invasion') {
+        return { valid: true };
+    }
+    const blockInfo = getMinionTargetBlockInfo(core, targetMinion, baseIndex, {
+        sourcePlayerId: playerId,
+        actionProtectionSourcePlayerId: playerId,
+        sourceDefId: defId,
+        sourceKind: 'action',
+        effectType: defId === 'mega_troopers_mega_attack' ? 'destroy' : 'affect',
+        respectActionProtection: true,
+        mode: 'preview',
+    });
+    return blockInfo.blocked
+        ? { valid: false, error: '该随从受到保护，不能成为此行动卡的目标' }
+        : { valid: true };
 }
 
 export function validateConsumableMinionQuota(
@@ -336,6 +362,17 @@ export function validateActionPlaySemantics(
         if (controllerConstraint === 'opponent' && targetMinion.controller === playerId) {
             return { valid: false, error: '该行动卡需要选择其他玩家的随从' };
         }
+        const targetProtection = validateActionMinionTargetProtection(
+            core,
+            playerId,
+            params.defId,
+            targetBaseIndex,
+            targetMinion,
+        );
+        if (!targetProtection.valid) return targetProtection;
+        if (params.defId === 'extramorphs_head_grabber' && getEffectivePower(core, targetMinion, targetBaseIndex) > 3) {
+            return { valid: false, error: '抱头虫只能打到当前力量≤3的佣兵' };
+        }
         if (params.defId === 'mega_troopers_mega_attack') {
             const targetValidation = validateMegaAttackTarget(core, playerId, targetBaseIndex, params.targetMinionUid);
             if (!targetValidation.valid) return targetValidation;
@@ -379,6 +416,17 @@ export function validateActionPlaySemantics(
             if (controllerConstraint === 'opponent' && targetMinion.controller === playerId) {
                 return { valid: false, error: '该行动卡需要选择其他玩家的随从' };
             }
+            const targetProtection = validateActionMinionTargetProtection(
+                core,
+                playerId,
+                params.defId,
+                targetBaseIndex,
+                targetMinion,
+            );
+            if (!targetProtection.valid) return targetProtection;
+            if (params.defId === 'extramorphs_head_grabber' && getEffectivePower(core, targetMinion, targetBaseIndex) > 3) {
+                return { valid: false, error: '抱头虫只能打到当前力量≤3的佣兵' };
+            }
         } else if (params.targetMinionUid !== undefined) {
             return { valid: false, error: '该持续行动卡不需要选择随从目标' };
         }
@@ -401,7 +449,7 @@ export function validateActionPlaySemantics(
     }
 
     if (typeof targetBaseIndex === 'number') {
-        const ongoingTarget = def.ongoingTarget ?? 'base';
+        const ongoingTarget = 'ongoingTarget' in def ? def.ongoingTarget ?? 'base' : 'base';
         if (ongoingTarget === 'base' && isOperationRestricted(core, targetBaseIndex, playerId, 'play_action')) {
             return { valid: false, error: '该基地禁止打出行动卡' };
         }

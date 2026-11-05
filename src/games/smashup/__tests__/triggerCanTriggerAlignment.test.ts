@@ -369,7 +369,7 @@ describe('Smash Up trigger queue canTrigger alignment', () => {
         const noDestinationQueued = collectTriggers(oneBase, 'onMinionDestroyed', {
             state: oneBase,
             matchState: makeMatchState(oneBase),
-            playerId: '1',
+            playerId: '0',
             baseIndex: 0,
             triggerMinionUid: 'victim',
             triggerMinionDefId: 'ghosts_spectre',
@@ -384,7 +384,7 @@ describe('Smash Up trigger queue canTrigger alignment', () => {
         const moveQueued = collectTriggers(twoBases, 'onMinionDestroyed', {
             state: twoBases,
             matchState: makeMatchState(twoBases),
-            playerId: '1',
+            playerId: '0',
             baseIndex: 0,
             triggerMinionUid: 'victim',
             triggerMinionDefId: 'ghosts_spectre',

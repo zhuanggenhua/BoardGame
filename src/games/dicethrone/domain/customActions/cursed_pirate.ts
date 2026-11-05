@@ -31,7 +31,6 @@ import {
     buildStatusAppliedOrChoiceEvents,
     getPowderKegTransferTargetIds,
 } from '../statusEvents';
-import { updatePendingAttackSettlementStage } from '../utils';
 import { getDiceThronePlayerChoiceListLabel } from '../playerDisplay';
 
 const MERCILESS_CURSE_POWDER_KEG_CHOICE_ID = 'cursed-pirate-merciless-curse-powder-keg';
@@ -190,7 +189,8 @@ const createBonusDieEvents = (
     settlementTargetId?: string,
 ): { dice: BonusDieInfo[]; events: DiceThroneEvent[] } => {
     const dice = values.map((value, index) => {
-        const face = getPlayerDieFace(state, playerId, value) ?? '';
+        const numericFace: `${number}` = `${value}`;
+        const face = getPlayerDieFace(state, playerId, value) ?? numericFace;
         const effectKey = effectKeyBuilder?.(value, face, index) ?? `bonusDie.effect.${face}`;
         return { index, value, face, effectKey };
     });
@@ -221,7 +221,7 @@ function stealOneCp({
     sourceAbilityId,
     state,
     timestamp,
-}: CustomActionContext): DiceThroneEvent[] {
+}: Pick<CustomActionContext, 'attackerId' | 'targetId' | 'sourceAbilityId' | 'state' | 'timestamp'>): DiceThroneEvent[] {
     const attacker = state.players[attackerId];
     const target = state.players[targetId];
     if (!attacker || !target) return [];
@@ -471,17 +471,11 @@ function applyPowderKegIfThreeOfAKind({
     const target = state.players[targetId];
     if (!target) return [];
 
-    const currentStacks = target.statusEffects[STATUS_IDS.POWDER_KEG] ?? 0;
-    const maxStacks = getTokenStackLimit(state, targetId, STATUS_IDS.POWDER_KEG);
-    const newTotal = Math.min(currentStacks + 1, maxStacks);
-    const stacks = Math.max(0, newTotal - currentStacks);
-    if (stacks <= 0) return [];
-
     return buildStatusAppliedOrChoiceEvents({
         state,
         targetId,
         statusId: STATUS_IDS.POWDER_KEG,
-        stacks,
+        stacks: 1,
         sourceAbilityId,
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
@@ -522,7 +516,7 @@ function requestOpponentDiscardOneCard({
     sourceAbilityId,
     state,
     timestamp,
-}: CustomActionContext): DiceThroneEvent[] {
+}: Pick<CustomActionContext, 'targetId' | 'sourceAbilityId' | 'state' | 'timestamp'>): DiceThroneEvent[] {
     const target = state.players[targetId];
     if (!target || target.hand.length === 0) return [];
 
@@ -708,6 +702,50 @@ function requestHumanVerdictCommand({
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as ChoiceRequestedEvent];
+}
+
+function buildHumanVerdictDamageEvent(
+    state: CustomActionContext['state'],
+    targetId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const target = state.players[targetId];
+    if (!target) return [];
+    const hp = target.resources[RESOURCE_IDS.HP] ?? 0;
+    return [{
+        type: 'DAMAGE_DEALT',
+        payload: {
+            targetId,
+            amount: 7,
+            actualDamage: Math.min(7, hp),
+            sourceAbilityId,
+            damageScope: 'attack',
+            unblockable: true,
+        },
+        sourceCommandType: 'CHOICE_RESOLVED',
+        timestamp,
+    } as DamageDealtEvent];
+}
+
+function buildHumanVerdictParleyAndDamageEvents(
+    state: CustomActionContext['state'],
+    targetId: string,
+    sourceAbilityId: string,
+    timestamp: number,
+): DiceThroneEvent[] {
+    return [
+        ...buildStatusAppliedOrChoiceEvents({
+            state,
+            targetId,
+            statusId: STATUS_IDS.PARLEY,
+            stacks: 1,
+            sourceAbilityId,
+            sourceCommandType: 'CHOICE_RESOLVED',
+            timestamp,
+        }),
+        ...buildHumanVerdictDamageEvent(state, targetId, sourceAbilityId, timestamp + 1),
+    ];
 }
 
 function requestHumanMercilessPlunder({
@@ -1385,25 +1423,10 @@ export function registerCursedPirateCustomActions(): void {
 
         if (mode === WALK_THE_PLANK_DISCARD_MODE) {
             return requestOpponentDiscardOneCard({
-                attackerId: playerId,
                 targetId,
                 sourceAbilityId,
                 state,
                 timestamp,
-                random,
-                ctx: {
-                    attackerId: playerId,
-                    defenderId: targetId,
-                    sourceAbilityId,
-                    state,
-                    damageDealt: 0,
-                    timestamp,
-                },
-                action: {
-                    type: 'custom',
-                    target: 'opponent',
-                    customActionId: 'cursed-pirate-human-walk-the-plank-choice',
-                },
             });
         }
 
@@ -1431,19 +1454,6 @@ export function registerCursedPirateCustomActions(): void {
             timestamp,
         } as StatusRemovedEvent];
     });
-    registerChoiceEffectHandler(HUMAN_REMOVE_CURSED_COINS_CHOICE_ID, ({ state, sourceAbilityId }) => {
-        if (!sourceAbilityId || state.pendingAttack?.sourceAbilityId !== sourceAbilityId) {
-            return undefined;
-        }
-        return {
-            pendingAttack: {
-                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
-                // 惊魂动魄的 7 点主伤害已在 withDamage 阶段落地；
-                // 选择是否移除诅咒金币后只需要收口 ATTACK_RESOLVED，不应继续挂住攻击链。
-                postDamageFollowUpResolved: true,
-            },
-        };
-    });
     registerChoiceResolvedEventHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({
         state,
         playerId,
@@ -1459,37 +1469,16 @@ export function registerCursedPirateCustomActions(): void {
         const target = targetId ? state.players[targetId] : undefined;
         if (!targetId || !target) return [];
 
-        const hp = target.resources[RESOURCE_IDS.HP] ?? 0;
-        return [
+        const events: DiceThroneEvent[] = [
             {
                 type: 'ATTACK_MADE_UNDEFENDABLE',
                 payload: { attackerId: state.pendingAttack?.attackerId ?? playerId },
                 sourceCommandType: 'CHOICE_RESOLVED',
                 timestamp,
             } as AttackMadeUndefendableEvent,
-            ...buildStatusAppliedOrChoiceEvents({
-                state,
-                targetId,
-                statusId: STATUS_IDS.PARLEY,
-                stacks: 1,
-                sourceAbilityId,
-                sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp: timestamp + 1,
-            }),
-            {
-                type: 'DAMAGE_DEALT',
-                payload: {
-                    targetId,
-                    amount: 7,
-                    actualDamage: Math.min(7, hp),
-                    sourceAbilityId,
-                    damageScope: 'attack',
-                    unblockable: true,
-                },
-                sourceCommandType: 'CHOICE_RESOLVED',
-                timestamp: timestamp + 2,
-            } as DamageDealtEvent,
         ];
+
+        return [...events, ...buildHumanVerdictParleyAndDamageEvents(state, targetId, sourceAbilityId, timestamp + 1)];
     });
     registerChoiceResolvedEventHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({
         state,
@@ -1533,7 +1522,7 @@ export function registerCursedPirateCustomActions(): void {
             }),
         ];
     });
-    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, playerId, sourceAbilityId, value }) => {
+    registerChoiceEffectHandler(HUMAN_MERCILESS_PLUNDER_CHOICE_ID, ({ state, playerId, value }) => {
         const { cursedCoinGain } = decodeHumanTargetedCursedCoinChoiceValue(state, value ?? 0);
         const player = state.players[playerId];
         if (!player) return undefined;
@@ -1551,14 +1540,6 @@ export function registerCursedPirateCustomActions(): void {
                 },
             },
         };
-        if (sourceAbilityId && state.pendingAttack?.sourceAbilityId === sourceAbilityId) {
-            result.pendingAttack = {
-                ...updatePendingAttackSettlementStage(state.pendingAttack, 'readyToResolve')!,
-                // 无情劫掠的 12 点主伤害已在 withDamage 阶段落地；
-                // 选择诅咒金币后只需要收口 ATTACK_RESOLVED，不应再次重放整段攻击链。
-                postDamageFollowUpResolved: true,
-            };
-        }
         return result;
     });
     registerChoiceEffectHandler(HUMAN_VERDICT_COMMAND_CHOICE_ID, ({ state, playerId, value }) => {
@@ -1589,8 +1570,9 @@ export function registerCursedPirateCustomActions(): void {
         if (!sourceAbilityId) return [];
         const decoded = decodeRansomSelectionValue(state, value ?? 0);
         const target = decoded.targetId ? state.players[decoded.targetId] : undefined;
+        if (!decoded.attackerId || !decoded.targetId || !target) return [];
         const die = getRansomEligibleCurrentDice(state, decoded.targetId).find(entry => entry.id === decoded.dieId);
-        if (!decoded.attackerId || !decoded.targetId || !target || !die) return [];
+        if (!die) return [];
 
         const targetCp = target.resources[RESOURCE_IDS.CP] ?? 0;
         const baseValue = Math.trunc(value ?? 0);

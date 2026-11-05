@@ -14,6 +14,14 @@ import type {
     QidahenSpecialTroopStack,
 } from './types';
 
+export const getQidahenPendingBattleActingFaction = (pending: QidahenPendingTargetAction): QidahenFactionId => (
+    pending.battleStep === 'defender-declaration' && pending.defenderFactionId !== 'neutral'
+        ? pending.defenderFactionId
+        : pending.battleStep === 'retreat'
+            ? pending.retreatFactionId ?? pending.attackerFactionId
+            : pending.attackerFactionId
+);
+
 export const isRegionControlledByFaction = (
     region: Pick<QidahenCore['regions'][number], 'controller'>,
     factionId: QidahenFactionId,

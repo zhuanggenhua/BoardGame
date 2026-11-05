@@ -271,7 +271,7 @@ const DissipateEffect: React.FC<{
         left: position.x,
         top: position.y,
         transform: 'translate(-50%, -50%)',
-        zIndex: UI_Z_INDEX.effect,
+        zIndex: UI_Z_INDEX.overlayRaised,
         pointerEvents: 'none' as const,
         filter: 'brightness(1.5)',
       },

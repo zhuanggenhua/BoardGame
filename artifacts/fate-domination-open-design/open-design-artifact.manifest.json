@@ -1,0 +1,34 @@
+{
+  "kind": "html",
+  "renderer": "html",
+  "exports": ["html", "pdf"],
+  "title": "命运支配开放设计当前工作稿",
+  "supportingFiles": [
+    "assets/fuyuki-city.webp",
+    "assets/situation-turning-point.webp",
+    "assets/event-fate-battle.webp",
+    "assets/master-emiya.webp",
+    "assets/master-slot-b.webp",
+    "assets/servant-saber.webp",
+    "assets/attack-magic-low.webp",
+    "assets/attack-strength-high.webp",
+    "assets/skill-luck.webp",
+    "assets/skill-moment.webp"
+  ],
+  "metadata": {
+    "gameId": "fate-domination",
+    "artifactKind": "open-design-artifact-candidate",
+    "humanReview": "not-approved",
+    "openDesignProjectId": "b4bb4fbb-ee71-4465-9e34-e4c24f397155",
+    "canvas": "1920x1080",
+    "mediaGenerate": false,
+    "implementationGate": "awaiting-design-review",
+    "revision": "current-working-from-v6-lineage",
+    "currentArtifact": "index-v6.html",
+    "userVisibleIdentity": "current-working",
+    "lineageFile": "index-v6.html",
+    "historicalSixthDraftEvidence": "test-results/evidence-screenshots/fate-domination/open-design-v6",
+    "currentExport": "exports/fate-domination-current-desktop.png",
+    "audit": "DESIGN-v6.md"
+  }
+}

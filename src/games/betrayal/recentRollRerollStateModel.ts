@@ -1,8 +1,4 @@
 import {
-    eventRollResolutionNeedsSharedAcknowledgement,
-    resolvePendingEventRollResolutionRequiredPlayerIds,
-} from './acknowledgementReadModel';
-import {
     canDeferOrdinaryAttackDamageToDefender,
     isPendingDamageAllocationForAttackRoll,
     resolveAttackRerollOutcome,
@@ -36,6 +32,7 @@ import {
     cloneMagicCameraRuntimeState,
     cloneUponReflectionRuntimeState,
 } from './hauntRuntimeSetupModel';
+import { resolveHumanAcknowledgementPlayerIds } from './acknowledgementReadModel';
 import { isDustHaunt } from './hauntScenarioReadModel';
 import { cloneHauntTraitorResolution } from './hauntTraitorResolutionModel';
 import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
@@ -88,7 +85,10 @@ function applyDeathPreventionRerollOutcome(
     core.scenarioRuntime = cloneScenarioRuntimeStatus(deathPrevention.scenarioRuntimeBeforeDefeat);
     core.monsters = deathPrevention.monstersBeforeDefeat.map(cloneMonster);
     resetExplorerTraits(explorer, deathPrevention.traitsBeforeDamage);
-    if (deathPrevention.damageTraits?.length) {
+    if (deathPrevention.damageKind === 'general') {
+        if (!deathPrevention.damageTraits?.length) {
+            throw new Error('General death-prevention damage is missing its assigned traits');
+        }
         applyGeneralDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageTraits, { allowSkull: true });
     } else {
         applyAttackDamage(explorer, deathPrevention.damageAmount, deathPrevention.damageKind);
@@ -201,7 +201,7 @@ function refreshLatestEventDiscoveryAfterReroll(
     nextRoll: BetrayalRecentRollState,
     nextTotal: number,
     nextLabel: string,
-    effect: BetrayalRecentRollState['branchThresholds'][number]['effect'],
+    effect: NonNullable<BetrayalRecentRollState['branchThresholds']>[number]['effect'],
 ): void {
     if (!core.latestDiscovery || core.latestDiscovery.title !== nextRoll.sourceTitle) {
         return;
@@ -248,27 +248,23 @@ function applyEventRecentRollRerollState(
                 effect: cloneUseEffect(nextEffect),
             }
             : undefined;
-        const acknowledgementContext = {
-            nextPendingEventChoice,
-            hauntRevealResolution: event.payload.eventRerollHaunt?.hauntRevealResolution,
-            hauntTraitorResolution: event.payload.eventRerollHaunt?.hauntTraitorResolution,
-            dustSetup: event.payload.eventRerollHaunt?.dustSetup,
-            magicCameraSetup: event.payload.eventRerollHaunt?.magicCameraSetup,
-            helpingHandsSetup: event.payload.eventRerollHaunt?.helpingHandsSetup,
-            uponReflectionSetup: event.payload.eventRerollHaunt?.uponReflectionSetup,
-        };
-        const requiresSharedAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement(acknowledgementContext);
         nextRoll.latestLabel = nextBranch.label;
         core.recentRoll = nextRoll;
         core.pendingEventRollResolution = {
             ...pendingEventRoll,
-            requiredPlayerIds: requiresSharedAcknowledgement && core.playerIds.length > 0
-                ? [...core.playerIds]
-                : resolvePendingEventRollResolutionRequiredPlayerIds(core, pendingEventRoll),
+            requiredPlayerIds: resolveHumanAcknowledgementPlayerIds(core, pendingEventRoll.playerId),
             acknowledgedPlayerIds: [],
             effect: cloneUseEffect(nextEffect),
             nextPendingEventChoice,
-            requiresAcknowledgement: true,
+            requiresAcknowledgement: Boolean(
+                nextPendingEventChoice
+                || event.payload.eventRerollHaunt?.hauntRevealResolution
+                || event.payload.eventRerollHaunt?.hauntTraitorResolution
+                || event.payload.eventRerollHaunt?.dustSetup
+                || event.payload.eventRerollHaunt?.magicCameraSetup
+                || event.payload.eventRerollHaunt?.helpingHandsSetup
+                || event.payload.eventRerollHaunt?.uponReflectionSetup
+            ),
             deathPrevention: event.payload.eventRerollDeathPrevention
                 ? {
                     ...event.payload.eventRerollDeathPrevention,

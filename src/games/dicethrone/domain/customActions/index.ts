@@ -15,8 +15,11 @@ import { registerCursedPirateCustomActions } from './cursed_pirate';
 import { registerTianshiCustomActions } from './tianshi';
 import { registerLierenCustomActions } from './lieren';
 import { registerVampireLordCustomActions } from './vampire_lord';
+import { registerZhizhuxiaCustomActions } from './zhizhuxia';
+import { registerThorCustomActions } from './thor';
 
 let initialized = false;
+import { registerDoctorStrangeCustomActions } from './doctor_strange';
 
 /**
  * 初始化所有 Custom Action 处理器。
@@ -28,6 +31,7 @@ export function initializeCustomActions(): void {
     }
 
     registerCommonCustomActions();
+    registerDoctorStrangeCustomActions();
     registerArtificerCustomActions();
     registerMonkCustomActions();
     registerBarbarianCustomActions();
@@ -44,6 +48,8 @@ export function initializeCustomActions(): void {
     registerTianshiCustomActions();
     registerLierenCustomActions();
     registerVampireLordCustomActions();
+    registerZhizhuxiaCustomActions();
+    registerThorCustomActions();
 
     initialized = true;
 }
@@ -65,3 +71,4 @@ export { registerCursedPirateCustomActions } from './cursed_pirate';
 export { registerTianshiCustomActions } from './tianshi';
 export { registerLierenCustomActions } from './lieren';
 export { registerVampireLordCustomActions } from './vampire_lord';
+export { registerZhizhuxiaCustomActions } from './zhizhuxia';

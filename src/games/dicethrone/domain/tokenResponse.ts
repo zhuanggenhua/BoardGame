@@ -16,8 +16,10 @@ import type {
     TokenUsedEvent,
     TokenResponseClosedEvent,
     DamageDealtEvent,
+    TurnPhase,
 } from './types';
 import type {
+    DamageOrigin,
     TokenDef,
     TokenUseEffectType,
     TokenEffectContext,
@@ -29,7 +31,8 @@ import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
-import { getTokenStackLimit } from './rules';
+import { checkPlayCard, getTokenStackLimit, isNyraCompanionActive } from './rules';
+import { resolveCurrentRollContext } from './rollContext';
 import { isPurifiableDebuffId } from './statusRemoval';
 import { getRemainingArtificerBotActivations, isArtificerBotTokenId } from './artificerBots';
 import {
@@ -37,6 +40,7 @@ import {
     estimateDiceThroneDamageAfterExistingPrevention,
 } from './damagePreventionCommit';
 import { buildDiceThroneTokenResponseFrameIdFromPendingDamageId } from './timingOpportunityIdentities';
+import { getActionBlockedByStunLikeStatus } from './statusActionBlocking';
 
 function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerId, tokenId: string): number | undefined {
     return isArtificerBotTokenId(tokenId)
@@ -48,21 +52,45 @@ function getArtificerBotAvailableAmount(state: DiceThroneCore, playerId: PlayerI
 // Token 可用性检查
 // ============================================================================
 
-export function hasBeforeDamageReceivedCard(
-    state: DiceThroneCore,
-    playerId: PlayerId,
-): boolean {
-    const player = state.players[playerId];
-    if (!player) return false;
+function getDamageResponsePhase(state: DiceThroneCore): TurnPhase {
+    const legacyPhase = state as DiceThroneCore & { turnPhase?: TurnPhase; phase?: TurnPhase };
+    const phase = resolveCurrentRollContext(state)?.phase ?? legacyPhase.turnPhase ?? legacyPhase.phase;
+    if (phase) return phase;
+    if (state.pendingAttack) {
+        return state.pendingAttack.defenseAbilityId ? 'defensiveRoll' : 'offensiveRoll';
+    }
+    return 'main1';
+}
 
-    return (player.hand ?? []).some(card => {
-        const pendingDamage = card.playCondition?.pendingDamage;
-        if (!pendingDamage || pendingDamage.responseType !== 'beforeDamageReceived') return false;
-        if (pendingDamage.role === 'source') return false;
-        if (card.timing !== 'instant' && card.timing !== 'roll') return false;
-        if (!card.effects?.some(effect => effect.action)) return false;
-        return (player.resources?.[RESOURCE_IDS.CP] ?? 0) >= card.cpCost;
-    });
+export function hasBeforeDamageReceivedCardForTarget(
+    state: DiceThroneCore,
+    targetPlayerId: PlayerId,
+    phase: TurnPhase = getDamageResponsePhase(state),
+    candidatePendingDamage?: PendingDamage,
+): boolean {
+    if (state.pendingAttack?.isUltimate === true) return false;
+
+    const pendingDamage = state.pendingDamage ?? candidatePendingDamage;
+    if (pendingDamage) {
+        if (
+            pendingDamage.targetPlayerId !== targetPlayerId
+            || pendingDamage.responseType !== 'beforeDamageReceived'
+        ) return false;
+    } else if (state.pendingAttack?.defenderId !== targetPlayerId) {
+        return false;
+    }
+
+    const playState = !state.pendingDamage && candidatePendingDamage
+        ? { ...state, pendingDamage: candidatePendingDamage }
+        : state;
+
+    return Object.entries(state.players).some(([cardOwnerId, player]) => (
+        (player.hand ?? []).some(card => {
+            const condition = card.playCondition?.pendingDamage;
+            if (!condition || condition.responseType !== 'beforeDamageReceived') return false;
+            return checkPlayCard(playState, cardOwnerId, card, phase).ok;
+        })
+    ));
 }
 
 function resolveAdditionalTokenCosts(
@@ -90,14 +118,19 @@ export function getUsableTokenAmountForTiming(
     playerId: PlayerId,
     tokenId: string,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
-    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number }
+    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number; unblockable?: boolean }
 ): number {
     const player = state.players[playerId];
     if (!player) return 0;
+    // 眩晕 / 晕眩只禁止主动攻击；提示卡明确允许持有者在任何时候花气减伤，
+    // 因此防御方的 beforeDamageReceived 响应不能被状态门禁吞掉。
+    if (timing === 'beforeDamageDealt'
+        && getActionBlockedByStunLikeStatus(state, playerId, { requireActivePlayer: false })) return 0;
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
     if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;
     if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) return 0;
+    if (tokenDef.activeUse.requiresUnblockable && options?.unblockable !== true) return 0;
 
     const damageScope = options?.damageScope ?? 'attack';
     const hasAttackContext = !!state.pendingAttack;
@@ -145,7 +178,7 @@ export function getUsableTokensForTiming(
     state: DiceThroneCore,
     playerId: PlayerId,
     timing: 'beforeDamageDealt' | 'beforeDamageReceived',
-    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number }
+    options?: { damageScope?: 'attack' | 'direct'; originalDamageOverride?: number; unblockable?: boolean }
 ): TokenDef[] {
     const player = state.players[playerId];
     if (!player) return [];
@@ -178,7 +211,7 @@ export function getUsableTokensForOffensiveRollEnd(
         if (def.id === TOKEN_IDS.CRIT && expectedDamage < 5) return false;
 
         // 精准门控：攻击已经不可防御时，精准无意义
-        if (def.id === TOKEN_IDS.ACCURACY && isAlreadyUnblockable) return false;
+        if ((def.id === TOKEN_IDS.ACCURACY || def.id === TOKEN_IDS.GUARD_BREAK) && isAlreadyUnblockable) return false;
         
         return true;
     });
@@ -203,10 +236,12 @@ export function hasDefensiveTokens(
     playerId: PlayerId,
     damageScope?: 'attack' | 'direct',
     originalDamageOverride?: number,
+    unblockable?: boolean,
 ): boolean {
     return getUsableTokensForTiming(state, playerId, 'beforeDamageReceived', {
         damageScope,
         originalDamageOverride,
+        unblockable,
     }).length > 0;
 }
 
@@ -277,11 +312,12 @@ export function createPendingDamage(
     responseType: 'beforeDamageDealt' | 'beforeDamageReceived',
     sourceAbilityId: string | undefined,
     timestamp: number = 0,
-    initialModifiers?: Array<{ type: 'defense' | 'token' | 'shield' | 'status'; value: number; sourceId?: string; sourceName?: string }>,
+    initialModifiers?: PendingDamage['modifiers'],
     damageScope?: 'attack' | 'direct',
     unblockable?: boolean,
     deferredTokenGrants?: PendingDamage['deferredTokenGrants'],
     committedPrevention?: Pick<PendingDamage, 'preventionCommitted' | 'shieldsConsumed'> & { currentDamage?: number },
+    damageOrigin?: DamageOrigin,
 ): PendingDamage {
     const responderId = responseType === 'beforeDamageDealt' ? sourcePlayerId : targetPlayerId;
     const currentDamage = Math.max(0, committedPrevention?.currentDamage ?? damage);
@@ -294,6 +330,7 @@ export function createPendingDamage(
         currentDamage,
         sourceAbilityId,
         damageScope,
+        damageOrigin,
         ...(unblockable ? { unblockable: true } : {}),
         ...(deferredTokenGrants?.length ? { deferredTokenGrants } : {}),
         responseType,
@@ -396,9 +433,16 @@ export const resolveDamageResponseType = (
     state: DiceThroneCore,
     defenderId: PlayerId,
     rawTokenResponseType: 'attackerBoost' | 'defenderMitigation' | null,
+    candidatePendingDamage?: PendingDamage,
+    phase: TurnPhase = getDamageResponsePhase(state),
 ): 'attackerBoost' | 'defenderMitigation' | null => {
     const isUltimateDamage = state.pendingAttack?.isUltimate === true;
-    const hasDefenderCardResponse = hasBeforeDamageReceivedCard(state, defenderId);
+    const hasDefenderCardResponse = hasBeforeDamageReceivedCardForTarget(
+        state,
+        defenderId,
+        phase,
+        candidatePendingDamage,
+    );
     if (rawTokenResponseType === 'attackerBoost') return 'attackerBoost';
     if (isUltimateDamage) return null;
     if (rawTokenResponseType === 'defenderMitigation') return 'defenderMitigation';
@@ -433,12 +477,38 @@ export function maybeCreateDamageResponseEvent(params: {
     const isUnblockable = dmgPayload.unblockable === true;
     const bypassShields = dmgPayload.bypassShields === true;
     const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
+    const phase = getDamageResponsePhase(state);
     const target = state.players[dmgTargetId];
-    const hasNyraRedirect = target?.characterId === 'lieren'
-        && (target.companion?.hp ?? 0) > 0
+    const hasNyraRedirect = isNyraCompanionActive(target)
         && state.pendingAttack?.isUltimate !== true;
-    const hasDefenderAvoidanceResponse = hasBeforeDamageReceivedCard(state, dmgTargetId)
-        || hasDefensiveTokens(state, dmgTargetId, damageScope, dmgAmount)
+    const candidatePendingDamage = damageScope === 'attack'
+        && state.pendingAttack?.defenderId === dmgTargetId
+        ? applyExistingDamagePreventionToPendingDamage(
+            state,
+            createPendingDamage(
+                attackerId,
+                dmgTargetId,
+                dmgAmount,
+                'beforeDamageReceived',
+                sourceAbilityId ?? dmgPayload.sourceAbilityId,
+                timestamp,
+                dmgPayload.modifiers,
+                damageScope,
+                isUnblockable,
+                dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
+                undefined,
+                dmgPayload.damageOrigin,
+            ),
+            {
+                bypassShields,
+                isUltimateDamage: state.pendingAttack?.isUltimate === true,
+            },
+        )
+        : undefined;
+    const hasDefenderCardResponse = (candidatePendingDamage?.currentDamage ?? dmgAmount) > 0
+        && hasBeforeDamageReceivedCardForTarget(state, dmgTargetId, phase, candidatePendingDamage);
+    const hasDefenderAvoidanceResponse = hasDefenderCardResponse
+        || hasDefensiveTokens(state, dmgTargetId, damageScope, dmgAmount, isUnblockable)
         || hasNyraRedirect;
 
     if (!allowAttackerBoost && !hasDefenderAvoidanceResponse) {
@@ -460,12 +530,15 @@ export function maybeCreateDamageResponseEvent(params: {
             effectiveDamageForTokenResponse,
             isDefensiveContext,
             damageScope,
+            isUnblockable,
         )
         : (hasDefenderAvoidanceResponse && effectiveDamageForTokenResponse > 0 ? 'defenderMitigation' : null);
     const tokenResponseType = resolveDamageResponseType(
         state,
         dmgTargetId,
         rawTokenResponseType ?? (hasNyraRedirect && effectiveDamageForTokenResponse > 0 ? 'defenderMitigation' : null),
+        candidatePendingDamage,
+        phase,
     );
 
     if (!tokenResponseType) return null;
@@ -473,25 +546,32 @@ export function maybeCreateDamageResponseEvent(params: {
     const responseType = tokenResponseType === 'attackerBoost'
         ? 'beforeDamageDealt'
         : 'beforeDamageReceived';
-    const pendingDamage = applyExistingDamagePreventionToPendingDamage(
-        state,
-        createPendingDamage(
-        attackerId,
-        dmgTargetId,
-        dmgAmount,
-        responseType,
-        sourceAbilityId ?? dmgPayload.sourceAbilityId,
-        timestamp,
-        dmgPayload.modifiers,
-        damageScope,
-        isUnblockable,
-        dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
-        ),
-        {
-            bypassShields,
-            isUltimateDamage: state.pendingAttack?.isUltimate === true,
-        },
-    );
+    const pendingDamage = responseType === 'beforeDamageReceived' && candidatePendingDamage
+        ? candidatePendingDamage
+        : applyExistingDamagePreventionToPendingDamage(
+            state,
+            createPendingDamage(
+                attackerId,
+                dmgTargetId,
+                dmgAmount,
+                responseType,
+                sourceAbilityId ?? dmgPayload.sourceAbilityId,
+                timestamp,
+                dmgPayload.modifiers,
+                damageScope,
+                isUnblockable,
+                dmgPayload.deferredTokenGrants ?? state.pendingAttack?.deferredTokenGrants,
+                undefined,
+                dmgPayload.damageOrigin,
+            ),
+            {
+                bypassShields,
+                isUltimateDamage: state.pendingAttack?.isUltimate === true,
+            },
+        );
+    if (typeof dmgPayload.attackDamageBeforePercent === 'number') {
+        pendingDamage.attackDamageBeforePercent = dmgPayload.attackDamageBeforePercent;
+    }
     return createTokenResponseRequestedEvent(pendingDamage, timestamp);
 }
 
@@ -603,6 +683,15 @@ const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThro
             };
         }
 
+        if (tokenDef.id === TOKEN_IDS.INVISIBLE) {
+            const currentDamage = pendingDamage?.currentDamage ?? 0;
+            return {
+                success: true,
+                damageModifier: -currentDamage,
+                extra: { fullyEvaded: true },
+            };
+        }
+
         // 神罚 (retribution)：不减伤，反弹受到伤害的一半（向上取整）
         const isRetribution = tokenDef.id === TOKEN_IDS.RETRIBUTION;
         if (isRetribution) {
@@ -669,6 +758,12 @@ const effectProcessors: Record<TokenUseEffectType, TokenEffectProcessor<DiceThro
      */
     removeDebuff: (_ctx) => {
         // 净化本身只消耗 Token，实际移除状态由调用方处理
+        return {
+            success: true,
+        };
+    },
+
+    custom: (_ctx) => {
         return {
             success: true,
         };
@@ -820,6 +915,8 @@ export function processTokenUsage(
         ? 'evasionAttempt'
         : effect.type === 'removeDebuff'
             ? 'removeDebuff'
+            : effect.type === 'custom'
+                ? 'custom'
             : effectType;
     const event: TokenUsedEvent = {
         type: 'TOKEN_USED',
@@ -837,6 +934,7 @@ export function processTokenUsage(
                 : {}),
             effectType: resolvedEffectType,
             damageModifier: result.damageModifier,
+            ...(result.extra?.fullyEvaded ? { fullyEvaded: true } : {}),
             evasionRoll: result.rollResult,
             deferredDamageEvents: result.extra?.deferredDamageEvents as PendingDamage['deferredDamageEvents'] | undefined,
         },
@@ -863,11 +961,13 @@ function getRetributionReflectionAmount(
         ?.filter(modifier => modifier.sourceId === TOKEN_IDS.PROTECT && modifier.type === 'token' && modifier.value < 0)
         .reduce((sum, modifier) => sum + Math.abs(modifier.value), 0) ?? 0;
     const damageBeforeProtect = Math.max(0, pendingDamage.currentDamage + protectPrevented);
-    const damageAfterFixedPrevention = estimateDamageAfterExistingShields(
-        state,
-        pendingDamage.targetPlayerId,
-        damageBeforeProtect,
-    );
+    const damageAfterFixedPrevention = pendingDamage.preventionCommitted
+        ? damageBeforeProtect
+        : estimateDamageAfterExistingShields(
+            state,
+            pendingDamage.targetPlayerId,
+            damageBeforeProtect,
+        );
     return Math.ceil(damageAfterFixedPrevention / 2);
 }
 
@@ -919,6 +1019,10 @@ export function finalizeTokenResponse(
                 sourceAbilityId: pendingDamage.sourceAbilityId,
                 sourcePlayerId: pendingDamage.sourcePlayerId,
                 damageScope: pendingDamage.damageScope,
+                damageOrigin: pendingDamage.damageOrigin,
+                ...(typeof pendingDamage.attackDamageBeforePercent === 'number'
+                    ? { attackDamageBeforePercent: pendingDamage.attackDamageBeforePercent }
+                    : {}),
                 ...(pendingDamage.unblockable ? { unblockable: true } : {}),
                 ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
                 modifiers: pendingDamage.modifiers,
@@ -950,6 +1054,7 @@ export function finalizeTokenResponse(
                 sourceAbilityId: deferredDamage.sourceAbilityId,
                 sourcePlayerId: deferredDamage.sourcePlayerId,
                 damageScope: deferredDamage.damageScope,
+                damageOrigin: deferredDamage.damageOrigin,
                 ...(deferredDamage.unblockable ? { unblockable: true } : {}),
                 ...(choiceSource?.resolutionFrameId ? { resolutionFrameId: choiceSource.resolutionFrameId } : {}),
             },
@@ -965,16 +1070,18 @@ export function finalizeTokenResponse(
             allowAttackerBoost: deferredDamage.damageScope === 'attack',
         });
         if (followupResponseEvent) {
+            followupResponseEvent.payload.pendingDamage.deferredResolutionEvents = pendingDamage.deferredResolutionEvents;
             const remainingDeferredDamages = deferredDamages.slice(i + 1);
             if (remainingDeferredDamages.length > 0) {
                 followupResponseEvent.payload.pendingDamage.deferredDamageEvents = remainingDeferredDamages;
             }
             events.push(followupResponseEvent);
-            break;
+            return events;
         }
         events.push(damageEvent);
     }
     
+    events.push(...(pendingDamage.deferredResolutionEvents ?? []));
     return events;
 }
 
@@ -994,7 +1101,8 @@ export function shouldOpenTokenResponse(
     defenderId: PlayerId,
     damage: number,
     isDefensiveContext?: boolean,
-    damageScope?: 'attack' | 'direct'
+    damageScope?: 'attack' | 'direct',
+    unblockable?: boolean
 ): 'attackerBoost' | 'defenderMitigation' | null {
     if (damage <= 0) {
         return null;
@@ -1027,7 +1135,7 @@ export function shouldOpenTokenResponse(
     }
     
     // 检查防御方是否有可用的防御 Token
-    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId, damageScope, damage);
+    const hasDefensiveTokensResult = hasDefensiveTokens(state, defenderId, damageScope, damage, unblockable);
     if (hasDefensiveTokensResult) {
         return 'defenderMitigation';
     }

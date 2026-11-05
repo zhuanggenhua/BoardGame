@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "requirements": [
+    {
+      "requirement": "连续正常对局与核心行动",
+      "status": "PASS",
+      "baselineSource": "本代理此前独立私读R85历史五图，仅作职责对照，不代表用户已验收；规则来源正式PDF1.3，R128源码及真实trace另行核对。",
+      "preservedInformation": "轮盘、玩家、地图兵力控制、纪年及手牌持续读取职责保留，R128同局覆盖扩军到次年训练。",
+      "preservedActions": "两端真实73步均PASS，轮盘与弃牌行动实际执行，结束后正式下一输入接受。",
+      "changes": "旧短线替换为完整年度流程，免费1格与征召科技为合法课程设计选择。",
+      "duplicateDecision": "地图、实体手牌、轮盘和正式行动槽各自承接，不新增常驻事实副本。",
+      "changeAuthority": "用户授权彻底重构正常对局并覆盖核心规则及年中/新年，未逐字指定免费1格。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/01-轮盘前进两格与军屯落点.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-final-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/0"
+    },
+    {
+      "requirement": "出兵来源部队目标与战术",
+      "status": "PASS",
+      "baselineSource": "本代理此前独立私读R85历史五图，仅作职责对照，不代表用户已验收；规则来源正式PDF1.3，R128源码及真实trace另行核对。",
+      "preservedInformation": "来源目标、具体参战部队、战场宽度与战术作用保留，当前战后标题明确辽北→叶赫部。",
+      "preservedActions": "正式输入依次选来源、具体部队、目标、战术和战斗，地图棋子与确认入口清晰可见。",
+      "changes": "旧四兵突袭替换为两步兵一炮兵调度，控制章归属与既有教程避让补齐。",
+      "duplicateDecision": "部队实体承接选择、正式面板承接提交，重复地区身份浮条退场。",
+      "changeAuthority": "用户要求先选出兵来源再选目标，三兵调度属于该完整重构授权下的设计裁决，非逐字指定。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-final-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/1"
+    },
+    {
+      "requirement": "真实掷骰与分段结果",
+      "status": "PASS",
+      "baselineSource": "本代理此前独立私读R85历史五图，仅作职责对照，不代表用户已验收；规则来源正式PDF1.3，R128源码及真实trace另行核对。",
+      "preservedInformation": "旧07只证明文字炮骑步骰果，当前保留阶段损伤与战后幸存决策并新增物理骰过程。",
+      "preservedActions": "保留启动战斗、读取阶段结果及占领撤回职责，R128双端战斗动态专项报告PASS。",
+      "changes": "公共物理骰按权威骰序播放，静态图仅核骰体和结果承载，不独自证明运动或规则数值。",
+      "duplicateDecision": "骰体承接过程、分段面板承接损伤、战后面板承接决策，旧长战报不冒充投掷。",
+      "changeAuthority": "用户明确要求真实掷骰动画及全部验证后交付，十二面骰未在本课浏览器出现，不外推。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/07-战后幸存部队与占领选择.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-12-步兵停稳与结果.jpg",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-24-战后占领选择.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-final-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/2"
+    },
+    {
+      "requirement": "年中和新年结算",
+      "status": "PASS",
+      "baselineSource": "本代理此前独立私读R85历史五图，仅作职责对照，不代表用户已验收；规则来源正式PDF1.3，R128源码及真实trace另行核对。",
+      "preservedInformation": "年中税赋漕运、新年维护耗损及纪年人物为新增覆盖，不能从旧结束图反推旧课已有。",
+      "preservedActions": "当前玩家亲选维护放弃、真实牌费用或部队移除、纪年和人物，两端连续trace覆盖。",
+      "changes": "年度流程由正式turnResolution候选与实体事实承接，旧自动代付链退役。",
+      "duplicateDecision": "防线、地图部队、手牌、纪年及人物卡各承接相应决策，不以摘要替代操作。",
+      "changeAuthority": "用户明确要求年中和新年并强调规则书内容不能省略，具体合法示范由课程设计确定。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-08-年中税赋与漕运.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-18-山海关维护选择.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-final-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/3"
+    },
+    {
+      "requirement": "地图候选手牌与检视",
+      "status": "PASS",
+      "baselineSource": "本代理此前独立私读R85历史五图，仅作职责对照，不代表用户已验收；规则来源正式PDF1.3，R128源码及真实trace另行核对。",
+      "preservedInformation": "合法地图候选、手牌身份和完整卡面检视保留，R128末端手牌与恢复箭头实际可见。",
+      "preservedActions": "真实翻看到末端再返回且选牌和手牌ID不变，检视不支付，合法替代军屯检查点恢复。",
+      "changes": "新增正式左右翻看箭头恢复溢出手牌，白卡保护实际卡体及控制章，不删除合法候选。",
+      "duplicateDecision": "实体承接选择、检视承接阅读，完整卡面只在独立检视语境展开。",
+      "changeAuthority": "用户要求以正常流程展示功能实际含义，保留合法对象、检视和手牌恢复是该重构的职责守恒。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/03b-共享放大镜检视手牌.png",
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/06-野战选择实际出兵部队.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-13-已选部队与确认出兵.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-20-手牌末端与翻看入口.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-02-共享放大镜检视征召手牌.png",
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/移动-23-共享放大镜检视人物.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-final-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/4"
+    },
+    {
+      "requirement": "进度生命周期与次年继续",
+      "status": "PASS",
+      "baselineSource": "本代理此前独立私读R85历史五图，仅作职责对照，不代表用户已验收；规则来源正式PDF1.3，R128源码及真实trace另行核对。",
+      "preservedInformation": "旧09只证明退出后同局继续，当前新增次年训练并保留正式继续能力。",
+      "preservedActions": "R128生命周期四记录PASS，刷新恢复、回退重做、重头开始及旧版本拒绝恢复均覆盖，最终下一输入接受。",
+      "changes": "删除单列退出教学，把自然继续放在完整年度和次年炮兵训练后。",
+      "duplicateDecision": "教程进度归TutorialSystem，正式局面归core，不增加退出教学副本或第二套局面。",
+      "changeAuthority": "用户明确说退出后同局继续不用学，授权删除教学章节，不意味着删除正式继续能力。",
+      "before": [
+        "D:/gongzuo/webgame/BoardGame/evidence/qidahen/tutorial-20261029-hand-battle-r85-final/media/09-教程退出后同局继续.png"
+      ],
+      "after": [
+        "evidence/qidahen/tutorial-20261030-annual-r128-final/media/桌面-40-完整年度教程结束并继续对局.png"
+      ],
+      "independentReviewFile": "test-results/qidahen-annual-final-independent-baseline.json",
+      "sourceReviewEntry": "/requirements/5"
+    }
+  ]
+}

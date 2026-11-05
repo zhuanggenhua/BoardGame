@@ -1,4 +1,6 @@
+import { getQidahenArtilleryTechnologyCount } from './armamentStateAccessors';
 import type { RandomFn } from '../../../engine/types';
+import { applyQidahenBattleDamage, consumeQidahenBattleRollTotal } from './battleMorale';
 import { getNonSiegedCityActionSourceSnapshot } from './actionSourceRegionState';
 import { getQidahenTroopDieSides } from './attackRules';
 import { getArmamentLevel } from './armamentStateAccessors';
@@ -103,15 +105,20 @@ const controlsOrdosRegion = (state: QidahenCore, factionId: QidahenFactionId): b
 const getBattleRollArmamentBonus = (
     state: QidahenCore,
     unit: QidahenCombatUnit,
+    cityBattle: boolean,
+    side: QidahenBattleUnitSide,
 ): number => {
-    if (!unit.structured) {
-        return 0;
+    if (!unit.structured || !unit.factionId) return 0;
+    if (unit.troopKind === 'artillery') {
+        const sources = state.factions[unit.factionId].armaments.find(armament => armament.id === 'artillery-tech')?.sourceCardDefIds ?? [];
+        const artilleryTech = getQidahenArtilleryTechnologyCount(state, unit.factionId);
+        const redCoat = unit.factionId === 'ming' ? sources.filter(id => id === RED_COAT_CANNON_CARD_DEF_ID).length : 0;
+        return artilleryTech + redCoat * (cityBattle && side === 'attacker' ? 2 : !cityBattle && side === 'defender' ? 1 : 0);
     }
-    if (unit.troopKind === 'infantry') {
-        return getArmamentLevel(state, unit.factionId, 'infantry-armor');
-    }
-    if (unit.troopKind === 'cavalry') {
-        return getArmamentLevel(state, unit.factionId, 'cavalry-armor');
+    if (unit.troopKind === 'cavalry' && controlsOrdosRegion(state, unit.factionId)) {
+        return state.factions[unit.factionId].armaments
+            .flatMap(armament => armament.sourceCardDefIds ?? [])
+            .filter(id => id === FINE_STEEL_SABER_CARD_DEF_ID).length;
     }
     return 0;
 };
@@ -229,22 +236,6 @@ const getBattleRollArmamentDiceCountBonus = (
     if (!unit.structured || !unit.factionId) {
         return 0;
     }
-    if (phase === 'artillery' && unit.troopKind === 'artillery') {
-        const artilleryTechBonus = getArmamentLevel(state, unit.factionId, 'artillery-tech') > 0 ? 1 : 0;
-        const redCoatCannonBonus = hasArmamentSourceCard(
-            state,
-            unit.factionId,
-            'artillery-tech',
-            RED_COAT_CANNON_CARD_DEF_ID,
-        )
-            ? cityBattle && side === 'attacker'
-                ? 2
-                : !cityBattle && side === 'defender'
-                    ? 1
-                    : 0
-            : 0;
-        return artilleryTechBonus + redCoatCannonBonus;
-    }
     if (!cityBattle && phase === 'cavalry' && unit.troopKind === 'cavalry') {
         const hasCavalryFirearmSource = hasArmamentSourceCard(
             state,
@@ -262,7 +253,6 @@ const getBattleRollArmamentDiceCountBonus = (
             && !hasFineSteelSaberSource;
         return hasCavalryFirearmSource
             || hasLegacyCavalryFirearm
-            || (hasFineSteelSaberSource && controlsOrdosRegion(state, unit.factionId))
             ? 1
             : 0;
     }
@@ -567,9 +557,15 @@ const rollCombatUnit = (
     for (let index = 0; index < rollCount; index += 1) {
         const dieSides = getQidahenTroopDieSides(effectiveLevel);
         const raw = random.d(dieSides);
-        const armamentBonus = getBattleRollArmamentBonus(state, unit);
+        const armamentBonus = getBattleRollArmamentBonus(state, unit, cityBattle, side);
+        const tacticValueBonus = (pendingTargetAction.tacticModifiers ?? [])
+            .filter(modifier => isTacticModifierActive(pendingTargetAction, modifier)
+                && modifier.side === side && modifier.troopKind === unit.troopKind
+                && (!modifier.targetPieceId || unit.pieceIds.includes(modifier.targetPieceId))
+                && (!modifier.targetTokenId || !!modifier.targetPieceId || unit.appliedTacticModifierIds?.includes(modifier.id)))
+            .reduce((sum, modifier) => sum + (modifier.rollValueBonus ?? 0), 0);
         const characterBonus = getBattleRollCharacterBonus(state, unit);
-        const armoredValue = raw + armamentBonus + characterBonus;
+        const armoredValue = raw + armamentBonus + characterBonus + tacticValueBonus;
         const adjustedValue = cityBattle && phase === 'melee' && unit.troopKind === 'cavalry'
             ? Math.max(0, armoredValue - 1)
             : armoredValue;
@@ -599,28 +595,6 @@ const battlePhaseLabelById: Record<QidahenBattleRollPhase, string> = {
     cavalry: '骑兵',
     infantry: '步兵',
     melee: '骑步',
-};
-
-const trimBattleUnitsBeforeCounterRoll = (
-    units: QidahenCombatUnit[],
-    preventedCount: number,
-): QidahenCombatUnit[] => {
-    let remainingPreventedCount = Math.max(0, preventedCount);
-    return units
-        .slice()
-        .sort((left, right) => left.level - right.level)
-        .map((unit) => {
-            if (remainingPreventedCount <= 0) {
-                return unit;
-            }
-            const prevented = Math.min(unit.count, remainingPreventedCount);
-            remainingPreventedCount -= prevented;
-            return {
-                ...unit,
-                count: unit.count - prevented,
-            };
-        })
-        .filter((unit) => unit.count > 0);
 };
 
 const getEiduPriorityPhase = (
@@ -912,6 +886,17 @@ const buildBattleStageUnits = (
     return [...nativeUnits, ...rollAsUnits];
 };
 
+const getRollTotalDamage = (
+    state: QidahenCore, pending: QidahenPendingTargetAction, units: QidahenCombatUnit[], total: number, side: QidahenBattleUnitSide,
+): number => consumeQidahenBattleRollTotal(units, total, unit => {
+    const armor = unit.troopKind === 'infantry' ? getArmamentLevel(state, unit.factionId, 'infantry-armor')
+        : unit.troopKind === 'cavalry' ? getArmamentLevel(state, unit.factionId, 'cavalry-armor') : 0;
+    const tacticDefense = (pending.tacticModifiers ?? []).filter(modifier => isTacticModifierActive(pending, modifier)
+        && modifier.side === side && modifier.troopKind === unit.troopKind)
+        .reduce((sum, modifier) => sum + (modifier.defenseBonus ?? 0), 0);
+    return unit.troopKind === 'artillery' ? 4 : Math.max(1, 3 + armor + tacticDefense);
+}, pending.tacticModifiers?.some(modifier => modifier.side === side && modifier.casualtyPriority === 'artillery-first')).damage;
+
 const rollBattleStage = (
     random: RandomFn,
     state: QidahenCore,
@@ -922,25 +907,28 @@ const rollBattleStage = (
     cityBattle: boolean,
     battlePriority: ReturnType<typeof getEiduPriorityPhase>,
 ) => {
-    const stageAttackerUnits = buildBattleStageUnits(pendingTargetAction, attackerUnits, phase, 'attacker', cityBattle);
-    const stageDefenderUnits = buildBattleStageUnits(pendingTargetAction, defenderUnits, phase, 'defender', cityBattle);
+    const stageAttackerUnits = buildBattleStageUnits(pendingTargetAction, takeBattleUnits(attackerUnits, pendingTargetAction.battleWidth), phase, 'attacker', cityBattle);
+    const stageDefenderUnits = buildBattleStageUnits(pendingTargetAction, takeBattleUnits(defenderUnits, pendingTargetAction.battleWidth), phase, 'defender', cityBattle);
     let attackerRolls: QidahenBattleRoll[] = [];
     let defenderRolls: QidahenBattleRoll[] = [];
 
     if (battlePriority?.phase === phase) {
         if (battlePriority.side === 'attacker') {
             attackerRolls = stageAttackerUnits.flatMap((unit) => rollCombatUnit(random, state, pendingTargetAction, unit, phase, cityBattle, 'attacker'));
-            const preventedDefenderUnits = trimBattleUnitsBeforeCounterRoll(
-                stageDefenderUnits,
-                Math.floor(attackerRolls.reduce((sum, roll) => sum + roll.value, 0) / 3),
-            );
+            const damagedDefenderUnits = applyQidahenBattleDamage(
+                defenderUnits,
+                getRollTotalDamage(state, pendingTargetAction, defenderUnits, attackerRolls.reduce((sum, roll) => sum + roll.value, 0), 'defender'),
+            ).filter((unit) => unit.level > 0);
+            const preventedDefenderUnits = buildBattleStageUnits(pendingTargetAction, takeBattleUnits(damagedDefenderUnits, pendingTargetAction.battleWidth), phase, 'defender', cityBattle);
             defenderRolls = preventedDefenderUnits.flatMap((unit) => rollCombatUnit(random, state, pendingTargetAction, unit, phase, cityBattle, 'defender'));
         } else {
             defenderRolls = stageDefenderUnits.flatMap((unit) => rollCombatUnit(random, state, pendingTargetAction, unit, phase, cityBattle, 'defender'));
-            const preventedAttackerUnits = trimBattleUnitsBeforeCounterRoll(
-                stageAttackerUnits,
-                Math.floor(defenderRolls.reduce((sum, roll) => sum + roll.value, 0) / 3),
-            );
+            const damagedAttackerUnits = applyQidahenBattleDamage(
+                attackerUnits,
+                getRollTotalDamage(state, pendingTargetAction, attackerUnits, defenderRolls.reduce((sum, roll) => sum + roll.value, 0), 'attacker'),
+                pendingTargetAction.tacticModifiers?.some((modifier) => modifier.side === 'attacker' && modifier.casualtyPriority === 'artillery-first'),
+            ).filter((unit) => unit.level > 0);
+            const preventedAttackerUnits = buildBattleStageUnits(pendingTargetAction, takeBattleUnits(damagedAttackerUnits, pendingTargetAction.battleWidth), phase, 'attacker', cityBattle);
             attackerRolls = preventedAttackerUnits.flatMap((unit) => rollCombatUnit(random, state, pendingTargetAction, unit, phase, cityBattle, 'attacker'));
         }
     } else {
@@ -958,8 +946,8 @@ const rollBattleStage = (
         defenderRolls,
         attackerTotal,
         defenderTotal,
-        attackerDamage: Math.floor(attackerTotal / 3),
-        defenderDamage: Math.floor(defenderTotal / 3),
+        attackerDamage: getRollTotalDamage(state, pendingTargetAction, defenderUnits, attackerTotal, 'defender'),
+        defenderDamage: getRollTotalDamage(state, pendingTargetAction, attackerUnits, defenderTotal, 'attacker'),
         priorityNote: battlePriority?.phase === phase ? battlePriority.note : null,
     };
 };
@@ -985,7 +973,7 @@ export const createQidahenStructuredBattleRolls = (
     random: RandomFn,
     options: QidahenStructuredBattleRollOptions,
 ): QidahenBattleRolls | null => {
-    if (options.defenderHoldCity || options.defenderCavalryEvasion || options.attackerCavalryPlunder) {
+    if (options.defenderCavalryEvasion || options.attackerCavalryPlunder) {
         return null;
     }
     if (pendingTargetAction.actionId !== 'raid' && pendingTargetAction.actionId !== 'wheel-dispatch' && pendingTargetAction.actionId !== 'drive-tiger') {
@@ -1011,26 +999,26 @@ export const createQidahenStructuredBattleRolls = (
         ? buildCommittedBattleUnitsFromForceCommitments(
             state,
             pendingTargetAction,
-            pendingTargetAction.attackPressure || pendingTargetAction.battleWidth,
+            Number.MAX_SAFE_INTEGER,
         )
         : buildCommittedBattleUnits(
             sourceRegion,
             pendingTargetAction.committedTroops,
-            pendingTargetAction.attackPressure || pendingTargetAction.battleWidth,
+            Number.MAX_SAFE_INTEGER,
             pendingTargetAction.movementProfileId,
         );
-    const baseDefenderUnits = takeBattleUnits(buildCombatUnits(targetBattleRegion), defenderPressure);
+    const baseDefenderUnits = buildCombatUnits(targetBattleRegion);
     const transferredUnits = applyTacticUnitTransfers(
         pendingTargetAction,
         baseAttackerUnits,
         baseDefenderUnits,
     );
-    const attackerUnits = applyTacticUnitKindOverrides(
+    let attackerUnits = applyTacticUnitKindOverrides(
         pendingTargetAction,
         'attacker',
         transferredUnits.attackerUnits,
     );
-    const defenderUnits = applyTacticUnitKindOverrides(
+    let defenderUnits = applyTacticUnitKindOverrides(
         pendingTargetAction,
         'defender',
         transferredUnits.defenderUnits,
@@ -1039,6 +1027,14 @@ export const createQidahenStructuredBattleRolls = (
         return null;
     }
 
+    const individualUnits = (units: QidahenCombatUnit[]) => units.flatMap((unit) => (
+        Array.from({ length: unit.count }, (_, index) => ({
+            ...unit, count: 1, pieceIds: unit.pieceIds[index] ? [unit.pieceIds[index]] : [],
+        }))
+    ));
+    attackerUnits = individualUnits(attackerUnits);
+    defenderUnits = individualUnits(defenderUnits);
+
     const cityBattle = battleMode === 'city';
     const phases: QidahenBattleRollPhase[] = cityBattle
         ? ['artillery', 'melee']
@@ -1046,9 +1042,20 @@ export const createQidahenStructuredBattleRolls = (
     const battlePriority = getTacticPriorityPhase(pendingTargetAction, attackerUnits, defenderUnits, cityBattle)
         ?? getArmamentPriorityPhase(state, pendingTargetAction, attackerUnits, defenderUnits, cityBattle)
         ?? getEiduPriorityPhase(state, attackerUnits, defenderUnits, cityBattle);
-    const stages = phases
-        .map((phase) => rollBattleStage(random, state, pendingTargetAction, phase, attackerUnits, defenderUnits, cityBattle, battlePriority))
-        .filter((stage) => stage.attackerRolls.length > 0 || stage.defenderRolls.length > 0);
+    const stages: ReturnType<typeof rollBattleStage>[] = [];
+    for (const phase of phases) {
+        const livingAttackers = attackerUnits.filter((unit) => unit.level > 0);
+        const livingDefenders = defenderUnits.filter((unit) => unit.level > 0);
+        if (!livingAttackers.some((unit) => unit.troopKind !== 'artillery')
+            || !livingDefenders.some((unit) => unit.troopKind !== 'artillery')) break;
+        const stage = rollBattleStage(random, state, pendingTargetAction, phase, livingAttackers, livingDefenders, cityBattle, battlePriority);
+        if (stage.attackerRolls.length > 0 || stage.defenderRolls.length > 0) stages.push(stage);
+        attackerUnits = applyQidahenBattleDamage(
+            attackerUnits, stage.defenderDamage,
+            pendingTargetAction.tacticModifiers?.some((modifier) => modifier.side === 'attacker' && modifier.casualtyPriority === 'artillery-first'),
+        );
+        defenderUnits = applyQidahenBattleDamage(defenderUnits, stage.attackerDamage);
+    }
     const attackerDamage = stages.reduce((sum, stage) => sum + stage.attackerDamage, 0);
     const defenderDamage = stages.reduce((sum, stage) => sum + stage.defenderDamage, 0);
 
@@ -1057,6 +1064,16 @@ export const createQidahenStructuredBattleRolls = (
         stages,
         attackerDamage,
         defenderDamage,
+        attackerMorale: {
+            remainingLevels: Object.fromEntries(attackerUnits.flatMap((unit) => unit.pieceIds.map((id) => [id, unit.level]))),
+            destroyedTroops: attackerUnits.filter((unit) => unit.level <= 0).length,
+            survivingCombatTroops: attackerUnits.filter((unit) => unit.level > 0 && unit.troopKind !== 'artillery').length,
+        },
+        defenderMorale: {
+            remainingLevels: Object.fromEntries(defenderUnits.flatMap((unit) => unit.pieceIds.map((id) => [id, unit.level]))),
+            destroyedTroops: defenderUnits.filter((unit) => unit.level <= 0).length,
+            survivingCombatTroops: defenderUnits.filter((unit) => unit.level > 0 && unit.troopKind !== 'artillery').length,
+        },
         summary: buildBattleRollSummary(stages, cityBattle),
     };
 };

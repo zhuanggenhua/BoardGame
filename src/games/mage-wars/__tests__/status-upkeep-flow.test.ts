@@ -213,6 +213,57 @@ describe('mage-wars status and upkeep flow', () => {
         expect(actionLogKinds(upkeep.state)).toContain(MAGE_WARS_EVENTS.ARENA_OBJECT_REGENERATED);
     });
 
+    it('regenerates a damaged mage from an equipped Regrowth Belt during upkeep', () => {
+        const baseState = setupState('channel');
+        const regrowthBelt = makeArenaObject('regrowth-belt-0', '0', PLAYER_ZERO_START_ZONE, {
+            kind: 'equipment',
+            sourceSpellCardId: 3707,
+            sourceObjectId: 'spell-card-3707',
+            name: '重生腰带',
+            life: 1,
+            damage: 0,
+            armor: 0,
+            actionReady: false,
+            attackOrTraitLine: '法师获得重生2特性',
+            rulesText: '法师获得重生2特性。',
+            anchoredToPlayerId: '0',
+        });
+        const state: MatchState<MageWarsCore> = {
+            core: withArenaObject({
+                ...baseState.core,
+                players: {
+                    ...baseState.core.players,
+                    '0': {
+                        ...baseState.core.players['0'],
+                        damage: 5,
+                    },
+                },
+            }, regrowthBelt),
+            sys: baseState.sys,
+        };
+
+        const upkeep = runCommand(state, {
+            type: FLOW_COMMANDS.ADVANCE_PHASE,
+            playerId: '0',
+            payload: {},
+        });
+
+        expect(upkeep.success).toBe(true);
+        expect(upkeep.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.MAGE_REGENERATED,
+                payload: expect.objectContaining({
+                    playerId: '0',
+                    regeneration: 2,
+                    actualHealing: 2,
+                    sourceObjectIds: [regrowthBelt.id],
+                }),
+            }),
+        ]));
+        expect(upkeep.state.core.players['0'].damage).toBe(3);
+        expect(actionLogKinds(upkeep.state)).toContain(MAGE_WARS_EVENTS.MAGE_REGENERATED);
+    });
+
     it('emits upkeep automatic damage facts from flow hooks without resolving damage there', () => {
         const baseState = setupState('channel');
         const rottedCat = makeArenaObject('flow-rot-cat-0', '0', PLAYER_ZERO_START_ZONE, {

@@ -5,16 +5,24 @@
 
 import type { CardiaCore, CardInstance, EncounterState, ModifierToken, OngoingAbility, DelayedEffect, PlayedCard } from './core-types';
 import type { CardiaEvent } from './events';
+import type { PlayerId } from '../../../engine/types';
 import { CARDIA_EVENTS } from './events';
-import { ABILITY_IDS } from './ids';
+import { ABILITY_IDS, PHASE_IDS } from './ids';
+import type { PhaseId } from './ids';
 import { updatePlayer, getOpponentId } from './utils';
-import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
+import { FLOW_EVENTS, type PhaseChangedEvent as FlowPhaseChangedEvent } from '../../../engine/systems/FlowSystem';
 import { findCardiaStoredOngoingAbility, removeCardiaStoredOngoingAbility } from './effectHost';
+
+type CardiaReducerEvent = CardiaEvent | FlowPhaseChangedEvent;
+
+function isCardiaPhase(phase: string): phase is PhaseId {
+    return Object.values(PHASE_IDS).some((knownPhase) => knownPhase === phase);
+}
 
 /**
  * 归约事件到核心状态
  */
-export function reduce(core: CardiaCore, event: CardiaEvent): CardiaCore {
+export function reduce(core: CardiaCore, event: CardiaReducerEvent): CardiaCore {
     switch (event.type) {
         case CARDIA_EVENTS.CARD_PLAYED.type:
             return reduceCardPlayed(core, event);
@@ -106,7 +114,7 @@ export function reduce(core: CardiaCore, event: CardiaEvent): CardiaCore {
             return reducePhaseChanged(core, event);
         
         case FLOW_EVENTS.PHASE_CHANGED:
-            return reducePhaseChanged(core, event as any);
+            return reducePhaseChanged(core, event);
         
         case CARDIA_EVENTS.REVEAL_ORDER_CHANGED.type:
             return reduceRevealOrderChanged(core, event);
@@ -124,7 +132,7 @@ export function reduce(core: CardiaCore, event: CardiaEvent): CardiaCore {
  */
 function reduceCardPlayed(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_PLAYED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_PLAYED.type }>
 ): CardiaCore {
     const { playerId, cardUid, slotIndex } = event.payload;
     const player = core.players[playerId];
@@ -156,7 +164,7 @@ function reduceCardPlayed(
  */
 function reduceCardDrawn(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_DRAWN }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_DRAWN.type }>
 ): CardiaCore {
     const { playerId, count } = event.payload;
     const player = core.players[playerId];
@@ -177,7 +185,7 @@ function reduceCardDrawn(
  */
 function reduceEncounterResolved(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ENCOUNTER_RESOLVED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ENCOUNTER_RESOLVED.type }>
 ): CardiaCore {
     const { slotIndex, winner, loser } = event.payload;
     
@@ -242,7 +250,7 @@ function reduceEncounterResolved(
         encounterIndex: core.turnNumber,
     };
     
-    let newCore = {
+    let newCore: CardiaCore = {
         ...core,
         previousEncounter: core.currentEncounter,
         currentEncounter: encounter,
@@ -276,7 +284,7 @@ function reduceEncounterResolved(
  */
 function reduceAbilityActivated(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ABILITY_ACTIVATED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ABILITY_ACTIVATED.type }>
 ): CardiaCore {
     // 能力激活事件本身不改变状态
     // 状态变化由能力效果产生的其他事件处理
@@ -289,7 +297,7 @@ function reduceAbilityActivated(
  */
 function reduceCardRecycled(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_RECYCLED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_RECYCLED.type }>
 ): CardiaCore {
     const { playerId, cardId, from } = event.payload;
     const player = core.players[playerId];
@@ -340,7 +348,7 @@ function reduceCardRecycled(
  */
 function reduceDeckShuffled(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DECK_SHUFFLED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DECK_SHUFFLED.type }>
 ): CardiaCore {
     const { playerId } = event.payload;
     
@@ -355,7 +363,7 @@ function reduceDeckShuffled(
  */
 function reduceOngoingAbilityPlaced(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ONGOING_ABILITY_PLACED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ONGOING_ABILITY_PLACED.type }>
 ): CardiaCore {
     const { abilityId, cardId, playerId, effectType, timestamp, encounterIndex, targetCardId, targetPlayerId } = event.payload;
     
@@ -382,16 +390,18 @@ function reduceOngoingAbilityPlaced(
         return card;
     });
     
+    const players: CardiaCore['players'] = {
+        ...core.players,
+        [playerId]: {
+            ...player,
+            playedCards: updatedPlayedCards,
+        },
+    };
+
     return {
         ...core,
         ongoingAbilities: [...core.ongoingAbilities, newAbility],
-        players: {
-            ...core.players,
-            [playerId]: {
-                ...player,
-                playedCards: updatedPlayedCards,
-            },
-        },
+        players,
     };
 }
 
@@ -400,7 +410,7 @@ function reduceOngoingAbilityPlaced(
  */
 function reduceOngoingAbilityRemoved(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ONGOING_ABILITY_REMOVED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ONGOING_ABILITY_REMOVED.type }>
 ): CardiaCore {
     const { abilityId, cardId, playerId } = event.payload;
     
@@ -408,7 +418,7 @@ function reduceOngoingAbilityRemoved(
     const removedAbility = findCardiaStoredOngoingAbility(core, { abilityId, cardId, playerId });
     
     // 移除 core.ongoingAbilities 中的记录
-    let newCore = {
+    let newCore: CardiaCore = {
         ...core,
         ongoingAbilities: removeCardiaStoredOngoingAbility(core, { abilityId, cardId, playerId }),
     };
@@ -521,7 +531,7 @@ function reduceOngoingAbilityRemoved(
             const player2Influence = encounter.player2Influence;
             
             let winnerId: PlayerId | null = null;
-            let winnerCard: CardiaCard | null = null;
+            let winnerCard: CardInstance | null = null;
             
             if (player1Influence > player2Influence) {
                 winnerId = newCore.playerOrder[0];
@@ -566,7 +576,7 @@ function reduceOngoingAbilityRemoved(
  */
 function reduceModifierTokenPlaced(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_TOKEN_PLACED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_TOKEN_PLACED.type }>
 ): CardiaCore {
     const { cardId, value, source, timestamp } = event.payload;
     
@@ -604,7 +614,7 @@ function reduceModifierTokenPlaced(
  */
 function reduceModifierTokenRemoved(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_TOKEN_REMOVED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_TOKEN_REMOVED.type }>
 ): CardiaCore {
     const { cardId, source } = event.payload;
     
@@ -623,7 +633,7 @@ function reduceModifierTokenRemoved(
  */
 function reduceCardInfluenceModified(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_INFLUENCE_MODIFIED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_INFLUENCE_MODIFIED.type }>
 ): CardiaCore {
     const { cardId, newInfluence } = event.payload;
     
@@ -681,7 +691,7 @@ function reduceCardInfluenceModified(
  */
 function reduceEncounterResultChanged(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ENCOUNTER_RESULT_CHANGED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.ENCOUNTER_RESULT_CHANGED.type }>
 ): CardiaCore {
     const { slotIndex, newWinner } = event.payload;
     
@@ -713,7 +723,7 @@ function reduceEncounterResultChanged(
     // 如果修改的是当前遭遇（最后一个），也更新 currentEncounter
     const isCurrentEncounter = slotIndex === core.encounterHistory.length - 1;
     
-    let newCore = {
+    let newCore: CardiaCore = {
         ...core,
         encounterHistory: newHistory,
         currentEncounter: isCurrentEncounter ? updatedEncounter : core.currentEncounter,
@@ -771,7 +781,7 @@ function reduceEncounterResultChanged(
  */
 function reduceSignetMoved(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_MOVED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_MOVED.type }>
 ): CardiaCore {
     const { fromCardId, toCardId } = event.payload;
     
@@ -836,7 +846,7 @@ function reduceSignetMoved(
  */
 function reduceSignetRemoved(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_REMOVED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_REMOVED.type }>
 ): CardiaCore {
     const { cardId, playerId } = event.payload;
     
@@ -877,7 +887,7 @@ function reduceSignetRemoved(
  */
 function reduceExtraSignetPlaced(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.EXTRA_SIGNET_PLACED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.EXTRA_SIGNET_PLACED.type }>
 ): CardiaCore {
     const { cardId, playerId } = event.payload;
     
@@ -915,7 +925,7 @@ function reduceExtraSignetPlaced(
  */
 function reduceSignetGranted(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_GRANTED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.SIGNET_GRANTED.type }>
 ): CardiaCore {
     const { cardUid, playerId } = event.payload;
     
@@ -953,12 +963,18 @@ function reduceSignetGranted(
  */
 function reduceCardReplaced(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_REPLACED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARD_REPLACED.type }>
 ): CardiaCore {
     console.log('[reduceCardReplaced] 开始处理卡牌替换事件:', event.payload);
     
     try {
-        const { oldCardId, newCardId, playerId, encounterIndex, suppressAbility } = event.payload;
+        const { oldCardId, newCardId, playerId, suppressAbility } = event.payload;
+        const encounterIndex = 'encounterIndex' in event.payload && typeof event.payload.encounterIndex === 'number'
+            ? event.payload.encounterIndex
+            : 'slotIndex' in event.payload
+                ? event.payload.slotIndex + 1
+                : undefined;
+        if (encounterIndex === undefined) return core;
         const player = core.players[playerId];
         
         // 1. 找到要替换的旧卡牌
@@ -1151,7 +1167,7 @@ function reduceCardReplaced(
         };
     }
     
-    let newCore = {
+    let newCore: CardiaCore = {
         ...core,
         players: {
             ...core.players,
@@ -1273,7 +1289,7 @@ function reduceCardReplaced(
  */
 function reduceCardsDiscarded(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARDS_DISCARDED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARDS_DISCARDED.type }>
 ): CardiaCore {
     const { playerId, cardIds, from } = event.payload;
     const player = core.players[playerId];
@@ -1308,7 +1324,7 @@ function reduceCardsDiscarded(
  */
 function reduceCardsDiscardedFromDeck(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARDS_DISCARDED_FROM_DECK }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.CARDS_DISCARDED_FROM_DECK.type }>
 ): CardiaCore {
     const { playerId, count } = event.payload;
     const player = core.players[playerId];
@@ -1328,19 +1344,30 @@ function reduceCardsDiscardedFromDeck(
  */
 function reduceDelayedEffectRegistered(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DELAYED_EFFECT_REGISTERED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DELAYED_EFFECT_REGISTERED.type }>
 ): CardiaCore {
-    const { effectType, target, value, condition, sourceAbilityId, sourcePlayerId, timestamp } = event.payload;
-    
-    const newEffect: DelayedEffect = {
-        effectType,
-        target,
-        value,
-        condition,
-        sourceAbilityId,
-        sourcePlayerId,
-        timestamp,
-    };
+    const newEffect: DelayedEffect = 'trigger' in event.payload
+        ? {
+            effectId: event.payload.effectId,
+            effectType: 'conditionalDiscard',
+            target: 'opponent',
+            value: event.payload.data.discardCount,
+            condition: event.payload.trigger,
+            sourceAbilityId: event.payload.abilityId,
+            sourcePlayerId: event.payload.playerId,
+            targetPlayerId: event.payload.targetPlayerId,
+            requiredFaction: event.payload.data.requiredFaction,
+            timestamp: event.payload.timestamp,
+        }
+        : {
+            effectType: event.payload.effectType,
+            target: event.payload.target,
+            value: event.payload.value,
+            condition: event.payload.condition,
+            sourceAbilityId: event.payload.sourceAbilityId,
+            sourcePlayerId: event.payload.sourcePlayerId,
+            timestamp: event.payload.timestamp,
+        };
     
     return {
         ...core,
@@ -1353,9 +1380,9 @@ function reduceDelayedEffectRegistered(
  */
 function reduceDelayedEffectTriggered(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DELAYED_EFFECT_TRIGGERED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.DELAYED_EFFECT_TRIGGERED.type }>
 ): CardiaCore {
-    const { effectType, sourceAbilityId, sourcePlayerId } = event.payload;
+    const { effectType, sourceAbilityId, sourcePlayerId, effectId } = event.payload;
     
     console.log('[Cardia] reduceDelayedEffectTriggered:', {
         effectType,
@@ -1366,11 +1393,13 @@ function reduceDelayedEffectTriggered(
     
     // 移除已触发的延迟效果（匹配 effectType, sourceAbilityId, sourcePlayerId）
     const newDelayedEffects = core.delayedEffects.filter(
-        effect => !(
-            effect.effectType === effectType &&
-            effect.sourceAbilityId === sourceAbilityId &&
-            effect.sourcePlayerId === sourcePlayerId
-        )
+        effect => effectId
+            ? effect.effectId !== effectId
+            : !(
+                effect.effectType === effectType &&
+                effect.sourceAbilityId === sourceAbilityId &&
+                effect.sourcePlayerId === sourcePlayerId
+            )
     );
     
     console.log('[Cardia] reduceDelayedEffectTriggered: after filter', {
@@ -1389,7 +1418,7 @@ function reduceDelayedEffectTriggered(
  */
 function reduceInventorPendingSet(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.INVENTOR_PENDING_SET }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.INVENTOR_PENDING_SET.type }>
 ): CardiaCore {
     const { playerId, timestamp, firstCardId } = event.payload;
     
@@ -1414,7 +1443,7 @@ function reduceInventorPendingSet(
  */
 function reduceInventorPendingCleared(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.INVENTOR_PENDING_CLEARED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.INVENTOR_PENDING_CLEARED.type }>
 ): CardiaCore {
     return {
         ...core,
@@ -1427,7 +1456,7 @@ function reduceInventorPendingCleared(
  */
 function reduceModifierAdded(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_ADDED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_ADDED.type }>
 ): CardiaCore {
     const { cardUid, value, playerId } = event.payload;
     
@@ -1511,14 +1540,32 @@ function reduceModifierAdded(
  */
 function reduceModifierRemoved(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_REMOVED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.MODIFIER_REMOVED.type }>
 ): CardiaCore {
-    const { modifierId } = event.payload;
-    
-    return {
-        ...core,
-        modifierTokens: core.modifierTokens.filter(m => m.id !== modifierId),
-    };
+    const { cardUid, modifierId, playerId } = event.payload;
+    const player = core.players[playerId];
+    if (!player) return core;
+
+    const removeModifier = <T extends CardInstance | PlayedCard>(card: T): T => ({
+        ...card,
+        modifiers: {
+            ...card.modifiers,
+            entries: card.modifiers.entries.filter(entry => entry.def.id !== modifierId),
+        },
+    });
+
+    if (player.currentCard?.uid === cardUid) {
+        return updatePlayer(core, playerId, {
+            currentCard: removeModifier(player.currentCard),
+        });
+    }
+
+    const cardIndex = player.playedCards.findIndex(card => card.uid === cardUid);
+    if (cardIndex < 0) return core;
+
+    const playedCards = [...player.playedCards];
+    playedCards[cardIndex] = removeModifier(playedCards[cardIndex]);
+    return updatePlayer(core, playerId, { playedCards });
 }
 
 /**
@@ -1526,7 +1573,7 @@ function reduceModifierRemoved(
  */
 function reduceTurnEnded(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.TURN_ENDED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.TURN_ENDED.type }>
 ): CardiaCore {
     const { playerId } = event.payload;
     
@@ -1534,7 +1581,7 @@ function reduceTurnEnded(
     const opponentId = getOpponentId(core, playerId);
     
     // 重置双方玩家的回合状态
-    let newCore = {
+    let newCore: CardiaCore = {
         ...core,
         turnNumber: core.turnNumber + 1,
         currentPlayerId: opponentId,
@@ -1569,12 +1616,15 @@ function reduceTurnEnded(
  */
 function reducePhaseChanged(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.PHASE_CHANGED }> | any
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.PHASE_CHANGED.type }> | FlowPhaseChangedEvent
 ): CardiaCore {
     // 兼容两种 payload 格式：
     // - CARDIA_EVENTS.PHASE_CHANGED: { newPhase: string }
     // - FLOW_EVENTS.PHASE_CHANGED: { from: string, to: string, activePlayerId: string }
-    const newPhase = (event.payload as any).newPhase || (event.payload as any).to;
+    const newPhase = 'newPhase' in event.payload ? event.payload.newPhase : event.payload.to;
+    if (!isCardiaPhase(newPhase)) {
+        throw new Error(`Cardia received an unsupported phase: ${newPhase}`);
+    }
     
     // 更新游戏阶段
     return {
@@ -1588,7 +1638,7 @@ function reducePhaseChanged(
  */
 function reduceGameWon(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.GAME_WON }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.GAME_WON.type }>
 ): CardiaCore {
     // 设置游戏胜利标记，供 isGameOver 检查
     const { winnerId } = event.payload as { winnerId: string; reason: string };
@@ -1604,7 +1654,7 @@ function reduceGameWon(
  */
 function reduceRevealOrderChanged(
     core: CardiaCore,
-    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.REVEAL_ORDER_CHANGED }>
+    event: Extract<CardiaEvent, { type: typeof CARDIA_EVENTS.REVEAL_ORDER_CHANGED.type }>
 ): CardiaCore {
     return {
         ...core,

@@ -1531,7 +1531,7 @@ const enumerateInteractionOptionPermutations = <T extends { id: string }>(
 const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLegalAction[] | null => {
     const current = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
     if (!current) return null;
-    if (current.playerId !== playerId) return [];
+    if (String(current.playerId) !== String(playerId)) return [];
     if (current.kind !== 'simple-choice') {
         return buildAiOwnedBlockingInteractionFallbackActions({
             playerId,
@@ -2357,7 +2357,7 @@ function shouldUseSharedDecisionViewForReactionOrdering(args: {
         } | null;
     } | undefined)?.current;
 
-    if (!currentInteraction || currentInteraction.playerId !== args.playerId) {
+    if (!currentInteraction || String(currentInteraction.playerId) !== String(args.playerId)) {
         return false;
     }
     if (currentInteraction.kind !== 'simple-choice') {

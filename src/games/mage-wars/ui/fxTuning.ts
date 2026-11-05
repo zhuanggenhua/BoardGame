@@ -2,7 +2,8 @@ import type { BoardBurstPresetName } from '../../../components/common/animations
 import type { ImpactEffects } from '../../../components/common/animations/ImpactContainer';
 import type { SummonColorTheme } from '../../../components/common/animations/SummonEffect';
 
-type MageWarsTravelFxKind = 'attack' | 'push' | 'teleport' | 'move';
+type MageWarsTravelFxKind = 'attack' | 'push' | 'move';
+type MageWarsFxColorKind = MageWarsTravelFxKind | 'teleport';
 type MageWarsTravelFxTuning = {
     pathPaddingCells: number;
     pathMinSizeCells: number;
@@ -20,30 +21,50 @@ type MageWarsTravelFxTuning = {
 
 export const MAGE_WARS_FX_TIMING = {
     projectileTravelMs: 2_600,
-    projectileRangedCompleteMs: 4_200,
+    rangedAttackTravelMs: 1_350,
+    projectileRangedCompleteMs: 2_650,
     projectileSameCellCompleteMs: 1_450,
-    teleportTravelImpactMs: 2_600,
-    teleportSameCellImpactMs: 180,
-    teleportTravelCompleteMs: 3_600,
-    teleportSameCellCompleteMs: 950,
-    pushTravelImpactMs: 2_600,
+    // 近战来源冲刺、命中和结果层必须在真实录屏中保持可读，不能只留下单帧闪光。
+    meleeLungeOutMs: 280,
+    meleeLungePauseMs: 140,
+    meleeLungeReturnMs: 280,
+    meleeStrikeMs: 260,
+    meleeCompleteMs: 900,
+    diceResultRollMs: 900,
+    // Attack d6 follows DiceThrone / Summoner Wars: linear tumble, then ease onto the result face.
+    diceResultTumbleMs: 500,
+    diceResultSettleMs: 800,
+    meleeResultVisibleMs: 3_000,
+    teleportArrivalImpactMs: 420,
+    teleportCompleteMs: 1_250,
+    // 推斥滑移约 0.3 秒；complete 再留一拍给落点帧和 registry 收口。
+    pushTravelImpactMs: 300,
     pushSameCellImpactMs: 80,
-    pushTravelCompleteMs: 3_300,
-    pushSameCellCompleteMs: 780,
-    moveTravelImpactMs: 900,
+    pushTravelCompleteMs: 450,
+    pushSameCellCompleteMs: 180,
+    moveTravelImpactMs: 560,
     moveSameCellImpactMs: 80,
-    moveTravelCompleteMs: 1_150,
-    moveSameCellCompleteMs: 420,
+    moveTravelCompleteMs: 620,
+    moveSameCellCompleteMs: 180,
     directDamageCompleteMs: 850,
 } as const;
 
 export const MAGE_WARS_SUMMON_FX_TUNING = {
-    scale: 1.08,
-    originY: 0.66,
+    // 宿主贴卡；沿用现有 summon 光柱，按卡宽比拉成等宽，不再叠 CSS 光圈。
+    scale: 1,
+    originY: 0.9,
     durationScale: 2.4,
-    visualScale: 1.55,
+    visualScale: 1,
     dimStrength: 0,
+    pillarWidthRatio: 1,
 } as const;
+
+/** E2E 审计上限：宿主与卡同框，只留亚像素/描边余量。 */
+export const MAGE_WARS_SUMMON_FX_MAX_OBJECT_RATIO = 1.2;
+
+export const MAGE_WARS_SUMMON_HOST_STYLE = {
+    overflow: 'visible' as const,
+};
 
 export const MAGE_WARS_ATTACK_FX_TUNING = {
     pathPaddingCells: 1.35,
@@ -60,6 +81,8 @@ export const MAGE_WARS_ATTACK_FX_TUNING = {
     shakeDuration: 620,
     impactEffects: { shake: true, hitStop: true } satisfies ImpactEffects,
     damageFlashCompleteMs: 1_550,
+    meleeSlashDurationMs: 860,
+    meleeSlashActiveMs: 460,
 } as const;
 
 export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTravelFxTuning> = {
@@ -84,20 +107,6 @@ export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTr
         targetBurstOverflow: 2.35,
         targetBurstSizeClassName: 'relative h-28 w-28',
     },
-    teleport: {
-        pathPaddingCells: 1.45,
-        pathMinSizeCells: 2.45,
-        sourceWakeSizeClassName: 'relative h-20 w-20',
-        sourceWakeOverflow: 2.2,
-        midBurstOverflow: 2.45,
-        sourceWakePreset: 'magicDust',
-        midBurstPreset: 'summonGlow',
-        midBurstStrongPreset: 'summonGlowStrong',
-        targetBurstPreset: 'summonGlow',
-        targetBurstStrongPreset: 'summonGlowStrong',
-        targetBurstOverflow: 2.2,
-        targetBurstSizeClassName: 'relative h-28 w-28',
-    },
     move: {
         pathPaddingCells: 0.8,
         pathMinSizeCells: 1.25,
@@ -107,6 +116,16 @@ export const MAGE_WARS_TRAVEL_FX_TUNING: Record<MageWarsTravelFxKind, MageWarsTr
         sourceWakePreset: 'sparks',
         midBurstPreset: 'sparks',
     },
+} as const;
+
+export const MAGE_WARS_TELEPORT_FX_TUNING = {
+    sourcePreset: 'magicDust' as BoardBurstPresetName,
+    arrivalPreset: 'summonGlow' as BoardBurstPresetName,
+    arrivalStrongPreset: 'summonGlowStrong' as BoardBurstPresetName,
+    sourceOverflow: 2.2,
+    arrivalOverflow: 2.2,
+    sourceSizeClassName: 'relative h-20 w-20',
+    arrivalSizeClassName: 'relative h-28 w-28',
 } as const;
 
 export const MAGE_WARS_DIRECT_DAMAGE_FX_TUNING = {
@@ -129,8 +148,11 @@ export function resolveMageWarsSummonColor(objectKind: unknown): SummonColorThem
     return objectKind === 'conjuration' ? 'gold' : 'blue';
 }
 
-export function mageWarsFxColors(kind: MageWarsTravelFxKind, strong = false): string[] {
+export function mageWarsFxColors(kind: MageWarsFxColorKind, strong = false): string[] {
     if (kind === 'attack') return ['#fff7ed', '#fca5a5', '#ef4444', '#7f1d1d'];
+    if (kind === 'teleport') return strong
+        ? ['#f5f3ff', '#c4b5fd', '#8b5cf6', '#4c1d95']
+        : ['#f5f3ff', '#ddd6fe', '#a78bfa', '#6d28d9'];
     if (kind === 'move') return ['#ecfeff', '#a5f3fc', '#22d3ee', '#0e7490'];
     if (kind === 'push') return ['#e0f2fe', '#bae6fd', '#38bdf8', '#0369a1'];
     return strong

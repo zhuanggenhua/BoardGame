@@ -143,7 +143,8 @@ test.describe('SmashUp 弃牌堆交互目标族回归', () => {
         await expect(page.locator('[data-card-uid="bananas-a"] .ring-2.ring-amber-300\\/80')).toHaveCount(0);
 
         await page.locator('[data-card-uid="evo-a"]').click({ force: true });
-        await expect(page.getByText('请选择一个随从')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('请选择一个随从')).toHaveCount(0);
+        await expect(page.locator('[data-minion-uid="own-cyberback"]')).toBeVisible({ timeout: 5000 });
         await game.screenshot('cyberback-discard-action-selected', testInfo);
 
         await page.locator('[data-minion-uid="own-cyberback"]').click({ force: true });

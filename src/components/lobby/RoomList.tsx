@@ -1,30 +1,31 @@
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
-import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel, type RoomItem, type ActiveMatchInfo } from './roomActions';
+import { RoomPrimaryActions, type RoomPrimaryActionsProps } from './RoomPrimaryActions';
+import { resolveRoomExpansionLabel, resolveRoomScenarioLabel, resolveRoomScenarioPendingLabel, type RoomItem } from './roomActions';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 
-interface RoomListProps {
+interface RoomListProps extends RoomPrimaryActionsProps {
+    showPrimaryActions?: boolean;
     roomItems: RoomItem[];
     gameManifest?: GameManifestEntry | null;
     gameTranslationNamespace?: string;
-    activeMatch: ActiveMatchInfo | null;
-    isActionLoading: boolean;
     isLobbyLoading: boolean;
-    onJoinRoom: (matchID: string, gameName?: string) => void;
+    connectionError?: boolean;
+    onRetryConnection?: () => void;
     onJoinRequest: (matchID: string, gameName?: string) => void;
-    onAction: (matchID: string, playerID: string, credentials: string, isHost: boolean) => void;
-    onForceExitLocal: (matchID: string) => void;
-    onOpenCreateRoom: () => void;
     onSpectate: (matchID: string) => void;
 }
 
 export const RoomList = ({
+    showPrimaryActions = true,
     roomItems,
     gameManifest,
     gameTranslationNamespace,
     activeMatch,
     isActionLoading,
     isLobbyLoading,
+    connectionError = false,
+    onRetryConnection,
     onJoinRoom,
     onJoinRequest,
     onAction,
@@ -36,63 +37,20 @@ export const RoomList = ({
 
     return (
         <>
-            {/* 创建操作 */}
-            <div className="mb-6 space-y-3">
-                {activeMatch && (
-                    <div className="w-full py-3 px-4 bg-parchment-base-bg/50 border border-parchment-card-border/50 rounded-[4px] flex flex-col items-center gap-3">
-                        <span className="text-xs text-parchment-light-text font-bold uppercase tracking-wider">
-                            {t('activeMatch.notice')}
-                        </span>
-                        <div className="flex flex-wrap justify-center gap-2">
-                            <button
-                                onClick={() => onJoinRoom(activeMatch.matchID, activeMatch.gameName)}
-                                className="px-4 py-1.5 bg-parchment-card-border text-parchment-card-bg text-xs font-bold rounded hover:bg-parchment-brown transition-colors cursor-pointer uppercase tracking-wider"
-                            >
-                                {t('activeMatch.return', { id: activeMatch.matchID.slice(0, 4) })}
-                            </button>
-                            {activeMatch.canReconnect && activeMatch.myPlayerID && activeMatch.myCredentials && (
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onAction(activeMatch.matchID, activeMatch.myPlayerID!, activeMatch.myCredentials!, activeMatch.isHost);
-                                    }}
-                                    className={clsx(
-                                        "px-3 py-1.5 rounded-[4px] text-[10px] font-bold transition-all cursor-pointer uppercase tracking-wider border",
-                                        activeMatch.isHost
-                                            ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-                                            : "bg-orange-50 text-orange-600 border-orange-200 hover:bg-orange-100"
-                                    )}
-                                >
-                                    {activeMatch.isHost ? t('actions.destroy') : t('actions.leave')}
-                                </button>
-                            )}
-                            {!activeMatch.canReconnect && (
-                                <button
-                                    onClick={() => onForceExitLocal(activeMatch.matchID)}
-                                    className="px-3 py-1.5 rounded-[4px] text-[10px] font-bold transition-all cursor-pointer uppercase tracking-wider border bg-white/70 text-parchment-base-text border-parchment-card-border/60 hover:bg-white"
-                                    title={t('actions.forceExitHint')}
-                                >
-                                    {t('actions.forceExit')}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
-                {!activeMatch && (
-                    <button
-                        onClick={onOpenCreateRoom}
-                        disabled={isActionLoading}
-                        data-testid="game-details-open-create-room"
-                        className="w-full py-3 bg-parchment-base-text hover:bg-parchment-brown text-parchment-card-bg font-bold rounded-[4px] shadow-md hover:shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer text-sm uppercase tracking-widest"
-                    >
-                        {isActionLoading ? t('button.processing') : t('actions.createRoom')}
-                    </button>
-                )}
-            </div>
+            {showPrimaryActions && <RoomPrimaryActions activeMatch={activeMatch} isActionLoading={isActionLoading}
+                onJoinRoom={onJoinRoom} onAction={onAction} onForceExitLocal={onForceExitLocal} onOpenCreateRoom={onOpenCreateRoom} />}
 
             {/* 房间列表 */}
             <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                {isLobbyLoading ? (
+                {connectionError ? (
+                    <div role="alert" className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-[6px] border border-parchment-card-border/30 p-4 text-center text-parchment-base-text">
+                        <p>{t('error.serviceUnavailable.title')}</p>
+                        {onRetryConnection && <button type="button" onClick={onRetryConnection}
+                            className="rounded border border-parchment-brown px-4 py-2 font-bold hover:bg-parchment-base-bg focus-visible:outline focus-visible:outline-2">
+                            {t('platform.retry')}
+                        </button>}
+                    </div>
+                ) : isLobbyLoading ? (
                     <div
                         role="status"
                         aria-live="polite"
@@ -104,7 +62,7 @@ export const RoomList = ({
                         </p>
                     </div>
                 ) : roomItems.length === 0 ? (
-                    <div className="text-center text-parchment-light-text py-10 italic text-sm border border-dashed border-parchment-card-border/30 rounded-[4px]">
+                    <div className="platform-room-list-empty text-center text-parchment-light-text py-10 italic text-sm border border-dashed border-parchment-card-border/30 rounded-[4px]">
                         {t('rooms.empty')}
                     </div>
                 ) : (
@@ -231,10 +189,11 @@ export const RoomList = ({
                                             e.stopPropagation();
                                             onSpectate(room.matchID);
                                         }}
-                                        className="p-1.5 rounded-[4px] text-parchment-light-text hover:text-parchment-base-text hover:bg-parchment-base-bg transition-all cursor-pointer border border-parchment-card-border/30"
+                                        className="inline-flex h-11 w-11 items-center justify-center p-0 rounded-[4px] text-parchment-light-text hover:text-parchment-base-text hover:bg-parchment-base-bg transition-all cursor-pointer border border-parchment-card-border/30"
                                         title={t('actions.spectate')}
+                                        aria-label={t('actions.spectate')}
                                     >
-                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <svg className="block h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                         </svg>

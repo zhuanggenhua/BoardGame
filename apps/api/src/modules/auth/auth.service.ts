@@ -1,20 +1,22 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import type { Cache } from 'cache-manager';
-import { createHash, randomBytes } from 'crypto';
-import jwt from 'jsonwebtoken';
 import type { Model } from 'mongoose';
+import type { Cache } from 'cache-manager';
+import { createHash, createHmac, randomBytes } from 'crypto';
+import jwt from 'jsonwebtoken';
 import { User, type UserDocument } from './schemas/user.schema';
+import { REFRESH_SESSION_MAX_IDLE_SECONDS, RefreshSession, type RefreshSessionDocument } from './schemas/refresh-session.schema';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'boardgame-secret-key-change-in-production';
 // 登录态（JWT）有效期：30 天
 const JWT_EXPIRES_IN = '30d';
 const DEFAULT_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
-// Refresh token 承担长期登录态续签，必须长于 Access Token。
-const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 180;
+// 持久 Cookie 和服务端会话均采用 400 天滚动闲置期限，不设固定绝对期限。
+const REVOKED_SESSION_RETENTION_SECONDS = 60 * 60 * 24 * 200;
 const REFRESH_TOKEN_PREFIX = 'refresh:token:';
 const REFRESH_TOKEN_USER_PREFIX = 'refresh:user:';
+const REFRESH_TOKEN_ROTATION_GRACE_MS = 30_000;
 const EMAIL_CODE_TTL_SECONDS = 5 * 60;
 const RESET_CODE_TTL_SECONDS = 5 * 60;
 const RESET_SEND_INTERVAL_SECONDS = 60;
@@ -57,14 +59,16 @@ type ResetAttemptRecord = {
 type CodeVerifyResult = 'ok' | 'missing' | 'mismatch';
 
 export type RefreshTokenRotationResult =
-    | { status: 'ok'; userId: string; token: string; expiresAt: number }
-    | { status: 'reuse'; userId: string }
+    | { status: 'ok'; userId: string; sessionId: string; token: string; expiresAt: number }
+    | { status: 'race'; userId: string; sessionId: string; token: string; expiresAt: number }
+    | { status: 'stale'; userId: string; sessionId: string }
     | { status: 'invalid' };
 
 @Injectable()
 export class AuthService {
     constructor(
         @InjectModel(User.name) private userModel: Model<UserDocument>,
+        @InjectModel(RefreshSession.name) private refreshSessionModel: Model<RefreshSessionDocument>,
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
@@ -272,93 +276,292 @@ export class AuthService {
         );
     }
 
-    async issueRefreshToken(userId: string): Promise<{ token: string; expiresAt: number }> {
-        const token = this.createRefreshToken();
+    async issueRefreshToken(userId: string): Promise<{ token: string; expiresAt: number; sessionId: string }> {
+        const sessionId = randomBytes(16).toString('hex');
+        const token = this.createRefreshToken(sessionId);
         const tokenHash = this.hashRefreshToken(token);
-        const nowSeconds = this.nowSeconds();
-        const expiresAt = nowSeconds + REFRESH_TOKEN_TTL_SECONDS;
-        const record: RefreshTokenRecord = {
+        const now = new Date();
+        await this.refreshSessionModel.create({
+            sessionId,
             userId,
-            issuedAt: nowSeconds,
-            expiresAt,
-        };
-
-        const existingHash = await this.cacheManager.get<string>(this.refreshUserKey(userId));
-        if (existingHash) {
-            const existingRecord = await this.getRefreshTokenRecord(existingHash);
-            if (existingRecord) {
-                await this.markRefreshTokenRevoked(existingHash, existingRecord, tokenHash);
-            }
-        }
-
-        await this.setCacheWithSeconds(this.refreshTokenKey(tokenHash), record, REFRESH_TOKEN_TTL_SECONDS);
-        await this.setCacheWithSeconds(this.refreshUserKey(userId), tokenHash, REFRESH_TOKEN_TTL_SECONDS);
-
-        return { token, expiresAt };
+            tokenHash,
+            lastUsedAt: now,
+        });
+        return { token, expiresAt: this.refreshCookieExpirySeconds(now), sessionId };
     }
 
     async rotateRefreshToken(refreshToken: string): Promise<RefreshTokenRotationResult> {
         const tokenHash = this.hashRefreshToken(refreshToken);
-        const record = await this.getRefreshTokenRecord(tokenHash);
-        if (!record) {
+        const now = new Date();
+        const parsed = this.parseRefreshToken(refreshToken);
+        if (parsed) {
+            return this.rotateMongoRefreshToken(parsed.sessionId, tokenHash, now);
+        }
+        return this.migrateLegacyRefreshToken(tokenHash, now);
+    }
+
+    private async rotateMongoRefreshToken(
+        sessionId: string,
+        tokenHash: string,
+        now: Date,
+    ): Promise<RefreshTokenRotationResult> {
+        const current = await this.refreshSessionModel.findOne({ sessionId })
+            .select('+tokenHash +previousTokenHash')
+            .lean()
+            .exec();
+        if (!current || current.revokedAt || this.isRefreshSessionIdleExpired(current.lastUsedAt, now)) {
+            return { status: 'invalid' };
+        }
+        const currentVersion = current.rotationVersion ?? 0;
+        if (current.tokenHash !== tokenHash) {
+            if (current.previousTokenHash === tokenHash
+                && current.previousTokenGraceUntil
+                && current.previousTokenGraceUntil.getTime() >= now.getTime()) {
+                return this.createRefreshRaceResult(current, tokenHash, currentVersion, now);
+            }
+            return { status: 'stale', userId: current.userId, sessionId };
+        }
+
+        const nextVersion = currentVersion + 1;
+        const nextToken = this.createRotatedRefreshToken(sessionId, tokenHash, nextVersion);
+        const nextHash = this.hashRefreshToken(nextToken);
+        const rotated = await this.refreshSessionModel.findOneAndUpdate(
+            { sessionId, tokenHash, rotationVersion: currentVersion, revokedAt: null },
+            {
+                $set: {
+                    tokenHash: nextHash,
+                    previousTokenHash: tokenHash,
+                    previousTokenGraceUntil: new Date(now.getTime() + REFRESH_TOKEN_ROTATION_GRACE_MS),
+                    lastUsedAt: now,
+                    rotationVersion: nextVersion,
+                },
+            },
+            { returnDocument: 'after', projection: { userId: 1, sessionId: 1 } },
+        ).lean().exec();
+
+        if (rotated) {
+            return {
+                status: 'ok',
+                userId: rotated.userId,
+                sessionId: rotated.sessionId,
+                token: nextToken,
+                expiresAt: this.refreshCookieExpirySeconds(now),
+            };
+        }
+
+        const session = await this.refreshSessionModel.findOne({ sessionId })
+            .select('+tokenHash +previousTokenHash')
+            .lean()
+            .exec();
+        if (!session || session.revokedAt || this.isRefreshSessionIdleExpired(session.lastUsedAt, now)) {
             return { status: 'invalid' };
         }
 
-        if (record.revokedAt || record.replacedBy) {
-            await this.revokeRefreshTokensForUser(record.userId);
-            return { status: 'reuse', userId: record.userId };
+        // 并发请求的输家保留赢家写入的 Cookie；迟到响应不得覆盖它。
+        if (session.previousTokenHash === tokenHash
+            && session.previousTokenGraceUntil
+            && session.previousTokenGraceUntil.getTime() >= now.getTime()) {
+            return this.createRefreshRaceResult(session, tokenHash, session.rotationVersion, now);
         }
+        return { status: 'stale', userId: session.userId, sessionId };
+    }
 
-        const nowSeconds = this.nowSeconds();
-        if (record.expiresAt <= nowSeconds) {
-            await this.revokeRefreshTokensForUser(record.userId);
-            return { status: 'invalid' };
-        }
-
-        const newToken = this.createRefreshToken();
-        const newHash = this.hashRefreshToken(newToken);
-        const newExpiresAt = nowSeconds + REFRESH_TOKEN_TTL_SECONDS;
-        const newRecord: RefreshTokenRecord = {
-            userId: record.userId,
-            issuedAt: nowSeconds,
-            expiresAt: newExpiresAt,
+    private createRefreshRaceResult(
+        session: { userId: string; sessionId: string },
+        previousTokenHash: string,
+        currentVersion: number,
+        now: Date,
+    ): RefreshTokenRotationResult {
+        return {
+            status: 'race',
+            userId: session.userId,
+            sessionId: session.sessionId,
+            token: this.createRotatedRefreshToken(session.sessionId, previousTokenHash, currentVersion),
+            expiresAt: this.refreshCookieExpirySeconds(now),
         };
+    }
 
-        await this.setCacheWithSeconds(this.refreshTokenKey(newHash), newRecord, REFRESH_TOKEN_TTL_SECONDS);
-        await this.setCacheWithSeconds(this.refreshUserKey(record.userId), newHash, REFRESH_TOKEN_TTL_SECONDS);
-        await this.markRefreshTokenRevoked(tokenHash, record, newHash);
+    private async migrateLegacyRefreshToken(
+        tokenHash: string,
+        now: Date,
+    ): Promise<RefreshTokenRotationResult> {
+        const nowSeconds = Math.floor(now.getTime() / 1000);
+        const migratedSessionId = `legacy-${tokenHash}`;
+        const migratedToken = this.createLegacyMigratedToken(migratedSessionId, tokenHash);
+        const migratedHash = this.hashRefreshToken(migratedToken);
+        const legacyRecord = await this.getRefreshTokenRecord(tokenHash);
+        if (!legacyRecord || legacyRecord.revokedAt || legacyRecord.replacedBy || legacyRecord.expiresAt <= nowSeconds) {
+            const migratedSession = await this.refreshSessionModel.findOne({ legacyTokenHash: tokenHash })
+                .select('+tokenHash +previousTokenHash')
+                .lean()
+                .exec();
+            if (!migratedSession || migratedSession.revokedAt
+                || this.isRefreshSessionIdleExpired(migratedSession.lastUsedAt, now)
+                || !migratedSession.migrationGraceUntil
+                || migratedSession.migrationGraceUntil.getTime() < now.getTime()) {
+                return { status: 'invalid' };
+            }
+            if (migratedSession.tokenHash === migratedHash) {
+                return {
+                    status: 'ok',
+                    userId: migratedSession.userId,
+                    sessionId: migratedSession.sessionId,
+                    token: migratedToken,
+                    expiresAt: this.refreshCookieExpirySeconds(now),
+                };
+            }
+            if (migratedSession.previousTokenHash === migratedHash
+                && migratedSession.previousTokenGraceUntil
+                && migratedSession.previousTokenGraceUntil.getTime() >= now.getTime()) {
+                return this.createRefreshRaceResult(migratedSession, migratedHash, migratedSession.rotationVersion, now);
+            }
+            return { status: 'stale', userId: migratedSession.userId, sessionId: migratedSession.sessionId };
+        }
 
-        return { status: 'ok', userId: record.userId, token: newToken, expiresAt: newExpiresAt };
+        // 以旧 token 哈希作为迁移键，确保多 API 实例并发迁移得到同一新凭证。
+        const sessionId = migratedSessionId;
+        let session = await this.refreshSessionModel.findOne({ legacyTokenHash: tokenHash })
+            .select('+tokenHash +previousTokenHash')
+            .lean()
+            .exec();
+        if (!session) {
+            try {
+                session = await this.refreshSessionModel.findOneAndUpdate(
+                    { legacyTokenHash: tokenHash },
+                    {
+                        $setOnInsert: {
+                            sessionId,
+                            userId: legacyRecord.userId,
+                            tokenHash: migratedHash,
+                            legacyTokenHash: tokenHash,
+                            migrationGraceUntil: new Date(now.getTime() + REFRESH_TOKEN_ROTATION_GRACE_MS),
+                            lastUsedAt: now,
+                        },
+                    },
+                    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+                ).select('+tokenHash +previousTokenHash').lean().exec();
+            } catch (error) {
+                // 并发 upsert 唯一索引冲突时，只接受已由另一请求写入的同一迁移记录。
+                session = await this.refreshSessionModel.findOne({ legacyTokenHash: tokenHash })
+                    .select('+tokenHash +previousTokenHash')
+                    .lean()
+                    .exec();
+                if (!session) throw error;
+            }
+        }
+
+        if (!session || session.revokedAt || this.isRefreshSessionIdleExpired(session.lastUsedAt, now)) {
+            return { status: 'invalid' };
+        }
+        await this.markRefreshTokenRevoked(tokenHash, legacyRecord, migratedHash);
+        if (session.tokenHash !== migratedHash) {
+            if (session.previousTokenHash === migratedHash
+                && session.previousTokenGraceUntil
+                && session.previousTokenGraceUntil.getTime() >= now.getTime()) {
+                return this.createRefreshRaceResult(session, migratedHash, session.rotationVersion, now);
+            }
+            return { status: 'stale', userId: session.userId, sessionId: session.sessionId };
+        }
+        return {
+            status: 'ok',
+            userId: session.userId,
+            sessionId: session.sessionId,
+            token: migratedToken,
+            expiresAt: this.refreshCookieExpirySeconds(now),
+        };
     }
 
     async revokeRefreshToken(refreshToken: string): Promise<void> {
         const tokenHash = this.hashRefreshToken(refreshToken);
-        const record = await this.getRefreshTokenRecord(tokenHash);
-        if (!record) {
-            return;
+        const revokedAt = new Date();
+        const revokedAtSeconds = Math.floor(revokedAt.getTime() / 1000);
+        const legacyRecord = this.parseRefreshToken(refreshToken)
+            ? null
+            : await this.getRefreshTokenRecord(tokenHash);
+
+        if (legacyRecord
+            && !legacyRecord.revokedAt
+            && !legacyRecord.replacedBy
+            && legacyRecord.expiresAt > revokedAtSeconds) {
+            try {
+                // A tombstone closes the gap where migration already read the legacy
+                // cache record but has not inserted its Mongo session yet.
+                await this.refreshSessionModel.findOneAndUpdate(
+                    { legacyTokenHash: tokenHash },
+                    {
+                        $setOnInsert: {
+                            sessionId: `legacy-${tokenHash}`,
+                            userId: legacyRecord.userId,
+                            tokenHash,
+                            legacyTokenHash: tokenHash,
+                            lastUsedAt: revokedAt,
+                            revokedAt,
+                            cleanupAt: this.revokedSessionCleanupAt(revokedAt),
+                        },
+                    },
+                    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+                ).exec();
+            } catch (error) {
+                // Migration may win the insert race; the session-level update below
+                // will then revoke its row using the legacy token hash.
+                if (!error || typeof error !== 'object' || !('code' in error) || error.code !== 11000) {
+                    throw error;
+                }
+            }
         }
 
-        await this.markRefreshTokenRevoked(tokenHash, record);
-        const currentHash = await this.cacheManager.get<string>(this.refreshUserKey(record.userId));
-        if (currentHash === tokenHash) {
-            await this.cacheManager.del(this.refreshUserKey(record.userId));
-        }
+        await this.refreshSessionModel.updateOne(
+            {
+                revokedAt: null,
+                $or: [
+                    { tokenHash },
+                    {
+                        previousTokenHash: tokenHash,
+                        previousTokenGraceUntil: { $gte: revokedAt },
+                    },
+                    {
+                        legacyTokenHash: tokenHash,
+                        migrationGraceUntil: { $gte: revokedAt },
+                    },
+                ],
+            },
+            { $set: { revokedAt, cleanupAt: this.revokedSessionCleanupAt(revokedAt) } },
+        ).exec();
+        if (legacyRecord) await this.markRefreshTokenRevoked(tokenHash, legacyRecord);
     }
 
     async revokeRefreshTokensForUser(userId: string): Promise<void> {
-        const currentHash = await this.cacheManager.get<string>(this.refreshUserKey(userId));
-        if (!currentHash) {
-            return;
+        const revokedAt = new Date();
+        await this.refreshSessionModel.updateMany(
+            { userId, revokedAt: null },
+            { $set: { revokedAt, cleanupAt: this.revokedSessionCleanupAt(revokedAt) } },
+        ).exec();
+        const legacyCurrent = await this.cacheManager.get<string>(this.refreshUserKey(userId));
+        if (legacyCurrent) {
+            const record = await this.getRefreshTokenRecord(legacyCurrent);
+            if (record) await this.markRefreshTokenRevoked(legacyCurrent, record);
+            await this.cacheManager.del(this.refreshUserKey(userId));
         }
+    }
 
-        const record = await this.getRefreshTokenRecord(currentHash);
-        if (record) {
-            await this.markRefreshTokenRevoked(currentHash, record);
-        }
-        await this.cacheManager.del(this.refreshUserKey(userId));
+    private refreshCookieExpirySeconds(now = new Date()): number {
+        return Math.floor(now.getTime() / 1000) + REFRESH_SESSION_MAX_IDLE_SECONDS;
+    }
+
+    private isRefreshSessionIdleExpired(lastUsedAt: Date, now: Date): boolean {
+        return now.getTime() - lastUsedAt.getTime() >= REFRESH_SESSION_MAX_IDLE_SECONDS * 1000;
+    }
+
+    private revokedSessionCleanupAt(revokedAt: Date): Date {
+        return new Date(revokedAt.getTime() + REVOKED_SESSION_RETENTION_SECONDS * 1000);
     }
 
     async blacklistToken(token: string): Promise<void> {
+        try {
+            jwt.verify(token, JWT_SECRET);
+        } catch {
+            return;
+        }
         const ttlSeconds = this.resolveTokenTtlSeconds(token);
         await this.setCacheWithSeconds(`jwt:blacklist:${token}`, true, ttlSeconds);
     }
@@ -507,8 +710,27 @@ export class AuthService {
         return DEFAULT_TOKEN_TTL_SECONDS;
     }
 
-    private createRefreshToken(): string {
-        return randomBytes(32).toString('hex');
+    private createRefreshToken(sessionId: string): string {
+        return `${sessionId}.${randomBytes(32).toString('hex')}`;
+    }
+
+    private createLegacyMigratedToken(sessionId: string, legacyTokenHash: string): string {
+        const secret = createHmac('sha256', JWT_SECRET)
+            .update(`refresh-migration:${sessionId}:${legacyTokenHash}`)
+            .digest('hex');
+        return `${sessionId}.${secret}`;
+    }
+
+    private createRotatedRefreshToken(sessionId: string, previousTokenHash: string, version: number): string {
+        const secret = createHmac('sha256', JWT_SECRET)
+            .update(`refresh-rotation:${sessionId}:${previousTokenHash}:${version}`)
+            .digest('hex');
+        return `${sessionId}.${secret}`;
+    }
+
+    private parseRefreshToken(token: string): { sessionId: string } | null {
+        const match = /^([a-zA-Z0-9-]{32,80})\.([a-f0-9]{64})$/.exec(token);
+        return match ? { sessionId: match[1] } : null;
     }
 
     private hashRefreshToken(token: string): string {

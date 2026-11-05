@@ -3,6 +3,7 @@ import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { resolveGameHudPhase } from '../components/game/framework/widgets/gameHudModel';
 import type { MatchSeatSwapConfig } from '../components/game/framework';
 import { type AiSeatController } from '../engine/ai';
+import type { ManualForceEndAiPhaseResult } from '../engine/transport/protocol';
 import type { OnlineAiRecoveryEngineConfig } from '../engine/transport/onlineAiRecovery';
 import { useGameClient } from '../engine/transport/react';
 import { useMatchRoomHudForceDismiss } from './useMatchRoomHudForceDismiss';
@@ -22,7 +23,7 @@ export type MatchRoomOnlineHudBridgeProps = {
     onLeave?: () => void;
     onDestroy?: () => void;
     onForceExit?: () => void;
-    onForceEndAiPhase?: () => Promise<boolean>;
+    onForceEndAiPhase?: () => Promise<ManualForceEndAiPhaseResult>;
     showForceEndAiPhase?: boolean;
     isLoading?: boolean;
     seatControllers: Record<string, AiSeatController>;
@@ -32,6 +33,7 @@ export type MatchRoomOnlineHudBridgeProps = {
     renderRuntimeSettings?: MatchRoomOnlineHudModel['renderRuntimeSettings'];
     availableEmotes?: MatchRoomOnlineHudModel['availableEmotes'];
     resolveEmote?: MatchRoomOnlineHudModel['resolveEmote'];
+    hudPlacement?: MatchRoomOnlineHudModel['hudPlacement'];
 };
 
 export function useMatchRoomOnlineHudModel({
@@ -55,6 +57,7 @@ export function useMatchRoomOnlineHudModel({
     renderRuntimeSettings,
     availableEmotes,
     resolveEmote,
+    hudPlacement,
 }: MatchRoomOnlineHudBridgeProps): MatchRoomOnlineHudModel {
     const { state, dispatch, matchPlayers, isConnected } = useGameClient();
     const hudPresence = useMatchRoomHudPresenceModel({
@@ -110,5 +113,6 @@ export function useMatchRoomOnlineHudModel({
         renderRuntimeSettings,
         availableEmotes,
         resolveEmote,
+        hudPlacement,
     };
 }

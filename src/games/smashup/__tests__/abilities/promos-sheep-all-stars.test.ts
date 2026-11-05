@@ -228,6 +228,92 @@ describe('Promo 绵羊与全明星代表性玩法行为', () => {
         ]));
     });
 
+    it('羊皮狼响应同基地随从移走时，会移动宿主并把附着行动弃置', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_pasture', [
+                    makeMinion('host', 'spider_verse_ghost_spider', '0', 4, {
+                        attachedActions: [
+                            { uid: 'clothing', defId: 'sheep_in_sheeps_clothing', ownerId: '0' },
+                        ],
+                    }),
+                    makeMinion('moved-away', 'sheep_black_sheep', '1', 4),
+                ]),
+                makeBase('base_stadium'),
+            ],
+        });
+
+        const moved = resolveMovedMinions(
+            makeMatchState(core),
+            '1',
+            [{ minionUid: 'moved-away', minionDefId: 'sheep_black_sheep', fromBaseIndex: 0, toBaseIndex: 1 }],
+            FIXED_RANDOM,
+            22,
+        );
+        const queued = moved.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
+        expect(queued?.payload?.triggers?.[0]).toMatchObject({
+            sourceDefId: 'sheep_in_sheeps_clothing',
+        });
+        const movedCore = {
+            ...core,
+            bases: [
+                makeBase('base_the_pasture', [
+                    makeMinion('host', 'spider_verse_ghost_spider', '0', 4, {
+                        attachedActions: [
+                            { uid: 'clothing', defId: 'sheep_in_sheeps_clothing', ownerId: '0' },
+                        ],
+                    }),
+                ]),
+                makeBase('base_stadium', [
+                    makeMinion('moved-away', 'sheep_black_sheep', '1', 4),
+                ]),
+            ],
+        };
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({
+                ...movedCore,
+                triggerQueue: queued.payload.triggers,
+            } as any),
+            FIXED_RANDOM,
+            22,
+        );
+        const resolved = respondToPromptOption(
+            prompted!.state,
+            option => option.value?.triggerId === queued.payload.triggers[0].id,
+            'trigger In Sheep\'s Clothing',
+            '1',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: SU_EVENTS.MINION_MOVED,
+                payload: expect.objectContaining({
+                    minionUid: 'host',
+                    fromBaseIndex: 0,
+                    toBaseIndex: 1,
+                    reason: 'sheep_in_sheeps_clothing',
+                }),
+            }),
+            expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({
+                    cardUid: 'clothing',
+                    defId: 'sheep_in_sheeps_clothing',
+                    destination: 'discard',
+                }),
+            }),
+        ]));
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual([]);
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['moved-away', 'host']);
+        expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).toContain('clothing');
+    });
+
     it('少尉可把对手行动对同基地己方另一个随从的影响改到自己身上', () => {
         const core = makeState({
             players: {

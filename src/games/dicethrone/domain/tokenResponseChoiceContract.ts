@@ -51,6 +51,7 @@ function readUseTokenOption(candidate: ChoiceRequestCandidate): DiceThroneTokenR
     if (!isEnabledCandidate(candidate)) return null;
 
     const command = candidate.commands?.find((item) => item.type === 'USE_TOKEN');
+    if (!command) return null;
     const payload = asRecord(command?.payload);
     const tokenId = typeof payload?.tokenId === 'string' ? payload.tokenId : null;
     const amount = typeof payload?.amount === 'number' && Number.isFinite(payload.amount)
@@ -79,7 +80,11 @@ function payloadMatches(expected: unknown, actual: unknown): boolean {
 
     const expectedKeys = Object.keys(expectedRecord)
         .sort();
-    const actualKeys = Object.keys(actualRecord).sort();
+    // 教程自动命令由 transport 附加撤回元数据；它不是候选效果参数。
+    // 仅排除 UndoSystem 已定义的 true 标记，其余额外字段仍拒绝。
+    const actualKeys = Object.keys(actualRecord)
+        .filter(key => key !== '_noSnapshot' || actualRecord[key] !== true)
+        .sort();
     if (expectedKeys.length !== actualKeys.length) return false;
     return expectedKeys.every((key, index) => (
         actualKeys[index] === key

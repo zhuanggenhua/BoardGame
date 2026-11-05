@@ -4,15 +4,20 @@ import { MongooseModule, getModelToken } from '@nestjs/mongoose';
 import { Test } from '@nestjs/testing';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import type { Model } from 'mongoose';
+import type { Cache } from 'cache-manager';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { User, type UserDocument } from '../src/modules/auth/schemas/user.schema';
+import { RefreshSession, type RefreshSessionDocument } from '../src/modules/auth/schemas/refresh-session.schema';
+import { createHash, randomBytes } from 'crypto';
 
 describe('AuthService', () => {
     let mongo: MongoMemoryServer | null;
     let moduleRef: import('@nestjs/testing').TestingModule;
     let authService: AuthService;
     let userModel: Model<UserDocument>;
+    let refreshSessionModel: Model<RefreshSessionDocument>;
+    let cacheManager: Cache;
 
     beforeAll(async () => {
         const externalMongoUri = process.env.MONGO_URI;
@@ -34,10 +39,12 @@ describe('AuthService', () => {
 
         authService = moduleRef.get(AuthService);
         userModel = moduleRef.get<Model<UserDocument>>(getModelToken(User.name));
+        refreshSessionModel = moduleRef.get<Model<RefreshSessionDocument>>(getModelToken(RefreshSession.name));
+        cacheManager = moduleRef.get('CACHE_MANAGER');
     });
 
     beforeEach(async () => {
-        await userModel.deleteMany({});
+        await Promise.all([userModel.deleteMany({}), refreshSessionModel.deleteMany({})]);
     });
 
     afterAll(async () => {
@@ -64,6 +71,112 @@ describe('AuthService', () => {
         const second = await authService.verifyResetCode(email, '123456');
         expect(first).toBe('ok');
         expect(second).toBe('missing');
+    });
+
+    it('Refresh 会话按设备独立持久化，原子轮换和撤销只影响当前设备', async () => {
+        const user = await authService.createUser('sessions', 'pass1234', 'sessions@example.com');
+        const first = await authService.issueRefreshToken(user.id);
+        const second = await authService.issueRefreshToken(user.id);
+
+        expect(first.sessionId).not.toBe(second.sessionId);
+        expect(await refreshSessionModel.countDocuments({ userId: user.id, revokedAt: null })).toBe(2);
+        const stored = await refreshSessionModel.findOne({ sessionId: first.sessionId }).select('+tokenHash').lean();
+        expect(stored?.tokenHash).toBe(createHash('sha256').update(first.token).digest('hex'));
+        expect(stored).not.toHaveProperty('expiresAt');
+
+        const concurrentRotations = await Promise.all([
+            authService.rotateRefreshToken(first.token),
+            authService.rotateRefreshToken(first.token),
+        ]);
+        expect(concurrentRotations.map(result => result.status).sort()).toEqual(['ok', 'race']);
+        const rotated = concurrentRotations.find(result => result.status === 'ok');
+        const racing = concurrentRotations.find(result => result.status === 'race');
+        if (rotated?.status !== 'ok' || racing?.status !== 'race') throw new Error('应得到一次原子轮换和一次竞态结果');
+        expect(racing.token).toBe(rotated.token);
+
+        const racingOldToken = await authService.rotateRefreshToken(first.token);
+        expect(racingOldToken).toMatchObject({ status: 'race', sessionId: first.sessionId, token: rotated.token });
+
+        await authService.revokeRefreshToken(first.token);
+        expect(await authService.rotateRefreshToken(rotated.token)).toEqual({ status: 'invalid' });
+        expect(['ok', 'race']).toContain((await authService.rotateRefreshToken(second.token)).status);
+
+        await authService.revokeRefreshToken(rotated.token);
+        expect(await authService.rotateRefreshToken(rotated.token)).toEqual({ status: 'invalid' });
+        expect(['ok', 'race']).toContain((await authService.rotateRefreshToken(second.token)).status);
+
+        const third = await authService.issueRefreshToken(user.id);
+        const thirdRotation = await authService.rotateRefreshToken(third.token);
+        if (thirdRotation.status !== 'ok' && thirdRotation.status !== 'race') {
+            throw new Error('第三台设备会话应成功续签');
+        }
+        await refreshSessionModel.updateOne(
+            { sessionId: third.sessionId },
+            { $set: { previousTokenGraceUntil: new Date(Date.now() - 60_000) } },
+        ).exec();
+        await authService.revokeRefreshToken(third.token);
+        expect(['ok', 'race']).toContain((await authService.rotateRefreshToken(thirdRotation.token)).status);
+    });
+
+    it('仍有效的旧缓存 Refresh Token 可并发幂等迁移到 MongoDB', async () => {
+        const user = await authService.createUser('legacy', 'pass1234', 'legacy@example.com');
+        const oldToken = randomBytes(32).toString('hex');
+        const oldHash = createHash('sha256').update(oldToken).digest('hex');
+        const now = Math.floor(Date.now() / 1000);
+        await cacheManager.set(`refresh:token:${oldHash}`, {
+            userId: user.id,
+            issuedAt: now,
+            expiresAt: now + 60 * 60,
+        }, 60 * 60);
+
+        const results = await Promise.all([
+            authService.rotateRefreshToken(oldToken),
+            authService.rotateRefreshToken(oldToken),
+        ]);
+        expect(results.map(result => result.status)).toEqual(['ok', 'ok']);
+        if (results[0].status !== 'ok' || results[1].status !== 'ok') throw new Error('迁移请求应幂等返回同一凭证');
+        expect(results[0].token).toBe(results[1].token);
+        expect(await refreshSessionModel.countDocuments({ userId: user.id, legacyTokenHash: oldHash })).toBe(1);
+        const migratedRecord = await cacheManager.get<{ revokedAt?: number }>(`refresh:token:${oldHash}`);
+        expect(migratedRecord?.revokedAt).toBeDefined();
+        const retryAfterLostResponse = await authService.rotateRefreshToken(oldToken);
+        expect(retryAfterLostResponse).toMatchObject({ status: 'ok', token: results[0].token });
+
+        await authService.revokeRefreshToken(oldToken);
+        expect(await authService.rotateRefreshToken(results[0].token)).toEqual({ status: 'invalid' });
+    });
+
+    it('旧缓存 Refresh Token 的迁移宽限期过后不能再撤销已迁移会话', async () => {
+        const user = await authService.createUser('legacy-expired-grace', 'pass1234', 'legacy-expired-grace@example.com');
+        const oldToken = randomBytes(32).toString('hex');
+        const oldHash = createHash('sha256').update(oldToken).digest('hex');
+        const now = Math.floor(Date.now() / 1000);
+        await cacheManager.set(`refresh:token:${oldHash}`, {
+            userId: user.id,
+            issuedAt: now,
+            expiresAt: now + 60 * 60,
+        }, 60 * 60);
+
+        const migrated = await authService.rotateRefreshToken(oldToken);
+        if (migrated.status !== 'ok') throw new Error('旧会话应成功迁移');
+        await refreshSessionModel.updateOne(
+            { sessionId: migrated.sessionId },
+            { $set: { migrationGraceUntil: new Date(Date.now() - 60_000) } },
+        ).exec();
+
+        await authService.revokeRefreshToken(oldToken);
+        expect(['ok', 'race']).toContain((await authService.rotateRefreshToken(migrated.token)).status);
+    });
+
+    it('即使 Mongo TTL 后台清理尚未运行，超过 400 天闲置的会话也不能续签', async () => {
+        const user = await authService.createUser('idle', 'pass1234', 'idle@example.com');
+        const issued = await authService.issueRefreshToken(user.id);
+        await refreshSessionModel.updateOne(
+            { sessionId: issued.sessionId },
+            { $set: { lastUsedAt: new Date(Date.now() - 401 * 24 * 60 * 60 * 1000) } },
+        ).exec();
+
+        expect(await authService.rotateRefreshToken(issued.token)).toEqual({ status: 'invalid' });
     });
 
     it('邮箱验证码在内存缓存下不应 300ms 内过期', async () => {

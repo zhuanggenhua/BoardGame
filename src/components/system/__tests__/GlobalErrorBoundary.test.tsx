@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
@@ -42,6 +43,78 @@ import {
     resolveRuntimeKeyboardInsetBottom,
     useRuntimeViewport,
 } from '../../../hooks/ui/useRuntimeViewport';
+
+const readIndexBootstrapScript = () => {
+    const html = readFileSync('index.html', 'utf8');
+    const match = /<script>\s*(\(function\(\)\{[\s\S]*?\}\)\(\);)\s*<\/script>/u.exec(html);
+    expect(match?.[1]).toBeTruthy();
+    return match![1];
+};
+
+type IndexBootstrapHarnessOptions = {
+    pathname: string;
+    fetchStatus?: number;
+    fetchRejects?: boolean;
+    initialStorage?: Record<string, string>;
+};
+
+const runIndexBootstrapHarness = async ({
+    pathname,
+    fetchStatus = 404,
+    fetchRejects = false,
+    initialStorage = {},
+}: IndexBootstrapHarnessOptions) => {
+    const store = new Map(Object.entries(initialStorage));
+    const localStorageMock = {
+        getItem: vi.fn((key: string) => store.get(key) ?? null),
+        setItem: vi.fn((key: string, value: string) => {
+            store.set(key, String(value));
+        }),
+        removeItem: vi.fn((key: string) => {
+            store.delete(key);
+        }),
+    };
+    const locationMock = {
+        pathname,
+        href: `http://127.0.0.1:4277${pathname}`,
+        replace: vi.fn((nextPath: string) => {
+            const nextUrl = new URL(nextPath, 'http://127.0.0.1:4277');
+            locationMock.pathname = nextUrl.pathname;
+            locationMock.href = nextUrl.href;
+        }),
+    };
+    const initialLoader = {
+        style: { cssText: '' },
+        innerHTML: '',
+        setAttribute: vi.fn(),
+        querySelector: vi.fn(),
+    };
+    const documentMock = {
+        getElementById: vi.fn((id: string) => (id === 'initial-loader' ? initialLoader : null)),
+    };
+    const windowMock = {
+        setTimeout: vi.fn(),
+    };
+    const fetchMock = vi.fn(() => {
+        if (fetchRejects) return Promise.reject(new Error('network down'));
+        return Promise.resolve({ status: fetchStatus });
+    });
+    const script = readIndexBootstrapScript();
+    const executeScript = new Function('window', 'document', 'location', 'localStorage', 'fetch', script);
+
+    executeScript(windowMock, documentMock, locationMock, localStorageMock, fetchMock);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    return {
+        fetchMock,
+        initialLoader,
+        localStorageMock,
+        locationMock,
+        store,
+        windowMock,
+    };
+};
 
 // Mock Dependencies
 vi.mock('react', async () => {
@@ -214,6 +287,65 @@ describe('GamePageRescueGate helpers', () => {
             contentRect: null,
             meaningfulContentCount: 0,
         })).toBeNull();
+    });
+});
+
+describe('Index bootstrap missing match guard', () => {
+    it('React 启动前确认在线房间 404 时会清理本地对局记录并返回对应大厅', async () => {
+        const result = await runIndexBootstrapHarness({
+            pathname: '/play/dicethrone/match/VN_Zn4ofCG2',
+            fetchStatus: 404,
+            initialStorage: {
+                match_creds_VN_Zn4ofCG2: JSON.stringify({
+                    matchID: 'VN_Zn4ofCG2',
+                    playerID: '0',
+                    credentials: 'stale-human-creds',
+                    gameName: 'dicethrone',
+                }),
+                match_ai_creds_VN_Zn4ofCG2: JSON.stringify({ 1: 'stale-ai-creds' }),
+                owner_active_match: JSON.stringify({
+                    matchID: 'VN_Zn4ofCG2',
+                    gameName: 'dicethrone',
+                }),
+            },
+        });
+
+        expect(result.fetchMock).toHaveBeenCalledWith('/games/dicethrone/VN_Zn4ofCG2', { cache: 'no-store' });
+        expect(result.store.get('match_creds_VN_Zn4ofCG2')).toBeUndefined();
+        expect(result.store.get('match_ai_creds_VN_Zn4ofCG2')).toBeUndefined();
+        expect(result.store.get('owner_active_match')).toBeUndefined();
+        expect(JSON.parse(result.store.get('owner_active_match_suppressed') || '[]')).toEqual(['VN_Zn4ofCG2']);
+        expect(result.locationMock.replace).toHaveBeenCalledWith('/?game=dicethrone');
+    });
+
+    it('React 启动前遇到非 404 或网络失败时不清理本地记录，避免误踢正常房间', async () => {
+        const existingStorage = {
+            match_creds_room1: JSON.stringify({ matchID: 'room1', playerID: '0' }),
+            match_ai_creds_room1: JSON.stringify({ 1: 'ai-creds' }),
+            owner_active_match: JSON.stringify({ matchID: 'room1', gameName: 'dicethrone' }),
+        };
+
+        const serverError = await runIndexBootstrapHarness({
+            pathname: '/play/dicethrone/match/room1',
+            fetchStatus: 500,
+            initialStorage: existingStorage,
+        });
+        expect(serverError.store.get('match_creds_room1')).toBe(existingStorage.match_creds_room1);
+        expect(serverError.store.get('match_ai_creds_room1')).toBe(existingStorage.match_ai_creds_room1);
+        expect(serverError.store.get('owner_active_match')).toBe(existingStorage.owner_active_match);
+        expect(serverError.store.get('owner_active_match_suppressed')).toBeUndefined();
+        expect(serverError.locationMock.replace).not.toHaveBeenCalled();
+
+        const networkError = await runIndexBootstrapHarness({
+            pathname: '/play/dicethrone/match/room1',
+            fetchRejects: true,
+            initialStorage: existingStorage,
+        });
+        expect(networkError.store.get('match_creds_room1')).toBe(existingStorage.match_creds_room1);
+        expect(networkError.store.get('match_ai_creds_room1')).toBe(existingStorage.match_ai_creds_room1);
+        expect(networkError.store.get('owner_active_match')).toBe(existingStorage.owner_active_match);
+        expect(networkError.store.get('owner_active_match_suppressed')).toBeUndefined();
+        expect(networkError.locationMock.replace).not.toHaveBeenCalled();
     });
 });
 

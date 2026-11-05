@@ -20,7 +20,7 @@ import type {
     SmashUpCore,
     SmashUpEvent,
     TempPowerAddedEvent,
-    TitanInPlay,
+    TitanState,
 } from './types';
 import { SU_EVENTS } from './types';
 
@@ -64,7 +64,7 @@ type CardInPlayLookup =
     | { targetKind: 'minion'; baseIndex: number; minion: MinionOnBase }
     | { targetKind: 'ongoing'; baseIndex: number; ongoing: OngoingActionOnBase }
     | { targetKind: 'attached_action'; baseIndex: number; hostMinion: MinionOnBase; action: AttachedActionOnMinion }
-    | { targetKind: 'titan'; titan: TitanInPlay };
+    | { targetKind: 'titan'; titan: TitanState };
 
 function findCardInPlayByUid(
     core: SmashUpCore,
@@ -259,8 +259,29 @@ export function buildAffectRecords(
         }
         case SU_EVENTS.ONGOING_DETACHED: {
             const payload = (event as OngoingDetachedEvent).payload;
+            if (payload.isDestruction === false) return [];
             const lookup = findCardInPlayByUid(core, payload.cardUid);
-            if (!lookup || (lookup.targetKind !== 'ongoing' && lookup.targetKind !== 'attached_action')) return [];
+            if (!lookup) {
+                if (payload.targetBaseIndex === undefined || !payload.targetKind) return [];
+                return [{
+                    targetKind: payload.targetKind,
+                    targetUid: payload.cardUid,
+                    baseIndex: payload.targetBaseIndex,
+                    affectType: 'destroy',
+                    reason: payload.reason,
+                    countsForOnMinionAffected: false,
+                    sourcePlayerId: payload.sourcePlayerId,
+                    sourceCardUid: payload.sourceCardUid,
+                    sourceDefId: payload.sourceDefId ?? payload.defId,
+                    sourceControllerId: payload.sourceControllerId,
+                    sourceBaseIndex: payload.sourceBaseIndex,
+                    triggerCardUid: payload.cardUid,
+                    triggerCardDefId: payload.defId,
+                    triggerCardOwnerId: payload.ownerId,
+                    triggerCardKind: payload.targetKind,
+                }];
+            }
+            if (lookup.targetKind !== 'ongoing' && lookup.targetKind !== 'attached_action') return [];
             return [buildInPlayCardAffectRecord(
                 lookup,
                 'destroy',

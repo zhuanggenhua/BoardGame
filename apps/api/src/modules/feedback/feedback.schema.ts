@@ -51,6 +51,40 @@ export interface FeedbackClientContext {
     lastRouteChange?: FeedbackRouteChangeSummary;
     recentRouteChanges?: FeedbackRouteChangeSummary[];
     pageFlags?: FeedbackPageFlags;
+    performance?: FeedbackPerformanceContext;
+}
+
+export interface FeedbackPerformanceContext {
+    capturedAt: string;
+    windowMs: number;
+    frame?: {
+        averageFps?: number;
+        minFps?: number;
+        averageFrameTimeMs?: number;
+        maxFrameTimeMs?: number;
+        bucketCount?: number;
+    };
+    longTasks?: {
+        count: number;
+        totalDurationMs: number;
+        maxDurationMs?: number;
+    };
+    network?: {
+        connectionRttMs?: number;
+        effectiveType?: string;
+        downlinkMbps?: number;
+        requestCount: number;
+        averageDurationMs?: number;
+        maxDurationMs?: number;
+        averageTtfbMs?: number;
+        recentRequests?: Array<{
+            path: string;
+            initiatorType?: string;
+            durationMs: number;
+            ttfbMs?: number;
+            connectMs?: number;
+        }>;
+    };
 }
 
 export interface FeedbackErrorContext {
@@ -60,6 +94,46 @@ export interface FeedbackErrorContext {
     source?: string;
     jsStack?: string;
     componentStack?: string;
+}
+
+export type FeedbackReplayability = 'full' | 'partial' | 'unreplayable';
+export type FeedbackCollectionStatus = 'complete' | 'partial' | 'failed';
+
+export interface FeedbackDiagnosticPacket {
+    schemaVersion: number;
+    captureId: string;
+    chainId?: string;
+    capturedAt: string;
+    source: 'user' | 'client-auto' | 'server';
+    collectionStatus: FeedbackCollectionStatus;
+    replayability: FeedbackReplayability;
+    missingFields: string[];
+    correlation?: {
+        matchId?: string;
+        roomId?: string;
+        requestId?: string;
+        stateId?: number;
+        stateRevision?: number;
+        decisionEpoch?: number;
+    };
+    build?: Record<string, unknown>;
+    phase?: string;
+    turnNumber?: number;
+    currentPlayerId?: string;
+    interaction?: unknown;
+    responseWindow?: unknown;
+    legalActions?: unknown;
+    aiDecisionPreview?: unknown;
+    snapshots?: {
+        before?: unknown;
+        at?: unknown;
+        after?: unknown;
+    };
+    actionLogTail?: unknown[];
+    eventStreamTail?: unknown[];
+    undo?: unknown;
+    randomCursor?: number;
+    collectionErrors?: string[];
 }
 
 export interface FeedbackElementSummary {
@@ -155,6 +229,13 @@ export class Feedback {
     @Prop({ type: String })
     autoReportKind?: string;
 
+    /** 同一份客户端自动故障现场的投递身份，不代表不同故障之间的聚合。 */
+    @Prop({ type: String })
+    autoCaptureKey?: string;
+
+    @Prop({ type: [String], default: undefined })
+    diagnosticCaptureIds?: string[];
+
     @Prop({ type: String })
     incidentKey?: string;
 
@@ -201,6 +282,13 @@ export class Feedback {
     errorContext?: FeedbackErrorContext;
 
     @Prop({ type: Object })
+    diagnosticPacket?: FeedbackDiagnosticPacket;
+
+    /** 权威对局可能包含隐藏手牌和随机种子，不得进入公开反馈投影。 */
+    @Prop({ type: String, select: false })
+    privateReplay?: string;
+
+    @Prop({ type: Object })
     configProposal?: FeedbackConfigProposalContext;
 
     @Prop({ type: [Object] })
@@ -212,6 +300,8 @@ export const FeedbackSchema = SchemaFactory.createForClass(Feedback);
 FeedbackSchema.index({ reporterType: 1, source: 1, createdAt: -1 });
 FeedbackSchema.index({ gameId: 1, createdAt: -1 });
 FeedbackSchema.index({ status: 1, createdAt: -1 });
+FeedbackSchema.index({ 'diagnosticPacket.replayability': 1, createdAt: -1 });
+FeedbackSchema.index({ autoCaptureKey: 1 }, { unique: true, sparse: true });
 FeedbackSchema.index({ incidentKey: 1 }, { sparse: true });
 FeedbackSchema.index({ aggregationKey: 1 }, { sparse: true });
 FeedbackSchema.index(

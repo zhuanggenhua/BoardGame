@@ -127,6 +127,19 @@ export function createInitialPreviewState(_core: BetrayalCore): PreviewState {
   };
 }
 
+export function resolveRoomPlacementCancellationState(
+  previousState: PreviewState,
+): PreviewState {
+  return {
+    ...previousState,
+    pendingRoomPlacementSlotId: null,
+    pendingRoomPlacementFailure: null,
+    pendingRoomOrientationTurns: 0,
+    pendingRoomTileAdjustment: null,
+    interactionMode: "default",
+  };
+}
+
 export function resolvePreservedExplorePlacementState(
   core: BetrayalCore,
   previousState: PreviewState,
@@ -191,8 +204,14 @@ export function resolvePreservedExplorePlacementState(
 export function resolveNextPreviewStateAfterCoreChange(
   core: BetrayalCore,
   previousState: PreviewState,
+  options: {
+    authoritativeHistoryRewound?: boolean;
+  } = {},
 ): PreviewState {
   const nextInitialState = createInitialPreviewState(core);
+  if (options.authoritativeHistoryRewound) {
+    return nextInitialState;
+  }
   const hasActiveTradeDraft =
     previousState.tradeSelectionTouched ||
     previousState.selectedTradeTargetPlayerId !== null ||
@@ -286,7 +305,8 @@ export function resolveNextPreviewStateAfterCoreChange(
   if (
     core.currentExplorerInventory.some(
       (card) => card.id === previousState.selectedInventoryCardId,
-    )
+    ) &&
+    !core.usedCardIdsThisTurn.includes(previousState.selectedInventoryCardId ?? "")
   ) {
     return {
       ...nextInitialState,

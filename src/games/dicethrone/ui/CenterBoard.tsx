@@ -1,8 +1,10 @@
 import React from 'react';
+import './CenterBoard.css';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { UI_Z_INDEX } from '../../../core';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
+import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
@@ -11,6 +13,10 @@ import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlot
 import type { AbilityCard } from '../types';
 import { hasDiceThroneTipBoard, type HeroState } from '../domain/types';
 import { NyraCompanionPanel, type NyraDamageResponse } from './NyraCompanionPanel';
+import {
+    buildBoardShellInlineUnitValue,
+    buildBoardShellScreenPixelValue,
+} from '../../../shared/runtimeLayoutUnits';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -26,7 +32,7 @@ export interface CenterBoardProps {
     selectedAbilityId?: string;
     activatingAbilityId?: string;
     abilityLevels?: Record<string, number>;
-    characterId?: string;
+    characterId?: HeroState['characterId'];
     playerBoardFace?: HeroState['playerBoardFace'];
     locale?: string;
     onMagnifyImage: (image: string) => void;
@@ -35,6 +41,7 @@ export interface CenterBoardProps {
     playerTokens?: Record<string, number>;
     nyraPlayer?: HeroState;
     nyraDamageResponse?: NyraDamageResponse;
+    preparedSpells?: AbilityCard[];
 }
 
 export const CenterBoard = ({
@@ -60,37 +67,52 @@ export const CenterBoard = ({
     playerTokens,
     nyraPlayer,
     nyraDamageResponse,
+    preparedSpells,
 }: CenterBoardProps) => {
     const { t } = useTranslation('game-dicethrone');
     const showTouchMagnifyButton = useCoarsePointer();
     const boardUiTuning = getPlayerBoardUiTuning(characterId);
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(characterId);
-    const playerBoardHeightVw = boardUiTuning.playerBoardBaseHeightVw;
-    const tipBoardHeightVw = boardUiTuning.tipBoardHeightVw;
+    const playerBoardHeightUnits = boardUiTuning.playerBoardBaseHeightUnits;
+    const tipBoardHeightUnits = boardUiTuning.tipBoardHeightUnits;
     const hasTipBoard = hasDiceThroneTipBoard(characterId);
     // 女猎手提示卡恢复显示后，组合宽度增加；右移少量以保持妮拉面板不侵入左侧回合栏。
     const shellTranslateX = boardUiTuning.shellTranslateX + (characterId === 'lieren' ? 0.5 : 0);
-    const shellTransform = shellTranslateX === 0 ? '' : `translateX(${shellTranslateX}vw)`;
-    const shellFrameClassName = 'absolute left-[15vw] right-[15vw] top-[-6.5vw] bottom-0 flex items-center justify-center pointer-events-auto';
-    const overlayButtonIconClassName = 'w-[0.72vw] h-[0.72vw] fill-current';
-    const overlayButtonClassName = `absolute flex items-center justify-center rounded-full border border-white/20 bg-black/60 p-0 text-white shadow-xl transition-[background-color,border-color,opacity] duration-300 hover:bg-amber-500/72 hover:border-amber-300/45 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
-    const overlayButtonVisualClassName = 'flex h-full w-full items-center justify-center';
+    const shellTransform = shellTranslateX === 0 ? '' : `translateX(${buildBoardShellInlineUnitValue(shellTranslateX)})`;
+    const shellFrameClassName = 'absolute bottom-0 flex items-center justify-center pointer-events-auto';
+    const overlayButtonIconClassName = 'dt-board-magnify-icon fill-current';
+    const overlayButtonClassName = `absolute flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-300 hover:brightness-125 ${showTouchMagnifyButton ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`;
+    const overlayButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/20 bg-black/60 text-white shadow-xl';
+    const overlayButtonVisualStyle = {
+        width: buildBoardShellInlineUnitValue(2.6),
+        height: buildBoardShellInlineUnitValue(2.6),
+    } as const;
     const overlayButtonStyle = {
-        top: `${boardUiTuning.magnifyButtonTop}vw`,
-        right: '0.9vw',
-        width: '2.6vw',
-        height: '2.6vw',
-        minWidth: '0',
-        minHeight: '0',
-        maxWidth: '2.6vw',
-        maxHeight: '2.6vw',
+        top: buildBoardShellInlineUnitValue(boardUiTuning.magnifyButtonTop),
+        right: buildBoardShellInlineUnitValue(0.9),
+        width: buildBoardShellScreenPixelValue(44),
+        height: buildBoardShellScreenPixelValue(44),
+        minWidth: buildBoardShellScreenPixelValue(44),
+        minHeight: buildBoardShellScreenPixelValue(44),
+        maxWidth: buildBoardShellScreenPixelValue(44),
+        maxHeight: buildBoardShellScreenPixelValue(44),
         appearance: 'none',
         WebkitAppearance: 'none',
         fontSize: '0',
         lineHeight: '0',
     } as const;
-    const tipToggleButtonOffsetClassName = isTipOpen ? 'right-[0.8vw]' : 'left-[0.1vw]';
-    const tipToggleButtonClassName = `absolute top-[55%] z-50 flex p-[0.5vw] text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16 ${tipToggleButtonOffsetClassName}`;
+    const tipBoardOverlayButtonStyle = {
+        ...overlayButtonStyle,
+        top: buildBoardShellInlineUnitValue(0.25),
+        right: buildBoardShellInlineUnitValue(0.25),
+    } as const;
+    const tipToggleButtonStyle = {
+        [isTipOpen ? 'right' : 'left']: isTipOpen ? buildBoardShellInlineUnitValue(0.8) : buildBoardShellInlineUnitValue(0.1),
+        padding: buildBoardShellInlineUnitValue(0.5),
+        minWidth: buildBoardShellScreenPixelValue(44),
+        minHeight: buildBoardShellScreenPixelValue(44),
+    } as const;
+    const tipToggleButtonClassName = 'absolute top-[55%] z-50 flex text-[inherit] -translate-y-1/2 items-center justify-center rounded-full bg-black/30 text-white/50 transition-[background-color,color,border-color] duration-500 border border-white/8 hover:bg-black/50 hover:text-white hover:border-white/16';
 
     const playerBoardPath = ASSETS.PLAYER_BOARD(characterId, playerBoardFace);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
@@ -144,25 +166,64 @@ export const CenterBoard = ({
         );
     };
 
+    const renderPreparedSpells = () => {
+        if (characterId !== 'doctor_strange' || !preparedSpells?.length) return null;
+        return (
+            <div
+                className="absolute z-30 flex flex-col overflow-hidden rounded-md border border-amber-200/45 bg-slate-950/85 p-[1.5%] shadow-xl"
+                style={{ left: '0.6%', top: '60%', width: '15.5%', height: '38.2%', zIndex: UI_Z_INDEX.hud + 1 }}
+                data-prepared-spell-zone="public"
+                data-player-panel-slot="vishanti-book-prepared-spells"
+                onClick={event => event.stopPropagation()}
+            >
+                <span className="mb-[2%] truncate text-center font-semibold leading-tight text-amber-100" style={{ fontSize: 'clamp(6px, 0.78vw, 12px)' }}>
+                    {t('doctorStrange.preparedSpells', { count: preparedSpells.length })}
+                </span>
+                <div className="flex min-h-0 flex-1 items-start gap-[3%] overflow-x-auto overflow-y-hidden">
+                    {preparedSpells.map(card => (
+                        <button
+                            key={card.id}
+                            type="button"
+                            className="min-w-0 shrink-0 self-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                            style={{ width: '46%' }}
+                            aria-label={t(card.name, { defaultValue: card.name })}
+                            data-prepared-spell-card={card.id}
+                            data-board-magnify-ignore="true"
+                            onClick={() => onMagnifyCard(card)}
+                        >
+                            <CardPreview previewRef={card.previewRef} locale={locale} alt={t(card.name, { defaultValue: card.name })}
+                                className="w-full" />
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <>
             <div
                 className={shellFrameClassName}
-                style={shellTransform.length === 0
-                    ? undefined
-                    : { transform: shellTransform }}
+                style={{
+                    left: buildBoardShellInlineUnitValue(15),
+                    right: buildBoardShellInlineUnitValue(15),
+                    top: buildBoardShellInlineUnitValue(-6.5),
+                    ...(shellTransform.length === 0 ? {} : { transform: shellTransform }),
+                }}
             >
                 <div
                     className="relative flex items-center justify-center"
-                    style={{ gap: `${boardUiTuning.centerBoardGapVw}vw` }}
+                    style={{ gap: buildBoardShellInlineUnitValue(boardUiTuning.centerBoardGapUnits) }}
                 >
                 <div
-                    className={`relative w-auto shadow-2xl z-0 group transition-[outline] duration-300 rounded-[0.8vw] overflow-visible ${isLayoutEditing ? '' : 'cursor-zoom-in'} ${coreAreaHighlighted ? 'outline outline-4 outline-dashed outline-amber-400 outline-offset-[0.1vw]' : ''}`}
+                    className={`relative w-auto shadow-2xl z-0 group transition-[outline] duration-300 overflow-visible ${isLayoutEditing ? '' : 'cursor-zoom-in'} ${coreAreaHighlighted ? 'outline outline-4 outline-dashed outline-amber-400' : ''}`}
                     style={{
-                        height: `${playerBoardHeightVw}vw`,
+                        height: buildBoardShellInlineUnitValue(playerBoardHeightUnits),
+                        borderRadius: buildBoardShellInlineUnitValue(0.8),
+                        outlineOffset: coreAreaHighlighted ? buildBoardShellInlineUnitValue(0.1) : undefined,
                         ...(boardUiTuning.playerBoardTranslateY === 0
                             ? {}
-                            : { transform: `translateY(${boardUiTuning.playerBoardTranslateY}vw)` }),
+                            : { transform: `translateY(${buildBoardShellInlineUnitValue(boardUiTuning.playerBoardTranslateY)})` }),
                     }}
                     data-tutorial-id="player-board"
                     data-testid="player-board-surface"
@@ -173,7 +234,7 @@ export const CenterBoard = ({
                         <div
                             className="relative h-full"
                             style={{
-                                width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
+                                width: `calc(${buildBoardShellInlineUnitValue(playerBoardHeightUnits)} * ${playerBoardAspectRatio})`,
                                 perspective: '2200px',
                                 WebkitPerspective: '2200px',
                                 perspectiveOrigin: '50% 50%',
@@ -194,12 +255,13 @@ export const CenterBoard = ({
                                 animate={true3DBoardFlipMotion}
                             >
                                 <div
-                                    className="absolute inset-0 overflow-hidden rounded-[0.8vw]"
+                                    className="absolute inset-0 overflow-hidden"
                                     style={{
                                         backfaceVisibility: 'hidden',
                                         WebkitBackfaceVisibility: 'hidden',
                                         transform: 'rotateY(0deg)',
                                         pointerEvents: cursedPirateVisibleFace === 'normal' ? 'auto' : 'none',
+                                        borderRadius: buildBoardShellInlineUnitValue(0.8),
                                     }}
                                 >
                                     <OptimizedImage
@@ -238,12 +300,13 @@ export const CenterBoard = ({
                                     {renderNyraBoardBadge()}
                                 </div>
                                 <div
-                                    className="absolute inset-0 overflow-hidden rounded-[0.8vw]"
+                                    className="absolute inset-0 overflow-hidden"
                                     style={{
                                         backfaceVisibility: 'hidden',
                                         WebkitBackfaceVisibility: 'hidden',
                                         transform: 'rotateY(180deg)',
                                         pointerEvents: cursedPirateVisibleFace === 'cursed' ? 'auto' : 'none',
+                                        borderRadius: buildBoardShellInlineUnitValue(0.8),
                                     }}
                                 >
                                     <OptimizedImage
@@ -285,11 +348,12 @@ export const CenterBoard = ({
                         </div>
                     ) : (
                         <motion.div
-                            className="relative h-full overflow-hidden rounded-[0.8vw]"
+                            className="relative h-full overflow-hidden"
                             data-testid="player-board-face-shell"
                             data-player-board-face={playerBoardFace ?? 'default'}
                             style={{
-                                width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
+                                width: `calc(${buildBoardShellInlineUnitValue(playerBoardHeightUnits)} * ${playerBoardAspectRatio})`,
+                                borderRadius: buildBoardShellInlineUnitValue(0.8),
                             }}
                             initial={{ opacity: 0.96 }}
                             animate={{ opacity: 1 }}
@@ -326,6 +390,7 @@ export const CenterBoard = ({
                                 onMagnifyCard={onMagnifyCard}
                                 playerTokens={playerTokens}
                             />
+                            {renderPreparedSpells()}
                             {renderNyraBoardBadge()}
                         </motion.div>
                     )}
@@ -338,8 +403,16 @@ export const CenterBoard = ({
                         data-board-magnify-ignore="true"
                         aria-label={t('actions.magnify')}
                     >
-                        <span className={overlayButtonVisualClassName}>
-                            <svg className={overlayButtonIconClassName} viewBox="0 0 20 20">
+                        <span
+                            className={overlayButtonVisualClassName}
+                            style={overlayButtonVisualStyle}
+                            data-fixed-control-visual="true"
+                        >
+                            <svg
+                                className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
+                                style={{ width: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})`, height: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})` }}
+                                viewBox="0 0 20 20"
+                            >
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                             </svg>
                         </span>
@@ -347,22 +420,26 @@ export const CenterBoard = ({
                 </div>
                 {hasTipBoard && <div
                     className="flex items-center relative"
-                    style={{ height: `${tipBoardHeightVw}vw` }}
+                    style={{ height: buildBoardShellInlineUnitValue(tipBoardHeightUnits) }}
                     data-tutorial-id="tip-board"
                 >
                     <button
                         type="button"
                         onClick={onToggleTip}
                         className={tipToggleButtonClassName}
+                        style={tipToggleButtonStyle}
                         data-board-magnify-ignore="true"
                     >
                         {isTipOpen ? '<' : '>'}
                     </button>
-                    <div className={`relative h-full transition-[width,opacity,transform] duration-500 overflow-hidden rounded-[0.8vw] ${isTipOpen ? 'w-auto opacity-100 scale-100' : 'w-0 opacity-0 scale-95'}`}>
+                    <div
+                        className={`relative h-full transition-[width,opacity,transform] duration-500 overflow-hidden ${isTipOpen ? 'w-auto opacity-100 scale-100' : 'w-0 opacity-0 scale-95'}`}
+                        style={{ borderRadius: buildBoardShellInlineUnitValue(0.8) }}
+                    >
                         <div
                             className={`relative h-full group ${isLayoutEditing ? '' : 'cursor-zoom-in'}`}
                             style={{
-                                width: `calc(${tipBoardHeightVw}vw * ${1311 / 2048})`,
+                                width: `calc(${buildBoardShellInlineUnitValue(tipBoardHeightUnits)} * ${1311 / 2048})`,
                             }}
                             data-testid="tip-board-surface"
                             onClick={(event) => handleMagnifySurfaceClick(event, tipBoardPath)}
@@ -389,13 +466,22 @@ export const CenterBoard = ({
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onMagnifyImage(tipBoardPath); }}
                                 className={overlayButtonClassName}
-                                style={{ ...overlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
+                                style={{ ...tipBoardOverlayButtonStyle, zIndex: UI_Z_INDEX.hud + 10 }}
                                 data-testid="tip-board-magnify-button"
+                                data-tutorial-id="tip-board-magnify-button"
                                 data-board-magnify-ignore="true"
                                 aria-label={t('actions.magnify')}
                             >
-                                <span className={overlayButtonVisualClassName}>
-                                    <svg className={overlayButtonIconClassName} viewBox="0 0 20 20">
+                                <span
+                                    className={overlayButtonVisualClassName}
+                                    style={overlayButtonVisualStyle}
+                                    data-fixed-control-visual="true"
+                                >
+                                    <svg
+                                        className={`board-shell-fixed-icon ${overlayButtonIconClassName}`}
+                                        style={{ width: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})`, height: `var(--dt-board-magnify-size, ${buildBoardShellInlineUnitValue(0.72)})` }}
+                                        viewBox="0 0 20 20"
+                                    >
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
                                 </span>

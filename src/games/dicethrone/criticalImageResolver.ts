@@ -14,6 +14,8 @@ const CHARACTER_ASSET_TYPES = [
 type AssetTag = 'selection' | 'gameplay';
 
 const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
+    doctor_strange: 'doctor_strange',
+    thor: 'thor',
     monk: 'monk',
     barbarian: 'barbarian',
     pyromancer: 'pyromancer',
@@ -30,6 +32,7 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     tianshi: 'tianshi',
     lieren: 'lieren',
     vampire_lord: 'xixuegui',
+    zhizhuxia: 'zhizhuxia',
 };
 
 const IMPLEMENTED_CHARACTERS: readonly SelectableCharacterId[] = IMPLEMENTED_DICETHRONE_CHARACTER_IDS;

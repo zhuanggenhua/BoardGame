@@ -4,6 +4,12 @@ import type {
     ResolvePendingActionCommand,
 } from './types';
 
+export const isQidahenBattleCasualtyOrderValid = (value: unknown): boolean => {
+    const payload = value as { attackerCasualtyPriority?: unknown; defenderCasualtyPriority?: unknown } | null;
+    return payload?.attackerCasualtyPriority !== 'lowest-level'
+        && payload?.defenderCasualtyPriority !== 'lowest-level';
+};
+
 export const buildPendingTargetRearGuardChoiceValue = (): QidahenPendingTargetChoiceValue => ({
     choiceId: 'rear-guard',
     retreatLossMode: 'rear-guard',

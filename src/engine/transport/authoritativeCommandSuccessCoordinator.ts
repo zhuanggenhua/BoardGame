@@ -38,6 +38,7 @@ export type AuthoritativeCommandSuccessCoordinatorHooks<
         event: GameEvent;
         progressMarkerBefore: string;
         preCommandSeatView: MatchState<unknown>;
+        randomCursorBefore?: number;
     }) => Promise<FeedbackPayload | null>;
     buildPostTrainingState: (match: TMatch, playerId: string) => MatchState<unknown>;
     trainingDataCapture: Pick<TrainingDataCapture, 'recordDecisionSample'>;
@@ -80,7 +81,9 @@ export class AuthoritativeCommandSuccessCoordinator<
         stateIdBefore: number;
         progressMarkerBeforeCommand: string;
         preCommandSeatView: MatchState<unknown>;
+        randomCursorBefore?: number;
         suppressBroadcast?: boolean;
+        captureTrainingData?: boolean;
     }): Promise<boolean> {
         const { match } = args;
         match.lastCommandFailureReason = null;
@@ -111,6 +114,7 @@ export class AuthoritativeCommandSuccessCoordinator<
                 event: event as GameEvent,
                 progressMarkerBefore: args.progressMarkerBeforeCommand,
                 preCommandSeatView: args.preCommandSeatView,
+                randomCursorBefore: args.randomCursorBefore,
             });
             if (feedback) {
                 unsatisfiableInteractionFeedback = feedback;
@@ -149,6 +153,7 @@ export class AuthoritativeCommandSuccessCoordinator<
             gameOver: commitResult.gameOver,
             unsatisfiableInteractionFeedback,
             suppressBroadcast: args.suppressBroadcast,
+            captureTrainingData: args.captureTrainingData,
             trainingDataCapture: this.hooks.trainingDataCapture,
             reportOnlineAiRecoveryFeedback: this.hooks.reportOnlineAiRecoveryFeedback,
             broadcastState: () => this.hooks.broadcastState(match),

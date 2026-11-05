@@ -4,7 +4,8 @@
  * 主题：临时力量增益（回合结束清零）、消灭低力量随从
  */
 
-import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
+import {
+ registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addTempPower,
@@ -20,6 +21,8 @@ import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
 import { getEffectivePower, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createBranchProgram,
     createEffectProgram,
@@ -78,14 +81,14 @@ type WerewolfChoice = {
     sourceUid?: string;
 };
 
-function attachOptionsGenerator<T>(
+function attachOptionsGenerator<T extends object>(
     interaction: InteractionDescriptor<T>,
     optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
-): InteractionDescriptor<T> {
+): InteractionDescriptor<T & { optionsGenerator: typeof optionsGenerator }> {
     return {
         ...interaction,
         data: {
-            ...(interaction.data ?? {}),
+            ...interaction.data,
             optionsGenerator,
         },
     };
@@ -155,14 +158,13 @@ function resolveWerewolfChewToySourceSelection(
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: state,
             playerId,
             now: timestamp,
             sourceUid: choice.minionUid,
             baseIndex: choice.baseIndex,
-        },
-        nextProgram: werewolfChewToyTargetPromptProgram,
+        }, werewolfChewToyTargetPromptProgram),
     };
 }
 
@@ -225,7 +227,7 @@ function resolveWerewolfLetTheDogOutSourceSelection(
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: state,
             playerId,
             now: timestamp,
@@ -233,8 +235,7 @@ function resolveWerewolfLetTheDogOutSourceSelection(
             sourceUid: choice.minionUid,
             sourceBaseIndex: choice.baseIndex,
             destroyedUids: [],
-        },
-        nextProgram: werewolfLetTheDogOutTargetsPromptProgram,
+        }, werewolfLetTheDogOutTargetsPromptProgram),
     };
 }
 
@@ -369,11 +370,7 @@ function buildWerewolfLetTheDogOutTargetOptions(
     ];
 }
 
-const werewolfChewToyTargetPromptProgram = createPromptProgram<
-    WerewolfChewToyTargetContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const werewolfChewToyTargetPromptProgram = createPromptProgram<WerewolfChewToyTargetContext>({
     sourceId: 'werewolf_chew_toy_target',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -434,7 +431,7 @@ const werewolfChewToyTargetPromptProgram = createPromptProgram<
     },
 });
 
-const werewolfChewToyPromptProgram = createPromptProgram<WerewolfChewToyContext, SmashUpCore, SmashUpEvent>({
+const werewolfChewToyPromptProgram = createPromptProgram<WerewolfChewToyContext>({
     sourceId: 'werewolf_chew_toy',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -492,11 +489,11 @@ const werewolfChewToyProgram = createBranchProgram<WerewolfChewToyContext, Smash
     }),
 });
 
-const werewolfLetTheDogOutTargetsPromptProgram = createPromptProgram<
+const werewolfLetTheDogOutTargetsPromptProgram: AbilityProgram<
     WerewolfLetTheDogOutTargetsContext,
     SmashUpCore,
     SmashUpEvent
->({
+> = createPromptProgram<WerewolfLetTheDogOutTargetsContext>({
     sourceId: 'werewolf_let_the_dog_out_targets',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -595,24 +592,24 @@ const werewolfLetTheDogOutTargetsPromptProgram = createPromptProgram<
         }
         return {
             events: destroyEvents,
-            context: {
+            continuation: createAbilityRuntimeContinuation<
+                WerewolfLetTheDogOutTargetsContext,
+                SmashUpCore,
+                SmashUpEvent
+            >({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 budget: newBudget,
                 sourceUid: context.sourceUid,
+                sourceBaseIndex: context.sourceBaseIndex,
                 destroyedUids,
-            },
-            nextProgram: werewolfLetTheDogOutTargetsPromptProgram,
+            }, werewolfLetTheDogOutTargetsPromptProgram),
         };
     },
 });
 
-const werewolfLetTheDogOutPromptProgram = createPromptProgram<
-    WerewolfLetTheDogOutContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const werewolfLetTheDogOutPromptProgram = createPromptProgram<WerewolfLetTheDogOutContext>({
     sourceId: 'werewolf_let_the_dog_out',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(

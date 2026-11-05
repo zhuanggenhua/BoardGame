@@ -16,6 +16,7 @@ import { getMunchkinSpecialCardDescriptor } from '../data/factions/munchkin';
 import { getBaseDef, getCardDef } from '../data/cards';
 import { getSuppressionFilteredStateForSource, isBaseAbilitySuppressed, isBaseScoringSuppressed, isCardSuppressed } from './ongoingEffects';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
+import { getEffectiveBaseAbilitySourceIds } from './effectiveBaseAbilities';
 import {
     countSemanticControlledMinionCandidates,
     countSemanticControlledRuntimeActions,
@@ -45,6 +46,14 @@ export interface PowerModifierContext {
     /** 当前正在计算的修正来源 defId；用于 POD/base 共享规则的精确来源收口 */
     modifierSourceDefId?: string;
 }
+
+type BaseRuntimeActionContext = {
+    state: SmashUpCore;
+    baseIndex: number;
+    base: BaseInPlay;
+    minion?: MinionOnBase;
+    modifierSourceDefId?: string;
+};
 
 /** 力量修正函数：返回力量增减值（正数=加，负数=减） */
 export type PowerModifierFn = (ctx: PowerModifierContext) => number;
@@ -138,12 +147,12 @@ export interface PowerModifierRuntimeHelpers {
         options?: RuntimeActionMatchOptions,
     ): number;
     countBaseOngoingsMatchingRuntimeDefId(
-        ctx: PowerModifierContext,
+        ctx: BaseRuntimeActionContext,
         baseDefId: string,
         options?: RuntimeActionMatchOptions,
     ): number;
     sumBaseOngoingsMatchingRuntimeDefId(
-        ctx: PowerModifierContext,
+        ctx: BaseRuntimeActionContext,
         baseDefId: string,
         mapper: (action: ModifierRuntimeAction) => number,
         options?: RuntimeActionMatchOptions,
@@ -273,7 +282,7 @@ export function matchesRuntimeDefId(defId: unknown, baseDefId: string): boolean 
 }
 
 export function getActionControllerId(
-    action: ModifierRuntimeAction,
+    action: Pick<ModifierRuntimeAction, 'ownerId' | 'metadata'>,
     lens: OngoingControllerLens = 'sourceController',
 ): PlayerId {
     return getSemanticActionControllerId(action, lens);
@@ -286,7 +295,7 @@ function isEntityBackedModifierSource(defId: string): boolean {
 function shouldExposePodModifierAlias(defId: string): boolean {
     const podCard = getCardDef(`${defId}_pod`);
     if (podCard) {
-        return podCard.abilityTags?.includes('ongoing') ?? false;
+    return podCard.type === 'action' && (podCard.abilityTags?.includes('ongoing') ?? false);
     }
     return Boolean(getBaseDef(`${defId}_pod`));
 }
@@ -369,10 +378,15 @@ function getFilteredBreakpointModifierContext(
     originalBreakpoint: number,
 ): BreakpointModifierContext {
     const filteredState = getSuppressionFilteredStateForSource(state, sourceDefId);
+    const filteredBase = filteredState.bases[baseIndex] ?? state.bases[baseIndex];
+    const contextualBase = getBaseDef(sourceDefId)
+        && getEffectiveBaseAbilitySourceIds(filteredState, baseIndex).includes(sourceDefId)
+        ? { ...filteredBase, defId: sourceDefId }
+        : filteredBase;
     return {
         state: filteredState,
         baseIndex,
-        base: filteredState.bases[baseIndex] ?? state.bases[baseIndex],
+        base: contextualBase,
         originalBreakpoint,
     };
 }
@@ -487,15 +501,22 @@ export function getBasePowerModifiers(
     const base = state.bases[baseIndex];
     let total = 0;
 
-    const baseEntry = basePowerModifiers.get(base.defId);
-    if (baseEntry && !isBaseAbilitySuppressed(state, baseIndex)) {
-        const filteredState = getSuppressionFilteredStateForSource(state, base.defId);
-        total += baseEntry.modifier({
-            state: filteredState,
-            baseIndex,
-            base: filteredState.bases[baseIndex] ?? base,
-            playerId,
-        });
+    if (!isBaseAbilitySuppressed(state, baseIndex)) {
+        for (const sourceDefId of getEffectiveBaseAbilitySourceIds(state, baseIndex)) {
+            const baseEntry = basePowerModifiers.get(sourceDefId);
+            if (!baseEntry) continue;
+            const filteredState = getSuppressionFilteredStateForSource(state, sourceDefId);
+            const filteredBase = filteredState.bases[baseIndex] ?? base;
+            const contextualBase = getBaseDef(sourceDefId)
+                ? { ...filteredBase, defId: sourceDefId }
+                : filteredBase;
+            total += baseEntry.modifier({
+                state: filteredState,
+                baseIndex,
+                base: contextualBase,
+                playerId,
+            });
+        }
     }
 
     // 遍历基地上的所有 ongoing 行动卡
@@ -945,7 +966,7 @@ export function getModifierExceptionAuditSnapshot(): ModifierExceptionAuditSnaps
 }
 
 function filterRuntimeMatchedActions(
-    ctx: PowerModifierContext,
+    ctx: BaseRuntimeActionContext,
     actions: readonly ModifierRuntimeAction[],
     baseDefId: string,
     options?: RuntimeActionMatchOptions,

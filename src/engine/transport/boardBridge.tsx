@@ -73,14 +73,14 @@ export function BoardBridge<
     if (activeRenderer.kind === 'react') {
         const RendererBoard = activeRenderer.component;
         return (
-            <BoardErrorBoundary fallback={Loading}>
+            <BoardErrorBoundary fallback={Loading} resetKey={stableKey} resetIdentity={RendererBoard}>
                 <RendererBoard key={stableKey} {...props} />
             </BoardErrorBoundary>
         );
     }
 
     return (
-        <BoardErrorBoundary fallback={Loading}>
+        <BoardErrorBoundary fallback={Loading} resetKey={stableKey} resetIdentity={activeRenderer.mount}>
             <ImperativeBoardRendererHost
                 key={stableKey}
                 renderer={activeRenderer}
@@ -183,14 +183,21 @@ export const shouldShowBoardRenderFallback = ({
  * - 最多重试 5 次
  * - 重试期间显示 loading fallback
  */
+type BoardErrorBoundaryProps = {
+    children: React.ReactNode;
+    fallback?: React.ReactNode;
+    resetKey: React.Key;
+    resetIdentity: unknown;
+};
+
 class BoardErrorBoundary extends React.Component<
-    { children: React.ReactNode; fallback?: React.ReactNode },
+    BoardErrorBoundaryProps,
     { hasError: boolean; error?: Error; retryCount: number }
 > {
     private retryTimer: NodeJS.Timeout | null = null;
     private readonly maxRetries = BOARD_ERROR_BOUNDARY_MAX_RETRIES;
 
-    constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+    constructor(props: BoardErrorBoundaryProps) {
         super(props);
         this.state = { hasError: false, retryCount: 0 };
     }
@@ -242,9 +249,13 @@ class BoardErrorBoundary extends React.Component<
         }
     }
 
-    componentDidUpdate(prevProps: { children: React.ReactNode }) {
-        // 如果 children 变化，重置错误状态和重试计数
-        if (this.state.hasError && prevProps.children !== this.props.children) {
+    componentDidUpdate(prevProps: Readonly<BoardErrorBoundaryProps>) {
+        // 只在 Board 实例身份或显式 remountKey 改变时重置错误，
+        // 父组件每次更新都会创建新的 children 元素，不能把它当作恢复条件。
+        if (this.state.hasError && (
+            prevProps.resetKey !== this.props.resetKey
+            || prevProps.resetIdentity !== this.props.resetIdentity
+        )) {
             this.setState({ hasError: false, error: undefined, retryCount: 0 });
         }
     }

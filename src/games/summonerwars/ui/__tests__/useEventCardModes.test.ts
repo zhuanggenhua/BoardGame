@@ -10,4 +10,8 @@ describe('事件卡 UI 交互路由', () => {
   it('灼烧应从手牌进入系统目标选择，而不是直接无目标打出', () => {
     expect(requiresEventInteraction(`${CARD_IDS.HUIJIN_SCORCH}-0-1`)).toBe(true);
   });
+
+  it('服从应从手牌进入两步目标选择，而不是直接无目标打出', () => {
+    expect(requiresEventInteraction(`${CARD_IDS.ZHONGCAI_OBEDIENCE}-0-1`)).toBe(true);
+  });
 });

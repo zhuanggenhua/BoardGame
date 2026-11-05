@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { getAllGames, getGameById } from '../../config/games.config';
-import { MOBILE_REFERENCE_VIEWPORT } from '../../shared/referenceViewports';
+import { DESKTOP_REFERENCE_VIEWPORT, MOBILE_LANDSCAPE_DESIGN_VIEWPORT, MOBILE_REFERENCE_VIEWPORT } from '../../shared/referenceViewports';
 import {
     getGameMobileBannerKind,
     getGamePageDataAttributes,
@@ -32,6 +32,13 @@ describe('mobile support manifest contract', () => {
         expect(game?.preferredOrientation).toBe('landscape');
         expect(game?.mobileLayoutPreset).toBe('board-shell');
         expect(game?.mobileBattlefieldZoom).toBe('game-owned');
+        expect(game?.mobileBoardShellLayout).toEqual({
+            designWidth: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.width,
+            designHeight: MOBILE_LANDSCAPE_DESIGN_VIEWPORT.height,
+            referenceWidth: DESKTOP_REFERENCE_VIEWPORT.width,
+            referenceHeight: 960,
+            fit: 'contain',
+        });
         expect(game?.shellTargets).toEqual(
             expect.arrayContaining(['pwa', 'app-webview', 'mini-program-webview']),
         );
@@ -178,6 +185,9 @@ describe('mobile support helpers', () => {
             mobileBoardShellLayout: {
                 designWidth: 1160,
                 designHeight: 720,
+                referenceWidth: 1920,
+                referenceHeight: 1080,
+                fit: 'contain',
             },
         });
 
@@ -190,6 +200,9 @@ describe('mobile support helpers', () => {
         expect(attrs['data-shell-targets']).toBe('pwa,app-webview');
         expect(attrs['data-mobile-board-shell-design-width']).toBe('1160');
         expect(attrs['data-mobile-board-shell-design-height']).toBe('720');
+        expect(attrs['data-mobile-board-shell-reference-width']).toBe('1920');
+        expect(attrs['data-mobile-board-shell-reference-height']).toBe('1080');
+        expect(attrs['data-mobile-board-shell-fit']).toBe('contain');
     });
 
     it('mirrors game page attributes to html and body while the page is mounted', () => {
@@ -219,7 +232,7 @@ describe('mobile support helpers', () => {
         expect(document.body.getAttribute('data-mobile-battlefield-zoom')).toBeNull();
     });
 
-    it('only landscape board-shell games enable legacy scale fallback', () => {
+    it('board-shell 只在 manifest 主方向匹配时启用缩放兜底', () => {
         expect(
             shouldUseBoardShellScale(
                 { mobileProfile: 'landscape-adapted', mobileLayoutPreset: 'board-shell' },
@@ -233,6 +246,22 @@ describe('mobile support helpers', () => {
                 { mobileProfile: 'portrait-adapted', mobileLayoutPreset: 'portrait-simple' },
                 900,
                 500,
+            ),
+        ).toBe(false);
+
+        expect(
+            shouldUseBoardShellScale(
+                { mobileProfile: 'portrait-adapted', mobileLayoutPreset: 'board-shell' },
+                390,
+                844,
+            ),
+        ).toBe(true);
+
+        expect(
+            shouldUseBoardShellScale(
+                { mobileProfile: 'portrait-adapted', mobileLayoutPreset: 'board-shell' },
+                844,
+                390,
             ),
         ).toBe(false);
     });

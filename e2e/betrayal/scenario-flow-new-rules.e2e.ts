@@ -6,14 +6,15 @@ import {
 import {
   createFirstScenarioHauntRuntimeCore,
   createFirstScenarioReadyToExorciseRuntimeCore,
-  createFirstScenarioSurvivorEndgameCore,
-  createFirstScenarioTraitorEndgameCore,
   initBetrayalContext,
   injectCore,
   saveScreenshot,
+  setHarnessRandomQueue,
+  waitForPhysicalDiceSettled,
   waitForBetrayalPageReady,
   warmBetrayalFrontend,
 } from "./betrayalTestHelpers";
+import { createMummyTraitorVictoryReadyTutorialCore } from "../../src/games/betrayal/testing/firstScenarioTestUtils";
 
 const EVIDENCE_DIR = "evidence/betrayal-scenario-flow-new-rules";
 const HAUNT_TABLE_SCREENSHOT = `${EVIDENCE_DIR}/01-作祟开始-剧本关闭后牌桌承接.jpg`;
@@ -59,13 +60,19 @@ async function dismissHauntRevealIfPresent(page: Page) {
 }
 
 async function continueToEndgameIfPresent(page: Page) {
-  const continueButton = page.getByTestId("betrayal-exorcise-roll-continue");
-  if (
-    (await continueButton.count()) > 0 &&
-    (await continueButton.first().isVisible())
-  ) {
-    await continueButton.first().click();
-  }
+  const continueButton = page.locator(
+    '[data-testid="betrayal-exorcise-roll-continue"]:visible',
+  ).last();
+  const endgameScreen = page.getByTestId("betrayal-endgame-screen");
+  await expect(continueButton).toBeVisible({
+    timeout: 30000,
+    message: "终局前必须先出现真实驱逐结果确认入口",
+  });
+  await continueButton.click();
+  await expect(endgameScreen).toBeVisible({
+    timeout: 30000,
+    message: "确认真实驱逐结果后必须进入终局页",
+  });
 }
 
 async function captureScenarioReaderTurn(
@@ -145,7 +152,31 @@ async function captureScenarioReaderBodyBottom(
       scrollHeight > clientHeight + 2 ? [index] : [],
   );
   if (scrollableIndexes.length === 0) {
-    throw new Error("剧本正文没有形成可验证的滚动承载区");
+    const tailVisibility = await bodyScroll.evaluateAll((elements) =>
+      elements.map((element) => {
+        const sections = Array.from(
+          element.querySelectorAll<HTMLElement>(
+            '[data-testid^="betrayal-scenario-book-section-"]',
+          ),
+        );
+        const lastSection = sections.at(-1);
+        if (!lastSection) {
+          return false;
+        }
+        const containerRect = element.getBoundingClientRect();
+        const sectionRect = lastSection.getBoundingClientRect();
+        return (
+          sectionRect.top >= containerRect.top - 2 &&
+          sectionRect.bottom <= containerRect.bottom + 2
+        );
+      }),
+    );
+    expect(
+      tailVisibility.every(Boolean),
+      "正文没有滚动需求时，末段也必须完整位于书页可视区",
+    ).toBe(true);
+    await saveScreenshot(page, screenshotPath);
+    return;
   }
 
   await bodyScroll.evaluateAll((elements) => {
@@ -223,6 +254,94 @@ async function assertCinematicActionSlotLayout(narration: Locator) {
   expect(actionBox.y - (terminalMarkBox.y + terminalMarkBox.height)).toBeGreaterThanOrEqual(
     6,
   );
+}
+
+async function assertScenarioBookControlsOnPages(reader: Locator) {
+  const book = reader.getByTestId("betrayal-scenario-book");
+  const pages = book.locator('[data-testid^="betrayal-scenario-book-page-"]');
+  const leftPage = pages.nth(0);
+  const rightPage = pages.nth(1);
+  const close = book.getByTestId("betrayal-scenario-reader-close");
+  const prev = book.getByTestId("betrayal-scenario-reader-prev-zone");
+  const next = book.getByTestId("betrayal-scenario-reader-next-zone");
+  const progress = book.getByTestId("betrayal-scenario-reader-footer-progress");
+
+  const metrics = await Promise.all([
+    book.boundingBox(),
+    leftPage.boundingBox(),
+    rightPage.boundingBox(),
+    close.boundingBox(),
+    prev.boundingBox(),
+    next.boundingBox(),
+    progress.boundingBox(),
+  ]);
+  const [
+    bookBox,
+    leftPageBox,
+    rightPageBox,
+    closeBox,
+    prevBox,
+    nextBox,
+    progressBox,
+  ] = metrics;
+  if (
+    !bookBox ||
+    !leftPageBox ||
+    !rightPageBox ||
+    !closeBox ||
+    !prevBox ||
+    !nextBox ||
+    !progressBox
+  ) {
+    throw new Error("剧本书或书内控件缺少真实几何信息");
+  }
+
+  const withinBook = (box: NonNullable<typeof bookBox>) =>
+    box.x >= bookBox.x - 1 &&
+    box.y >= bookBox.y - 1 &&
+    box.x + box.width <= bookBox.x + bookBox.width + 1 &&
+    box.y + box.height <= bookBox.y + bookBox.height + 1;
+
+  expect(withinBook(closeBox), "关闭控件必须属于剧本书内部").toBe(true);
+  expect(withinBook(prevBox), "上一页控件必须属于剧本书内部").toBe(true);
+  expect(withinBook(nextBox), "下一页控件必须属于剧本书内部").toBe(true);
+  expect(withinBook(progressBox), "页码必须属于剧本书内部").toBe(true);
+
+  expect(
+    prevBox.x,
+    "上一页控件必须位于左侧书页内部",
+  ).toBeGreaterThanOrEqual(leftPageBox.x - 1);
+  expect(
+    prevBox.x + prevBox.width,
+    "上一页控件不能越出左侧书页",
+  ).toBeLessThanOrEqual(leftPageBox.x + leftPageBox.width + 1);
+  expect(
+    nextBox.x,
+    "下一页控件必须位于右侧书页内部",
+  ).toBeGreaterThanOrEqual(rightPageBox.x - 1);
+  expect(
+    nextBox.x + nextBox.width,
+    "下一页控件不能越出右侧书页",
+  ).toBeLessThanOrEqual(rightPageBox.x + rightPageBox.width + 1);
+  expect(
+    prevBox.y + prevBox.height,
+    "上一页控件必须贴在左侧书页底部",
+  ).toBeGreaterThanOrEqual(leftPageBox.y + leftPageBox.height - 64);
+  expect(
+    nextBox.y + nextBox.height,
+    "下一页控件必须贴在右侧书页底部",
+  ).toBeGreaterThanOrEqual(rightPageBox.y + rightPageBox.height - 64);
+  expect(
+    progressBox.x + progressBox.width,
+    "页码不能压住右侧书页的下一页控件",
+  ).toBeLessThanOrEqual(nextBox.x - 8);
+
+  const progressCenterX = progressBox.x + progressBox.width / 2;
+  const bookCenterX = bookBox.x + bookBox.width / 2;
+  expect(
+    Math.abs(progressCenterX - bookCenterX),
+    "页码必须严格位于整本书的中线",
+  ).toBeLessThanOrEqual(2);
 }
 
 test.describe("山屋惊魂剧本流程新规覆盖", () => {
@@ -307,6 +426,13 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
       HERO_READER_TURNING_SCREENSHOT,
     );
     await expect(heroReader.getByTestId("betrayal-scenario-book")).toBeVisible();
+    await assertScenarioBookControlsOnPages(heroReader);
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-opening-stage"),
+    ).toHaveCount(0);
+    await expect(
+      heroReader.getByTestId("betrayal-scenario-reader-prev-zone"),
+    ).toBeDisabled();
     await expect(
       heroReader.getByTestId("betrayal-scenario-book-section-prologue"),
     ).toHaveCount(0);
@@ -399,6 +525,7 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await expect(
       traitorReader.getByTestId("betrayal-scenario-book"),
     ).toBeVisible();
+    await assertScenarioBookControlsOnPages(traitorReader);
     await expect(
       traitorReader.getByTestId("betrayal-scenario-book-section-prologue"),
     ).toHaveCount(0);
@@ -483,8 +610,20 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await openInjectedCoreAsPlayer(
       page,
       "0",
-      createFirstScenarioSurvivorEndgameCore(),
+      createFirstScenarioReadyToExorciseRuntimeCore(),
     );
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "驱逐木乃伊",
+    );
+    // 驱逐检定先投英雄 4 颗骰子，再投木乃伊 5 颗骰子；用高英雄结果、低木乃伊结果确保真实成功分支。
+    await setHarnessRandomQueue(page, [
+      0.99, 0.99, 0.99, 0.99,
+      0.01, 0.01, 0.01, 0.01, 0.01,
+    ]);
+    await page.getByTestId("betrayal-action-use").click();
+    const exorciseRoll = page.getByTestId("betrayal-recent-roll-panel");
+    await expect(exorciseRoll).toBeVisible();
+    await waitForPhysicalDiceSettled(exorciseRoll);
     await continueToEndgameIfPresent(page);
     const survivorEndgame = page.getByTestId("betrayal-endgame-screen");
     await expect(survivorEndgame).toBeVisible({ timeout: 30000 });
@@ -528,8 +667,20 @@ test.describe("山屋惊魂剧本流程新规覆盖", () => {
     await openInjectedCoreAsPlayer(
       page,
       "2",
-      createFirstScenarioTraitorEndgameCore(),
+      createMummyTraitorVictoryReadyTutorialCore(),
     );
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "拾起女孩",
+    );
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "交出女孩",
+    );
+    await page.getByTestId("betrayal-action-use").click();
+    await expect(page.getByTestId("betrayal-action-use")).toContainText(
+      "交出圣符",
+    );
+    await page.getByTestId("betrayal-action-use").click();
     const traitorEndgame = page.getByTestId("betrayal-endgame-screen");
     await expect(traitorEndgame).toBeVisible({ timeout: 30000 });
     await expect(

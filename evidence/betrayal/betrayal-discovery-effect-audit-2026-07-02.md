@@ -77,48 +77,57 @@
 
 | 楼层 | 房间 | 门位 | 抽牌奖励 | 效果实现状态 |
 | --- | --- | --- | --- | --- |
-| ground | 观测台（observatory） | north/east/south/west | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 温室（conservatory） | east/south | 1 个物品 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 墓园（graveyard） | east/south | 1 个预兆 | 已实现：固定连通地下洞窟；`resolveConnectedRoomIds` 会在墓园与地下洞窟之间加入双向移动目标；已有领域测试 |
-| ground | 舞厅（ballroom） | south/west | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 厨房（kitchen） | east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 餐厅（diningRoom） | north/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 礼拜堂（chapel） | east/south | 无 | 已实现：`discoveryEffect=gainSanity1`，发现板块时让发现者获得 1 点神志；已有领域测试 |
+| ground | 观测台（observatory） | north/east/south | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 温室（conservatory） | north/south | 1 个物品 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 墓园（graveyard） | north/east | 1 个预兆 | 已实现：固定连通地下洞窟；`resolveConnectedRoomIds` 会在墓园与地下洞窟之间加入双向移动目标；已有领域测试 |
+| ground | 舞厅（ballroom） | north/east/south/west | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 厨房（kitchen） | north/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 餐厅（diningRoom） | north/east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 礼拜堂（chapel） | north/south | 无 | 已实现：`discoveryEffect=gainSanity1`，发现板块时让发现者获得 1 点神志；已有领域测试 |
 | ground | 实验室（laboratory） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 金库（vault） | north/east | 2 个物品 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；场景书特例不得当作基础房间效果 |
+| ground | 金库（vault） | north | 2 个物品 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；场景书特例不得当作基础房间效果 |
 | ground | 火炉房（furnaceRoom） | east/south/west | 无 | 已实现：`endTurnEffect=physicalDamage1`，结束回合在火炉房时承受 1 点物理伤害；已有领域测试 |
-| ground | 客房（guestQuarters） | east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 客房（guestQuarters） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
 | ground | 血腥房间（bloodyRoom） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 标本室（specimenRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 沙龙（salon） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 标本室（specimenRoom） | east/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 沙龙（salon） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
 | ground | 主卧（primaryBedroom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 育婴室（nursery） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 手术室（operatingTheatre） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| ground | 器械库（armory） | north/east/south | 无 | 已实现：`discoveryEffect=drawUntilWeapon`，发现时从物品牌堆顶展示直到武器，拿取武器并埋葬其余展示牌；已有领域测试覆盖拿砍刀、埋急救包、扣物品牌堆 |
-| upper | 塔楼（tower） | south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 雕像走廊（statuaryCorridor） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 书房（study） | north/east | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；`roomAtlas.ts` 当前把书房和图书馆都映射到 room-front-atlas frame 25，按同一图书室/LIBRARY 效果复用保留；已有领域测试 |
+| ground | 育婴室（nursery） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 手术室（operatingTheatre） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| ground | 器械库（armory） | north/east | 无 | 已实现：`discoveryEffect=drawUntilWeapon`，发现时从物品牌堆顶展示直到武器，拿取武器并埋葬其余展示牌；已有领域测试覆盖拿砍刀、埋急救包、扣物品牌堆 |
+| upper | 塔楼（tower） | north/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| upper | 雕像走廊（statuaryCorridor） | north/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| upper | 书房（study） | north/east/south | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；`roomAtlas.ts` 当前把书房和图书馆都映射到 room-front-atlas frame 25，按同一图书室/LIBRARY 效果复用保留；已有领域测试 |
 | upper | 长廊（gallery） | north/south | 无 | 已实现：固定连通舞厅；`resolveConnectedRoomIds` 会在长廊与已发现舞厅之间加入移动目标；已有领域测试 |
-| upper | 图书馆（library） | south/west | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；已有领域测试 |
-| upper | 冬季卧室（winterBedroom） | east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 倒塌房间（collapsedRoom） | north/south | 无 | 已实现：`endTurnEffect=speedCheckFallToBasement`，结束回合速度检定失败时移至地下室起始点并承受 1 骰物理伤害；已有领域测试覆盖失败分支 |
+| upper | 图书馆（library） | north/east/south | 无 | 已实现：`discoveryEffect=gainKnowledge1`，发现板块时让发现者获得 1 点知识；已有领域测试 |
+| upper | 冬季卧室（winterBedroom） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| upper | 倒塌房间（collapsedRoom） | north/east | 无 | 已实现：`endTurnEffect=speedCheckFallToBasement`，结束回合速度检定失败时移至地下室起始点并承受 1 骰物理伤害；已有领域测试覆盖失败分支 |
 | upper | 烧焦房间（charredRoom） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 管风琴室（organRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为风琴室 |
+| upper | 管风琴室（organRoom） | east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为风琴室 |
 | upper | 隔音室（soundproofedRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 游戏室（gameRoom） | north/east/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| upper | 体育馆（gymnasium） | north/east/south | 无 | 已实现：`discoveryEffect=gainSpeed1`，发现板块时让发现者获得 1 点速度；已有领域测试 |
+| upper | 游戏室（gameRoom） | north/east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| upper | 体育馆（gymnasium） | north/west | 无 | 已实现：`discoveryEffect=gainSpeed1`，发现板块时让发现者获得 1 点速度；已有领域测试 |
 | upper | 狭窄通道（crampedPassageway） | north/east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为逼仄的通道 |
-| upper | 神秘电梯（mysticElevator） | north/east/south/west | 无 | 已实现：`enterEffect=mysticElevator`，当前探索者在神秘电梯时可点房间效果按钮，投 2 骰后按 4+/3/2/0-1 将电梯移动到对应楼层开放门口；`usedRoomEffectIdsThisTurn` 限制每回合一次；已有领域测试与页面测试 |
-| basement | 洗衣滑槽（laundryChute） | north/east | 无 | 已实现：`endTurnEffect=moveToBasementLanding`，结束回合在本板块时将探险者放置到地下室起始点；已有领域测试 |
+| upper | 神秘电梯（mysticElevator） | north | 无 | 已实现：`enterEffect=mysticElevator`，当前探索者在神秘电梯时可点房间效果按钮，投 2 骰后按 4+/3/2/0-1 将电梯移动到对应楼层开放门口；`usedRoomEffectIdsThisTurn` 限制每回合一次；已有领域测试与页面测试 |
+| basement | 洗衣滑槽（laundryChute） | north | 无 | 已实现：`endTurnEffect=moveToBasementLanding`，结束回合在本板块时将探险者放置到地下室起始点；已有领域测试 |
 | basement | 裂隙（chasm） | north/south | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；图中文字译名为“深渊”，当前代码名为“裂隙” |
-| basement | 储物间（larder） | north/east | 无 | 已实现：`discoveryEffect=gainMight1`，发现板块时让发现者获得 1 点力量；已有领域测试；frame-note：图面译名为食物储藏室 |
-| basement | 地下湖（undergroundLake） | north/west | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；场景书特例不得当作基础房间效果 |
-| basement | 地下洞窟（undergroundCavern） | east/south | 无 | 已实现：固定连通墓园；`resolveConnectedRoomIds` 会在地下洞窟与墓园之间加入双向移动目标；已有领域测试；frame-note：图面译名为地下洞穴 |
-| basement | 仪式室（ritualRoom） | west/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为仪式房间 |
-| basement | 地下墓穴（catacombs） | north/south | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
-| basement | 密道楼梯（secretStaircase） | north/east | 无 | 已实现：固定连通门厅；`resolveConnectedRoomIds` 会在密道楼梯与门厅之间加入双向移动目标；已有领域测试 |
-| basement | 杂物间（junkRoom） | north/east | 无 | 已实现：`discoveryEffect=placeObstacleToken`，发现板块时在房间上放置障碍物标记；离开带障碍物标记的板块需要 2 点移动，移动不足会被拒绝；已有领域消费者测试与页面标记渲染测试；frame-note：图面译名为杂乱的房间 |
-| basement | 爬行空间（crawlspace） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为管道夹层 |
+| basement | 储物间（larder） | north/west | 无 | 已实现：`discoveryEffect=gainMight1`，发现板块时让发现者获得 1 点力量；已有领域测试；frame-note：图面译名为食物储藏室 |
+| basement | 地下湖（undergroundLake） | north/east | 1 个预兆 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；场景书特例不得当作基础房间效果 |
+| basement | 地下洞窟（undergroundCavern） | north/east/south/west | 无 | 已实现：固定连通墓园；`resolveConnectedRoomIds` 会在地下洞窟与墓园之间加入双向移动目标；已有领域测试；frame-note：图面译名为地下洞穴 |
+| basement | 仪式室（ritualRoom） | north/east | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为仪式房间 |
+| basement | 地下墓穴（catacombs） | north/east/south/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算 |
+| basement | 密道楼梯（secretStaircase） | north | 无 | 已实现：固定连通门厅；`resolveConnectedRoomIds` 会在密道楼梯与门厅之间加入双向移动目标；已有领域测试 |
+| basement | 杂物间（junkRoom） | north/east/south | 无 | 已实现：`discoveryEffect=placeObstacleToken`，发现板块时在房间上放置障碍物标记；离开带障碍物标记的板块需要 2 点移动，移动不足会被拒绝；已有领域消费者测试与页面标记渲染测试；frame-note：图面译名为杂乱的房间 |
+| basement | 爬行空间（crawlspace） | north/east/west | 无 | 已锁为无房间文字效果；发现/进入不需要新增房间效果结算；frame-note：图面译名为管道夹层 |
+
+### 本轮门位重审对账（2026-09-23）
+
+- 图像真相源：原始房间正面图集 `public/assets/i18n/zh-CN/betrayal/rooms/room-front-atlas.jpg`，按 `roomAtlas.ts` 的 frame 映射逐间裁切后压缩查看；本轮同时使用北/东/南/西四条边的门槽形状与位置复核，颜色分布只作为候选线索，不作为门位判定。复核图：`artifacts/betrayal-door-audit-20260919/current-atlas-edge-bands-group-1-compressed.jpg`、`current-atlas-edge-bands-group-2-compressed.jpg`、`current-atlas-edge-bands-group-3-compressed.jpg`。
+- 全量范围：42 间运行中房间（ground 18、upper 14、basement 10）逐边复核；当前源码与 `object-inventory.json` 的 42 行门位逐项对账，源码导入结果与清单的 `mismatches: []`，未发现遗漏、重复或差异。当前可查看总表：`artifacts/betrayal-door-audit-20260919/all-42-current-doorways.jpg`。
+- 测试语义对账：`betrayal-foundation-setup-and-movement.test.ts` 的相关断言证明探索消费配置中的门位、旋转后的最终门位会写入放置房间，并拒绝没有入口的非法探索；这些测试不证明图片像素本身，因此不能替代本轮图像复核。
+- 当前真实入口复跑：房间放置与旋转断言已执行到位；最后清理发现确认队列时，测试点击了仍处于禁用状态的 `betrayal-discovery-continue`（界面显示“已确认 1/3”）并超时，因此本次不计作完整 E2E PASS。该阻塞发生在发现牌确认清理，不涉及门位配置或房间图面，失败截图/上下文留在 `test-results/playwright-artifacts/betrayal-room-placement-or-61c36-向选择-玩家探索新房间时可旋转房间板块并以确认朝向放置-chromium/`。
+- 旧测试失效检查：本轮只修正作者配置与审计表，没有修改探索命令、旋转算法或交互语义；没有发现需要废止的旧门位测试断言。
+- 最终权威状态：`src/games/betrayal/scenarioConfig.ts::BETRAYAL_DISCOVERY_POOLS`；派生清单为 `evidence/betrayal/full-audit/object-inventory.json`。当前确认的配置修正是标本室 `east/south/west → east/west`；火炉房保留原图确认的 `east/south/west`。旧 `candidate-*` / `set-*` 图片只作为历史候选证据，不作为当前门位结果。
 
 ## 物品/预兆具体效果实现审计表
 

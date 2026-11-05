@@ -8,6 +8,7 @@ import {
 import {
     type SmashUpVariantRelation,
     type SmashUpVariantSurface,
+    getAllSmashUpVariantProfiles,
     getSmashUpVariantSurfaceRelation,
     normalizeSmashUpVariantFamilyId,
 } from './variantBindings';
@@ -67,8 +68,19 @@ export function resolveSmashUpVariantRelationForSourceId(
         return undefined;
     }
 
-    const entity = getVariantEntity(familyId);
-    return getSmashUpVariantSurfaceRelation(surface, familyId, entity?.faction);
+    const entity = getVariantEntity(sourceId) ?? getVariantEntity(familyId) ?? getVariantEntity(`${familyId}_pod`);
+    if (entity?.faction) {
+        return getSmashUpVariantSurfaceRelation(surface, familyId, entity.faction);
+    }
+
+    for (const profile of getAllSmashUpVariantProfiles()) {
+        const override = profile.familyOverrides?.[familyId];
+        if (override) {
+            return override[surface] ?? profile.defaults[surface];
+        }
+    }
+
+    return undefined;
 }
 
 export function shouldGenerateSmashUpPodAlias(

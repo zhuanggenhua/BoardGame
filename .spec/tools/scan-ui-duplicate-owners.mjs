@@ -238,7 +238,12 @@ const RULESETS = {
     forbiddenSelectors: [],
     requiredSelectors: [
       { id: 'allocation-panel', label: '精神伤害分配面板', selector: '[data-testid="betrayal-damage-allocation-panel"]' },
-      { id: 'source-hidden-owner', label: '来源事件只作隐藏归属，不占主可见层', selector: '[data-testid="betrayal-damage-allocation-source"][data-visible-source-owner="discovery-card"].sr-only' },
+      {
+        id: 'source-owner',
+        label: '来源只保留一个合法可见 owner',
+        selector:
+          '[data-testid="betrayal-damage-allocation-source"]:is([data-visible-source-owner="discovery-card"].sr-only, [data-visible-source-owner="panel"]:not(.sr-only))',
+      },
       { id: 'knowledge-trait-owner', label: '知识刻度尺承接已选 1 点', selector: '[data-testid="betrayal-damage-allocation-trait-knowledge"][data-damage-selected-count="1"][data-trait-preview-step-count="1"]' },
       { id: 'sanity-trait-owner', label: '神志刻度尺承接已选 1 点', selector: '[data-testid="betrayal-damage-allocation-trait-sanity"][data-damage-selected-count="1"][data-trait-preview-step-count="1"]' },
       { id: 'knowledge-trait-increase', label: '知识刻度尺提供加号分配', selector: '[data-testid="betrayal-damage-allocation-trait-knowledge-increase"]' },

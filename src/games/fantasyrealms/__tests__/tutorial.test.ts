@@ -47,8 +47,17 @@ describe('FantasyRealms 教程配置', () => {
         expect(setupState?.showMask).toBe(true);
         expect(setupState?.infoStep).not.toBe(true);
         expect(setupMerge?.commandType).toBe('SYS_CHEAT_MERGE_STATE');
+        expect(setupState?.hiddenAutomation?.kind).toBe('setup-precondition');
         expect(setupOverview?.content).toBe('game-fantasyrealms:tutorial.steps.setupOverview');
         expect(setupOverview?.infoStep).toBe(true);
+    });
+
+    it('中途预设示范态必须作为可见分段，不能隐藏成自动跳步', () => {
+        for (const stepId of ['setup-take-center', 'setup-score-showcase']) {
+            const step = tutorial.steps.find((item) => item.id === stepId);
+            expect(step?.aiActions?.length, `${stepId} 仍由正式教程命令建立示范态`).toBeGreaterThan(0);
+            expect(step?.hiddenAutomation, `${stepId} 不能隐藏为 setup-precondition`).toBeUndefined();
+        }
     });
 
     it('教程文案会先讲目标和基础回合，再直接点名当前牌和动作', () => {

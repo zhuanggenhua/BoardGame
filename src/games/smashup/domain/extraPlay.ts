@@ -3,8 +3,8 @@ import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
 import { validate, type SmashUpValidateOptions } from './commands';
 import { execute } from './reducer';
 import {
+    buildActionMinionTargetOptions,
     buildBaseTargetOptions,
-    buildMinionTargetOptions,
     createSkipOption,
     getSetAsideTitansPlayableAs,
     grantExtraAction,
@@ -12,6 +12,7 @@ import {
 } from './abilityHelpers';
 import {
     attachDeferredInteractionSnapshot,
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createPromptProgram,
     executeAbilityProgram,
@@ -21,10 +22,12 @@ import {
     SU_COMMANDS,
     SU_EVENTS,
     type ActionCardDef,
+    type CardInstance,
     type FusionCardDef,
     type LimitModifiedEvent,
     type SmashUpCore,
     type SmashUpEvent,
+    type StoredCardInstance,
 } from './types';
 import { isOperationRestricted } from './ongoingEffects';
 import { getActionPlayTargetMode } from './playLegality';
@@ -50,6 +53,10 @@ type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
 let immediateExtraPromptCounter = 0;
 
+function isStoredCardInstance(card: CardInstance): card is StoredCardInstance {
+    return 'reason' in card && typeof card.reason === 'string';
+}
+
 function isBaseModifierActionLike(def: ActionCardDef | FusionCardDef): boolean {
     if (def.type === 'fusion') {
         return def.actionSubtype === 'ongoing' && (def.actionOngoingTarget ?? 'base') === 'base';
@@ -70,6 +77,7 @@ function buildImmediateExtraEventKey(event: LimitModifiedEvent): string {
         payload.restrictToCardUid ?? '__any_card_uid__',
         payload.restrictToCardDefId ?? '__any_card_def__',
         payload.restrictToBaseModifier ? 'base_modifier_only' : 'any_action_kind',
+        payload.allowSkip === false ? 'mandatory_play' : 'optional_play',
         payload.specificCardUid ?? '__any_card__',
         payload.sameNameDefId ?? '__any_name__',
         payload.sameNameOnly ? 'same_name' : 'not_same_name',
@@ -172,7 +180,11 @@ function buildImmediateExtraMinionCardOptions(
 ) {
     const validateOptions = buildImmediateExtraValidateOptions(extra);
     const player = state.core.players[extra.playerId];
-    if (!player) return [createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
+    if (!player) {
+        return extra.allowSkip === false
+            ? []
+            : [createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
+    }
 
     const buildCardOptions = (
         cards: typeof player.hand,
@@ -182,7 +194,7 @@ function buildImmediateExtraMinionCardOptions(
         .filter(card => isCardMinionLike(card))
         .filter(card => !extra.specificCardUid || card.uid === extra.specificCardUid)
         .filter(card => !extra.sameNameDefId || isSameNameDefId(card.defId, extra.sameNameDefId))
-        .filter(card => source !== 'stored' || (card.counters ?? 0) <= 0)
+        .filter(card => source !== 'stored' || (isStoredCardInstance(card) && (card.counters ?? 0) <= 0))
         .flatMap((card, index) => {
             const power = getMinionLikePower(card.defId) ?? 0;
             if (!matchesImmediateExtraMinionConstraint(card.defId, power, extra)) return [];
@@ -202,7 +214,7 @@ function buildImmediateExtraMinionCardOptions(
                 label: `${def?.name ?? card.defId} (力量 ${power})`,
                 value: { cardUid: card.uid, defId: card.defId, source } satisfies ImmediateMinionCardChoice,
                 displayMode: 'card' as const,
-                _source: source as const,
+                _source: source,
             }];
         });
     const handOptions = buildCardOptions(player.hand, 'hand', 'card');
@@ -241,7 +253,10 @@ function buildImmediateExtraMinionCardOptions(
             }];
         });
 
-    return [...handOptions, ...deckOptions, ...storedOptions, ...discardOptions, ...titanOptions, createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
+    const options = [...handOptions, ...deckOptions, ...storedOptions, ...discardOptions, ...titanOptions];
+    return extra.allowSkip === false
+        ? options
+        : [...options, createSkipOption('放弃这次额外随从', 'ui.immediate_extra_minion_skip_option') as any];
 }
 
 function buildImmediateExtraMinionBaseOptions(
@@ -287,7 +302,11 @@ function buildImmediateExtraActionCardOptions(
 ) {
     const validateOptions = buildImmediateExtraValidateOptions(extra);
     const player = state.core.players[extra.playerId];
-    if (!player) return [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
+    if (!player) {
+        return extra.allowSkip === false
+            ? []
+            : [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
+    }
 
     const buildActionOptions = (
         cards: typeof player.hand,
@@ -297,7 +316,7 @@ function buildImmediateExtraActionCardOptions(
         .filter(card => isCardActionLike(card))
         .filter(card => extra.restrictToCardUid === undefined || card.uid === extra.restrictToCardUid)
         .filter(card => extra.restrictToCardDefId === undefined || card.defId === extra.restrictToCardDefId)
-        .filter(card => source !== 'stored' || (card.counters ?? 0) <= 0)
+        .filter(card => source !== 'stored' || (isStoredCardInstance(card) && (card.counters ?? 0) <= 0))
         .flatMap((card, index) => {
             const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
             if (!def) return [];
@@ -360,7 +379,7 @@ function buildImmediateExtraActionCardOptions(
                 label: def.name ?? card.defId,
                 value: { cardUid: card.uid, defId: card.defId, source } satisfies ImmediateActionCardChoice,
                 displayMode: 'card' as const,
-                _source: source as const,
+                _source: source,
             }];
         });
     const options = [
@@ -369,7 +388,9 @@ function buildImmediateExtraActionCardOptions(
         ...(extra.allowFromDiscard ? buildActionOptions(player.discard, 'discard', 'discard-card') : []),
     ];
 
-    return [...options, createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
+    return extra.allowSkip === false
+        ? options
+        : [...options, createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any];
 }
 
 function buildImmediateExtraActionBaseOptions(
@@ -428,7 +449,11 @@ function buildImmediateExtraActionMinionOptions(
         }
     }
 
-    return buildMinionTargetOptions(candidates, { state: state.core });
+    return buildActionMinionTargetOptions(candidates, {
+        state: state.core,
+        sourcePlayerId: extra.playerId,
+        sourceDefId: choice.defId,
+    });
 }
 
 function executeImmediateExtraMinionPlay(
@@ -580,11 +605,7 @@ function buildMinionSkipEvents(
         : [];
 }
 
-const immediateExtraMinionBasePromptProgram = createPromptProgram<
-    ImmediateExtraMinionBasePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const immediateExtraMinionBasePromptProgram = createPromptProgram<ImmediateExtraMinionBasePromptContext>({
     sourceId: 'smashup_immediate_extra_minion_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -639,11 +660,7 @@ const immediateExtraMinionBasePromptProgram = createPromptProgram<
     },
 });
 
-const immediateExtraMinionPromptProgram = createPromptProgram<
-    ImmediateExtraMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const immediateExtraMinionPromptProgram = createPromptProgram<ImmediateExtraMinionPromptContext>({
     sourceId: 'smashup_immediate_extra_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -694,21 +711,16 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 extra: context.extra,
                 choice,
-            },
-            nextProgram: immediateExtraMinionBasePromptProgram,
+            }, immediateExtraMinionBasePromptProgram),
         };
     },
 });
 
-const immediateExtraActionBasePromptProgram = createPromptProgram<
-    ImmediateExtraActionBasePromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const immediateExtraActionBasePromptProgram = createPromptProgram<ImmediateExtraActionBasePromptContext>({
     sourceId: 'smashup_immediate_extra_action_base',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -717,7 +729,9 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
             '选择该额外战术的目标基地',
             [
                 ...buildImmediateExtraActionBaseOptions(context.matchState, context.extra, context.choice),
-                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
+                ...(context.extra.allowSkip === false
+                    ? []
+                    : [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any]),
             ],
             {
                 sourceId: 'smashup_immediate_extra_action_base',
@@ -743,7 +757,9 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionBaseOptions(latestState, latestExtra, latestChoice),
-                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
+                ...(latestExtra.allowSkip === false
+                    ? []
+                    : [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any]),
             ];
         };
         return interactionWithSnapshot;
@@ -760,11 +776,7 @@ const immediateExtraActionBasePromptProgram = createPromptProgram<
     },
 });
 
-const immediateExtraActionMinionPromptProgram = createPromptProgram<
-    ImmediateExtraActionMinionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const immediateExtraActionMinionPromptProgram = createPromptProgram<ImmediateExtraActionMinionPromptContext>({
     sourceId: 'smashup_immediate_extra_action_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -773,7 +785,9 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
             '选择该额外战术的目标随从',
             [
                 ...buildImmediateExtraActionMinionOptions(context.matchState, context.extra, context.choice),
-                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
+                ...(context.extra.allowSkip === false
+                    ? []
+                    : [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any]),
             ],
             {
                 sourceId: 'smashup_immediate_extra_action_minion',
@@ -799,7 +813,9 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
             if (!latestExtra || !latestChoice) return [];
             return [
                 ...buildImmediateExtraActionMinionOptions(latestState, latestExtra, latestChoice),
-                createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any,
+                ...(latestExtra.allowSkip === false
+                    ? []
+                    : [createSkipOption('放弃这次额外战术', 'ui.immediate_extra_action_skip_option') as any]),
             ];
         };
         return interactionWithSnapshot;
@@ -816,11 +832,7 @@ const immediateExtraActionMinionPromptProgram = createPromptProgram<
     },
 });
 
-const immediateExtraActionPromptProgram = createPromptProgram<
-    ImmediateExtraActionPromptContext,
-    SmashUpCore,
-    SmashUpEvent
->({
+const immediateExtraActionPromptProgram = createPromptProgram<ImmediateExtraActionPromptContext>({
     sourceId: 'smashup_immediate_extra_action',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -879,12 +891,11 @@ const immediateExtraActionPromptProgram = createPromptProgram<
             return {
                 matchState: state,
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     extra: context.extra,
                     choice,
-                },
-                nextProgram: immediateExtraActionBasePromptProgram,
+                }, immediateExtraActionBasePromptProgram),
             };
         }
 
@@ -895,12 +906,11 @@ const immediateExtraActionPromptProgram = createPromptProgram<
         return {
             matchState: state,
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 extra: context.extra,
                 choice,
-            },
-            nextProgram: immediateExtraActionMinionPromptProgram,
+            }, immediateExtraActionMinionPromptProgram),
         };
     },
 });
@@ -910,11 +920,13 @@ export function queueImmediateExtraPlayInteractions(
     events: LimitModifiedEvent[],
 ): MatchState<SmashUpCore> {
     let nextState = state;
-    const sysAny = nextState.sys as Record<string, unknown>;
-    if (!(sysAny._processedImmediateExtraEvents instanceof Set)) {
-        sysAny._processedImmediateExtraEvents = new Set<string>();
-    }
-    const processedImmediateExtraEvents = sysAny._processedImmediateExtraEvents as Set<string>;
+    const runtimeSys = nextState.sys as typeof nextState.sys & {
+        _processedImmediateExtraEvents?: Set<string>;
+    };
+    const processedImmediateExtraEvents = runtimeSys._processedImmediateExtraEvents instanceof Set
+        ? runtimeSys._processedImmediateExtraEvents
+        : new Set<string>();
+    runtimeSys._processedImmediateExtraEvents = processedImmediateExtraEvents;
 
     for (const event of events) {
         if (event.payload.playTiming !== 'immediate' || event.payload.delta <= 0) continue;
@@ -922,15 +934,15 @@ export function queueImmediateExtraPlayInteractions(
         if (processedImmediateExtraEvents.has(eventKey)) continue;
         processedImmediateExtraEvents.add(eventKey);
         const payload = event.payload as ImmediateExtraLimitPayload;
-        const result = executeAbilityProgram(
-            payload.limitType === 'minion'
-                ? immediateExtraMinionPromptProgram
-                : immediateExtraActionPromptProgram,
-            {
+        const result = payload.limitType === 'minion'
+            ? executeAbilityProgram(immediateExtraMinionPromptProgram, {
                 matchState: nextState,
-                extra: payload,
-            },
-        );
+                extra: { ...payload, limitType: 'minion' },
+            })
+            : executeAbilityProgram(immediateExtraActionPromptProgram, {
+                matchState: nextState,
+                extra: { ...payload, limitType: 'action' },
+            });
         nextState = result.matchState ?? nextState;
     }
 

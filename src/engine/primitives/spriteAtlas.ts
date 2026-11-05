@@ -76,7 +76,7 @@ function isFrameAtlasConfig(atlas: SpriteAtlasConfig): atlas is SpriteAtlasFrame
   return 'frames' in atlas;
 }
 
-function getSafeFrame(index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame {
+export function resolveSpriteAtlasFrame(index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame {
   if (isFrameAtlasConfig(atlas)) {
     if (atlas.frames.length === 0) {
       return { x: 0, y: 0, width: atlas.imageW, height: atlas.imageH };
@@ -103,7 +103,7 @@ function getSafeFrame(index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame
 
 /** 计算精灵帧的 CSS 背景裁切样式 */
 export function computeSpriteStyle(index: number, atlas: SpriteAtlasConfig): CSSProperties {
-  const frame = getSafeFrame(index, atlas);
+  const frame = resolveSpriteAtlasFrame(index, atlas);
   const cardW = frame.width;
   const cardH = frame.height;
   const x = frame.x;
@@ -122,7 +122,7 @@ export function computeSpriteStyle(index: number, atlas: SpriteAtlasConfig): CSS
 
 /** 获取精灵帧的宽高比 */
 export function computeSpriteAspectRatio(index: number, atlas: SpriteAtlasConfig): number {
-  const frame = getSafeFrame(index, atlas);
+  const frame = resolveSpriteAtlasFrame(index, atlas);
   return frame.width / frame.height;
 }
 
@@ -139,7 +139,7 @@ export function computeSpriteImgStyle(index: number, atlas: SpriteAtlasConfig): 
   /** 帧宽高比 */
   aspectRatio: number;
 } {
-  const frame = getSafeFrame(index, atlas);
+  const frame = resolveSpriteAtlasFrame(index, atlas);
   const cardW = frame.width;
   const cardH = frame.height;
   const x = frame.x;

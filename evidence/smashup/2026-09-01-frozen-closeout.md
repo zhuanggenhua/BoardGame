@@ -1,5 +1,12 @@
 # 大杀四方冰雪奇缘对象级审计收口
 
+## 2026-09-19 状态回写：旧收口结论失效，开启全量重审
+
+- 当前状态：旧文档的“17 个对象全部 passed”结论失效；以 `evidence/smashup/2026-09-19-frozen-reaudit.md` 为当前唯一重审入口。
+- 失效原因：本轮重新读取中文 Frozen 卡图后，确认当前牌面与运行时效果存在系统性错配：迷你雪人、棉花糖、雪宝、斯文、安娜、克里斯托弗、艾莎、真爱的行为、夏天大盛宴、堆雪人、冻结的港口、汉斯、放手吧、锁上大门、冰宫、阿伦黛尔均与牌面不一致；驯鹿牌实现方向接近但中英文录入仍是旧效果。
+- 线上反馈 `6aac10778e41d08302191228` 当前仍为 `in_progress`，不能因为旧测试或旧 evidence 通过而回写终态。
+- 历史正文保留，不删除；本段只负责阻止旧结论继续被当作当前真相。
+
 ## 基本信息
 
 - 对象：Smash Up / 大杀四方 `frozen`（冰雪奇缘）
@@ -13,6 +20,14 @@
 - 本轮覆盖的规则链路：打出时能力、场上天赋、持续力量修正、保护 / 移动阻止、打出限制、基地 VP 修正、基地持续减力。
 - 本轮目标入口 / 环境：本地工作区 `D:\gongzuo\webgame\BoardGame`；领域测试覆盖最终权威状态；Playwright 覆盖艾莎场上天赋的真实页面第一入口和基地选择 UI。
 - 明确不在本轮范围内：Disney 其它派系（超能陆战队、狮子王、花木兰）的对象级重审；服务器 / 公开资源主源重新上传与 URL 哈希回查；全 Smash Up 批量统一 closeout。
+
+## 线上反馈更正
+
+- 反馈 ID：`6aac0f588e41d08302191209`
+- 玩家原文：实际效果与文本不一致，文本效果是搜索一张牌，实际效果是战力加2。
+- 更正：本文旧审计行曾把“驯鹿的心地比人好”写成选择己方角色加力量；该描述已失效。当前契约是搜索自己的牌库和/或弃牌堆中的一个角色：力量 3 或更低时，只允许将刚搜索到的角色立即额外打出；力量高于 3 时将牌库来源牌置入弃牌堆，弃牌堆来源保持在弃牌堆。
+- 当前证据：`src/games/smashup/abilities/disney_four_factions.ts` 的 `reindeers()` / `searchPlayMinion`，以及 `src/games/smashup/__tests__/abilities/disney-four-factions.test.ts` 中牌库低力量、弃牌堆低力量、高力量弃置和指定牌限制四个场景。
+- 范围说明：这条更正只覆盖上述具体牌面反馈；不能据此把“冰雪奇缘的效果全是错的”（`6aac10778e41d08302191228`）标为已解决，因为该反馈没有具体牌名、操作步骤或可核对截图。
 
 ## 审计自检表
 
@@ -71,7 +86,7 @@
 | 汉斯·韦斯特加德 / `frozen_hans_westergaard` | 打出到目标基地后，必须让玩家选择该基地力量 3 或更低角色摧毁；4 力量角色不进候选；不能自动摧毁第一张。 | `hans()` -> `promptMinion(kind: destroyMinion)`，候选用 `getMinionPower <= 3`。 | 只列两个低力量目标；选择 `chosen-low-target` 后它被摧毁；4 力量目标留场。 | Vitest：`冰雪奇缘：汉斯必须选择目标基地力量 3 或更低角色...`；共享流程 `smashup-shared-simple-choice-minion`。 | 无 | `passed` |
 | 放手吧 / `frozen_let_it_go` | 打出后玩家选择己方一个角色回手，并获得额外行动额度；不能自动返回第一张。 | `letItGo()` -> `promptMinion(kind: returnMinion, extraActionAfter: true)`。 | `chosen-ally` 从基地移除回手；`first-ally` 留场；产生 action limit 增加事件。 | Vitest：`冰雪奇缘：放手吧必须选择要返回的己方角色...`；共享流程 `smashup-shared-simple-choice-minion`。 | 无 | `passed` |
 | 锁上大门 / `frozen_lock_the_gates` | 持续行动附在基地；只阻止其他玩家在该基地打出力量 3 或更低角色；允许对手力量 4；允许控制者低力量。 | `lockTheGatesRestriction()` + `registerRestriction('play_minion')`。 | 对手 2 力量打出被拒绝；对手 4 力量成功；控制者 2 力量成功。 | Vitest：`冰雪奇缘：锁上大门只阻止其他玩家在该基地打出力量 3 或更低角色`；共享流程 `smashup-shared-ongoing-modifier-protection`。 | 无 | `passed` |
-| 驯鹿的心地比人好 / `frozen_reindeers_are_better_than_people` | 打出后玩家必须选择己方一个角色，本回合 +2；若斯文在场则 +4；敌方不进候选。 | `reindeers()` -> `promptMinion(kind: addTempPower)`，`amount` 由 `hasDefInPlay(frozen_sven)` 决定。 | 无斯文时选中己方 +2；有斯文时选中己方 +4；敌方不进候选。 | Vitest：`冰雪奇缘：驯鹿的心地比人好必须选择己方角色...`；共享流程 `smashup-shared-simple-choice-minion`。 | 无 | `passed` |
+| 驯鹿的心地比人好 / `frozen_reindeers_are_better_than_people` | 打出后搜索自己的牌库和/或弃牌堆中的一个角色；力量 3 或更低时只允许将刚搜索到的角色立即额外打出，否则弃置所选牌。 | `reindeers()` -> `runPrompt(kind: searchPlayMinion)`；力量判断在 `resolvePromptChoice()`，牌库高力量分支使用 `CARDS_MILLED`，低力量分支授予指定牌的 immediate extra minion。 | 牌库低力量、弃牌堆低力量、高力量弃置、只允许额外打出刚搜索牌四个场景均有直接断言；旧“己方角色 +2 / 斯文在场 +4”描述作废。 | Vitest：`disney-four-factions.test.ts` 中上述四个 `驯鹿的心地比人好` 场景。 | 无 | `passed` |
 | 冰宫 / `base_ice_palace` | 基地临界点 22、VP 4/2/1；这里有对手角色时角色有效力量 -1。 | 静态 `FROZEN_BASES`；`registerCustomPowerModifiers({ sourceDefId: base_ice_palace })`。 | `icePalace` 审查行有 22 和 4/2/1；同基地存在对手时安娜和普通随从有效力量均降低 1。 | Vitest：`configReviewAdapter` 基地行；`冰雪奇缘：冻结的港口...冰宫减力...`。 | 无 | `passed` |
 | 阿伦黛尔 / `base_arendelle` | 基地临界点 20、VP 3/2/1；计分时角色最多的玩家额外 +1 VP，并列最多可同时获得。 | 静态 `FROZEN_BASES`；`registerBaseVpModifier('base_arendelle', ...)`。 | 玩家 0 原 3 仍 3；玩家 1 原 2 因角色最多额外到 3。 | Vitest：`冰雪奇缘：阿伦黛尔只在基地计分 VP 奖励时给最多角色玩家额外 1 VP`。 | 无 | `passed` |
 

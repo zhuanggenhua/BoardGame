@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { X, MessageSquareWarning, Send, Loader2, AlertTriangle, Lightbulb, HelpCircle, Image as ImageIcon, Trash2, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -15,10 +15,19 @@ import {
     buildGameFeedbackActionLog,
     buildGameFeedbackStateSnapshot,
 } from '../../lib/feedback/gameFeedbackDiagnostics';
+import {
+    buildFeedbackDiagnosticPacket,
+    serializeFeedbackDiagnosticPacket,
+} from '../../lib/feedback/diagnosticPacket';
 import { getCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackContext';
+import { prepareFeedbackReplayCapture, requestFeedbackReplayCapture } from '../../lib/feedback/feedbackReplayBridge';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import {
+    captureCurrentFeedbackScreenshot,
+    compressFeedbackImage,
+} from '../../lib/feedback/feedbackScreenshot';
 
 const FEEDBACK_MODAL_DEBUG = true;
 const FEEDBACK_DRAFT_STORAGE_PREFIX = 'feedback-modal:draft:v1';
@@ -102,10 +111,14 @@ interface FeedbackDraft {
     severity: FeedbackSeverity;
     contactInfo: string;
     pastedImage: string | null;
+    imageSource?: 'auto' | 'screenshot' | 'pasted' | null;
     attachLog: boolean;
     attachState: boolean;
     gameName: string;
 }
+
+type FeedbackImageSource = 'screenshot' | 'pasted' | null;
+type FeedbackScreenshotStatus = 'idle' | 'capturing' | 'ready' | 'failed';
 
 const FEEDBACK_TYPE_LABEL_KEYS: Record<FeedbackType, string> = {
     [FeedbackType.BUG]: 'hud.feedback.type.bug',
@@ -192,12 +205,20 @@ const readFeedbackDraft = (storageKey: string): FeedbackDraft | null => {
         const parsed = JSON.parse(raw) as Partial<FeedbackDraft> | null;
         if (!parsed || typeof parsed !== 'object') return null;
 
+        const isLegacyAutoScreenshot = parsed.imageSource === 'auto';
         return {
             content: typeof parsed.content === 'string' ? parsed.content : '',
             type: isFeedbackType(parsed.type) ? parsed.type : FeedbackType.BUG,
             severity: isFeedbackSeverity(parsed.severity) ? parsed.severity : FeedbackSeverity.LOW,
             contactInfo: typeof parsed.contactInfo === 'string' ? parsed.contactInfo : '',
-            pastedImage: typeof parsed.pastedImage === 'string' ? parsed.pastedImage : null,
+            pastedImage: !isLegacyAutoScreenshot && typeof parsed.pastedImage === 'string'
+                ? parsed.pastedImage
+                : null,
+            imageSource: isLegacyAutoScreenshot
+                ? null
+                : parsed.imageSource === 'screenshot' || parsed.imageSource === 'pasted'
+                    ? parsed.imageSource
+                    : (typeof parsed.pastedImage === 'string' ? 'pasted' : null),
             attachLog: typeof parsed.attachLog === 'boolean' ? parsed.attachLog : false,
             attachState: typeof parsed.attachState === 'boolean' ? parsed.attachState : false,
             gameName: typeof parsed.gameName === 'string' ? parsed.gameName : '',
@@ -245,6 +266,8 @@ export const FeedbackModal = ({
     const backdropRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+    const pastedImageRef = useRef<string | null>(null);
+    const draftPersistenceDisabledRef = useRef(false);
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
         return document.getElementById('modal-root') ?? document.body;
@@ -303,15 +326,30 @@ export const FeedbackModal = ({
     const [contactInfo, setContactInfo] = useState(() => initialDraft?.contactInfo ?? '');
     const [submitting, setSubmitting] = useState(false);
     const [pastedImage, setPastedImage] = useState<string | null>(() => initialDraft?.pastedImage ?? null);
+    const [imageSource, setImageSource] = useState<FeedbackImageSource>(() => {
+        const draftSource = initialDraft?.imageSource;
+        if (draftSource === 'screenshot' || draftSource === 'pasted') return draftSource;
+        return initialDraft?.pastedImage ? 'pasted' : null;
+    });
+    const [screenshotStatus, setScreenshotStatus] = useState<FeedbackScreenshotStatus>(
+        initialDraft?.pastedImage ? 'ready' : 'idle',
+    );
     const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!resolvedActionLogText);
     const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!resolvedStateSnapshot);
     const [isCompactLandscape, setIsCompactLandscape] = useState(false);
     const [gameName, setGameName] = useState(() => initialDraft?.gameName ?? runtimeContext?.gameId ?? autoGameId);
+    const feedbackScreenshotContext = useMemo(() => ({
+        gameId: runtimeContext?.gameId ?? autoGameId ?? undefined,
+        matchId: runtimeContext?.matchId,
+        mode: runtimeContext?.mode,
+    }), [autoGameId, runtimeContext?.gameId, runtimeContext?.matchId, runtimeContext?.mode]);
     const shouldShowGameSelector = !runtimeContext?.gameId;
     const requiresTextContent = hasConfigProposal;
     const canSubmit = !submitting
         && !IS_DEV_API_DISABLED
-        && (requiresTextContent ? Boolean(content.trim()) : Boolean(content.trim() || pastedImage));
+        && (requiresTextContent
+            ? Boolean(content.trim())
+            : Boolean(content.trim() || pastedImage));
     const fieldLabelClassName = cn(
         'font-bold text-parchment-light-text uppercase tracking-wider',
         isCompactLandscape ? 'text-[11px]' : 'text-xs',
@@ -321,6 +359,10 @@ export const FeedbackModal = ({
         'w-full bg-parchment-card-bg border border-parchment-brown/20 text-parchment-base-text text-base sm:text-sm rounded-lg focus:ring-parchment-gold focus:border-parchment-gold block transition-colors outline-none placeholder:text-parchment-light-text/50',
         isCompactLandscape ? 'p-2' : 'p-2.5',
     );
+
+    useEffect(() => {
+        pastedImageRef.current = pastedImage;
+    }, [pastedImage]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -394,17 +436,21 @@ export const FeedbackModal = ({
     }, [isCompactLandscape]);
 
     useEffect(() => {
+        if (draftPersistenceDisabledRef.current) {
+            return;
+        }
         writeFeedbackDraft(draftStorageKey, {
             content,
             type,
             severity,
             contactInfo,
             pastedImage,
+            imageSource,
             attachLog,
             attachState,
             gameName,
         });
-    }, [attachLog, attachState, contactInfo, content, draftStorageKey, gameName, pastedImage, severity, type]);
+    }, [attachLog, attachState, contactInfo, content, draftStorageKey, gameName, imageSource, pastedImage, severity, type]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) {
@@ -419,8 +465,10 @@ export const FeedbackModal = ({
                 e.preventDefault();
                 const blob = item.getAsFile();
                 if (blob) {
-                    compressImage(blob).then((dataUrl) => {
+                    compressFeedbackImage(blob).then((dataUrl) => {
+                        pastedImageRef.current = dataUrl;
                         setPastedImage(dataUrl);
+                        setImageSource('pasted');
                     });
                 }
                 return;
@@ -428,11 +476,36 @@ export const FeedbackModal = ({
         }
     };
 
-    const clearImage = () => setPastedImage(null);
+    const clearImage = () => {
+        pastedImageRef.current = null;
+        setPastedImage(null);
+        setImageSource(null);
+        setScreenshotStatus('idle');
+    };
+
+    const handleCaptureScreenshot = async () => {
+        if (!isInGame || screenshotStatus === 'capturing') return;
+
+        setScreenshotStatus('capturing');
+        try {
+            const dataUrl = await captureCurrentFeedbackScreenshot(feedbackScreenshotContext);
+            if (!dataUrl) throw new Error(t('hud.feedback.screenshotFailed'));
+
+            pastedImageRef.current = dataUrl;
+            setPastedImage(dataUrl);
+            setImageSource('screenshot');
+            setScreenshotStatus('ready');
+        } catch (captureError) {
+            setScreenshotStatus('failed');
+            error(captureError instanceof Error ? captureError.message : t('hud.feedback.screenshotFailed'));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (requiresTextContent ? !content.trim() : (!content.trim() && !pastedImage)) return;
+        if (requiresTextContent
+            ? !content.trim()
+            : (!content.trim() && !pastedImage)) return;
 
         if (IS_DEV_API_DISABLED) {
             return;
@@ -440,10 +513,16 @@ export const FeedbackModal = ({
 
         setSubmitting(true);
         try {
+            const attachedImage = pastedImageRef.current ?? pastedImage;
+            if (!requiresTextContent && !content.trim() && !attachedImage) {
+                error(t('hud.feedback.screenshotFailed'));
+                return;
+            }
+
             // Append image to content as Markdown if present
             let finalContent = content;
-            if (pastedImage) {
-                finalContent += `\n\n![Screenshot](${pastedImage})`;
+            if (attachedImage) {
+                finalContent += `\n\n![Screenshot](${attachedImage})`;
             }
 
             const lastErrorContext = getLastErrorContext();
@@ -459,6 +538,11 @@ export const FeedbackModal = ({
                 gameId: (runtimeContext?.gameId ?? gameName) || undefined,
             });
 
+            const shouldCaptureReplay = attachState && clientContext.mode === 'online' && clientContext.matchId && clientContext.playerId;
+            const captureId = shouldCaptureReplay
+                ? await prepareFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!)
+                : undefined;
+
             const errorContext = lastErrorContext
                 ? {
                     message: lastErrorContext.message,
@@ -468,6 +552,14 @@ export const FeedbackModal = ({
                     jsStack: lastErrorContext.jsStack,
                     componentStack: lastErrorContext.componentStack,
                 }
+                : undefined;
+            const diagnosticPacket = currentGameFeedbackContext?.state
+                ? serializeFeedbackDiagnosticPacket(buildFeedbackDiagnosticPacket({
+                    state: attachState ? currentGameFeedbackContext.state : undefined,
+                    clientContext,
+                    source: 'user',
+                    collectionErrors: shouldCaptureReplay && !captureId ? ['private_replay_prepare_failed'] : undefined,
+                }))
                 : undefined;
 
             const normalizedConfigProposals = configProposalList.length > 0
@@ -491,6 +583,7 @@ export const FeedbackModal = ({
                 contactInfo: contactInfo || undefined,
                 actionLog: (attachLog && resolvedActionLogText) ? resolvedActionLogText : undefined,
                 stateSnapshot: (attachState && resolvedStateSnapshot) ? resolvedStateSnapshot : undefined,
+                diagnosticPacket,
                 clientContext,
                 errorContext,
                 configProposal: normalizedConfigProposal,
@@ -527,19 +620,25 @@ export const FeedbackModal = ({
                 );
             }
 
-            const payload = await res.json().catch(() => null) as { rewardPoints?: number } | null;
+            const payload = await res.json().catch(() => null) as { _id?: string; rewardPoints?: number } | null;
+            let replayCaptureFailed = false;
+            if (shouldCaptureReplay) {
+                replayCaptureFailed = !captureId || !payload?._id || !await requestFeedbackReplayCapture(clientContext.matchId!, clientContext.playerId!, payload._id, captureId);
+            }
             const rewardPoints = typeof payload?.rewardPoints === 'number' ? payload.rewardPoints : 0;
+            draftPersistenceDisabledRef.current = true;
             clearFeedbackDraft(draftStorageKey);
             if (rewardPoints > 0) {
                 addFeedbackPoints(rewardPoints);
-                success({
+                if (!replayCaptureFailed) success({
                     kind: 'reward-points',
                     text: t('hud.feedback.success'),
                     points: rewardPoints,
                 });
-            } else {
+            } else if (!replayCaptureFailed) {
                 success(t('hud.feedback.success'));
             }
+            if (replayCaptureFailed) error(t('hud.feedback.errors.replayCaptureFailed'));
             onSubmitted?.();
             onClose();
         } catch (err) {
@@ -588,6 +687,7 @@ export const FeedbackModal = ({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 ref={panelRef}
+                data-platform-dialog="feedback"
                 className={cn(
                     'bg-parchment-base-bg rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border-2 border-parchment-brown/30',
                     isCompactLandscape && 'max-w-[40rem]',
@@ -610,7 +710,8 @@ export const FeedbackModal = ({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-parchment-cream/60 hover:text-parchment-cream hover:bg-white/10 rounded-full transition-colors"
+                        aria-label={t('common:close')}
+                        className="platform-dialog-close p-2 text-parchment-cream/60 hover:text-parchment-cream hover:bg-white/10 rounded-full transition-colors"
                     >
                         <X size={20} />
                     </button>
@@ -765,12 +866,38 @@ export const FeedbackModal = ({
                             ></textarea>
                             {/* Paste Hint */}
                             {!pastedImage && !content && (
-                                <div className="absolute bottom-3 right-3 text-[10px] text-parchment-light-text/60 pointer-events-none flex items-center gap-1">
+                                <div
+                                    className="absolute bottom-3 right-3 text-[10px] text-parchment-light-text/60 pointer-events-none flex items-center gap-1"
+                                    data-testid="feedback-auto-screenshot-status"
+                                >
                                     <ImageIcon size={12} />
                                     <span>{t('hud.feedback.pasteHint')}</span>
                                 </div>
                             )}
                         </div>
+                        {isInGame && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => void handleCaptureScreenshot()}
+                                    disabled={screenshotStatus === 'capturing'}
+                                    className="inline-flex min-h-9 items-center gap-2 rounded-md border border-parchment-brown/25 bg-parchment-card-bg px-3 py-1.5 text-xs font-bold text-parchment-base-text transition-colors hover:bg-parchment-gold/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-parchment-gold disabled:cursor-wait disabled:opacity-60"
+                                    data-testid="feedback-capture-screenshot"
+                                >
+                                    {screenshotStatus === 'capturing'
+                                        ? <Loader2 size={14} className="animate-spin" />
+                                        : <Camera size={14} />}
+                                    {screenshotStatus === 'capturing'
+                                        ? t('hud.feedback.screenshotCapturing')
+                                        : t('hud.feedback.screenshotButton')}
+                                </button>
+                                {screenshotStatus === 'failed' && (
+                                    <span role="status" className="text-xs text-red-700">
+                                        {t('hud.feedback.screenshotFailed')}
+                                    </span>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* Image Preview */}
@@ -781,12 +908,13 @@ export const FeedbackModal = ({
                                 animate={{ opacity: 1, height: 'auto' }}
                                 exit={{ opacity: 0, height: 0 }}
                                 className="relative group rounded-lg overflow-hidden border border-parchment-brown/20 bg-parchment-card-bg"
+                                data-testid="feedback-image-preview"
                             >
                                 <img src={pastedImage} alt={t('hud.feedback.imageAlt')} className="w-full h-auto max-h-48 object-contain bg-black/5" />
                                 <button
                                     type="button"
                                     onClick={clearImage}
-                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity shadow-md hover:bg-red-600"
                                     title={t('hud.feedback.deleteImage')}
                                 >
                                     <Trash2 size={14} />
@@ -872,48 +1000,3 @@ export const FeedbackModal = ({
 
     return portalRoot ? createPortal(modal, portalRoot) : modal;
 };
-
-
-// 图片压缩工具
-
-/** 最大 base64 体积约 500KB（压缩后） */
-const MAX_WIDTH = 1280;
-const MAX_HEIGHT = 960;
-const JPEG_QUALITY = 0.7;
-
-function compressImage(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        const url = URL.createObjectURL(file);
-        img.onload = () => {
-            URL.revokeObjectURL(url);
-            let { width, height } = img;
-
-            // 等比缩放
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                width = Math.round(width * ratio);
-                height = Math.round(height * ratio);
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                reject(new Error('Canvas not available'));
-                return;
-            }
-            ctx.drawImage(img, 0, 0, width, height);
-
-            // 输出 JPEG（体积远小于 PNG base64）
-            const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-            resolve(dataUrl);
-        };
-        img.onerror = () => {
-            URL.revokeObjectURL(url);
-            reject(new Error('Image load failed'));
-        };
-        img.src = url;
-    });
-}

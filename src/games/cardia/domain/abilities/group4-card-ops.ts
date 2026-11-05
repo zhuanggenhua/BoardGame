@@ -14,6 +14,7 @@ import {
     hasCardiaStoredOngoingAbilitiesOnCard,
 } from '../effectHost';
 import type { CardiaAbilityContext } from '../abilityExecutor';
+import type { CardiaInteraction } from '../interactionHandlers';
 import type { CardiaEvent } from '../events';
 
 /**

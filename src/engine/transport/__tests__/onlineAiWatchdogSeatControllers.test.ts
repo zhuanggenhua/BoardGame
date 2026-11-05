@@ -3,6 +3,8 @@ import {
     extractSetupSeatControllers,
     resolveOnlineAiWatchdogSeatControllers,
 } from '../onlineAiWatchdogSeatControllers';
+import { SummonerWarsDomain } from '../../../games/summonerwars/domain';
+import { createInitialSystemState } from '../../pipeline';
 
 describe('onlineAiWatchdogSeatControllers', () => {
     it('显式 enableAi=false 时 watchdog 应忽略残留 AI 座位定义', () => {
@@ -78,6 +80,57 @@ describe('onlineAiWatchdogSeatControllers', () => {
         expect(resolved.seatControllers['1']).toMatchObject({
             type: 'local-ai',
             policyId: 'manualSetupSelectionPolicy',
+            manualSetupSelection: true,
+            manualFactionSelection: true,
+        });
+    });
+
+    it('召唤师战争状态只保留座位 type 时，watchdog 仍应保留手动选派系配置', () => {
+        const setupData = {
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': {
+                    type: 'local-ai',
+                    manualSetupSelection: true,
+                    manualFactionSelection: true,
+                },
+            },
+        };
+        const core = SummonerWarsDomain.setup(
+            ['0', '1'],
+            {
+                random: () => 0.5,
+                d: () => 1,
+                range: (min: number) => min,
+                shuffle: <T,>(items: T[]) => [...items],
+            },
+            setupData,
+        );
+
+        expect(core.seatControllers?.['1']).toEqual({ type: 'local-ai' });
+
+        const resolved = resolveOnlineAiWatchdogSeatControllers({
+            gameId: 'summonerwars',
+            playerIds: ['0', '1'],
+            setupData,
+            state: {
+                core,
+                sys: createInitialSystemState(['0', '1'], []),
+            } as any,
+            gameManifests: {
+                summonerwars: {
+                    ai: {
+                        capture: true,
+                        localAi: true,
+                        remoteAi: false,
+                        manualSetupSelection: true,
+                    },
+                },
+            },
+        });
+
+        expect(resolved.seatControllers['1']).toMatchObject({
+            type: 'local-ai',
             manualSetupSelection: true,
             manualFactionSelection: true,
         });

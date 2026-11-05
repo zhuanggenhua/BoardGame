@@ -1,0 +1,43 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "createdAt": "2026-09-19T09:33:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-evidence",
+    "viewer": "web",
+    "finalPassBeforeOpen": true,
+    "openBrowser": false
+  },
+  "requirements": [
+    {
+      "requirement": "奖励骰阶段明确显示死无全尸的 2 个利爪来源",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E 断言奖励骰值为 [1,2,4,5,6]，对应 2 个利爪、2 个催眠和 1 个血滴。",
+        "该阶段截图单独标明奖励骰 2 个利爪，避免与基础攻击骰混淆。"
+      ]
+    },
+    {
+      "requirement": "结算后基础攻击骰显示 3 个利爪，但攻击修正仍为 +2",
+      "status": "PASS",
+      "evidence": [
+        "真实入口 E2E 断言结算后基础攻击骰仍为 [1,2,3,4,6]，其中 1、2、3 是 3 个基础利爪。",
+        "同一真实入口状态断言死无全尸奖励骰结算 totalDamage 为 2，pendingAttack.attackModifierBonusDamage 为 2；行动日志包含“利爪 2 个”和“+2”。"
+      ]
+    },
+    {
+      "requirement": "总伤害标签按“总 / 伤 / 害”逐字换行，数值 5 到 7 竖直排列，攻击修正徽章仍在骰盘上方，悬浮提示在窗口内",
+      "status": "PASS",
+      "evidence": [
+        "E2E 直接断言总伤害标签文本为“总伤害”，并读取三个字符子节点的几何位置，确认从上到下逐行排列。",
+        "E2E 断言总伤害变化节点包含 5、向下箭头、7，且三段几何位置从上到下递增。",
+        "E2E 断言攻击修正徽章仍位于骰盘上方，悬浮提示为 fixed 且四边均在视口内。"
+      ]
+    }
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个利爪加-2-伤害，并竖直显示总伤害-5-到-7\\吸血鬼领主-死无全尸-奖励骰2利爪待确认-这是攻击修正来源.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\vampire-lord-real-entry.e2e\\死无全尸真实入口应按-2-个利爪加-2-伤害，并竖直显示总伤害-5-到-7\\吸血鬼领主-死无全尸-结算后基础攻击骰3爪-奖励骰2爪已转为攻击修正2-总伤害5到7竖排.jpg"
+  ]
+}

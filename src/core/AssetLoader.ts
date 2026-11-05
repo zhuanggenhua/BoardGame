@@ -433,6 +433,16 @@ function resetCriticalImagesSignal(): void {
     _criticalImagesState = 'blocked';
 }
 
+const resolveCriticalPathsForStage = (
+    staticCritical: string[],
+    resolved: CriticalImageResolverResult,
+): string[] => {
+    const source = resolved.replaceStaticCritical
+        ? resolved.critical
+        : [...staticCritical, ...resolved.critical];
+    return [...new Set(source)];
+};
+
 /**
  * 预加载关键图片（第一阶段：阻塞门禁）
  *
@@ -465,8 +475,8 @@ export async function preloadCriticalImages(
         resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
     }
 
-    // 合并去重
-    const criticalPaths = [...new Set([...staticCritical, ...resolved.critical])];
+    // 合并去重；教程等动态阶段可显式接管静态全量 critical，避免首屏被非当前素材阻塞。
+    const criticalPaths = resolveCriticalPathsForStage(staticCritical, resolved);
     const warmPaths = [...new Set([...staticWarm, ...resolved.warm])];
 
     if (criticalPaths.length === 0) {
@@ -547,7 +557,7 @@ export function areAllCriticalImagesCached(
         resolved = resolveCriticalImages(gameId, gameState, locale, playerID);
     }
 
-    const criticalPaths = [...new Set([...staticCritical, ...resolved.critical])];
+    const criticalPaths = resolveCriticalPathsForStage(staticCritical, resolved);
     if (criticalPaths.length === 0) return true;
 
     const effectiveLocale = locale || 'zh-CN';
@@ -871,7 +881,11 @@ function probeSynchronousImageReady(src: string, locale?: string): boolean {
         const testImg = new Image();
         testImg.src = url;
         if (testImg.complete && testImg.naturalWidth > 0) {
-            cacheLoadedImage(url, testImg, locale);
+            // areAllCriticalImagesCached is also read by CriticalImageGate during render.
+            // Populate the cache for that render, but don't synchronously notify mounted
+            // AtlasCard subscribers: their setState would target a different component
+            // while CriticalImageGate is still rendering.
+            cacheLoadedImage(url, testImg, locale, undefined, false);
             return true;
         }
     }
@@ -960,7 +974,13 @@ function orderImageCandidatesByRuntimeState(src: string, locale: string, candida
     return preferred.length > 0 ? [...preferred, ...deferred] : [...candidateUrls];
 }
 
-function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: string, resolvedUrl?: string): void {
+function cacheLoadedImage(
+    src: string,
+    imgElement: HTMLImageElement,
+    locale?: string,
+    resolvedUrl?: string,
+    emitReadyNotification = true,
+): void {
     const keys = getPreloadedImageCacheKeys(src, locale);
     const effectiveResolvedUrl = resolvedUrl || imgElement.currentSrc || imgElement.src || '';
     for (const key of keys) {
@@ -971,8 +991,10 @@ function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: st
         forgetImageCandidateFailure(src, locale, effectiveResolvedUrl);
     }
     rememberPersistentImageReadyHint(src, locale);
-    _emitImageReady(src);
-    keys.forEach((key) => _emitImageReady(key));
+    if (emitReadyNotification) {
+        _emitImageReady(src);
+        keys.forEach((key) => _emitImageReady(key));
+    }
 }
 
 export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement, resolvedUrl?: string): void {
@@ -1309,7 +1331,14 @@ const resolveAssetBaseUrlForPath = (value: string) => {
         }
     }
     const gameId = resolveGameIdFromAssetRelativePath(value);
-    return gameId ? gameAssetBaseOverrides.get(gameId) : undefined;
+    if (!gameId) return undefined;
+    const runtimeOverride = gameAssetBaseOverrides.get(gameId);
+    if (runtimeOverride) return runtimeOverride;
+    // Selected games can ship assets with the web build while other games keep CDN URLs.
+    // This default survives native-package override cleanup; installed packages still win.
+    const bundledGames = (import.meta.env.VITE_LOCAL_ASSET_GAMES ?? '')
+        .split(',').map((id: string) => id.trim()).filter(Boolean);
+    return bundledGames.includes(gameId) ? LOCAL_ASSETS_BASE_URL : undefined;
 };
 const isInternalAssetsUrl = (src: string) => {
     if (src.startsWith(assetsBaseUrl) || src.startsWith(`${assetsBaseUrl}/`)) {
@@ -1703,12 +1732,14 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
         ].filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);
         const publicUrl = resolveVersionedAssetUrl(`/assets/${remoteRelative}`);
         const preferPublicAssetBeforeRemote = (import.meta.env.DEV || isLocalBrowserAssetOrigin())
-            && !isCapacitorFileAssetUrl(localizedUrl);
+            && !shouldUseRemoteAssetsInLiteDev()
+            && !isCapacitorFileAssetUrl(localizedUrl)
+            && !isSameOriginAsCurrentPage(localizedUrl);
 
-        pushCandidate(localizedUrl);
         if (preferPublicAssetBeforeRemote) {
             pushCandidate(publicUrl);
         }
+        pushCandidate(localizedUrl);
         if (!localAssetsOnly) {
             remoteBaseUrls.forEach((baseUrl) => {
                 pushCandidate(resolveVersionedRemoteAssetUrl(`${baseUrl}/${remoteRelative}`, remoteRelative));

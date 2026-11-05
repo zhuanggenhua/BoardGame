@@ -1,0 +1,9 @@
+/** Compatibility import path for previously serialized Daze choices. */
+export {
+    DAZE_EXTRA_ATTACK_CHOICE_SOURCE_ID,
+    DAZE_EXTRA_ATTACK_USE_PURIFY_CUSTOM_ID,
+    DAZE_EXTRA_ATTACK_CONTINUE_CUSTOM_ID,
+    INCOMING_DEBUFF_PURIFY_CHOICE_SOURCE_ID,
+    INCOMING_DEBUFF_USE_PURIFY_CUSTOM_ID,
+    INCOMING_DEBUFF_DECLINE_PURIFY_CUSTOM_ID,
+} from './incomingDebuffPurifyChoice';

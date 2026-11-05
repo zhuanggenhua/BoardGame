@@ -61,9 +61,15 @@ export function resolveBetrayalRecentRollRerollPayload(
         && core.recentRoll.branchThresholds
         ? resolveEventBranch(core.recentRoll.branchThresholds, nextDice.reduce((sum, pip) => sum + pip, 0) + core.recentRoll.passiveBonus)
         : null;
-    const rerollTargetsPendingEventRoll = core.pendingEventRollResolution?.rollId === core.recentRoll?.id;
-    const pendingHauntRoll = rerollTargetsPendingEventRoll
-        ? core.pendingEventRollResolution.hauntRoll
+    const pendingEventRollResolution = core.pendingEventRollResolution;
+    const rerollTargetsPendingEventRoll = Boolean(
+        pendingEventRollResolution
+        && pendingEventRollResolution.rollId === core.recentRoll?.id,
+    );
+    const pendingHauntRoll = pendingEventRollResolution
+        && core.recentRoll
+        && pendingEventRollResolution.rollId === core.recentRoll.id
+        ? pendingEventRollResolution.hauntRoll
         : undefined;
     const rerolledEventTotal = nextDice.reduce((sum, pip) => sum + pip, 0)
         + (core.recentRoll?.passiveBonus ?? 0);

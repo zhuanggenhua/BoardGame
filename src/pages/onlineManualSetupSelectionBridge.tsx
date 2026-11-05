@@ -65,6 +65,29 @@ function buildManualSetupDraftState(
         };
     }
 
+    if (draft.actionKind === 'faction-selection') {
+        const factionSelection = isPlainRecord(core.factionSelection) ? core.factionSelection : null;
+        const selections = factionSelection && isPlainRecord(factionSelection.selections)
+            ? factionSelection.selections
+            : null;
+        if (!factionSelection || !selections) {
+            return undefined;
+        }
+        return {
+            ...sharedState,
+            core: {
+                ...core,
+                factionSelection: {
+                    ...factionSelection,
+                    selections: {
+                        ...selections,
+                        [draft.playerId]: draft.selectionId,
+                    },
+                },
+            },
+        };
+    }
+
     return undefined;
 }
 
@@ -121,9 +144,6 @@ export const OnlineManualSetupSelectionBridge = ({
     const activeDraftManualSetupSelection = isDraftManualSetupSelectionReleased
         ? null
         : draftManualSetupSelection;
-    const shouldOverrideManualSetupPlayerId = shouldInterceptManualSetupSelection
-        && sharedState?.sys?.phase === 'factionSelect';
-
     useEffect(() => {
         latestSharedStateRef.current = sharedState;
     }, [sharedState]);
@@ -269,7 +289,7 @@ export const OnlineManualSetupSelectionBridge = ({
     return (
         <GameClientOverrideProvider
             state={manualSetupDraftState}
-            playerId={shouldOverrideManualSetupPlayerId ? manualSetupPlayerId : undefined}
+            playerId={shouldInterceptManualSetupSelection ? manualSetupPlayerId : undefined}
             dispatch={shouldInterceptManualSetupSelection ? manualDispatch : undefined}
         >
             {children}

@@ -27,6 +27,7 @@ import {
     getResponderQueue,
     getSelectedCombatOpponentId,
     hasOpponentTargetEffect,
+    isSkirmishMode,
     isTeamMode,
 } from './rules';
 import { resourceSystem } from './resourceSystem';
@@ -164,6 +165,12 @@ export function executeCardCommand(
                 break;
             }
 
+            if (card.type === 'spell') {
+                events.push({ type: 'STRANGE_OPERATION_REQUESTED', payload: { playerId: actingPlayerId,
+                    operation: 'prepare-card', sourceId: card.id }, sourceCommandType: command.type, timestamp });
+                break;
+            }
+
             const responseWindowEvent = !(card.type === 'upgrade' && upgradeTargetAbilityId)
                 && !matchState.sys?.responseWindow?.current
                 ? buildAfterCardPlayedWindowEvent(
@@ -234,6 +241,7 @@ export function executeCardCommand(
                     state,
                     damageDealt: 0,
                     timestamp,
+                    damageOrigin: 'card',
                 };
                 const effectEvents = resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random });
                 events.push(...effectEvents);
@@ -258,7 +266,7 @@ export function executeCardCommand(
             const opponentId = selectedOpponentId
                 ?? getContextualOpponentId(state, actingPlayerId)
                 ?? actingPlayerId;
-            const needsSelectedOpponent = isTeamMode(state)
+            const needsSelectedOpponent = (isTeamMode(state) || isSkirmishMode(state))
                 && selectedOpponentId === undefined
                 && getOpponents(state, actingPlayerId).length > 1
                 && cardNeedsSelectedDefender(card);
@@ -314,6 +322,8 @@ export function executeCardCommand(
                         state,
                         damageDealt: 0,
                         timestamp,
+                        damageOrigin: 'card',
+                        isAttackModifierCard: card.isAttackModifier,
                     };
                     effectEvents.push(...resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random }));
                 }

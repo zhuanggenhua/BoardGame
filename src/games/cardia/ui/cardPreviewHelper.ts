@@ -5,7 +5,16 @@
  */
 
 import type { CardPreviewRef } from '../../../core/types';
+import { CARD_IDS_DECK_I, CARD_IDS_DECK_II } from '../domain/ids';
+import type { CardId } from '../domain/ids';
 import cardRegistry from '../domain/cardRegistry';
+
+const CARD_ID_SET = new Set<string>([
+    ...Object.values(CARD_IDS_DECK_I),
+    ...Object.values(CARD_IDS_DECK_II),
+]);
+
+const isCardId = (value: string): value is CardId => CARD_ID_SET.has(value);
 
 /**
  * 卡牌预览元数据
@@ -25,7 +34,8 @@ export function getCardiaCardPreviewMeta(cardIdOrUid: string): CardPreviewMeta |
     // 从 UID 中提取 defId（格式：defId_timestamp_random）
     // 例如：deck_i_card_09_1775881348955_eiii1tdrz -> deck_i_card_09
     const defId = cardIdOrUid.split('_').slice(0, 4).join('_');
-    
+    if (!isCardId(defId)) return null;
+
     const cardDef = cardRegistry.get(defId);
     if (!cardDef) return null;
 

@@ -130,6 +130,7 @@ export const COMMON_UNITS: UnitCard[] = [
     attackType: 'melee',
     attackRange: 1,
     abilities: ['blood_rage', 'power_boost', 'blood_rage_decay'],
+    unitTags: ['undead'],
     deckSymbols: [DECK_SYMBOLS.MOON], // 🌙 (图片确认)
     spriteIndex: SPRITE_INDEX.COMMON_UNDEAD_WARRIOR,
   },
@@ -160,6 +161,7 @@ export const COMMON_UNITS: UnitCard[] = [
     attackType: 'melee',
     attackRange: 1,
     abilities: ['soulless', 'infection'],
+    unitTags: ['undead', 'carrier'],
     deckSymbols: [DECK_SYMBOLS.MOON], // 🌙 (图片确认)
     spriteIndex: SPRITE_INDEX.COMMON_PLAGUE_ZOMBIE,
   },
@@ -175,6 +177,7 @@ export const COMMON_UNITS: UnitCard[] = [
     attackType: 'ranged',
     attackRange: 3,
     abilities: ['soul_transfer'],
+    unitTags: ['undead'],
     deckSymbols: [DECK_SYMBOLS.FLAME], // 🔥 (图片确认)
     spriteIndex: SPRITE_INDEX.COMMON_UNDEAD_ARCHER,
   },

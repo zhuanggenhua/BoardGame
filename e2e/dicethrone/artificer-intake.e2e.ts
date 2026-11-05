@@ -362,20 +362,45 @@ test.describe('DiceThrone 工匠真实入口', () => {
                 const latest = await getMatchState(match.matchId, match.hostPage) as JsonRecord;
                 const root = asRecord(latest.G ?? latest);
                 const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
                 const players = asRecordMap(core.players);
                 const host = asRecord(players['0']);
                 const guest = asRecord(players['1']);
+                const eventEntries = Array.isArray(asRecord(sys.eventStream).entries)
+                    ? asRecord(sys.eventStream).entries as JsonRecord[]
+                    : [];
+                const nanobotDamage = [...eventEntries]
+                    .reverse()
+                    .map(entry => asRecord(entry.event))
+                    .find(event => event.type === 'DAMAGE_DEALT'
+                        && asRecord(event.payload).sourceAbilityId === 'artificer-nanobot-detonate'
+                        && asRecord(event.payload).targetId === '1');
+                const nanobotDamagePayload = asRecord(nanobotDamage?.payload);
                 return {
                     hostSynth: Number(asRecord(host.tokens)[TOKEN_IDS.SYNTH] ?? -1),
                     hostNanobot: Number(asRecord(host.tokens)[TOKEN_IDS.NANOBOT] ?? -1),
                     guestNanobomb: Number(asRecord(guest.statusEffects)[STATUS_IDS.NANOBOMB] ?? -1),
                     guestHp: Number(asRecord(guest.resources)[RESOURCE_IDS.HP] ?? -1),
+                    damageEvent: nanobotDamage
+                        ? {
+                            amount: Number(nanobotDamagePayload.amount ?? -1),
+                            actualDamage: Number(nanobotDamagePayload.actualDamage ?? -1),
+                            damageScope: nanobotDamagePayload.damageScope ?? null,
+                            unblockable: nanobotDamagePayload.unblockable ?? null,
+                        }
+                        : null,
                 };
             }, { timeout: 15000 }).toEqual({
                 hostSynth: 0,
                 hostNanobot: 1,
                 guestNanobomb: 0,
                 guestHp: 47,
+                damageEvent: {
+                    amount: 3,
+                    actualDamage: 3,
+                    damageScope: 'direct',
+                    unblockable: true,
+                },
             });
 
             await saveEvidenceScreenshot(match.hostPage, testInfo, '03-工坊-纳米机器人引爆后');

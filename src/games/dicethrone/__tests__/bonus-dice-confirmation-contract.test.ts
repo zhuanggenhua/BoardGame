@@ -4,6 +4,7 @@ import type { MatchState } from '../../../engine/types';
 import { DiceThroneDomain } from '../domain';
 import { createDiceThroneEventSystem } from '../domain/systems';
 import { reduce } from '../domain/reducer';
+import { createDisplayOnlySettlement } from '../domain/effects';
 import type { DiceThroneCore, DiceThroneEvent, PendingBonusDiceSettlement } from '../domain/types';
 import { createHeroMatchup, createQueuedRandom, testSystems } from './test-utils';
 import { COMMON_CARDS } from '../domain/commonCards';
@@ -61,6 +62,47 @@ const openBonusDiceState = (
 };
 
 describe('DiceThrone 奖励骰普通确认合同', () => {
+    it('modifyDie 请求缺少选择数量时拒绝建立含默认单骰语义的交互', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        const malformed = {
+            id: 'missing-dice-select-count',
+            playerId: '0',
+            sourceCardId: 'test-missing-count',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToModify',
+            selected: [],
+            dieModifyConfig: { mode: 'set', targetValue: 6 },
+        };
+        const request = {
+            type: 'INTERACTION_REQUESTED',
+            payload: { interaction: malformed },
+            sourceCommandType: 'TEST_INVALID_DICE_INTERACTION',
+            timestamp: 100,
+        } as DiceThroneEvent;
+
+        expect(() => runBonusDiceSystem(state, [request])).toThrow(/modifyDie interaction requires .*selectCount/);
+    });
+
+    it('selectDie 请求缺少选择数量时拒绝建立含默认单骰语义的交互', () => {
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1]));
+        const malformed = {
+            id: 'missing-reroll-select-count',
+            playerId: '0',
+            sourceCardId: 'test-missing-reroll-count',
+            type: 'selectDie',
+            titleKey: 'interaction.selectDiceToReroll',
+            selected: [],
+        };
+        const request = {
+            type: 'INTERACTION_REQUESTED',
+            payload: { interaction: malformed },
+            sourceCommandType: 'TEST_INVALID_DICE_INTERACTION',
+            timestamp: 100,
+        } as DiceThroneEvent;
+
+        expect(() => runBonusDiceSystem(state, [request])).toThrow(/selectDie interaction requires positive integer selectCount/);
+    });
+
     it('所有生产奖励骰专用结算器都必须注册，避免投掷成功但确认后没有规则消费者', () => {
         const expectedSettlementIds = [
             'artificer-heal-bot-use',
@@ -115,15 +157,68 @@ describe('DiceThrone 奖励骰普通确认合同', () => {
             'treant-mother-tree-roll',
             'treant-rooted-roll',
             'vampire-lord-mesmerize-roll',
+            'vampire-lord-blood-from-above-roll',
+            'vampire-lord-total-demise-roll',
             'zhanshujia-war-monger-roll',
             'zhanshujia-war-monger-2-roll',
             'zhanshujia-war-room-roll',
+            'zhizhuxia-spider-reflex-settlement',
             'powder-keg-upkeep',
             'blinded-check',
             'tianshi-dazzle-check',
+            'thor-odinforce-settle',
+            'thor-chain-settle',
+            'thor-guard-break-settle',
+            'thor-undaunted-settle',
+            'strange-astral',
+            'strange-shield',
+            'strange-tendrils',
+            'thor-bifrost-settle',
         ];
 
         expect(getRegisteredBonusDiceSettlementIds()).toEqual(new Set(expectedSettlementIds));
+    });
+
+    it('未消费主攻击伤害的奖励骰不能声明 readyToResolve', () => {
+        const illegalContinuation = {
+            kind: 'attack',
+            settlementStage: 'readyToResolve',
+            markBonusDiceResolved: false,
+        } as any;
+        const dice = [{ index: 0, value: 4, face: 'sabre', effectParams: { value: 4 } }];
+
+        expect(() => createDisplayOnlySettlement(
+            'test-attack-modifier',
+            '0',
+            '1',
+            dice,
+            100,
+            { continuation: illegalContinuation },
+        )).toThrow(/invalid bonus dice continuation.*test-attack-modifier/);
+
+        const state = createHeroMatchup('monk', 'treant')(['0', '1'], createQueuedRandom([1])).core;
+        state.pendingBonusDiceSettlement = {
+            ...bonusSettlement(),
+            sourceAbilityId: 'test-attack-modifier',
+            continuation: illegalContinuation,
+        } as any;
+
+        expect(() => reduce(state, {
+            type: 'BONUS_DICE_SETTLED',
+            payload: {
+                settlementId: 'ordinary-confirm-required',
+                finalDice: dice,
+                totalDamage: 0,
+                thresholdTriggered: false,
+                attackerId: '0',
+                targetId: '1',
+                sourceAbilityId: 'test-attack-modifier',
+                displayOnly: true,
+                allowDiceModification: true,
+            },
+            sourceCommandType: 'TEST_CONFIRM_BONUS_DICE',
+            timestamp: 101,
+        } as DiceThroneEvent)).toThrow(/invalid bonus dice continuation.*test-attack-modifier/);
     });
 
     it('即使对手有改骰牌，奖励骰也不再打开响应窗口，而是直接停在右侧骰盘等待普通确认', () => {

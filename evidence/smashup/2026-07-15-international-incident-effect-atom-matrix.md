@@ -1,5 +1,11 @@
 # 《环游世界：国际事件》59 对象 effect atom 矩阵
 
+## 2026-09-18 当前审计回写
+
+- 本轮复核对象仍是 4 个派系：相扑手 `sumo_wrestlers`、火枪手 `musketeers`、骑警 `mounties`、摔角手 `luchadors`，合计 51 张卡牌 + 8 张基地；对象主源仍为 `src/games/smashup/data/factions/international_incident.ts` 与本文原有 59 行矩阵。
+- 当前结论保持 `representative_only / in_progress`：L2 对象矩阵、共享流程和 14 条真实入口 E2E 证据有效，但 L3/L4 仍是代表链，且本地资源到远端公开 URL 的 `HEAD 200` 仍未闭合。没有把 14 条 E2E 外推为 59 个对象全部完成，也没有移除 `ids.ts` 中四个派系的 `in_progress`。
+- 本轮新增的审计口径是“每个对象必须回到候选生成、payload、执行入口、最终权威状态和流程清理”；未列为 `representative-passed` 的对象继续留在残余范围。
+
 ## 结论口径
 
 - 本文件建立 51 张卡牌 + 8 张基地的对象级规则子句 / effect atom / 共享消费合同矩阵，作为 `add-smashup-international-incident-factions` 的 2026-07-15 审计补证。
@@ -40,11 +46,11 @@
 | `sumo_wrestlers_rookie_sumo` | 相扑新人 | C1 天赋可弃 1 张；C2 在你的一个随从上放置 2 个 +1 指示物。 | SC-STATIC, SC-MINION-EFFECT | L1 passed；L2 partial；天赋真实入口 pending。 |
 | `base_heya_training_stable` | 训练馆 | C1 回合开始触发；C2 可弃 1 张；C3 给这里你的一个随从 +1 指示物；C4 可跳过。 | SC-STATIC, SC-BASE, SC-MINION-EFFECT | L1 passed；L2 passed（skip + 选择）；真实入口 pending。 |
 | `base_the_dohyo` | 土俵 | C1 你的回合第一次在这里打出随从后；C2 可移动这里另一玩家一个随从到其它基地；C3 可跳过。 | SC-STATIC, SC-BASE, SC-MOVE | L1 passed；L2 passed（skip + 选择）；真实入口 pending。 |
-| `musketeers_on_a_roll` | 连连获胜 | C1 选择同一个随从；C2 至多 2 张直接影响该随从的行动作为额外行动；C3 额外行动均受同随从限制。 | SC-STATIC, SC-EXTRA-ACTION | L1 passed；L2 passed；真实额外行动消费链 pending。 |
-| `musketeers_make_way` | 让路 | C1 移动你的一个随从到另一个基地；C2 可额外打出一个行动。 | SC-STATIC, SC-MOVE, SC-EXTRA-ACTION | L1 passed；L2 passed；真实入口 pending。 |
+| `musketeers_on_a_roll` | 连连获胜 | C1 选择同一个随从；C2 至多 2 张直接影响该随从的行动作为额外行动；C3 额外行动均受同随从限制。 | SC-STATIC, SC-EXTRA-ACTION | L1 passed；L2 passed；L3/L4 passed：真实手牌入口完成目标选择、两次受限额外行动消费和流程清理，见 `smashup-international-incident-four-factions.e2e.ts:1736-1870`。 |
+| `musketeers_make_way` | 让路 | C1 移动你的一个随从到另一个基地；C2 可额外打出一个行动。 | SC-STATIC, SC-MOVE, SC-EXTRA-ACTION | L1 passed；L2 passed；L3/L4 passed：真实手牌入口完成随从选择、目标基地选择、移动后额外行动消费和流程清理，见 `smashup-international-incident-four-factions.e2e.ts:1876-1994`。 |
 | `musketeers_en_garde` | 预备姿势 | C1 选择一个随从；C2 +1 直到回合结束；C3 抽 1；C4 可额外打出一个行动。 | SC-STATIC, SC-MINION-EFFECT, SC-EXTRA-ACTION | L1 passed；L2 passed；更多触发对象 L3/L4 pending。 |
 | `musketeers_biding_time` | 等待时机 | C1 选择一个随从；C2 +2 直到回合结束；C3 可额外打出一个直接影响此随从的行动。 | SC-STATIC, SC-MINION-EFFECT, SC-EXTRA-ACTION | L1 passed；L2 passed；真实额外行动消费链 pending。 |
-| `musketeers_to_battle` | 投入战斗！ | C1 额外打出一个随从；C2 可额外打出一个直接影响该随从的行动；C3 skip/不打随从时清理 pending effect。 | SC-STATIC, SC-EXTRA-MINION, SC-EXTRA-ACTION | L1 passed；L2 passed；skip 真实链 pending。 |
+| `musketeers_to_battle` | 投入战斗！ | C1 额外打出一个随从；C2 可额外打出一个直接影响该随从的行动；C3 skip/不打随从时清理 pending effect。 | SC-STATIC, SC-EXTRA-MINION, SC-EXTRA-ACTION | L1 passed；L2 passed；L3/L4 passed：真实手牌入口完成额外随从、基地、受限行动和目标随从四段选择，最终行动额度、手牌、弃牌堆、pending effect、triggerQueue 与交互态均核对通过；见 `smashup-international-incident-four-factions.e2e.ts:1990-2078` 与 63-68 截图。 |
 | `musketeers_porthos` | 波尔托斯 | C1 持续不受其他玩家行动影响；C2 不保护己方行动或非行动来源。 | SC-STATIC, SC-ONGOING | L1 passed；L2 passed；真实入口 pending。 |
 | `musketeers_athos` | 阿多斯 | C1 你打出行动直接影响这里一个或多个你的其他随从后；C2 那些随从各 +1 至回合结束。 | SC-STATIC, SC-ONGOING, SC-MINION-EFFECT | L1 passed；L2 passed；once/边界 pending。 |
 | `musketeers_one_for_all` | 一为全 | C1 选择一个基地；C2 你在那里每个随从 +1 至回合结束；C3 可额外打出一个行动。 | SC-STATIC, SC-MINION-EFFECT, SC-EXTRA-ACTION | L1 passed；L2 passed；L3/L4 representative-passed；其它边界 pending。 |
@@ -56,14 +62,14 @@
 | `musketeers_aramis` | 阿拉密斯 | C1 你的回合中一次；C2 在你打出直接影响此随从的行动后；C3 可额外打出一个直接影响此随从的行动。 | SC-STATIC, SC-ONGOING, SC-EXTRA-ACTION | L1 passed；L2 passed；L3/L4 representative-passed（真实手牌入口用 `预备姿势` 直接影响阿拉密斯后出现真实反应窗口，选择阿拉密斯反应获得 immediate restricted extra action，再消费 `等待时机` 只能继续影响阿拉密斯本人；阿拉密斯累计 +3 临时力量，`预备姿势` 与 `等待时机` 均进入弃牌堆，interaction 清空）。 |
 | `base_bastion_saint_gervais` | 圣热尔韦堡垒 | C1 每回合一次；C2 你打出直接影响这里己方随从的行动后；C3 可额外打出一个行动。 | SC-STATIC, SC-BASE, SC-EXTRA-ACTION | L1 passed；L2 passed；L3/L4 representative-passed（真实手牌入口打出 `廉价欢呼` 直接影响圣热尔韦堡垒上的己方疯狂之花后，玩家 actionLimit 从 1 提升到 2，并成功消费该额度打出 `团队标记`；interaction / triggerQueue 清空；同回合第二次不触发仍由 L2 覆盖）。 |
 | `base_the_golden_lily` | 黄金百合 | C1 你的回合结束时；C2 如果你在这里有随从；C3 抽 1。 | SC-STATIC, SC-BASE | L1 passed；L2 passed；无己方随从拒绝路径 pending。 |
-| `mounties_eh` | 嗯？ | C1 特殊：你每回合打出第一个行动后；C2 从弃牌堆作为额外行动；C3 你的一个随从 +1 至回合结束；C4 此卡回手而非弃牌；C5 每回合一次。 | SC-STATIC, SC-RESPONSE, SC-MINION-EFFECT | L1 passed；L2 passed；L3/L4 representative-passed；once/turn 边界 pending。 |
+| `mounties_eh` | 嗯？ | C1 特殊：你每回合打出第一个行动后；C2 从弃牌堆作为额外行动；C3 你的一个随从 +1 至回合结束；C4 此卡回手而非弃牌；C5 每回合一次。 | SC-STATIC, SC-RESPONSE, SC-MINION-EFFECT | L1 passed；L2 passed；L3/L4 direct passed（第一张行动后真实弃牌堆发动、+1、回手、交互关闭）；第二张行动后不再开放、下一回合第一张行动后重新开放均已由领域测试与真实入口通过。 |
 | `mounties_bring_em_in` | 带进来 | C1 打在一个随从上；C2 宿主移动到另一个基地后；C3 在宿主上放置 1 个 +1 指示物。 | SC-STATIC, SC-ATTACH, SC-ONGOING | L1 passed；L2 passed；真实移动事件链 pending。 |
 | `mounties_mountie_major` | 骑警少校 | C1 按这里“拥有最多随从的另一位玩家”的随从数；C2 本随从持续获得等量 +1。 | SC-STATIC, SC-ONGOING | L1 passed；L2 passed；多玩家并列边界 pending。 |
 | `mounties_northern_mover` | 北方搬运者 | C1 天赋选择你的另一个随从；C2 移动到另一个基地；C3 或 +1 至回合结束。 | SC-STATIC, SC-MOVE, SC-MINION-EFFECT | L1 passed；L2 passed；真实天赋入口 pending。 |
 | `mounties_war_canuck` | 战争骑警 | C1 天赋检查这里有另一玩家随从；C2 本随从 +2 持续到你的下个回合开始。 | SC-STATIC, SC-MINION-EFFECT | L1 passed；L2 passed；无目标拒绝路径 pending。 |
 | `mounties_when_calls_the_badge` | 呼叫警徽 | C1 打出时选择一个你有随从的基地；C2 该基地每个己方随从各 +1 指示物；C3 特殊：基地计分前打出。 | SC-STATIC, SC-RESPONSE, SC-MINION-EFFECT | L1 passed；L2 passed；L3/L4 representative-passed；更多响应轮次 pending。 |
 | `mounties_dudlee` | 达德利 | C1 天赋移动此随从到有另一玩家随从的基地；C2 此随从 +1 至回合结束。 | SC-STATIC, SC-MOVE, SC-MINION-EFFECT | L1 passed；L2 passed；真实天赋入口 pending。 |
-| `mounties_always_get_our_man` | 总能抓到目标 | C1 移动你的一个随从到有较低力量另一玩家随从的基地；C2 回合结束摧毁那个目标随从。 | SC-STATIC, SC-MOVE, SC-ONGOING | L1 passed；L2 passed；多候选/真实入口 pending。 |
+| `mounties_always_get_our_man` | 总能抓到目标 | C1 移动你的一个随从到有较低力量另一玩家随从的基地；C2 回合结束摧毁那个目标随从。 | SC-STATIC, SC-MOVE, SC-ONGOING | L1 passed；L2 passed；L3/L4 representative-passed（真实入口覆盖多己方候选、多低力量目标、移动成功后标记、回合结束摧毁）；全骑警对象 direct 覆盖仍 pending。 |
 | `mounties_battle_moose` | 战斗麋鹿 | C1 打在你的一个随从上；C2 你在这里的随从不能被其他玩家卡牌摧毁。 | SC-STATIC, SC-ATTACH, SC-ONGOING | L1 passed；L2 passed；真实入口 pending。 |
 | `mounties_power_poutine` | 力量肉汁薯条 | C1 选择一个基地；C2 你在那里至多两个随从各 +2 至回合结束；C3 可空选。 | SC-STATIC, SC-MINION-EFFECT | L1 passed；L2 passed（空选 + 双选）；命令层基地选择 pending。 |
 | `mounties_move_aboot` | 挪过去 | C1 选择有另一玩家随从的基地；C2 从另一个基地移动你的一个随从到那里；C3 +2 至回合结束。 | SC-STATIC, SC-MOVE, SC-MINION-EFFECT | L1 passed；L2 passed；真实入口 pending。 |
@@ -116,6 +122,7 @@
 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts "全为一可从真实手牌附着、触发加力并在回合结束自毁"` | passed：1 Playwright test；`全为一` 从真实手牌附着到波尔托斯，触发宿主 +1 并在回合结束自动进入弃牌堆，interaction 收口 |
 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts "方形擂台可从真实打出随从入口随机回收弃牌堆行动"` | passed：1 Playwright test；`方形擂台` 从真实打出随从入口触发，弃牌堆唯一行动 `压制` 回到手牌，弃牌堆清空，interaction / triggerQueue 收口 |
 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts "圣热尔韦堡垒可从真实行动影响己方随从入口授予额外行动"` | passed：1 Playwright test；`圣热尔韦堡垒` 从真实手牌行动触发，`廉价欢呼` 影响己方疯狂之花后授予额外行动，玩家继续打出 `团队标记`，interaction / triggerQueue 收口 |
+| `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts "投入战斗可从真实手牌入口打出额外随从并消费其限定额外行动"` | passed：1 Playwright test；真实手牌打出 `投入战斗！` 后完成额外随从、基地、受限 `预备姿势` 和目标随从选择，最终 `actionLimit=3`、`actionsPlayed=2`、后续行动牌留在手牌，pending effect / interaction / triggerQueue 清空 |
 | `npx vitest run src/games/smashup/__tests__/abilities/international-incident.test.ts --reporter=dot` | passed：1 file / 42 tests；新增覆盖 `擂台边` 识别 `压制` 的真实 `ONGOING_ATTACHED` 事件并抽牌，防止附着行动只带 `payload.defId` 时被误过滤 |
 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts "擂台边可从真实行动影响另一玩家随从入口抽牌"` | passed：1 Playwright test；`压制` 从真实手牌入口附着到这里另一玩家带己方 Set-Up 行动的达达尼昂后，玩家 0 抽到 `团队标记`，牌库清空，interaction / triggerQueue 收口 |
 | `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-international-incident-four-factions.e2e.ts` | passed：14 Playwright tests；完整文件复跑通过，覆盖 `四派系代表能力` 中 `聪明 Set-Up` 附着后由 `擂台边` 抽到 `团队标记` 与 `廉价欢呼`、`圣热尔韦堡垒` 真实行动影响己方随从后授予并消费额外行动、`方形擂台` 真实打出随从入口随机回收弃牌堆行动、`擂台边` 真实行动影响另一玩家随从后抽牌，以及 `全为一` 真实附着 / 触发加力 / 回合末自毁、`阿拉密斯` 真实反应窗口 + 限定额外行动消费等代表链 |

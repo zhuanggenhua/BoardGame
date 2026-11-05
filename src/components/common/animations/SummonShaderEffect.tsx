@@ -44,6 +44,8 @@ export interface SummonShaderEffectProps {
   durationScale?: number;
   /** 视觉宽度倍率。用于不同游戏在同一锚点尺寸下调节光柱主体强度，默认 1。 */
   visualScale?: number;
+  /** 相对宿主宽度的光柱底宽比。1 = 贴卡等宽；默认不传，保持原窄柱。 */
+  pillarWidthRatio?: number;
   className?: string;
 }
 
@@ -108,6 +110,7 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
   onComplete,
   durationScale = 1,
   visualScale = 1,
+  pillarWidthRatio,
   className = '',
 }) => {
   if (!active) return null;
@@ -134,6 +137,9 @@ export const SummonShaderEffect: React.FC<SummonShaderEffectProps> = ({
         uIntensity: isStrong ? 1.3 : 1.0,
         uDimStrength: dimStrength,
         uPillarWidth: (isStrong ? 0.04 : 0.03) * resolvedVisualScale,
+        uPillarHostRatio: Number.isFinite(pillarWidthRatio) && (pillarWidthRatio ?? 0) > 0
+          ? Math.max(0.05, Math.min(1.5, pillarWidthRatio as number))
+          : 0,
       }}
       duration={dur}
       onComplete={onComplete}

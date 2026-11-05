@@ -14,6 +14,9 @@ const REGISTRY_LOCK_RETRYABLE_CODES = new Set(['EEXIST', 'EPERM', 'EBUSY']);
 const REGISTRY_LOCK_RETRY_COUNT = 120;
 const REGISTRY_LOCK_RETRY_DELAY_MS = 50;
 const REGISTRY_LOCK_STALE_MS = 30000;
+// 同一进程的工作区拓扑不随登记 / 心跳改变，避免每次读写都启动 Git 子进程。
+const worktreeRoots = new Map();
+const gitCommonDirs = new Map();
 
 function nowIso() {
   return new Date().toISOString();
@@ -193,8 +196,12 @@ function writeRegistryFile(filePath, runtimes) {
 }
 
 export function getWorktreeRoot(cwd = process.cwd()) {
+  const key = path.resolve(cwd);
+  if (worktreeRoots.has(key)) return worktreeRoots.get(key);
   const raw = runGit('git rev-parse --show-toplevel', cwd);
-  return raw ? path.resolve(cwd, raw) : path.resolve(cwd);
+  const root = raw ? path.resolve(cwd, raw) : key;
+  if (raw) worktreeRoots.set(key, root);
+  return root;
 }
 
 function isGitWorktreeCheckout(cwd = process.cwd()) {
@@ -241,10 +248,14 @@ function resolveGitCommonDirCandidate(candidate) {
 }
 
 export function getGitCommonDir(cwd = process.cwd()) {
+  const key = path.resolve(cwd);
+  if (gitCommonDirs.has(key)) return gitCommonDirs.get(key);
   const worktreeRoot = getWorktreeRoot(cwd);
   const raw = runGit('git rev-parse --git-common-dir', cwd);
   const candidate = raw ? path.resolve(worktreeRoot, raw) : path.join(worktreeRoot, '.git');
-  return resolveGitCommonDirCandidate(candidate);
+  const commonDir = resolveGitCommonDirCandidate(candidate);
+  if (raw) gitCommonDirs.set(key, commonDir);
+  return commonDir;
 }
 
 function getSharedRuntimeDir(cwd = process.cwd()) {
@@ -562,7 +573,7 @@ function tryRemoveStaleRegistryLock(lockPath) {
   }
 }
 
-function acquireSharedRegistryLock(cwd = process.cwd()) {
+export function acquireSharedRegistryLock(cwd = process.cwd()) {
   const lockPath = getSharedRegistryLockPath(cwd);
   ensureDir(lockPath);
 
@@ -642,9 +653,9 @@ export function removeRuntime(scope, cwd = process.cwd()) {
   return removeRuntimeById(getRuntimeId(scope, cwd), cwd);
 }
 
-export function removeRuntimeById(runtimeId, cwd = process.cwd()) {
+export function removeRuntimeById(runtimeId, cwd = process.cwd(), { ownerPid } = {}) {
   withSharedRegistryMutation(cwd, runtimes => (
-    Array.isArray(runtimes) ? runtimes.filter(runtime => runtime.runtimeId !== runtimeId) : []
+    Array.isArray(runtimes) ? runtimes.filter(runtime => runtime.runtimeId !== runtimeId || (ownerPid !== undefined && Number(runtime.ownerPid) !== Number(ownerPid))) : []
   ));
 }
 

@@ -160,48 +160,108 @@ export function moveArenaObject(
     const object = getArenaObject(core, objectId);
     if (!object) return core;
 
-    const moved: MageWarsCore = {
-        ...core,
-        objects: {
-            ...core.objects,
-            [objectId]: {
-                ...object,
-                zoneId: toZoneId,
+    const moveSingleObject = (
+        currentCore: MageWarsCore,
+        currentObjectId: string,
+        currentFromZoneId: ArenaZoneId,
+        currentToZoneId: ArenaZoneId,
+    ): MageWarsCore => {
+        const currentObject = getArenaObject(currentCore, currentObjectId);
+        if (!currentObject) return currentCore;
+
+        if (currentFromZoneId === currentToZoneId) {
+            return {
+                ...currentCore,
+                objects: {
+                    ...currentCore.objects,
+                    [currentObjectId]: {
+                        ...currentObject,
+                        zoneId: currentToZoneId,
+                    },
+                },
+                arena: currentCore.arena.map((zone) => {
+                    if (zone.id !== currentToZoneId) return zone;
+                    return {
+                        ...zone,
+                        objectIds: zone.objectIds.includes(currentObjectId)
+                            ? zone.objectIds
+                            : [...zone.objectIds, currentObjectId],
+                        conjurationIds: currentObject.kind === 'conjuration'
+                            && !zone.conjurationIds.includes(currentObjectId)
+                            ? [...zone.conjurationIds, currentObjectId]
+                            : zone.conjurationIds,
+                    };
+                }),
+            };
+        }
+
+        return {
+            ...currentCore,
+            objects: {
+                ...currentCore.objects,
+                [currentObjectId]: {
+                    ...currentObject,
+                    zoneId: currentToZoneId,
+                },
             },
-        },
-        arena: core.arena.map((zone) => {
-            if (zone.id === fromZoneId) {
-                return {
-                    ...zone,
-                    objectIds: zone.objectIds.filter((candidate) => candidate !== objectId),
-                    conjurationIds: zone.conjurationIds.filter((candidate) => candidate !== objectId),
-                };
-            }
-            if (zone.id === toZoneId) {
-                const nextObjectIds = zone.objectIds.includes(objectId)
-                    ? zone.objectIds
-                    : [...zone.objectIds, objectId];
-                const nextConjurationIds = object.kind === 'conjuration' && !zone.conjurationIds.includes(objectId)
-                    ? [...zone.conjurationIds, objectId]
-                    : zone.conjurationIds;
-                return {
-                    ...zone,
-                    objectIds: nextObjectIds,
-                    conjurationIds: nextConjurationIds,
-                };
-            }
-            return zone;
-        }),
+            arena: currentCore.arena.map((zone) => {
+                if (zone.id === currentFromZoneId && zone.id === currentToZoneId) {
+                    const nextObjectIds = zone.objectIds.includes(currentObjectId)
+                        ? zone.objectIds
+                        : [...zone.objectIds, currentObjectId];
+                    const nextConjurationIds = currentObject.kind === 'conjuration' && !zone.conjurationIds.includes(currentObjectId)
+                        ? [...zone.conjurationIds, currentObjectId]
+                        : zone.conjurationIds;
+                    return {
+                        ...zone,
+                        objectIds: nextObjectIds,
+                        conjurationIds: nextConjurationIds,
+                    };
+                }
+                if (zone.id === currentFromZoneId) {
+                    return {
+                        ...zone,
+                        objectIds: zone.objectIds.filter((candidate) => candidate !== currentObjectId),
+                        conjurationIds: zone.conjurationIds.filter((candidate) => candidate !== currentObjectId),
+                    };
+                }
+                if (zone.id === currentToZoneId) {
+                    const nextObjectIds = zone.objectIds.includes(currentObjectId)
+                        ? zone.objectIds
+                        : [...zone.objectIds, currentObjectId];
+                    const nextConjurationIds = currentObject.kind === 'conjuration' && !zone.conjurationIds.includes(currentObjectId)
+                        ? [...zone.conjurationIds, currentObjectId]
+                        : zone.conjurationIds;
+                    return {
+                        ...zone,
+                        objectIds: nextObjectIds,
+                        conjurationIds: nextConjurationIds,
+                    };
+                }
+                return zone;
+            }),
+        };
     };
 
-    const attachedObjectIds = Object.values(core.objects)
-        .filter((candidate) => candidate.anchoredToObjectId === objectId)
-        .map((candidate) => candidate.id);
+    let moved = moveSingleObject(core, objectId, fromZoneId, toZoneId);
+    const attachedObjectIds: string[] = [];
+    const pendingParentIds = [objectId];
+    while (pendingParentIds.length > 0) {
+        const parentId = pendingParentIds.shift()!;
+        for (const candidate of Object.values(core.objects)) {
+            if (candidate.anchoredToObjectId !== parentId || attachedObjectIds.includes(candidate.id)) continue;
+            attachedObjectIds.push(candidate.id);
+            pendingParentIds.push(candidate.id);
+        }
+    }
 
-    return attachedObjectIds.reduce(
-        (nextCore, attachedObjectId) => removeArenaObject(nextCore, attachedObjectId),
-        moved,
-    );
+    for (const attachedObjectId of attachedObjectIds) {
+        const attachedObject = getArenaObject(moved, attachedObjectId);
+        if (!attachedObject) continue;
+        moved = moveSingleObject(moved, attachedObjectId, attachedObject.zoneId, toZoneId);
+    }
+
+    return moved;
 }
 
 export function addArenaObject(core: MageWarsCore, object: MageWarsArenaObjectState): MageWarsCore {

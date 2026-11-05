@@ -13,10 +13,11 @@ const FACTION_DIR_MAP: Record<FactionId, string> = {
     huijin: 'huijin',
     shouren: 'shouren',
     yongheng: 'yongheng',
-    shadow: 'shadow',
+  shadow: 'shadow',
+  zhongcai: 'zhongcai',
 };
 
-const ALL_FACTIONS: FactionId[] = ['necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow'];
+const ALL_FACTIONS: FactionId[] = ['necromancer', 'trickster', 'paladin', 'goblin', 'frost', 'barbaric', 'mogu', 'huijin', 'shouren', 'yongheng', 'shadow', 'zhongcai'];
 
 const SELECTION_CRITICAL = [
     'summonerwars/common/map',

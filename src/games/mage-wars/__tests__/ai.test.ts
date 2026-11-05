@@ -69,13 +69,14 @@ function sourceObject(
     kind: 'creature' | 'conjuration',
     zoneId: typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS],
     mana: number,
+    ownerId: '0' | '1' = '0',
 ): MageWarsArenaObjectState {
     const source = getMageWarsSpellCardFromConfig(sourceSpellCardId)?.spellcastingSource;
     if (!source) throw new Error(`missing test source ${sourceSpellCardId}`);
     return {
         id,
         kind,
-        ownerId: '0',
+        ownerId,
         sourceSpellCardId,
         sourceObjectId: `spell-${sourceSpellCardId}`,
         spellcastingSource: source,
@@ -88,6 +89,7 @@ function sourceObject(
         actionReady: kind === 'creature',
         guarding: false,
         statusTokens: {},
+        attackOrTraitLine: getMageWarsSpellCardFromConfig(sourceSpellCardId)?.attackOrTraitLine,
     };
 }
 
@@ -137,7 +139,7 @@ describe('mage-wars local AI support', () => {
         });
     });
 
-    it('baseline policy picks the highest-priority legal planning action', () => {
+    it('策略层会比较准备方案，而不是永远按动作种类拿第一个', () => {
         let core = withMage(MageWarsDomain.setup(PLAYER_IDS, fixedRandom), MAGE_IDS.WIZARD_APPRENTICE);
         core = addObject(core, sourceObject('familiar-ai', 2908, 'creature', ARENA_ZONE_IDS.A2, 3));
         const state = stateFor(core, 'planning');
@@ -155,7 +157,124 @@ describe('mage-wars local AI support', () => {
         const decision = mageWarsAiRuntime.localPolicies?.baseline.decide(context);
         const selectedAction = context.legalActions.find((action) => action.actionId === decision?.actionId);
 
-        expect(selectedAction?.kind).toBe('plan-object-spell');
+        expect(selectedAction?.kind).toBe('plan-spells');
+        expect(selectedAction?.metadata?.planningValueTotal).toBeGreaterThan(0);
+    });
+
+    it('有明确击杀窗口时优先攻击目标，不会先移动或推进阶段', () => {
+        let core = MageWarsDomain.setup(PLAYER_IDS, fixedRandom);
+        core = withMage(core, MAGE_IDS.WIZARD_APPRENTICE);
+        core = {
+            ...core,
+            phaseActorId: '0',
+            currentPlayerId: '0',
+        };
+        core = addObject(core, sourceObject(
+            'attacker-ai',
+            2908,
+            'creature',
+            ARENA_ZONE_IDS.A2,
+            3,
+            '0',
+        ));
+        core = addObject(core, {
+            ...sourceObject('target-ai', 2908, 'creature', ARENA_ZONE_IDS.A2, 0, '1'),
+            life: 1,
+            actionReady: false,
+        });
+        const state = stateFor(core, 'creatureAction');
+        const context = buildAiDecisionContext({
+            gameId: 'mage-wars',
+            matchId: 'local:mage-wars-ai-kill-window',
+            playerId: '0',
+            visibleState: state,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', minimumActionDelayMs: 0 },
+        });
+
+        const decision = mageWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const selectedAction = context.legalActions.find((action) => action.actionId === decision?.actionId);
+
+        expect(selectedAction?.kind).toBe('object-attack');
+        expect(selectedAction?.commands[0]?.payload).toMatchObject({
+            attackerObjectId: 'attacker-ai',
+            targetObjectId: 'target-ai',
+        });
+    });
+
+    it('合法但被高护甲挡住的攻击没有收益时，不会为了消耗行动而优先攻击', () => {
+        let core = MageWarsDomain.setup(PLAYER_IDS, fixedRandom);
+        core = withMage(core, MAGE_IDS.WIZARD_APPRENTICE);
+        core = {
+            ...core,
+            phaseActorId: '0',
+            currentPlayerId: '0',
+        };
+        core = addObject(core, sourceObject(
+            'attacker-ai',
+            2908,
+            'creature',
+            ARENA_ZONE_IDS.A2,
+            3,
+            '0',
+        ));
+        core = addObject(core, {
+            ...sourceObject('armored-target-ai', 2908, 'creature', ARENA_ZONE_IDS.A2, 0, '1'),
+            armor: 99,
+            actionReady: false,
+        });
+        const state = stateFor(core, 'creatureAction');
+        const context = buildAiDecisionContext({
+            gameId: 'mage-wars',
+            matchId: 'local:mage-wars-ai-no-benefit-attack',
+            playerId: '0',
+            visibleState: state,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', minimumActionDelayMs: 0 },
+        });
+
+        const decision = mageWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const selectedAction = context.legalActions.find((action) => action.actionId === decision?.actionId);
+
+        expect(selectedAction?.kind).not.toBe('object-attack');
+    });
+
+    it('法师生命过低时优先守卫，而不是无意义地推进阶段', () => {
+        let core = MageWarsDomain.setup(PLAYER_IDS, fixedRandom);
+        core = withMage(core, MAGE_IDS.PRIESTESS_APPRENTICE);
+        core = {
+            ...core,
+            phaseActorId: '0',
+            currentPlayerId: '0',
+            players: {
+                ...core.players,
+                '0': {
+                    ...core.players['0'],
+                    damage: core.players['0'].life - 2,
+                    actionReady: true,
+                },
+            },
+        };
+        const state = stateFor(core, 'creatureAction');
+        const context = buildAiDecisionContext({
+            gameId: 'mage-wars',
+            matchId: 'local:mage-wars-ai-low-life',
+            playerId: '0',
+            visibleState: state,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', minimumActionDelayMs: 0 },
+        });
+
+        const decision = mageWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const selectedAction = context.legalActions.find((action) => action.actionId === decision?.actionId);
+
+        expect(selectedAction?.kind).toBe('guard');
     });
 
     it('shared local AI runner can resolve a real AI-seat planning command', async () => {

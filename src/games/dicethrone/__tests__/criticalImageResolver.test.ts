@@ -169,9 +169,9 @@ describe('diceThroneCriticalImageResolver', () => {
         for (const characterId of ['monk', 'gunslinger', 'samurai', 'tianshi', 'vampire_lord'] as const) {
             const tuning = getPlayerBoardUiTuning(characterId);
 
-            expect(tuning.playerBoardBaseHeightVw, `${characterId} 缺少 playerBoardBaseHeightVw`).toBeGreaterThan(0);
-            expect(tuning.tipBoardHeightVw, `${characterId} 缺少 tipBoardHeightVw`).toBeGreaterThan(0);
-            expect(tuning.centerBoardGapVw, `${characterId} 缺少 centerBoardGapVw`).toBeGreaterThanOrEqual(0);
+            expect(tuning.playerBoardBaseHeightUnits, `${characterId} 缺少 playerBoardBaseHeightUnits`).toBeGreaterThan(0);
+            expect(tuning.tipBoardHeightUnits, `${characterId} 缺少 tipBoardHeightUnits`).toBeGreaterThan(0);
+            expect(tuning.centerBoardGapUnits, `${characterId} 缺少 centerBoardGapUnits`).toBeGreaterThanOrEqual(0);
         }
     });
 
@@ -180,17 +180,23 @@ describe('diceThroneCriticalImageResolver', () => {
             barbarian: { width: 2048, height: 1260 },
             monk: { width: 2048, height: 1260 },
             moon_elf: { width: 2048, height: 1260 },
-            paladin: { width: 2048, height: 1250 },
+            paladin: { width: 4005, height: 2476 },
             pyromancer: { width: 2048, height: 1260 },
             shadow_thief: { width: 2048, height: 1260 },
             tianshi: { width: 3643, height: 2234 },
             lieren: { width: 3632, height: 2234 },
             vampire_lord: { width: 3627, height: 2234 },
+            zhizhuxia: { width: 1800, height: 1089 },
+            thor: { width: 3576, height: 2157 },
         } as const;
 
         for (const [characterId, dimensions] of Object.entries(expectedDimensions)) {
             expect(getPlayerBoardLayoutVersion(characterId), `${characterId} 应使用 v2 面板布局`).toBe('v2');
             expect(getPlayerBoardDimensions(characterId)).toEqual(dimensions);
         }
+    });
+
+    it('未登记的新派系默认使用 v2 玩家板布局', () => {
+        expect(getPlayerBoardLayoutVersion('new-faction')).toBe('v2');
     });
 });

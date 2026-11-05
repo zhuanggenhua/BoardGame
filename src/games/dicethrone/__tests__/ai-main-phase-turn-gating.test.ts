@@ -13,9 +13,9 @@ import { buildDiceThroneAiLegalActions } from '../ai';
 import { engineConfig } from '../game';
 import { canAdvancePhase, checkPlayCard } from '../domain/rules';
 import { RESOURCE_IDS } from '../domain/resources';
-import { TOKEN_IDS } from '../domain/ids';
+import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { DiceThroneCommand, DiceThroneCore } from '../domain/types';
-import { cmd, createHeroMatchup, createQueuedRandom, createRunner, createSetupWithHand, fixedRandom, getCardById, testSystems } from './test-utils';
+import { advanceTo, cmd, createHeroMatchup, createQueuedRandom, createRunner, createSetupWithHand, fixedRandom, getCardById, testSystems } from './test-utils';
 
 describe('DiceThrone AI 主阶段候选门禁', () => {
     const dispatch = (
@@ -116,6 +116,120 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
 
         expect(actions.some((action) => action.kind === 'response-pass')).toBe(true);
         expect(actions.some((action) => action.kind === 'skip-bonus-dice-reroll')).toBe(false);
+    });
+
+    it('无响应窗口但仍有阻塞伤害时，应先确认当前展示态奖励骰，再处理 Token 响应', () => {
+        const state = createSetupWithHand([], {
+            playerId: '1',
+            cp: 0,
+            mutate: (core) => {
+                core.activePlayerId = '1';
+                core.pendingBonusDiceSettlement = {
+                    id: 'bonus-before-token-response',
+                    sourceAbilityId: 'flight',
+                    attackerId: '1',
+                    targetId: '0',
+                    dice: [{ index: 0, value: 3, face: 'katana' }],
+                    rerollCostTokenId: '',
+                    rerollCostAmount: 0,
+                    rerollCount: 0,
+                    maxRerollCount: 0,
+                    displayOnly: true,
+                };
+                core.pendingDamage = {
+                    id: 'damage-after-display-only-bonus',
+                    sourcePlayerId: '1',
+                    targetPlayerId: '0',
+                    originalDamage: 4,
+                    currentDamage: 4,
+                    responseType: 'beforeDamageDealt',
+                    responderId: '1',
+                    isFullyEvaded: false,
+                };
+            },
+        })(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.sys.responseWindow = { current: undefined };
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'confirm-roll',
+            commands: [{ type: 'CONFIRM_ROLL', payload: {} }],
+        }));
+        expect(actions.some((action) => action.kind === 'skip-token-response')).toBe(false);
+    });
+
+    it('AI 使用隐匿攻击后应先确认奖励骰，再回到当前 Token 响应，不得生成被拒绝的紧急取消', () => {
+        const random = createQueuedRandom([6, 6, 6, 6, 6, 5]);
+        let state = createHeroMatchup('shadow_thief', 'samurai', (core) => {
+            core.players['0'].tokens[TOKEN_IDS.SNEAK_ATTACK] = 1;
+            core.players['1'].tokens[TOKEN_IDS.TAIJI] = 0;
+            core.players['1'].tokens[TOKEN_IDS.EVASIVE] = 0;
+        })(['0', '1'], random);
+
+        for (const input of [
+            ...advanceTo('offensiveRoll'),
+            cmd('ROLL_DICE', '0'),
+            cmd('CONFIRM_ROLL', '0'),
+            cmd('SELECT_ABILITY', '0', { abilityId: 'shadow-shank' }),
+            cmd('ADVANCE_PHASE', '0'),
+        ]) {
+            const result = executePipeline(
+                { domain: DiceThroneDomain, systems: testSystems },
+                state,
+                { ...input, timestamp: 1 } as DiceThroneCommand,
+                random,
+                ['0', '1'],
+            );
+            expect(result.success, result.error).toBe(true);
+            state = result.state as MatchState<DiceThroneCore>;
+        }
+
+        const pendingDamageId = state.core.pendingDamage?.id;
+        expect(pendingDamageId).toBeTruthy();
+        const used = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            state,
+            {
+                type: 'USE_TOKEN',
+                playerId: '0',
+                payload: { tokenId: TOKEN_IDS.SNEAK_ATTACK, amount: 1, pendingDamageId },
+                timestamp: 2,
+            } as DiceThroneCommand,
+            random,
+            ['0', '1'],
+        );
+        expect(used.success, used.error).toBe(true);
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state: used.state as MatchState<DiceThroneCore>,
+        });
+        expect(actions.some((action) => action.kind === 'confirm-roll')).toBe(true);
+        expect(actions.some((action) => action.kind === 'interaction-cancel')).toBe(false);
+
+        const confirmed = executePipeline(
+            { domain: DiceThroneDomain, systems: testSystems },
+            used.state,
+            {
+                type: 'CONFIRM_ROLL',
+                playerId: '0',
+                payload: {},
+                timestamp: 3,
+            } as DiceThroneCommand,
+            random,
+            ['0', '1'],
+        );
+        expect(confirmed.success, confirmed.error).toBe(true);
+        const postBonusActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state: confirmed.state as MatchState<DiceThroneCore>,
+        });
+        expect(postBonusActions.some((action) => action.kind === 'skip-token-response')).toBe(true);
     });
 
     it('未知阻塞交互属于 AI 时应紧急取消而不是继续走主阶段', () => {
@@ -344,6 +458,58 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
         } as never)).toEqual({ valid: true });
     });
 
+    it('规则核对：AI 处于眩晕时仍可在受伤前使用气减伤，眩晕只限制攻击', () => {
+        const state = createHeroMatchup('barbarian', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.sys.flowHalted = true;
+        state.core.activePlayerId = '0';
+        state.core.players['1'].tokens[TOKEN_IDS.TAIJI] = 3;
+        state.core.players['1'].tokens[TOKEN_IDS.FLIGHT] = 1;
+        state.core.players['1'].statusEffects[STATUS_IDS.DAZE] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'violent-assault',
+            settlementStage: 'preDamage',
+            isDefendable: true,
+            preDefenseResolved: true,
+        };
+        state.core.pendingDamage = {
+            id: 'online-ai-dazed-taiji-response',
+            sourcePlayerId: '0',
+            targetPlayerId: '1',
+            originalDamage: 2,
+            currentDamage: 2,
+            responseType: 'beforeDamageReceived',
+            responderId: '1',
+            sourceAbilityId: 'violent-assault',
+            damageScope: 'attack',
+        };
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'token-response',
+            commands: [expect.objectContaining({
+                type: 'USE_TOKEN',
+                payload: expect.objectContaining({ tokenId: TOKEN_IDS.TAIJI }),
+            })],
+        }));
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'skip-token-response',
+            commands: [{
+                type: 'SKIP_TOKEN_RESPONSE',
+                payload: { pendingDamageId: 'online-ai-dazed-taiji-response' },
+            }],
+        }));
+        expect(DiceThroneDomain.validate(state, {
+            type: 'SKIP_TOKEN_RESPONSE',
+            playerId: '1',
+            payload: { pendingDamageId: 'online-ai-dazed-taiji-response' },
+            timestamp: 0,
+        } as never)).toEqual({ valid: true });
+    });
+
     it('线上反馈：工匠电能机器人加伤后，AI 让过响应应把 12 点伤害扣到生命值', () => {
         const state = createHeroMatchup('artificer', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'defensiveRoll';
@@ -499,11 +665,66 @@ describe('DiceThrone AI 主阶段候选门禁', () => {
             timestamp: 0,
         } as never)).toEqual({ valid: true });
 
+        const forcedAdvance = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            playerId: '1',
+            engineConfig,
+            gameId: 'dicethrone',
+        });
+        expect(forcedAdvance?.action.commands).toEqual([{ type: 'ADVANCE_PHASE', payload: {} }]);
+
         const actions = buildDiceThroneAiLegalActions({ playerId: '1', state });
         expect(actions).toContainEqual(expect.objectContaining({
             kind: 'advance-phase',
             commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
         }));
+    });
+
+    it('线上反馈：防御骰仍可掷时 watchdog 不得绕过动作强推阶段', () => {
+        const state = createHeroMatchup('treant', 'artificer')(['0', '1'], fixedRandom);
+        state.sys.phase = 'defensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 0;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 4;
+        state.core.rollConfirmed = false;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: 'shattering-fist-3-5',
+            defenseAbilityId: 'tinker',
+            settlementStage: 'preDamage',
+            isDefendable: true,
+            preDefenseResolved: true,
+        };
+
+        expect(canAdvancePhase(state.core, 'defensiveRoll')).toBe(false);
+        expect(DiceThroneDomain.validate(state, {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+            timestamp: 0,
+        } as never)).toMatchObject({ valid: false, error: 'cannot_advance_phase' });
+        expect(buildDiceThroneAiLegalActions({ playerId: '1', state })).toContainEqual(expect.objectContaining({
+            kind: 'roll-dice',
+            commands: [{ type: 'ROLL_DICE', payload: {} }],
+        }));
+
+        const forcedAdvance = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState: state,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            playerId: '1',
+            engineConfig,
+            gameId: 'dicethrone',
+        });
+        expect(forcedAdvance).toBeNull();
     });
 
     it('主阶段临时骰确认后，watchdog 不得把攻击掷骰阶段裸推进掉', () => {

@@ -761,7 +761,7 @@ test.describe('Lobby E2E', () => {
         await expect(manualFactionCheckbox).not.toBeChecked();
         await manualFactionCheckbox.check();
         await expect(manualFactionCheckbox).toBeChecked();
-        await expect(page.getByText('玩家选择 AI 派系')).toBeVisible();
+        await expect(page.getByText('手动选择 AI 派系')).toBeVisible();
 
         await game.screenshot('lobby-smashup-create-room-ai-config-manual-faction', testInfo);
 

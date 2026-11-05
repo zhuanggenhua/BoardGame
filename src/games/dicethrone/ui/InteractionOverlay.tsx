@@ -6,14 +6,45 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { InteractionDescriptor, HeroState } from '../domain/types';
+import { Search, X } from 'lucide-react';
+import type { AbilityCard, InteractionDescriptor, HeroState } from '../domain/types';
 import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
+import { UI_Z_INDEX } from '../../../core';
+import { CardPreview } from '../../../components/common/media/CardPreview';
+import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
+import { getDiceThroneCardPreviewRef } from './cardPreviewHelper';
 
 type TeamTone = 'self' | 'ally' | 'enemy';
+
+const CARD_POOL_CARD_WIDTH = 'clamp(88px, min(7.2vw, 12.5vh), 132px)';
+const CARD_POOL_PANEL_TOP = 'min(clamp(4.25rem, 9vh, 6.25rem), 9vh)';
+const CARD_POOL_CARD_MAX_WIDTH_PX = 132;
+const CARD_POOL_PANEL_MAX_WIDTH_PX = 1120;
+const CARD_POOL_PANEL_SAFE_PADDING_PX = 96;
+const CARD_POOL_GRID_GAP_PX = 16;
+
+const normalizeCardPoolSearchText = (value: unknown): string => (
+    String(value ?? '')
+        .normalize('NFKC')
+        .trim()
+        .toLocaleLowerCase()
+);
+
+const getCardPoolViewportWidth = (): number => {
+    if (typeof window === 'undefined') return 1024;
+    return Math.max(320, window.innerWidth);
+};
+
+const getCardPoolSingleRowCapacity = (): number => {
+    const viewportWidth = getCardPoolViewportWidth();
+    const panelWidth = Math.min(CARD_POOL_PANEL_MAX_WIDTH_PX, viewportWidth - 32);
+    const usableWidth = Math.max(CARD_POOL_CARD_MAX_WIDTH_PX, panelWidth - CARD_POOL_PANEL_SAFE_PADDING_PX);
+    return Math.max(1, Math.floor((usableWidth + CARD_POOL_GRID_GAP_PX) / (CARD_POOL_CARD_MAX_WIDTH_PX + CARD_POOL_GRID_GAP_PX)));
+};
 
 interface ToneClasses {
     idleBorderClassName: string;
@@ -105,6 +136,8 @@ export interface InteractionOverlayProps {
     onSelectPlayer: (playerId: PlayerId) => void;
     /** 选择手牌回调 */
     onSelectHandCard?: (cardId: string) => void;
+    /** 复用牌桌既有放大阅读，不改变当前选择。 */
+    onMagnifyCard?: (card: AbilityCard) => void;
     /** 确认交互 */
     onConfirm: () => void;
     /** 取消交互 */
@@ -113,6 +146,15 @@ export interface InteractionOverlayProps {
     statusIconAtlas?: StatusAtlases | null;
     /** 语言 */
     locale?: string;
+    /** 保留提示确认能力，同时允许查看/操作背景棋盘。 */
+    allowBackgroundInteraction?: boolean;
+    /** 限制是否可提交；复用选择界面承载 ChoiceRequest 时对应原交互权限。 */
+    canResolve?: boolean;
+    /** 操作按钮翻译 key 覆盖，用于选择器内明确显示“清空选择”或“跳过”。 */
+    cancelLabelKey?: string;
+    confirmLabelKey?: string;
+    /** 是否允许清空当前本地选择。 */
+    canCancel?: boolean;
 }
 
 export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
@@ -126,31 +168,73 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     onSelectStatus,
     onSelectPlayer,
     onSelectHandCard = () => undefined,
+    onMagnifyCard,
     onConfirm,
     onCancel,
     statusIconAtlas,
     locale,
+    allowBackgroundInteraction = false,
+    canResolve = true,
+    cancelLabelKey = 'common.cancel',
+    confirmLabelKey = 'common.confirm',
+    canCancel = true,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     const interactionType = interaction.type;
     const selectedItems = interaction.selected ?? [];
+    const isDoctorStrangeInteraction = players[interaction.playerId]?.characterId === 'doctor_strange';
+    const cardReading = useTouchLongPress<string, AbilityCard>({
+        enabled: Boolean(onMagnifyCard),
+        durationMs: 420,
+        moveCancelPx: 14,
+        clickBlockMs: 450,
+        onLongPress: (_id, card) => onMagnifyCard?.(card),
+    });
     const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(players);
+    const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
+    const compactSingleStatusHolder = isDoctorStrangeInteraction && isStatusSelection && targetPlayerIds.length === 1;
+    const isTransferStatusSelection = (
+        (interactionType === 'selectStatus' || interactionType === 'selectTargetStatus')
+        && interaction.transferConfig !== undefined
+        && !interaction.transferConfig.statusId
+    );
     const isRemovableEffect = React.useCallback((effectId: string) => {
         const definition = tokenDefinitions?.find(def => def.id === effectId);
         return definition?.passiveTrigger?.removable ?? true;
     }, [tokenDefinitions]);
     const getRemovableEntries = React.useCallback((entries: Record<string, number> | undefined) => {
         return Object.fromEntries(
-            Object.entries(entries ?? {}).filter(([effectId, stacks]) => stacks > 0 && isRemovableEffect(effectId)),
+            Object.entries(entries ?? {}).filter(([effectId, stacks]) => (
+                stacks > 0
+                && isRemovableEffect(effectId)
+                && (!isTransferStatusSelection
+                    || tokenDefinitions?.find(definition => definition.id === effectId)?.passiveTrigger?.transferable !== false)
+            )),
         );
-    }, [isRemovableEffect]);
+    }, [isRemovableEffect, isTransferStatusSelection, tokenDefinitions]);
+    const getStatusEntries = React.useCallback((
+        playerId: PlayerId,
+        collection: 'statusEffects' | 'tokens',
+        entries: Record<string, number> | undefined,
+    ) => {
+        const candidates = interaction.candidateStatusOptions;
+        if (!candidates) return getRemovableEntries(entries);
+        const allowedIds = new Set(candidates
+            .filter(candidate => candidate.playerId === playerId && candidate.collection === collection)
+            .map(candidate => candidate.statusId));
+        return Object.fromEntries(Object.entries(entries ?? {}).filter(([statusId, stacks]) => (
+            stacks > 0 && allowedIds.has(statusId)
+        )));
+    }, [getRemovableEntries, interaction.candidateStatusOptions]);
 
     // 状态效果选择模式
-    const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
     // 玩家选择模式（选择目标玩家：授予 token / 移除所有状态等）
     const isPlayerSelection = interactionType === 'selectPlayer';
-    // 手牌选择模式（由手牌持有者自行选择）
+    // 卡牌选择模式（由持有者从手牌或抽牌堆自行选择）
     const isHandCardSelection = interactionType === 'selectHandCard';
+    const isDeckCardSelection = interactionType === 'selectDeckCard';
+    const isCardSelection = isHandCardSelection || isDeckCardSelection || interactionType === 'selectCard';
+    const cardSourceZone = interaction.cardSourceZone ?? (isDeckCardSelection ? 'deck' : 'hand');
     // 转移模式的第二阶段：选择目标玩家
     const isTransferTargetSelection = interactionType === 'selectTargetStatus' && interaction.transferConfig?.statusId;
     const shouldRenderStatusOwners = isStatusSelection && !isTransferTargetSelection;
@@ -165,8 +249,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const playersWithStatus = targetPlayerIds.filter(pid => {
         const p = players[pid];
         if (!p) return false;
-        const hasEffects = Object.keys(getRemovableEntries(p.statusEffects)).length > 0;
-        const hasTokens = Object.keys(getRemovableEntries(p.tokens)).length > 0;
+        const hasEffects = Object.keys(getStatusEntries(pid, 'statusEffects', p.statusEffects)).length > 0;
+        const hasTokens = Object.keys(getStatusEntries(pid, 'tokens', p.tokens)).length > 0;
         return hasEffects || hasTokens;
     });
 
@@ -177,7 +261,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const getPlayerMeta = React.useCallback((pid: PlayerId) => {
         const isSelf = pid === currentPlayerId;
         const isAlly = !isSelf && !!currentTeamId && teamIdByPlayerId?.[pid] === currentTeamId;
-        const teamTone = isSelf ? 'self' : isAlly ? 'ally' : 'enemy';
+        const teamTone: TeamTone = isSelf ? 'self' : isAlly ? 'ally' : 'enemy';
         const seatIndex = resolvedSeatingOrder.indexOf(pid);
         const seatNumber = seatIndex >= 0 ? seatIndex + 1 : Number.parseInt(String(pid), 10) + 1;
         const seatLabel = Number.isFinite(seatNumber) ? `P${seatNumber}` : `P${String(pid)}`;
@@ -232,12 +316,275 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     }, [interaction.transferConfig?.sourcePlayerId, interaction.transferConfig?.statusId, isTransferTargetSelection, players]);
 
     const minSelectCount = interaction.minSelectCount ?? (
-        isPlayerSelection || isHandCardSelection || isTransferTargetSelection ? 1 : interaction.selectCount
+        isPlayerSelection || isCardSelection || isTransferTargetSelection ? 1 : interaction.selectCount
     );
-    const canConfirm = selectedItems.length >= minSelectCount;
+    const canConfirm = canResolve && selectedItems.length >= minSelectCount;
+    const [cardPoolSearch, setCardPoolSearch] = React.useState('');
+    const cardSelectionCards = React.useMemo(() => {
+        if (!isCardSelection) return [] as AbilityCard[];
+        const player = players[interaction.playerId];
+        const sourceCards = player?.[cardSourceZone] ?? [];
+        const candidateIds = interaction.candidateCardIds;
+        return candidateIds ? sourceCards.filter(card => candidateIds.includes(card.id)) : sourceCards;
+    }, [cardSourceZone, interaction.candidateCardIds, interaction.playerId, isCardSelection, players]);
+    const cardPoolSearchSignature = React.useMemo(() => (
+        [
+            interaction.id,
+            interaction.playerId,
+            interactionType,
+            cardSourceZone,
+            cardSelectionCards.map(card => card.id).join('|'),
+        ].join('::')
+    ), [cardSelectionCards, cardSourceZone, interaction.id, interaction.playerId, interactionType]);
+
+    React.useEffect(() => {
+        setCardPoolSearch('');
+    }, [cardPoolSearchSignature]);
+
+    const resolveCardName = React.useCallback((card: AbilityCard): string => {
+        const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
+            ?? card.i18n?.['zh-CN']?.name
+            ?? card.name
+            ?? card.id;
+        if (
+            typeof rawCardName === 'string'
+            && rawCardName.startsWith('cards.')
+            && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
+        ) {
+            return t(rawCardName);
+        }
+        return String(rawCardName);
+    }, [i18n, locale, t]);
+
+    const normalizedCardPoolSearch = normalizeCardPoolSearchText(cardPoolSearch);
+    const shouldShowCardPoolSearch = cardSelectionCards.length > getCardPoolSingleRowCapacity();
+    const visibleCardSelectionCards = React.useMemo(() => {
+        if (!shouldShowCardPoolSearch || normalizedCardPoolSearch.length === 0) {
+            return cardSelectionCards;
+        }
+
+        return cardSelectionCards.filter((card) => {
+            const localizedNames = Object.values(card.i18n ?? {})
+                .flatMap(entry => [entry.name, entry.description]);
+            const haystack = [
+                resolveCardName(card),
+                card.name,
+                card.description,
+                card.id,
+                card.type,
+                card.timing,
+                card.cpCost,
+                ...localizedNames,
+            ].map(normalizeCardPoolSearchText).join(' ');
+            return haystack.includes(normalizedCardPoolSearch);
+        });
+    }, [cardSelectionCards, normalizedCardPoolSearch, resolveCardName, shouldShowCardPoolSearch]);
 
     // Derived presence
     const isOpen = true; // Controlled by BoardOverlays
+
+    if (isCardSelection) {
+        const cardPoolCardStyle: React.CSSProperties = {
+            ...(isDoctorStrangeInteraction ? {} : { backgroundColor: '#0f172a', borderRadius: '0.25rem' }),
+            width: CARD_POOL_CARD_WIDTH,
+        };
+
+        return (
+            <div
+                data-testid="dt-card-pool-overlay"
+                data-card-pool-layout="center-stage"
+                data-card-pool-hand-protection="shared-stage-visible-hand"
+                data-card-pool-browse-mode="grid-scroll"
+                className="dt-card-pool fixed inset-0 pointer-events-none"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div
+                    data-testid="dt-card-pool-panel"
+                    className="dt-card-pool-panel pointer-events-auto absolute inset-x-0 top-[clamp(4.25rem,9vh,6.25rem)] px-4"
+                    style={{ top: CARD_POOL_PANEL_TOP }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.nativeEvent.stopImmediatePropagation()}
+                >
+                    <div
+                        data-testid="dt-card-pool-surface"
+                        className="dt-card-pool-surface pointer-events-auto relative isolate mx-auto flex w-full max-w-[70rem] flex-col px-3 py-3"
+                        style={{ height: `min(calc(min(40vh, 28rem) + 11rem), calc(100dvh - ${CARD_POOL_PANEL_TOP} - 1rem))` }}
+                    >
+                        <div
+                            aria-hidden="true"
+                            data-testid="dt-card-pool-backdrop"
+                            className="dt-card-pool-backdrop pointer-events-none absolute inset-x-[2%] inset-y-0 -z-10 border-y border-red-300/20 bg-[linear-gradient(90deg,transparent_0%,rgba(10,3,7,0.82)_12%,rgba(24,4,11,0.94)_50%,rgba(10,3,7,0.82)_88%,transparent_100%)] shadow-[0_18px_42px_rgba(0,0,0,0.34)] backdrop-blur-[1px]"
+                        />
+                        <h2
+                            data-testid="dt-card-pool-title"
+                            className="dt-card-pool-title mb-2 shrink-0 text-center text-base font-black uppercase tracking-[0.12em] text-amber-100 drop-shadow-[0_2px_9px_rgba(127,29,29,0.78)] sm:text-lg"
+                        >
+                            {t(interaction.titleKey, { count: interaction.selectCount })}
+                        </h2>
+                        {shouldShowCardPoolSearch ? (
+                            <div
+                                data-testid="dt-card-pool-search"
+                                className="dt-card-pool-search mx-auto mb-1 w-full max-w-[min(100%,30rem)] shrink-0"
+                            >
+                                <div className="relative">
+                                    <span
+                                        data-testid="dt-card-pool-search-leading-icon"
+                                        className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-red-100/70"
+                                    >
+                                        <Search className="h-4 w-4" strokeWidth={2.1} />
+                                    </span>
+                                    <input
+                                        type="text"
+                                        inputMode="search"
+                                        role="searchbox"
+                                        value={cardPoolSearch}
+                                        onChange={(event) => setCardPoolSearch(event.target.value)}
+                                        onKeyDown={(event) => {
+                                            if (event.key === 'Escape' && cardPoolSearch) {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                setCardPoolSearch('');
+                                            }
+                                        }}
+                                        placeholder={t('interaction.cardPoolSearchPlaceholder')}
+                                        data-testid="dt-card-pool-search-input"
+                                        className="h-9 w-full rounded-full border border-red-200/25 bg-[#1a0509]/72 pl-10 pr-10 text-sm font-bold text-amber-50 outline-none placeholder:text-red-100/38 focus:border-red-200/60 focus:ring-2 focus:ring-red-300/20"
+                                    />
+                                    {normalizedCardPoolSearch.length > 0 ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setCardPoolSearch('')}
+                                            data-testid="dt-card-pool-search-clear"
+                                            className="absolute right-1.5 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-red-100/10 text-amber-50 transition-colors hover:bg-red-100/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200"
+                                            style={{ translate: 'none', transform: 'translateY(-50%)' }}
+                                            aria-label={t('interaction.cardPoolSearchClear')}
+                                        >
+                                            <X size={14} strokeWidth={2.2} />
+                                        </button>
+                                    ) : null}
+                                </div>
+                                <div
+                                    data-testid="dt-card-pool-result-count"
+                                    className="mt-1.5 text-center text-[11px] font-bold tracking-[0.08em] text-amber-100/68"
+                                >
+                                    {t('interaction.cardPoolFilterResultCount', {
+                                        visible: visibleCardSelectionCards.length,
+                                        total: cardSelectionCards.length,
+                                    })}
+                                </div>
+                            </div>
+                        ) : null}
+                        <div
+                            data-testid="dt-card-pool-selection"
+                            data-card-pool-kind={cardSourceZone}
+                            data-card-pool-visible-rows="two"
+                            className="dt-card-pool-selection scrollbar-thin mx-auto min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-1 py-3 [scrollbar-color:rgba(248,113,113,0.42)_transparent]"
+                        >
+                            <div
+                                data-testid="dt-card-pool-track"
+                                className="dt-card-pool-track mx-auto flex min-w-full flex-wrap items-start justify-center gap-[clamp(0.65rem,1vw,1rem)] px-3"
+                            >
+                                {visibleCardSelectionCards.length === 0 ? (
+                                    <div
+                                        data-testid="dt-card-pool-empty"
+                                        className="flex min-h-[9rem] min-w-[min(22rem,76vw)] items-center justify-center rounded-[0.35rem] border border-dashed border-red-200/22 bg-[#120407]/58 px-6 text-center text-sm font-bold tracking-[0.08em] text-amber-100/72"
+                                    >
+                                        {t('interaction.cardPoolSearchEmpty')}
+                                    </div>
+                                ) : visibleCardSelectionCards.map(card => {
+                                    const ownerCharacterId = players[interaction.playerId]?.characterId;
+                                    const previewRef = card.previewRef ?? getDiceThroneCardPreviewRef(card.id, ownerCharacterId);
+                                    const inspectableCard = previewRef ? { ...card, previewRef } : undefined;
+                                    const cardName = resolveCardName(card);
+                                    const isSelected = selectedItems.includes(card.id);
+                                    return (
+                                        <button
+                                            key={card.id}
+                                            type="button"
+                                            data-testid={`dt-${cardSourceZone}-card-option-${card.id}`}
+                                            data-selected={isSelected ? 'true' : 'false'}
+                                            data-card-pool-mode="preview"
+                                            data-card-preview-ready={previewRef ? 'true' : 'false'}
+                                            data-selection-focus={isSelected ? 'selected' : 'available'}
+                                            aria-label={`${cardName} ${card.type} ${card.cpCost} CP`}
+                                            aria-pressed={isSelected}
+                                            onClick={() => {
+                                                if (!cardReading.shouldBlockClick(card.id)) onSelectHandCard(card.id);
+                                            }}
+                                            onPointerDown={event => {
+                                                if (inspectableCard) cardReading.handlePointerDown(event, card.id, inspectableCard);
+                                            }}
+                                            onPointerMove={event => cardReading.handlePointerMove(event, card.id)}
+                                            onPointerUp={() => cardReading.handlePointerUp(card.id)}
+                                            onPointerCancel={() => cardReading.handlePointerUp(card.id)}
+                                            onTouchEnd={event => {
+                                                if (cardReading.shouldBlockClick(card.id)) event.preventDefault();
+                                            }}
+                                            onContextMenu={onMagnifyCard && inspectableCard ? event => {
+                                                event.preventDefault();
+                                                onMagnifyCard(inspectableCard);
+                                            } : undefined}
+                                            className={`
+                                                group relative flex flex-shrink-0 cursor-pointer flex-col items-center border-0 bg-transparent p-0 text-left transition-transform duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200
+                                                ${isSelected ? '-translate-y-2 z-10' : 'hover:-translate-y-1 hover:z-10'}
+                                            `}
+                                        >
+                                            <div
+                                                data-testid={`dt-card-choice-preview-${card.id}`}
+                                                className={`
+                                                    overflow-hidden transition-[box-shadow,filter] duration-200 ${isDoctorStrangeInteraction ? '' : 'rounded-[0.3rem]'}
+                                                    ${isSelected
+                                                        ? 'ring-2 ring-amber-200 shadow-[0_0_0_1px_rgba(127,29,29,0.86),0_0_24px_rgba(248,113,113,0.52),0_14px_24px_rgba(0,0,0,0.48)]'
+                                                        : isDoctorStrangeInteraction
+                                                            ? 'brightness-110 drop-shadow-[0_8px_10px_rgba(0,0,0,0.7)] group-hover:brightness-125'
+                                                            : 'shadow-[0_12px_22px_rgba(0,0,0,0.42)] group-hover:ring-1 group-hover:ring-red-200/75 group-hover:shadow-[0_0_16px_rgba(185,28,28,0.42),0_14px_24px_rgba(0,0,0,0.46)]'}
+                                                `}
+                                            >
+                                                <CardPreview
+                                                    previewRef={previewRef}
+                                                    locale={locale}
+                                                    className={isDoctorStrangeInteraction ? undefined : 'rounded-[0.3rem] bg-[#150609]'}
+                                                    style={cardPoolCardStyle}
+                                                    alt={cardName}
+                                                />
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <div
+                            data-testid="dt-card-pool-actions"
+                            className="dt-card-pool-actions mt-2 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3"
+                        >
+                            {canCancel && (
+                                <GameButton
+                                    onClick={onCancel}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="col-start-1 row-start-1 justify-self-end"
+                                    data-testid="dt-interaction-clear"
+                                >
+                                    {t(cancelLabelKey)}
+                                </GameButton>
+                            )}
+                            <GameButton
+                                onClick={onConfirm}
+                                disabled={!canConfirm}
+                                variant="primary"
+                                size="sm"
+                                className="col-start-2 row-start-1"
+                                data-testid="dt-interaction-confirm"
+                            >
+                                {t(confirmLabelKey)}
+                            </GameButton>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <GameModal
@@ -252,24 +599,30 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     )}
                 </div>
             }
-            width="xl"
+            width={compactSingleStatusHolder ? 'sm' : 'xl'}
+            density={compactSingleStatusHolder ? 'compact' : 'normal'}
             closeOnBackdrop={false} // Force interaction
+            allowBackgroundInteraction={allowBackgroundInteraction}
             footer={
                 <>
-                    <GameButton
-                        onClick={onCancel}
-                        variant="secondary"
-                        className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
-                    >
-                        {t('common.cancel')}
-                    </GameButton>
+                    {canCancel && (
+                        <GameButton
+                            onClick={onCancel}
+                            variant="secondary"
+                            className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
+                            data-testid="dt-interaction-clear"
+                        >
+                            {t(cancelLabelKey)}
+                        </GameButton>
+                    )}
                     <GameButton
                         onClick={onConfirm}
                         disabled={!canConfirm}
                         variant="primary"
                         className="px-8 -translate-y-0.5 shadow-[0_6px_0_#b45309] active:translate-y-[3px] active:shadow-[0_2px_0_#b45309]"
+                        data-testid="dt-interaction-confirm"
                     >
-                        {t('common.confirm')}
+                        {t(confirmLabelKey)}
                     </GameButton>
                 </>
             }
@@ -277,7 +630,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
             <div className="flex flex-col w-full p-2">
                 {/* 玩家选择区域 */}
                 {(shouldRenderStatusOwners || isPlayerSelection) && (
-                    <div className="flex flex-wrap gap-4 justify-center">
+                    <div data-testid="dt-status-owners" className="flex flex-wrap gap-4 justify-center">
                         {targetPlayerIds.map(pid => {
                             const player = players[pid];
                             if (!player) return null;
@@ -303,6 +656,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                         relationLabel={relationLabel}
                                         seatLabel={seatLabel}
                                         onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
+                                        selected={isSelected}
                                         containerClassName={`
                                             p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                             ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'opacity-50 cursor-not-allowed'}
@@ -315,8 +669,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     >
                                         {/* 显示玩家的状态效果（仅供参考） */}
                                         <SelectableEffectsContainer
-                                            effects={requiresTargetWithStatus ? getRemovableEntries(player.statusEffects) : (player.statusEffects ?? {})}
-                                            tokens={requiresTargetWithStatus ? getRemovableEntries(player.tokens) : player.tokens}
+                                            effects={requiresTargetWithStatus ? getStatusEntries(pid, 'statusEffects', player.statusEffects) : (player.statusEffects ?? {})}
+                                            tokens={requiresTargetWithStatus ? getStatusEntries(pid, 'tokens', player.tokens) : player.tokens}
                                             highlightAll={false}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="small"
@@ -347,7 +701,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     relationLabel={relationLabel}
                                     seatLabel={seatLabel}
                                     containerClassName={`
-                                        p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                        ${compactSingleStatusHolder ? 'p-3' : 'p-4'} rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${hasStatus
                                             ? passiveBorderClassName
                                             : 'border-slate-700 bg-slate-800/30 opacity-50'}
@@ -355,11 +709,13 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 >
                                     {hasStatus ? (
                                         <SelectableEffectsContainer
-                                            effects={getRemovableEntries(player.statusEffects)}
-                                            tokens={getRemovableEntries(player.tokens)}
-                                            selectedId={selectedStatusId}
+                                            effects={getStatusEntries(pid, 'statusEffects', player.statusEffects)}
+                                            tokens={getStatusEntries(pid, 'tokens', player.tokens)}
+                                            selectedId={interaction.selectedStatusPlayerId === pid ? selectedStatusId : undefined}
                                             highlightAll={true}
                                             onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}
+                                            tooltipPlacementBoundarySelector={isDoctorStrangeInteraction ? (targetPlayerIds.length === 1 ? '[data-testid="dt-game-modal"]' : '[data-testid="dt-status-owners"]') : undefined}
+                                            tooltipAvoidSelector={isDoctorStrangeInteraction && targetPlayerIds.length > 1 ? '#modal-root [data-testid^="dt-status-owner-"], #modal-root h2, #modal-root button' : undefined}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="normal"
                                             className="justify-center"
@@ -461,43 +817,6 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                     </div>
                 )}
 
-                {/* 手牌选择区域 */}
-                {isHandCardSelection && (
-                    <div className="flex flex-wrap gap-3 justify-center">
-                        {(players[interaction.playerId]?.hand ?? []).map(card => {
-                            const rawCardName = card.i18n?.[locale ?? 'zh-CN']?.name
-                                ?? card.i18n?.['zh-CN']?.name
-                                ?? card.name
-                                ?? card.id;
-                            const cardName = typeof rawCardName === 'string'
-                                && rawCardName.startsWith('cards.')
-                                && i18n.exists(rawCardName, { ns: 'game-dicethrone' })
-                                ? t(rawCardName)
-                                : rawCardName;
-                            const isSelected = selectedItems.includes(card.id);
-                            return (
-                                <button
-                                    key={card.id}
-                                    type="button"
-                                    data-testid={`dt-hand-card-option-${card.id}`}
-                                    data-selected={isSelected ? 'true' : 'false'}
-                                    onClick={() => onSelectHandCard(card.id)}
-                                    className={`
-                                        min-w-[180px] rounded-xl border-2 p-4 text-left transition-all duration-200
-                                        ${isSelected
-                                            ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
-                                            : 'border-slate-600 bg-slate-800/70 hover:border-amber-300 hover:bg-slate-700'}
-                                    `}
-                                >
-                                    <div className="text-sm font-bold text-slate-100">{cardName}</div>
-                                    <div className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                        {card.type} · {card.cpCost} CP
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
             </div>
         </GameModal>
     );

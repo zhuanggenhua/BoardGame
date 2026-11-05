@@ -181,6 +181,10 @@ export interface BoardSummonEffectPresetProps {
   objectKind?: string;
   objectId?: string;
   className?: string;
+  hostStyle?: React.CSSProperties;
+  overlayStyle?: React.CSSProperties;
+  overlayTestId?: string;
+  pillarWidthRatio?: number;
   onImpact?: () => void;
   onComplete?: () => void;
 }
@@ -200,6 +204,10 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
   objectKind,
   objectId,
   className = '',
+  hostStyle,
+  overlayStyle,
+  overlayTestId,
+  pillarWidthRatio,
   onImpact,
   onComplete,
 }) => {
@@ -214,7 +222,8 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
       data-object-id={objectId ?? anchorSnapshot?.anchorId ?? ''}
       data-anchor-id={anchorSnapshot?.anchorId ?? objectId ?? ''}
       data-surface-id={anchorSnapshot?.surfaceId ?? ''}
-      style={box}
+      data-pillar-width-ratio={pillarWidthRatio ?? ''}
+      style={{ ...box, ...hostStyle }}
     >
       <SummonHybridEffect
         active
@@ -225,9 +234,18 @@ export const BoardSummonEffectPreset: React.FC<BoardSummonEffectPresetProps> = (
         durationScale={durationScale}
         visualScale={visualScale}
         dimStrength={dimStrength}
+        pillarWidthRatio={pillarWidthRatio}
         onImpact={onImpact}
         onComplete={onComplete}
       />
+      {overlayStyle ? (
+        <div
+          data-testid={overlayTestId || `${hostTestId}-halo`}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={overlayStyle}
+        />
+      ) : null}
     </div>
   );
 };
@@ -392,6 +410,10 @@ export interface BoardDamageImpactPresetProps {
   shakeDuration?: number;
   impactEffects?: ImpactEffects;
   damageFlashCompleteMs?: number;
+  slashDurationMs?: number;
+  slashActiveMs?: number;
+  pulseDurationMs?: number;
+  pulseActiveMs?: number;
   sizeStyle?: React.CSSProperties;
   className?: string;
 }
@@ -416,6 +438,10 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
   shakeDuration = 620,
   impactEffects = { shake: true, hitStop: true },
   damageFlashCompleteMs = 1_550,
+  slashDurationMs = 560,
+  slashActiveMs = 220,
+  pulseDurationMs = 620,
+  pulseActiveMs = 620,
   sizeStyle,
   className = '',
 }) => {
@@ -463,10 +489,10 @@ export const BoardDamageImpactPreset: React.FC<BoardDamageImpactPresetProps> = (
           numberColorClass={numberColorClass}
           numberDurationSeconds={numberDurationSeconds}
           quality={quality}
-          slashDurationMs={560}
-          slashActiveMs={220}
-          pulseDurationMs={620}
-          pulseActiveMs={620}
+          slashDurationMs={slashDurationMs}
+          slashActiveMs={slashActiveMs}
+          pulseDurationMs={pulseDurationMs}
+          pulseActiveMs={pulseActiveMs}
           pulseColor={pulseColor}
           completeMs={damageFlashCompleteMs}
         />
@@ -527,6 +553,100 @@ export const BoardBurstImpactPreset: React.FC<BoardBurstImpactPresetProps> = ({
         />
       </div>
     </div>
+  );
+};
+
+export interface BoardTeleportImpactPresetProps {
+  source?: FxCellCoord;
+  target: FxCellCoord;
+  getCellPosition: CellPositionResolver;
+  sourceSnapshot?: FxAnchorSnapshot | null;
+  targetSnapshot?: FxAnchorSnapshot | null;
+  sourceBox?: FxBox | null;
+  targetBox?: FxBox | null;
+  sourceAnchorId?: string;
+  targetAnchorId?: string;
+  quality?: FxQuality;
+  arrivalDelayMs?: number;
+  sourceHostTestId?: string;
+  sourceBurstTestId?: string;
+  arrivalHostTestId?: string;
+  arrivalBurstTestId?: string;
+  sourcePreset?: BoardBurstPresetName;
+  arrivalPreset?: BoardBurstPresetName;
+  sourceColor?: string[];
+  arrivalColor?: string[];
+  sourceOverflow?: number;
+  arrivalOverflow?: number;
+  sourceSizeClassName?: string;
+  arrivalSizeClassName?: string;
+}
+
+/**
+ * Direct relocation feedback: source flash and destination arrival only.
+ * No projectile path or travel intermediate state is rendered.
+ */
+export const BoardTeleportImpactPreset: React.FC<BoardTeleportImpactPresetProps> = ({
+  source,
+  target,
+  getCellPosition,
+  sourceSnapshot,
+  targetSnapshot,
+  sourceBox,
+  targetBox,
+  sourceAnchorId,
+  targetAnchorId,
+  quality = 'full',
+  arrivalDelayMs = 0,
+  sourceHostTestId = 'board-fx-teleport-source',
+  sourceBurstTestId,
+  arrivalHostTestId = 'board-fx-teleport-arrival',
+  arrivalBurstTestId,
+  sourcePreset = 'magicDust',
+  arrivalPreset = 'summonGlow',
+  sourceColor,
+  arrivalColor,
+  sourceOverflow = 2.4,
+  arrivalOverflow = 2.6,
+  sourceSizeClassName = 'relative h-24 w-24',
+  arrivalSizeClassName = 'relative h-28 w-28',
+}) => {
+  const hasDistinctSource = Boolean(source && !sameCell(source, target));
+
+  return (
+    <>
+      {hasDistinctSource ? (
+        <BoardBurstImpactPreset
+          cell={source!}
+          getCellPosition={getCellPosition}
+          targetSnapshot={sourceSnapshot}
+          box={sourceBox}
+          targetAnchorId={sourceAnchorId}
+          quality={quality}
+          hostTestId={sourceHostTestId}
+          burstTestId={sourceBurstTestId}
+          preset={sourcePreset}
+          color={sourceColor}
+          overflow={sourceOverflow}
+          sizeClassName={sourceSizeClassName}
+        />
+      ) : null}
+      <BoardBurstImpactPreset
+        cell={target}
+        getCellPosition={getCellPosition}
+        targetSnapshot={targetSnapshot}
+        box={targetBox}
+        targetAnchorId={targetAnchorId}
+        quality={quality}
+        delayMs={arrivalDelayMs}
+        hostTestId={arrivalHostTestId}
+        burstTestId={arrivalBurstTestId}
+        preset={arrivalPreset}
+        color={arrivalColor}
+        overflow={arrivalOverflow}
+        sizeClassName={arrivalSizeClassName}
+      />
+    </>
   );
 };
 

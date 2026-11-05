@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
 import type { HeroState, TurnPhase } from '../types';
 import type { TokenDef } from '../domain/tokenTypes';
 import { PhaseIndicator } from './PhaseIndicator';
@@ -10,7 +10,9 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import type { HitStopConfig } from '../../../components/common/animations';
 import { UI_Z_INDEX } from '../../../core';
 import { AutoResponseToggle } from './AutoResponseToggle';
+import { buildBoardShellInlineUnitValue } from '../../../shared/runtimeLayoutUnits';
 
+const dtUnit = buildBoardShellInlineUnitValue;
 
 export const LeftSidebar = ({
     currentPhase,
@@ -41,6 +43,8 @@ export const LeftSidebar = ({
     onAutoResponseToggle,
     responseTokenIds,
     onResponseTokenClick,
+    activeTokenIds,
+    onActiveTokenClick,
     isHandHidden,
     onToggleHandHidden,
 }: {
@@ -88,23 +92,55 @@ export const LeftSidebar = ({
     /** 当前响应中可直接点击使用的 Token。提示与跳过由手牌上方的共享响应框承接。 */
     responseTokenIds?: string[];
     onResponseTokenClick?: (tokenId: string) => void;
+    /** 当前非响应窗口中可从 Token 本体主动点击使用的 Token。 */
+    activeTokenIds?: string[];
+    onActiveTokenClick?: (tokenId: string) => void;
     /** 手牌层是否临时隐藏，仅影响本地 UI。 */
     isHandHidden?: boolean;
     onToggleHandHidden?: () => void;
 }) => {
+    const leftSidebarStyle = {
+        zIndex: UI_Z_INDEX.hud,
+        left: dtUnit(1.5),
+        bottom: dtUnit(1.5),
+        width: dtUnit(16),
+    } as CSSProperties;
+    const clickableTokenIds = React.useMemo(() => Array.from(new Set([
+        ...(responseTokenIds ?? []),
+        ...(activeTokenIds ?? []),
+        ...(canUsePurify
+            ? (tokenDefinitions ?? []).filter(def => def.activeUse?.effect.type === 'removeDebuff').map(def => def.id)
+            : []),
+        ...(canUseFlight ? [TOKEN_IDS.FLIGHT] : []),
+        ...(canUseNyraBondHeal ? [TOKEN_IDS.NYRAS_BOND] : []),
+    ])), [
+        activeTokenIds,
+        canUseFlight,
+        canUseNyraBondHeal,
+        canUsePurify,
+        responseTokenIds,
+        tokenDefinitions,
+    ]);
+
     return (
         <div
-            className="absolute left-[1.5vw] top-0 bottom-[1.5vw] w-[16vw] flex flex-col items-center pointer-events-none"
-            style={{ zIndex: UI_Z_INDEX.hud }}
+            className="dt-left-sidebar absolute top-0 flex flex-col items-center pointer-events-none"
+            style={leftSidebarStyle}
             data-testid="left-sidebar"
+            data-dicethrone-left-hud-density="normal"
         >
             {/* 回合顺序 - 上移 */}
-            <div className="w-full pt-[0.2rem] px-[1vw]" data-testid="turn-order-panel">
+            <div
+                className="dt-left-sidebar__turn-order-panel w-full pt-[0.2rem]"
+                style={{ paddingInline: dtUnit(1) }}
+                data-testid="turn-order-panel"
+            >
                 <PhaseIndicator currentPhase={currentPhase} />
             </div>
             <div className="flex-grow" />
             <div
-                className="relative w-full flex flex-col items-center gap-[0.5vw] pointer-events-auto"
+                className="dt-left-sidebar__self-panel-group relative w-full flex flex-col items-center pointer-events-auto"
+                style={{ gap: dtUnit(0.5) }}
                 data-testid="self-player-panel-group"
             >
                 {/*
@@ -112,7 +148,8 @@ export const LeftSidebar = ({
                  * Use a small offset above the HP container so the effect doesn't land too low.
                  */}
                 <div
-                    className="relative w-full px-[1.2vw] flex flex-col-reverse gap-[0.3vw]"
+                    className="dt-left-sidebar__status-tokens relative w-full flex flex-col-reverse"
+                    style={{ gap: dtUnit(0.3), paddingInline: dtUnit(1.2) }}
                     ref={selfBuffRef}
                     data-tutorial-id="status-tokens"
                 >
@@ -120,16 +157,23 @@ export const LeftSidebar = ({
                         tokens={viewPlayer.tokens ?? {}}
                         maxPerRow={5}
                         size="normal"
-                        className="flex-wrap-reverse justify-start gap-[0.3vw]"
+                        gapUnits={0.3}
+                        className="flex-wrap-reverse justify-start"
                         locale={locale}
                         atlas={statusIconAtlas}
                         characterId={viewPlayer.characterId}
+                        tooltipPosition={viewPlayer.characterId === 'doctor_strange' ? 'top' : undefined}
+                        tooltipPlacementBoundarySelector={viewPlayer.characterId === 'doctor_strange' ? '[data-tutorial-id="status-tokens"]' : undefined}
                         tokenDefinitions={tokenDefinitions}
                         tokenStackLimits={viewPlayer.tokenStackLimits}
                         testIdPrefix={playerId ? `dt-player-${playerId}-token` : undefined}
                         onTokenClick={(tokenId) => {
                             if (responseTokenIds?.includes(tokenId)) {
                                 onResponseTokenClick?.(tokenId);
+                                return;
+                            }
+                            if (activeTokenIds?.includes(tokenId)) {
+                                onActiveTokenClick?.(tokenId);
                                 return;
                             }
                             if (tokenId === TOKEN_IDS.FLIGHT && onFlightClick) {
@@ -146,20 +190,14 @@ export const LeftSidebar = ({
                                 onPurifyClick();
                             }
                         }}
-                        clickableTokens={[
-                            ...(responseTokenIds ?? []),
-                            ...(canUsePurify
-                                ? (tokenDefinitions ?? []).filter(def => def.activeUse?.effect.type === 'removeDebuff').map(def => def.id)
-                                : []),
-                            ...(canUseFlight ? [TOKEN_IDS.FLIGHT] : []),
-                            ...(canUseNyraBondHeal ? [TOKEN_IDS.NYRAS_BOND] : []),
-                        ]}
+                        clickableTokens={clickableTokenIds}
                     />
                     <StatusEffectsContainer
                         effects={viewPlayer.statusEffects ?? {}}
                         maxPerRow={5}
                         size="normal"
-                        className="flex-wrap-reverse justify-start gap-[0.3vw]"
+                        gapUnits={0.3}
+                        className="flex-wrap-reverse justify-start"
                         locale={locale}
                         atlas={statusIconAtlas}
                         characterId={viewPlayer.characterId}
@@ -173,8 +211,13 @@ export const LeftSidebar = ({
                     />
                 </div>
                 {/* 血条和自动响应开关容器 */}
-                <div className="w-full px-[1vw]" data-testid="dt-player-stats-panel" data-tutorial-id="player-stats">
-                    <div className="w-full flex flex-col gap-[0.4vw]">
+                <div
+                    className="dt-left-sidebar__stats w-full"
+                    style={{ paddingInline: dtUnit(1) }}
+                    data-testid="dt-player-stats-panel"
+                    data-tutorial-id="player-stats"
+                >
+                    <div className="w-full flex flex-col" style={{ gap: dtUnit(0.4) }}>
                         <PlayerStats
                             player={viewPlayer}
                             hpRef={selfHpRef}
@@ -196,7 +239,8 @@ export const LeftSidebar = ({
                     </div>
                 </div>
                 <div
-                    className="w-full px-[1vw] pt-[0.3vw]"
+                    className="dt-left-sidebar__draw-deck w-full"
+                    style={{ paddingInline: dtUnit(1), paddingTop: dtUnit(0.3) }}
                     data-tutorial-id="draw-deck"
                     data-player-seat-anchor={playerId}
                 >

@@ -64,7 +64,7 @@ export function isSmashUpPromptOwnedByPlayer({
     return String(currentPrompt.playerId) === String(playerID);
 }
 
-export function shouldForceSmashUpPromptOverlay(currentPrompt: ButtonOverlayPromptLike): boolean {
+export function shouldForceSmashUpPromptOverlay(currentPrompt: ButtonOverlayPromptLike | null | undefined): boolean {
     const options = currentPrompt?.options;
     return Array.isArray(options) && options.length > 0 && options.every(option => option.displayMode === 'button');
 }
@@ -142,6 +142,25 @@ function hasEnabledCardOptionOutsideHand(
     });
 }
 
+function hasEnabledCardOptionInHand(
+    currentPrompt: HandPromptLike,
+    hand: ReadonlyArray<HandCardLike> | null | undefined,
+): boolean {
+    if (!hand) return false;
+    const options = (currentPrompt as ButtonOverlayPromptLike | undefined)?.options;
+    if (!Array.isArray(options) || options.length === 0) return false;
+
+    const handUids = new Set(
+        hand.flatMap(card => typeof card?.uid === 'string' ? [card.uid] : []),
+    );
+
+    return options.some(option => {
+        if (option?.disabled) return false;
+        const value = option?.value as { cardUid?: unknown } | undefined;
+        return typeof value?.cardUid === 'string' && handUids.has(value.cardUid);
+    });
+}
+
 /**
  * 手牌类交互要先区分“由手牌区直接承接”还是“仍由 PromptOverlay 承接”：
  * - direct: 当前手牌本体能承接的 hand prompt，单选点卡即提交，多选点卡后确认
@@ -156,8 +175,8 @@ export function resolveSmashUpHandPromptUiMode({
 }: ResolveHandPromptUiModeInput): SmashUpHandPromptUiMode {
     if (!isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID })) return 'none';
     if (targetType !== 'hand') return 'none';
-    if (currentPrompt?.multi) return 'overlay';
     if (hasEnabledCardOptionOutsideHand(currentPrompt, hand)) return 'overlay';
+    if (currentPrompt?.multi && !hasEnabledCardOptionInHand(currentPrompt, hand)) return 'overlay';
     return 'direct';
 }
 

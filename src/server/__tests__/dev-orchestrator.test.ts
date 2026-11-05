@@ -36,10 +36,9 @@ async function getFreePort() {
     return port;
 }
 
-async function loadResolveDevPortsFromEnv() {
+async function loadDevOrchestrator() {
     vi.resetModules();
-    const module = await import('../../../scripts/infra/dev-orchestrator.js');
-    return module.resolveDevPortsFromEnv;
+    return import('../../../scripts/infra/dev-orchestrator.js');
 }
 
 afterEach(async () => {
@@ -56,7 +55,7 @@ afterEach(async () => {
 
 describe('resolveDevPortsFromEnv', () => {
     it('在首选端口空闲时保持原端口', async () => {
-        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const { resolveDevPortsFromEnv } = await loadDevOrchestrator();
         const preferredPorts = {
             frontend: await getFreePort(),
             gameServer: await getFreePort(),
@@ -69,7 +68,7 @@ describe('resolveDevPortsFromEnv', () => {
     });
 
     it('在默认端口被占用时自动切到空闲端口', async () => {
-        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const { resolveDevPortsFromEnv } = await loadDevOrchestrator();
         const occupiedFrontend = await listenOnRandomPort();
         const occupiedGameServer = await listenOnRandomPort();
         const freeApiPort = await getFreePort();
@@ -90,7 +89,7 @@ describe('resolveDevPortsFromEnv', () => {
     });
 
     it('显式指定端口时保持用户端口不自动改写', async () => {
-        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const { resolveDevPortsFromEnv } = await loadDevOrchestrator();
         const occupiedFrontend = await listenOnRandomPort();
         const preferredPorts = {
             frontend: occupiedFrontend.port,
@@ -109,7 +108,7 @@ describe('resolveDevPortsFromEnv', () => {
     });
 
     it('非固定端口入口将显式端口视为首选端口，冲突时自动切换', async () => {
-        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const { resolveDevPortsFromEnv } = await loadDevOrchestrator();
         const occupiedFrontend = await listenOnRandomPort();
         const preferredPorts = {
             frontend: occupiedFrontend.port,
@@ -127,7 +126,7 @@ describe('resolveDevPortsFromEnv', () => {
     });
 
     it('非固定端口入口即使继承严格端口环境变量，关闭尊重显式端口后仍能自动切换', async () => {
-        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const { resolveDevPortsFromEnv } = await loadDevOrchestrator();
         const occupiedFrontend = await listenOnRandomPort();
         const preferredPorts = {
             frontend: occupiedFrontend.port,
@@ -144,7 +143,7 @@ describe('resolveDevPortsFromEnv', () => {
     });
 
     it('lite 入口固定使用首选端口，不因占用而递增', async () => {
-        const resolveDevPortsFromEnv = await loadResolveDevPortsFromEnv();
+        const { resolveDevPortsFromEnv } = await loadDevOrchestrator();
         const occupiedFrontend = await listenOnRandomPort();
         const preferredPorts = {
             frontend: occupiedFrontend.port,
@@ -158,5 +157,32 @@ describe('resolveDevPortsFromEnv', () => {
         );
 
         expect(resolved).toEqual(preferredPorts);
+    });
+});
+
+describe('shouldStartApi', () => {
+    it('没有 Mongo URI 时跳过可选 API', async () => {
+        const { shouldStartApi } = await loadDevOrchestrator();
+
+        expect(shouldStartApi({ skipApiMode: false, mongoUri: null })).toBe(false);
+        expect(shouldStartApi({ skipApiMode: false, mongoUri: '   ' })).toBe(false);
+    });
+
+    it('有 Mongo URI 且非 lite 模式时启动 API', async () => {
+        const { shouldStartApi } = await loadDevOrchestrator();
+
+        expect(shouldStartApi({
+            skipApiMode: false,
+            mongoUri: 'mongodb://127.0.0.1:27017/boardgame',
+        })).toBe(true);
+    });
+
+    it('lite 模式即使有 Mongo URI 也跳过 API', async () => {
+        const { shouldStartApi } = await loadDevOrchestrator();
+
+        expect(shouldStartApi({
+            skipApiMode: true,
+            mongoUri: 'mongodb://127.0.0.1:27017/boardgame',
+        })).toBe(false);
     });
 });

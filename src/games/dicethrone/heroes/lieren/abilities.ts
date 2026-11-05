@@ -66,7 +66,7 @@ const replaceable = (
     descriptionId: string,
     trigger: AbilityDef['trigger'],
     effects: AbilityEffect[],
-    opts?: Pick<AbilityDef, 'type' | 'tags' | 'sfxKey'>,
+    opts?: Partial<Pick<AbilityDef, 'type' | 'tags' | 'sfxKey'>>,
 ): AbilityDef => ({
     id,
     name: abilityText(nameId, 'name'),

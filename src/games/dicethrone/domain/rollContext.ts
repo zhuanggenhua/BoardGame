@@ -468,7 +468,10 @@ export const isCurrentBonusRollSettlement = (
 
 export const isSettledReplayOnlyRollContext = (
     context: DiceThroneRollContext | undefined,
-): boolean => context?.status === 'settled' && context.display.replayOnly === true;
+): context is DiceThroneRollContext & {
+    status: 'settled';
+    display: DiceThroneRollContext['display'] & { replayOnly: true };
+} => context?.status === 'settled' && context.display.replayOnly === true;
 
 const isMainRollPhase = (phase: TurnPhase | undefined): boolean => (
     phase === 'offensiveRoll'

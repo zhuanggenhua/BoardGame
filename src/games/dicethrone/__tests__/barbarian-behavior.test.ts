@@ -13,9 +13,21 @@ import { execute } from '../domain/execute';
 import { reduce } from '../domain/reducer';
 import { registerDiceDefinition } from '../domain/diceRegistry';
 import { barbarianDiceDefinition } from '../heroes/barbarian/diceConfig';
+import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
+import { pyromancerDiceDefinition } from '../heroes/pyromancer/diceConfig';
+import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
+import { moonElfDiceDefinition } from '../heroes/moon_elf/diceConfig';
+import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
+import { gunslingerDiceDefinition } from '../heroes/gunslinger/diceConfig';
+import { SAMURAI_CARDS } from '../heroes/samurai/cards';
+import { samuraiDiceDefinition } from '../heroes/samurai/diceConfig';
 
 initializeCustomActions();
 registerDiceDefinition(barbarianDiceDefinition);
+registerDiceDefinition(pyromancerDiceDefinition);
+registerDiceDefinition(moonElfDiceDefinition);
+registerDiceDefinition(gunslingerDiceDefinition);
+registerDiceDefinition(samuraiDiceDefinition);
 
 // ============================================================================
 // 测试工具
@@ -109,6 +121,62 @@ function settleBonusDiceEvents(state: DiceThroneCore, events: DiceThroneEvent[])
 // ============================================================================
 
 describe('野蛮人 Custom Action 运行时行为断言', () => {
+
+    it('火法师攻击修正牌通过出牌入口结算时保留父攻击的阶段和奖励骰状态', () => {
+        const state = createState({});
+        state.players['0'].characterId = 'pyromancer';
+        state.selectedCharacters['0'] = 'pyromancer';
+        state.players['0'].hand = [PYROMANCER_CARDS.find(card => card.id === 'card-get-fired-up')!];
+        state.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'pyro-blast',
+            isDefendable: false, damage: 0, settlementStage: 'afterDefense',
+        };
+        const events = execute(
+            { core: state, sys: { phase: 'offensiveRoll' } } as any,
+            { type: 'PLAY_CARD', playerId: '0', payload: { cardId: 'card-get-fired-up' }, timestamp: 1000 } as any,
+            { d: () => 1 } as any,
+        );
+        const request = events.find(event => event.type === 'BONUS_DICE_REROLL_REQUESTED');
+        expect(request?.payload.settlement.continuation).toEqual({
+            kind: 'attack', settlementStage: 'preserve', markBonusDiceResolved: false,
+        });
+        const pending = events.reduce((current, event) => reduce(current, event), state);
+        const settled = execute(
+            { core: pending, sys: { phase: 'offensiveRoll' } } as any,
+            { type: 'SKIP_BONUS_DICE_REROLL', playerId: '0', payload: {}, timestamp: 2000 } as any,
+            { d: () => 1 } as any,
+        );
+        const after = settled.reduce((current, event) => reduce(current, event), pending);
+        expect(after.pendingAttack?.settlementStage).toBe('afterDefense');
+        expect(after.pendingAttack?.bonusDiceResolved).not.toBe(true);
+    });
+
+    it.each([
+        ['moon_elf', 'volley', MOON_ELF_CARDS],
+        ['moon_elf', 'watch-out', MOON_ELF_CARDS],
+        ['gunslinger', 'card-eat-my-lead', GUNSLINGER_CARDS],
+        ['samurai', 'card-righteousness', SAMURAI_CARDS],
+    ])('%s 的攻击修正牌 %s 通过共同出牌入口保留父攻击', (hero, cardId, cards) => {
+        const state = createState({});
+        state.players['0'].characterId = hero;
+        state.selectedCharacters['0'] = hero;
+        const card = cards.find(entry => entry.id === cardId);
+        expect(card?.isAttackModifier).toBe(true);
+        state.players['0'].hand = [card!];
+        state.pendingAttack = {
+            attackerId: '0', defenderId: '1', sourceAbilityId: 'test-parent-attack',
+            isDefendable: true, damage: 6, settlementStage: 'afterDefense',
+        };
+        const events = execute(
+            { core: state, sys: { phase: 'offensiveRoll' } } as any,
+            { type: 'PLAY_CARD', playerId: '0', payload: { cardId }, timestamp: 1000 } as any,
+            { d: () => 1 } as any,
+        );
+        const request = events.find(event => event.type === 'BONUS_DICE_REROLL_REQUESTED');
+        expect(request?.payload.settlement.continuation).toEqual({
+            kind: 'attack', settlementStage: 'preserve', markBonusDiceResolved: false,
+        });
+    });
 
     // ========================================================================
     // barbarian-suppress-roll: 投3骰，造成点数总和伤害，>14施加脑震荡
@@ -382,6 +450,20 @@ describe('野蛮人 Custom Action 运行时行为断言', () => {
     // more-please-roll-damage: 投5骰，剑面数加到当前攻击+脑震荡
     // ========================================================================
     describe('more-please-roll-damage (再来点儿)', () => {
+        it('攻击修正牌的临时骰不能标记主技能奖励骰已经结算', () => {
+            const state = createState({});
+            state.pendingAttack = {
+                attackerId: '0', defenderId: '1', sourceAbilityId: 'suppress',
+                isDefendable: false, damage: 0, settlementStage: 'afterDefense',
+            };
+            const handler = getCustomActionHandler('more-please-roll-damage')!;
+            const events = handler(buildCtx(state, 'more-please-roll-damage', { random: () => 1 / 6, targetSelf: true }));
+            const pending = events.reduce((current, event) => reduce(current, event), state);
+            const settledEvents = settleBonusDiceEvents(state, events);
+            const after = settledEvents.reduce((current, event) => reduce(current, event), pending);
+            expect(after.pendingAttack?.bonusDiceResolved).not.toBe(true);
+            expect(after.pendingAttack?.settlementStage).toBe('afterDefense');
+        });
         it('5个剑面应加入本次攻击加伤并施加脑震荡（target:self 场景）', () => {
             const state = createState({});
             const handler = getCustomActionHandler('more-please-roll-damage')!;

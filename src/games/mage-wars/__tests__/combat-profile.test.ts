@@ -389,7 +389,7 @@ describe('mage-wars structured combat profiles', () => {
     test('keeps every configured base profile equivalent to the card field contract parser', () => {
         const configuredCards = [
             2800, 2801, 2802, 2803, 2804, 2807, 2808, 2809, 2810, 2811, 2812, 2813,
-            2814, 2816, 2819, 2820, 2822, 2824, 2825, 2826, 2901, 2906, 2907, 2909, 3701, 3704, 3706,
+            2814, 2816, 2819, 2820, 2822, 2824, 2825, 2826, 2901, 2904, 2906, 2907, 2909, 3701, 3704, 3706,
         ];
 
         for (const cardId of configuredCards) {
@@ -417,7 +417,7 @@ describe('mage-wars structured combat profiles', () => {
     test('resolves configured cards without using their display attack text', () => {
         const configuredCards = [
             2800, 2801, 2802, 2803, 2804, 2807, 2808, 2809, 2810, 2811, 2812, 2813,
-            2814, 2816, 2819, 2820, 2822, 2824, 2825, 2826, 2901, 2906, 2907, 2909, 3701, 3704, 3706,
+            2814, 2816, 2819, 2820, 2822, 2824, 2825, 2826, 2901, 2904, 2906, 2907, 2909, 3701, 3704, 3706,
         ];
 
         for (const cardId of configuredCards) {

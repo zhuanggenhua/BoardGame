@@ -23,14 +23,14 @@ function omitTutorialChoicePayloadMeta(payload: Record<string, unknown>): Record
 
 function readCurrentChoiceRequestContract<TCore>(
     state: MatchState<TCore>,
-): Record<string, unknown> | null {
+): (Record<string, unknown> & { candidates: unknown[] }) | null {
     const currentInteraction = state.sys?.interaction?.current as {
         data?: unknown;
     } | undefined;
     const data = isRecord(currentInteraction?.data) ? currentInteraction.data : null;
     const contract = isRecord(data?.choiceRequestContract) ? data.choiceRequestContract : null;
     if (!contract || !Array.isArray(contract.candidates)) return null;
-    return contract;
+    return { ...contract, candidates: contract.candidates };
 }
 
 function resolveTutorialChoiceCandidatePayload<TCore>(args: {

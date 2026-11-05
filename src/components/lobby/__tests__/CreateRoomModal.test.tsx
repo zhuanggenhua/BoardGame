@@ -43,7 +43,7 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.aiThinkingTime') return 'AI 思考时长';
             if (key === 'createRoom.aiThinkingTimeHint') return '按游戏单独记住';
             if (key === 'createRoom.aiThinkingTimeSeconds') return `${options?.count} 秒`;
-            if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
+            if (key === 'createRoom.aiManualFactionSelection') return '手动选择 AI 派系';
             if (key === 'setup.scenario.label') return '开局剧本';
             if (key === 'setup.scenario.postSarhu1619') return '剧本一：萨尔浒战后（1619）';
             if (key === 'setup.scenario.shanhaiguan1622') return '剧本二：山海关之议（1622）';
@@ -68,6 +68,7 @@ const gameManifest: GameManifestEntry = {
         capture: true,
         localAi: true,
         remoteAi: true,
+        manualSetupSelection: true,
     },
 };
 
@@ -101,6 +102,35 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(screen.getByText('Disabled')).toBeInTheDocument();
         expect(screen.queryByText('AI 占位')).toBeNull();
+    });
+
+    it('没有开局派系 / 角色选择能力的游戏，不显示手动代选入口且不保留旧标记', () => {
+        const onConfirm = vi.fn();
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: THE_GANG_MANIFEST,
+            initialPreferences: {
+                numPlayers: 4,
+                minimumActionDelayMs: 1000,
+                setupSelections: {},
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', manualFactionSelection: true },
+                    '2': { type: 'human' },
+                    '3': { type: 'human' },
+                },
+            },
+        }));
+
+        expect(screen.queryByTestId('create-room-ai-manual-faction-checkbox')).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm.mock.calls[0]?.[0]?.seatControllers?.['1'])
+            .not.toHaveProperty('manualFactionSelection');
+        expect(onConfirm.mock.calls[0]?.[0]?.seatControllers?.['1'])
+            .not.toHaveProperty('manualSetupSelection');
     });
 
     it('有已保存 AI 偏好时，打开弹窗会恢复为开启', () => {
@@ -201,7 +231,7 @@ describe('CreateRoomModal AI default state', () => {
         }));
 
         fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
-        fireEvent.click(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i }));
+        fireEvent.click(screen.getByRole('checkbox', { name: /手动选择 AI 派系/i }));
         fireEvent.click(screen.getByRole('button', { name: '确认' }));
 
         expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
@@ -235,7 +265,7 @@ describe('CreateRoomModal AI default state', () => {
             },
         }));
 
-        expect(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i })).toBeChecked();
+        expect(screen.getByRole('checkbox', { name: /手动选择 AI 派系/i })).toBeChecked();
     });
 
     it('切换难度后会同步到本地 AI 座位', () => {
@@ -585,4 +615,27 @@ describe('CreateRoomModal AI default state', () => {
             }),
         }));
     });
+});
+
+it('平台建房弹窗有单一关闭入口并响应原生取消，提交中保持打开', () => {
+    const onClose = vi.fn();
+    const props = { isOpen: true, onClose, onConfirm: vi.fn(), gameManifest: FANTASY_REALMS_MANIFEST };
+    const view = render(createElement(CreateRoomModal, props));
+    const dialog = screen.getByRole('dialog', { name: '创建房间' });
+    expect(screen.getAllByRole('button', { name: '取消' })).toHaveLength(1);
+    const underlyingEscape = vi.fn();
+    window.addEventListener('keydown', underlyingEscape);
+    try {
+        fireEvent.keyDown(dialog, { key: 'Escape' });
+        expect(underlyingEscape).not.toHaveBeenCalled();
+    } finally {
+        window.removeEventListener('keydown', underlyingEscape);
+    }
+    fireEvent.click(screen.getByRole('button', { name: '取消' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+    expect(onClose).toHaveBeenCalledTimes(2);
+    view.rerender(createElement(CreateRoomModal, { ...props, isLoading: true }));
+    fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+    expect(onClose).toHaveBeenCalledTimes(2);
 });

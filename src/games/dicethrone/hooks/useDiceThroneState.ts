@@ -10,6 +10,7 @@ import type { PlayerId, MatchState, ResponseWindowState } from '../../../engine/
 import { asSimpleChoice, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import type { HeroState, Die, TurnPhase, PendingAttack, PendingDefenderChoice } from '../types';
 import type { DiceThroneCore } from '../domain';
+import type { ChoiceRequestedEvent } from '../domain/events';
 import { getAvailableAbilityIds, getDefensiveAbilityIds, canAdvancePhase as canAdvancePhaseDomain } from '../domain/rules';
 
 // ============================================================================
@@ -55,7 +56,7 @@ export function getFocusPlayerId(state: EngineState): PlayerId {
     
     // 5. 防御阶段的防御方（掷骰者）
     if (turnPhase === 'defensiveRoll' && core.pendingAttack) {
-        return core.pendingAttack.defenderId;
+        return core.pendingAttack.defenderId ?? core.activePlayerId;
     }
     
     // 6. 默认：回合主动玩家
@@ -142,7 +143,7 @@ export function useDiceThroneState(G: EngineState): DiceThroneStateAccess {
         // 实时计算可用技能（派生状态，不再存储在 core 中）
         const isAbilityRollPhase = turnPhase === 'offensiveRoll' || turnPhase === 'defensiveRoll';
         const rollerId = turnPhase === 'defensiveRoll' && core.pendingAttack
-            ? core.pendingAttack.defenderId
+            ? core.pendingAttack.defenderId ?? core.activePlayerId
             : core.activePlayerId;
         // 防御阶段掷骰前：列出所有防御技能供选择/切换（不检查骰面）
         // 规则 §3.6 步骤 2：先选择防御技能，再掷骰
@@ -206,7 +207,7 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
     hasChoice: boolean;
     playerId: PlayerId | undefined;
     title: string | undefined;
-    options: Array<{ id: string; label: string; labelParams?: Record<string, string | number>; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean }>;
+    options: Array<{ id: string; label: string; labelParams?: Record<string, string | number>; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean; previewRef?: ChoiceRequestedEvent['payload']['options'][number]['previewRef']; targetPlayerId?: PlayerId; dicePreview?: ChoiceRequestedEvent['payload']['options'][number]['dicePreview']; choiceKind?: ChoiceRequestedEvent['payload']['options'][number]['choiceKind']; cardId?: string; cardSourceZone?: ChoiceRequestedEvent['payload']['options'][number]['cardSourceZone']; candidateStatusId?: string }>;
     sourceAbilityId?: string;
     /** slider 模式配置（存在时渲染滑动条） */
     slider?: SliderConfig;
@@ -220,7 +221,7 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
                 playerId: prompt.playerId,
                 title: prompt.title,
                 options: prompt.options.map(opt => {
-                    const rawValue = opt.value as { statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean } | undefined;
+                    const rawValue = opt.value as ChoiceRequestedEvent['payload']['options'][number] | undefined;
                     return {
                         id: opt.id,
                         label: opt.label,
@@ -229,6 +230,13 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
                         tokenId: rawValue?.tokenId,
                         customId: rawValue?.customId,
                         value: rawValue?.value,
+                        previewRef: rawValue?.previewRef,
+                        dicePreview: rawValue?.dicePreview,
+                        targetPlayerId: rawValue?.targetPlayerId,
+                        choiceKind: rawValue?.choiceKind,
+                        cardId: rawValue?.cardId,
+                        cardSourceZone: rawValue?.cardSourceZone,
+                        candidateStatusId: rawValue?.candidateStatusId,
                         disabled: opt.disabled ?? rawValue?.disabled,
                     };
                 }),

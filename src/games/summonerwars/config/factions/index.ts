@@ -13,6 +13,7 @@ export * from './huijin';
 export * from './shouren';
 export * from './yongheng';
 export * from './shadow';
+export * from './zhongcai';
 export { DECK_SYMBOLS } from '../symbols';
 
 import { createNecromancerDeck } from './necromancer';
@@ -26,6 +27,7 @@ import { createHuijinDeck } from './huijin';
 import { createShourenDeck } from './shouren';
 import { createYonghengDeck } from './yongheng';
 import { createShadowDeck } from './shadow';
+import { createZhongcaiDeck } from './zhongcai';
 import type { FactionId } from '../../domain/types';
 import type { AiSetupOptionStatus } from '../../../../engine/ai/types';
 
@@ -42,6 +44,7 @@ export const FACTION_IDS = {
   SHOUREN: 'shouren',
   YONGHENG: 'yongheng',
   SHADOW: 'shadow',
+  ZHONGCAI: 'zhongcai',
 } as const;
 
 /** 中文阵营名 → 阵营 ID 映射 */
@@ -57,6 +60,7 @@ export const FACTION_NAME_TO_ID: Record<string, FactionId> = {
   '冰苔兽人': 'shouren',
   '永恒议会': 'yongheng',
   '暗影精灵': 'shadow',
+  '仲裁': 'zhongcai',
 };
 
 /** 将中文阵营名或阵营 ID 统一解析为 FactionId */
@@ -186,6 +190,15 @@ export const FACTION_CATALOG: FactionCatalogEntry[] = ([
     setupOptionStatus: 'in_progress',
     setupOptionStatusReason: SUMMONER_WARS_FACTION_IN_PROGRESS_REASON,
   },
+  {
+    id: 'zhongcai',
+    nameKey: 'factions.zhongcai',
+    heroImagePath: 'summonerwars/hero/zhongcai/hero',
+    tipImagePath: 'summonerwars/hero/zhongcai/tip',
+    selectable: true,
+    setupOptionStatus: 'in_progress',
+    setupOptionStatusReason: SUMMONER_WARS_FACTION_IN_PROGRESS_REASON,
+  },
 ] satisfies FactionCatalogSourceEntry[]).map(withDerivedFactionStatusTag);
 
 /** 根据阵营 ID 创建牌组 */
@@ -202,6 +215,7 @@ export function createDeckByFactionId(factionId: FactionId) {
     case 'shouren': return createShourenDeck();
     case 'yongheng': return createYonghengDeck();
     case 'shadow': return createShadowDeck();
+    case 'zhongcai': return createZhongcaiDeck();
     default: return createNecromancerDeck();
   }
 }

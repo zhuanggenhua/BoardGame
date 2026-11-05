@@ -108,6 +108,7 @@ const ASSET_PUBLISH_REQUIRED_FILES = [
     'scripts/assets/asset-publish-ownership.mjs',
     'scripts/assets/release-retention.mjs',
     'scripts/assets/server-android-package-refresh.mjs',
+    'scripts/mobile/android-package-archive.mjs',
     'scripts/mobile/android-assets-base-url.mjs',
 ];
 

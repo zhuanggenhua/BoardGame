@@ -25,6 +25,8 @@ import type { ReactNode } from 'react';
 import type { GameEngineConfig } from './engineConfig';
 import type { LatencyOptimizationConfig } from './latency/types';
 import type { AiSeatController } from '../ai/types';
+import type { LocalMatchSnapshot } from './localSession';
+import { useAuth } from '../../contexts/AuthContext';
 import {
     shouldSilentlyRetryOnlineAiBatchRejection,
 } from './onlineAiRecovery';
@@ -38,6 +40,7 @@ import {
 } from './reactContext';
 export {
     useGameClient,
+    useOptionalGameClient,
     useBoardProps,
 } from './reactContext';
 export {
@@ -58,6 +61,8 @@ export {
 } from './aiAttemptGuard';
 
 import { EventStreamRollbackContext } from '../hooks/EventStreamRollbackContext';
+
+const EMPTY_SEAT_CONTROLLERS: Record<string, AiSeatController> = {};
 
 // re-export 供外部使用（测试等场景）
 export { filterPlayedEvents } from './latency/optimisticEngine';
@@ -106,11 +111,13 @@ export function GameProvider({
     engineConfig,
     latencyConfig,
 }: GameProviderProps) {
+    const { token: adminToken } = useAuth();
     const { rollbackSignal, value } = useGameProviderRuntime({
         server,
         matchId,
         playerId,
         credentials,
+        adminToken,
         onError,
         onConnectionChange,
         onStateReady,
@@ -166,6 +173,8 @@ export interface LocalGameProviderProps {
     persistSession?: boolean;
     /** 持久化用的游戏 ID；默认使用 config.gameId */
     persistGameId?: string;
+    /** 可选恢复策略；返回 false 时忽略已保存快照并从当前 setup 新开局。 */
+    shouldRestorePersistedSession?: (snapshot: LocalMatchSnapshot) => boolean;
     /** 测试/手动驱动场景中仅保留 AI 座位语义，不启动本地 AI 自动出牌。 */
     disableLocalAiAutomation?: boolean;
 }
@@ -177,12 +186,13 @@ export function LocalGameProvider({
     setupData,
     children,
     onCommandRejected,
-    seatControllers = {},
+    seatControllers = EMPTY_SEAT_CONTROLLERS,
     playerNames,
     playerId: localPlayerId,
     followCurrentTurnPlayer = false,
     persistSession = false,
     persistGameId,
+    shouldRestorePersistedSession,
     disableLocalAiAutomation = false,
 }: LocalGameProviderProps) {
     const value = useLocalGameProviderRuntime({
@@ -197,6 +207,7 @@ export function LocalGameProvider({
         followCurrentTurnPlayer,
         persistSession,
         persistGameId,
+        shouldRestorePersistedSession,
         disableLocalAiAutomation,
     });
 

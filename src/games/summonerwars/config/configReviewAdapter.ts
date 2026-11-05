@@ -1,5 +1,5 @@
 import type { CardPreviewRef } from '../../../core';
-import type { Card, EventCard, FactionId, StructureCard, UnitCard } from '../domain/types';
+import type { Card, EventCard, FactionId, StructureCard, UnitCard, UnitTag } from '../domain/types';
 import { getBaseCardId } from '../domain/ids';
 import { getSummonerWarsCardPreviewRef } from '../ui/cardPreviewHelper';
 import { createDeckByFactionId, FACTION_CATALOG } from './factions';
@@ -25,6 +25,7 @@ export const SUMMONER_WARS_CONFIG_REVIEW_FIELD_KEYS = [
   'deckSymbols',
   'cardType',
   'unitClass',
+  'unitTags',
   'quantity',
   'setupPositions',
   'attack',
@@ -87,6 +88,7 @@ export interface SummonerWarsConfigReviewRow {
   objectType: SummonerWarsConfigReviewType;
   cardType: Card['cardType'];
   unitClass?: UnitCard['unitClass'];
+  unitTags?: UnitTag[];
   factionId: FactionId;
   factionNameKey: string;
   name: string;
@@ -215,6 +217,16 @@ export const SUMMONER_WARS_CONFIG_REVIEW_FIELD_DEFINITIONS: readonly SummonerWar
     evidence: [RULE_EVIDENCE.cardPrintedFields],
     fieldPath: (objectId) => cardFieldPath(objectId, 'unitClass'),
     getValue: (row) => row.unitClass,
+  },
+  {
+    key: 'unitTags',
+    valueKind: 'string-array',
+    applicability: 'unit',
+    requiredForAudit: true,
+    meaning: '卡面单位分类标签，例如亡灵、疫病体 / Carrier、城塞 / Citadel',
+    evidence: [RULE_EVIDENCE.cardPrintedFields],
+    fieldPath: (objectId) => cardFieldPath(objectId, 'unitTags'),
+    getValue: (row) => row.unitTags,
   },
   {
     key: 'quantity',
@@ -540,6 +552,7 @@ function createReviewRowDraft(
     return {
       ...base,
       unitClass: card.unitClass,
+      unitTags: [...(card.unitTags ?? [])],
       attack: card.strength,
       life: card.life,
       attackType: card.attackType,

@@ -78,4 +78,36 @@ describe('pipeline afterEvents pending context', () => {
     expect(result.state.sys.phase).toBe('phase2');
     expect(observedValues).toEqual([1, 1]);
   });
+
+  it('仅在 manifest 声明时于权威终局关闭活动教程', () => {
+    const terminalDomain: DomainCore<TestCore, TestCommand, TestEvent> = {
+      ...testDomain,
+      gameId: 'pipeline-tutorial-terminal-test',
+      isGameOver: () => ({ winner: '0' }),
+    };
+
+    for (const closeOnGameOver of [false, true]) {
+      const state: MatchState<TestCore> = {
+        core: { value: 1 },
+        sys: createInitialSystemState(['0'], [], 'tutorial-terminal-test'),
+      };
+      state.sys.tutorial = {
+        ...state.sys.tutorial,
+        active: true,
+        manifestId: 'terminal-test',
+        manifestCloseOnGameOver: closeOnGameOver,
+      };
+
+      const result = executePipeline(
+        { domain: terminalDomain, systems: [] },
+        state,
+        { type: 'NOOP', playerId: '0', payload: {}, timestamp: 1 },
+        createSeededRandom('tutorial-terminal-test'),
+        ['0'],
+      );
+
+      expect(result.state.sys.gameover).toEqual({ winner: '0' });
+      expect(result.state.sys.tutorial.active).toBe(!closeOnGameOver);
+    }
+  });
 });

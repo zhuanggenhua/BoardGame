@@ -36,6 +36,7 @@ import { buildSummonerWarsAiLegalActions } from '../ai';
 import { resolveNextLocalAiAction } from '../../../engine/ai';
 import { engineConfig } from '../game';
 import { shouldBlockHandInteraction } from '../ui/handInteractionBusy';
+import { CHAMPION_UNITS_ZHONGCAI, COMMON_UNITS_ZHONGCAI } from '../config/factions/zhongcai';
 
 // ============================================================================
 // 测试辅助
@@ -340,6 +341,12 @@ describe('SummonerWars 系统交互桥接回归', () => {
       name: '敌方英雄',
       life: 5,
     }), '1');
+    putUnit(core, { row: 0, col: 5 }, mkUnit('enemy-summoner-anchor', {
+      faction: 'necromancer',
+      unitClass: 'summoner',
+      name: '亡灵召唤师',
+      life: 12,
+    }), '1');
     const farCommon = putUnit(core, { row: 0, col: 0 }, mkUnit('far-common-target', {
       faction: 'necromancer',
       unitClass: 'common',
@@ -420,6 +427,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
       mkUnit('paladin-fortress-knight-board', {
         faction: 'paladin',
         name: '城塞骑士',
+        unitTags: ['citadel'],
         abilities: [],
       }),
       '0',
@@ -440,6 +448,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
     core.players['0'].discard.push(mkUnit(fortressCardId, {
       faction: 'paladin',
       name: '城塞圣武士',
+      unitTags: ['citadel'],
       abilities: ['judgment'],
     }));
 
@@ -519,6 +528,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
       mkUnit('paladin-fortress-guard-board', {
         faction: 'paladin',
         name: '城塞守卫',
+        unitTags: ['citadel'],
         abilities: [],
       }),
       '0',
@@ -526,6 +536,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
     core.players['0'].discard.push(mkUnit('fortress-guard-discard', {
       faction: 'paladin',
       name: '城塞守卫',
+      unitTags: ['citadel'],
       abilities: [],
     }));
 
@@ -579,12 +590,13 @@ describe('SummonerWars 系统交互桥接回归', () => {
       name: '雷塔勒斯',
       life: 8,
     }), '0');
-    const undeadCard = mkUnit('skeleton-warrior-l4', {
+    const undeadCard = mkUnit('necro-undead-warrior-l4', {
       faction: 'necromancer',
       unitClass: 'common',
-      name: '骷髅战士',
+      name: '亡灵战士',
+      unitTags: ['undead'],
     });
-    const discardCard = { ...undeadCard, id: 'skeleton-warrior-l4-discard' };
+    const discardCard = { ...undeadCard, id: 'necro-undead-warrior-l4-discard' };
     core.players['0'].discard.push(discardCard as UnitCard);
 
     let state: MatchState<SummonerWarsCore> = {
@@ -861,7 +873,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
     expect(archerAfterDuplicate?.extraAttacks).toBe(1);
   });
 
-  it('[mind_transmission] 普通攻击友方目标被拒绝，不触发攻击敌方前提', () => {
+  it('[mind_transmission] 普通攻击友方目标合法，但不触发攻击敌方前提', () => {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'trickster', faction1: 'necromancer' });
     clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
@@ -892,10 +904,11 @@ describe('SummonerWars 系统交互桥接回归', () => {
       payload: { attacker: gurzhuangPos, target: friendlyTargetPos },
     });
 
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('无法攻击该目标');
+    expect(result.success).toBe(true);
     expect(getSwCurrentType(result.state)).toBeUndefined();
     expect(result.state.core.players['0'].hasAttackedEnemy).toBe(false);
+    expect(result.state.core.players['0'].attackCount).toBe(1);
+    expect(getUnitAt(result.state.core, friendlyTargetPos)?.damage).toBe(2);
   });
 
   it('[withdraw] DECLARE_ATTACK 后应排出费用交互，并可完成两步撤退链', () => {
@@ -1334,6 +1347,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
       name: '亡灵疫病体',
       faction: 'necromancer',
       unitClass: 'common',
+      unitTags: ['undead', 'carrier'],
       abilities: ['soulless', 'infection'],
       life: 1,
     });
@@ -1342,6 +1356,7 @@ describe('SummonerWars 系统交互桥接回归', () => {
       name: '亡灵疫病体',
       faction: 'necromancer',
       unitClass: 'common',
+      unitTags: ['undead', 'carrier'],
       abilities: ['soulless', 'infection'],
       strength: 2,
       life: 2,
@@ -1394,6 +1409,149 @@ describe('SummonerWars 系统交互桥接回归', () => {
     });
     expect(duplicateResponse.success).toBe(false);
     expect(getUnitAt(duplicateResponse.state.core, enemyPos)?.card.id).toBe(discardedPlague.id);
+  });
+
+  it('[infection] 疫病体击杀友方单位也应生成感染交互，但不计入攻击敌方或魔力奖励', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'necromancer', faction1: 'trickster' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+
+    const plaguePos = { row: 4, col: 2 };
+    const allyPos = { row: 4, col: 3 };
+    const discardedPlague = mkUnit('infection-friendly-discard-plague', {
+      name: '亡灵疫病体',
+      faction: 'necromancer',
+      unitClass: 'common',
+      unitTags: ['undead', 'carrier'],
+      abilities: ['soulless', 'infection'],
+      life: 1,
+    });
+    core.players['0'].discard = [discardedPlague];
+    const magicBefore = core.players['0'].magic;
+
+    putUnit(core, plaguePos, mkUnit('infection-friendly-attacker', {
+      name: '亡灵疫病体',
+      faction: 'necromancer',
+      unitClass: 'common',
+      unitTags: ['undead', 'carrier'],
+      abilities: ['soulless', 'infection'],
+      strength: 2,
+      life: 2,
+    }), '0');
+    putUnit(core, allyPos, mkUnit('infection-friendly-ally', {
+      name: '友方牺牲品',
+      faction: 'necromancer',
+      unitClass: 'common',
+      abilities: [],
+      life: 1,
+    }), '0');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], interactionSystems),
+    };
+
+    const requested = runPipeline(state, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      playerId: '0',
+      payload: { attacker: plaguePos, target: allyPos },
+    });
+    expect(requested.success).toBe(true);
+    state = requested.state;
+
+    expect(getSwCurrentType(state)).toBe('infection');
+    expect(getUnitAt(state.core, allyPos)).toBeUndefined();
+    expect(state.core.players['0'].hasAttackedEnemy).not.toBe(true);
+    expect(state.core.players['0'].magic).toBe(magicBefore);
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(options.map(option => option.id)).toContain(discardedPlague.id);
+
+    const picked = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: discardedPlague.id },
+    });
+    expect(picked.success).toBe(true);
+    state = picked.state;
+
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(getUnitAt(state.core, allyPos)?.card.id).toBe(discardedPlague.id);
+    expect(state.core.players['0'].discard.some(card => card.id === discardedPlague.id)).toBe(false);
+  });
+
+  it('[infection] 疫病体击杀友方疫病体时，刚进入弃牌堆的疫病体也能被感染召回', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'necromancer', faction1: 'trickster' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+    core.players['0'].discard = [];
+
+    const plaguePos = { row: 4, col: 2 };
+    const allyPlaguePos = { row: 4, col: 3 };
+    const slainPlague = mkUnit('infection-slain-friendly-plague', {
+      name: '亡灵疫病体',
+      faction: 'necromancer',
+      unitClass: 'common',
+      unitTags: ['undead', 'carrier'],
+      abilities: ['soulless', 'infection'],
+      life: 1,
+    });
+    const magicBefore = core.players['0'].magic;
+
+    putUnit(core, plaguePos, mkUnit('infection-plague-attacker', {
+      name: '亡灵疫病体',
+      faction: 'necromancer',
+      unitClass: 'common',
+      unitTags: ['undead', 'carrier'],
+      abilities: ['soulless', 'infection'],
+      strength: 2,
+      life: 2,
+    }), '0');
+    putUnit(core, allyPlaguePos, slainPlague, '0');
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], interactionSystems),
+    };
+
+    const requested = runPipeline(state, {
+      type: SW_COMMANDS.DECLARE_ATTACK,
+      playerId: '0',
+      payload: { attacker: plaguePos, target: allyPlaguePos },
+    });
+    expect(requested.success).toBe(true);
+    state = requested.state;
+
+    expect(getSwCurrentType(state)).toBe('infection');
+    expect(getUnitAt(state.core, allyPlaguePos)).toBeUndefined();
+    expect(state.core.players['0'].discard.some(card => card.id === slainPlague.id)).toBe(true);
+    expect(state.core.players['0'].hasAttackedEnemy).not.toBe(true);
+    expect(state.core.players['0'].magic).toBe(magicBefore);
+
+    const current = state.sys.interaction.current;
+    expect(current?.kind).toBe('simple-choice');
+    const options = ((current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(options.map(option => option.id)).toContain(slainPlague.id);
+
+    const picked = runPipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: { interactionId: current!.id, optionId: slainPlague.id },
+    });
+    expect(picked.success).toBe(true);
+    state = picked.state;
+
+    expect(state.sys.interaction.current).toBeUndefined();
+    expect(state.sys.interaction.queue).toHaveLength(0);
+    expect(getUnitAt(state.core, allyPlaguePos)?.card.id).toBe(slainPlague.id);
+    expect(state.core.players['0'].discard.some(card => card.id === slainPlague.id)).toBe(false);
   });
 
   it('[soul_transfer] 确认移动后应收口，重复响应不应再次移动', () => {
@@ -1908,6 +2066,52 @@ describe('SummonerWars 系统交互桥接回归', () => {
     expect(getUnitAt(duplicateResponse.state.core, pushedPos)?.instanceId).toBe(target.instanceId);
   });
 
+  it('[telekinesis_instead] 应排除没有可用推拉方向的目标，避免 AI 重复重开选择', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'trickster', faction1: 'necromancer' });
+    clearRect(core, core.board.map((_, row) => row), core.board[0].map((_, col) => col));
+    core.phase = 'attack';
+    core.currentPlayer = '0';
+    core.players['0'].attackCount = 2;
+
+    const mage = putUnit(core, { row: 1, col: 3 }, mkUnit('wind-mage-blocked-target', {
+      abilities: ['telekinesis_instead'],
+      faction: 'trickster',
+    }), '0');
+    const trappedTargetPos = { row: 2, col: 2 };
+    putUnit(core, trappedTargetPos, mkUnit('trapped-target'), '1');
+    putStructure(core, { row: 1, col: 2 });
+    putUnit(core, { row: 3, col: 2 }, mkUnit('south-blocker'), '0');
+    putStructure(core, { row: 2, col: 1 });
+    putUnit(core, { row: 2, col: 3 }, mkUnit('east-blocker'), '1');
+
+    const state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], interactionSystems),
+    };
+    const aiActions = buildSummonerWarsAiLegalActions({ playerId: '0', state });
+    const blockedTargetActions = aiActions.filter((action) => action.commands.some((command) => {
+      const payload = command.payload as { abilityId?: string; targetPosition?: CellCoord };
+      return payload.abilityId === 'telekinesis_instead'
+        && payload.targetPosition?.row === trappedTargetPos.row
+        && payload.targetPosition?.col === trappedTargetPos.col;
+    }));
+    expect(blockedTargetActions).toHaveLength(0);
+
+    const requested = runPipeline(state, {
+      type: SW_COMMANDS.ACTIVATE_ABILITY,
+      playerId: '0',
+      payload: { abilityId: 'telekinesis_instead', sourceUnitId: mage.instanceId },
+    });
+    expect(requested.success).toBe(true);
+    const targetOptions = ((requested.state.sys.interaction.current?.data as { options?: PromptOption[] } | undefined)?.options ?? []) as PromptOption[];
+    expect(targetOptions.some((option) => {
+      const value = option.value as { targetPosition?: CellCoord } | undefined;
+      return value?.targetPosition?.row === trappedTargetPos.row
+        && value.targetPosition?.col === trappedTargetPos.col;
+    })).toBe(false);
+  });
+
   it('[structure_shift] 移动后两步真实交互应移动友方建筑且重复响应不二次移动', () => {
     resetInstanceCounter();
     const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'frost', faction1: 'barbaric' });
@@ -2014,6 +2218,47 @@ describe('SummonerWars 系统交互桥接回归', () => {
     expect(duplicateResponse.state.core.board[structurePos.row][structurePos.col].structure).toBeUndefined();
     expect(duplicateResponse.state.core.board[shiftedPos.row][shiftedPos.col].structure?.owner).toBe('0');
     expect(duplicateResponse.events.filter(e => e.type === SW_EVENTS.UNIT_PUSHED)).toHaveLength(0);
+  });
+});
+
+describe('仲裁抹消交互收口', () => {
+  it('选择抹消目标后关闭交互并写入本回合失能状态', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'zhongcai', faction1: 'necromancer' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'summon';
+    core.currentPlayer = '0';
+    const source = putUnit(core, { row: 4, col: 3 }, CHAMPION_UNITS_ZHONGCAI[2], '0');
+    const target = putUnit(core, { row: 4, col: 5 }, COMMON_UNITS_ZHONGCAI[0], '0');
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any),
+    };
+
+    const advanced = runGamePipeline(state, {
+      type: FLOW_COMMANDS.ADVANCE_PHASE,
+      playerId: '0',
+      payload: {},
+    });
+    expect(advanced.success).toBe(true);
+    state = advanced.state;
+    expect(getSwCurrentType(state)).toBe('activated_ability_target');
+    expect((state.sys.interaction.current?.data as { sw?: { abilityId?: string; sourceUnitId?: string } } | undefined)?.sw).toMatchObject({
+      abilityId: 'zhongcai_erase',
+      sourceUnitId: source.instanceId,
+    });
+
+    const picked = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: {
+        interactionId: state.sys.interaction.current!.id,
+        optionId: `pos:${target.position.row},${target.position.col}`,
+      },
+    });
+    expect(picked.success).toBe(true);
+    expect(picked.state.sys.interaction.current).toBeUndefined();
+    expect(picked.state.core.board[target.position.row][target.position.col].unit?.suppressedUntilTurnEnd).toBe(true);
   });
 });
 
@@ -2633,14 +2878,19 @@ describe('亡灵法师交互链', () => {
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
 
     // 在弃牌堆放一个亡灵单位
-    const undeadCard = mkUnit('skeleton-warrior', { faction: 'necromancer', unitClass: 'common' });
-    const discardCard = { ...undeadCard, id: 'skeleton_warrior-0-discard' };
+    const undeadCard = mkUnit('necro-undead-warrior', {
+      faction: 'necromancer',
+      unitClass: 'common',
+      name: '亡灵战士',
+      unitTags: ['undead'],
+    });
+    const discardCard = { ...undeadCard, id: 'necro-undead-warrior-0-discard' };
     core.players['0'].discard.push(discardCard as any);
 
     const events = exec(core, SW_COMMANDS.ACTIVATE_ABILITY, {
       abilityId: 'revive_undead',
       sourceUnitId: unit.instanceId,
-      targetCardId: 'skeleton_warrior-0-discard',
+      targetCardId: 'necro-undead-warrior-0-discard',
       targetPosition: { row: 4, col: 4 },
     });
     const damageEvent = events.find(e =>
@@ -2676,7 +2926,7 @@ describe('亡灵法师交互链', () => {
       abilities: ['revive_undead'], unitClass: 'summoner', faction: 'necromancer', life: 8,
     });
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
-    const discardCard = mkUnit('skeleton_warrior', { faction: 'necromancer' });
+    const discardCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', name: '亡灵战士', unitTags: ['undead'] });
     core.players['0'].discard.push({ ...discardCard, id: 'sk-discard' } as any);
 
     const result = validate(core, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -2715,7 +2965,7 @@ describe('亡灵法师交互链', () => {
       abilities: ['revive_undead'], unitClass: 'summoner', faction: 'necromancer', life: 8,
     });
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
-    const discardCard = mkUnit('skeleton_warrior', { faction: 'necromancer' });
+    const discardCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', name: '亡灵战士', unitTags: ['undead'] });
     core.players['0'].discard.push({ ...discardCard, id: 'sk-discard' } as any);
 
     const result = validate(core, SW_COMMANDS.ACTIVATE_ABILITY, {
@@ -2735,7 +2985,7 @@ describe('亡灵法师交互链', () => {
       abilities: ['revive_undead'], unitClass: 'summoner', faction: 'necromancer', life: 8,
     });
     const unit = putUnit(core, { row: 4, col: 3 }, summoner, '0');
-    const discardCard = mkUnit('skeleton_warrior', { faction: 'necromancer' });
+    const discardCard = mkUnit('necro-undead-warrior', { faction: 'necromancer', name: '亡灵战士', unitTags: ['undead'] });
     core.players['0'].discard.push({ ...discardCard, id: 'sk-discard' } as any);
     putUnit(core, { row: 4, col: 4 }, mkUnit('occupied', { faction: 'necromancer' }), '0');
 

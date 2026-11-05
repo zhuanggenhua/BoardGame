@@ -1,6 +1,11 @@
-import type { TutorialManifest } from '../../engine/types';
+import type { TutorialHiddenAutomationContract, TutorialManifest } from '../../engine/types';
 import { CHEAT_COMMANDS } from '../../engine/systems/CheatSystem';
 import { OFFICIAL_FANTASY_REALMS_CARDS } from './data/cards';
+
+const setupPrecondition = (reason: string): TutorialHiddenAutomationContract => ({
+    kind: 'setup-precondition',
+    reason,
+});
 
 type TableCard = (typeof OFFICIAL_FANTASY_REALMS_CARDS)[number];
 
@@ -136,6 +141,7 @@ export const FantasyRealmsTutorial: TutorialManifest = {
                     },
                 },
             ],
+            hiddenAutomation: setupPrecondition('Create the legal draw example before the first visible Fantasy Realms step.'),
         },
         {
             id: 'setup-overview',

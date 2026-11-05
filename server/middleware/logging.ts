@@ -2,7 +2,7 @@
  * Koa 日志中间件
  */
 
-import { Context, Next } from 'koa';
+import type { Context, Next } from 'koa';
 import logger from '../logger';
 
 /**

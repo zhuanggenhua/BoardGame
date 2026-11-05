@@ -65,7 +65,7 @@ function hasConfirmablePhaseEndAbility(
 export const PHASE_START_ABILITIES: Record<GamePhase, string[]> = {
   factionSelect: [],
   summon: ['guidance'],
-  move: ['illusion', 'huijin_wildfire'],
+  move: ['illusion', 'huijin_wildfire', 'zhongcai_erase'],
   build: [],
   attack: ['blood_rune', 'ice_shards'],
   magic: [],
@@ -77,7 +77,7 @@ export const PHASE_END_ABILITIES: Record<GamePhase, string[]> = {
   summon: [],
   move: ['mogu_decay'],
   build: [],
-  attack: ['feed_beast', 'mogu_parasite', 'huijin_call_guards', 'shadow_inescapable_doom'],
+  attack: ['feed_beast', 'mogu_parasite', 'huijin_call_guards', 'shadow_inescapable_doom', 'zhongcai_radiant_healing'],
   magic: ['mogu_burst'],
   draw: [],
 };
@@ -331,6 +331,19 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
           });
           continue;
         }
+        if ((cardBaseId === CARD_IDS.ZHONGCAI_HOLY_DECREE || cardBaseId === CARD_IDS.ZHONGCAI_LOYALTY_DECREE)
+          && (activeEvent.charges ?? 0) > 0) {
+          events.push({
+            type: SW_EVENTS.ZHONGCAI_DECREE_PROMPTED,
+            payload: {
+              playerId: nextPlayer,
+              cardId: activeEvent.id,
+              charges: activeEvent.charges ?? 0,
+            },
+            timestamp,
+          });
+          continue;
+        }
         events.push({
           type: SW_EVENTS.ACTIVE_EVENT_DISCARDED,
           payload: { playerId: nextPlayer, cardId: activeEvent.id },
@@ -361,19 +374,6 @@ export const summonerWarsFlowHooks: FlowHooks<SummonerWarsCore> = {
     return state.core.currentPlayer;
   },
 
-  /**
-   * 阶段结束技能确认/跳过后自动推进
-   * 当 flowHalted（阶段结束技能等待确认）且不再有需要确认的技能时，自动推进
-   */
-  onAutoContinueCheck: ({ state }) => {
-    if (!state.sys.flowHalted) return;
-    const core = state.core;
-    const phase = core.phase;
-    const playerId = core.currentPlayer;
-    // 仍有需要确认的技能 → 不自动推进
-    if (hasConfirmablePhaseEndAbility(core, playerId, phase, getPhaseEndAbilityResolved(state))) return;
-    return { autoContinue: true, playerId };
-  },
 };
 
 export default summonerWarsFlowHooks;

@@ -1,4 +1,4 @@
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, getQidahenBoundaryTypeMeta, type QidahenPassageBoundaryType } from '../ui/mapGraph';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, QIDAHEN_RUNTIME_REGION_GRAPH, getQidahenBoundaryTypeMeta, type QidahenPassageBoundaryType } from '../ui/mapGraph';
 import {
     getQidahenLogicalRuleRegionConfigs,
     resolveQidahenRuleRegionConfig,
@@ -168,8 +168,8 @@ export const refreshRuntimeRegionRules = (
     let runtimeRegions = cloneRuntimeRegionsForRuleRefresh(regions);
     const fortificationById = new Map(fortifications.map((item) => [item.id, item]));
 
-    if (fortificationById.get('outer-wall')?.ruined) {
-        runtimeRegions = setBidirectionalBoundary(runtimeRegions, 'city-region-20', 'city-region-24', 'plain');
+    for (const edge of QIDAHEN_RUNTIME_REGION_GRAPH.edges) {
+        if (edge.fortificationId && fortificationById.get(edge.fortificationId)?.ruined) runtimeRegions = setBidirectionalBoundary(runtimeRegions, edge.from, edge.to, 'plain');
     }
 
     if (fortificationById.get('shanhaiguan')?.ruined) {

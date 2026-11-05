@@ -53,6 +53,7 @@ import {
     resolveBetrayalDeathStateSummary,
     resolveCorpseLootTargets,
 } from '../../deathStateReadModel';
+import { resolveRecentRollRequiredPlayerIds } from '../../acknowledgementReadModel';
 import {
     BETRAYAL_DISCOVERY_POOLS,
     BETRAYAL_SCENARIO_CARD_IDS,
@@ -205,11 +206,7 @@ export function confirmScenarioCardForAllPlayers(core: BetrayalCore): BetrayalCo
 export function acknowledgeRecentRollForAllPlayers(core: BetrayalCore): BetrayalCore {
     expect(core.recentRoll).toBeTruthy();
     const recentRoll = core.recentRoll!;
-    const requiredPlayerIds = recentRoll.requiredPlayerIds?.length
-        ? recentRoll.requiredPlayerIds
-        : core.playerIds.length > 0
-            ? core.playerIds
-            : [recentRoll.playerId];
+    const requiredPlayerIds = resolveRecentRollRequiredPlayerIds(core, recentRoll);
     return requiredPlayerIds.reduce((draft, playerId) => {
         if (!draft.recentRoll || draft.recentRoll.acknowledgedPlayerIds?.includes(playerId)) {
             return draft;
@@ -1107,6 +1104,11 @@ export function createDustHauntCore(playerIds: string[] = ['0', '1', '2']): Betr
     if (core.pendingEventRollResolution) {
         core = acknowledgePendingEventRollResolution(core);
     }
+    setDiscoveredTestRoom(core, 'upper-west', {
+        name: '图书馆',
+        visualId: 'library',
+        discoveryReward: 'omen',
+    });
     return acknowledgePendingCardResolutions(core);
 }
 

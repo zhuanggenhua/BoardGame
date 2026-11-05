@@ -1,0 +1,887 @@
+{
+  "gameId": "dicethrone",
+  "evidenceCategory": "independent",
+  "chainId": "奇异博士深红系带真实施加",
+  "sourceRun": "1792997736322-291300-61d923cd-cfd8-47bb-922c-8f14eaaa91dc",
+  "sourceRevision": "4b2f9c85ee2bc6a7498f1b2a5109be4de5afd81d611d77839d6b45f1335824ae",
+  "e2eSourceRevision": "8280dad9d916b668d4c4b5c4e85c64e7689cc6627696f932bf50a4aadca1528d",
+  "status": "PASS",
+  "outcome": "真实打出法术、选择对手并确认其状态与获得回合。",
+  "steps": [
+    {
+      "id": "crimson-bands-spell-in-hand",
+      "action": "进入奇异博士主阶段并展示深红系带法术手牌",
+      "before": {
+        "visible": {
+          "boardHeroIds": [],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": null,
+          "headingTexts": [
+            "选择你的英雄"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange",
+            "thor",
+            "monk",
+            "barbarian",
+            "pyromancer",
+            "shadow_thief",
+            "moon_elf",
+            "paladin",
+            "gunslinger",
+            "samurai",
+            "treant",
+            "ninja",
+            "zhanshujia",
+            "cursed_pirate",
+            "artificer",
+            "tianshi",
+            "lieren",
+            "vampire_lord",
+            "zhizhuxia"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": []
+        },
+        "authoritative": {
+          "phase": "setup",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "unselected",
+              "resources": {
+                "hp": null,
+                "cp": null
+              },
+              "tokens": {},
+              "statusEffects": {},
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 0,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 1,
+              "handIds": [
+                "spell-crimson-bands-of-cyttorak"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "深红系带法术处于可操作手牌中",
+          "actual": {
+            "phase": "main1",
+            "handCount": 1
+          },
+          "expected": {
+            "phase": "main1",
+            "handCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "crimson-bands-select-opponent",
+      "action": "真实鼠标打出法术并显示对手目标选项",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine"
+              ],
+              "handCount": 1,
+              "handIds": [
+                "spell-crimson-bands-of-cyttorak"
+              ],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-crimson-bands-of-cyttorak"
+          ],
+          "choiceLabels": [
+            "选择这名玩家P2"
+          ],
+          "modalButtonLabels": [
+            "选择这名玩家P2"
+          ],
+          "diceInteractionHintText": null,
+          "modalText": "技能结算选择选择一名玩家选择这名玩家P2",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序",
+            "技能结算选择"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "spell-crimson-bands-of-cyttorak",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-crimson-bands-of-cyttorak"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "深红系带的合法目标为对手",
+          "actual": 1,
+          "expected": 1
+        }
+      ]
+    },
+    {
+      "id": "crimson-bands-status-granted",
+      "action": "确认对手目标并完成状态施加",
+      "before": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-crimson-bands-of-cyttorak"
+          ],
+          "choiceLabels": [
+            "选择这名玩家P2"
+          ],
+          "modalButtonLabels": [
+            "选择这名玩家P2"
+          ],
+          "diceInteractionHintText": null,
+          "modalText": "技能结算选择选择一名玩家选择这名玩家P2",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序",
+            "技能结算选择"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": {
+            "kind": "simple-choice",
+            "playerId": "0",
+            "sourceId": "spell-crimson-bands-of-cyttorak",
+            "dtType": null,
+            "selectCount": null,
+            "diceOwnerId": null,
+            "targetOpponentDice": null,
+            "allowedDieIds": []
+          },
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-crimson-bands-of-cyttorak"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [
+            "dicethrone:doctor-strange-spell"
+          ],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "after": {
+        "visible": {
+          "boardHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedAbilityIds": [],
+          "preparedSpellIds": [
+            "spell-flames-of-faltine",
+            "spell-crimson-bands-of-cyttorak"
+          ],
+          "choiceLabels": [],
+          "modalButtonLabels": [],
+          "diceInteractionHintText": null,
+          "modalText": "",
+          "phaseControlText": "下一阶段",
+          "headingTexts": [
+            "回合顺序"
+          ],
+          "selectableHeroIds": [
+            "doctor_strange"
+          ],
+          "selectedHeroIds": [],
+          "doctorStrangeImplementationBadgeVisible": false,
+          "spotlightVisible": false,
+          "visibleTooltipTitles": [],
+          "tokenIds": [],
+          "dice": [
+            {
+              "id": "0",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "1",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "2",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "3",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            },
+            {
+              "id": "4",
+              "ownerId": "",
+              "value": "1",
+              "selected": false,
+              "clickable": false
+            }
+          ]
+        },
+        "authoritative": {
+          "phase": "main1",
+          "currentPlayerId": null,
+          "round": null,
+          "turnNumber": 1,
+          "rollCount": 0,
+          "diceSymbols": [],
+          "dice": [],
+          "interaction": null,
+          "players": {
+            "0": {
+              "characterId": "doctor_strange",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "premonition": 0,
+                "deja-vu": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 0
+              },
+              "crimsonBandsReceivedTurn": null,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [
+                "spell-flames-of-faltine",
+                "spell-crimson-bands-of-cyttorak"
+              ],
+              "handCount": 0,
+              "handIds": [],
+              "deckCount": 31,
+              "discardCount": 0,
+              "discardIds": []
+            },
+            "1": {
+              "characterId": "monk",
+              "resources": {
+                "hp": 50,
+                "cp": 3
+              },
+              "tokens": {
+                "taiji": 0,
+                "evasive": 0,
+                "purify": 0,
+                "knockdown": 0
+              },
+              "statusEffects": {
+                "knockdown": 0,
+                "crimson-bands": 1
+              },
+              "crimsonBandsReceivedTurn": 1,
+              "crimsonBandsActiveTurn": null,
+              "preparedSpellIds": [],
+              "handCount": 4,
+              "handIds": [
+                "card-enlightenment",
+                "card-inner-peace",
+                "card-deep-thought",
+                "card-buddha-light"
+              ],
+              "deckCount": 29,
+              "discardCount": 0,
+              "discardIds": []
+            }
+          },
+          "pendingAttack": null,
+          "pendingBonusDiceSettlement": null,
+          "resolutionFrameKinds": [],
+          "doctorStrangeSetupOptionStatus": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "对手获得深红系带且本回合不提前激活",
+          "actual": {
+            "status": 1,
+            "receivedTurn": 1,
+            "turnNumber": 1
+          },
+          "expected": {
+            "status": 1,
+            "receivedTurn": 1,
+            "turnNumber": 1
+          }
+        }
+      ]
+    }
+  ],
+  "uiStates": [
+    {
+      "id": "doctor-strange-crimson-bands-hand",
+      "stepId": "crimson-bands-spell-in-hand",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "e96194c2ca1bc2bd6d2f15dc14dd5c10a45e3678fc03090a99a5637ee17f0226"
+    },
+    {
+      "id": "doctor-strange-crimson-bands-target",
+      "stepId": "crimson-bands-select-opponent",
+      "change": "interaction-mode",
+      "viewport": "desktop",
+      "sha256": "e35f882b4d48f4174f4f12c897d030e5310b7171c9885391158993308a0ca372"
+    },
+    {
+      "id": "doctor-strange-crimson-bands-granted",
+      "stepId": "crimson-bands-status-granted",
+      "change": "layout",
+      "viewport": "desktop",
+      "sha256": "1daa1cb62d0ac08959b2f4bf3be7c1775c49a7b269697f05478f7d5333a987d3"
+    }
+  ]
+}

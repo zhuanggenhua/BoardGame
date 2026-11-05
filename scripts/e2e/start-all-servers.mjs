@@ -9,6 +9,7 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { E2E_SINGLE_WORKER_PORTS } from '../infra/e2e-port-config.js';
+import { createDevRuntimeEnv } from '../infra/dev-port-runtime.js';
 import { withE2ELocalAssetEnv } from '../infra/e2e-local-assets-env.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +19,11 @@ const rootDir = join(__dirname, '../..');
 const FRONTEND_PORT = process.env.PW_PORT || process.env.E2E_PORT || String(E2E_SINGLE_WORKER_PORTS.frontend);
 const GAME_SERVER_PORT = process.env.GAME_SERVER_PORT || process.env.PW_GAME_SERVER_PORT || String(E2E_SINGLE_WORKER_PORTS.gameServer);
 const API_SERVER_PORT = process.env.API_SERVER_PORT || process.env.PW_API_SERVER_PORT || String(E2E_SINGLE_WORKER_PORTS.apiServer);
+const runtimeEnv = createDevRuntimeEnv({
+    frontend: Number(FRONTEND_PORT),
+    gameServer: Number(GAME_SERVER_PORT),
+    apiServer: Number(API_SERVER_PORT),
+}, withE2ELocalAssetEnv(process.env));
 
 console.log('🚀 启动 E2E 测试服务器...');
 console.log(`   前端: http://localhost:${FRONTEND_PORT}`);
@@ -30,7 +36,7 @@ const frontend = spawn('npx', ['vite', '--port', FRONTEND_PORT, '--strictPort'],
     cwd: rootDir,
     stdio: 'inherit',
     shell: true,
-    env: withE2ELocalAssetEnv({ ...process.env, PORT: FRONTEND_PORT }),
+    env: { ...runtimeEnv, PORT: FRONTEND_PORT },
 });
 processes.push({ name: '前端', process: frontend });
 
@@ -44,7 +50,7 @@ const gameServer = spawn('node', [
     cwd: rootDir,
     stdio: 'inherit',
     shell: true,
-    env: { ...process.env, NODE_ENV: 'test', GAME_SERVER_PORT, USE_PERSISTENT_STORAGE: 'false' },
+    env: { ...runtimeEnv, NODE_ENV: 'test', USE_PERSISTENT_STORAGE: 'false' },
 });
 processes.push({ name: '游戏服务器', process: gameServer });
 
@@ -58,7 +64,7 @@ const apiServer = spawn('node', [
     cwd: rootDir,
     stdio: 'inherit',
     shell: true,
-    env: { ...process.env, API_SERVER_PORT },
+    env: { ...runtimeEnv },
 });
 processes.push({ name: 'API 服务器', process: apiServer });
 

@@ -41,7 +41,8 @@ it('首剧本起跑位就是真实运行时，不再保留手工结算口', () =
         expect(core.phase).toBe('preHaunt');
         expect(core.endgameResult).toBeNull();
         expect(core.scenarioRuntime.hauntTriggered).toBe(false);
-        expect(core.rooms.some((room) => room.id === 'upper-west' && room.name === '图书馆')).toBe(true);
+        expect(core.rooms.some((room) => room.id === 'upper-west' && room.name === '未探索')).toBe(true);
+        expect(core.roomDiscoveryDeck.some((entry) => entry.room.visualId === 'library')).toBe(true);
     });
 
 it('叛徒能力可忽略火炉房这类伤害性房间效果', () => {

@@ -111,6 +111,39 @@ describe('格林童话代表性玩法行为', () => {
         expect(getMinionPower(core, core.bases[2].minions[1], 2)).toBe(3);
         expect(getMinionPower(core, core.bases[2].minions[2], 2)).toBe(2);
 
+        const separatedPartnerCore = makeState({
+            bases: [
+                makeBase('base_gingerbread_house', [
+                    makeMinion('hansel-only', 'grimms_fairy_tales_hansel', '0', 2),
+                ]),
+                makeBase('base_woodland_cottage', [
+                    makeMinion('gretel-away', 'grimms_fairy_tales_gretel', '0', 2),
+                ]),
+            ],
+        });
+        expect(getMinionPower(separatedPartnerCore, separatedPartnerCore.bases[0].minions[0], 0)).toBe(2);
+
+        const opponentControlledPartnerCore = makeState({
+            bases: [
+                makeBase('base_gingerbread_house', [
+                    makeMinion('hansel-owned-by-0', 'grimms_fairy_tales_hansel', '0', 2),
+                    makeMinion('gretel-controlled-by-1', 'grimms_fairy_tales_gretel', '0', 2),
+                ]),
+            ],
+        });
+        opponentControlledPartnerCore.bases[0].minions[1].controller = '1';
+        expect(getMinionPower(opponentControlledPartnerCore, opponentControlledPartnerCore.bases[0].minions[0], 0)).toBe(2);
+
+        const hoodWithWolfCore = makeState({
+            bases: [
+                makeBase('base_gingerbread_house', [
+                    makeMinion('hood', 'grimms_fairy_tales_red_riding_hood', '0', 3),
+                    makeMinion('wolf', 'grimms_fairy_tales_big_bad_wolf', '1', 6),
+                ]),
+            ],
+        });
+        expect(getMinionPower(hoodWithWolfCore, hoodWithWolfCore.bases[0].minions[0], 0)).toBe(3);
+
         const wolfCore = makeState({
             bases: [
                 core.bases[2],
@@ -148,6 +181,75 @@ describe('格林童话代表性玩法行为', () => {
             result.matchState!,
             option => option.value?.cardUid === 'minion-1',
             'choose minion from deck',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(selected.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['minion-1', 'action-1']);
+    });
+
+    it('一篮子好东西只将牌库中的行动放到牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('minion-1', 'grimms_fairy_tales_hansel', 'minion', '0'),
+                        makeCard('action-1', 'grimms_fairy_tales_another_story', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('grimms_fairy_tales_basket_of_goodies', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'basket',
+            defId: 'grimms_fairy_tales_basket_of_goodies',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 11,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.DECK_INSPECTED)).toBe(true);
+        const selected = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'action-1',
+            'choose action from deck',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(selected.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['action-1', 'minion-1']);
+    });
+
+    it('侏儒怪可以将牌库中的任意牌放到牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('action-1', 'grimms_fairy_tales_another_story', 'action', '0'),
+                        makeCard('minion-1', 'grimms_fairy_tales_hansel', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const result = invokeRegisteredAbilityContract('grimms_fairy_tales_rumpelstiltskin', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'rumpelstiltskin',
+            defId: 'grimms_fairy_tales_rumpelstiltskin',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 12,
+        });
+
+        const selected = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.cardUid === 'minion-1',
+            'choose any card from deck',
             '0',
             FIXED_RANDOM,
         );

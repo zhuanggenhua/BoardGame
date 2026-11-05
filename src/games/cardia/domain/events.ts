@@ -1,6 +1,8 @@
 import type { GameEvent } from '../../../engine/types';
 import type { PlayerId } from '../../../engine/types';
 import { defineEvents } from '../../../lib/audio/defineEvents';
+import type { FactionType } from './core-types';
+import type { AbilityId } from './ids';
 
 /**
  * Cardia 事件定义（含音频策略）
@@ -58,7 +60,7 @@ export const CARDIA_EVENTS = defineEvents({
     },
     
     // === 动画驱动音效（fx）===
-    ENCOUNTER_RESOLVED: { audio: 'fx' },
+    ENCOUNTER_RESOLVED: 'fx',
     
     // 能力激活（即时音效）
     ABILITY_ACTIVATED: { 
@@ -67,29 +69,29 @@ export const CARDIA_EVENTS = defineEvents({
     },
     
     // === 无音效事件（silent）===
-    ABILITY_SKIPPED: { audio: 'silent' },
-    ABILITY_INTERACTION_REQUESTED: { audio: 'silent' },
-    ABILITY_NO_VALID_TARGET: { audio: 'silent' },
-    ABILITY_COPIED: { audio: 'silent' },
-    ONGOING_ABILITY_PLACED: { audio: 'silent' },
-    ONGOING_ABILITY_REMOVED: { audio: 'silent' },
-    MODIFIER_ADDED: { audio: 'silent' },
-    MODIFIER_REMOVED: { audio: 'silent' },
-    CARD_INFLUENCE_MODIFIED: { audio: 'silent' },
-    ENCOUNTER_RESULT_CHANGED: { audio: 'silent' },
-    REVEAL_ORDER_CHANGED: { audio: 'silent' },
-    SIGNET_MOVED: { audio: 'silent' },
-    SIGNET_REMOVED: { audio: 'silent' },
-    EXTRA_SIGNET_PLACED: { audio: 'silent' },
-    FACTION_SELECTED: { audio: 'silent' },
-    CARDS_DISCARDED_FROM_DECK: { audio: 'silent' },
-    CARD_RECYCLED: { audio: 'silent' },
-    DELAYED_EFFECT_REGISTERED: { audio: 'silent' },
-    DELAYED_EFFECT_TRIGGERED: { audio: 'silent' },
-    INVENTOR_PENDING_SET: { audio: 'silent' },
-    INVENTOR_PENDING_CLEARED: { audio: 'silent' },
-    TURN_ENDED: { audio: 'silent' },
-    PHASE_CHANGED: { audio: 'silent' },
+    ABILITY_SKIPPED: 'silent',
+    ABILITY_INTERACTION_REQUESTED: 'silent',
+    ABILITY_NO_VALID_TARGET: 'silent',
+    ABILITY_COPIED: 'silent',
+    ONGOING_ABILITY_PLACED: 'silent',
+    ONGOING_ABILITY_REMOVED: 'silent',
+    MODIFIER_ADDED: 'silent',
+    MODIFIER_REMOVED: 'silent',
+    CARD_INFLUENCE_MODIFIED: 'silent',
+    ENCOUNTER_RESULT_CHANGED: 'silent',
+    REVEAL_ORDER_CHANGED: 'silent',
+    SIGNET_MOVED: 'silent',
+    SIGNET_REMOVED: 'silent',
+    EXTRA_SIGNET_PLACED: 'silent',
+    FACTION_SELECTED: 'silent',
+    CARDS_DISCARDED_FROM_DECK: 'silent',
+    CARD_RECYCLED: 'silent',
+    DELAYED_EFFECT_REGISTERED: 'silent',
+    DELAYED_EFFECT_TRIGGERED: 'silent',
+    INVENTOR_PENDING_SET: 'silent',
+    INVENTOR_PENDING_CLEARED: 'silent',
+    TURN_ENDED: 'silent',
+    PHASE_CHANGED: 'silent',
 });
 
 /**
@@ -191,13 +193,15 @@ export interface AbilityCopiedEvent extends GameEvent<typeof CARDIA_EVENTS.ABILI
  */
 export interface OngoingAbilityPlacedEvent extends GameEvent<typeof CARDIA_EVENTS.ONGOING_ABILITY_PLACED.type> {
     payload: {
-        abilityId: string;
+        abilityId: AbilityId;
         cardId: string;
         playerId: PlayerId;
         effectType: string;
         timestamp: number;
         encounterIndex?: number;  // 可选：影响的遭遇索引（调停者使用）
         conditional?: boolean;    // 可选：是否为条件性效果（机械精灵使用）
+        targetCardId?: string;    // 可选：持续能力记录的目标卡牌
+        targetPlayerId?: PlayerId; // 可选：持续能力记录的目标玩家
     };
 }
 
@@ -206,7 +210,7 @@ export interface OngoingAbilityPlacedEvent extends GameEvent<typeof CARDIA_EVENT
  */
 export interface OngoingAbilityRemovedEvent extends GameEvent<typeof CARDIA_EVENTS.ONGOING_ABILITY_REMOVED.type> {
     payload: {
-        abilityId: string;
+        abilityId: AbilityId;
         cardId: string;
         playerId: string;
     };
@@ -264,6 +268,7 @@ export interface RevealOrderChangedEvent extends GameEvent<typeof CARDIA_EVENTS.
     payload: {
         revealFirstPlayerId: PlayerId;
         sourceAbilityId: string;
+        forcedPlayOrderPlayerId?: PlayerId;
     };
 }
 
@@ -327,12 +332,19 @@ export interface FactionSelectedEvent extends GameEvent<typeof CARDIA_EVENTS.FAC
  */
 export interface CardReplacedEvent extends GameEvent<typeof CARDIA_EVENTS.CARD_REPLACED.type> {
     payload: {
+        oldCardId: string;
+        newCardId: string;
+        playerId: PlayerId;
+        encounterIndex: number;
+        suppressAbility?: boolean;    // 可选：替换后的卡牌不再触发能力
+    } | {
         slotIndex: number;
         oldCardId: string;
         newCardId: string;
         replacedByAbility: boolean;
-        playerId: PlayerId;           // 添加：被替换卡牌的拥有者
-        encounterIndex?: number;      // 添加：遭遇索引
+        playerId: PlayerId;
+        encounterIndex?: number;
+        suppressAbility?: boolean;
     };
 }
 
@@ -390,6 +402,17 @@ export interface DelayedEffectRegisteredEvent extends GameEvent<typeof CARDIA_EV
         sourceAbilityId: string;
         sourcePlayerId: PlayerId;
         timestamp: number;
+    } | {
+        effectId: string;
+        abilityId: string;
+        playerId: PlayerId;
+        targetPlayerId: PlayerId;
+        trigger: 'onOpponentPlayCard';
+        data: {
+            requiredFaction: FactionType;
+            discardCount: number;
+        };
+        timestamp: number;
     };
 }
 
@@ -400,6 +423,9 @@ export interface DelayedEffectTriggeredEvent extends GameEvent<typeof CARDIA_EVE
     payload: {
         effectType: string;
         targetCardId: string;
+        sourceAbilityId: string;
+        sourcePlayerId: PlayerId;
+        effectId?: string;
     };
 }
 

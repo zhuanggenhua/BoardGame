@@ -27,7 +27,10 @@ import { useGameImplementationReady } from '../games/useGameImplementationReady'
 import { createLocalMatchSeed, ensureLocalMatchSeedSearchParams } from '../engine/transport/localSession';
 import { GamePageRuntimeProvider } from '../games/pageRuntimeAdapter';
 import type { GameRuntimeLocalSetupResult } from '../games/gameRuntimeAdapter';
-import { buildGameHudRuntimeProps } from './gameHudRuntimeProps';
+import {
+    buildGameHudRuntimeProps,
+    resolveGameHudPlacement,
+} from './gameHudRuntimeProps';
 import { resolveManifestLocalSetup, resolveRuntimeLocalSetupData } from './matchRoomLocalSetup';
 
 // 教程系统正常拦截，不弹 toast
@@ -256,9 +259,10 @@ export const LocalMatchRoom = () => {
                                         ) : (
                                             <>
                                                 <Suspense fallback={null}>
-                                                    <LocalGameHUD
+                                                <LocalGameHUD
                                                         mode="local"
                                                         gameId={gameId}
+                                                        hudPlacement={resolveGameHudPlacement(gameConfig)}
                                                         localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')}
                                                         {...gameHudRuntimeProps}
                                                     />

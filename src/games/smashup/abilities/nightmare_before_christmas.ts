@@ -1,5 +1,4 @@
 import type { PlayerId } from '../../../engine/types';
-import type { PlayerId } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction, type PromptOption, type SimpleChoiceConfig } from '../../../engine/systems/InteractionSystem';
 import { registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';

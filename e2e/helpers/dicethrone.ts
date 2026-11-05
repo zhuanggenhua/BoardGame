@@ -14,6 +14,7 @@ import { getMatchState, injectMatchState } from './state-injection';
 import { getDieFaceByDefinition, getHeroDieFace } from '../../src/games/dicethrone/domain/rules';
 import type { SelectableCharacterId } from '../../src/games/dicethrone/domain/types';
 import '../../src/games/dicethrone/domain';
+import { startSourceSession, releaseSourceSession } from '../framework/sourceIdentity';
 
 const GAME_NAME = 'dicethrone';
 
@@ -734,6 +735,7 @@ export const setupDTOnlineMatch = async (
         ? { blockLobbySocket: options.blockLobbySocket, skipImageGate: options.skipImageGate ?? true }
         : { skipImageGate: true };
     const hostContext = await browser.newContext({ baseURL });
+    await startSourceSession(hostContext, baseURL);
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
@@ -760,6 +762,7 @@ export const setupDTOnlineMatch = async (
     await gotoDTMatchRoom(hostPage, matchId, '0');
 
     const guestContext = await browser.newContext({ baseURL });
+    await startSourceSession(guestContext, baseURL);
     await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const guestPage = await guestContext.newPage();
 
@@ -822,6 +825,8 @@ export const setupDTOnlineMatchWithPlayers = async (
         skipCharacterSelectionWait?: boolean;
         blockLobbySocket?: boolean;
         skipImageGate?: boolean;
+        /** 只把正式匹配页及其资源记入 UI 证据，不把首页预热模块算入目标依赖。 */
+        sourceIdentityStartAtMatchRoute?: boolean;
     },
 ): Promise<DTMultiMatchSetup | null> => {
     const numPlayers = options.numPlayers;
@@ -839,6 +844,7 @@ export const setupDTOnlineMatchWithPlayers = async (
         ...options.contextOptions,
         baseURL,
     });
+    if (!options.sourceIdentityStartAtMatchRoute) await startSourceSession(hostContext, baseURL!);
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
@@ -874,6 +880,7 @@ export const setupDTOnlineMatchWithPlayers = async (
     }
 
     await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
+    if (options.sourceIdentityStartAtMatchRoute) await startSourceSession(hostContext, baseURL!);
     await gotoDTMatchRoom(hostPage, matchId, '0');
     if (!options.skipCharacterSelectionWait && !shouldBatchWaitForCharacterSelection) {
         await waitForCharacterSelectionInRoom(hostPage, {
@@ -893,6 +900,7 @@ export const setupDTOnlineMatchWithPlayers = async (
             ...options.contextOptions,
             baseURL,
         });
+        if (!options.sourceIdentityStartAtMatchRoute) await startSourceSession(guestContext, baseURL!);
         await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
         const guestPage = await guestContext.newPage();
 
@@ -911,6 +919,7 @@ export const setupDTOnlineMatchWithPlayers = async (
         }
 
         await seedDTMatchCredentials(guestContext, matchId, playerId, guestCredentials);
+        if (options.sourceIdentityStartAtMatchRoute) await startSourceSession(guestContext, baseURL!);
         await gotoDTMatchRoom(guestPage, matchId, playerId);
         if (!options.skipCharacterSelectionWait && !shouldBatchWaitForCharacterSelection) {
             await waitForCharacterSelectionInRoom(guestPage, {
@@ -978,6 +987,7 @@ export const cleanupDTMatch = async (setup: DTMatchSetup | DTMultiMatchSetup) =>
 
     for (const context of contexts) {
         try {
+            await releaseSourceSession(context);
             await context.close();
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -1368,7 +1378,6 @@ export const applyDiceValues = async (page: Page, values: number[]) => {
             throw new Error('No dice found in state');
         }
 
-        const { getDieFaceByDefinition } = await import('/src/games/dicethrone/domain/rules.ts');
         const applyValues = (dice: Array<{ definitionId?: string; value?: number; symbol?: string; symbols?: string[] }>) => (
             dice.map((die, index) => {
                 const value = nextValues[index] ?? die.value;
@@ -1510,6 +1519,17 @@ export const maybePassResponse = async (page: Page, timeout = 1000): Promise<boo
         return true;
     }
     return false;
+};
+
+/** Continue the existing attack-result showcase when it is waiting for player input. */
+export const continueAttackShowcaseIfVisible = async (page: Page): Promise<boolean> => {
+    const showcase = page.getByTestId('attack-showcase-overlay');
+    if (!(await showcase.isVisible({ timeout: 1000 }).catch(() => false))) return false;
+    const continueButton = showcase.getByRole('button', { name: /^(开始防御|继续|Start Defense|Continue)$/i }).first();
+    await expect(continueButton).toBeVisible();
+    await continueButton.click();
+    await expect(showcase).toBeHidden({ timeout: 10000 });
+    return true;
 };
 
 /**
@@ -1673,6 +1693,111 @@ const toDiceRandomValue = (value: number) => {
 
 export const setDiceThroneBonusDiceValues = async (page: Page, values: number[]) => {
     await setDiceThroneRandomQueue(page, values.map(toDiceRandomValue));
+};
+
+/**
+ * 在线 E2E 中，奖励骰/临时骰必须写服务器权威状态。
+ * 随机队列只能影响浏览器测试 harness，不能证明服务端最终确认的骰面。
+ */
+export const applyPendingBonusDiceValues = async (page: Page, values: number[]) => {
+    const onlineMatchId = await readOnlineMatchId(page);
+    if (!onlineMatchId) {
+        await applyDiceValues(page, values);
+        return;
+    }
+
+    const currentState = await getMatchState(onlineMatchId, page) as Record<string, unknown>;
+    const nextState = structuredClone(currentState) as Record<string, unknown>;
+    const root = getMatchRoot(nextState);
+    const core = isRecord(root.core) ? root.core : undefined;
+    if (!core || !isRecord(core.pendingBonusDiceSettlement)) {
+        throw new Error('Online DiceThrone match has no pending bonus dice settlement to patch');
+    }
+
+    const settlement = core.pendingBonusDiceSettlement;
+    const dice = Array.isArray(settlement.dice) ? settlement.dice : [];
+    if (dice.length !== values.length) {
+        throw new Error(`Pending bonus dice has ${dice.length} dice, expected ${values.length}`);
+    }
+
+    const players = isRecord(core.players) ? core.players : {};
+    const attackerId = typeof settlement.attackerId === 'string' ? settlement.attackerId : undefined;
+    const attacker = attackerId && isRecord(players[attackerId]) ? players[attackerId] : undefined;
+    const selectedCharacters = isRecord(core.selectedCharacters) ? core.selectedCharacters : {};
+    const characterId = typeof attacker?.characterId === 'string'
+        ? attacker.characterId
+        : attackerId && typeof selectedCharacters[attackerId] === 'string'
+            ? selectedCharacters[attackerId] as string
+            : undefined;
+
+    const nextDice = dice.map((die, index) => {
+        if (!isRecord(die)) {
+            throw new Error(`Pending bonus die ${index} is not an object`);
+        }
+        const value = values[index];
+        const definitionId = typeof die.definitionId === 'string' ? die.definitionId : undefined;
+        const face = definitionId
+            ? getDieFaceByDefinition(definitionId, value)
+            : characterId
+                ? getHeroDieFace(characterId as SelectableCharacterId, value)
+                : null;
+        if (!face) {
+            throw new Error(`Pending bonus die ${index} has no face for value ${value}`);
+        }
+        return {
+            ...die,
+            value,
+            face,
+            symbol: face,
+            symbols: [face],
+            effectParams: isRecord(die.effectParams)
+                ? { ...die.effectParams, value, index }
+                : { value, index },
+        };
+    });
+    const nextContextDice = nextDice.map((die, index) => {
+        const dieIndex = typeof die.index === 'number' ? die.index : index;
+        const definitionId = typeof die.definitionId === 'string'
+            ? die.definitionId
+            : characterId
+                ? `${characterId}-dice`
+                : undefined;
+        return {
+            id: dieIndex,
+            definitionId,
+            value: die.value,
+            symbol: die.face,
+            symbols: die.face ? [die.face] : [],
+            isKept: false,
+            ownerId: attackerId,
+            displayOnly: Boolean(settlement.displayOnly),
+        };
+    });
+
+    const currentRollContext = isRecord(core.currentRollContext) ? core.currentRollContext : undefined;
+    root.core = {
+        ...core,
+        pendingBonusDiceSettlement: {
+            ...settlement,
+            dice: nextDice,
+        },
+        ...(currentRollContext?.id === `bonus:${settlement.id}` && Array.isArray(currentRollContext.dice) ? {
+            currentRollContext: {
+                ...currentRollContext,
+                dice: nextContextDice,
+            },
+        } : {}),
+    };
+
+    await injectMatchState(onlineMatchId, root as never, page);
+    await page.waitForFunction((expectedValues) => {
+        const state = (window as Window).__BG_TEST_HARNESS__?.state?.get?.();
+        const settlement = state?.core?.pendingBonusDiceSettlement;
+        const dice = settlement?.dice;
+        return Array.isArray(dice)
+            && dice.length === expectedValues.length
+            && dice.every((die, index) => die?.value === expectedValues[index]);
+    }, values, { timeout: 10000, polling: 100 });
 };
 
 export const waitForDiceThronePhase = async (page: Page, phase: string, timeout = 10000) => {

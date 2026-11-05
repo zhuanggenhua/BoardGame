@@ -39,4 +39,31 @@ describe('useTouchInspectGesture', () => {
         expect(onInspect).toHaveBeenCalledWith('slot-1', { id: 'card-thrust-punch-2' });
         expect(result.current.shouldBlockInspectClick('slot-1')).toBe(true);
     });
+
+    it('粗指针长按后的下一次点击即使超过时间窗也会被消费一次', () => {
+        vi.useFakeTimers();
+
+        const onInspect = vi.fn();
+        const { result } = renderHook(() => useTouchInspectGesture<string, { id: string }>({
+            enabled: true,
+            onInspect,
+            clickBlockMs: 300,
+        }));
+
+        const props = result.current.getTouchInspectProps('slot-1', { id: 'card-thrust-punch-2' });
+        act(() => {
+            props.onPointerDown({
+                pointerType: 'touch',
+                clientX: 10,
+                clientY: 10,
+            } as any);
+            vi.advanceTimersByTime(500);
+            props.onPointerUp();
+            vi.advanceTimersByTime(1000);
+        });
+
+        expect(onInspect).toHaveBeenCalledTimes(1);
+        expect(result.current.shouldBlockInspectClick('slot-1')).toBe(true);
+        expect(result.current.shouldBlockInspectClick('slot-1')).toBe(false);
+    });
 });

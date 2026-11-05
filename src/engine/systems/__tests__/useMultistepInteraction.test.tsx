@@ -31,6 +31,9 @@ function BatchHarness({
             <button type="button" onClick={() => state.step({ action: 'toggle', dieId: 1 })}>
                 die-1
             </button>
+            <button type="button" onClick={state.cancel}>
+                cancel
+            </button>
             <button type="button" onClick={state.confirm} disabled={!state.canConfirm}>
                 confirm
             </button>
@@ -40,6 +43,36 @@ function BatchHarness({
 }
 
 describe('useMultistepInteraction', () => {
+    it('普通取消请求关闭当前权威交互', () => {
+        const dispatchLog: Array<{ type: string; payload?: unknown }> = [];
+        const interaction: InteractionDescriptor<MultistepChoiceData<SelectStep, SelectResult>> = {
+            id: 'bonus-dice:group-reroll',
+            kind: 'multistep-choice',
+            playerId: '0',
+            data: {
+                title: 'interaction.hint_group_reroll',
+                minSteps: 0,
+                initialResult: { selectedDiceIds: [] },
+                localReducer: (current, step) => step.action === 'toggle'
+                    ? { selectedDiceIds: current.selectedDiceIds.includes(step.dieId)
+                        ? current.selectedDiceIds.filter(id => id !== step.dieId)
+                        : [...current.selectedDiceIds, step.dieId] }
+                    : current,
+                toCommands: () => [],
+            },
+        };
+
+        render(<BatchHarness interaction={interaction} dispatchLog={dispatchLog} />);
+        fireEvent.click(screen.getByText('die-0'));
+        expect(screen.getByTestId('selected')).toHaveTextContent('0');
+        fireEvent.click(screen.getByText('cancel'));
+
+        expect(screen.getByTestId('selected')).toHaveTextContent('0');
+        expect(dispatchLog).toEqual([
+            { type: INTERACTION_COMMANDS.CANCEL, payload: { interactionId: 'bonus-dice:group-reroll' } },
+        ]);
+    });
+
     it('submitBatch 交互第一次确认只提交本批次命令，不关闭整段交互', () => {
         const dispatchLog: Array<{ type: string; payload?: unknown }> = [];
         const interaction: InteractionDescriptor<MultistepChoiceData<SelectStep, SelectResult>> = {

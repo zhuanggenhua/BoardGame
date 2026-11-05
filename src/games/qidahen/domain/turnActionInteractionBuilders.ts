@@ -4,54 +4,13 @@ import { QIDAHEN_COMMANDS } from './commands';
 import {
     getQidahenCurrentWheelDispatchSelectionForCore,
 } from './dispatchSelectionBuilders';
-import type {
-    QidahenDiplomacyInteraction,
-    QidahenDriveTigerConsentInteraction,
-    QidahenEventCharacterTargetInteraction,
-    QidahenEventOpponentHandChoiceInteraction,
-    QidahenFortificationMaintenanceInteraction,
-    QidahenGrantPardonInteraction,
-    QidahenHandLimitDiscardInteraction,
-    QidahenInternalDispatchInteraction,
-    QidahenKhanEdictInteraction,
-    QidahenMaShiTradeInteraction,
-    QidahenOpenGateSurrenderInteraction,
-    QidahenRecruitInteraction,
-    QidahenWheelDispatchInteraction,
-} from './interactionContracts';
+import type { QidahenDiplomacyInteraction, QidahenDriveTigerConsentInteraction, QidahenEventCharacterTargetInteraction, QidahenEventOpponentHandChoiceInteraction, QidahenGrantPardonInteraction, QidahenHandLimitDiscardInteraction, QidahenInternalDispatchInteraction, QidahenKhanEdictInteraction, QidahenMaShiTradeInteraction, QidahenOpenGateSurrenderInteraction, QidahenRecruitInteraction, QidahenWheelDispatchInteraction } from './interactionContracts';
 import type { QidahenRuntimeInteractionBuilderSpec } from './runtimeInteractionBuilderContracts';
-import {
-    getQidahenDriveTigerConsentSelectionForCore,
-    getQidahenEventCharacterTargetSelectionForCore,
-    getQidahenEventOpponentHandChoiceSelectionForCore,
-    getQidahenDiplomacySelectionForCore,
-    getQidahenHandLimitDiscardSelectionForCore,
-    getQidahenFortificationMaintenanceSelectionForCore,
-    getQidahenGrantPardonSelectionForCore,
-    getQidahenInternalDispatchSelectionForCore,
-    getQidahenKhanEdictSelectionForCore,
-    getQidahenMaShiTradeSelectionForCore,
-    getQidahenOpenGateSurrenderSelectionForCore,
-    getQidahenRecruitSelectionForCore,
-    getQidahenWheelDispatchSelectionForCore,
-} from './interactionSelectionAccessors';
-import {
-    QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
-    QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID,
-    QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,
-    QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID,
-    QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-    QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
-    QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID,
-    QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID,
-    QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID,
-    QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID,
-    QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID,
-    QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID,
-    QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID,
-} from './interactionSources';
+import { getQidahenDriveTigerConsentSelectionForCore, getQidahenEventCharacterTargetSelectionForCore, getQidahenEventOpponentHandChoiceSelectionForCore, getQidahenDiplomacySelectionForCore, getQidahenHandLimitDiscardSelectionForCore, getQidahenGrantPardonSelectionForCore, getQidahenInternalDispatchSelectionForCore, getQidahenKhanEdictSelectionForCore, getQidahenMaShiTradeSelectionForCore, getQidahenOpenGateSurrenderSelectionForCore, getQidahenRecruitSelectionForCore, getQidahenWheelDispatchSelectionForCore } from './interactionSelectionAccessors';
+import { QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID, QIDAHEN_DIPLOMACY_INTERACTION_SOURCE_ID, QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID, QIDAHEN_EVENT_OPPONENT_HAND_CHOICE_INTERACTION_SOURCE_ID, QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID, QIDAHEN_HAND_LIMIT_DISCARD_INTERACTION_SOURCE_ID, QIDAHEN_INTERNAL_DISPATCH_INTERACTION_SOURCE_ID, QIDAHEN_KHAN_EDICT_INTERACTION_SOURCE_ID, QIDAHEN_MA_SHI_TRADE_INTERACTION_SOURCE_ID, QIDAHEN_OPEN_GATE_SURRENDER_INTERACTION_SOURCE_ID, QIDAHEN_RECRUIT_INTERACTION_SOURCE_ID, QIDAHEN_WHEEL_DISPATCH_INTERACTION_SOURCE_ID } from './interactionSources';
 import { buildQidahenOpenGateSurrenderTroopChoices } from './openGateSurrenderSelection';
 import type { QidahenCore } from './types';
+import { isQidahenWheelDispatchPaymentPending } from './wheelDispatchPayment';
 
 function buildQidahenHandLimitDiscardInteraction(
     state: MatchState<QidahenCore>,
@@ -140,22 +99,40 @@ function buildQidahenGrantPardonInteraction(
         return null;
     }
 
-    const options = selection.choices.map((choice) => ({
-        id: choice.id,
-        label: choice.label,
-        value: { choiceId: choice.id },
-        displayMode: 'button' as const,
-        description: choice.detail,
-    }));
+    const options = selection.targetRegionId == null
+        ? Array.from(new Map(selection.choices.map((choice) => [choice.targetRegionId, choice])).values()).map((choice) => ({
+            id: `region:${choice.targetRegionId}`,
+            label: choice.targetRegionName,
+            value: { choiceId: `region:${choice.targetRegionId}` },
+            displayMode: 'button' as const,
+            description: `选择${choice.targetRegionName}作为接收区。`,
+        }))
+        : selection.opponentFactionId == null
+            ? Array.from(new Map(selection.choices.map((choice) => [choice.sourceFactionId, choice])).values()).map((choice) => ({
+                id: `opponent:${choice.sourceFactionId}`,
+                label: choice.sourceFactionName,
+                value: { choiceId: `opponent:${choice.sourceFactionId}` },
+                displayMode: 'button' as const,
+                description: `指定${choice.sourceFactionName}玩家选择部队。`,
+            }))
+            : selection.choices.map((choice) => ({
+                id: choice.id,
+                label: choice.label,
+                value: { choiceId: choice.id },
+                displayMode: 'button' as const,
+                description: choice.detail,
+            }));
 
     const interaction = createQidahenChoiceRequestInteraction({
-        requestId: `qidahen-grant-pardon-${selection.sourceRegionId ?? state.core.currentPlayer}`,
-        playerId: state.core.currentPlayer,
+        requestId: `qidahen-grant-pardon-${selection.targetRegionId ?? 'region'}-${selection.opponentFactionId ?? state.core.currentPlayer}`,
+        playerId: selection.opponentFactionId == null
+            ? state.core.currentPlayer
+            : state.core.factions[selection.opponentFactionId]?.playerId ?? state.core.currentPlayer,
         title: selection.title,
         sourceId: QIDAHEN_GRANT_PARDON_INTERACTION_SOURCE_ID,
         candidates: options,
         subtitle: selection.summary,
-        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
+        allowedCommands: [QIDAHEN_COMMANDS.SELECT_REGION, QIDAHEN_COMMANDS.RESOLVE_GRANT_PARDON_CHOICE],
     }) as QidahenGrantPardonInteraction;
 
     interaction.data.qidahenGrantPardonSelection = {
@@ -204,6 +181,9 @@ function buildQidahenDiplomacyInteraction(
 function buildQidahenWheelDispatchInteraction(
     state: MatchState<QidahenCore>,
 ): QidahenWheelDispatchInteraction | null {
+    if (isQidahenWheelDispatchPaymentPending(state.core)) {
+        return null;
+    }
     const selection = state.core.turnPhase === 'dispatch-targeting'
         ? (
             getQidahenWheelDispatchSelectionForCore(state.core, state.sys.interaction?.current)
@@ -390,39 +370,7 @@ function buildQidahenDriveTigerConsentInteraction(
     return interaction;
 }
 
-function buildQidahenFortificationMaintenanceInteraction(
-    state: MatchState<QidahenCore>,
-): QidahenFortificationMaintenanceInteraction | null {
-    const selection = getQidahenFortificationMaintenanceSelectionForCore(state.core, state.sys.interaction?.current);
-    if (!selection) {
-        return null;
-    }
 
-    const options = selection.choices.map((choice) => ({
-        id: choice.id,
-        label: choice.label,
-        value: { choiceId: choice.id },
-        displayMode: 'button' as const,
-        description: choice.detail,
-    }));
-
-    const interaction = createQidahenChoiceRequestInteraction({
-        requestId: `qidahen-fortification-maintenance-${state.core.currentYearIndex}`,
-        playerId: state.core.factions.ming.playerId ?? state.core.currentPlayer,
-        title: selection.title,
-        sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-        candidates: options,
-        subtitle: selection.summary,
-        allowedCommands: [QIDAHEN_COMMANDS.RESOLVE_FORTIFICATION_MAINTENANCE],
-    }) as QidahenFortificationMaintenanceInteraction;
-
-    interaction.data.qidahenFortificationMaintenanceSelection = {
-        ...selection,
-        choices: selection.choices.map((choice) => ({ ...choice })),
-    };
-
-    return interaction;
-}
 
 function buildQidahenEventCharacterTargetInteraction(
     state: MatchState<QidahenCore>,
@@ -651,10 +599,6 @@ export const QIDAHEN_TURN_ACTION_RUNTIME_INTERACTION_BUILDERS: readonly QidahenR
     {
         sourceId: QIDAHEN_DRIVE_TIGER_CONSENT_INTERACTION_SOURCE_ID,
         buildInteraction: buildQidahenDriveTigerConsentInteraction,
-    },
-    {
-        sourceId: QIDAHEN_FORTIFICATION_MAINTENANCE_INTERACTION_SOURCE_ID,
-        buildInteraction: buildQidahenFortificationMaintenanceInteraction,
     },
     {
         sourceId: QIDAHEN_EVENT_CHARACTER_TARGET_INTERACTION_SOURCE_ID,

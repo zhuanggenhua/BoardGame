@@ -195,6 +195,20 @@ describe('registerPodPowerModifierAliases completion audit', () => {
         expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint + 7);
     });
 
+    it('synthetic breakpoint modifier 即使命中 shared metadata，也不应重复生成 POD alias', () => {
+        const state = makeStateWithBases([makeBase('base_storytellers_hut')]);
+        const baseBreakpoint = getEffectiveBreakpoint(state, 0);
+
+        registerCustomBreakpointModifiers([{
+            sourceDefId: 'base_storytellers_hut',
+            runtimeIdentity: 'synthetic',
+            compute: (ctx) => ctx.base.defId === 'base_storytellers_hut' ? -2 : 0,
+        }]);
+        registerPodPowerModifierAliases();
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint - 2);
+    });
+
     it('POD base power alias 在未显式覆写时，仍应继承基础版 modifier', () => {
         registerBasePowerModifier('alias_base_power_card', (ctx) => (
             ctx.ongoing?.defId === 'alias_base_power_card' && ctx.ongoing.ownerId === ctx.playerId ? 5 : 0

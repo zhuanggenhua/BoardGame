@@ -1,5 +1,5 @@
 import { buildDriveTigerDispatchSelectionFromRegionSemantics } from './dispatchSelectionBuilders';
-import { buildPendingTargetAction } from './pendingTargetActionBuilder';
+import { buildPendingTargetAction, getExplicitRaidTargetAction } from './pendingTargetActionBuilder';
 import { getQidahenExplicitRegionSelectionSemantics } from './regionFocusSemantics';
 import { getQidahenBoundaryTypeMeta } from '../ui/mapGraph';
 import {
@@ -238,7 +238,9 @@ const resolveQidahenSelectedActionPendingFollowUpResolution = (
     const pendingActionId = actionId === 'play-event-card' && selectedEventActionCardDefId === CROSS_MOUNTAINS_CARD_DEF_ID
         ? 'raid'
         : actionId;
-    const pendingTargetAction = (pendingActionId === 'raid' || pendingActionId === 'marriage-subjugation')
+    const pendingTargetAction = pendingActionId === 'raid' && state.confirmedActionId === 'raid'
+        ? getExplicitRaidTargetAction(state, currentFactionId)
+        : (pendingActionId === 'raid' || pendingActionId === 'marriage-subjugation')
         ? buildPendingTargetAction(
             state,
             currentFactionId,

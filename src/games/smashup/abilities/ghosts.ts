@@ -18,6 +18,7 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
+    createAbilityRuntimeContinuation,
     createAbilityRuntimeSimpleChoice,
     createBranchProgram,
     createEffectProgram,
@@ -182,14 +183,14 @@ type GhostConfirmChoiceValue = { confirm?: boolean };
 type GhostAcrossChoiceValue = { defId?: string; __cancel__?: true };
 type GhostDeadRisePlayChoiceValue = { cardUid?: string; defId?: string; ownerId?: PlayerId; power?: number; baseIndex?: number; skip?: true };
 
-function attachOptionsGenerator<T>(
+function attachOptionsGenerator<T extends object>(
     interaction: InteractionDescriptor<T>,
     optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
-): InteractionDescriptor<T> {
+): InteractionDescriptor<T & { optionsGenerator: typeof optionsGenerator }> {
     return {
         ...interaction,
         data: {
-            ...(interaction.data ?? {}),
+            ...interaction.data,
             optionsGenerator,
         },
     };
@@ -434,7 +435,7 @@ function createGhostAcrossTheDivideContext(ctx: AbilityContext): GhostAcrossTheD
     };
 }
 
-const ghostGhostPromptProgram = createPromptProgram<GhostGhostContext, SmashUpCore, SmashUpEvent>({
+const ghostGhostPromptProgram = createPromptProgram<GhostGhostContext>({
     sourceId: 'ghost_ghost',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -560,7 +561,7 @@ function ghostMakeContact(ctx: AbilityContext): AbilityResult {
     return { events: buildMakeContactControlChangeEvents(ctx) };
 }
 
-const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmContext, SmashUpCore, SmashUpEvent>({
+const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmContext>({
     sourceId: 'ghost_spirit_confirm',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ghost_spirit_confirm_${context.now}`,
@@ -611,7 +612,7 @@ const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmCo
     },
 });
 
-const ghostSpiritDiscardPromptProgram = createPromptProgram<GhostSpiritDiscardContext, SmashUpCore, SmashUpEvent>({
+const ghostSpiritDiscardPromptProgram = createPromptProgram<GhostSpiritDiscardContext>({
     sourceId: 'ghost_spirit_discard',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -660,7 +661,7 @@ const ghostSpiritDiscardPromptProgram = createPromptProgram<GhostSpiritDiscardCo
     },
 });
 
-const ghostSpiritPromptProgram = createPromptProgram<GhostSpiritContext, SmashUpCore, SmashUpEvent>({
+const ghostSpiritPromptProgram = createPromptProgram<GhostSpiritContext>({
     sourceId: 'ghost_spirit',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -695,28 +696,26 @@ const ghostSpiritPromptProgram = createPromptProgram<GhostSpiritContext, SmashUp
         if (power === 0) {
             return {
                 events: [],
-                context: {
+                continuation: createAbilityRuntimeContinuation({
                     matchState: state,
                     playerId,
                     now: timestamp,
                     minionUid: candidate.uid,
                     baseIndex: candidate.baseIndex,
-                },
-                nextProgram: ghostSpiritConfirmPromptProgram,
+                }, ghostSpiritConfirmPromptProgram),
             };
         }
 
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 minionUid: candidate.uid,
                 baseIndex: candidate.baseIndex,
                 requiredCount: power,
-            },
-            nextProgram: ghostSpiritDiscardPromptProgram,
+            }, ghostSpiritDiscardPromptProgram),
         };
     },
 });
@@ -738,7 +737,7 @@ const ghostSpiritProgram = createBranchProgram<GhostSpiritContext, SmashUpCore, 
     }),
 });
 
-const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBaseContext, SmashUpCore, SmashUpEvent>({
+const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBaseContext>({
     sourceId: 'ghost_the_dead_rise_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `ghost_the_dead_rise_base_${context.now}`,
@@ -789,7 +788,7 @@ const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBa
     },
 });
 
-const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePlayContext, SmashUpCore, SmashUpEvent>({
+const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePlayContext>({
     sourceId: 'ghost_the_dead_rise_play',
     buildInteraction: (context) => {
         const interaction = attachOptionsGenerator(
@@ -868,7 +867,7 @@ const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePl
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
@@ -876,13 +875,12 @@ const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePl
                     defId: selected.defId,
                     ownerId: selected.ownerId,
                     power: selected.power,
-                },
-            nextProgram: ghostTheDeadRiseBasePromptProgram,
+                }, ghostTheDeadRiseBasePromptProgram),
         };
     },
 });
 
-const ghostTheDeadRiseDiscardPromptProgram = createPromptProgram<GhostTheDeadRiseContext, SmashUpCore, SmashUpEvent>({
+const ghostTheDeadRiseDiscardPromptProgram = createPromptProgram<GhostTheDeadRiseContext>({
     sourceId: 'ghost_the_dead_rise_discard',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -923,14 +921,13 @@ const ghostTheDeadRiseDiscardPromptProgram = createPromptProgram<GhostTheDeadRis
 
         return {
             events: [discardEvent],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId,
                 now: timestamp,
                 discardCount: discardUids.length,
                 eligible,
-            },
-            nextProgram: ghostTheDeadRisePlayPromptProgram,
+            }, ghostTheDeadRisePlayPromptProgram),
         };
     },
 });
@@ -943,7 +940,7 @@ const ghostTheDeadRiseProgram = createBranchProgram<GhostTheDeadRiseContext, Sma
     else: ghostTheDeadRiseDiscardPromptProgram,
 });
 
-const ghostAcrossTheDividePromptProgram = createPromptProgram<GhostAcrossTheDivideContext, SmashUpCore, SmashUpEvent>({
+const ghostAcrossTheDividePromptProgram = createPromptProgram<GhostAcrossTheDivideContext>({
     sourceId: 'ghost_across_the_divide',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(

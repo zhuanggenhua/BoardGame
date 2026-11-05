@@ -19,6 +19,7 @@ export function ExplorerFigureToken({
   size = "board",
   missingTokenLabel,
   testIdPrefix = "betrayal-explorer-figure-token",
+  sceneArtwork = false,
   targetHighlight = false,
   targetHighlightSelected = false,
   targetHighlightTestId,
@@ -30,6 +31,7 @@ export function ExplorerFigureToken({
   size?: "board" | "panel";
   missingTokenLabel: string;
   testIdPrefix?: string;
+  sceneArtwork?: boolean;
   targetHighlight?: boolean;
   targetHighlightSelected?: boolean;
   targetHighlightTestId?: string;
@@ -58,10 +60,10 @@ export function ExplorerFigureToken({
             fallbackImage: "h-full w-full scale-[1.08] object-cover",
           }
         : {
-            root: "h-[54px] w-[50px]",
-            outline: "h-[54px] w-[50px]",
-            frame: "h-[44px] w-[42px]",
-            targetOutline: "h-[44px] w-[42px]",
+            root: "h-[72px] w-[66px]",
+            outline: "h-[72px] w-[66px]",
+            frame: "h-[62px] w-[62px]",
+            targetOutline: "h-[62px] w-[62px]",
             officialImage: "h-full w-full scale-[1.16] object-cover",
             fallbackImage: "h-full w-full scale-[1.08] object-cover",
           };
@@ -70,6 +72,9 @@ export function ExplorerFigureToken({
     <span
       className={`pointer-events-none relative inline-flex ${sizeClass.root} items-center justify-center`}
       data-testid={`${testIdPrefix}-${explorer.playerId}`}
+      data-zoom-pan-target={
+        size === "board" ? `${testIdPrefix}-${explorer.playerId}` : undefined
+      }
       data-player-id={explorer.playerId}
       data-explorer-id={explorer.explorerId}
       data-explorer-name={explorer.displayName}
@@ -101,12 +106,12 @@ export function ExplorerFigureToken({
             points="50,0 100,30 82,108 18,108 0,30"
             fill="none"
             stroke={outlineColor}
-            strokeWidth="6"
+            strokeWidth="8"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
           />
         </svg>
-      ) : (
+      ) : !sceneArtwork || !hasOfficialToken ? (
         <span
           className={`pointer-events-none absolute left-1/2 top-1/2 z-0 ${sizeClass.outline} -translate-x-1/2 -translate-y-1/2`}
           data-testid={`${testIdPrefix}-outline-${explorer.playerId}`}
@@ -116,8 +121,8 @@ export function ExplorerFigureToken({
             filter: outlineShadow,
           }}
         />
-      )}
-      <span
+      ) : null}
+      {(!sceneArtwork || !hasOfficialToken) && <span
         className={`pointer-events-none relative z-10 flex ${sizeClass.frame} items-center justify-center overflow-hidden bg-transparent`}
         data-testid={`${testIdPrefix}-surface-${explorer.playerId}`}
         style={{
@@ -141,7 +146,7 @@ export function ExplorerFigureToken({
             <span>{missingTokenLabel}</span>
           </span>
         )}
-      </span>
+      </span>}
     </span>
   );
 }
@@ -153,6 +158,7 @@ export function MonsterBoardToken({
   quietFrame = false,
   status = "active",
   testIdPrefix = "betrayal-monster-board-token",
+  sceneArtwork = false,
   targetHighlight = false,
   targetHighlightRole = "target",
   targetHighlightRelation,
@@ -164,6 +170,7 @@ export function MonsterBoardToken({
   quietFrame?: boolean;
   status?: BetrayalMonsterStatusKind;
   testIdPrefix?: string;
+  sceneArtwork?: boolean;
   targetHighlight?: boolean;
   targetHighlightRole?: "target" | "source";
   targetHighlightRelation?: EntityRelation;
@@ -173,9 +180,9 @@ export function MonsterBoardToken({
   const hasOfficialToken = Boolean(monster.tokenAsset);
   const isMummyToken = inferMonsterDefinitionId(monster) === "mummy";
   const isStunned = status === "stunned";
-  const tokenFrameSize = isMummyToken ? 50 : 52;
-  const tokenSurfaceSize = 42;
-  const tokenBackingSize = 46;
+  const tokenFrameSize = isMummyToken ? 70 : 52;
+  const tokenSurfaceSize = isMummyToken ? 62 : 42;
+  const tokenBackingSize = isMummyToken ? 66 : 46;
   const tokenRadius = isMummyToken ? tokenSurfaceSize / 2 : 6;
   const tokenBackingRadius = isMummyToken ? tokenBackingSize / 2 : 7;
   const highlightTone = getEntityRelationHighlightTone(targetHighlightRelation);
@@ -238,7 +245,7 @@ export function MonsterBoardToken({
             vectorEffect="non-scaling-stroke"
           />
         </svg>
-      ) : (
+      ) : !sceneArtwork ? (
         <span
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           data-testid={`${testIdPrefix}-outline-${monster.id}`}
@@ -250,8 +257,8 @@ export function MonsterBoardToken({
             filter: outlineShadow,
           }}
         />
-      )}
-      <span
+      ) : null}
+      {!sceneArtwork && <span
         className="pointer-events-none relative z-10 flex items-center justify-center overflow-hidden bg-[rgba(16,11,8,0.28)]"
         style={{
           width: tokenSurfaceSize,
@@ -274,7 +281,7 @@ export function MonsterBoardToken({
           }
           draggable={false}
         />
-      </span>
+      </span>}
       {isStunned ? (
         <span
           className="pointer-events-none absolute -bottom-1 left-1/2 z-20 -translate-x-1/2 rounded-[4px] border border-[rgba(212,224,221,0.62)] bg-[rgba(9,14,14,0.94)] px-1.5 py-0.5 text-[8px] font-black leading-none tracking-[0.08em] text-[#dce7e2] shadow-[0_3px_8px_rgba(0,0,0,0.38)]"
@@ -291,6 +298,7 @@ export function GirlBoardToken({
   token,
   t,
   attachedTo,
+  displaySize = "default",
   interactive = false,
   onClick,
   testIdPrefix = "betrayal-room-haunt-token",
@@ -298,6 +306,7 @@ export function GirlBoardToken({
   token: BetrayalHauntTokenInstanceSummary;
   t: ReturnType<typeof useTranslation>["t"];
   attachedTo: "room" | "explorer" | "mummy";
+  displaySize?: "default" | "mummy-carry";
   interactive?: boolean;
   onClick?: () => void;
   testIdPrefix?: string;
@@ -314,19 +323,21 @@ export function GirlBoardToken({
             player: token.ownerName,
           })
         : t("board.hauntTokens.girlPlaced");
-  const label = `${t("board.hauntTokens.girl")}，${ownerLabel}`;
+  const label = `${t("board.hauntTokens.girl")}预兆标记，${ownerLabel}`;
   const unitTestId =
     testIdPrefix === "betrayal-room-haunt-token"
       ? `betrayal-girl-svg-token-${token.roomId ?? "unknown"}`
       : `${testIdPrefix}-girl-svg-${token.roomId ?? "unknown"}`;
   const isMummyAttachment = attachedTo === "mummy";
-  const tokenSizePx = 54;
+  const isMummyCarryDisplay = displaySize === "mummy-carry";
+  const tokenSizePx = isMummyCarryDisplay ? 38 : 54;
   const unit = (
     <span
-      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyAttachment ? "p-[4px] shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "p-[4px] shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
+      className={`pointer-events-none block overflow-hidden rounded-full border-[2px] border-[rgba(81,43,21,0.84)] bg-[radial-gradient(circle_at_38%_28%,rgba(255,250,225,0.98),rgba(235,202,150,0.96)_58%,rgba(137,81,46,0.96))] ${isMummyCarryDisplay ? "p-[2px]" : "p-[4px]"} ${isMummyAttachment ? "shadow-[0_0_0_1px_rgba(255,238,196,0.82),0_0_10px_rgba(255,216,154,0.42)]" : "shadow-[0_0_0_1px_rgba(255,238,196,0.88),0_0_15px_rgba(255,216,154,0.54)]"}`}
       style={{ width: tokenSizePx, height: tokenSizePx }}
       data-testid={unitTestId}
       data-token-attachment={attachedTo}
+      data-token-display-size={displaySize}
       data-token-asset={tokenAsset ?? undefined}
       data-token-visual-size={String(tokenSizePx)}
       data-token-visual-tone="parchment-figure"

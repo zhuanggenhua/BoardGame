@@ -1,4 +1,5 @@
-import type { PlayerId } from '../../../engine/types';
+import type {
+ PlayerId } from '../../../engine/types';
 import { registerSimpleAbility, resolveAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -26,6 +27,8 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createPromptProgram,
     executeAbilityProgram,
@@ -439,7 +442,7 @@ function sameCardName(leftDefId: string, rightDefId: string): boolean {
 function hasSwordAttached(minion: MinionOnBase): boolean {
     return minion.attachedActions.some((action) => {
         const def = getCardDef(action.defId);
-        const name = `${def?.name ?? ''} ${def?.nameEn ?? ''} ${action.defId}`.toLowerCase();
+        const name = `${def?.name ?? ''} ${action.defId}`.toLowerCase();
         return name.includes('sword') || name.includes('剑');
     });
 }
@@ -788,7 +791,8 @@ function moveEvents(
         sourceBaseIndex?: number;
     },
 ): SmashUpEvent[] {
-    return buildValidatedMoveEvents(state, {
+    const core = 'core' in state ? state.core : state;
+    return buildValidatedMoveEvents(core, {
         minionUid: target.uid,
         minionDefId: target.defId,
         fromBaseIndex: target.baseIndex,
@@ -809,11 +813,11 @@ function targetFromChoice(choice: MinionChoice): MinionTarget | undefined {
         uid: choice.minionUid,
         defId: choice.defId,
         baseIndex: choice.baseIndex,
-        label: '',
+        label: getCardDef(choice.defId)?.name ?? choice.defId,
     };
 }
 
-const powerPromptProgram = createPromptProgram<PowerPromptContext, SmashUpCore, SmashUpEvent>({
+const powerPromptProgram = createPromptProgram<PowerPromptContext>({
     sourceId: 'half_the_battle_power_prompt',
     interactionSourceIds: [
         'geckos_hokusai',
@@ -891,7 +895,7 @@ function runPowerPrompt(
     }));
 }
 
-const moveDestinationPromptProgram = createPromptProgram<MoveDestinationContext, SmashUpCore, SmashUpEvent>({
+const moveDestinationPromptProgram = createPromptProgram<MoveDestinationContext>({
     sourceId: 'half_the_battle_move_destination',
     interactionSourceIds: [
         'geckos_gecko_blimp_dest',
@@ -928,7 +932,7 @@ const moveDestinationPromptProgram = createPromptProgram<MoveDestinationContext,
     },
 });
 
-const movePromptProgram = createPromptProgram<MovePromptContext, SmashUpCore, SmashUpEvent>({
+const movePromptProgram = createPromptProgram<MovePromptContext>({
     sourceId: 'half_the_battle_move_prompt',
     interactionSourceIds: [
         'geckos_gecko_blimp',
@@ -1032,7 +1036,7 @@ function runMovePrompt(
     }));
 }
 
-const minionEffectPromptProgram = createPromptProgram<MinionEffectPromptContext, SmashUpCore, SmashUpEvent>({
+const minionEffectPromptProgram = createPromptProgram<MinionEffectPromptContext>({
     sourceId: 'half_the_battle_minion_effect_prompt',
     interactionSourceIds: [
         'geckos_now_you_know_bullying_special',
@@ -1084,7 +1088,6 @@ const minionEffectPromptProgram = createPromptProgram<MinionEffectPromptContext,
                     ownerId,
                     sourcePlayerId: context.playerId,
                     sourceDefId: context.sourceDefId,
-                    sourceKind: context.sourceKind,
                     expectedLocation: 'bases',
                     reason: context.sourceId,
                     now: timestamp,
@@ -1092,7 +1095,7 @@ const minionEffectPromptProgram = createPromptProgram<MinionEffectPromptContext,
             };
         }
         return {
-            events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.sourceId, {
+            events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceId, {
                 restrictToMinionUid: target.uid,
             })],
         };
@@ -1122,7 +1125,7 @@ function runMinionEffectPrompt(
     }));
 }
 
-const actionTransferDestinationPromptProgram = createPromptProgram<ActionTransferDestinationContext, SmashUpCore, SmashUpEvent>({
+const actionTransferDestinationPromptProgram: AbilityProgram<ActionTransferDestinationContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ActionTransferDestinationContext>({
     sourceId: 'half_the_battle_action_transfer_destination',
     interactionSourceIds: [
         'rulers_cosmos_powerful_sword_transfer_destination',
@@ -1167,15 +1170,14 @@ const actionTransferDestinationPromptProgram = createPromptProgram<ActionTransfe
             if (followupTalents.length > 0) {
                 return {
                     events,
-                    context: {
+                    continuation: createAbilityRuntimeContinuation({
                         matchState: state,
                         playerId: context.playerId,
                         now: timestamp,
                         sourceId: context.followupTalentFeedbackSource,
                         title: '有毒废弃物：你可以使用接收随从上的一个天赋',
                         talents: followupTalents,
-                    } satisfies TalentFollowupContext,
-                    nextProgram: talentFollowupPromptProgram,
+                    } satisfies TalentFollowupContext, talentFollowupPromptProgram),
                 };
             }
         }
@@ -1183,7 +1185,7 @@ const actionTransferDestinationPromptProgram = createPromptProgram<ActionTransfe
         if (remainingActions.length === 0) return { events };
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -1196,13 +1198,12 @@ const actionTransferDestinationPromptProgram = createPromptProgram<ActionTransfe
                 optional: true,
                 repeatUntilSkip: true,
                 ...(context.addCounterOnDestination ? { addCounterOnDestination: true } : {}),
-            } satisfies ActionTransferSourceContext,
-            nextProgram: actionTransferSourcePromptProgram,
+            } satisfies ActionTransferSourceContext, actionTransferSourcePromptProgram),
         };
     },
 });
 
-const talentFollowupPromptProgram = createPromptProgram<TalentFollowupContext, SmashUpCore, SmashUpEvent>({
+const talentFollowupPromptProgram = createPromptProgram<TalentFollowupContext>({
     sourceId: 'half_the_battle_talent_followup',
     interactionSourceIds: ['rulers_cosmos_toxic_waste_special_talent_followup'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -1274,7 +1275,7 @@ const talentFollowupPromptProgram = createPromptProgram<TalentFollowupContext, S
     },
 });
 
-const actionTransferSourcePromptProgram = createPromptProgram<ActionTransferSourceContext, SmashUpCore, SmashUpEvent>({
+const actionTransferSourcePromptProgram: AbilityProgram<ActionTransferSourceContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ActionTransferSourceContext>({
     sourceId: 'half_the_battle_action_transfer_source',
     interactionSourceIds: [
         'rulers_cosmos_powerful_sword_transfer_source',
@@ -1320,7 +1321,7 @@ const actionTransferSourcePromptProgram = createPromptProgram<ActionTransferSour
         if (destinations.length === 0) return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -1339,8 +1340,7 @@ const actionTransferSourcePromptProgram = createPromptProgram<ActionTransferSour
                     repeatSourceTitle: context.title,
                     repeatDestinationMode: context.destinationMode,
                 } : {}),
-            } satisfies ActionTransferDestinationContext,
-            nextProgram: actionTransferDestinationPromptProgram,
+            } satisfies ActionTransferDestinationContext, actionTransferDestinationPromptProgram),
         };
     },
 });
@@ -1359,7 +1359,7 @@ function runActionTransferPrompt(
     }));
 }
 
-const cardPromptProgram = createPromptProgram<CardPromptContext, SmashUpCore, SmashUpEvent>({
+const cardPromptProgram = createPromptProgram<CardPromptContext>({
     sourceId: 'half_the_battle_card_prompt',
     interactionSourceIds: [
         'geckos_van_gogh',
@@ -1422,7 +1422,7 @@ const cardPromptProgram = createPromptProgram<CardPromptContext, SmashUpCore, Sm
                             sourceDefId: context.sourceId,
                             now: timestamp,
                         }),
-                        grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.sourceId, {
+                        grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceId, {
                             restrictToCardUid: choice.cardUid,
                         }),
                     ],
@@ -1431,7 +1431,7 @@ const cardPromptProgram = createPromptProgram<CardPromptContext, SmashUpCore, Sm
             return {
                 events: [
                     recoverCardsFromDiscard(context.playerId, [choice.cardUid], context.sourceId, timestamp),
-                    grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.sourceId, {
+                    grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceId, {
                         restrictToCardUid: choice.cardUid,
                     }),
                 ],
@@ -1460,7 +1460,7 @@ function runCardPrompt(ctx: AbilityContext, context: Omit<CardPromptContext, key
     }));
 }
 
-const discardPlayOnMinionTargetPromptProgram = createPromptProgram<DiscardPlayOnMinionTargetContext, SmashUpCore, SmashUpEvent>({
+const discardPlayOnMinionTargetPromptProgram = createPromptProgram<DiscardPlayOnMinionTargetContext>({
     sourceId: 'half_the_battle_discard_play_on_minion_target',
     interactionSourceIds: ['rulers_cosmos_gal_woman_target'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -1514,7 +1514,7 @@ const discardPlayOnMinionTargetPromptProgram = createPromptProgram<DiscardPlayOn
     },
 });
 
-const discardPlayOnMinionActionPromptProgram = createPromptProgram<DiscardPlayOnMinionActionContext, SmashUpCore, SmashUpEvent>({
+const discardPlayOnMinionActionPromptProgram = createPromptProgram<DiscardPlayOnMinionActionContext>({
     sourceId: 'half_the_battle_discard_play_on_minion_action',
     interactionSourceIds: ['rulers_cosmos_gal_woman'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -1539,15 +1539,14 @@ const discardPlayOnMinionActionPromptProgram = createPromptProgram<DiscardPlayOn
         if (targets.length === 0) return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceId: 'rulers_cosmos_gal_woman_target',
                 action,
                 targets,
-            } satisfies DiscardPlayOnMinionTargetContext,
-            nextProgram: discardPlayOnMinionTargetPromptProgram,
+            } satisfies DiscardPlayOnMinionTargetContext, discardPlayOnMinionTargetPromptProgram),
         };
     },
 });
@@ -1569,7 +1568,7 @@ function runDiscardPlayOnMinionActionPrompt(
     }));
 }
 
-const minionSwapCandidatePromptProgram = createPromptProgram<MinionSwapCandidateContext, SmashUpCore, SmashUpEvent>({
+const minionSwapCandidatePromptProgram = createPromptProgram<MinionSwapCandidateContext>({
     sourceId: 'half_the_battle_minion_swap_candidate',
     interactionSourceIds: [
         'geckos_june_swap_candidate',
@@ -1601,13 +1600,13 @@ const minionSwapCandidatePromptProgram = createPromptProgram<MinionSwapCandidate
             events.push(addPowerCounter(choice.cardUid, context.source.baseIndex, 1, context.sourceId, timestamp));
         }
         if (context.grantExtraActionSourceId) {
-            events.push(grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.grantExtraActionSourceId));
+            events.push(grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.grantExtraActionSourceId));
         }
         return { events };
     },
 });
 
-const minionSwapSourcePromptProgram = createPromptProgram<MinionSwapSourceContext, SmashUpCore, SmashUpEvent>({
+const minionSwapSourcePromptProgram = createPromptProgram<MinionSwapSourceContext>({
     sourceId: 'half_the_battle_minion_swap_source',
     interactionSourceIds: [
         'geckos_june_swap_source',
@@ -1636,7 +1635,7 @@ const minionSwapSourcePromptProgram = createPromptProgram<MinionSwapSourceContex
         if (candidates.length === 0) return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -1646,8 +1645,7 @@ const minionSwapSourcePromptProgram = createPromptProgram<MinionSwapSourceContex
                 candidates,
                 ...(context.addCounterToIncoming ? { addCounterToIncoming: true } : {}),
                 ...(context.grantExtraActionSourceId ? { grantExtraActionSourceId: context.grantExtraActionSourceId } : {}),
-            } satisfies MinionSwapCandidateContext,
-            nextProgram: minionSwapCandidatePromptProgram,
+            } satisfies MinionSwapCandidateContext, minionSwapCandidatePromptProgram),
         };
     },
 });
@@ -1688,7 +1686,7 @@ function runMinionSwapPrompt(
     }));
 }
 
-const basePromptProgram = createPromptProgram<BasePromptContext, SmashUpCore, SmashUpEvent>({
+const basePromptProgram = createPromptProgram<BasePromptContext>({
     sourceId: 'half_the_battle_base_prompt',
     interactionSourceIds: ['gi_gerald_go_gerald', 'pearl_images_were_up_youre_down', 'rulers_cosmos_armor_of_battle'],
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
@@ -1727,7 +1725,7 @@ const basePromptProgram = createPromptProgram<BasePromptContext, SmashUpCore, Sm
     },
 });
 
-const slimePoolTargetPromptProgram = createPromptProgram<SlimePoolTargetContext, SmashUpCore, SmashUpEvent>({
+const slimePoolTargetPromptProgram = createPromptProgram<SlimePoolTargetContext>({
     sourceId: 'base_slime_pool',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `base_slime_pool_${context.now}`,
@@ -1772,7 +1770,7 @@ const slimePoolTargetPromptProgram = createPromptProgram<SlimePoolTargetContext,
     },
 });
 
-const copyTalentPromptProgram = createPromptProgram<CopyTalentPromptContext, SmashUpCore, SmashUpEvent>({
+const copyTalentPromptProgram = createPromptProgram<CopyTalentPromptContext>({
     sourceId: 'rulers_cosmos_guy_man_copy_talent',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `rulers_cosmos_guy_man_copy_talent_${context.now}`,
@@ -1816,7 +1814,7 @@ const copyTalentPromptProgram = createPromptProgram<CopyTalentPromptContext, Sma
     },
 });
 
-const fusionActionCopyPromptProgram = createPromptProgram<FusionActionCopyPromptContext, SmashUpCore, SmashUpEvent>({
+const fusionActionCopyPromptProgram = createPromptProgram<FusionActionCopyPromptContext>({
     sourceId: 'half_the_battle_fusion_action_copy',
     interactionSourceIds: [
         'gi_gerald_shellback_copy_action',
@@ -1890,7 +1888,7 @@ function runBasePrompt(ctx: AbilityContext, context: Omit<BasePromptContext, key
     }));
 }
 
-const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore, SmashUpEvent>({
+const buttonPromptProgram = createPromptProgram<ButtonPromptContext>({
     sourceId: 'half_the_battle_button_prompt',
     interactionSourceIds: [
         'geckos_kandinsky_talent',
@@ -1982,7 +1980,12 @@ const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore
         const choice = value as ButtonChoice;
         if (choice.skip || !choice.choice) return { events: [] };
         const sourceTarget = context.sourceMinionUid && context.sourceBaseIndex !== undefined
-            ? { uid: context.sourceMinionUid, defId: context.sourceMinionDefId ?? '', baseIndex: context.sourceBaseIndex }
+            ? {
+                uid: context.sourceMinionUid,
+                defId: context.sourceMinionDefId ?? '',
+                baseIndex: context.sourceBaseIndex,
+                label: getCardDef(context.sourceMinionDefId ?? '')?.name ?? context.sourceMinionDefId ?? context.sourceMinionUid,
+            }
             : undefined;
         if (context.kind === 'kandinsky-talent' && sourceTarget) {
             if (choice.choice === 'temp') return { events: [addTempPower(sourceTarget.uid, sourceTarget.baseIndex, 2, context.sourceId, timestamp)] };
@@ -2035,15 +2038,15 @@ const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore
         }
         if (context.kind === 'can-do-minion') {
             if (choice.choice === 'minion') {
-                return { events: [grantContextualExtraMinion({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.sourceId, context.sourceBaseIndex, { powerMax: 2 })] };
+                return { events: [grantContextualExtraMinion({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceId, context.sourceBaseIndex, { powerMax: 2 })] };
             }
-            return { events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.sourceId)] };
+            return { events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceId)] };
         }
         if (context.kind === 'base-extra-action' && context.sourceBaseIndex !== undefined && context.baseDefId) {
             return {
                 events: [
                     baseAbilityUsed(context.playerId, context.sourceBaseIndex, context.baseDefId, timestamp),
-                    grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, context.sourceId),
+                    grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, context.sourceId),
                 ],
             };
         }
@@ -2110,7 +2113,7 @@ const buttonPromptProgram = createPromptProgram<ButtonPromptContext, SmashUpCore
             };
         }
         if (context.kind === 'viscount-trigger' && sourceTarget) {
-            const events = choice.choice === 'counter'
+            const events: SmashUpEvent[] = choice.choice === 'counter'
                 ? [addPowerCounter(sourceTarget.uid, sourceTarget.baseIndex, 1, context.sourceId, timestamp)]
                 : [addTempPower(sourceTarget.uid, sourceTarget.baseIndex, 2, context.sourceId, timestamp)];
             events.push(minionMetadata(sourceTarget.uid, sourceTarget.baseIndex, { halfTheBattleViscountUsedTurn: state.core.turnNumber }, context.sourceId, timestamp));
@@ -2343,7 +2346,7 @@ function geckosNowYouKnowBullying(ctx: AbilityContext): AbilityResult {
     });
 }
 
-const mastersPromptProgram = createPromptProgram<PowerPromptContext, SmashUpCore, SmashUpEvent>({
+const mastersPromptProgram = createPromptProgram<PowerPromptContext>({
     sourceId: 'geckos_masters_teachings',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `geckos_masters_teachings_${context.now}`,
@@ -2358,12 +2361,12 @@ const mastersPromptProgram = createPromptProgram<PowerPromptContext, SmashUpCore
         if (!target) return { events: [] };
         const events: SmashUpEvent[] = [addPowerCounter(target.uid, target.baseIndex, 2, 'geckos_masters_teachings', timestamp)];
         if ((state.core.players[context.playerId]?.actionsPlayed ?? 0) <= 1) {
-            events.push(grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state.sys }, 'geckos_masters_teachings'));
+            events.push(grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, 'geckos_masters_teachings'));
             return { events };
         }
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -2373,8 +2376,7 @@ const mastersPromptProgram = createPromptProgram<PowerPromptContext, SmashUpCore
                 sourceMinionUid: target.uid,
                 sourceMinionDefId: target.defId,
                 sourceBaseIndex: target.baseIndex,
-            } satisfies ButtonPromptContext,
-            nextProgram: buttonPromptProgram,
+            } satisfies ButtonPromptContext, buttonPromptProgram),
         };
     },
 });
@@ -2736,7 +2738,7 @@ function pearlPearlTalent(ctx: AbilityContext): AbilityResult {
     });
 }
 
-const crystalFirstPromptProgram = createPromptProgram<CrystalFirstContext, SmashUpCore, SmashUpEvent>({
+const crystalFirstPromptProgram = createPromptProgram<CrystalFirstContext>({
     sourceId: 'pearl_images_crystal',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_crystal_${context.now}`,
@@ -2751,19 +2753,18 @@ const crystalFirstPromptProgram = createPromptProgram<CrystalFirstContext, Smash
         const ownTargets = collectMinionTargets(state.core, (minion, baseIndex) => minion.controller === context.playerId && baseIndex === target.baseIndex);
         return {
             events: [addPowerCounter(target.uid, target.baseIndex, 1, 'pearl_images_crystal', timestamp)],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 targetBaseIndex: target.baseIndex,
                 candidates: ownTargets,
-            } satisfies CrystalSecondContext,
-            nextProgram: crystalSecondPromptProgram,
+            } satisfies CrystalSecondContext, crystalSecondPromptProgram),
         };
     },
 });
 
-const crystalSecondPromptProgram = createPromptProgram<CrystalSecondContext, SmashUpCore, SmashUpEvent>({
+const crystalSecondPromptProgram = createPromptProgram<CrystalSecondContext>({
     sourceId: 'pearl_images_crystal_own',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_crystal_own_${context.now}`,
@@ -2845,7 +2846,7 @@ function jamRevealNoEligibleMinions(
     ];
 }
 
-const jamRewardPromptProgram = createPromptProgram<JamRewardContext, SmashUpCore, SmashUpEvent>({
+const jamRewardPromptProgram = createPromptProgram<JamRewardContext>({
     sourceId: 'pearl_images_jam_all_night_long_reward',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_jam_all_night_long_reward_${context.now}`,
@@ -2879,7 +2880,7 @@ const jamRewardPromptProgram = createPromptProgram<JamRewardContext, SmashUpCore
     },
 });
 
-const jamMinionPromptProgram = createPromptProgram<JamMinionContext, SmashUpCore, SmashUpEvent>({
+const jamMinionPromptProgram = createPromptProgram<JamMinionContext>({
     sourceId: 'pearl_images_jam_all_night_long_minion',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_jam_all_night_long_minion_${context.selectedPlayerId}_${context.now}`,
@@ -2931,19 +2932,18 @@ const jamMinionPromptProgram = createPromptProgram<JamMinionContext, SmashUpCore
         ];
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 sourceBaseIndex: context.sourceBaseIndex,
                 counterTargets,
-            } satisfies JamRewardContext,
-            nextProgram: jamRewardPromptProgram,
+            } satisfies JamRewardContext, jamRewardPromptProgram),
         };
     },
 });
 
-const jamPlayerPromptProgram = createPromptProgram<JamPlayerContext, SmashUpCore, SmashUpEvent>({
+const jamPlayerPromptProgram = createPromptProgram<JamPlayerContext>({
     sourceId: 'pearl_images_jam_all_night_long',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_jam_all_night_long_${context.now}`,
@@ -2966,7 +2966,7 @@ const jamPlayerPromptProgram = createPromptProgram<JamPlayerContext, SmashUpCore
         }
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -2974,8 +2974,7 @@ const jamPlayerPromptProgram = createPromptProgram<JamPlayerContext, SmashUpCore
                 selectedPlayerId: choice.playerId,
                 selectedIsOtherPlayer: choice.playerId !== context.playerId,
                 minions,
-            } satisfies JamMinionContext,
-            nextProgram: jamMinionPromptProgram,
+            } satisfies JamMinionContext, jamMinionPromptProgram),
         };
     },
 });
@@ -2999,7 +2998,7 @@ function pearlJamAllNightTalent(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const bikeFirstPromptProgram = createPromptProgram<BikeFirstContext, SmashUpCore, SmashUpEvent>({
+const bikeFirstPromptProgram = createPromptProgram<BikeFirstContext>({
     sourceId: 'pearl_images_now_you_know_bike_safety',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_${context.now}`,
@@ -3015,7 +3014,7 @@ const bikeFirstPromptProgram = createPromptProgram<BikeFirstContext, SmashUpCore
         if (otherTargets.length === 0) return { events: [] };
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -3023,13 +3022,12 @@ const bikeFirstPromptProgram = createPromptProgram<BikeFirstContext, SmashUpCore
                 first,
                 otherTargets,
                 ...(context.fixedDestinationBaseIndex !== undefined ? { fixedDestinationBaseIndex: context.fixedDestinationBaseIndex } : {}),
-            } satisfies BikeSecondContext,
-            nextProgram: bikeSecondPromptProgram,
+            } satisfies BikeSecondContext, bikeSecondPromptProgram),
         };
     },
 });
 
-const bikeSecondPromptProgram = createPromptProgram<BikeSecondContext, SmashUpCore, SmashUpEvent>({
+const bikeSecondPromptProgram = createPromptProgram<BikeSecondContext>({
     sourceId: 'pearl_images_now_you_know_bike_safety_second',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_second_${context.now}`,
@@ -3060,7 +3058,7 @@ const bikeSecondPromptProgram = createPromptProgram<BikeSecondContext, SmashUpCo
         const destinationBases = collectBaseTargets(state.core, baseIndex => baseIndex !== context.first.baseIndex);
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
@@ -3068,13 +3066,12 @@ const bikeSecondPromptProgram = createPromptProgram<BikeSecondContext, SmashUpCo
                 first: context.first,
                 second,
                 destinationBases,
-            } satisfies BikeDestinationContext,
-            nextProgram: bikeDestinationPromptProgram,
+            } satisfies BikeDestinationContext, bikeDestinationPromptProgram),
         };
     },
 });
 
-const bikeDestinationPromptProgram = createPromptProgram<BikeDestinationContext, SmashUpCore, SmashUpEvent>({
+const bikeDestinationPromptProgram = createPromptProgram<BikeDestinationContext>({
     sourceId: 'pearl_images_now_you_know_bike_safety_dest',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `${context.sourceId}_dest_${context.now}`,
@@ -3117,7 +3114,7 @@ function pearlBikeSafety(ctx: AbilityContext): AbilityResult {
     }));
 }
 
-const trulyOutstandingFirstPromptProgram = createPromptProgram<TrulyOutstandingFirstContext, SmashUpCore, SmashUpEvent>({
+const trulyOutstandingFirstPromptProgram = createPromptProgram<TrulyOutstandingFirstContext>({
     sourceId: 'pearl_images_truly_outstanding',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_truly_outstanding_${context.now}`,
@@ -3134,19 +3131,18 @@ const trulyOutstandingFirstPromptProgram = createPromptProgram<TrulyOutstandingF
         if (targets.length === 0 || ownTargets.length === 0) return { events };
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 matchState: state,
                 playerId: context.playerId,
                 now: timestamp,
                 selectedCount: targets.length,
                 candidates: ownTargets,
-            } satisfies TrulyOutstandingSecondContext,
-            nextProgram: trulyOutstandingSecondPromptProgram,
+            } satisfies TrulyOutstandingSecondContext, trulyOutstandingSecondPromptProgram),
         };
     },
 });
 
-const trulyOutstandingSecondPromptProgram = createPromptProgram<TrulyOutstandingSecondContext, SmashUpCore, SmashUpEvent>({
+const trulyOutstandingSecondPromptProgram = createPromptProgram<TrulyOutstandingSecondContext>({
     sourceId: 'pearl_images_truly_outstanding_own',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `pearl_images_truly_outstanding_own_${context.now}`,
@@ -3374,7 +3370,7 @@ function giGeraldsBase(ctx: BaseAbilityContext): BaseAbilityResult {
 
 function ussBanner(ctx: BaseAbilityContext): BaseAbilityResult {
     return {
-        events: [grantContextualExtraMinion({ playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState?.sys }, 'base_uss_banner', ctx.baseIndex, { powerMax: 2 })],
+        events: [grantContextualExtraMinion({ playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState }, 'base_uss_banner', ctx.baseIndex, { powerMax: 2 })],
     };
 }
 

@@ -1,23 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Pin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { GAME_CHANGELOG_API_URL } from '../../config/server';
+import { getGameChangelogs } from '../../api/game-changelogs';
 import { logger } from '../../lib/logger';
 import type { GameChangelogItem } from './gameDetailsContent';
+import { GameChangelogContent } from './GameChangelogContent';
 
 interface GameDetailsChangelogSectionProps {
     gameId: string;
 }
-
-type GameChangelogResponse = {
-    changelogs?: GameChangelogItem[];
-};
 
 type LoadedState = {
     gameId: string;
     items: GameChangelogItem[];
     error: boolean;
 };
+
+export function changelogTitleIncludesVersion(title: string, versionLabel: string): boolean {
+    const version = versionLabel.trim().replace(/^v(?=\d)/i, '').toLowerCase();
+    if (!version) return false;
+    const normalized = title.toLowerCase();
+    for (let index = normalized.indexOf(version); index >= 0; index = normalized.indexOf(version, index + 1)) {
+        const start = index > 0 && normalized[index - 1] === 'v' ? index - 1 : index;
+        const before = start > 0 ? normalized[start - 1] : '';
+        const after = normalized[index + version.length] ?? '';
+        if (!/[a-z0-9.]/.test(before) && !/[a-z0-9.]/.test(after)) return true;
+    }
+    return false;
+}
 
 const resolveDisplayDate = (item: GameChangelogItem) => item.publishedAt || item.updatedAt || item.createdAt;
 
@@ -35,18 +45,11 @@ export const GameDetailsChangelogSection = ({ gameId }: GameDetailsChangelogSect
 
         const controller = new AbortController();
 
-        fetch(`${GAME_CHANGELOG_API_URL}/${encodeURIComponent(gameId)}`, {
-            signal: controller.signal,
-        })
-            .then(async (response) => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const payload = await response.json() as GameChangelogResponse;
+        getGameChangelogs(gameId, controller.signal)
+            .then((items) => {
                 setLoadedState({
                     gameId,
-                    items: Array.isArray(payload.changelogs) ? payload.changelogs : [],
+                    items,
                     error: false,
                 });
             })
@@ -86,23 +89,23 @@ export const GameDetailsChangelogSection = ({ gameId }: GameDetailsChangelogSect
     return (
         <section aria-live="polite" className="space-y-3 py-1">
             {resolvedError ? (
-                <div className="rounded-[6px] border border-dashed border-[#e5e0d0] bg-[#f8f4eb]/70 px-4 py-8 text-center">
+                <div className="game-changelog-state rounded-[6px] border border-dashed border-[#e5e0d0] bg-[#f8f4eb]/70 px-4 py-8 text-center">
                     <p className="text-sm italic text-[#8c7b64]">{t('changelog.error')}</p>
                 </div>
             ) : isLoading ? (
-                <div className="flex h-40 flex-col items-center justify-center gap-3 rounded-[6px] border border-dashed border-[#e5e0d0] bg-[#f8f4eb]/70">
+                <div className="game-changelog-state flex h-40 flex-col items-center justify-center gap-3 rounded-[6px] border border-dashed border-[#e5e0d0] bg-[#f8f4eb]/70">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-parchment-brown/20 border-t-parchment-brown" />
                     <p className="text-xs italic tracking-wider text-[#8c7b64]">{t('changelog.loading')}</p>
                 </div>
             ) : resolvedItems.length === 0 ? (
-                <div className="rounded-[6px] border border-dashed border-[#e5e0d0] bg-[#f8f4eb]/70 px-4 py-8 text-center">
+                <div className="game-changelog-state rounded-[6px] border border-dashed border-[#e5e0d0] bg-[#f8f4eb]/70 px-4 py-8 text-center">
                     <p className="text-sm italic text-[#8c7b64]">{t('leaderboard.changelogEmpty')}</p>
                 </div>
             ) : (
                 resolvedItems.map((item) => (
                     <article
                         key={item.id}
-                        className="rounded-[6px] border border-parchment-card-border/30 bg-[#fcfbf9] px-4 py-4 shadow-sm"
+                        className="game-changelog-item rounded-[6px] border border-parchment-card-border/30 bg-[#fcfbf9] px-4 py-4 shadow-sm"
                     >
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
@@ -110,7 +113,7 @@ export const GameDetailsChangelogSection = ({ gameId }: GameDetailsChangelogSect
                                     <h4 className="text-base font-bold leading-tight text-parchment-base-text">
                                         {item.title}
                                     </h4>
-                                    {item.versionLabel ? (
+                                    {item.versionLabel && !changelogTitleIncludesVersion(item.title, item.versionLabel) ? (
                                         <span className="rounded-full border border-parchment-card-border/40 bg-parchment-base-bg/60 px-2 py-0.5 text-[11px] font-medium text-parchment-light-text">
                                             {item.versionLabel}
                                         </span>
@@ -122,11 +125,9 @@ export const GameDetailsChangelogSection = ({ gameId }: GameDetailsChangelogSect
                                         </span>
                                     ) : null}
                                 </div>
-                                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#5b4b37]">
-                                    {item.content}
-                                </p>
+                                <GameChangelogContent content={item.content} className="game-changelog-body mt-3 text-sm leading-6 text-[#5b4b37]" />
                             </div>
-                            <span className="shrink-0 text-[11px] uppercase tracking-[0.12em] text-parchment-light-text/70">
+                            <span className="game-changelog-date shrink-0 text-[11px] uppercase tracking-[0.12em] text-parchment-light-text/70">
                                 {formatDate(resolveDisplayDate(item))}
                             </span>
                         </div>

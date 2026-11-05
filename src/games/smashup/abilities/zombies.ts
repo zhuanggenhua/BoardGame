@@ -4,7 +4,8 @@
  * 主题：从弃牌堆复活随从、弃牌堆操作
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
 import { SU_EVENTS } from '../domain/types';
 import type {
@@ -24,6 +25,8 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { validateDiscardMinionPlaySemantics } from '../domain/playLegality';
 import { registerDiscardPlayProvider } from '../domain/discardPlayability';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createBranchProgram,
     createEffectProgram,
@@ -129,10 +132,10 @@ export function registerZombieAbilities(): void {
     // === ongoing 效果注册 ===
     // 泛滥横行：这里只注册“其他玩家不能打随从到此基地”；到期离场由卡牌定义里的 lifecycle 统一注册。
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
-    registerAbility('zombie_overrun', 'onPlay', () => []);
+    registerAbility('zombie_overrun', 'onPlay', () => ({ events: [] }));
 
     registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
-    registerAbility('zombie_overrun_pod', 'onPlay', () => []);
+    registerAbility('zombie_overrun_pod', 'onPlay', () => ({ events: [] }));
 
     // === 弃牌堆出牌能力注册 ===
     // 顽强丧尸：被动，弃牌堆中可作为额外随从打出（每回合限一次）
@@ -412,15 +415,15 @@ function buildZombieDiscardCardOptions(cards: ZombieDiscardOption[]) {
     }));
 }
 
-function attachOptionsGenerator<T>(
-    interaction: ReturnType<typeof createAbilityRuntimeSimpleChoice<T>>,
+function attachOptionsGenerator<TInteraction extends { data: Record<string, unknown> }>(
+    interaction: TInteraction,
     optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
-) {
-    (interaction.data as Record<string, unknown>).optionsGenerator = optionsGenerator;
+): TInteraction {
+    interaction.data.optionsGenerator = optionsGenerator;
     return interaction;
 }
 
-const zombieGraveDiggerPromptProgram = createPromptProgram<ZombieGraveDiggerContext, SmashUpCore, SmashUpEvent>({
+const zombieGraveDiggerPromptProgram = createPromptProgram<ZombieGraveDiggerContext>({
     sourceId: 'zombie_grave_digger',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -477,7 +480,7 @@ const zombieGraveDiggerProgram = createBranchProgram<ZombieGraveDiggerContext, S
     else: zombieGraveDiggerPromptProgram,
 });
 
-const zombieWalkerChoiceProgram = createPromptProgram<ZombieWalkerContext, SmashUpCore, SmashUpEvent>({
+const zombieWalkerChoiceProgram = createPromptProgram<ZombieWalkerContext>({
     sourceId: 'zombie_walker',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `zombie_walker_${context.now}`,
@@ -529,7 +532,7 @@ const zombieWalkerProgram = createEffectProgram<ZombieWalkerContext, SmashUpCore
     };
 });
 
-const zombieGraveRobbingPromptProgram = createPromptProgram<ZombieGraveRobbingContext, SmashUpCore, SmashUpEvent>({
+const zombieGraveRobbingPromptProgram = createPromptProgram<ZombieGraveRobbingContext>({
     sourceId: 'zombie_grave_robbing',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -570,7 +573,7 @@ const zombieGraveRobbingProgram = createBranchProgram<ZombieGraveRobbingContext,
     else: zombieGraveRobbingPromptProgram,
 });
 
-const zombieNotEnoughBulletsPromptProgram = createPromptProgram<ZombieNotEnoughBulletsContext, SmashUpCore, SmashUpEvent>({
+const zombieNotEnoughBulletsPromptProgram = createPromptProgram<ZombieNotEnoughBulletsContext>({
     sourceId: 'zombie_not_enough_bullets',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `zombie_not_enough_bullets_${context.now}`,
@@ -605,7 +608,7 @@ const zombieNotEnoughBulletsProgram = createBranchProgram<ZombieNotEnoughBullets
     else: zombieNotEnoughBulletsPromptProgram,
 });
 
-const zombieLendAHandPromptProgram = createPromptProgram<ZombieLendAHandContext, SmashUpCore, SmashUpEvent>({
+const zombieLendAHandPromptProgram = createPromptProgram<ZombieLendAHandContext>({
     sourceId: 'zombie_lend_a_hand',
     buildInteraction: (context) => attachOptionsGenerator(
         createAbilityRuntimeSimpleChoice(
@@ -672,7 +675,7 @@ const zombieLendAHandProgram = createBranchProgram<ZombieLendAHandContext, Smash
     else: zombieLendAHandPromptProgram,
 });
 
-const zombieOutbreakChooseBasePromptProgram = createPromptProgram<ZombieOutbreakContext, SmashUpCore, SmashUpEvent>({
+const zombieOutbreakChooseBasePromptProgram = createPromptProgram<ZombieOutbreakContext>({
     sourceId: 'zombie_outbreak_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `zombie_outbreak_base_${context.now}`,
@@ -731,7 +734,7 @@ function buildZombieMallCrawlEvents(
     ];
 }
 
-const zombieMallCrawlPromptProgram = createPromptProgram<ZombieMallCrawlContext, SmashUpCore, SmashUpEvent>({
+const zombieMallCrawlPromptProgram = createPromptProgram<ZombieMallCrawlContext>({
     sourceId: 'zombie_mall_crawl',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `zombie_mall_crawl_${context.now}`,
@@ -757,7 +760,7 @@ const zombieMallCrawlProgram = createBranchProgram<ZombieMallCrawlContext, Smash
     else: zombieMallCrawlPromptProgram,
 });
 
-const zombieTheyKeepComingPromptProgram = createPromptProgram<ZombieTheyKeepComingContext, SmashUpCore, SmashUpEvent>({
+const zombieTheyKeepComingPromptProgram = createPromptProgram<ZombieTheyKeepComingContext>({
     sourceId: 'zombie_they_keep_coming',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -985,13 +988,13 @@ function resolveZombieLordChoice(
     };
 }
 
-const zombieLordPickPromptProgram = createPromptProgram<ZombieLordContext, SmashUpCore, SmashUpEvent>({
+const zombieLordPickPromptProgram: AbilityProgram<ZombieLordContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ZombieLordContext>({
     sourceId: 'zombie_lord_pick',
     buildInteraction: (context) => buildZombieLordInteraction(context),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const result = resolveZombieLordChoice(state, playerId, value as ZombieDiscardChoice, context, timestamp);
         return result.nextContext
-            ? { events: result.events, context: result.nextContext, nextProgram: zombieLordPickPromptProgram }
+            ? { events: result.events, continuation: createAbilityRuntimeContinuation(result.nextContext, zombieLordPickPromptProgram) }
             : { events: result.events };
     },
 });

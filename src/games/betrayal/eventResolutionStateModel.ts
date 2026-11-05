@@ -1,4 +1,3 @@
-import { eventRollResolutionNeedsSharedAcknowledgement } from './acknowledgementReadModel';
 import {
     acknowledgeEventEffectCardResolution,
     cloneDiscoverySummary,
@@ -39,6 +38,11 @@ import {
     cloneUseEffect,
     type UseEffectProfile,
 } from './possessionEffects';
+import {
+    isIntermediateAllTraitCheckEventRollResolution,
+    resolveEventRollResolutionRequiresAcknowledgement,
+    resolveHumanAcknowledgementPlayerIds,
+} from './acknowledgementReadModel';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
 import { BETRAYAL_SCENARIO_CONFIGS } from './scenarioConfig';
 import { consumeNextNonCombatTraitReplacementAfterTraitRoll } from './traitRollModel';
@@ -141,12 +145,29 @@ function createEventRecentRoll(
     };
 }
 
+export function buildEventChoiceRecentRollId(
+    event: Pick<EventChoiceResolvedEvent, 'payload' | 'timestamp'>,
+): string {
+    const eventRoll = event.payload.eventRoll;
+    const traitCheckStep = event.payload.allTraitCheckProgress?.results.length ?? 0;
+    return [
+        event.payload.playerId,
+        event.payload.sourceTitle,
+        event.timestamp,
+        eventRoll?.kind ?? 'none',
+        eventRoll?.trait ?? 'none',
+        traitCheckStep,
+        eventRoll?.rollLabel ?? eventRoll?.label ?? 'roll',
+    ].join('-');
+}
+
 function createPendingEventRollResolution(core: BetrayalCore, input: {
     rollId: string;
     playerId: string;
     sourceTitle: string;
     eventEffect?: EventChoiceResolvedEvent['payload']['eventEffect'];
     nextPendingEventChoice?: BetrayalPendingEventChoiceState;
+    requiredPlayerIds?: readonly string[];
     deathPrevention?: BetrayalPendingEventRollResolutionState['deathPrevention'];
     hauntTriggered?: boolean;
     hauntCardNumber?: number;
@@ -163,27 +184,30 @@ function createPendingEventRollResolution(core: BetrayalCore, input: {
     const nextPendingEventChoice = input.nextPendingEventChoice
         ? clonePendingEventChoice(input.nextPendingEventChoice)
         : undefined;
-    const needsSharedEventRollAcknowledgement = eventRollResolutionNeedsSharedAcknowledgement({
-        nextPendingEventChoice,
-        hauntRevealResolution: input.hauntRevealResolution,
-        hauntTraitorResolution: input.hauntTraitorResolution,
-        dustSetup: input.dustSetup,
-        magicCameraSetup: input.magicCameraSetup,
-        helpingHandsSetup: input.helpingHandsSetup,
-        uponReflectionSetup: input.uponReflectionSetup,
-    });
+    const requiredPlayerIds = resolveHumanAcknowledgementPlayerIds(core, input.playerId);
     return {
         rollId: input.rollId,
         playerId: input.playerId,
         sourceTitle: input.sourceTitle,
-        requiredPlayerIds: needsSharedEventRollAcknowledgement && core.playerIds.length > 0
-            ? [...core.playerIds]
-            : [input.playerId],
+        requiredPlayerIds,
         acknowledgedPlayerIds: [],
         effect: cloneUseEffect(input.eventEffect ?? nextPendingEventChoice!.effect),
         nextPendingEventChoice,
         deathPrevention: cloneEventDeathPrevention(input.deathPrevention),
-        requiresAcknowledgement: true,
+        requiresPlayerAdvance: isIntermediateAllTraitCheckEventRollResolution({
+            nextPendingEventChoice,
+        }),
+        requiresAcknowledgement: resolveEventRollResolutionRequiresAcknowledgement({
+            effect: input.eventEffect ?? nextPendingEventChoice!.effect,
+            nextPendingEventChoice,
+            hauntRevealResolution: input.hauntRevealResolution,
+            hauntTraitorResolution: input.hauntTraitorResolution,
+            dustSetup: input.dustSetup,
+            magicCameraSetup: input.magicCameraSetup,
+            helpingHandsSetup: input.helpingHandsSetup,
+            uponReflectionSetup: input.uponReflectionSetup,
+            hauntRoll: input.hauntRoll,
+        }),
         hauntTriggered: input.hauntTriggered,
         hauntCardNumber: input.hauntCardNumber,
         hauntTriggerLabel: input.hauntTriggerLabel,
@@ -305,6 +329,13 @@ export function applyBetrayalEventChoiceResolvedState(
 ): BetrayalEventStateResolution {
     const previousRecentRoll = core.recentRoll;
     const previousDiscovery = core.latestDiscovery;
+    const confirmedAllTraitReward = Boolean(
+        core.pendingEventChoice?.effect.mode === 'chosenTrait'
+        && core.pendingEventChoice.allTraitCheckProgress?.results.length
+        && core.pendingEventChoice.allTraitCheckProgress.results.every((result) => result.passed)
+        && event.payload.accepted
+        && !event.payload.eventRoll?.dice?.length,
+    );
     const deferNextPendingEventChoiceBehindRoll = Boolean(
         event.payload.eventRoll?.dice?.length
         && event.payload.nextPendingEventChoice,
@@ -319,6 +350,16 @@ export function applyBetrayalEventChoiceResolvedState(
     mergePreviousDiscoveryResolutionSteps(previousDiscovery, nextDiscovery);
     core.latestDiscovery = nextDiscovery;
     core.latestDiscoveryOwnerPlayerId = event.payload.playerId;
+    if (event.payload.allTraitCheckProgress) {
+        core.recentAllTraitCheck = {
+            sourceTitle: event.payload.allTraitCheckProgress.sourceTitle,
+            playerId: event.payload.allTraitCheckProgress.playerId,
+            results: event.payload.allTraitCheckProgress.results.map((result) => ({
+                ...result,
+                dice: [...result.dice],
+            })),
+        };
+    }
     if (event.payload.drawnEventCardNameToBury) {
         buryEventCardToBottom(core, event.payload.drawnEventCardNameToBury);
     }
@@ -342,7 +383,7 @@ export function applyBetrayalEventChoiceResolvedState(
         : null;
     core.recentRoll = event.payload.eventRoll?.dice?.length && event.payload.eventRoll.branchThresholds
         ? createEventRecentRoll(
-            `${event.payload.playerId}-${event.payload.sourceTitle}-${event.timestamp}`,
+            buildEventChoiceRecentRollId(event),
             event.payload.playerId,
             event.payload.sourceTitle,
             event.payload.eventRoll.eventDescription,
@@ -414,6 +455,11 @@ export function applyBetrayalEventChoiceResolvedState(
             deckKind: 'event',
             discovery: eventChoiceDiscovery,
         });
+    if (confirmedAllTraitReward) {
+        // The choice command already carries the player's explicit reward
+        // confirmation. Do not ask the same player to confirm it a second time.
+        acknowledgeEventEffectCardResolution(core, event.payload.sourceTitle, event.payload.playerId);
+    }
     const synced = syncCurrentExplorerProjection(core);
     const pendingDamageAllocationAfterEventChoice = core.pendingDamageAllocation;
     const nextCore = {
@@ -470,7 +516,7 @@ export function applyBetrayalEventRolledState(
         && (eventDiscovery.resolutionSteps?.length ?? 0) > 1
         ? createPendingCardResolutionQueue({
             playerId: event.payload.playerId,
-            requiredPlayerIds: core.playerIds,
+            requiredPlayerIds: resolveHumanAcknowledgementPlayerIds(core, event.payload.playerId),
             roomId: core.currentExplorer.roomId,
             timestamp: event.timestamp,
             deckKind: 'event',
@@ -576,8 +622,14 @@ export function applyBetrayalEventRollFinalizedState(
         event.timestamp,
         event.payload.deathPrevention,
     );
+    const eventRollWasSharedAcknowledgement =
+        event.payload.requiredPlayerIds.length > 1
+        && event.payload.requiredPlayerIds.every((playerId) => (
+            event.payload.acknowledgedPlayerIds.includes(playerId)
+        ));
     const eventEffectCardResolutionQueue =
-        core.latestDiscovery?.kind === 'event'
+        !eventRollWasSharedAcknowledgement
+        && core.latestDiscovery?.kind === 'event'
         && core.latestDiscovery.title === event.payload.sourceTitle
         && (core.latestDiscovery.resolutionSteps?.length ?? 0) > 0
             ? createPendingCardResolutionQueue({

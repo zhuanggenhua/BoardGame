@@ -1,7 +1,7 @@
 # 小黑屋木乃伊横行中段实现审计（2026-07-29）
 
 > 2026-07-29 接续边界：本文件只审「木乃伊横行」进入作祟后的中段运行链，消费 `docs/games/betrayal/haunts/01-mummy-rampage.md`、当前实现、测试和既有 evidence。它不重新录入图包，不替代 74 张发现牌、42 个房间、全部作祟或完整自然长链 E2E。「女孩」版本边界已由当前总账裁定：它是旧版木乃伊剧本 token / 触发标签，不是当前 9 张预兆牌。
-> 2026-07-31 修订：本文件此前的“公开 token”结论只证明运行态对象和组件代表链存在，不证明正式木乃伊 / 大怪物 token 图面已接入。当前发现木乃伊引用的正式资源路径缺文件，该部分降级为 `runtime-present / visual-token-blocked`。
+> 2026-07-31 修订：本文件此前的“公开 token”结论只证明运行态对象和组件代表链存在，不证明正式木乃伊 / 大怪物 token 图面已接入。地图 token 已改接公开 SVG；2026-09-19 用户进一步裁定当前 portrait 直接使用，因此本文件不再把 portrait 标记为临时占位或当前阻塞。
 
 ## 审计范围
 
@@ -17,13 +17,13 @@
 
 ## 结论等级
 
-结论等级：`mummy-rampage-midgame-indexed / domain-and-board-representative-verified / hero-traitor-monster-and-forced-omen-e2e-verified / visual-token-blocked / downstream-open`。
+结论等级：`mummy-rampage-midgame-indexed / domain-and-board-representative-verified / hero-traitor-monster-and-forced-omen-e2e-verified / runtime-visual-user-accepted / downstream-open`。
 
 ### 审计口径修订（2026-07-31）
 
 本文件的审计核心是“规则子句是否被当前实现正确消费”：规则子句、实现入口、状态写入 / 清理、玩家可见入口和必要负向断言是否闭合。审计不是穷举所有房间、伤害、死亡保护、重掷和特殊状态组合；只有能直接改变规则结果、让玩家无法完成流程、或证明共享消费者不一致的组合，才升级为实现正确性缺口。
 
-2026-07-31 补充：规则要求放置 token / 标记 / 怪物标记时，审计必须同时拆成“运行态对象存在”和“正式资源图面存在”。本文件此前只证明木乃伊运行态和地图交互存在，没有核对 `tokenAsset` / `portraitAsset` 对应资源文件是否真实存在；因此旧“公开 token”相关表述在木乃伊图面层失效，必须降级。
+2026-07-31 补充：规则要求放置 token / 标记 / 怪物标记时，审计必须同时拆成“运行态对象存在”和“资源图面存在”。地图 `tokenAsset` 已改为 Openclipart 324162 的 `mummy.svg` 并接入运行时；2026-09-19 用户确认当前 `portraitAsset` 图面直接使用，资源索引已回写为用户接受状态，不再形成本轮阻塞。
 
 后续残余统一分三类：
 
@@ -86,7 +86,7 @@
 | 对象/链路 | 当前实现消费 | 证据等级 | 残余范围 |
 | --- | --- | --- | --- |
 | 开局与作祟揭示 | 七张剧本卡候选、默认木乃伊、作祟揭示读模型、公开/秘密分册已接入；真实入口 E2E 覆盖公开揭示、英雄/叛徒分册、开局叙事、目标承接和双结局朗读，代表夹具触发牌为「面具」。 | `L2 + L3-reading-e2e` | 「女孩」已裁定为旧版木乃伊剧本 token / 触发标签；「面具」只是当前代表触发牌，作祟开始不等于中段自然链完成。 |
-| setup 与公开 token | 木乃伊、石棺、女孩、知识进度已生成；目标条和地图交互代表链存在；但木乃伊正式大怪物 token 图面未闭合。`monsterDefinitions.ts` 引用 `betrayal/tokens/monsters/large-monster-front` 与 `betrayal/monsters/mummy`，当前正式资源目录缺这两个源图和压缩图；`mummy-token-source-search-2026-07-31.md` 已记录本地图包未发现可确认源图。 | `L2 runtime + component-representative + visual-token-blocked` | P0 素材/视觉承接阻塞：必须找到木乃伊大怪物 token / 木乃伊正式图面并接入，或继续保持 blocked；旧截图只能证明有可交互怪物对象，不能证明正式 token 图面完成。 |
+| setup 与公开 token | 木乃伊、石棺、女孩、知识进度已生成；目标条和地图交互代表链存在；地图 token 已接入 Openclipart 324162 SVG，portrait 按用户裁定直接使用。`monsterDefinitions.ts` 当前引用 `betrayal/tokens/monsters/mummy.svg` 与 `betrayal/monsters/mummy`；两条资源路径均保留当前运行时接线。 | `L2 runtime + component-representative + runtime-visual-user-accepted` | 当前不再有 portrait 素材阻塞；后续只在资源回归或用户要求替换时重审。 |
 | 英雄找真名 | validator、投骰、知识标记、recentRoll、目标条更新和 Board 主动作点击链已接入；真实入口 E2E 覆盖英雄从牌桌主动作点击寻找木乃伊真名，成功后显示“取得第 1 枚知识标记”和“找到了木乃伊真名”；失败反馈和同回合禁用原因已有 Board 代表测试。 | `L2 domain + Board component representative + L3 Playwright screenshot chain` | 验证层级缺口：自然整段链、非法房间/非持书等负向 UI；非阻塞扩展：兔脚/手电筒/书本加成组合。 |
 | 英雄学驱逐法术 | 持书英雄、真名前置、6+ 知识检定、第 2 标记、目标条更新和 Board 主动作点击链已接入；真实入口 E2E 覆盖持书英雄从牌桌主动作点击学习驱逐法术，成功后显示“取得第 2 枚知识标记”和“学会驱逐木乃伊的法术”；失败反馈和同回合禁用原因已有 Board 代表测试。 | `L2 domain + Board component representative + L3 Playwright screenshot chain` | 验证层级缺口：自然整段链、非持书英雄负向 UI；非阻塞扩展：兔脚/手电筒/书本加成组合。 |
 | 英雄驱逐木乃伊 | 2 标记、书本同房、英雄同房、神志对抗、英雄终局和 Board 主动作点击链已接入；真实入口 E2E 覆盖英雄从牌桌主动作点击驱逐木乃伊后进入英雄终局朗读和结果报告；驱逐失败反馈和同回合禁用原因已有 Board 代表测试。 | `L2 domain + Board component representative + L3 Playwright screenshot chain` | 验证层级缺口：自然整段从找真名/学法术/驱逐连续走完、驱逐失败真实页；非阻塞扩展：神志加值/重掷组合。 |
@@ -162,7 +162,7 @@
 
 残余范围：
 
-- 木乃伊正式大怪物 token / 木乃伊图面当前为 P0 素材/视觉承接阻塞：运行态对象已存在，但正式资源路径 `betrayal/tokens/monsters/large-monster-front`、`betrayal/monsters/mummy` 没有对应源图和压缩图；不得用狼人、幽灵、小型怪物、文字壳或红色占位替代。
+- 木乃伊地图 token 已从旧 `large-monster-front` 占位切换为 `betrayal/tokens/monsters/mummy.svg`，来源为 Openclipart 324162，并已进入 manifest / 资源索引；`betrayal/monsters/mummy` portrait 按 2026-09-19 用户裁定直接使用，资源索引状态为 `runtime-user-accepted`，不再作为本轮素材阻塞。
 - 英雄找真名、学习驱逐法术、驱逐木乃伊已补真实入口 E2E / 截图链、Board 主动作代表链、失败反馈和同回合禁用原因；验证层级缺口是自然整段链、非持书/非法房间负向 UI 和驱逐失败真实页；加成 / 重掷组合归为非阻塞扩展。
 - 叛徒拾起女孩、交女孩、交圣符/指环已补真实入口 E2E / 截图链，并已有 Board 代表链覆盖指环分支、非婚礼牌负向和同一预兆已交过负向；验证层级缺口是更多负向 UI 和整局自然链；死亡 / 交易后组合归为非阻塞扩展。
 - 木乃伊移动骰 0 和 1 瞬移女孩房间、移动模式“只限已发现房间 / 不能探索新房间”提示与未发现房间无目标框、已持女孩和圣符时自然怪物移动回石棺触发叛徒终局、同房必须先攻击、同房攻击目标过滤、攻击后偷走地图、偷走圣符、偷走指环、夺走女孩、攻击后移动恢复、选择造成伤害进入受伤英雄伤害分配页、木乃伊攻击这一条的盔甲减伤并实际扣属性轨道格回牌桌、木乃伊攻击致死伤害触发头骨后的成功阻止死亡与失败正常死亡，以及头骨失败后的兔脚重掷阻止死亡已补真实 Playwright / 截图链；胸针在木乃伊强制伤害下不适用已补，胸针非强制物理/精神伤害入口已分别在灰尘普通攻击桶和指环攻击桶补证；无可偷物品、预兆或女孩时直接进入强制伤害分配的领域 + Board 代表链已补；失效偷取目标拒绝和玩家可见提示的领域 + Board 代表链已补；验证层级缺口是同一整局自然跨回合长链；更多房间特殊状态组合、其它伤害来源减伤 / 死亡保护 / 兔脚组合归为非阻塞扩展。
@@ -186,5 +186,5 @@
 | 旧矩阵风险 | `runtime-implementation-consumption-audit-2026-07-29.md` 已写“木乃伊中段仍需补真实入口 E2E”，但缺单独专项账本，容易被“剧本阅读/终局朗读 E2E 已通过”误读成剧本完成。 |
 | 本轮修订 | 本文件把 setup、英雄线、叛徒线、木乃伊移动/攻击、强制关键预兆和终局朗读拆成独立中段矩阵，并把强制关键预兆真实探索、木乃伊叛徒拾女孩 / 交女孩 / 交圣符 / 交指环、木乃伊英雄找真名 / 学法术 / 驱逐、木乃伊怪物移动骰 0/1 / 同房攻击 / 偷地图 / 偷圣符 / 偷指环 / 偷女孩 / 造成伤害分配回牌桌真实入口截图链写入对应层级与残余。 |
 | 2026-07-31 剧本流程复核 | 复跑 `scenario-flow-new-rules.e2e.ts`，公开揭示、分册阅读、开局叙事、目标承接和双结局朗读 2 条通过；同步修正过期断言，明确当前代表夹具触发牌为「面具」，不是「书本」；「女孩」另按当前总账裁定为旧版木乃伊剧本 token / 触发标签。 |
-| 2026-07-31 token 审计漏项回写 | 旧“setup 与公开 token”行降级：木乃伊运行态和交互链存在，但正式木乃伊 / 大怪物 token 资源缺失；当前状态为 `runtime-present / visual-token-blocked`。 |
-| 当前状态 | `mummy-rampage-midgame-indexed / domain-and-board-representative-verified / hero-traitor-monster-and-forced-omen-e2e-verified / visual-token-blocked / downstream-open`，不是完成。 |
+| 2026-07-31 token 审计漏项回写 | 旧“setup 与公开 token”行先降级为 `runtime-present / visual-token-blocked`；后续地图 token 已改接 Openclipart 324162 SVG，当前只保留 portrait 的 `visual-token-blocked`。 |
+| 当前状态 | `mummy-rampage-midgame-indexed / domain-and-board-representative-verified / hero-traitor-monster-and-forced-omen-e2e-verified / runtime-visual-user-accepted / downstream-open`；当前 portrait 不再阻塞，剩余只属于自然长链和扩展验证边界。 |

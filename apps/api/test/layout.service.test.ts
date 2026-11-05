@@ -63,17 +63,17 @@ describe('LayoutService', () => {
                     shellTranslateX: 0,
                     playerBoardTranslateY: 0,
                     magnifyButtonTop: 0.48,
-                    playerBoardBaseHeightVw: 35,
-                    tipBoardHeightVw: 35,
-                    centerBoardGapVw: 0.5,
+                    playerBoardBaseHeightUnits: 35,
+                    tipBoardHeightUnits: 35,
+                    centerBoardGapUnits: 0.5,
                 },
                 v2: {
                     shellTranslateX: 1.1,
                     playerBoardTranslateY: -1.45,
                     magnifyButtonTop: 1.85,
-                    playerBoardBaseHeightVw: 35,
-                    tipBoardHeightVw: 29.6,
-                    centerBoardGapVw: 0.24,
+                    playerBoardBaseHeightUnits: 35,
+                    tipBoardHeightUnits: 29.6,
+                    centerBoardGapUnits: 0.24,
                 },
             },
         };
@@ -91,8 +91,8 @@ describe('LayoutService', () => {
         expect(saved).toContain('DICETHRONE_BOARD_LAYOUT_CONFIG');
         expect(saved).toContain("id: 'fist'");
         expect(saved).toContain('x: 0.10');
-        expect(saved).toContain('playerBoardBaseHeightVw: 35');
-        expect(saved).toContain('tipBoardHeightVw: 29.60');
+        expect(saved).toContain('playerBoardBaseHeightUnits: 35');
+        expect(saved).toContain('tipBoardHeightUnits: 29.60');
         expect(saved).toContain("gunslinger: 'v2'");
     });
 

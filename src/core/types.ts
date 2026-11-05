@@ -87,6 +87,13 @@ export interface GameAssets {
 export interface CriticalImageResolverResult {
     critical: string[];
     warm: string[];
+    /**
+     * 为 true 时，动态 critical 清单接管当前阶段的阻塞清单，不再并入
+     * GameAssets.criticalImages。用于教程、选择页等只需要首屏可读素材的阶段。
+     */
+    replaceStaticCritical?: boolean;
+    /** Opt in: keep an already mounted scene hidden/inert during later preload runs. Initial preload still blocks mount. */
+    preserveMountedScene?: boolean;
     /** 可选的阶段标识，变化时 CriticalImageGate 会重新触发预加载 */
     phaseKey?: string;
 }

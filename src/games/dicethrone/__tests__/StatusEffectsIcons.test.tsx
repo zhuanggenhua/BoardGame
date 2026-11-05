@@ -518,7 +518,8 @@ describe('StatusEffectsIcons', () => {
         expect(halos).toHaveLength(2);
         expect(bodies).toHaveLength(2);
         for (const halo of halos) {
-            expect(halo.className).toContain('calc(100%+0.52vw)');
+            expect(halo.getAttribute('style')).toContain('--mobile-board-shell-inline-unit');
+            expect(halo.getAttribute('style')).toContain('0.52');
             expect(halo.getAttribute('style')).toContain('conic-gradient');
             expect(halo.getAttribute('style')).toContain('2px solid');
             expect(halo.getAttribute('style')).toContain('dicethrone-token-available-breathe');
@@ -583,7 +584,8 @@ describe('StatusEffectsIcons', () => {
         );
 
         expect(html).toContain('3/5');
-        expect(html).toContain('text-[0.56vw]');
+        expect(html).toContain('--mobile-board-shell-inline-unit');
+        expect(html).toContain('0.56');
         expect(html).toContain('z-30');
         expect(html).toContain('border-white/80');
         expect(html).not.toContain('text-[0.4vw]');

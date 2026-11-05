@@ -18,6 +18,10 @@ export interface GameClientContextValue {
     state: MatchState<unknown> | null;
     /** 发送命令 */
     dispatch: (type: string, payload: unknown) => void;
+    /** 当前已由服务端确认的管理员调试权限。 */
+    adminDebugAvailable?: boolean;
+    /** 通过服务端管理员调试通道发送作弊命令。 */
+    adminDebugDispatch?: (type: string, payload: unknown) => boolean;
     /** 请求服务端为人工准备选择执行当前 AI seat 的权威合法动作。 */
     requestManualSetupSelection?: (
         request: ManualSetupSelectionRequest,
@@ -47,6 +51,10 @@ export interface GameClientContextValue {
 
 export const GameClientContext = createContext<GameClientContextValue | null>(null);
 
+export function useOptionalGameClient(): GameClientContextValue | null {
+    return useContext(GameClientContext);
+}
+
 /**
  * 获取游戏客户端上下文
  *
@@ -63,6 +71,8 @@ export function useGameClient<
     return ctx as {
         state: MatchState<TCore> | null;
         dispatch: <K extends string & keyof TCommandMap>(type: K, payload: TCommandMap[K]) => void;
+        adminDebugAvailable?: boolean;
+        adminDebugDispatch?: (type: string, payload: unknown) => boolean;
         requestManualSetupSelection?: (
             request: ManualSetupSelectionRequest,
             onResult?: (result: ManualSetupSelectionResult) => void,

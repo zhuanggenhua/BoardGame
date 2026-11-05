@@ -245,6 +245,35 @@ describe('小黑屋操作日志与撤回', () => {
         );
     });
 
+    it('确认剧本卡只推进角色选择状态，不写入可见活动日志', () => {
+        let state = setupState();
+        for (const playerId of playerIds) {
+            state = runCommand(state, {
+                type: BETRAYAL_COMMANDS.SELECT_EXPLORER,
+                playerId,
+                payload: { explorerId: findAvailableExplorerId(state) },
+                timestamp: Number(playerId) + 1,
+            });
+        }
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.PROPOSE_SCENARIO_CARD,
+            playerId: '0',
+            payload: { candidateId: 'friends-forever' },
+            timestamp: 10,
+        });
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD,
+            playerId: '0',
+            payload: {},
+            timestamp: 11,
+        });
+
+        expect(state.core.scenarioCardConfirmations['0']).toBe('friends-forever');
+        expect(state.core.activityLog.some((entry) => entry.text.includes('确认剧本卡'))).toBe(false);
+        expect(state.sys.actionLog.entries.some((entry) => entry.kind === BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD)).toBe(false);
+    });
+
     it('正式日志命令都有公开摘要且不复写私密参数', () => {
         const core = createStartedFirstScenarioCore();
         const state: MatchState<BetrayalCore> = {
@@ -286,7 +315,10 @@ describe('小黑屋操作日志与撤回', () => {
         };
 
         const commandTypes = BETRAYAL_ACTION_LOG_ALLOWLIST.filter(
-            (type) => type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            (type) => (
+                type !== BETRAYAL_COMMANDS.ROLL_EVENT
+                && type !== BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL
+            ),
         );
         const entries = commandTypes.map((type, index) => (
             formatBetrayalActionEntry({
@@ -394,6 +426,27 @@ describe('小黑屋操作日志与撤回', () => {
                 segments: [expect.objectContaining({
                     key: 'actionLog.exploreRoomEvent',
                     params: { playerId: '0', room: '厨房', event: '无线电广播' },
+                    interactiveParams: expect.objectContaining({
+                        room: expect.objectContaining({
+                            previewRef: expect.objectContaining({ type: 'renderer' }),
+                        }),
+                        event: expect.objectContaining({
+                            previewRef: expect.objectContaining({ type: 'renderer' }),
+                        }),
+                    }),
+                })],
+            }),
+            expect.objectContaining({
+                kind: BETRAYAL_COMMANDS.ROLL_EVENT,
+                segments: [expect.objectContaining({
+                    key: 'actionLog.eventRollResult',
+                    params: {
+                        playerId: '0',
+                        event: '无线电广播',
+                        roll: '投 2 颗骰子',
+                        total: 4,
+                        result: '获得 1 点知识',
+                    },
                 })],
             }),
         ]));
@@ -471,11 +524,36 @@ describe('小黑屋操作日志与撤回', () => {
         expect(state.core.recentRoll?.sourceEventRoll).toBeUndefined();
         expect(mentalTraitTotal(state.core, '0')).toBe(8);
 
+        const radioRollId = state.core.recentRoll?.id;
         state = runCommand(state, {
             type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
             playerId: '0',
-            payload: { rollId: state.core.recentRoll?.id },
+            payload: { rollId: radioRollId },
             timestamp: 30,
+        });
+        expect(state.core.pendingEventRollResolution).toMatchObject({
+            rollId: radioRollId,
+            acknowledgedPlayerIds: ['0'],
+            requiredPlayerIds: playerIds,
+        });
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            playerId: '1',
+            payload: { rollId: radioRollId },
+            timestamp: 31,
+        });
+        expect(state.core.pendingEventRollResolution).toMatchObject({
+            rollId: radioRollId,
+            acknowledgedPlayerIds: ['0', '1'],
+            requiredPlayerIds: playerIds,
+        });
+
+        state = runCommand(state, {
+            type: BETRAYAL_COMMANDS.FINALIZE_EVENT_ROLL,
+            playerId: '2',
+            payload: { rollId: radioRollId },
+            timestamp: 32,
         }, createBetrayalScriptedRandom(3));
 
         expect(state.core.pendingEventRollResolution).toBeNull();

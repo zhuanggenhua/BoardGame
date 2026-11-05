@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-29",
+  "generatedAt": "2026-09-24",
   "source": "src/games/betrayal/scenarioConfig.ts::BETRAYAL_DISCOVERY_POOLS",
   "counts": {
     "rooms": {
@@ -11,7 +11,7 @@
     "runtimeEvents": 43,
     "items": 22,
     "omens": 9,
-    "runtimePossessions": 34
+    "runtimePossessions": 31
   },
   "rooms": {
     "ground": [
@@ -26,8 +26,7 @@
         "doorways": [
           "north",
           "east",
-          "south",
-          "west"
+          "south"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -43,7 +42,7 @@
           "植物"
         ],
         "doorways": [
-          "east",
+          "north",
           "south"
         ],
         "discoveryReward": null,
@@ -60,8 +59,8 @@
           "室外"
         ],
         "doorways": [
-          "east",
-          "south"
+          "north",
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -77,6 +76,8 @@
           "开阔"
         ],
         "doorways": [
+          "north",
+          "east",
           "south",
           "west"
         ],
@@ -94,9 +95,8 @@
           "物资"
         ],
         "doorways": [
-          "east",
-          "south",
-          "west"
+          "north",
+          "south"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -113,6 +113,8 @@
         ],
         "doorways": [
           "north",
+          "east",
+          "south",
           "west"
         ],
         "discoveryReward": null,
@@ -129,7 +131,7 @@
           "静压"
         ],
         "doorways": [
-          "east",
+          "north",
           "south"
         ],
         "discoveryReward": null,
@@ -163,8 +165,7 @@
           "目标"
         ],
         "doorways": [
-          "north",
-          "east"
+          "north"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -199,8 +200,8 @@
           "卧室"
         ],
         "doorways": [
-          "east",
-          "south"
+          "north",
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -234,9 +235,8 @@
           "事件"
         ],
         "doorways": [
-          "north",
           "east",
-          "south"
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -253,8 +253,7 @@
         ],
         "doorways": [
           "north",
-          "east",
-          "south"
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -291,8 +290,7 @@
         ],
         "doorways": [
           "north",
-          "east",
-          "south"
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -310,8 +308,7 @@
         ],
         "doorways": [
           "north",
-          "east",
-          "south"
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -328,8 +325,7 @@
         ],
         "doorways": [
           "north",
-          "east",
-          "south"
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": "drawUntilWeapon",
@@ -347,8 +343,8 @@
           "高处"
         ],
         "doorways": [
-          "south",
-          "west"
+          "north",
+          "south"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -365,7 +361,6 @@
         ],
         "doorways": [
           "north",
-          "east",
           "south"
         ],
         "discoveryReward": null,
@@ -383,7 +378,8 @@
         ],
         "doorways": [
           "north",
-          "east"
+          "east",
+          "south"
         ],
         "discoveryReward": null,
         "discoveryEffect": "gainKnowledge1",
@@ -416,8 +412,9 @@
           "调查"
         ],
         "doorways": [
-          "south",
-          "west"
+          "north",
+          "east",
+          "south"
         ],
         "discoveryReward": null,
         "discoveryEffect": "gainKnowledge1",
@@ -433,8 +430,8 @@
           "卧室"
         ],
         "doorways": [
-          "east",
-          "south"
+          "north",
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -451,7 +448,7 @@
         ],
         "doorways": [
           "north",
-          "south"
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -484,9 +481,9 @@
           "精神"
         ],
         "doorways": [
-          "north",
           "east",
-          "south"
+          "south",
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -522,7 +519,8 @@
         "doorways": [
           "north",
           "east",
-          "south"
+          "south",
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -539,8 +537,7 @@
         ],
         "doorways": [
           "north",
-          "east",
-          "south"
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": "gainSpeed1",
@@ -576,10 +573,7 @@
           "特殊移动"
         ],
         "doorways": [
-          "north",
-          "east",
-          "south",
-          "west"
+          "north"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -598,8 +592,7 @@
           "特殊移动"
         ],
         "doorways": [
-          "north",
-          "east"
+          "north"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -633,7 +626,7 @@
         ],
         "doorways": [
           "north",
-          "east"
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": "gainMight1",
@@ -650,7 +643,7 @@
         ],
         "doorways": [
           "north",
-          "west"
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -666,8 +659,10 @@
           "危险"
         ],
         "doorways": [
+          "north",
           "east",
-          "south"
+          "south",
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -683,8 +678,8 @@
           "危险"
         ],
         "doorways": [
-          "west",
-          "south"
+          "north",
+          "east"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -701,7 +696,9 @@
         ],
         "doorways": [
           "north",
-          "south"
+          "east",
+          "south",
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -717,8 +714,7 @@
           "特殊移动"
         ],
         "doorways": [
-          "north",
-          "east"
+          "north"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -735,7 +731,8 @@
         ],
         "doorways": [
           "north",
-          "east"
+          "east",
+          "south"
         ],
         "discoveryReward": null,
         "discoveryEffect": "placeObstacleToken",
@@ -752,7 +749,8 @@
         ],
         "doorways": [
           "north",
-          "east"
+          "east",
+          "west"
         ],
         "discoveryReward": null,
         "discoveryEffect": null,
@@ -839,14 +837,14 @@
         {
           "min": 0,
           "label": "受到 2 点精神伤害",
-          "effectMode": "generalDamage"
+          "effectMode": "fixedDamage"
         }
       ],
       "effectMode": null,
       "modes": [
         "traitRoll",
         "none",
-        "generalDamage"
+        "fixedDamage"
       ]
     },
     {
@@ -864,20 +862,20 @@
         {
           "min": 2,
           "label": "受到 1 点物理伤害",
-          "effectMode": "generalDamage"
+          "effectMode": "fixedDamage"
         },
         {
           "min": 0,
           "label": "受到 3 点物理伤害",
-          "effectMode": "generalDamage"
+          "effectMode": "fixedDamage"
         }
       ],
       "effectMode": null,
       "modes": [
         "traitRoll",
         "none",
-        "generalDamage",
-        "generalDamage"
+        "fixedDamage",
+        "fixedDamage"
       ]
     },
     {
@@ -1146,7 +1144,7 @@
         {
           "min": 1,
           "label": "受到 1 点精神伤害",
-          "effectMode": "generalDamage"
+          "effectMode": "fixedDamage"
         },
         {
           "min": 0,
@@ -1158,7 +1156,7 @@
       "modes": [
         "traitRoll",
         "drawPossession",
-        "generalDamage",
+        "fixedDamage",
         "compound"
       ]
     },
@@ -1177,14 +1175,14 @@
         {
           "min": 0,
           "label": "受到 1 点精神伤害",
-          "effectMode": "generalDamage"
+          "effectMode": "fixedDamage"
         }
       ],
       "effectMode": null,
       "modes": [
         "traitRoll",
         "trait",
-        "generalDamage"
+        "fixedDamage"
       ]
     },
     {
@@ -1202,14 +1200,14 @@
         {
           "min": 0,
           "label": "受到 1 点物理伤害",
-          "effectMode": "generalDamage"
+          "effectMode": "fixedDamage"
         }
       ],
       "effectMode": null,
       "modes": [
         "traitRoll",
         "trait",
-        "generalDamage"
+        "fixedDamage"
       ]
     },
     {
@@ -1928,18 +1926,6 @@
       "source": "discoveryPool"
     },
     {
-      "id": "journal",
-      "name": "日记",
-      "kind": "item",
-      "source": "firstScenarioStartingInventory"
-    },
-    {
-      "id": "lantern",
-      "name": "灯笼",
-      "kind": "item",
-      "source": "firstScenarioStartingInventory"
-    },
-    {
       "id": "leather-jacket",
       "name": "皮夹克",
       "kind": "item",
@@ -1986,12 +1972,6 @@
       "name": "神秘秒表",
       "kind": "item",
       "source": "discoveryPool"
-    },
-    {
-      "id": "notebook",
-      "name": "笔记本",
-      "kind": "item",
-      "source": "firstScenarioStartingInventory"
     },
     {
       "id": "omen-book",
@@ -2097,11 +2077,6 @@
       "id": "give-omen-to-mummy",
       "name": "把圣符或指环交给木乃伊",
       "category": "traitor-action"
-    },
-    {
-      "id": "mummy-forced-omen-search",
-      "name": "强制找出关键预兆",
-      "category": "haunt-side-rule"
     },
     {
       "id": "mummy-monster-movement",

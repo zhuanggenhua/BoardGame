@@ -66,6 +66,9 @@ describe('SmashUp 杀人狂 / 小丑 intake', () => {
         expect(defs.find(def => def.id === 'diy_clowns_clown_girl')?.count).toBe(4);
         expect(defs.find(def => def.id === 'diy_clowns_colorful_scarf')?.count).toBe(2);
         expect(defs.find(def => def.id === 'diy_clowns_pie_in_the_face')?.count).toBe(2);
+        expect(defs.find(def => def.id === 'diy_clowns_clown_pyramid')).toMatchObject({
+            playNeedsBase: true,
+        });
     });
 
     it('两个单派系包各自带 2 张基地并接到独立基地图集', () => {

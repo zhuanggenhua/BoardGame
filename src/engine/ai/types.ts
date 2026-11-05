@@ -38,6 +38,8 @@ export interface AiSupportProfile {
     capture: boolean;
     localAi: boolean;
     remoteAi: boolean;
+    /** 是否存在可由真人替 AI 完成的开局派系 / 角色选择。 */
+    manualSetupSelection?: boolean;
     defaultLocalAiSeats?: 'first-opponent' | 'all-opponents';
 }
 
@@ -101,6 +103,7 @@ export interface AiInteractionSnapshot {
     sourceId?: string;
     playerId?: string;
     options: AiInteractionOptionSnapshot[];
+    optionsSource?: 'explicit' | 'missing';
     multi?: unknown;
     ai?: AiInteractionSupportDeclaration;
     aiDecisions?: AiDecisionDescriptor[];

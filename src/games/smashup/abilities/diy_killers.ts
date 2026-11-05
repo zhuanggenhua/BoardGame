@@ -563,10 +563,55 @@ function diyKillersImprovisedWeapon(ctx: AbilityContext): AbilityResult {
             grantContextualExtraAction(
                 { playerId: ctx.playerId, now: ctx.now, matchState: ctx.matchState },
                 'diy_killers_improvised_weapon',
-                { restrictToCardUid: card.uid, restrictToCardDefId: card.defId },
+                {
+                    restrictToCardUid: card.uid,
+                    restrictToCardDefId: card.defId,
+                    destroyAttachedActionAtTurnEnd: true,
+                },
             ),
         ],
     };
+}
+
+const IMPROVISED_WEAPON_CONTROLLER_METADATA = 'diyKillersImprovisedWeaponControllerId';
+const IMPROVISED_WEAPON_TURN_METADATA = 'diyKillersImprovisedWeaponTurnNumber';
+
+function isImprovisedWeaponAttachmentForTurn(
+    action: MinionOnBase['attachedActions'][number],
+    playerId: PlayerId,
+    turnNumber: number,
+): boolean {
+    return action.metadata?.[IMPROVISED_WEAPON_CONTROLLER_METADATA] === playerId
+        && action.metadata?.[IMPROVISED_WEAPON_TURN_METADATA] === turnNumber;
+}
+
+function canTriggerImprovisedWeaponTurnEnd(ctx: TriggerContext): boolean {
+    return ctx.state.bases.some(base => base.minions.some(minion =>
+        minion.attachedActions.some(action => isImprovisedWeaponAttachmentForTurn(action, ctx.playerId, ctx.state.turnNumber)),
+    ));
+}
+
+function improvisedWeaponTurnEnd(ctx: TriggerContext): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [];
+    for (const [baseIndex, base] of ctx.state.bases.entries()) {
+        for (const minion of base.minions) {
+            for (const action of minion.attachedActions) {
+                if (!isImprovisedWeaponAttachmentForTurn(action, ctx.playerId, ctx.state.turnNumber)) continue;
+                events.push(...buildValidatedOngoingDetachEvents(ctx.state, {
+                    cardUid: action.uid,
+                    reason: 'diy_killers_improvised_weapon_expire',
+                    destination: 'discard',
+                    sourcePlayerId: ctx.playerId,
+                    sourceCardUid: ctx.sourceCardUid,
+                    sourceDefId: 'diy_killers_improvised_weapon',
+                    sourceControllerId: ctx.playerId,
+                    sourceBaseIndex: baseIndex,
+                    now: ctx.now,
+                }));
+            }
+        }
+    }
+    return events;
 }
 
 function hasKillerInPlay(core: SmashUpCore, playerId: PlayerId): boolean {
@@ -878,7 +923,13 @@ function queueSavageAttackBoostPrompt(
         ],
         { sourceId: 'diy_killers_savage_attack_boost', targetType: 'minion', titleKey: 'ui.diy_killers_savage_attack_boost_title' },
     );
-    return queueInteraction(state, interaction);
+    const hasCaptainKirkMaskReaction = base.minions.some(minion =>
+        minion.uid !== destroyedMinionUid
+        && minion.attachedActions.some(action => action.defId === 'diy_killers_captain_kirk_mask'),
+    );
+    return hasCaptainKirkMaskReaction
+        ? queueInteraction(state, interaction, { urgent: true, forceQueue: true })
+        : queueInteraction(state, interaction);
 }
 
 const savageAttackHandler: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
@@ -1458,15 +1509,6 @@ function macheteDestroyTrigger(ctx: TriggerContext): SmashUpEvent[] {
             sourceControllerId: ctx.sourceControllerId,
             sourceBaseIndex: host.baseIndex,
         }));
-    if (ctx.destroyerId === host.minion.controller && ctx.reason?.startsWith('diy_killers_') && ctx.sourceCardUid === host.minion.uid) {
-        events.push(minionMetadataUpdated(
-            host.minion.uid,
-            host.baseIndex,
-            { diyKillersMacheteHostDestroyedTurn: ctx.state.turnNumber },
-            'diy_killers_machete',
-            ctx.now,
-        ));
-    }
     return events;
 }
 
@@ -1588,15 +1630,17 @@ const michaelMyersHandler: InteractionHandler = (state, playerId, value, data, _
     };
 };
 
-function campCrystalLakePowerTargets(core: SmashUpCore, baseIndex: number) {
+function campCrystalLakePowerTargets(core: SmashUpCore, baseIndex: number, playerId: PlayerId) {
     const base = core.bases[baseIndex];
     if (!base) return [];
-    return base.minions.map(minion => ({
+    return base.minions
+        .filter(minion => minion.controller === playerId)
+        .map(minion => ({
         uid: minion.uid,
         defId: minion.defId,
         baseIndex,
         label: getCardName(minion.defId),
-    }));
+        }));
 }
 
 function campCrystalLakeDestroyTargets(core: SmashUpCore, playerId: PlayerId, baseIndex: number) {
@@ -1616,7 +1660,7 @@ function campCrystalLakeDestroyTargets(core: SmashUpCore, playerId: PlayerId, ba
 function campCrystalLakeAfterDestroy(ctx: BaseAbilityContext): BaseAbilityResult {
     const amount = ctx.minionPower ?? 0;
     if (!ctx.destroyerId || amount <= 0) return { events: [] };
-    const targets = campCrystalLakePowerTargets(ctx.state, ctx.baseIndex);
+    const targets = campCrystalLakePowerTargets(ctx.state, ctx.baseIndex, ctx.destroyerId);
     if (targets.length === 0) return { events: [] };
     if (!ctx.matchState) return { events: [] };
     const interaction = createSimpleChoice(
@@ -1646,8 +1690,8 @@ const campCrystalLakePowerHandler: InteractionHandler = (state, playerId, value,
             sourcePlayerId,
             sourceDefId: 'base_diy_killers_camp_crystal_lake',
             sourceControllerId: sourcePlayerId,
-            sourceBaseIndex: context?.baseIndex ?? selected.baseIndex,
-        })],
+                sourceBaseIndex: context?.baseIndex ?? selected.baseIndex,
+            })],
     };
 };
 
@@ -1807,6 +1851,7 @@ export function registerDiyKillersAbilities(): void {
     registerTrigger('diy_killers_chainsaw', 'onMinionDestroyed', chainsawDestroyTrigger, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         canTrigger: canTriggerChainsawDestroy,
     });
     registerTrigger('diy_killers_clawed_glove', 'onMinionDestroyed', clawedGloveDestroyTrigger, {
@@ -1834,6 +1879,13 @@ export function registerDiyKillersAbilities(): void {
     registerTrigger('diy_killers_machete', 'onTurnEnd', macheteTurnEnd, {
         perInstance: true,
         playerContext: 'sourceController',
+    });
+    registerTrigger('diy_killers_improvised_weapon', 'onTurnEnd', improvisedWeaponTurnEnd, {
+        mandatory: true,
+        global: true,
+        globalZones: ['discard'],
+        baseScoped: false,
+        canTrigger: canTriggerImprovisedWeaponTurnEnd,
     });
     registerTrigger('diy_killers_hell_puzzle_box', 'onMinionDestroyed', hellPuzzleBoxDestroyTrigger, {
         perInstance: true,
@@ -1873,7 +1925,7 @@ export function registerDiyKillersAbilities(): void {
             ownerPlayerId: ctx => ctx.destroyerId,
             canTrigger: ctx => !!ctx.destroyerId
                 && (ctx.minionPower ?? 0) > 0
-                && campCrystalLakePowerTargets(ctx.state, ctx.baseIndex).length > 0,
+                && campCrystalLakePowerTargets(ctx.state, ctx.baseIndex, ctx.destroyerId).length > 0,
         },
     );
 

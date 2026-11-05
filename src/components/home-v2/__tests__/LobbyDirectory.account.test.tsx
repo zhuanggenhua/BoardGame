@@ -102,6 +102,7 @@ describe('LobbyDirectory account entry', () => {
         );
 
         expect(html).toContain('data-testid="home-v2-account-entry"');
+        expect(html).toContain('data-testid="home-v2-operation-guide-entry"');
         expect(html).toContain('auth:menu.login');
         expect(html).not.toContain('data-testid="reward-points-badge"');
     });
@@ -126,6 +127,7 @@ describe('LobbyDirectory account entry', () => {
         );
 
         expect(html).toContain('data-testid="home-v2-account-entry"');
+        expect(html).toContain('data-testid="home-v2-operation-guide-entry"');
         expect(html).toContain('data-testid="reward-points-badge"');
         expect(html).toContain('书友甲');
         expect(html).toContain('12');

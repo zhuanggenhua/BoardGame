@@ -24,9 +24,9 @@ export type PlayerBoardUiTuning = {
     shellTranslateX: number;
     playerBoardTranslateY: number;
     magnifyButtonTop: number;
-    playerBoardBaseHeightVw: number;
-    tipBoardHeightVw: number;
-    centerBoardGapVw: number;
+    playerBoardBaseHeightUnits: number;
+    tipBoardHeightUnits: number;
+    centerBoardGapUnits: number;
 };
 
 const V1_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = [
@@ -66,14 +66,17 @@ export const DICETHRONE_ABILITY_SLOT_LAYOUTS: Record<DiceThronePlayerBoardLayout
     v2: V2_ABILITY_SLOT_LAYOUT,
 };
 
-export const DEFAULT_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = DICETHRONE_ABILITY_SLOT_LAYOUTS.v1;
+// 新派系默认采用新版玩家板合同；只有已证明仍使用旧物理排版的角色才显式登记 v1。
+export const DEFAULT_ABILITY_SLOT_LAYOUT: AbilitySlotLayoutItem[] = DICETHRONE_ABILITY_SLOT_LAYOUTS.v2;
 
 export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimensions> = {
+    doctor_strange: { width: 3568, height: 2179 },
+    thor: { width: 3576, height: 2157 },
     barbarian: { width: 2048, height: 1260 },
     gunslinger: { width: 2048, height: 1254 },
     monk: { width: 2048, height: 1260 },
     moon_elf: { width: 2048, height: 1260 },
-    paladin: { width: 2048, height: 1250 },
+    paladin: { width: 4005, height: 2476 },
     pyromancer: { width: 2048, height: 1260 },
     samurai: { width: 2048, height: 1248 },
     shadow_thief: { width: 2048, height: 1260 },
@@ -85,9 +88,12 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
     tianshi: { width: 3643, height: 2234 },
     lieren: { width: 3632, height: 2234 },
     vampire_lord: { width: 3627, height: 2234 },
+    zhizhuxia: { width: 1800, height: 1089 },
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
+    doctor_strange: 'v2',
+    thor: 'v2',
     monk: 'v2',
     barbarian: 'v2',
     pyromancer: 'v2',
@@ -104,6 +110,7 @@ export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string,
     tianshi: 'v2',
     lieren: 'v2',
     vampire_lord: 'v2',
+    zhizhuxia: 'v2',
 };
 
 export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = {
@@ -111,17 +118,17 @@ export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = 
         shellTranslateX: 0,
         playerBoardTranslateY: 0,
         magnifyButtonTop: 0.48,
-        playerBoardBaseHeightVw: 35,
-        tipBoardHeightVw: 35,
-        centerBoardGapVw: 0.50,
+        playerBoardBaseHeightUnits: 35,
+        tipBoardHeightUnits: 35,
+        centerBoardGapUnits: 0.50,
     },
     v2: {
         shellTranslateX: 1.10,
         playerBoardTranslateY: -1.45,
         magnifyButtonTop: 1.85,
-        playerBoardBaseHeightVw: 31,
-        tipBoardHeightVw: 29.60,
-        centerBoardGapVw: 0.24,
+        playerBoardBaseHeightUnits: 31,
+        tipBoardHeightUnits: 29.60,
+        centerBoardGapUnits: 0.24,
     },
 };
 
@@ -131,7 +138,7 @@ export const DICETHRONE_BOARD_LAYOUT_CONFIG: DiceThroneBoardLayoutConfig = {
 };
 
 export const getPlayerBoardLayoutVersion = (characterId?: string | null): DiceThronePlayerBoardLayoutVersion => (
-    DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER[characterId ?? ''] ?? 'v1'
+    DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER[characterId ?? ''] ?? 'v2'
 );
 
 export const getAbilitySlotLayoutByVersion = (version: DiceThronePlayerBoardLayoutVersion): AbilitySlotLayoutItem[] => (

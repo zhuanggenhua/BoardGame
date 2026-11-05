@@ -258,8 +258,13 @@ describe('SmashUp Munchkin intake 静态合同', () => {
         }
         const configuredFactions = new Set([
             SMASHUP_FACTION_IDS.MUNCHKIN_DWARVES,
+            SMASHUP_FACTION_IDS.MUNCHKIN_HALFLINGS,
+            SMASHUP_FACTION_IDS.MUNCHKIN_THIEVES,
+            SMASHUP_FACTION_IDS.MUNCHKIN_MAGES,
             SMASHUP_FACTION_IDS.MUNCHKIN_ELVES,
             SMASHUP_FACTION_IDS.MUNCHKIN_CLERICS,
+            SMASHUP_FACTION_IDS.MUNCHKIN_ORCS,
+            SMASHUP_FACTION_IDS.MUNCHKIN_WARRIORS,
         ]);
         for (const factionId of configuredFactions) {
             expect(isFactionImplementationInProgress(factionId)).toBe(false);

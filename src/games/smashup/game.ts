@@ -3,6 +3,7 @@
  */
 
 import type { EngineSystem } from '../../engine/systems/types';
+import type { ForceEndTurnStalledAiResolution } from '../../engine/transport/onlineAiRecovery';
 import {
     createFlowSystem,
     createCheatSystem,
@@ -52,7 +53,7 @@ const systems: EngineSystem<SmashUpCore>[] = [
         commandAllowlist: ACTION_ALLOWLIST,
         formatEntry: formatSmashUpActionEntry,
     }),
-    createUndoSystem({ maxSnapshots: 3, snapshotCommandAllowlist: UNDO_ALLOWLIST }),
+    createUndoSystem({ maxSnapshots: 10, snapshotCommandAllowlist: UNDO_ALLOWLIST }),
     createInteractionSystem(),
     createSimpleChoiceSystem(),
     createMultistepChoiceSystem(),
@@ -91,14 +92,18 @@ export const engineConfig = {
         publicPregameLegalActionPhases: ['factionSelect'],
         autoSelectFirstTriggerOnlySimpleChoiceSourceIds: ['smashup_reaction_choose'],
         legacyResponseWindowMirrorSourceIds: ['smashup_reaction_choose'],
-        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }) => (
+        resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }: { type: string; payload: unknown }) => (
             type === SU_COMMANDS.SELECT_RANDOM_FACTION
                 ? 'select-faction'
                 : type === SU_COMMANDS.SELECT_FACTION && hasSmashUpFactionPayload(payload)
                 ? 'select-faction'
                 : undefined
         ),
-        allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => phase === 'scoreBases'
+        allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }: {
+            phase: string;
+            previousCandidate: ForceEndTurnStalledAiResolution;
+            nextCandidate: ForceEndTurnStalledAiResolution;
+        }) => phase === 'scoreBases'
             || phase === 'endTurn'
             || (
                 phase === 'playCards'

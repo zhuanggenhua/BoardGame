@@ -43,6 +43,7 @@ const VIEWER_NAV_ITEMS: NavItem[] = [
 const ADMIN_NAV_ITEMS: NavItem[] = [
     { icon: LayoutDashboard, labelKey: 'admin.layout.nav.overview', path: '/admin' },
     { icon: Users, labelKey: 'admin.layout.nav.users', path: '/admin/users' },
+    { icon: Gamepad2, labelKey: 'admin.layout.nav.creator_review', path: '/admin/creator-review' },
     { icon: ScrollText, labelKey: 'admin.layout.nav.changelogs', path: '/admin/changelogs' },
     { icon: Gamepad2, labelKey: 'admin.layout.nav.matches', path: '/admin/matches' },
     { icon: DoorOpen, labelKey: 'admin.layout.nav.rooms', path: '/admin/rooms' },
@@ -82,7 +83,7 @@ export default function AdminLayout() {
 
     return (
         <div className="h-screen w-full overflow-hidden bg-zinc-50 font-sans text-zinc-900 flex">
-            <aside className="z-20 flex w-72 flex-shrink-0 flex-col bg-zinc-950 text-zinc-400 shadow-xl">
+            <aside className={cn('z-20 flex w-72 flex-shrink-0 flex-col bg-zinc-950 text-zinc-400 shadow-xl', location.pathname === '/admin/creator-review' && 'hidden md:flex')}>
                 <div className="flex-shrink-0 p-6">
                     <div className="flex items-center gap-3 px-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/20">
@@ -133,7 +134,7 @@ export default function AdminLayout() {
                                         active ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'
                                     )}
                                 />
-                                <span className="relative z-10 font-medium">{t(item.labelKey)}</span>
+                                <span className="relative z-10 font-medium">{t(item.labelKey, { defaultValue: item.path === '/admin/creator-review' ? '投稿与作者认证' : item.labelKey })}</span>
                                 {active && <ChevronRight size={16} className="relative z-10 ml-auto text-indigo-400 opacity-80" />}
                             </Link>
                         );

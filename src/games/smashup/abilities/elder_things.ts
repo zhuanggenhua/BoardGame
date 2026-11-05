@@ -5,7 +5,8 @@
  * 克苏鲁扩展派系，核心机制围绕 Madness 牌库底
  */
 
-import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
+import {
+ registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     drawMadnessCards,
@@ -37,9 +38,11 @@ import { registerTrigger, registerProtection } from '../domain/ongoingEffects';
 import type { TriggerContext, ProtectionCheckContext } from '../domain/ongoingEffects';
 import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
 import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
-import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
+import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
@@ -173,12 +176,15 @@ type ElderThingDunwichHorrorPodChoicePromptContext = {
     minionUid: string;
     minionDefId: string;
     ownerId: string;
+    cardUid: string;
 };
 
-function attachOptionsGenerator<T>(
-    interaction: InteractionDescriptor<T>,
-    optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
-): InteractionDescriptor<T> {
+function attachOptionsGenerator<TData extends { options: PromptOption<unknown>[] }>(
+    interaction: InteractionDescriptor<TData>,
+    optionsGenerator: (state: MatchState<SmashUpCore>) => TData['options'],
+): InteractionDescriptor<TData & {
+    optionsGenerator: (state: MatchState<SmashUpCore>) => TData['options'];
+}> {
     return {
         ...interaction,
         data: {
@@ -490,7 +496,7 @@ function buildPowerOfMadnessPodActionOptions(state: SmashUpCore) {
         }));
 }
 
-const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingMiGoPromptProgram: AbilityProgram<ElderThingMiGoPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingMiGoPromptContext>({
     sourceId: 'elder_thing_mi_go',
     buildInteraction: (context) => {
         const currentOpponent = context.opponents[context.opponentIdx];
@@ -525,11 +531,10 @@ const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptCont
 
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 opponentIdx: nextIdx,
-            },
-            nextProgram: elderThingMiGoPromptProgram,
+            }, elderThingMiGoPromptProgram),
         };
     },
 });
@@ -541,19 +546,18 @@ const elderThingMiGoProgram = createEffectProgram<AbilityContext, SmashUpCore, S
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
             opponents,
             opponentIdx: 0,
-        } satisfies ElderThingMiGoPromptContext,
-        nextProgram: elderThingMiGoPromptProgram,
+        } satisfies ElderThingMiGoPromptContext, elderThingMiGoPromptProgram),
     };
 });
 
-const elderThingBeginTheSummoningPromptProgram = createPromptProgram<ElderThingBeginTheSummoningPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingBeginTheSummoningPromptProgram = createPromptProgram<ElderThingBeginTheSummoningPromptContext>({
     sourceId: 'elder_thing_begin_the_summoning',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -613,17 +617,16 @@ const elderThingBeginTheSummoningProgram = createEffectProgram<AbilityContext, S
     }
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
-        } satisfies ElderThingBeginTheSummoningPromptContext,
-        nextProgram: elderThingBeginTheSummoningPromptProgram,
+        } satisfies ElderThingBeginTheSummoningPromptContext, elderThingBeginTheSummoningPromptProgram),
     };
 });
 
-const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnfathomableGoalsPromptContext, SmashUpCore, SmashUpEvent>((context) => {
+const elderThingUnfathomableGoalsScanProgram: AbilityProgram<ElderThingUnfathomableGoalsPromptContext, SmashUpCore, SmashUpEvent> = createEffectProgram<ElderThingUnfathomableGoalsPromptContext, SmashUpCore, SmashUpEvent>((context) => {
     const events: SmashUpEvent[] = [];
     let nextIdx = context.opponentIdx;
 
@@ -642,18 +645,17 @@ const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnf
 
         return {
             events,
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 opponentIdx: nextIdx,
-            },
-            nextProgram: elderThingUnfathomableGoalsPromptProgram,
+            }, elderThingUnfathomableGoalsPromptProgram),
         };
     }
 
     return { events };
 });
 
-const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingUnfathomableGoalsPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingUnfathomableGoalsPromptProgram: AbilityProgram<ElderThingUnfathomableGoalsPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingUnfathomableGoalsPromptContext>({
     sourceId: 'elder_thing_unfathomable_goals',
     buildInteraction: (context) => {
         const opponentId = context.opponents[context.opponentIdx];
@@ -701,11 +703,10 @@ const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingU
                 sourceBaseIndex: selected.baseIndex,
                 sourceKind: 'action',
             }),
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 opponentIdx: context.opponentIdx + 1,
-            },
-            nextProgram: elderThingUnfathomableGoalsScanProgram,
+            }, elderThingUnfathomableGoalsScanProgram),
         };
     },
 });
@@ -744,15 +745,14 @@ const elderThingUnfathomableGoalsProgram = createEffectProgram<AbilityContext, S
 
     return {
         events,
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
             opponents: opponentsWithMadness,
             opponentIdx: 0,
-        } satisfies ElderThingUnfathomableGoalsPromptContext,
-        nextProgram: elderThingUnfathomableGoalsScanProgram,
+        } satisfies ElderThingUnfathomableGoalsPromptContext, elderThingUnfathomableGoalsScanProgram),
     };
 });
 
@@ -1006,7 +1006,7 @@ function getNextMiGoPodContext(
     }) satisfies ElderThingMiGoPodPromptContext;
 }
 
-const elderThingMiGoPodCounterPromptProgram = createPromptProgram<ElderThingMiGoPodPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingMiGoPodCounterPromptProgram = createPromptProgram<ElderThingMiGoPodPromptContext>({
     sourceId: 'elder_thing_mi_go_pod_counter',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1035,7 +1035,7 @@ const elderThingMiGoPodCounterPromptProgram = createPromptProgram<ElderThingMiGo
     },
 });
 
-const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingMiGoPodPromptProgram: AbilityProgram<ElderThingMiGoPodPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingMiGoPodPromptContext>({
     sourceId: 'elder_thing_mi_go_pod',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `elder_thing_mi_go_pod_${context.opponents[context.opponentIdx]}_${context.now}`,
@@ -1065,11 +1065,11 @@ const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodProm
 
         const pendingContext = getNextMiGoPodContext(nextContext, state, timestamp);
         if (pendingContext) {
-            return { events, context: pendingContext, nextProgram: elderThingMiGoPodPromptProgram };
+            return { events, continuation: createAbilityRuntimeContinuation(pendingContext, elderThingMiGoPodPromptProgram) };
         }
 
         if (!nextContext.anyDrew && buildAllMinionAffectOptions(state.core, nextContext.casterPlayerId).length > 0) {
-            return { events, context: nextContext, nextProgram: elderThingMiGoPodCounterPromptProgram };
+            return { events, continuation: createAbilityRuntimeContinuation(nextContext, elderThingMiGoPodCounterPromptProgram) };
         }
 
         return { events };
@@ -1081,7 +1081,7 @@ const elderThingMiGoPodProgram = createEffectProgram<AbilityContext, SmashUpCore
     if (opponents.length === 0) return { events: [] };
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             casterPlayerId: ctx.playerId,
             baseIndex: ctx.baseIndex,
@@ -1089,12 +1089,11 @@ const elderThingMiGoPodProgram = createEffectProgram<AbilityContext, SmashUpCore
             opponentIdx: 0,
             anyDrew: false,
             declinedCount: 0,
-        }) satisfies ElderThingMiGoPodPromptContext,
-        nextProgram: elderThingMiGoPodPromptProgram,
+        }) satisfies ElderThingMiGoPodPromptContext, elderThingMiGoPodPromptProgram),
     };
 });
 
-const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThingPodModePromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThingPodModePromptContext>({
     sourceId: 'elder_thing_elder_thing_pod_destroy',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1169,7 +1168,7 @@ const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThi
     },
 });
 
-const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingPodModePromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingPodModePromptContext>({
     sourceId: 'elder_thing_elder_thing_pod_mode',
     buildInteraction: (context) => {
         const canDestroy = collectFriendlyOtherMinions(
@@ -1248,19 +1247,17 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
 
         return {
             events: [],
-            context,
-            nextProgram: elderThingElderThingPodDestroyPromptProgram,
+            continuation: createAbilityRuntimeContinuation(context, elderThingElderThingPodDestroyPromptProgram),
         };
     },
 });
 
 const elderThingElderThingPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
     events: [],
-    context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+    continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         cardUid: ctx.cardUid,
         baseIndex: ctx.baseIndex,
-    }) satisfies ElderThingPodModePromptContext,
-    nextProgram: elderThingElderThingPodModePromptProgram,
+    }) satisfies ElderThingPodModePromptContext, elderThingElderThingPodModePromptProgram),
 }));
 
 function getNextShoggothPodPromptContext(
@@ -1302,7 +1299,7 @@ function getNextShoggothPodDeclinerContext(
     }) satisfies ElderThingShoggothPodDestroyPromptContext;
 }
 
-const elderThingShoggothPodDestroyPromptProgram = createPromptProgram<ElderThingShoggothPodDestroyPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingShoggothPodDestroyPromptProgram: AbilityProgram<ElderThingShoggothPodDestroyPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingShoggothPodDestroyPromptContext>({
     sourceId: 'elder_thing_shoggoth_pod_destroy',
     buildInteraction: (context) => {
         const targetPlayerId = context.decliners[context.declinerIdx];
@@ -1372,20 +1369,18 @@ const elderThingShoggothPodDestroyPromptProgram = createPromptProgram<ElderThing
             }
             return {
                 events,
-                context: skippedContext,
-                nextProgram: elderThingShoggothPodDestroyPromptProgram,
+                continuation: createAbilityRuntimeContinuation(skippedContext, elderThingShoggothPodDestroyPromptProgram),
             };
         }
 
         return {
             events,
-            context: nextDecliner,
-            nextProgram: elderThingShoggothPodDestroyPromptProgram,
+            continuation: createAbilityRuntimeContinuation(nextDecliner, elderThingShoggothPodDestroyPromptProgram),
         };
     },
 });
 
-const elderThingShoggothPodPromptProgram = createPromptProgram<ElderThingShoggothPodPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingShoggothPodPromptProgram: AbilityProgram<ElderThingShoggothPodPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingShoggothPodPromptContext>({
     sourceId: 'elder_thing_shoggoth_pod',
     buildInteraction: (context) => {
         const targetPlayerId = context.opponents[context.opponentIdx];
@@ -1417,7 +1412,7 @@ const elderThingShoggothPodPromptProgram = createPromptProgram<ElderThingShoggot
             decliners,
         }, state, timestamp);
         if (nextPrompt) {
-            return { events, context: nextPrompt, nextProgram: elderThingShoggothPodPromptProgram };
+            return { events, continuation: createAbilityRuntimeContinuation(nextPrompt, elderThingShoggothPodPromptProgram) };
         }
 
         if (decliners.length === 0) {
@@ -1451,15 +1446,13 @@ const elderThingShoggothPodPromptProgram = createPromptProgram<ElderThingShoggot
             }
             return {
                 events,
-                context: skippedContext,
-                nextProgram: elderThingShoggothPodDestroyPromptProgram,
+                continuation: createAbilityRuntimeContinuation(skippedContext, elderThingShoggothPodDestroyPromptProgram),
             };
         }
 
         return {
             events,
-            context: firstDestroyContext,
-            nextProgram: elderThingShoggothPodDestroyPromptProgram,
+            continuation: createAbilityRuntimeContinuation(firstDestroyContext, elderThingShoggothPodDestroyPromptProgram),
         };
     },
 });
@@ -1471,19 +1464,18 @@ const elderThingShoggothPodProgram = createEffectProgram<AbilityContext, SmashUp
     }
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             casterPlayerId: ctx.playerId,
             baseIndex: ctx.baseIndex,
             opponents,
             opponentIdx: 0,
             decliners: [] as PlayerId[],
-        }) satisfies ElderThingShoggothPodPromptContext,
-        nextProgram: elderThingShoggothPodPromptProgram,
+        }) satisfies ElderThingShoggothPodPromptContext, elderThingShoggothPodPromptProgram),
     };
 });
 
-const elderThingBeginTheSummoningPodPromptProgram = createPromptProgram<ElderThingBeginTheSummoningPodPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingBeginTheSummoningPodPromptProgram = createPromptProgram<ElderThingBeginTheSummoningPodPromptContext>({
     sourceId: 'elder_thing_begin_the_summoning_pod',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1535,10 +1527,9 @@ const elderThingBeginTheSummoningPodProgram = createEffectProgram<AbilityContext
     }
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
-        }) satisfies ElderThingBeginTheSummoningPodPromptContext,
-        nextProgram: elderThingBeginTheSummoningPodPromptProgram,
+        }) satisfies ElderThingBeginTheSummoningPodPromptContext, elderThingBeginTheSummoningPodPromptProgram),
     };
 });
 
@@ -1567,7 +1558,7 @@ function elderThingInsanityPod(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const elderThingPowerOfMadnessPodPromptProgram = createPromptProgram<ElderThingPowerOfMadnessPodPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingPowerOfMadnessPodPromptProgram: AbilityProgram<ElderThingPowerOfMadnessPodPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingPowerOfMadnessPodPromptContext>({
     sourceId: 'elder_thing_power_of_madness_pod_choose',
     interactionSourceIds: ['elder_thing_power_of_madness_pod_start'],
     buildInteraction: (context) => {
@@ -1628,12 +1619,11 @@ const elderThingPowerOfMadnessPodPromptProgram = createPromptProgram<ElderThingP
         }
         return {
             events,
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 opponents: context.opponents,
                 idx: nextIdx,
-            }) satisfies ElderThingPowerOfMadnessPodPromptContext,
-            nextProgram: elderThingPowerOfMadnessPodPromptProgram,
+            }) satisfies ElderThingPowerOfMadnessPodPromptContext, elderThingPowerOfMadnessPodPromptProgram),
         };
     },
 });
@@ -1643,16 +1633,15 @@ const elderThingPowerOfMadnessPodProgram = createEffectProgram<AbilityContext, S
     if (opponents.length === 0) return { events: [] };
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             opponents,
             idx: 0,
-        }) satisfies ElderThingPowerOfMadnessPodPromptContext,
-        nextProgram: elderThingPowerOfMadnessPodPromptProgram,
+        }) satisfies ElderThingPowerOfMadnessPodPromptContext, elderThingPowerOfMadnessPodPromptProgram),
     };
 });
 
-const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodChooseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodChooseMinionPromptContext>({
     sourceId: 'elder_thing_spreading_horror_pod_choose_minion',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -1700,18 +1689,17 @@ const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgra
         if (remaining <= 0) return { events };
         return {
             events,
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 casterPlayerId: context.casterPlayerId,
                 remaining,
                 usedBases: [...context.usedBases, context.chosenBaseIndex],
-            }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
-            nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+            }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext, elderThingSpreadingHorrorPodMayPlayDecisionProgram),
         };
     },
 });
 
-const elderThingSpreadingHorrorPodChooseBasePromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodChooseBasePromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingSpreadingHorrorPodChooseBasePromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodChooseBasePromptContext>({
     sourceId: 'elder_thing_spreading_horror_pod_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `elder_thing_spreading_horror_pod_choose_base_${context.now}_${context.remaining}`,
@@ -1734,30 +1722,28 @@ const elderThingSpreadingHorrorPodChooseBasePromptProgram = createPromptProgram<
             if (remaining <= 0) return { events: [] };
             return {
                 events: [],
-                context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                     cardUid: context.cardUid,
                     casterPlayerId: context.casterPlayerId,
                     remaining,
                     usedBases: context.usedBases,
-                }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
-                nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+                }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext, elderThingSpreadingHorrorPodMayPlayDecisionProgram),
             };
         }
         return {
             events: [],
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 casterPlayerId: context.casterPlayerId,
                 remaining: context.remaining,
                 usedBases: context.usedBases,
                 chosenBaseIndex: baseIndex,
-            }) satisfies ElderThingSpreadingHorrorPodChooseMinionPromptContext,
-            nextProgram: elderThingSpreadingHorrorPodChooseMinionPromptProgram,
+            }) satisfies ElderThingSpreadingHorrorPodChooseMinionPromptContext, elderThingSpreadingHorrorPodChooseMinionPromptProgram),
         };
     },
 });
 
-const elderThingSpreadingHorrorPodMayPlayPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingSpreadingHorrorPodMayPlayPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext>({
     sourceId: 'elder_thing_spreading_horror_pod_may_play',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `elder_thing_spreading_horror_pod_may_${context.now}_${context.remaining}`,
@@ -1776,29 +1762,27 @@ const elderThingSpreadingHorrorPodMayPlayPromptProgram = createPromptProgram<Eld
             if (remaining <= 0) return { events: [] };
             return {
                 events: [],
-                context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                     cardUid: context.cardUid,
                     casterPlayerId: context.casterPlayerId,
                     remaining,
                     usedBases: context.usedBases,
-                }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
-                nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+                }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext, elderThingSpreadingHorrorPodMayPlayDecisionProgram),
             };
         }
         return {
             events: [],
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 casterPlayerId: context.casterPlayerId,
                 remaining: context.remaining,
                 usedBases: context.usedBases,
-            }) satisfies ElderThingSpreadingHorrorPodChooseBasePromptContext,
-            nextProgram: elderThingSpreadingHorrorPodChooseBasePromptProgram,
+            }) satisfies ElderThingSpreadingHorrorPodChooseBasePromptContext, elderThingSpreadingHorrorPodChooseBasePromptProgram),
         };
     },
 });
 
-const elderThingSpreadingHorrorPodMayPlayDecisionProgram = createEffectProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext, SmashUpCore, SmashUpEvent>((context) => {
+const elderThingSpreadingHorrorPodMayPlayDecisionProgram: AbilityProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext, SmashUpCore, SmashUpEvent> = createEffectProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext, SmashUpCore, SmashUpEvent>((context) => {
     if (context.remaining <= 0) {
         return { events: [] };
     }
@@ -1808,22 +1792,20 @@ const elderThingSpreadingHorrorPodMayPlayDecisionProgram = createEffectProgram<E
     if (!hasPlayableDiscardMinion || !hasAvailableBase) {
         return {
             events: [],
-            context: {
+            continuation: createAbilityRuntimeContinuation({
                 ...context,
                 remaining: context.remaining - 1,
-            },
-            nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+            }, elderThingSpreadingHorrorPodMayPlayDecisionProgram),
         };
     }
 
     return {
         events: [],
-        context,
-        nextProgram: elderThingSpreadingHorrorPodMayPlayPromptProgram,
+        continuation: createAbilityRuntimeContinuation(context, elderThingSpreadingHorrorPodMayPlayPromptProgram),
     };
 });
 
-const elderThingSpreadingHorrorPodOpponentPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodOpponentPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingSpreadingHorrorPodOpponentPromptProgram: AbilityProgram<ElderThingSpreadingHorrorPodOpponentPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingSpreadingHorrorPodOpponentPromptContext>({
     sourceId: 'elder_thing_spreading_horror_pod_opponent',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `elder_thing_spreading_horror_pod_${context.opponents[context.idx]}_${context.now}`,
@@ -1855,27 +1837,25 @@ const elderThingSpreadingHorrorPodOpponentPromptProgram = createPromptProgram<El
         if (nextIdx < context.opponents.length) {
             return {
                 events,
-                context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                     cardUid: context.cardUid,
                     casterPlayerId: context.casterPlayerId,
                     opponents: context.opponents,
                     idx: nextIdx,
                     decliners,
-                }) satisfies ElderThingSpreadingHorrorPodOpponentPromptContext,
-                nextProgram: elderThingSpreadingHorrorPodOpponentPromptProgram,
+                }) satisfies ElderThingSpreadingHorrorPodOpponentPromptContext, elderThingSpreadingHorrorPodOpponentPromptProgram),
             };
         }
 
         if (decliners.length === 0) return { events };
         return {
             events,
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 casterPlayerId: context.casterPlayerId,
                 remaining: decliners.length,
                 usedBases: [] as number[],
-            }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
-            nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+            }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext, elderThingSpreadingHorrorPodMayPlayDecisionProgram),
         };
     },
 });
@@ -1885,14 +1865,13 @@ const elderThingSpreadingHorrorPodProgram = createEffectProgram<AbilityContext, 
     if (opponents.length === 0) return { events: [] };
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             casterPlayerId: ctx.playerId,
             opponents,
             idx: 0,
             decliners: [] as PlayerId[],
-        }) satisfies ElderThingSpreadingHorrorPodOpponentPromptContext,
-        nextProgram: elderThingSpreadingHorrorPodOpponentPromptProgram,
+        }) satisfies ElderThingSpreadingHorrorPodOpponentPromptContext, elderThingSpreadingHorrorPodOpponentPromptProgram),
     };
 });
 
@@ -2005,7 +1984,7 @@ function canTriggerElderThingDunwichHorrorPodBeforeScoring(ctx: TriggerContext):
     );
 }
 
-const elderThingDunwichHorrorPodChoicePromptProgram = createPromptProgram<ElderThingDunwichHorrorPodChoicePromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingDunwichHorrorPodChoicePromptProgram = createPromptProgram<ElderThingDunwichHorrorPodChoicePromptContext>({
     sourceId: 'elder_thing_dunwich_horror_pod_choice',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `elder_thing_dunwich_horror_pod_${context.minionUid}_${context.now}`,
@@ -2054,10 +2033,15 @@ const elderThingDunwichHorrorPodBeforeScoringProgram = createEffectProgram<Trigg
     const target = sourceHost ?? base.minions.find(minion =>
         minion.attachedActions.some(action => action.defId === 'elder_thing_dunwich_horror_pod'));
     if (!target) return { events: [] };
+    const sourceAction = target.attachedActions.find(action => (
+        action.defId === 'elder_thing_dunwich_horror_pod'
+        && (ctx.sourceCardUid === undefined || action.uid === ctx.sourceCardUid)
+    ));
+    if (!sourceAction) return { events: [] };
 
     return {
         events: [],
-        context: {
+        continuation: createAbilityRuntimeContinuation({
             matchState: ctx.matchState,
             playerId: target.controller,
             now,
@@ -2065,8 +2049,8 @@ const elderThingDunwichHorrorPodBeforeScoringProgram = createEffectProgram<Trigg
             minionUid: target.uid,
             minionDefId: target.defId,
             ownerId: target.owner,
-        } satisfies ElderThingDunwichHorrorPodChoicePromptContext,
-        nextProgram: elderThingDunwichHorrorPodChoicePromptProgram,
+            cardUid: sourceAction.uid,
+        } satisfies ElderThingDunwichHorrorPodChoicePromptContext, elderThingDunwichHorrorPodChoicePromptProgram),
     };
 });
 
@@ -2074,7 +2058,7 @@ function elderThingDunwichHorrorPodOnTurnEndNoop(_ctx: TriggerContext): SmashUpE
     return [];
 }
 
-const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestroySecondPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestroySecondPromptContext>({
     sourceId: 'elder_thing_elder_thing_destroy_second',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2162,7 +2146,7 @@ const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestr
     },
 });
 
-const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlayPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlayPromptContext>({
     sourceId: 'elder_thing_elder_thing_destroy_first',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2218,18 +2202,17 @@ const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlay
 
         return {
             events: [],
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 elderThingDefId: context.elderThingDefId,
                 baseIndex: context.baseIndex,
                 firstTarget,
-            }) satisfies ElderThingDestroySecondPromptContext,
-            nextProgram: elderThingDestroySecondPromptProgram,
+            }) satisfies ElderThingDestroySecondPromptContext, elderThingDestroySecondPromptProgram),
         };
     },
 });
 
-const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPromptContext>({
     sourceId: 'elder_thing_elder_thing_choice',
     buildInteraction: (context) => {
         const candidateCount = collectFriendlyOtherMinions(
@@ -2343,20 +2326,18 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
 
         return {
             events: [],
-            context,
-            nextProgram: elderThingDestroyFirstPromptProgram,
+            continuation: createAbilityRuntimeContinuation(context, elderThingDestroyFirstPromptProgram),
         };
     },
 });
 
 const elderThingElderThingProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
     events: [],
-    context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+    continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
         cardUid: ctx.cardUid,
         elderThingDefId: ctx.defId,
         baseIndex: ctx.baseIndex,
-    }) satisfies ElderThingOnPlayPromptContext,
-    nextProgram: elderThingChoicePromptProgram,
+    }) satisfies ElderThingOnPlayPromptContext, elderThingChoicePromptProgram),
 }));
 
 function getNextShoggothPromptContext(
@@ -2377,7 +2358,7 @@ function getNextShoggothPromptContext(
     }) satisfies ElderThingShoggothPromptContext;
 }
 
-const elderThingShoggothDestroyPromptProgram = createPromptProgram<ElderThingShoggothDestroyPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingShoggothDestroyPromptProgram = createPromptProgram<ElderThingShoggothDestroyPromptContext>({
     sourceId: 'elder_thing_shoggoth_destroy',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -2425,12 +2406,12 @@ const elderThingShoggothDestroyPromptProgram = createPromptProgram<ElderThingSho
             : [];
         const nextContext = getNextShoggothPromptContext(context, state, timestamp);
         return nextContext
-            ? { events, context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+            ? { events, continuation: createAbilityRuntimeContinuation(nextContext, elderThingShoggothPromptProgram) }
             : { events };
     },
 });
 
-const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingShoggothPromptProgram: AbilityProgram<ElderThingShoggothPromptContext, SmashUpCore, SmashUpEvent> = createPromptProgram<ElderThingShoggothPromptContext>({
     sourceId: 'elder_thing_shoggoth_opponent',
     buildInteraction: (context) => {
         const targetPlayerId = context.opponents[context.opponentIdx];
@@ -2453,7 +2434,7 @@ const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPr
             const nextContext = getNextShoggothPromptContext(context, state, timestamp);
             const events = event ? [event] : [];
             return nextContext
-                ? { events, context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+                ? { events, continuation: createAbilityRuntimeContinuation(nextContext, elderThingShoggothPromptProgram) }
                 : { events };
         }
 
@@ -2466,21 +2447,20 @@ const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPr
         if (destroyOptions.length === 0) {
             const nextContext = getNextShoggothPromptContext(context, state, timestamp);
             return nextContext
-                ? { events: [], context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+                ? { events: [], continuation: createAbilityRuntimeContinuation(nextContext, elderThingShoggothPromptProgram) }
                 : { events: [] };
         }
 
         return {
             events: [],
-            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(state, context.playerId, timestamp, {
                 cardUid: context.cardUid,
                 casterPlayerId: context.casterPlayerId,
                 targetPlayerId,
                 baseIndex: context.baseIndex,
                 opponents: context.opponents,
                 opponentIdx: context.opponentIdx,
-            }) satisfies ElderThingShoggothDestroyPromptContext,
-            nextProgram: elderThingShoggothDestroyPromptProgram,
+            }) satisfies ElderThingShoggothDestroyPromptContext, elderThingShoggothDestroyPromptProgram),
         };
     },
 });
@@ -2501,14 +2481,13 @@ const elderThingShoggothProgram = createEffectProgram<AbilityContext, SmashUpCor
 
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             casterPlayerId: ctx.playerId,
             baseIndex: ctx.baseIndex,
             opponents,
             opponentIdx: 0,
-        }) satisfies ElderThingShoggothPromptContext,
-        nextProgram: elderThingShoggothPromptProgram,
+        }) satisfies ElderThingShoggothPromptContext, elderThingShoggothPromptProgram),
     };
 });
 
@@ -2610,7 +2589,7 @@ function getPriceOfPowerPodCandidateBases(params: {
         .filter((candidate): candidate is { baseIndex: number; label: string } => candidate !== null);
 }
 
-const elderThingPriceOfPowerPodChooseBasePromptProgram = createPromptProgram<ElderThingPriceOfPowerPodChooseBasePromptContext, SmashUpCore, SmashUpEvent>({
+const elderThingPriceOfPowerPodChooseBasePromptProgram = createPromptProgram<ElderThingPriceOfPowerPodChooseBasePromptContext>({
     sourceId: 'elder_thing_the_price_of_power_pod_choose_base',
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `elder_thing_the_price_of_power_pod_choose_base_${context.now}`,
@@ -2670,11 +2649,10 @@ const elderThingPriceOfPowerPodOnPlayProgram = createEffectProgram<AbilityContex
 
     return {
         events: [],
-        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        continuation: createAbilityRuntimeContinuation(createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             cardUid: ctx.cardUid,
             perMadnessCounterAmount,
-        }) satisfies ElderThingPriceOfPowerPodChooseBasePromptContext,
-        nextProgram: elderThingPriceOfPowerPodChooseBasePromptProgram,
+        }) satisfies ElderThingPriceOfPowerPodChooseBasePromptContext, elderThingPriceOfPowerPodChooseBasePromptProgram),
     };
 });
 
@@ -2719,7 +2697,8 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
                 && ((a.metadata?.sourceControllerId as PlayerId | undefined) ?? a.ownerId) === ctx.playerId,
             );
             if (!horror) continue;
-            const destroyerId = horror.metadata?.sourceControllerId ?? horror.ownerId;
+            const sourceControllerId = horror.metadata?.sourceControllerId;
+            const destroyerId = typeof sourceControllerId === 'string' ? sourceControllerId : horror.ownerId;
             events.push(...buildValidatedDestroyEvents(ctx.state, {
                 minionUid: m.uid,
                 minionDefId: m.defId,

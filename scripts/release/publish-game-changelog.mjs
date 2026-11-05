@@ -4,6 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import process from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { pathToFileURL } from 'node:url';
+import { prepareDeploymentGameChangelog } from './deployment-game-changelog.mjs';
 
 const rootDir = process.cwd();
 const rawArgs = process.argv.slice(2);
@@ -42,6 +43,7 @@ const helpText = `
   --title <text>               手动指定标题
   --content <text>             手动指定正文
   --content-file <path>        从文件读取正文
+  --entries-file <path>        发布部署更新日志 JSON（每个游戏一条）
   --version <label>            版本号标签，默认 package.json version
   --published=<true|false>     是否直接发布，默认 true；也可用 --draft
   --pinned=<true|false>        是否置顶，默认 false
@@ -151,6 +153,7 @@ export const parsePublishOptions = (args = rawArgs, env = process.env) => {
         title: readArgValue(args, 'title', '').trim(),
         content: readArgValue(args, 'content', '').trim(),
         contentFile: readArgValue(args, 'content-file', '').trim(),
+        entriesFile: readArgValue(args, 'entries-file', '').trim(),
         versionLabel: readArgValue(args, 'version', env.BG_CHANGELOG_VERSION || env.npm_package_version || '').trim(),
         published: hasFlag(args, 'draft')
             ? false
@@ -541,7 +544,7 @@ const readJsonIfExists = async (filePath) => {
     }
 };
 
-const loadGameNames = async () => {
+export const loadGameNames = async () => {
     const [common, lobby] = await Promise.all([
         readJsonIfExists('public/locales/zh-CN/common.json'),
         readJsonIfExists('public/locales/zh-CN/lobby.json'),
@@ -559,7 +562,7 @@ const loadGameNames = async () => {
     return names;
 };
 
-const readPackageVersion = async () => {
+export const readPackageVersion = async () => {
     try {
         const pkg = JSON.parse(await readFile('package.json', 'utf8'));
         return typeof pkg.version === 'string' ? pkg.version : '';
@@ -697,7 +700,8 @@ const findDuplicateChangelog = async ({ apiBaseUrl, token, draft }) => {
     }, '查询已有更新日志');
     const items = Array.isArray(body?.items) ? body.items : [];
     return items.find((item) => (
-        item.title === draft.title
+        item.published === true
+        && item.title === draft.title
         && (item.versionLabel || '') === (draft.versionLabel || '')
         && item.content === draft.content
     ));
@@ -711,6 +715,27 @@ const createChangelog = async ({ apiBaseUrl, token, draft }) => requestJson(`${a
     },
     body: JSON.stringify(draft),
 }, '创建更新日志');
+
+export const publishChangelogDrafts = async ({ drafts, options }) => {
+    const credentials = await resolveCredentials(options);
+    const token = await login({ ...options, ...credentials });
+    let createdCount = 0;
+    let duplicateCount = 0;
+    for (const draft of drafts) {
+        if (!options.skipDuplicateCheck) {
+            const duplicate = await findDuplicateChangelog({ ...options, token, draft });
+            if (duplicate) {
+                duplicateCount += 1;
+                console.log(`[publish-game-changelog] 已存在相同日志，跳过: ${draft.gameId} ${duplicate.id || ''}`);
+                continue;
+            }
+        }
+        const result = await createChangelog({ ...options, token, draft });
+        createdCount += 1;
+        console.log(`[publish-game-changelog] 已创建: ${draft.gameId} ${result?.changelog?.id || ''}`);
+    }
+    return { createdCount, duplicateCount };
+};
 
 const printDraft = (draft) => {
     console.log(`\n[publish-game-changelog] ${draft.gameId}`);
@@ -735,43 +760,69 @@ const main = async () => {
         options.content = (await readFile(options.contentFile, 'utf8')).trim();
     }
 
-    const rangeInfo = await resolveDefaultRange(options);
-    const commitMessages = options.summary ? [] : await getCommitMessages(rangeInfo.range);
-    const detectedGameIds = detectGameIdsFromPaths(rangeInfo.paths, options.games);
-    const underConstructionGameIds = await loadUnderConstructionGameIds();
-    const { gameIds, skippedGameIds } = filterPublishableGameIds(
-        detectedGameIds,
-        underConstructionGameIds,
-        { includeUnderConstruction: options.includeUnderConstruction },
-    );
-    if (skippedGameIds.length > 0) {
-        console.log(`[publish-game-changelog] 跳过实施中游戏: ${skippedGameIds.join(', ')}`);
-    }
-    if (gameIds.length === 0) {
-        throw new Error(
-            detectedGameIds.length > 0
-                ? '识别到的游戏均为实施中游戏；公开玩家日志默认跳过它们，如确需发布请加 --include-under-construction。'
-                : `无法从提交范围 ${rangeInfo.range} 识别受影响游戏；请用 --game <id> 指定。`,
+    let drafts;
+    if (options.entriesFile) {
+        const payload = JSON.parse(await readFile(options.entriesFile, 'utf8'));
+        if (!options.versionLabel) {
+            options.versionLabel = await readPackageVersion();
+        }
+        const gameNames = await loadGameNames();
+        const underConstructionGameIds = await loadUnderConstructionGameIds();
+        const prepared = prepareDeploymentGameChangelog({
+            payload,
+            gameNames,
+            underConstructionGameIds,
+            defaultVersionLabel: options.versionLabel,
+        });
+        drafts = prepared.drafts;
+        if (prepared.skippedGameIds.length > 0) {
+            console.log(`[publish-game-changelog] 跳过实施中游戏: ${prepared.skippedGameIds.join(', ')}`);
+        }
+        if (drafts.length === 0) {
+            console.log('[publish-game-changelog] 没有可公开发布的游戏更新日志，跳过。');
+            return;
+        }
+        console.log(`[publish-game-changelog] 部署日志游戏: ${drafts.map(({ gameId }) => gameId).join(', ')}`);
+    } else {
+        const rangeInfo = await resolveDefaultRange(options);
+        const commitMessages = options.summary ? [] : await getCommitMessages(rangeInfo.range);
+        const detectedGameIds = detectGameIdsFromPaths(rangeInfo.paths, options.games);
+        const underConstructionGameIds = await loadUnderConstructionGameIds();
+        const { gameIds, skippedGameIds } = filterPublishableGameIds(
+            detectedGameIds,
+            underConstructionGameIds,
+            { includeUnderConstruction: options.includeUnderConstruction },
         );
+        if (skippedGameIds.length > 0) {
+            console.log(`[publish-game-changelog] 跳过实施中游戏: ${skippedGameIds.join(', ')}`);
+        }
+        if (gameIds.length === 0) {
+            throw new Error(
+                detectedGameIds.length > 0
+                    ? '识别到的游戏均为实施中游戏；公开玩家日志默认跳过它们，如确需发布请加 --include-under-construction。'
+                    : `无法从提交范围 ${rangeInfo.range} 识别受影响游戏；请用 --game <id> 指定。`,
+            );
+        }
+
+        const gameNames = await loadGameNames();
+        drafts = gameIds.map((gameId) => buildChangelogDraft({
+            gameId,
+            gameName: gameNames[gameId] || gameId,
+            changedPaths: rangeInfo.paths.filter((filePath) => gameIdFromPath(filePath) === gameId || options.games.includes(gameId)),
+            commitMessages,
+            summary: options.summary,
+            type: options.type,
+            title: options.title,
+            content: options.content,
+            versionLabel: options.versionLabel,
+            published: options.published,
+            pinned: options.pinned,
+        }));
+
+        console.log(`[publish-game-changelog] 提交范围: ${rangeInfo.range} (${rangeInfo.source})`);
+        console.log(`[publish-game-changelog] 识别游戏: ${gameIds.join(', ')}`);
     }
 
-    const gameNames = await loadGameNames();
-    const drafts = gameIds.map((gameId) => buildChangelogDraft({
-        gameId,
-        gameName: gameNames[gameId] || gameId,
-        changedPaths: rangeInfo.paths.filter((filePath) => gameIdFromPath(filePath) === gameId || options.games.includes(gameId)),
-        commitMessages,
-        summary: options.summary,
-        type: options.type,
-        title: options.title,
-        content: options.content,
-        versionLabel: options.versionLabel,
-        published: options.published,
-        pinned: options.pinned,
-    }));
-
-    console.log(`[publish-game-changelog] 提交范围: ${rangeInfo.range} (${rangeInfo.source})`);
-    console.log(`[publish-game-changelog] 识别游戏: ${gameIds.join(', ')}`);
     drafts.forEach(printDraft);
 
     if (options.dryRun) {
@@ -779,19 +830,7 @@ const main = async () => {
         return;
     }
 
-    const credentials = await resolveCredentials(options);
-    const token = await login({ ...options, ...credentials });
-    for (const draft of drafts) {
-        if (!options.skipDuplicateCheck) {
-            const duplicate = await findDuplicateChangelog({ ...options, token, draft });
-            if (duplicate) {
-                console.log(`[publish-game-changelog] 已存在相同日志，跳过: ${draft.gameId} ${duplicate.id || ''}`);
-                continue;
-            }
-        }
-        const result = await createChangelog({ ...options, token, draft });
-        console.log(`[publish-game-changelog] 已创建: ${draft.gameId} ${result?.changelog?.id || ''}`);
-    }
+    await publishChangelogDrafts({ drafts, options });
 };
 
 const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

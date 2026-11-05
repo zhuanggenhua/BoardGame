@@ -1,0 +1,51 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "催眠必须在对手确认骰后进入响应阶段，玩家能看到可以响应或跳过的窗口。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 通过：node scripts/infra/run-e2e-command.mjs isolated e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"催眠应在对手确认骰后打开响应窗口，并通过点击 token 本体改对手骰\"",
+        "原图 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-token本体高亮.jpg 显示对手确认骰后出现响应窗口，窗口中有可以响应和跳过，催眠 token 本体可见。"
+      ]
+    },
+    {
+      "requirement": "点击催眠 token 后必须进入临时骰确认，并继续选择对手骰。",
+      "status": "PASS",
+      "evidence": [
+        "标记图组 02 和 03 显示点击催眠后进入临时骰确认，再进入选择对手骰。",
+        "原图 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-临时骰确认前.jpg 与 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-选择对手骰.jpg 覆盖该连续流程。"
+      ]
+    },
+    {
+      "requirement": "选中对手骰并确认后，催眠必须重掷对手骰并收口回到攻击处理，而不是跳过响应。",
+      "status": "PASS",
+      "evidence": [
+        "标记图组 04 显示对手骰已选中等待确认；标记图组 05 显示重掷后响应窗口退场。",
+        "原图 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-重掷后收口.jpg 显示响应已收口，右侧对手骰结果已变化。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-token本体高亮.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-临时骰确认前.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-选择对手骰.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-对手骰已选待确认.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/吸血鬼领主-催眠响应窗口-重掷后收口.jpg"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/_labeled-for-user-20260916-hypnosis-response/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/_labeled-for-user-20260916-hypnosis-response/01-labeled-吸血鬼领主-催眠响应窗口-token本体高亮.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/_labeled-for-user-20260916-hypnosis-response/02-labeled-吸血鬼领主-催眠响应窗口-临时骰确认前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/_labeled-for-user-20260916-hypnosis-response/03-labeled-吸血鬼领主-催眠响应窗口-选择对手骰.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/_labeled-for-user-20260916-hypnosis-response/04-labeled-吸血鬼领主-催眠响应窗口-对手骰已选待确认.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/催眠应在对手确认骰后打开响应窗口，并通过点击-token-本体改对手骰/_labeled-for-user-20260916-hypnosis-response/05-labeled-吸血鬼领主-催眠响应窗口-重掷后收口.png"
+  ]
+}

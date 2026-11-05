@@ -11,6 +11,13 @@ import {
   buildRecentRollDisplayKey,
   type EventRollConfirmationPresentation,
 } from "./recentRollPresentation";
+import {
+  isPendingCardResolutionFullyAcknowledged,
+} from "./acknowledgementReadModel";
+import {
+  BETRAYAL_TRAIT_LABEL,
+  effectIsTraitOnly,
+} from "./possessionEffects";
 
 export type LatestDiscoveryDisplayEntry = {
   key: string;
@@ -22,7 +29,7 @@ export type LatestDiscoveryDisplayEntry = {
 
 type LatestDiscoveryTranslation = (
   key: string,
-  params?: { confirmed: number; total: number },
+  params?: Record<string, string | number>,
 ) => string;
 
 export type LatestDiscoverySelectionPresentation = {
@@ -40,6 +47,7 @@ export type LatestDiscoverySelectionPresentation = {
 export type BetrayalLatestDiscoveryContinueButtonState = {
   label: string;
   disabled: boolean;
+  eventRollReadable?: boolean;
   pendingCardResolutionId?: string;
   pendingCardResolutionStep?: string;
   cardResolutionConfirmedCount?: number;
@@ -51,6 +59,9 @@ export type BetrayalLatestDiscoveryContinueButtonState = {
 export type BetrayalLatestDiscoveryPanelPresentation = {
   hasDisplayEntry: boolean;
   shouldDisplayEventRolledDamageAsIndependentRoll: boolean;
+  shouldKeepTableChromeOpenForEventResult: boolean;
+  shouldHideTableChromeForBlockingOverlay: boolean;
+  shouldShowRecentRollReview: boolean;
   isRecentRollDismissed: boolean;
   hasActionableRollModifier: boolean;
   shouldAutoReturnAfterLatestDiscovery: boolean;
@@ -71,6 +82,7 @@ export type BetrayalLatestDiscoveryPanelPresentation = {
   cardResolutionTotalCount: number;
   viewerHasAcknowledgedCardResolution: boolean;
   canCurrentViewerAcknowledgeCardResolution: boolean;
+  isStandaloneItemGain: boolean;
   searchSequence: readonly BetrayalPendingCardResolutionProcessCard[];
   hasSearchSequence: boolean;
   isSearchOperator: boolean;
@@ -97,6 +109,15 @@ export function buildLatestDiscoveryKey(core: BetrayalCore): string | null {
         core.latestDiscovery.detail,
       ].join("::")
     : null;
+}
+
+function hasPendingLatestDiscoveryResolution(core: BetrayalCore): boolean {
+  return Boolean(
+    core.pendingEventChoice ||
+      core.pendingEventRollStart ||
+      core.pendingEventRollResolution ||
+      (core.pendingCardResolutionQueue?.length ?? 0) > 0,
+  );
 }
 
 export function isHauntScenarioOpeningDiscoverySummary(
@@ -176,9 +197,134 @@ function cloneRecentRollForDiscoveryDisplay(
     : null;
 }
 
+function resolvePendingCardResolutionDiscoveryKind(
+  pendingResolution: BetrayalPendingCardResolutionState,
+): BetrayalDiscoverySummary["kind"] {
+  return pendingResolution.deckKind === "event" ||
+    pendingResolution.deckKind === "item" ||
+    pendingResolution.deckKind === "omen"
+    ? pendingResolution.deckKind
+    : "none";
+}
+
+function buildPendingCardResolutionSourceKey(
+  core: BetrayalCore,
+  pendingResolution: BetrayalPendingCardResolutionState,
+): string {
+  const matchingLatestDiscovery =
+    core.latestDiscoveryOwnerPlayerId === pendingResolution.playerId &&
+    core.latestDiscovery?.title === pendingResolution.discoveryTitle
+      ? core.latestDiscovery
+      : null;
+  if (matchingLatestDiscovery) {
+    return buildLatestDiscoverySourceKey(
+      pendingResolution.playerId,
+      matchingLatestDiscovery,
+    );
+  }
+  return [
+    pendingResolution.playerId,
+    resolvePendingCardResolutionDiscoveryKind(pendingResolution),
+    pendingResolution.discoveryTitle,
+  ].join("::");
+}
+
+function cloneResolutionStepFromPendingCardResolution(
+  pendingResolution: BetrayalPendingCardResolutionState,
+): BetrayalDiscoveryResolutionStep {
+  return {
+    id: `pending-card-resolution-${pendingResolution.id}`,
+    kind: pendingResolution.stepKind,
+    text: pendingResolution.text,
+    deckKind: pendingResolution.deckKind,
+    cardId: pendingResolution.cardId,
+  };
+}
+
+function buildPendingCardResolutionDiscoverySummary(
+  core: BetrayalCore,
+  pendingResolution: BetrayalPendingCardResolutionState,
+): BetrayalDiscoverySummary {
+  const matchingLatestDiscovery =
+    core.latestDiscoveryOwnerPlayerId === pendingResolution.playerId &&
+    core.latestDiscovery?.title === pendingResolution.discoveryTitle
+      ? core.latestDiscovery
+      : null;
+  const kind = matchingLatestDiscovery?.kind ?? resolvePendingCardResolutionDiscoveryKind(pendingResolution);
+  const resolutionSteps = matchingLatestDiscovery?.resolutionSteps?.length
+    ? matchingLatestDiscovery.resolutionSteps.map((step) => ({ ...step }))
+    : [cloneResolutionStepFromPendingCardResolution(pendingResolution)];
+  const summary =
+    matchingLatestDiscovery?.summary?.trim() ||
+    (kind === "none" ? pendingResolution.text : "等待确认");
+  const detail =
+    matchingLatestDiscovery?.detail?.trim() || pendingResolution.text;
+
+  return {
+    kind,
+    title: pendingResolution.discoveryTitle,
+    summary,
+    detail,
+    tone: matchingLatestDiscovery?.tone ?? "accent",
+    resolutionSteps,
+  };
+}
+
+function buildPendingCardResolutionDisplayEntry(
+  core: BetrayalCore,
+): LatestDiscoveryDisplayEntry | null {
+  const pendingResolution = core.pendingCardResolutionQueue?.[0] ?? null;
+  if (!pendingResolution) {
+    return null;
+  }
+  const discovery = buildPendingCardResolutionDiscoverySummary(
+    core,
+    pendingResolution,
+  );
+  if (
+    isHauntScenarioOpeningDiscovery(core) &&
+    isHauntScenarioBookRevealDiscoverySummary(discovery)
+  ) {
+    return null;
+  }
+  const recentRollMatchesPendingResolution =
+    core.recentRoll?.sourceTitle === pendingResolution.discoveryTitle &&
+    core.recentRoll.playerId === pendingResolution.playerId;
+  const relatedRecentRoll =
+    recentRollMatchesPendingResolution &&
+    core.recentRoll &&
+    core.recentRoll.kind !== "eventTraitCheck" &&
+    core.recentRoll.kind !== "eventDiceRoll"
+      ? core.recentRoll
+      : recentRollMatchesPendingResolution &&
+          core.pendingEventRollResolution?.sourceTitle === pendingResolution.discoveryTitle &&
+          core.pendingEventRollResolution.playerId === pendingResolution.playerId
+        ? core.recentRoll
+        : null;
+  const sourceKey = buildPendingCardResolutionSourceKey(
+    core,
+    pendingResolution,
+  );
+  const recentRollId = relatedRecentRoll?.id ?? "";
+  const activityId = core.activityLog[0]?.id ?? "";
+
+  return {
+    key: [sourceKey, pendingResolution.id, recentRollId, activityId].join("::"),
+    sourceKey,
+    discovery,
+    ownerPlayerId: pendingResolution.playerId,
+    recentRoll: cloneRecentRollForDiscoveryDisplay(relatedRecentRoll),
+  };
+}
+
 export function buildLatestDiscoveryDisplayEntry(
   core: BetrayalCore,
 ): LatestDiscoveryDisplayEntry | null {
+  const pendingCardResolutionEntry =
+    buildPendingCardResolutionDisplayEntry(core);
+  if (pendingCardResolutionEntry) {
+    return pendingCardResolutionEntry;
+  }
   if (
     isHauntScenarioOpeningDiscovery(core) &&
     isHauntScenarioBookRevealDiscoverySummary(core.latestDiscovery)
@@ -196,6 +342,9 @@ export function buildLatestDiscoveryDisplayEntry(
     return null;
   }
   if (isEventSymbolNoCardDiscovery(core.latestDiscovery)) {
+    return null;
+  }
+  if (isNoEffectRoomDiscovery(core.latestDiscovery)) {
     return null;
   }
   const isHauntRollForOwner = Boolean(
@@ -245,15 +394,81 @@ export function resolveBetrayalLatestDiscoverySelectionPresentation(options: {
     dismissedLatestDiscoveryKey,
     dismissedLatestDiscoveryKeys,
   } = options;
-  const queuedEntry = queue[0] ?? null;
+  const activePendingCardResolution =
+    core.pendingCardResolutionQueue?.[0] ?? null;
+  const pendingCardResolutionSourceKey = activePendingCardResolution
+    ? buildPendingCardResolutionSourceKey(core, activePendingCardResolution)
+    : null;
+  const activePendingEventRollResolution =
+    core.pendingEventRollResolution ?? null;
+  const pendingEventRollResolutionSourceKey =
+    activePendingEventRollResolution &&
+    core.latestDiscoveryOwnerPlayerId === activePendingEventRollResolution.playerId &&
+    core.latestDiscovery?.title === activePendingEventRollResolution.sourceTitle
+      ? buildLatestDiscoverySourceKey(
+          core.latestDiscoveryOwnerPlayerId,
+          core.latestDiscovery,
+        )
+      : null;
+  const activePendingResolutionSourceKey =
+    pendingCardResolutionSourceKey ?? pendingEventRollResolutionSourceKey;
+  const stateRelevantQueue = queue.filter((entry) => {
+    const entryTargetsActivePendingResolution = Boolean(
+      activePendingResolutionSourceKey &&
+        entry.sourceKey === activePendingResolutionSourceKey,
+    );
+    if (
+      activePendingResolutionSourceKey &&
+      entry.sourceKey !== activePendingResolutionSourceKey
+    ) {
+      return false;
+    }
+    if (
+      entry.key === dismissedLatestDiscoveryKey ||
+      dismissedLatestDiscoveryKeys.has(entry.key)
+    ) {
+      return false;
+    }
+    if (
+      !entryTargetsActivePendingResolution &&
+      (entry.sourceKey === dismissedLatestDiscoveryKey ||
+        dismissedLatestDiscoveryKeys.has(entry.sourceKey))
+    ) {
+      return false;
+    }
+    if (
+      !hasPendingLatestDiscoveryResolution(core) &&
+      core.turnEndedByDiscovery &&
+      entry.discovery.kind === "event"
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const queuedEntry = stateRelevantQueue[0] ?? null;
+  const currentEntryTargetsActivePendingResolution = Boolean(
+    currentEntry &&
+      activePendingResolutionSourceKey &&
+      currentEntry.sourceKey === activePendingResolutionSourceKey,
+  );
   const visibleCurrentEntry =
     currentEntry &&
-    currentEntry.key !== dismissedLatestDiscoveryKey &&
-    !dismissedLatestDiscoveryKeys.has(currentEntry.key)
+    (currentEntryTargetsActivePendingResolution ||
+      (currentEntry.key !== dismissedLatestDiscoveryKey &&
+        !dismissedLatestDiscoveryKeys.has(currentEntry.key) &&
+        currentEntry.sourceKey !== dismissedLatestDiscoveryKey &&
+        !dismissedLatestDiscoveryKeys.has(currentEntry.sourceKey)))
       ? currentEntry
       : null;
-  const entry =
+  const shouldPreferCurrentPendingResolution = Boolean(
     visibleCurrentEntry &&
+      (activePendingCardResolution || activePendingEventRollResolution) &&
+      visibleCurrentEntry.sourceKey === activePendingResolutionSourceKey,
+  );
+  const entry =
+    shouldPreferCurrentPendingResolution
+      ? visibleCurrentEntry
+      : visibleCurrentEntry &&
     (!queuedEntry || queuedEntry.sourceKey === visibleCurrentEntry.sourceKey)
       ? visibleCurrentEntry
       : queuedEntry;
@@ -304,29 +519,96 @@ export function resolveBetrayalLatestDiscoveryQueueAfterCurrentEntry(options: {
   }
 
   if (!currentEntry) {
-    return [...queue];
+    return queue.filter((entry) => {
+      if (
+        !hasPendingLatestDiscoveryResolution(core) &&
+        core.turnEndedByDiscovery &&
+        entry.discovery.kind === "event"
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }
+  const pendingCardResolutionSourceKey = core.pendingCardResolutionQueue?.[0]
+    ? buildPendingCardResolutionSourceKey(
+        core,
+        core.pendingCardResolutionQueue[0],
+      )
+    : null;
+  const queueForCurrentState = queue.filter((entry) => {
+    const entryTargetsActivePendingResolution = Boolean(
+      pendingCardResolutionSourceKey &&
+        entry.sourceKey === pendingCardResolutionSourceKey,
+    );
+    if (
+      pendingCardResolutionSourceKey &&
+      entry.sourceKey !== pendingCardResolutionSourceKey &&
+      entry.sourceKey !== currentEntry.sourceKey
+    ) {
+      return false;
+    }
+    if (
+      entry.key === dismissedLatestDiscoveryKey ||
+      dismissedLatestDiscoveryKeys.has(entry.key)
+    ) {
+      return false;
+    }
+    if (
+      !entryTargetsActivePendingResolution &&
+      (entry.sourceKey === dismissedLatestDiscoveryKey ||
+        dismissedLatestDiscoveryKeys.has(entry.sourceKey))
+    ) {
+      return false;
+    }
+    if (
+      !hasPendingLatestDiscoveryResolution(core) &&
+      core.turnEndedByDiscovery &&
+      entry.discovery.kind === "event"
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const currentEntryTargetsActivePendingResolution = Boolean(
+    pendingCardResolutionSourceKey &&
+      currentEntry.sourceKey === pendingCardResolutionSourceKey,
+  );
+  if (
+    !hasPendingLatestDiscoveryResolution(core) &&
+    core.turnEndedByDiscovery &&
+    currentEntry.discovery.kind === "event"
+  ) {
+    return queueForCurrentState.filter(
+      (entry) => entry.sourceKey !== currentEntry.sourceKey,
+    );
   }
   if (
     currentEntry.key === dismissedLatestDiscoveryKey ||
-    dismissedLatestDiscoveryKeys.has(currentEntry.key)
+    dismissedLatestDiscoveryKeys.has(currentEntry.key) ||
+    (!currentEntryTargetsActivePendingResolution &&
+      (currentEntry.sourceKey === dismissedLatestDiscoveryKey ||
+        dismissedLatestDiscoveryKeys.has(currentEntry.sourceKey)))
   ) {
-    return [...queue];
+    return queueForCurrentState.filter(
+      (entry) => entry.sourceKey !== currentEntry.sourceKey,
+    );
   }
 
-  const existingIndex = queue.findIndex(
+  const existingIndex = queueForCurrentState.findIndex(
     (entry) => entry.key === currentEntry.key,
   );
   if (existingIndex >= 0) {
-    return queue.map((entry, index) =>
+    return queueForCurrentState.map((entry, index) =>
       index === existingIndex ? currentEntry : entry,
     );
   }
 
-  const existingSourceIndex = queue.findIndex(
+  const existingSourceIndex = queueForCurrentState.findIndex(
     (entry) => entry.sourceKey === currentEntry.sourceKey,
   );
   if (existingSourceIndex >= 0) {
-    return queue
+    return queueForCurrentState
       .map((entry, index) =>
         index === existingSourceIndex ? currentEntry : entry,
       )
@@ -337,17 +619,17 @@ export function resolveBetrayalLatestDiscoveryQueueAfterCurrentEntry(options: {
       );
   }
 
-  return [...queue, currentEntry];
+  return [...queueForCurrentState, currentEntry];
 }
 
 export function removeBetrayalLatestDiscoveryQueueEntry(
   queue: readonly LatestDiscoveryDisplayEntry[],
   key: string,
 ): LatestDiscoveryDisplayEntry[] {
-  if (queue[0]?.key === key) {
+  if (queue[0]?.key === key || queue[0]?.sourceKey === key) {
     return queue.slice(1);
   }
-  return queue.filter((entry) => entry.key !== key);
+  return queue.filter((entry) => entry.key !== key && entry.sourceKey !== key);
 }
 
 export function shouldRestoreBetrayalDiscoveryAfterHauntRevealDismiss(options: {
@@ -366,7 +648,9 @@ export function shouldRestoreBetrayalDiscoveryAfterHauntRevealDismiss(options: {
     nextEntry &&
       nextEntry.ownerPlayerId === viewerPlayerId &&
       nextEntry.key !== dismissedLatestDiscoveryKey &&
-      !dismissedLatestDiscoveryKeys.has(nextEntry.key),
+      nextEntry.sourceKey !== dismissedLatestDiscoveryKey &&
+      !dismissedLatestDiscoveryKeys.has(nextEntry.key) &&
+      !dismissedLatestDiscoveryKeys.has(nextEntry.sourceKey),
   );
 }
 
@@ -424,6 +708,16 @@ function resolveLatestDiscoveryDisplaySummary(
   return summary
     .replace(/[；;]\s*没有事件、物品或预兆发现牌[。.]?\s*$/, "")
     .trim();
+}
+
+function isNoEffectRoomDiscovery(
+  discovery: BetrayalDiscoverySummary | null,
+): boolean {
+  return Boolean(
+    discovery?.kind === "none" &&
+      (discovery.resolutionSteps?.length ?? 0) === 0 &&
+      discovery.detail.trim() === "没有事件、物品或预兆发现牌",
+  );
 }
 
 function resolveLatestDiscoveryPendingCardResolution(options: {
@@ -505,10 +799,19 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   viewerPlayerId: string;
   inventoryActionPlayerId: string;
   hasRecentRollModifier: boolean;
+  isConfirmedExorciseRoll: boolean;
   pendingEventChoice: BetrayalCore["pendingEventChoice"];
   shouldShowHauntRevealCue: boolean;
+  shouldPauseHauntBoardActions: boolean;
+  scenarioReaderOpen: boolean;
+  shouldShowScenarioStartOpening: boolean;
   latestDiscoverySearchRevealIndex: number;
   eventRollConfirmation: EventRollConfirmationPresentation;
+  isRecentRollReadable: boolean;
+  optimisticCardResolutionAcknowledgement?: {
+    resolutionId: string;
+    playerId: string;
+  } | null;
   t: LatestDiscoveryTranslation;
 }): BetrayalLatestDiscoveryPanelPresentation {
   const {
@@ -519,46 +822,169 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     viewerPlayerId,
     inventoryActionPlayerId,
     hasRecentRollModifier,
+    isConfirmedExorciseRoll,
     pendingEventChoice,
     shouldShowHauntRevealCue,
+    shouldPauseHauntBoardActions,
+    scenarioReaderOpen,
+    shouldShowScenarioStartOpening,
     latestDiscoverySearchRevealIndex,
     eventRollConfirmation,
+    isRecentRollReadable,
+    optimisticCardResolutionAcknowledgement,
     t,
   } = options;
-  const { discovery, recentRoll, ownerPlayerId, key } = selection;
+  const { entry, visibleCurrentEntry, discovery, recentRoll, ownerPlayerId, key } =
+    selection;
+  const eventDiscovery =
+    core.latestDiscovery?.kind === "event"
+      ? core.latestDiscovery
+      : discovery?.kind === "event"
+        ? discovery
+        : null;
   const activePendingCardResolution =
     core.pendingCardResolutionQueue?.[0] ?? null;
+  const activePendingEventRollResolution =
+    core.pendingEventRollResolution ?? null;
+  const isActivePendingEventRollEntry = Boolean(
+    entry &&
+      activePendingEventRollResolution &&
+      core.latestDiscoveryOwnerPlayerId ===
+        activePendingEventRollResolution.playerId &&
+      core.latestDiscovery?.title === activePendingEventRollResolution.sourceTitle &&
+      entry.sourceKey ===
+        buildLatestDiscoverySourceKey(
+          core.latestDiscoveryOwnerPlayerId,
+          core.latestDiscovery,
+        ),
+  );
   const hasDisplayEntry = Boolean(
-    discovery && key !== dismissedLatestDiscoveryKey,
+    discovery && (key !== dismissedLatestDiscoveryKey || isActivePendingEventRollEntry),
+  );
+  const recentRollDismissalKey =
+    selection.recentRollDisplayKey ?? selection.coreRecentRollDisplayKey;
+  const isRecentRollDismissed = Boolean(
+    recentRollDismissalKey && dismissedRecentRollId === recentRollDismissalKey,
+  );
+  const hasEventResultContext = Boolean(
+    eventDiscovery &&
+      core.recentRoll &&
+      (core.recentRoll.kind === "eventTraitCheck" ||
+        core.recentRoll.kind === "eventDiceRoll" ||
+        core.recentRoll.kind === "eventRolledDamage") &&
+      core.recentRoll.sourceTitle === eventDiscovery.title &&
+      !isRecentRollDismissed &&
+      !shouldShowHauntRevealCue &&
+      !isConfirmedExorciseRoll,
+  );
+  const hasEventDamageResultContext = Boolean(
+    hasEventResultContext && core.recentRoll?.kind === "eventRolledDamage",
   );
   const shouldDisplayEventRolledDamageAsIndependentRoll = Boolean(
-    core.recentRoll?.kind === "eventRolledDamage" &&
+    hasEventDamageResultContext &&
       recentRoll?.kind === "eventRolledDamage" &&
       selection.coreRecentRollDisplayKey === selection.recentRollDisplayKey,
-  );
-  const isRecentRollDismissed = Boolean(
-    selection.recentRollDisplayKey &&
-      dismissedRecentRollId === selection.recentRollDisplayKey,
   );
   const hasActionableRollModifier = Boolean(
     discovery &&
       recentRoll &&
+      isRecentRollReadable &&
       hasRecentRollModifier &&
       selection.coreRecentRollDisplayKey === selection.recentRollDisplayKey &&
       recentRoll.playerId === inventoryActionPlayerId,
   );
+  const shouldHideResolvedEventDiscovery = Boolean(
+    entry &&
+      visibleCurrentEntry &&
+      entry.sourceKey === visibleCurrentEntry.sourceKey &&
+      discovery?.kind === "event" &&
+      core.latestDiscovery?.kind === "event" &&
+      core.turnEndedByDiscovery &&
+      !hasPendingLatestDiscoveryResolution(core) &&
+      !hasEventResultContext,
+  );
   const shouldAutoReturnAfterLatestDiscovery = Boolean(
     !pendingEventChoice &&
+      !core.pendingEventRollStart &&
+      !core.pendingEventRollResolution &&
       (core.pendingCardResolutionQueue?.length ?? 0) === 0 &&
       core.turnEndedByDiscovery &&
-      isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) &&
+      (isSpiderAdjacentRoomResolutionDiscovery(core.latestDiscovery) ||
+        Boolean(
+          core.latestDiscovery?.kind === "event" &&
+          core.recentAllTraitCheck?.sourceTitle === core.latestDiscovery.title &&
+          core.recentAllTraitCheck.results.length === 4,
+        )) &&
       !hasActionableRollModifier,
+  );
+  const shouldKeepTableChromeOpenForEventResult = Boolean(
+    hasEventResultContext &&
+      !shouldAutoReturnAfterLatestDiscovery,
+  );
+  const shouldHideAcknowledgedSearchResolutionForViewer = Boolean(
+    activePendingCardResolution &&
+      activePendingCardResolution.playerId === ownerPlayerId &&
+      activePendingCardResolution.discoveryTitle === discovery?.title &&
+      (activePendingCardResolution.processCards?.length ?? 0) > 0 &&
+      isPendingCardResolutionFullyAcknowledged(
+        core,
+        activePendingCardResolution,
+      ),
   );
   const shouldShow = Boolean(
     hasDisplayEntry &&
       !shouldAutoReturnAfterLatestDiscovery &&
+      !shouldHideResolvedEventDiscovery &&
+      !shouldHideAcknowledgedSearchResolutionForViewer &&
       !shouldShowHauntRevealCue &&
       !shouldDisplayEventRolledDamageAsIndependentRoll,
+  );
+  // Event trait/dice rolls are owned by the visible discovery panel. During
+  // the state transition into pending acknowledgement, the generic review
+  // surface can otherwise mount for one render and settle the same roll first,
+  // making the discovery panel reveal its result while its own dice are still
+  // moving.
+  const isEventRollOwnedByDiscoveryPanel = Boolean(
+    eventDiscovery &&
+      core.recentRoll &&
+      (core.recentRoll.kind === "eventTraitCheck" ||
+        core.recentRoll.kind === "eventDiceRoll") &&
+      core.recentRoll.sourceTitle === eventDiscovery.title &&
+      !isRecentRollDismissed,
+  );
+  const shouldShowRecentRollReview = Boolean(
+    core.recentRoll &&
+      core.phase !== "endgame" &&
+      !isRecentRollDismissed &&
+      !isConfirmedExorciseRoll &&
+      !pendingEventChoice &&
+      !shouldAutoReturnAfterLatestDiscovery &&
+      !shouldShowHauntRevealCue &&
+      !shouldPauseHauntBoardActions &&
+      !scenarioReaderOpen &&
+      !shouldShowScenarioStartOpening &&
+      ((core.recentRoll.kind !== "hauntRoll" &&
+        core.recentRoll.kind !== "eventTraitCheck" &&
+        core.recentRoll.kind !== "eventDiceRoll" &&
+        core.recentRoll.kind !== "eventRolledDamage") ||
+        Boolean(selection.recentRollDisplayKey)) &&
+      !isEventRollOwnedByDiscoveryPanel &&
+      !shouldShow,
+  );
+  const shouldShowBlockingRecentRollOverlay = shouldShowRecentRollReview;
+  const hasOpenEventTableContext = Boolean(
+    ((discovery?.kind === "event" &&
+      !shouldAutoReturnAfterLatestDiscovery &&
+      !shouldShowHauntRevealCue &&
+      shouldShow) ||
+      shouldKeepTableChromeOpenForEventResult),
+  );
+  const shouldHideTableChromeForBlockingOverlay = Boolean(
+    !hasOpenEventTableContext &&
+      ((shouldShow &&
+        !shouldAutoReturnAfterLatestDiscovery &&
+        !pendingEventChoice) ||
+        shouldShowBlockingRecentRollOverlay),
   );
   const shouldShowRoll = Boolean(
     shouldShow &&
@@ -573,6 +999,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   );
   const canCurrentPlayerModifyRoll = Boolean(
     shouldShowRoll &&
+      isRecentRollReadable &&
       hasRecentRollModifier &&
       recentRoll &&
       selection.coreRecentRollDisplayKey === selection.recentRollDisplayKey &&
@@ -601,12 +1028,25 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   const displaySummary = resolveLatestDiscoveryDisplaySummary(discovery);
   const latestDiscoveryIsEventSymbolNoCard =
     isEventSymbolNoCardDiscovery(discovery);
+  const presentedEventEffect =
+    core.pendingEventRollResolution?.effect ??
+    recentRoll?.branchThresholds?.find(
+      (branch) => branch.label === recentRoll.latestLabel,
+    )?.effect;
+  const shouldSuppressTraitOnlyEventCard = Boolean(
+    discovery?.kind === "event" &&
+      !pendingEventChoice &&
+      !core.pendingEventRollResolution?.nextPendingEventChoice &&
+      effectIsTraitOnly(presentedEventEffect) &&
+      !hasRecentRollModifier,
+  );
   const shouldShowCardFace = Boolean(
     discovery &&
       ((discovery.kind !== "none" && !latestDiscoveryIsEventSymbolNoCard) ||
         (activePendingCardResolution?.cardId &&
           (activePendingCardResolution.deckKind === "item" ||
-            activePendingCardResolution.deckKind === "omen"))),
+            activePendingCardResolution.deckKind === "omen"))) &&
+      !shouldSuppressTraitOnlyEventCard,
   );
   const pendingCardResolution = resolveLatestDiscoveryPendingCardResolution({
     pendingResolution: activePendingCardResolution,
@@ -619,8 +1059,27 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       : pendingCardResolution
         ? [pendingCardResolution.playerId]
         : [];
-  const cardResolutionAcknowledgedPlayerIds =
+  const authoritativeCardResolutionAcknowledgedPlayerIds =
     pendingCardResolution?.acknowledgedPlayerIds ?? [];
+  const shouldApplyOptimisticCardResolutionAcknowledgement = Boolean(
+    pendingCardResolution &&
+      optimisticCardResolutionAcknowledgement?.resolutionId ===
+        pendingCardResolution.id &&
+      optimisticCardResolutionAcknowledgement.playerId &&
+      cardResolutionRequiredPlayerIds.includes(
+        optimisticCardResolutionAcknowledgement.playerId,
+      ) &&
+      !authoritativeCardResolutionAcknowledgedPlayerIds.includes(
+        optimisticCardResolutionAcknowledgement.playerId,
+      ),
+  );
+  const cardResolutionAcknowledgedPlayerIds =
+    shouldApplyOptimisticCardResolutionAcknowledgement
+      ? [
+          ...authoritativeCardResolutionAcknowledgedPlayerIds,
+          optimisticCardResolutionAcknowledgement!.playerId,
+        ]
+      : authoritativeCardResolutionAcknowledgedPlayerIds;
   const cardResolutionConfirmedCount =
     cardResolutionRequiredPlayerIds.filter((playerId) =>
       cardResolutionAcknowledgedPlayerIds.includes(playerId),
@@ -672,8 +1131,43 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       !viewerHasAcknowledgedCardResolution &&
       !canAdvanceSearch,
   );
+  const pendingPossessionCard = resolveLatestDiscoveryPendingPossessionCard({
+    visibleProcessCard,
+    pendingCardResolution,
+  });
+  const isStandaloneItemGain = Boolean(
+    pendingCardResolution &&
+      discovery?.kind === "item" &&
+      pendingPossessionCard?.kind === "item" &&
+      pendingCardResolution.deckKind === "item" &&
+      pendingCardResolution.stepKind === "drawn-card" &&
+      pendingCardResolution.total === 1 &&
+      pendingCardResolution.requiredPlayerIds?.length === 1 &&
+      pendingCardResolution.playerId === viewerPlayerId &&
+      !core.pendingEventChoice &&
+      !core.pendingEventRollResolution,
+  );
+  const eventRollAdvanceLabel = (() => {
+    const nextEventChoice = core.pendingEventRollResolution?.nextPendingEventChoice;
+    const nextEffect = nextEventChoice?.effect;
+    if (nextEffect?.mode === "allTraitChecks" && nextEffect.traits[0]) {
+      return t("board.discovery.nextTraitCheck", {
+        trait: BETRAYAL_TRAIT_LABEL[nextEffect.traits[0]],
+      });
+    }
+    if (nextEffect?.mode === "chosenTrait") {
+      return t("board.discovery.chooseRewardTrait");
+    }
+    if (nextEventChoice) {
+      return t("board.discovery.resolveNextStep");
+    }
+    return t("board.discovery.reviewResult");
+  })();
   const continueLabel = (() => {
     if (core.pendingEventRollResolution) {
+      if (core.pendingEventRollResolution.requiresPlayerAdvance) {
+        return eventRollAdvanceLabel;
+      }
       if (core.pendingEventRollResolution.requiresAcknowledgement === false) {
         return t("board.roll.backToBoard");
       }
@@ -687,8 +1181,18 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
             total: eventRollConfirmation.totalCount,
           });
     }
-    if (!pendingCardResolution) {
+    if (isStandaloneItemGain || !pendingCardResolution) {
       return t("board.roll.backToBoard");
+    }
+    if (
+      !viewerHasAcknowledgedCardResolution &&
+      !canAdvanceSearch &&
+      !canCurrentViewerAcknowledgeCardResolution
+    ) {
+      return t("board.discovery.waitingForCardConfirmation", {
+        confirmed: cardResolutionConfirmedCount,
+        total: cardResolutionTotalCount,
+      });
     }
     if (viewerHasAcknowledgedCardResolution) {
       return t("board.discovery.confirmedWithProgress", {
@@ -705,12 +1209,15 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
         total: cardResolutionTotalCount,
       });
     }
-    return t("board.discovery.confirmCard");
+    return t("board.discovery.confirmWithProgress", {
+      confirmed: cardResolutionConfirmedCount,
+      total: cardResolutionTotalCount,
+    });
   })();
-  const pendingPossessionCard = resolveLatestDiscoveryPendingPossessionCard({
-    visibleProcessCard,
-    pendingCardResolution,
-  });
+  const eventRollRequiresAcknowledgement = Boolean(
+    core.pendingEventRollResolution &&
+      core.pendingEventRollResolution.requiresAcknowledgement !== false,
+  );
   const displayedKindLabel = pendingPossessionCard
     ? pendingPossessionCard.kind === "item"
       ? t("board.discovery.itemCard")
@@ -723,6 +1230,9 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
   return {
     hasDisplayEntry,
     shouldDisplayEventRolledDamageAsIndependentRoll,
+    shouldKeepTableChromeOpenForEventResult,
+    shouldHideTableChromeForBlockingOverlay,
+    shouldShowRecentRollReview,
     isRecentRollDismissed,
     hasActionableRollModifier,
     shouldAutoReturnAfterLatestDiscovery,
@@ -747,6 +1257,7 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
     cardResolutionTotalCount,
     viewerHasAcknowledgedCardResolution,
     canCurrentViewerAcknowledgeCardResolution,
+    isStandaloneItemGain,
     searchSequence,
     hasSearchSequence,
     isSearchOperator,
@@ -764,11 +1275,14 @@ export function resolveBetrayalLatestDiscoveryPanelPresentation(options: {
       label: continueLabel,
       disabled: Boolean(
         (core.pendingEventRollResolution &&
-          !eventRollConfirmation.canViewerAcknowledge) ||
+          ((eventRollRequiresAcknowledgement &&
+            !eventRollConfirmation.canViewerAcknowledge) ||
+            !isRecentRollReadable)) ||
           (pendingCardResolution &&
             !canAdvanceSearch &&
             !canCurrentViewerAcknowledgeCardResolution),
       ),
+      eventRollReadable: hasEventResultContext ? isRecentRollReadable : undefined,
       pendingCardResolutionId: pendingCardResolution?.id ?? undefined,
       pendingCardResolutionStep:
         pendingCardResolution && !isSearchFinalAcknowledgement

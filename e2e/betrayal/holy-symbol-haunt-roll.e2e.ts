@@ -86,7 +86,7 @@ test.describe('山屋惊魂圣符作祟判定完整链路', () => {
         await injectCore(page, core);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
-        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*可探索/);
+        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
         await saveScreenshot(page, BEFORE_EXPLORE_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-explore').click();
@@ -100,7 +100,9 @@ test.describe('山屋惊魂圣符作祟判定完整链路', () => {
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryPanel).toHaveAttribute('aria-label', /预兆牌 圣符/);
         await expect(page.getByTestId('betrayal-discovery-card-front-atlas')).toHaveAttribute('data-atlas-frame-index', '4');
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('作祟检定');
+        await expect(page.getByTestId('betrayal-discovery-detail')).not.toContainText(
+            /作祟检定\s*\d*/,
+        );
         await saveScreenshot(page, OMEN_REVEALED_SCREENSHOT);
 
         const rollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -114,7 +116,9 @@ test.describe('山屋惊魂圣符作祟判定完整链路', () => {
         await waitForPhysicalDiceSettled(rollPanel);
         await saveScreenshot(page, HAUNT_ROLL_DICE_SCREENSHOT);
 
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(`作祟检定 ${expectedDiceCount}`);
+        await expect(page.getByTestId('betrayal-discovery-detail')).not.toContainText(
+            new RegExp(`作祟检定\\s*${expectedDiceCount}`),
+        );
         await expect(rollPanel).toContainText('未触发作祟');
         await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
         await saveScreenshot(page, HAUNT_ROLL_RESULT_SCREENSHOT);
@@ -145,7 +149,7 @@ test.describe('山屋惊魂圣符作祟判定完整链路', () => {
         await injectCore(page, core);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
         await expect(page.getByTestId('betrayal-action-explore')).toBeEnabled();
-        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*可探索/);
+        await expect(page.getByTestId('betrayal-room-ground-north')).toHaveAccessibleName(/未探索.*一层.*尚未翻出/);
         await saveScreenshot(page, BOOK_BEFORE_EXPLORE_SCREENSHOT);
 
         await page.getByTestId('betrayal-action-explore').click();
@@ -159,7 +163,9 @@ test.describe('山屋惊魂圣符作祟判定完整链路', () => {
         const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
         await expect(discoveryPanel).toHaveAttribute('aria-label', /预兆牌 书本/);
         await expect(page.getByTestId('betrayal-discovery-card-front-atlas')).toHaveAttribute('data-atlas-frame-index', '0');
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('作祟检定');
+        await expect(page.getByTestId('betrayal-discovery-detail')).not.toContainText(
+            /作祟检定\s*\d*/,
+        );
         await saveScreenshot(page, BOOK_OMEN_REVEALED_SCREENSHOT);
 
         const rollPanel = page.getByTestId('betrayal-recent-roll-panel');
@@ -173,7 +179,9 @@ test.describe('山屋惊魂圣符作祟判定完整链路', () => {
         await waitForPhysicalDiceSettled(rollPanel);
         await saveScreenshot(page, BOOK_HAUNT_ROLL_DICE_SCREENSHOT);
 
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText(`作祟检定 ${expectedDiceCount}`);
+        await expect(page.getByTestId('betrayal-discovery-detail')).not.toContainText(
+            new RegExp(`作祟检定\\s*${expectedDiceCount}`),
+        );
         await expect(rollPanel).toContainText('未触发作祟');
         await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
         await saveScreenshot(page, BOOK_HAUNT_ROLL_RESULT_SCREENSHOT);

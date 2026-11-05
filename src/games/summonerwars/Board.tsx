@@ -17,10 +17,10 @@ import type { SummonerWarsCore } from './domain';
 import { SW_COMMANDS } from './domain';
 import './cursor'; // Register cursor themes
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
+import { useOptionalGameClient } from '../../engine/transport/react';
 import { SummonerWarsDebugConfig } from './debug-config';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { UndoProvider } from '../../contexts/UndoContext';
-import { getUndoSnapshotCount } from '../../engine/systems/UndoSystem';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { useGameMode } from '../../contexts/GameModeContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
@@ -93,7 +93,6 @@ import { INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
 import { shouldBlockHandInteraction } from './ui/handInteractionBusy';
 import { swAttackDebugLog } from './ui/attackDebug';
 import { isTestEnvironment } from '../../engine/testing/environment';
-import { useSummonerWarsCombatEffectPreference } from './ui/useSummonerWarsCombatEffectPreference';
 import { countHits } from './config/dice';
 
 type Props = GameBoardProps<SummonerWarsCore>;
@@ -109,10 +108,63 @@ const MOBILE_LANDSCAPE_MAP_PADDING = '4vw';
 const DESKTOP_MAP_SIDE_RATIO = 0.1;
 const SUMMONER_WARS_CARD_ASPECT_RATIO = 1044 / 729;
 const DICE_RESULT_OVERLAY_DURATION_MS = 3000;
+const LIFE_TOGGLE_SCALE_SPACER_LABEL = '100%';
+
+function SummonerWarsLifeToggle({
+  pressed,
+  onToggle,
+}: {
+  pressed: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslation('game-summonerwars');
+  const label = t(pressed ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals');
+
+  return (
+    <button
+      type="button"
+      data-testid="sw-life-toggle"
+      data-tutorial-id="sw-life-toggle"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onToggle();
+      }}
+      className={`pointer-events-auto flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border text-white transition-[background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-amber-200/80 ${
+        pressed
+          ? 'border-amber-200 bg-amber-400 shadow-[0_0_18px_rgba(251,191,36,0.7)]'
+          : 'border-amber-100/55 bg-zinc-950/90 shadow-[0_8px_22px_rgba(0,0,0,0.55),0_0_12px_rgba(251,191,36,0.28)] hover:border-amber-200/80 hover:bg-zinc-900'
+      }`}
+    >
+      <svg
+        aria-hidden="true"
+        className="board-shell-fixed-icon h-6 w-6"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
+      </svg>
+    </button>
+  );
+}
 
 export const SummonerWarsBoard: React.FC<Props> = ({
   G, dispatch, playerID, reset, matchData, isMultiplayer, locale,
 }) => {
+  const adminDebugAvailable = useOptionalGameClient()?.adminDebugAvailable === true;
   const isGameOver = G.sys.gameover;
   const gameMode = useGameMode();
   const isLocalMatch = gameMode ? !gameMode.isMultiplayer : !isMultiplayer;
@@ -120,7 +172,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isTutorialMode = gameMode?.mode === 'tutorial';
   const effectiveLocale = locale || 'zh-CN';
   const { t } = useTranslation('game-summonerwars');
-  const { reducedCombatEffects } = useSummonerWarsCombatEffectPreference();
   const renderPipelineSettings = useRenderPipelineSettings();
   const viewport = useRuntimeViewport();
   const viewportSafeWidth = useMemo(() => {
@@ -130,7 +181,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const isMobileViewport = viewport.width <= 1023;
   const isLandscapeMobileViewport = isMobileViewport && viewport.width > viewport.height;
   const shouldShowLifeToggle = true;
-  const shouldReduceCombatEffects = renderPipelineSettings.fxQuality === 'reduced' || (reducedCombatEffects && isMobileViewport);
+  const shouldReduceCombatEffects = renderPipelineSettings.fxQuality === 'reduced';
   const fxQuality = shouldReduceCombatEffects ? 'reduced' : renderPipelineSettings.fxQuality;
   const desktopReferenceWidth = Math.min(
     SUMMONER_WARS_DESKTOP_HUD_REFERENCE_WIDTH_PX,
@@ -143,8 +194,9 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const mapPaddingRight = isLandscapeMobileViewport ? MOBILE_LANDSCAPE_MAP_PADDING : desktopMapPadding;
   const mapShadeWidth = isLandscapeMobileViewport ? MOBILE_LANDSCAPE_MAP_PADDING : desktopMapPadding;
   const activeEventLabelClass = 'text-xs px-1.5 py-0.5';
-  const activeEventCardStyle = { width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.045)` };
-  const activeEventNameClass = 'text-[11px] py-0.5 px-1';
+  // 持续事件需要保持卡面可读；当前实际入口按原尺寸的两倍展示，不设置最大宽度。
+  const activeEventCardStyle = { width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.09)` };
+  const activeEventNameClass = 'text-xs py-1 px-1.5';
   const activeEventChargeDotStyle = {
     width: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
     height: `calc(${BOARD_SHELL_REFERENCE_WIDTH} * 0.004)`,
@@ -296,10 +348,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const currentPhase = core.phase;
   const activePlayerId = (playerView.turnPlayerId ?? core.currentPlayer) as PlayerId;
   const isMyTurn = isLocalMatch || (playerID !== null && playerID !== undefined && activePlayerId === playerID);
-  const myPlayerId = isLocalMatch ? '0' : (playerID === '1' ? '1' : '0');
+  const myPlayerId = isLocalMatch ? '0' : (isSpectator ? rootPid : (playerID === '1' ? '1' : '0'));
   const opponentPlayerId = (playerView.orderedPlayerIds.find((pid) => pid !== myPlayerId) ?? (myPlayerId === '0' ? '1' : '0')) as PlayerId;
   const isWinner = !!isGameOver && isGameOver?.winner === rootPid;
-  const shouldFlipView = !isLocalMatch && !isSpectator && myPlayerId === '1';
+  const shouldFlipView = !isLocalMatch && myPlayerId === '1';
   const toViewCoord = useCallback((coord: CellCoord): CellCoord => (
     shouldFlipView ? { row: BOARD_ROWS - 1 - coord.row, col: BOARD_COLS - 1 - coord.col } : coord
   ), [shouldFlipView]);
@@ -554,15 +606,12 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   // 格子交互 Hook
   const interaction = useCellInteraction({
     core, dispatch,
-    currentPhase, isMyTurn, isGameOver: !!isGameOver,
-    myPlayerId, activePlayerId, myHand, fromViewCoord,
-    undoSnapshotCount: getUndoSnapshotCount(G.sys?.undo),
+    currentPhase, isMyTurn,
+    myPlayerId, myHand, fromViewCoord,
     interaction: currentInteraction,
-    isTutorialActive,
     abilityMode, setAbilityMode, soulTransferMode,
     mindCaptureMode,
     afterAttackAbilityMode,
-    rapidFireMode: effectiveRapidFireMode,
   });
 
   const engineInteractionBusy = !!currentInteraction && currentInteraction.playerId === (myPlayerId as PlayerId);
@@ -1050,7 +1099,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   }, [abilityMode?.abilityId, findInteractionOptionId, respondInteractionOption, setAbilityMode]);
   const handleSaveLayout = useCallback(async (config: BoardLayoutConfig) => saveSummonerWarsLayout(config), []);
 
-  const debugPanel = !isSpectator ? (
+  const debugPanel = !isSpectator || adminDebugAvailable ? (
     <GameDebugPanel
       G={G}
       dispatch={dispatch}
@@ -1175,43 +1224,11 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                   contentTestId="sw-map-content"
                   scaleTestId="sw-map-scale"
                   scaleBadgeAddon={shouldShowLifeToggle ? (
-                    <button
-                      type="button"
-                      data-testid="sw-life-toggle"
-                      data-tutorial-id="sw-life-toggle"
-                      aria-label={t(showBoardLifeTotals ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals')}
-                      aria-pressed={showBoardLifeTotals}
-                      title={t(showBoardLifeTotals ? 'ui.hideAllLifeTotals' : 'ui.showAllLifeTotals')}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onTouchStart={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        setShowBoardLifeTotals((value) => !value);
-                      }}
-                      className={`flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border text-white shadow-lg transition-[background-color,border-color,box-shadow] duration-150 focus:outline-none focus:ring-2 focus:ring-amber-200/80 ${
-                        showBoardLifeTotals
-                          ? 'border-amber-300/70 bg-amber-500/80 shadow-[0_0_14px_rgba(245,158,11,0.45)]'
-                          : 'border-white/20 bg-black/70 hover:border-amber-300/60 hover:bg-slate-800/90'
-                      }`}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        className="h-5 w-5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    </button>
+                    <div
+                      className="h-11 w-11 shrink-0"
+                      aria-hidden="true"
+                      data-testid="sw-life-toggle-slot"
+                    />
                   ) : undefined}
                 >
                   <div className="relative inline-block">
@@ -1234,6 +1251,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         validMovePositions={interaction.validMovePositions}
                         validAttackPositions={interaction.validAttackPositions}
                         validEventTargets={interaction.validEventTargets}
+                        zhongcaiObedienceHighlights={interaction.zhongcaiObedienceHighlights}
                         validAbilityPositions={interaction.validAbilityPositions}
                         validAbilityUnits={interaction.validAbilityUnits}
                         actionableUnitPositions={interaction.actionableUnitPositions}
@@ -1300,6 +1318,21 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 </MapContainer>
                   </div>
 
+                  {shouldShowLifeToggle ? (
+                    <div className="absolute top-3 left-3 z-30 flex items-center gap-2 pointer-events-none">
+                      <div
+                        className="invisible rounded-lg border px-3 py-1.5 text-sm font-bold"
+                        aria-hidden="true"
+                      >
+                        {LIFE_TOGGLE_SCALE_SPACER_LABEL}
+                      </div>
+                      <SummonerWarsLifeToggle
+                        pressed={showBoardLifeTotals}
+                        onToggle={() => setShowBoardLifeTotals((value) => !value)}
+                      />
+                    </div>
+                  ) : null}
+
                   {/* UI 层 */}
                   <div className="absolute inset-0 z-20 pointer-events-none">
                 {/* 左侧黑边渐变 */}
@@ -1335,7 +1368,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         const sprite = getEventSpriteConfig(ev);
                         const charges = ev.charges ?? 0;
                         return (
-                          <div key={ev.id} className="relative cursor-pointer group pointer-events-auto" onClick={() => handleMagnifyCard(ev)}>
+                          <div key={ev.id} data-testid={`sw-opponent-active-event-${ev.id}`} className="relative cursor-pointer group pointer-events-auto" onClick={() => handleMagnifyCard(ev)}>
                             <CardSprite atlasId={sprite.atlasId} frameIndex={sprite.frameIndex} className="rounded shadow-lg border border-amber-500/40 hover:border-amber-400 transition-all hover:scale-105" style={activeEventCardStyle} />
                             <div className="absolute inset-0 rounded bg-black/0 group-hover:bg-black/20 transition-colors" />
                             <div className={`absolute bottom-0 left-0 right-0 bg-black/80 text-amber-200 text-center rounded-b truncate border-t border-amber-500/20 ${activeEventNameClass}`}>{ev.name}</div>
@@ -1374,7 +1407,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                         const sprite = getEventSpriteConfig(ev);
                         const charges = ev.charges ?? 0;
                         return (
-                          <div key={ev.id} className="relative cursor-pointer group pointer-events-auto" onClick={() => handleMagnifyCard(ev)}>
+                          <div key={ev.id} data-testid={`sw-player-active-event-${ev.id}`} className="relative cursor-pointer group pointer-events-auto" onClick={() => handleMagnifyCard(ev)}>
                             <CardSprite atlasId={sprite.atlasId} frameIndex={sprite.frameIndex} className="rounded shadow-lg border border-amber-500/40 hover:border-amber-400 transition-all hover:scale-105" style={activeEventCardStyle} />
                             <div className="absolute inset-0 rounded bg-black/0 group-hover:bg-black/20 transition-colors" />
                             <div className={`absolute bottom-0 left-0 right-0 bg-black/80 text-amber-200 text-center rounded-b truncate border-t border-amber-500/20 ${activeEventNameClass}`}>{ev.name}</div>

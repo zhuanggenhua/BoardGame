@@ -808,7 +808,7 @@ describe('androidLiveUpdates', () => {
         expect(states.some((state) => state.blocking)).toBe(false);
     });
 
-    it('OTA 清单读取失败时必须返回显式错误并显示阻塞错误态', async () => {
+    it('OTA 清单读取失败时必须返回显式错误并显示非阻塞错误态', async () => {
         vi.resetModules();
 
         vi.doMock('@capacitor/core', () => ({
@@ -871,12 +871,12 @@ describe('androidLiveUpdates', () => {
         expect(currentMock).not.toHaveBeenCalled();
         expect(states).toContainEqual({
             phase: 'error',
-            blocking: true,
+            blocking: false,
             reason: 'OTA 清单读取失败：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: Failed to fetch',
         });
     });
 
-    it('OTA 清单不存在时必须返回显式错误并显示阻塞错误态', async () => {
+    it('OTA 清单不存在时必须返回显式错误并显示非阻塞错误态', async () => {
         vi.resetModules();
 
         vi.doMock('@capacitor/core', () => ({
@@ -937,7 +937,7 @@ describe('androidLiveUpdates', () => {
         expect(currentMock).not.toHaveBeenCalled();
         expect(states).toContainEqual({
             phase: 'error',
-            blocking: true,
+            blocking: false,
             reason: 'OTA 清单不存在：已尝试 1 个清单入口均失败：https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json: 404 https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
         });
     });
@@ -999,9 +999,13 @@ describe('androidLiveUpdates', () => {
         }));
 
         const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
+        const states: Array<{ phase: string; blocking: boolean }> = [];
 
         const result = await startAndroidLiveUpdateBackgroundCheck({
             force: true,
+            onForceStateChange: (state) => {
+                states.push({ phase: state.phase, blocking: state.blocking });
+            },
             envOverride: {
                 VITE_ANDROID_OTA_ENABLED: 'true',
                 VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
@@ -1082,9 +1086,13 @@ describe('androidLiveUpdates', () => {
         }));
 
         const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
+        const states: Array<{ phase: string; blocking: boolean }> = [];
 
         const result = await startAndroidLiveUpdateBackgroundCheck({
             force: true,
+            onForceStateChange: (state) => {
+                states.push({ phase: state.phase, blocking: state.blocking });
+            },
             envOverride: {
                 VITE_ANDROID_OTA_ENABLED: 'true',
                 VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
@@ -1110,6 +1118,8 @@ describe('androidLiveUpdates', () => {
         expect(setMultiDelayMock).toHaveBeenCalledWith({
             delayConditions: [{ kind: 'background', value: '0' }],
         });
+        expect(states).toContainEqual({ phase: 'checking', blocking: false });
+        expect(states).toContainEqual({ phase: 'downloading', blocking: false });
     });
 
     it('强制 OTA manifest 若发现新版本，后台检查也必须立即阻塞应用', async () => {
@@ -1173,11 +1183,12 @@ describe('androidLiveUpdates', () => {
                 forceUpdate: true,
                 forceUpdateTitle: '正在更新',
                 forceUpdateMessage: '正在下载必要更新，请稍候',
+                notes: '- 修正 OTA 更新记录显示来源',
             }),
         }));
 
         const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
-        const states: Array<{ phase: string; blocking: boolean }> = [];
+        const states: Array<{ phase: string; blocking: boolean; releaseNotes?: string }> = [];
 
         const result = await startAndroidLiveUpdateBackgroundCheck({
             force: true,
@@ -1188,7 +1199,11 @@ describe('androidLiveUpdates', () => {
                 VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS: '15000',
             },
             onForceStateChange: (state) => {
-                states.push({ phase: state.phase, blocking: state.blocking });
+                states.push({
+                    phase: state.phase,
+                    blocking: state.blocking,
+                    releaseNotes: state.releaseNotes,
+                });
             },
         });
 
@@ -1203,6 +1218,14 @@ describe('androidLiveUpdates', () => {
         expect(setMultiDelayMock).not.toHaveBeenCalled();
         expect(setMock).toHaveBeenCalledWith({ id: 'bundle-next' });
         expect(states.some((state) => state.blocking)).toBe(true);
+        expect(states).toContainEqual(expect.objectContaining({
+            phase: 'checking',
+            releaseNotes: '- 修正 OTA 更新记录显示来源',
+        }));
+        expect(states).toContainEqual(expect.objectContaining({
+            phase: 'downloading',
+            releaseNotes: '- 修正 OTA 更新记录显示来源',
+        }));
     });
 
     it('本地同版本 bundle 若仍在 downloading，不应误判为可直接排队的缓存包', async () => {

@@ -131,7 +131,7 @@ describe('DiceThrone 视角逻辑', () => {
         expect(result.rollerId).toBe('1');
     });
 
-    it('防御阶段存在 pendingAttack 且自己不是 defender 时强制观战', () => {
+    it('防御阶段存在 pendingAttack 且自己不是 defender 时只标记自动观战，不强制覆盖手动视角', () => {
         const result = runCase({
             currentPhase: 'defensiveRoll',
             pendingAttack: makePendingAttack('0'),
@@ -142,8 +142,8 @@ describe('DiceThrone 视角逻辑', () => {
 
         expect(result.rollerId).toBe('0');
         expect(result.shouldAutoObserve).toBe(true);
-        expect(result.viewMode).toBe('opponent');
-        expect(result.isSelfView).toBe(false);
+        expect(result.viewMode).toBe('self');
+        expect(result.isSelfView).toBe(true);
     });
 
     it('防御阶段存在 pendingAttack 且自己是 defender 时保持自身视角', () => {

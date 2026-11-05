@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { hasActiveBaseAbility, hasBaseAbility, triggerActiveBaseAbility, triggerBaseAbility } from '../../domain/baseAbilities';
-import { fireTriggers } from '../../domain/ongoingEffects';
+import { collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     applyEvents,
@@ -818,6 +819,49 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(getEffectivePower(core, core.bases[0].minions[4], 0)).toBe(0);
     });
 
+    it('Zero 计分后响应提交会返回拥有者手牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_halloween_town', [
+                    makeMinion('zero', 'nightmare_before_christmas_zero', '0', 1),
+                ]),
+                makeBase('base_spiral_hill'),
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 1, vp: 1 }],
+            random: FIXED_RANDOM,
+            now: 31,
+        }, { sourceDefIds: ['nightmare_before_christmas_zero'] });
+        expect(queued).toBeDefined();
+
+        const prompted = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: queued!.payload.triggers } as any),
+            FIXED_RANDOM,
+            31,
+        );
+        const resolved = respondToPromptOption(
+            prompted!.state,
+            option => option.value?.triggerId === queued!.payload.triggers[0].id,
+            'Zero 可选触发',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'zero')).toBe(false);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid)).toContain('zero');
+        expect(resolved.finalState.core.triggerQueue).toBeUndefined();
+    });
+
     it('乌基布基移动角色时必须按玩家选择的目的地移动', () => {
         const core = makeState({
             bases: [
@@ -1575,6 +1619,87 @@ describe('迪士尼四派系代表性玩法行为', () => {
         expect(playedOnSecondBase.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['enchanted-object']);
     });
 
+    it('打破诅咒从手牌弃掉后响应提交，会从弃牌堆作为特殊额外行动打出并给目标基地己方角色 +1', () => {
+        const fillerHand = Array.from({ length: 10 }, (_, index) =>
+            makeCard(`curse-filler-${index}`, 'aladdin_wish', 'action', '0'));
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('curse', 'beauty_and_the_beast_break_the_curse', 'action', '0'),
+                        ...fillerHand,
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_enchanted_castle', [
+                    makeMinion('ally', 'beauty_and_the_beast_belle', '0', 3),
+                    makeMinion('enemy', 'aladdin_abu', '1', 2),
+                ]),
+                makeBase('base_gastons_tavern'),
+            ],
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'draw';
+
+        const discarded = runCommand(matchState, {
+            type: SU_COMMANDS.DISCARD_TO_LIMIT,
+            playerId: '0',
+            payload: { cardUids: ['curse'] },
+        }, FIXED_RANDOM);
+        expect(discarded.success, discarded.error).toBe(true);
+
+        const reactionPrompt = getReactionPrompt(discarded.finalState);
+        const curseOption = getReactionPromptOptionBySourceDefId(
+            discarded.finalState,
+            reactionPrompt,
+            'beauty_and_the_beast_break_the_curse',
+        );
+        const openedExtraPrompt = respondToPrompt(discarded.finalState, curseOption.id, '0', FIXED_RANDOM);
+        const actionPrompt = getSimpleChoicePrompt(openedExtraPrompt.finalState, 'smashup_immediate_extra_action');
+        expect(getPromptOptions(actionPrompt).map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined))).toEqual([
+            'curse',
+            'skip',
+        ]);
+
+        const choseCard = respondToPromptOption(
+            openedExtraPrompt.finalState,
+            option => option.value?.cardUid === 'curse',
+            '打破诅咒选择弃牌堆自身',
+            '0',
+            FIXED_RANDOM,
+        );
+        const basePrompt = getSimpleChoicePrompt(choseCard.finalState, 'smashup_immediate_extra_action_base');
+        expect(basePrompt.autoResolveIfSingle).toBe(false);
+
+        const resolved = respondToPromptOption(
+            choseCard.finalState,
+            option => option.value?.baseIndex === 0,
+            '打破诅咒选择目标基地',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: expect.objectContaining({
+                cardUid: 'curse',
+                defId: 'beauty_and_the_beast_break_the_curse',
+                fromDiscard: true,
+                isExtraAction: true,
+                consumesNormalLimit: false,
+            }),
+        }));
+        expect(resolved.events).toContainEqual(expect.objectContaining({
+            type: SU_EVENTS.TEMP_POWER_ADDED,
+            payload: expect.objectContaining({ minionUid: 'ally', amount: 1, reason: 'beauty_and_the_beast_break_the_curse' }),
+        }));
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally')?.tempPowerModifier).toBe(1);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy')?.tempPowerModifier ?? 0).toBe(0);
+        expect(resolved.finalState.core.players['0'].usedDiscardPlayAbilities).toContain('beauty_and_the_beast_break_the_curse');
+    });
+
     it('图书馆从手牌弃掉后必须能从弃牌堆作为特殊额外打出', () => {
         const fillerHand = Array.from({ length: 10 }, (_, index) =>
             makeCard(`library-filler-${index}`, 'aladdin_wish', 'action', '0'));
@@ -1654,6 +1779,62 @@ describe('迪士尼四派系代表性玩法行为', () => {
             'draw-b',
         ]);
         expect(resolvedDiscard.finalState.core.players['0'].discard.filter(card => card.uid === 'library')).toHaveLength(1);
+    });
+
+    it.each([
+        ['魔法物品', 'enchanted-object', 'beauty_and_the_beast_enchanted_objects', 'minion'],
+        ['打破诅咒', 'curse', 'beauty_and_the_beast_break_the_curse', 'action'],
+        ['图书馆', 'library', 'beauty_and_the_beast_discover_the_library', 'action'],
+    ] as const)('出牌阶段弃掉%s后仍立即打开对应的额外出牌选择', (_label, discardedUid, discardedDefId, discardedType) => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard(discardedUid, discardedDefId, discardedType, '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_enchanted_castle', [
+                makeMinion('beast', 'beauty_and_the_beast_beast', '0', 4),
+                makeMinion('ally', 'beauty_and_the_beast_belle', '0', 3),
+            ])],
+        });
+        const matchState = makeMatchState(core);
+
+        const talent = invokeRegisteredAbilityContract('beauty_and_the_beast_beast', 'talent', {
+            state: core,
+            matchState,
+            playerId: '0',
+            cardUid: 'beast',
+            defId: 'beauty_and_the_beast_beast',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 90,
+        });
+        const discardPrompt = getSimpleChoicePrompt(talent.matchState!, 'beauty_and_the_beast_discard_hand');
+        const discarded = respondToPromptOption(
+            talent.matchState!,
+            option => option.value?.cardUid === discardedUid,
+            `${_label} 出牌阶段触发弃牌`,
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(discarded.success, discarded.error).toBe(true);
+        const reactionPrompt = getReactionPrompt(discarded.finalState);
+        const reactionOption = getReactionPromptOptionBySourceDefId(
+            discarded.finalState,
+            reactionPrompt,
+            discardedDefId,
+        );
+        const openedExtraPrompt = respondToPrompt(discarded.finalState, reactionOption.id, '0', FIXED_RANDOM);
+        const extraSource = discardedType === 'minion'
+            ? 'smashup_immediate_extra_minion'
+            : 'smashup_immediate_extra_action';
+        expect(getSimpleChoicePrompt(openedExtraPrompt.finalState, extraSource)).toBeTruthy();
+        expect(getPromptOptions(getSimpleChoicePrompt(openedExtraPrompt.finalState, extraSource))
+            .map(option => option.value?.cardUid ?? (option.value?.skip ? 'skip' : undefined)))
+            .toContain(discardedUid);
+        expect(discardPrompt).toBeTruthy();
     });
 
     it('电源插排移动角色时必须保留跳过和目标选择，不自动移动到第一个基地', () => {

@@ -14,6 +14,7 @@ const ALL_HERO_ATLASES = [
     'summonerwars/hero/shouren/hero',
     'summonerwars/hero/yongheng/hero',
     'summonerwars/hero/shadow/hero',
+    'summonerwars/hero/zhongcai/hero',
 ];
 
 const ALL_TIP_IMAGES = [
@@ -28,6 +29,7 @@ const ALL_TIP_IMAGES = [
     'summonerwars/hero/shouren/tip',
     'summonerwars/hero/yongheng/tip',
     'summonerwars/hero/shadow/tip',
+    'summonerwars/hero/zhongcai/tip',
 ];
 
 const SELECTION_CRITICAL = [

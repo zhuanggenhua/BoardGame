@@ -1,9 +1,20 @@
 # 文化冲击四派系 - 阿南西传说阶段进展（2026-07-14）
 
+## 2026-09-22 当前审计回写
+
+- 阿南西传说当前本地玩法范围已收口：19 条领域测试通过，`smashup-culture-shock-anansi.e2e.ts` 14/14 通过，15 个对象均已有真实打出、真实天赋或真实手牌响应链证据。
+- 本轮新增奥塞波豹真实打出后的转牌加力、奥尼尼巨蟒真实打出后的借牌响应，以及手牌中的马布罗大黄蜂额外出牌证据；一次失败仅为夹具把借来的牌放错玩家、并提前把大黄蜂移出手牌，修正后未发现生产规则缺陷。
+- R2 上传与代表 URL `HEAD 200` 仍是独立远端阻塞，不影响本地玩法范围结论；四派系批次整体仍未完成，当前剩余对象级 direct L3/L4 主要是俄罗斯童话。
+
+## 2026-09-19 当前审计回写
+
+- 阿南西传说当前证据为 `representative_only / in_progress`：18 条领域测试通过，已补齐玉米穗、智慧之锅、让它吃饱、羽毛礼物四张此前缺少独立行为证据的行动牌；正式真实入口 E2E 已执行，3 条用例全部通过。
+- 该结论只回写当前对象级审计边界，不改变旧文档的实现记录；四派系批次状态由 `2026-09-18-culture-shock-four-factions-audit.md` 汇总。
+
 ## 当前结论
 
-- 阿南西传说（`anansi_tales`）已完成本轮 L2 领域行为补齐：14 条定向 Vitest 全部通过。
-- 阿南西传说已补 2 条真实入口 L3/L4 E2E：派系选择页图集加载、`完美的礼物` + `故事讲述者小屋` 从真实手牌/基地入口结算到权威状态。
+- 阿南西传说（`anansi_tales`）已完成本轮 L2 领域行为补齐：18 条定向 Vitest 全部通过。
+- 阿南西传说已有 3 条真实入口 L3/L4 E2E 通过：派系选择页图集加载、`完美的礼物` + `故事讲述者小屋` 从真实手牌/基地入口结算到权威状态，以及 `羽毛礼物` 的己方随从移动、目的基地选择、给牌和交互收口。
 - 文化冲击卡图和复用基地 atlas 的本地压缩产物与根级/游戏级 manifest 已闭合；但 R2 精确上传因当前 worktree 缺少有效 `.env` 凭据失败；同项目候选 `.env` 复测后仍无法鉴权，CDN 代表 URL 仍为 `404`。
 - 这不是单派系完成结论；远端资源上传/HEAD 仍 blocked，且格林童话、俄罗斯童话、古代印加人尚未完成玩法闭环。
 - 四派系批次仍按 `阿南西传说 -> 格林童话 -> 俄罗斯童话 -> 古代印加人` 顺序推进；当前不能声明整批完成。
@@ -17,6 +28,10 @@
 | 收集故事 | 不是取回手牌，而是从另一名玩家手中额外打出自己拥有的牌 | 行动牌直接额外打出并触发 onPlay；随从牌新增选基地 prompt 后额外打出 | `anansi-tales.test.ts`：`收集故事会从另一名玩家手中额外打出自己拥有的行动` |
 | 阿南西之网 | 需要己方随从在该基地；每回合首次标准行动后才可用；给出后抽 2 | trigger/executor 双层校验己方随从与 `anansisWebUsedTurn`；给牌 prompt 成功后抽 2 并写 base metadata | `anansi-tales.test.ts`：`阿南西之网要求己方随从在场，并且每回合只在首次标准行动后生效` |
 | 故事讲述者小屋 | counter 应持久保存在基地上，每个 counter 降低断点 2 | 新增 base metadata `storytellersHutCounters`；注册 synthetic breakpoint modifier | `anansi-tales.test.ts`：`故事讲述者小屋会放置持久 counter 并按 counter 降低断点` |
+| 玉米穗 | 最多选择三张弃牌堆行动洗回牌库，获得额外行动，再把此牌给另一名玩家 | 通过运行时多选交互产生 `DECK_REORDERED`，再进入给牌交互；最终检查牌库、弃牌堆、行动额度和手牌归属 | `anansi-tales.test.ts`：`玉米穗最多洗回三张弃牌堆行动、获得额外行动并把自己给出` |
+| 智慧之锅 | 按其他玩家数量抽牌，分别给每名其他玩家一张手牌，并获得额外行动 | 通过 deferred continuation 在抽牌后恢复给牌交互；最终检查三名玩家手牌、行动额度和交互关闭 | `anansi-tales.test.ts`：`智慧之锅按其他玩家数量抽牌、分别给牌并获得额外行动` |
+| 让它吃饱 | 抽两张牌，再把此牌给另一名玩家 | 通过 deferred continuation 在抽牌后恢复给牌交互；最终检查抽牌结果、弃牌堆移除和目标玩家手牌 | `anansi-tales.test.ts`：`让它吃饱先抽两张牌，再把自己放入另一名玩家手中` |
+| 羽毛礼物 | 选择己方随从移动到另一基地，再把此牌给另一名玩家 | 通过两段目标交互完成己方过滤、目的基地排除、移动、给牌和交互关闭 | `anansi-tales.test.ts`：`羽毛礼物只允许选择己方随从，移动到另一基地后再把自己给出`；`smashup-culture-shock-anansi.e2e.ts`：真实入口 1 条用例通过 |
 
 ## 共享层变更
 
@@ -40,12 +55,12 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `npx vitest run src/games/smashup/__tests__/abilities/anansi-tales.test.ts --configLoader native` | PASS，14 tests |
+| `npx vitest run src/games/smashup/__tests__/abilities/anansi-tales.test.ts --configLoader native` | PASS，18 tests |
 | `npx vitest run src/games/smashup/__tests__/cultureShockFourFactionsIntegration.test.ts src/games/smashup/__tests__/polynesianVoyagersPenguinsIntegration.test.ts --configLoader native` | PASS，2 files / 11 tests |
 | `npx tsc --noEmit --pretty false --noErrorTruncation` | PASS |
 | `npm run typecheck -- --pretty false --noErrorTruncation` | PASS |
 | `npx openspec validate add-smashup-culture-shock-four-factions --strict --no-interactive` | PASS |
-| `npm run test:e2e:ci:file -- smashup-culture-shock-anansi.e2e.ts` | PASS，2 tests |
+| `npm run test:e2e:ci:file -- smashup-culture-shock-anansi.e2e.ts` | PASS，3 tests |
 | `npm run compress:images -- public/assets/i18n/zh-CN/smashup/cards/culture_shock` | PASS，1 张；`atlas.png` 40.14 MB -> `compressed/atlas.webp` 1.06 MB |
 | `npm run compress:images -- public/assets/i18n/zh-CN/smashup/base/polynesian_voyagers` | PASS，1 张；`atlas.png` 4.57 MB -> `compressed/atlas.webp` 431.75 KB |
 | `npm run assets:manifest` | PASS，增量生成根级与游戏级 manifest |
@@ -61,6 +76,9 @@
 | --- | --- | --- |
 | 阿南西传说派系选择页 | `D:\GA\BoardGame-upstream-main-dev-20260601\test-results\evidence-screenshots\smashup\smashup-culture-shock-anansi.e2e\派系选择页能看到阿南西传说，并加载文化冲击图集\01-阿南西传说-派系选择页图集可见.jpg` | 阿南西传说详情面板可见，手牌标签显示 `手牌 · 13`，蜘蛛阿南西、完美的礼物、交易故事等文化冲击卡图完整显示；未见白卡或 shimmer。 |
 | 故事讲述者小屋结算后 | `D:\GA\BoardGame-upstream-main-dev-20260601\test-results\evidence-screenshots\smashup\smashup-culture-shock-anansi.e2e\完美的礼物与故事讲述者小屋可从真实入口结算到权威状态\07-故事讲述者小屋-主动基地能力结算后.jpg` | 牌桌可见故事讲述者小屋、阿南西之网、阿克耶海龟和完美的礼物真实卡图；顶部 toast 显示额外获得 1 次战术打出机会，对应 `actionLimit + 1` 与 `storytellersHutCounters = 1` 的权威状态断言。 |
+| 羽毛礼物选择己方随从 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-culture-shock-anansi.e2e\羽毛礼物从真实入口完成己方随从移动、给牌与交互收口\08-羽毛礼物-选择己方随从.jpg` | 真实入口只暴露己方随从目标，交互仍保持打开，未进入给牌步骤。 |
+| 羽毛礼物选择另一基地 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-culture-shock-anansi.e2e\羽毛礼物从真实入口完成己方随从移动、给牌与交互收口\09-羽毛礼物-选择另一基地.jpg` | 随从选择后进入目的基地选择，当前基地被排除，另一基地可选。 |
+| 羽毛礼物移动给牌并收口 | `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-culture-shock-anansi.e2e\羽毛礼物从真实入口完成己方随从移动、给牌与交互收口\10-羽毛礼物-移动给牌并收口.jpg` | 己方随从已移动，羽毛礼物已进入目标玩家手牌，交互关闭，最终权威状态断言通过。 |
 
 ## 资源链状态
 
@@ -73,4 +91,4 @@
 
 - 未完成文化冲击资源 R2 上传与代表 URL `HEAD 200` 回查；当前 blocker 是 R2 鉴权 401 / `Unauthorized`，需要有效 `.env` / R2 凭据后重跑精确上传。
 - 未对格林童话、俄罗斯童话、古代印加人进行玩法实现闭环。
-- 当前结论只能写：阿南西传说代表性 L2 + 真实入口 L3/L4 已验证，本地资源与 manifest 已闭合；不能写阿南西传说完成，更不能写四派系完成。
+- 当前结论只能写：阿南西传说对象级 L2 已补齐，已有 3 条真实入口 E2E 通过；本地资源与 manifest 已闭合；不能写阿南西传说完成，更不能写四派系完成。

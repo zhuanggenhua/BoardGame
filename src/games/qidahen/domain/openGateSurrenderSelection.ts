@@ -155,6 +155,7 @@ const finalizeQidahenOpenGateSurrender = (
                     0,
                     state.factions[selection.ownerFactionId].discardPileCount ?? 0,
                 ) + extraDiscardCount,
+                discardPile: [...state.factions[selection.ownerFactionId].discardPile, ...state.handCards.filter(card => removedCardIds.has(card.id) && card.id !== selection.eventCardId)],
             },
         },
         factionActionUsed: true,

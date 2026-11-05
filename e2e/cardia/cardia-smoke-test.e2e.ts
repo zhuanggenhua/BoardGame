@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
 import { applyCardiaScenarioToPage, setupCardiaTestScenario, type CardiaTestScenario } from '../helpers/cardia';
+import { createEvidenceScreenshotRun, getEvidenceScreenshotPathInDirectory } from '../framework/evidenceScreenshots';
 
 /**
  * Cardia 烟雾测试 - 验证基础游戏流程
@@ -361,17 +362,77 @@ test.describe('Cardia 烟雾测试', () => {
 
   test('手机横屏布局应完整展示战场与手牌', async ({ page, game }, testInfo) => {
     const setup = await setupCardiaTestScenario(requireBrowser(page), MOBILE_LAYOUT_SCENARIO);
+    const evidenceRun = await createEvidenceScreenshotRun(testInfo, { requireChineseName: true });
+    console.log(`[Cardia layout evidence] runId=${evidenceRun.runId} stagingDir=${evidenceRun.stagingDir}`);
 
     try {
+      await hideDebugChrome(setup.player1Page);
+      await expectResponsiveLayoutStable(setup.player1Page);
+      await setup.player1Page.screenshot({
+        path: getEvidenceScreenshotPathInDirectory(
+          evidenceRun.stagingDir,
+          'PC桌面基线',
+          { format: 'png', requireChineseName: true },
+        ),
+        fullPage: false,
+      });
+
       await setup.player1Page.setViewportSize({ width: 844, height: 390 });
       await setup.player1Page.waitForTimeout(600);
       await hideDebugChrome(setup.player1Page);
 
       await expectResponsiveLayoutStable(setup.player1Page);
+      const firstHandCard = setup.player1Page.locator('[data-testid="cardia-hand-area"] [data-testid^="card-"]').first();
+      const firstHandCardWidth = await firstHandCard.evaluate((card) => card.getBoundingClientRect().width);
+      expect(firstHandCardWidth).toBeCloseTo(50, 0);
+      const firstBattlefieldCard = setup.player1Page.locator('[data-testid="cardia-battlefield"] [data-testid^="card-"]').first();
+      const mobileBattlefieldCardWidth = await firstBattlefieldCard.evaluate((card) => card.getBoundingClientRect().width);
+      expect(mobileBattlefieldCardWidth).toBeCloseTo(50, 0);
+      const shellFabIcon = setup.player1Page.locator(
+        '[data-testid="fab-menu"][data-hud-placement="in-shell"] [data-fab-visual-id] svg',
+      ).first();
+      await expect(shellFabIcon).toBeVisible();
+      const mobileFabIconWidth = await shellFabIcon.evaluate((icon) => icon.getBoundingClientRect().width);
+      const mobileShellScale = await setup.player1Page.locator('html').evaluate((root) => Number.parseFloat(
+        window.getComputedStyle(root).getPropertyValue('--mobile-board-shell-scale'),
+      ));
+      expect(mobileShellScale).toBeGreaterThan(0);
+      expect(mobileShellScale).toBeLessThan(1);
       await setup.player1Page.screenshot({
-        path: testInfo.outputPath('cardia-mobile-landscape-layout.png'),
+        path: getEvidenceScreenshotPathInDirectory(
+          evidenceRun.stagingDir,
+          '手机横屏牌桌',
+          { format: 'png', requireChineseName: true },
+        ),
         fullPage: false,
       });
+
+      await setup.player1Page.setViewportSize({ width: 1920, height: 1080 });
+      await setup.player1Page.waitForTimeout(600);
+      await expectResponsiveLayoutStable(setup.player1Page);
+      const desktopHandCardWidth = await firstHandCard.evaluate((card) => card.getBoundingClientRect().width);
+      const desktopBattlefieldCardWidth = await firstBattlefieldCard.evaluate((card) => card.getBoundingClientRect().width);
+      expect(desktopHandCardWidth).toBeCloseTo(80, 0);
+      expect(desktopBattlefieldCardWidth).toBeCloseTo(106, 0);
+      const desktopFabIconWidth = await shellFabIcon.evaluate((icon) => icon.getBoundingClientRect().width);
+      const desktopFabIconTransform = await shellFabIcon.evaluate((icon) => window.getComputedStyle(icon.parentElement!).transform);
+      expect(desktopFabIconTransform).toBe('none');
+      expect(mobileFabIconWidth / desktopFabIconWidth).toBeCloseTo(0.92, 2);
+      await setup.player1Page.screenshot({
+        path: getEvidenceScreenshotPathInDirectory(
+          evidenceRun.stagingDir,
+          'PC桌面恢复',
+          { format: 'png', requireChineseName: true },
+        ),
+        fullPage: false,
+      });
+
+      await setup.player1Page.setViewportSize({ width: 1280, height: 600 });
+      await setup.player1Page.waitForTimeout(600);
+      const compactDesktopHandCardWidth = await firstHandCard.evaluate((card) => card.getBoundingClientRect().width);
+      const compactDesktopBattlefieldCardWidth = await firstBattlefieldCard.evaluate((card) => card.getBoundingClientRect().width);
+      expect(compactDesktopHandCardWidth).toBeCloseTo(64, 0);
+      expect(compactDesktopBattlefieldCardWidth).toBeCloseTo(84, 0);
     } finally {
       await setup.cleanup();
     }

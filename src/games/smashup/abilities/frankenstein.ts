@@ -4,7 +4,8 @@
  * 主题：+1力量指示物的放置、移除、转移
  */
 
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type {
+ MatchState, PlayerId } from '../../../engine/types';
 import type { PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
@@ -23,6 +24,8 @@ import {
     removePowerCounter,
 } from '../domain/abilityHelpers';
 import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
     createAbilityRuntimeSimpleChoice,
     createAbilityRuntimeExecutor,
     createEffectProgram,
@@ -57,7 +60,7 @@ type FrankensteinPromptContext = {
 
 type CounterPromptContext = FrankensteinPromptContext & {
     reasonDefId: string;
-    excludeUid?: string;
+    excludeUid: string;
     excludeBaseIndex?: number;
 };
 
@@ -98,15 +101,50 @@ function appendPendingBodyShopDistribution(
     matchState: MatchState<SmashUpCore>,
     pending: BodyShopPendingDistribution,
 ): MatchState<SmashUpCore> {
-    const existing = Array.isArray((matchState.sys as Record<string, unknown>)[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY])
-        ? (matchState.sys as Record<string, unknown>)[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY] as BodyShopPendingDistribution[]
+    const sys = matchState.sys as typeof matchState.sys & {
+        _pendingBodyShopDistributions?: unknown;
+    };
+    const existingValue = sys._pendingBodyShopDistributions;
+    const existing = Array.isArray(existingValue)
+        ? existingValue.filter(isBodyShopPendingDistribution)
         : [];
+    const nextSys: MatchState<SmashUpCore>['sys'] & {
+        [BODY_SHOP_PENDING_DISTRIBUTIONS_KEY]?: BodyShopPendingDistribution[];
+    } = {
+        ...matchState.sys,
+        [BODY_SHOP_PENDING_DISTRIBUTIONS_KEY]: [...existing, pending],
+    };
     return {
         ...matchState,
-        sys: {
-            ...matchState.sys,
-            [BODY_SHOP_PENDING_DISTRIBUTIONS_KEY]: [...existing, pending],
-        } as typeof matchState.sys,
+        sys: nextSys,
+    };
+}
+
+function isBodyShopPendingDistribution(value: unknown): value is BodyShopPendingDistribution {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+    const candidate = value as Partial<BodyShopPendingDistribution>;
+    return typeof candidate.playerId === 'string'
+        && typeof candidate.targetMinionUid === 'string'
+        && typeof candidate.totalCounters === 'number'
+        && Number.isInteger(candidate.totalCounters)
+        && candidate.totalCounters > 0;
+}
+
+function createCounterPromptContext(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    reasonDefId: string,
+    excludeUid: string,
+    excludeBaseIndex?: number,
+): CounterPromptContext {
+    return {
+        matchState,
+        playerId,
+        now,
+        reasonDefId,
+        excludeUid,
+        ...(excludeBaseIndex !== undefined ? { excludeBaseIndex } : {}),
     };
 }
 
@@ -307,7 +345,7 @@ function resolveCounterPlacement(
     return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, context.reasonDefId, timestamp)];
 }
 
-const frankensteinLabAssistantPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+const frankensteinLabAssistantPromptProgram = createPromptProgram<CounterPromptContext>({
     sourceId: 'frankenstein_lab_assistant',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -331,7 +369,7 @@ const frankensteinLabAssistantPromptProgram = createPromptProgram<CounterPromptC
     }),
 });
 
-const frankensteinHerrDoktorPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+const frankensteinHerrDoktorPromptProgram = createPromptProgram<CounterPromptContext>({
     sourceId: 'frankenstein_herr_doktor',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -355,7 +393,7 @@ const frankensteinHerrDoktorPromptProgram = createPromptProgram<CounterPromptCon
     }),
 });
 
-const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext>({
     sourceId: 'frankenstein_igor',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -393,7 +431,7 @@ const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext, 
     }),
 });
 
-const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMobCardContext, SmashUpCore, SmashUpEvent>({
+const frankensteinAngryMobChooseCardPromptProgram: AbilityProgram<AngryMobCardContext, SmashUpCore, SmashUpEvent> = createPromptProgram<AngryMobCardContext>({
     sourceId: 'frankenstein_angry_mob_choose_card',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -446,16 +484,15 @@ const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMob
 
         return {
             events,
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 minionUid: context.minionUid,
                 baseIndex: context.baseIndex,
-            }),
-            nextProgram: frankensteinAngryMobChooseCardPromptProgram,
+            }), frankensteinAngryMobChooseCardPromptProgram),
         };
     },
 });
 
-const frankensteinAngryMobPromptProgram = createPromptProgram<FrankensteinPromptContext, SmashUpCore, SmashUpEvent>({
+const frankensteinAngryMobPromptProgram = createPromptProgram<FrankensteinPromptContext>({
     sourceId: 'frankenstein_angry_mob',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -483,16 +520,15 @@ const frankensteinAngryMobPromptProgram = createPromptProgram<FrankensteinPrompt
         if (!liveTarget || (state.core.players[playerId]?.hand.length ?? 0) === 0) return { events: [] };
         return {
             events: [],
-            context: createPromptContext(state, playerId, timestamp, {
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, {
                 minionUid: selected.minionUid,
                 baseIndex: selected.baseIndex,
-            }),
-            nextProgram: frankensteinAngryMobChooseCardPromptProgram,
+            }), frankensteinAngryMobChooseCardPromptProgram),
         };
     },
 });
 
-const frankensteinBodyShopDistributePromptProgram = createPromptProgram<BodyShopDistributeContext, SmashUpCore, SmashUpEvent>({
+const frankensteinBodyShopDistributePromptProgram: AbilityProgram<BodyShopDistributeContext, SmashUpCore, SmashUpEvent> = createPromptProgram<BodyShopDistributeContext>({
     sourceId: 'frankenstein_body_shop_distribute',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -535,13 +571,12 @@ const frankensteinBodyShopDistributePromptProgram = createPromptProgram<BodyShop
 
         return {
             events,
-            context: createPromptContext(state, playerId, timestamp, { remaining: nextRemaining }),
-            nextProgram: frankensteinBodyShopDistributePromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, { remaining: nextRemaining }), frankensteinBodyShopDistributePromptProgram),
         };
     },
 });
 
-const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPromptContext, SmashUpCore, SmashUpEvent>({
+const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPromptContext>({
     sourceId: 'frankenstein_body_shop',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -595,7 +630,7 @@ const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPrompt
     },
 });
 
-const frankensteinBlitzedDestroyPromptProgram = createPromptProgram<BlitzedDestroyContext, SmashUpCore, SmashUpEvent>({
+const frankensteinBlitzedDestroyPromptProgram = createPromptProgram<BlitzedDestroyContext>({
     sourceId: 'frankenstein_blitzed_destroy',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -637,7 +672,7 @@ const frankensteinBlitzedDestroyPromptProgram = createPromptProgram<BlitzedDestr
     },
 });
 
-const frankensteinBlitzedRemovePromptProgram = createPromptProgram<BlitzedRemoveContext, SmashUpCore, SmashUpEvent>({
+const frankensteinBlitzedRemovePromptProgram: AbilityProgram<BlitzedRemoveContext, SmashUpCore, SmashUpEvent> = createPromptProgram<BlitzedRemoveContext>({
     sourceId: 'frankenstein_blitzed_remove',
     buildInteraction: (context) => {
         const interaction = createAbilityRuntimeSimpleChoice(
@@ -666,8 +701,7 @@ const frankensteinBlitzedRemovePromptProgram = createPromptProgram<BlitzedRemove
             if (buildBlitzedDestroyOptions(state.core, playerId, context.removedTotal).length === 0) return { events: [] };
             return {
                 events: [],
-                context: createPromptContext(state, playerId, timestamp, { removedTotal: context.removedTotal }),
-                nextProgram: frankensteinBlitzedDestroyPromptProgram,
+                continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, { removedTotal: context.removedTotal }), frankensteinBlitzedDestroyPromptProgram),
             };
         }
         if (!selected?.minionUid || typeof selected.baseIndex !== 'number') return { events: [] };
@@ -683,8 +717,7 @@ const frankensteinBlitzedRemovePromptProgram = createPromptProgram<BlitzedRemove
         ];
         return {
             events,
-            context: createPromptContext(state, playerId, timestamp, { removedTotal: context.removedTotal + 1 }),
-            nextProgram: frankensteinBlitzedRemovePromptProgram,
+            continuation: createAbilityRuntimeContinuation(createPromptContext(state, playerId, timestamp, { removedTotal: context.removedTotal + 1 }), frankensteinBlitzedRemovePromptProgram),
         };
     },
 });
@@ -724,11 +757,10 @@ const frankensteinLabAssistantProgram = createEffectProgram<AbilityContext, Smas
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-            reasonDefId: 'frankenstein_lab_assistant',
-            excludeUid: ctx.cardUid,
-        }),
-        nextProgram: frankensteinLabAssistantPromptProgram,
+        continuation: createAbilityRuntimeContinuation(
+            createCounterPromptContext(ctx.matchState, ctx.playerId, ctx.now, 'frankenstein_lab_assistant', ctx.cardUid),
+            frankensteinLabAssistantPromptProgram,
+        ),
     };
 });
 
@@ -739,11 +771,10 @@ const frankensteinHerrDoktorProgram = createEffectProgram<AbilityContext, SmashU
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-            reasonDefId: 'frankenstein_herr_doktor',
-            excludeUid: ctx.cardUid,
-        }),
-        nextProgram: frankensteinHerrDoktorPromptProgram,
+        continuation: createAbilityRuntimeContinuation(
+            createCounterPromptContext(ctx.matchState, ctx.playerId, ctx.now, 'frankenstein_herr_doktor', ctx.cardUid),
+            frankensteinHerrDoktorPromptProgram,
+        ),
     };
 });
 
@@ -754,11 +785,10 @@ const frankensteinIgorOnDestroyProgram = createEffectProgram<AbilityContext, Sma
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
-            reasonDefId: ctx.defId,
-            excludeUid: ctx.cardUid,
-        }),
-        nextProgram: frankensteinIgorPromptProgram,
+        continuation: createAbilityRuntimeContinuation(
+            createCounterPromptContext(ctx.matchState, ctx.playerId, ctx.now, ctx.defId, ctx.cardUid),
+            frankensteinIgorPromptProgram,
+        ),
     };
 });
 
@@ -772,8 +802,7 @@ const frankensteinAngryMobProgram = createEffectProgram<AbilityContext, SmashUpC
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-        nextProgram: frankensteinAngryMobPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now), frankensteinAngryMobPromptProgram),
     };
 });
 
@@ -784,15 +813,13 @@ const frankensteinBodyShopProgram = createEffectProgram<AbilityContext, SmashUpC
     }
     return {
         events: [],
-        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
-        nextProgram: frankensteinBodyShopPromptProgram,
+        continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now), frankensteinBodyShopPromptProgram),
     };
 });
 
 const frankensteinBlitzedProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
     events: [],
-    context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { removedTotal: 0 }),
-    nextProgram: frankensteinBlitzedRemovePromptProgram,
+    continuation: createAbilityRuntimeContinuation(createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { removedTotal: 0 }), frankensteinBlitzedRemovePromptProgram),
 }));
 
 function isFrankensteinGermanEngineeringEligible(ctx: TriggerContext): boolean {
@@ -904,18 +931,22 @@ function registerFrankensteinOngoingEffects(): void {
         if (options.length === 0) return [];
 
         const reasonDefId = ctx.triggerMinionDefId;
-        if (!ctx.matchState) return [];
+        const excludeUid = ctx.triggerMinionUid;
+        if (!reasonDefId || !excludeUid || !ctx.matchState) return [];
 
         return runtimeResultToTriggerResult(
             executeAbilityProgram(
                 frankensteinIgorPromptProgram,
-                createPromptContext(ctx.matchState, controllerId, ctx.now, {
+                createCounterPromptContext(
+                    ctx.matchState,
+                    controllerId,
+                    ctx.now,
                     reasonDefId,
-                    excludeUid: ctx.triggerMinionUid,
-                    ...(typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('base-clear-discard:')
-                        ? { excludeBaseIndex: ctx.baseIndex }
-                        : {}),
-                }),
+                    excludeUid,
+                    typeof ctx.sourceEventId === 'string' && ctx.sourceEventId.startsWith('base-clear-discard:')
+                        ? ctx.baseIndex
+                        : undefined,
+                ),
             ),
             ctx.matchState,
         );
@@ -928,7 +959,6 @@ function registerFrankensteinOngoingEffects(): void {
         sourceScope: 'triggerBase',
         canTrigger: isFrankensteinGermanEngineeringEligible,
         perInstance: true,
-    }, {
     });
     registerTriggerProgramExecutor(
         'frankenstein_german_engineering',

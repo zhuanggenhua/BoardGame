@@ -1,3 +1,4 @@
+import { discardQidahenHandCards } from './handCardState';
 import {
     resolveQidahenGaoDiDispatchChoice,
     resolveQidahenInternalDispatchInteractionChoice,
@@ -28,9 +29,7 @@ import {
 import {
     getFactionIdByPlayerId,
 } from './factionTurnAccessors';
-import {
-    resolveQidahenFortificationMaintenanceInteractionChoice,
-} from './fortificationMaintenance';
+
 import {
     resolveQidahenEventCharacterTargetChoice,
     resolveQidahenEventOpponentHandChoice,
@@ -59,7 +58,6 @@ import {
     buildQidahenWuzhenChaohaSelection,
     QIDAHEN_WUZHEN_CHAOHA_CARD_DEF_ID,
     resolveQidahenWuzhenChaohaSelection,
-    setQidahenWuzhenChaohaArtilleryTechCount,
 } from './wuzhenChaohaSelection';
 import {
     resolveQidahenDefeatInDetailPlayed,
@@ -72,8 +70,10 @@ import {
     playQidahenFeignedRetreat,
     QIDAHEN_FEIGNED_RETREAT_CARD_DEF_ID,
 } from './feignedRetreatSelection';
+import { resolveQidahenWheelDispatchPayment } from './wheelDispatchPayment';
+import { resolveQidahenWheelRecruitTrainPayment } from './wheelRecruitTrain';
 
-const WUZHEN_CHAOHA_CARD_DEF_ID = 'qidahen-atlas05-1644-wuzhen-chaoha';
+const YUANYANG_ZHEN_CARD_DEF_ID = 'qidahen-atlas05-1644-yuanyang-zhen';
 const ARROWS_LIKE_RAIN_CARD_DEF_ID = 'qidahen-atlas05-1615-arrows-like-rain';
 const CAVALRY_CHARGE_CARD_DEF_ID = 'qidahen-atlas05-1618-cavalry-charge';
 const RAID_GRAIN_CARD_DEF_ID = 'qidahen-atlas05-1612-raid-grain';
@@ -200,7 +200,7 @@ const resolveQidahenTacticCardPlayedEvent = (
     const tacticRulesLine = playedCard.rulesSummary
         ? `效果摘要：${playedCard.rulesSummary}`
         : null;
-    const isWuzhenChaoha = playedCard.cardDefId === WUZHEN_CHAOHA_CARD_DEF_ID;
+    const isYuanyangZhen = playedCard.cardDefId === YUANYANG_ZHEN_CARD_DEF_ID;
     const isArrowsLikeRain = playedCard.cardDefId === ARROWS_LIKE_RAIN_CARD_DEF_ID
         && pendingTargetAction.battleMode === 'field';
     const isRaidGrain = playedCard.cardDefId === RAID_GRAIN_CARD_DEF_ID
@@ -235,8 +235,8 @@ const resolveQidahenTacticCardPlayedEvent = (
     if (playedCardSide === 'defender' && !isBayaraDefense && !isJirinaiInfantryDefendingMing && !isSteadfastDefense && !isChevalDeFrise) {
         return state;
     }
-    const tacticEffectLine = isWuzhenChaoha
-        ? '鸟真超哈：本次野战中攻方步兵骰子等级 +1。'
+    const tacticEffectLine = isYuanyangZhen
+        ? '鸳鸯阵：本次野战中攻方步兵骰子等级 +1。'
         : isArrowsLikeRain
             ? '箭如雨下：本次野战中攻方步兵先结算，并使对手拒马无效。'
             : isRaidGrain
@@ -268,7 +268,7 @@ const resolveQidahenTacticCardPlayedEvent = (
     const tacticLogText = tacticLines.join(' ');
     const tacticModifiers = [
         ...(pendingTargetAction.tacticModifiers ?? []),
-        ...(isWuzhenChaoha
+        ...(isYuanyangZhen
             ? [{
                 id: `tactic-${event.timestamp}-${playedCard.id}`,
                 sourceCardDefId: playedCard.cardDefId ?? null,
@@ -320,7 +320,8 @@ const resolveQidahenTacticCardPlayedEvent = (
                 label: playedCard.label,
                 side: 'attacker' as const,
                 troopKind: 'infantry' as const,
-                levelBonus: 1,
+                levelBonus: 0,
+                defenseBonus: 1,
             }]
             : []),
         ...(isBayaraAttack
@@ -444,13 +445,13 @@ const resolveQidahenTacticCardPlayedEvent = (
         raidAndAmbushSelection: state.raidAndAmbushSelection?.phase === 'follow-up'
             ? null
             : state.raidAndAmbushSelection,
-        pendingTargetAction: isWuzhenChaoha || isArrowsLikeRain || isRaidGrain || isCavalryCharge || isWarChariotFormation || isBayaraAttack || isBayaraDefense || isChainCannonFormation || isMountedInfantry || isInstigateDefectArtillery || isJirinaiInfantryAttackingMing || isJirinaiInfantryDefendingMing || isSteadfastDefense || isChevalDeFrise
+        pendingTargetAction: isYuanyangZhen || isArrowsLikeRain || isRaidGrain || isCavalryCharge || isWarChariotFormation || isBayaraAttack || isBayaraDefense || isChainCannonFormation || isMountedInfantry || isInstigateDefectArtillery || isJirinaiInfantryAttackingMing || isJirinaiInfantryDefendingMing || isSteadfastDefense || isChevalDeFrise
             ? {
                 ...pendingTargetAction,
                 tacticModifiers,
                 restriction: [
                     pendingTargetAction.restriction,
-                    isWuzhenChaoha ? '鸟真超哈：攻方步兵骰子等级 +1' : null,
+                    isYuanyangZhen ? '鸳鸯阵：攻方步兵骰子等级 +1' : null,
                     isArrowsLikeRain ? '箭如雨下：攻方步兵先结算' : null,
                     isRaidGrain ? '打草惊蛇：骑兵劫掠不受反击伤害' : null,
                     isCavalryCharge ? '骑兵冲锋：攻方骑兵每部队额外掷 2 骰' : null,
@@ -467,7 +468,7 @@ const resolveQidahenTacticCardPlayedEvent = (
                 ].filter(Boolean).join(' · '),
                 resolutionHint: [
                     pendingTargetAction.resolutionHint,
-                    isWuzhenChaoha ? '鸟真超哈步兵+1' : null,
+                    isYuanyangZhen ? '鸳鸯阵步兵+1' : null,
                     isArrowsLikeRain ? '箭如雨下步兵先结算' : null,
                     isRaidGrain ? '打草惊蛇劫掠免伤' : null,
                     isCavalryCharge ? '骑兵冲锋骑兵+2骰' : null,
@@ -484,8 +485,7 @@ const resolveQidahenTacticCardPlayedEvent = (
                 ].filter(Boolean).join(' · '),
             }
             : pendingTargetAction,
-        handCards: state.handCards.filter((card) => card.id !== playedCard.id),
-        discardPileCount: state.discardPileCount + 1,
+        ...discardQidahenHandCards(state, [playedCard.id]),
         lastSeasonSummary: {
             id: `summary-${event.timestamp}`,
             title: '战术牌',
@@ -571,16 +571,7 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
             event.payload.selection,
         ),
     ),
-    defineResolvedEventReducer(
-        ['FORTIFICATION_MAINTENANCE_RESOLVED'],
-        (state, event) => resolveQidahenFortificationMaintenanceInteractionChoice(
-            state,
-            event.payload.choiceId,
-            event.timestamp,
-            event.payload.attritionPriority,
-            event.payload.selection,
-        ),
-    ),
+
     defineResolvedEventReducer(
         ['DRIVE_TIGER_CONSENT_RESOLVED'],
         (state, event) => resolveQidahenDriveTigerConsentInteractionChoice(
@@ -732,13 +723,6 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
         }),
     ),
     defineResolvedEventReducer(
-        ['WUZHEN_CHAOHA_ARTILLERY_TECH_COUNT_SET'],
-        (state, event) => setQidahenWuzhenChaohaArtilleryTechCount(
-            state,
-            event.payload.count,
-        ),
-    ),
-    defineResolvedEventReducer(
         ['WUZHEN_CHAOHA_RESOLVED'],
         (state, event) => resolveQidahenWuzhenChaohaSelection(
             state,
@@ -768,6 +752,18 @@ const QIDAHEN_RESOLVED_EVENT_REDUCERS = [
             event.payload.choiceId,
             event.timestamp,
             event.payload.selection,
+        ),
+    ),
+    defineResolvedEventReducer(
+        ['WHEEL_DISPATCH_PAYMENT_RESOLVED'],
+        (state, event) => resolveQidahenWheelDispatchPayment(state, event.timestamp),
+    ),
+    defineResolvedEventReducer(
+        ['WHEEL_RECRUIT_TRAIN_PAYMENT_RESOLVED'],
+        (state, event) => resolveQidahenWheelRecruitTrainPayment(
+            state,
+            event.payload.cardIds,
+            event.timestamp,
         ),
     ),
 ] as const satisfies readonly QidahenResolvedEventReducerRuntimeSpec[];

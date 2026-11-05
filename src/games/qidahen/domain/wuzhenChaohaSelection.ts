@@ -1,3 +1,5 @@
+import { getQidahenArtilleryTechnologyCount } from './armamentStateAccessors';
+import { discardQidahenHandCards } from './handCardState';
 import { getQidahenBattleForceCommitments } from './battleForceCommitments';
 import type {
     QidahenCore,
@@ -6,18 +8,6 @@ import type {
 
 export const QIDAHEN_WUZHEN_CHAOHA_CARD_DEF_ID = 'qidahen-atlas05-1650-wuzhen-chaoha-special' as const;
 export const QIDAHEN_ARTILLERY_TECH_CARD_DEF_ID = 'qidahen-atlas05-1626-artillery-tech' as const;
-
-const getDestroyableArtilleryTechCount = (
-    state: QidahenCore,
-    factionId: QidahenWuzhenChaohaSelection['factionId'],
-): number => (
-    state.factions[factionId].armaments
-        .find((armament) => armament.id === 'artillery-tech')
-        ?.sourceCardDefIds
-        ?.filter((cardDefId) => cardDefId === QIDAHEN_ARTILLERY_TECH_CARD_DEF_ID)
-        .length
-    ?? 0
-);
 
 export const buildQidahenWuzhenChaohaSelection = (
     state: QidahenCore,
@@ -74,10 +64,6 @@ export const buildQidahenWuzhenChaohaSelection = (
         return null;
     }
 
-    const maxDestroyedArtilleryTechCount = getDestroyableArtilleryTechCount(
-        state,
-        pending.attackerFactionId,
-    );
     return {
         cardId,
         cardDefId: QIDAHEN_WUZHEN_CHAOHA_CARD_DEF_ID,
@@ -85,60 +71,7 @@ export const buildQidahenWuzhenChaohaSelection = (
         targetRuntimeRegionId: pending.targetRuntimeRegionId,
         targetRegionName: pending.targetRegionName,
         choices,
-        maxDestroyedArtilleryTechCount,
-        destroyedArtilleryTechCount: 0,
-    };
-};
-
-export const setQidahenWuzhenChaohaArtilleryTechCount = (
-    state: QidahenCore,
-    count: number,
-): QidahenCore => {
-    const selection = state.wuzhenChaohaSelection;
-    if (!selection) {
-        return state;
-    }
-    return {
-        ...state,
-        wuzhenChaohaSelection: {
-            ...selection,
-            destroyedArtilleryTechCount: Math.max(
-                0,
-                Math.min(Math.floor(count), selection.maxDestroyedArtilleryTechCount),
-            ),
-        },
-    };
-};
-
-const destroySelectedArtilleryTech = (
-    state: QidahenCore,
-    selection: QidahenWuzhenChaohaSelection,
-): QidahenCore['factions'] => {
-    let remaining = selection.destroyedArtilleryTechCount;
-    const faction = state.factions[selection.factionId];
-    return {
-        ...state.factions,
-        [selection.factionId]: {
-            ...faction,
-            armaments: faction.armaments.map((armament) => {
-                if (armament.id !== 'artillery-tech' || remaining <= 0) {
-                    return armament;
-                }
-                const nextSourceCardDefIds = (armament.sourceCardDefIds ?? []).filter((cardDefId) => {
-                    if (cardDefId !== QIDAHEN_ARTILLERY_TECH_CARD_DEF_ID || remaining <= 0) {
-                        return true;
-                    }
-                    remaining -= 1;
-                    return false;
-                });
-                const destroyedCount = selection.destroyedArtilleryTechCount - remaining;
-                return {
-                    ...armament,
-                    level: Math.max(0, armament.level - destroyedCount),
-                    sourceCardDefIds: nextSourceCardDefIds,
-                };
-            }),
-        },
+        artilleryTechBonus: getQidahenArtilleryTechnologyCount(state, pending.attackerFactionId),
     };
 };
 
@@ -157,21 +90,15 @@ export const resolveQidahenWuzhenChaohaSelection = (
         return state;
     }
 
-    const destroyedCount = Math.min(
-        selection.destroyedArtilleryTechCount,
-        getDestroyableArtilleryTechCount(state, selection.factionId),
-    );
-    const normalizedSelection = {
-        ...selection,
-        destroyedArtilleryTechCount: destroyedCount,
-    };
+    const artilleryTechBonus = getQidahenArtilleryTechnologyCount(state, selection.factionId);
     const modifier = {
         id: `tactic-${timestamp}-${playedCard.id}`,
         sourceCardDefId: playedCard.cardDefId ?? null,
         label: playedCard.label,
         side: 'attacker' as const,
         troopKind: 'infantry' as const,
-        levelBonus: destroyedCount,
+        levelBonus: 0,
+        rollValueBonus: artilleryTechBonus,
         rollAsPhase: 'artillery' as const,
         rollUnitCount: 1,
         targetPieceId: choice.pieceId ?? undefined,
@@ -179,24 +106,20 @@ export const resolveQidahenWuzhenChaohaSelection = (
     };
     return {
         ...state,
-        factions: destroySelectedArtilleryTech(state, normalizedSelection),
+        ...discardQidahenHandCards(state, [selection.cardId]),
         pendingTargetAction: {
             ...pending,
             tacticModifiers: [...(pending.tacticModifiers ?? []), modifier],
             restriction: `${pending.restriction} · 乌真超哈：指定步兵提前在炮兵阶段攻击`,
-            resolutionHint: `${pending.resolutionHint} · ${choice.label}提前攻击${destroyedCount > 0 ? `，毁火炮技术${destroyedCount}张并+${destroyedCount}级` : ''}`,
+            resolutionHint: `${pending.resolutionHint} · ${choice.label}提前攻击，掷骰点数+${artilleryTechBonus}`,
         },
         wuzhenChaohaSelection: null,
-        handCards: state.handCards.filter((card) => card.id !== selection.cardId),
-        discardPileCount: state.discardPileCount + 1,
         lastSeasonSummary: {
             id: `summary-${timestamp}`,
             title: '乌真超哈',
             lines: [
                 `${state.factions[selection.factionId].name}指定${choice.label}提前在炮兵阶段攻击。`,
-                destroyedCount > 0
-                    ? `销毁 ${destroyedCount} 张《火炮技术》，该步兵攻击等级 +${destroyedCount}。`
-                    : '未销毁《火炮技术》，该步兵攻击等级不变。',
+                `已研发 ${artilleryTechBonus} 张《火炮技术》，该步兵掷骰点数 +${artilleryTechBonus}。`,
             ],
         },
         actionLog: [

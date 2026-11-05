@@ -64,6 +64,7 @@ const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
   CARD_IDS.SHADOW_HIDE_IN_DARKNESS,
   CARD_IDS.SHADOW_MARL_GRIMOIRE,
   CARD_IDS.SHADOW_SHADOW_PULSE,
+  CARD_IDS.ZHONGCAI_OBEDIENCE,
 ]);
 
 const hasAdjacentEmptyCell = (core: SummonerWarsCore, position: CellCoord): boolean => {
@@ -172,6 +173,14 @@ const hasValidEventInteractionTargets = (
         && hasAdjacentEmptyCell(core, unit.position),
       );
     }
+    case CARD_IDS.ZHONGCAI_OBEDIENCE: {
+      if (!summoner) return false;
+      return friendlyUnits.some((unit) =>
+        unit.card.unitClass === 'common'
+        && manhattanDistance(summoner.position, unit.position) <= 3
+        && hasAdjacentEmptyCell(core, summoner.position),
+      );
+    }
     case CARD_IDS.SHOUREN_FREEZE: {
       return getValidShourenFreezeTargets(core, playerId).length > 0;
     }
@@ -254,10 +263,17 @@ export function validateCommand(
   const isTutorialActive = state.sys?.tutorial?.active === true;
   const playerId = core.currentPlayer;
   const payload = command.payload as Record<string, unknown>;
+  const isSummonerWarsCommand = Object.values(SW_COMMANDS).includes(
+    command.type as typeof SW_COMMANDS[keyof typeof SW_COMMANDS],
+  );
+
+  if (state.sys?.gameover && isSummonerWarsCommand) {
+    return { valid: false, error: 'game_over' };
+  }
 
   if (core.pendingAttackRoll
     && command.type !== SW_COMMANDS.RESOLVE_PENDING_ATTACK
-    && Object.values(SW_COMMANDS).includes(command.type as typeof SW_COMMANDS[keyof typeof SW_COMMANDS])) {
+    && isSummonerWarsCommand) {
     return { valid: false, error: '必须先完成待结算攻击' };
   }
 
@@ -436,10 +452,18 @@ export function validateCommand(
     case SW_COMMANDS.MOVE_UNIT: {
       const from = payload.from as CellCoord;
       const to = payload.to as CellCoord;
-      if (core.phase !== 'move') return { valid: false, error: '当前不是移动阶段' };
+      const hasFreedomDecree = core.players[playerId].activeEvents.some(ev =>
+        getBaseCardId(ev.id) === CARD_IDS.ZHONGCAI_FREEDOM_DECREE && ev.isActive,
+      );
+      const phaseAllowsMovement = core.phase === 'move'
+        || (core.phase === 'attack' && hasFreedomDecree);
+      if (!phaseAllowsMovement) return { valid: false, error: '当前不是移动阶段' };
       if (core.players[playerId].moveCount >= MAX_MOVES_PER_TURN) return { valid: false, error: '本回合移动次数已用完' };
       const unit = getUnitAt(core, from);
       if (!unit || unit.owner !== playerId) return { valid: false, error: '无法移动该单位' };
+      if (core.phase === 'attack' && unit.card.unitClass !== 'common') {
+        return { valid: false, error: '当前不是移动阶段' };
+      }
       if (unit.hasMoved) return { valid: false, error: '该单位本回合已移动' };
       if ((getUnitAbilities(unit, core)).includes('immobile')) return { valid: false, error: '该单位不能移动（禁足）' };
       if (!canMoveToEnhanced(core, from, to)) return { valid: false, error: '无法移动到目标位置' };
@@ -459,8 +483,13 @@ export function validateCommand(
       // ✅ 检查攻击者是否有额外攻击（洞穴地精群情激愤/连续射击等授予的 extraAttacks）
       const attacker = getUnitAt(core, attackerPos);
       const attackerHasExtraAttacks = attacker && (attacker.extraAttacks ?? 0) > 0;
+      const hasFreedomDecree = player.activeEvents.some(
+        e => getBaseCardId(e.id) === CARD_IDS.ZHONGCAI_FREEDOM_DECREE && e.isActive,
+      );
+      const canAttackThisPhase = core.phase === 'attack'
+        || (core.phase === 'move' && hasFreedomDecree && attacker?.card.unitClass === 'common');
       
-      if (core.phase !== 'attack' && !hasRallyingCry && !attackerHasExtraAttacks) {
+      if (!canAttackThisPhase && !hasRallyingCry && !attackerHasExtraAttacks) {
         return { valid: false, error: '当前不是攻击阶段' };
       }
       

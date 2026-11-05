@@ -1,0 +1,35 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "task-final-delivery",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "DiceThrone 手机横屏手牌拖拽必须跟随手指位移，不再只移动缩放后的 40%",
+      "status": "PASS",
+      "evidence": [
+        "真实手机横屏 E2E 命中 board-shell 缩放 scale=0.4；修前诊断为 pointerDelta 240/-40、cardDelta 96/-16、ratio 0.4；修后当前 E2E 为 pointerDelta 240/-40、cardDelta 240/-40、ratio 1.0",
+        "截图文件存在且为 2340x1080，红色手指标记存在；当前截图来自同一次通过的真实入口 E2E"
+      ]
+    },
+    {
+      "requirement": "本轮不能新增按钮或可见替代 UI，只修原拖拽路径",
+      "status": "PASS",
+      "evidence": [
+        "当前代码改动只在 src/games/dicethrone/ui/HandArea.tsx 校正拖拽坐标；未新增售卖按钮、HUD 或辅助面板",
+        "正式回归用例 e2e/dicethrone/dicethrone-mobile-hand-drag-follow.e2e.ts 验证原手牌拖拽路径"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-mobile-hand-drag-follow.e2e\\DiceThrone-手机横屏手牌拖拽应跟随手指位移\\手机横屏手牌拖拽跟手-红点为手指位置.jpg"
+  ],
+  "media": [
+    "D:\\gongzuo\\webgame\\BoardGame\\test-results\\evidence-screenshots\\dicethrone\\dicethrone-mobile-hand-drag-follow.e2e\\DiceThrone-手机横屏手牌拖拽应跟随手指位移\\手机横屏手牌拖拽跟手-红点为手指位置.jpg"
+  ],
+  "createdAt": "2026-09-14T10:34:44+08:00"
+}

@@ -60,6 +60,7 @@ export const AndroidNativeUpdateManager = () => {
     const [state, setState] = useState<AndroidNativeUpdateState>(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
     const pendingManifestRef = useRef<AndroidNativeUpdateManifest | null>(null);
     const interactiveRef = useRef(false);
+    const dismissedRef = useRef(false);
     const toastRef = useRef(toast);
     const tRef = useRef(t);
 
@@ -75,6 +76,12 @@ export const AndroidNativeUpdateManager = () => {
 
         let disposed = false;
         let listenerHandlePromise: Promise<{ remove(): Promise<void> } | null> | null = null;
+        const publishState = (nextState: AndroidNativeUpdateState) => {
+            if (disposed || dismissedRef.current) {
+                return;
+            }
+            setState(nextState);
+        };
 
         const applyCheck = async (interactive = false) => {
             try {
@@ -83,7 +90,7 @@ export const AndroidNativeUpdateManager = () => {
                 if (!config.enabled) {
                     pendingManifestRef.current = null;
                     interactiveRef.current = false;
-                    setState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
+                    publishState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
                     if (interactive) {
                         toastRef.current.warning(tRef.current('nativeUpdate.toast.disabled'));
                     }
@@ -98,7 +105,7 @@ export const AndroidNativeUpdateManager = () => {
                 if (!availability.available || !availability.manifest) {
                     pendingManifestRef.current = null;
                     interactiveRef.current = false;
-                    setState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
+                    publishState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
                     if (interactive && availability.reason === 'up-to-date') {
                         toastRef.current.success(tRef.current('nativeUpdate.toast.upToDate'), '应用更新', {
                             dedupeKey: 'android-native-update:up-to-date',
@@ -128,7 +135,7 @@ export const AndroidNativeUpdateManager = () => {
 
                 if (preparedState) {
                     const recoveredState = normalizeRecoveredPreparedUpdate(preparedState);
-                    setState(mapNativeUpdateEventToState(recoveredState, {
+                    publishState(mapNativeUpdateEventToState(recoveredState, {
                         blocking: shouldBlock,
                         title: displayTitle,
                         message: displayMessage,
@@ -157,7 +164,7 @@ export const AndroidNativeUpdateManager = () => {
                                     manifestVersion: availability.manifest.version,
                                     error: error instanceof Error ? error.message : String(error),
                                 });
-                                setState({
+                                publishState({
                                     phase: 'error',
                                     blocking: shouldBlock,
                                     version: availability.manifest.version,
@@ -172,7 +179,7 @@ export const AndroidNativeUpdateManager = () => {
                     }
                 }
 
-                setState({
+                publishState({
                     phase: 'checking',
                     blocking: shouldBlock,
                     version: availability.manifest.version,
@@ -203,7 +210,7 @@ export const AndroidNativeUpdateManager = () => {
                             errorMessage: result.errorMessage,
                             apkFilePath: result.apkFilePath,
                         });
-                        setState(mapNativeUpdateEventToState(recoveredLiveState, {
+                        publishState(mapNativeUpdateEventToState(recoveredLiveState, {
                             blocking: shouldBlock,
                             title: displayTitle,
                             message: displayMessage,
@@ -223,7 +230,7 @@ export const AndroidNativeUpdateManager = () => {
                         manifestVersion: availability.manifest.version,
                         error: error instanceof Error ? error.message : String(error),
                     });
-                    setState({
+                    publishState({
                         phase: 'error',
                         blocking: shouldBlock,
                         version: availability.manifest.version,
@@ -243,7 +250,7 @@ export const AndroidNativeUpdateManager = () => {
                 });
                 pendingManifestRef.current = null;
                 interactiveRef.current = false;
-                setState({
+                publishState({
                     phase: 'error',
                     blocking: true,
                     reason: message,
@@ -254,12 +261,12 @@ export const AndroidNativeUpdateManager = () => {
         };
 
         listenerHandlePromise = subscribeAndroidNativeUpdateState((event) => {
-            if (disposed || !pendingManifestRef.current) {
+            if (disposed || dismissedRef.current || !pendingManifestRef.current) {
                 return;
             }
 
             const manifest = pendingManifestRef.current;
-            setState(mapNativeUpdateEventToState(event, {
+            publishState(mapNativeUpdateEventToState(event, {
                 blocking: manifest.forceUpdate === true || interactiveRef.current,
                 title: manifest.forceUpdateTitle || undefined,
                 message: manifest.forceUpdateMessage || undefined,
@@ -267,6 +274,7 @@ export const AndroidNativeUpdateManager = () => {
         });
 
         const unsubscribeRequest = subscribeAndroidNativeUpdateRequests((request) => {
+            dismissedRef.current = false;
             void applyCheck(request.interactive !== false);
         });
 
@@ -289,6 +297,7 @@ export const AndroidNativeUpdateManager = () => {
     }
 
     const handleRetry = () => {
+        dismissedRef.current = false;
         requestAndroidNativeUpdateCheck({ interactive: true });
     };
 
@@ -320,6 +329,10 @@ export const AndroidNativeUpdateManager = () => {
     return (
         <AndroidNativeUpdateGate
             state={state}
+            onDismiss={() => {
+                dismissedRef.current = true;
+                setState(HIDDEN_ANDROID_NATIVE_UPDATE_STATE);
+            }}
             onRetry={handleRetry}
             onOpenSettings={handleOpenSettings}
             onContinueInstall={handleContinueInstall}

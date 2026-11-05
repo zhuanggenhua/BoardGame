@@ -39,6 +39,7 @@ export interface QidahenRegionGraphNode {
 
 export interface QidahenRegionGraphEdge {
     id: string;
+    fortificationId?: 'outer-wall' | 'inner-wall';
     from: string;
     to: string;
     bidirectional: boolean;
@@ -81,6 +82,10 @@ export interface QidahenMaskRegionDefinition {
     seed: QidahenRegionGraphPoint | null;
     links: string[];
     printedRegionIds: string[];
+    mapRole: 'land' | 'city' | 'point';
+    parentRegionId: string | null;
+    markerBounds: { left: number; top: number; width: number; height: number } | null;
+    homelandFaction: 'ming' | 'mongol' | 'jin' | 'neutral' | null;
 }
 
 export interface QidahenRuntimeRegionDefinition extends QidahenMaskRegionDefinition {
@@ -100,9 +105,9 @@ export interface QidahenSharedPrintedRegionAudit {
 
 const DEFAULT_BOUNDARY_TYPES: QidahenPassageBoundaryMeta[] = [
     { id: 'plain', label: '平原', note: '战场宽度 3', travelCost: 1, battleWidth: 3, unitCap: null },
-    { id: 'mountain', label: '山脉', note: '战场宽度 2', travelCost: 2, battleWidth: 2, unitCap: null },
-    { id: 'river', label: '河流', note: '战场宽度 2', travelCost: 2, battleWidth: 2, unitCap: null },
-    { id: 'coast', label: '海岸/水路', note: '船锚区相邻，最多 2 部队', travelCost: 2, battleWidth: 2, unitCap: 2 },
+    { id: 'mountain', label: '山脉', note: '战场宽度 2', travelCost: 1, battleWidth: 2, unitCap: null },
+    { id: 'river', label: '河流', note: '战场宽度 2', travelCost: 1, battleWidth: 2, unitCap: null },
+    { id: 'coast', label: '海岸/水路', note: '船锚区相邻，最多 2 部队', travelCost: 1, battleWidth: 2, unitCap: 2 },
     { id: 'wall-convex', label: '攻入长城', note: '凸面战场宽度 1', travelCost: 1, battleWidth: 1, unitCap: null },
     { id: 'wall-flat', label: '出长城', note: '平面战场宽度 3', travelCost: 1, battleWidth: 3, unitCap: null },
     { id: 'city', label: '攻城', note: '战场宽度 1', travelCost: 1, battleWidth: 1, unitCap: null },
@@ -161,6 +166,16 @@ const parseMaskRegionDefinition = (value: unknown): QidahenMaskRegionDefinition 
         printedRegionIds: Array.isArray(value.printedRegionIds)
             ? value.printedRegionIds.map((item) => toStringOrEmpty(item)).filter(Boolean)
             : [id],
+        mapRole: value.mapRole === 'city' || value.mapRole === 'point' ? value.mapRole : 'land',
+        parentRegionId: typeof value.parentRegionId === 'string' ? value.parentRegionId : null,
+        homelandFaction: ['ming', 'mongol', 'jin', 'neutral'].includes(String(value.homelandFaction))
+            ? value.homelandFaction as 'ming' | 'mongol' | 'jin' | 'neutral' : null,
+        markerBounds: isRecord(value.markerBounds) ? {
+            left: toFiniteNumber(value.markerBounds.left),
+            top: toFiniteNumber(value.markerBounds.top),
+            width: toFiniteNumber(value.markerBounds.width),
+            height: toFiniteNumber(value.markerBounds.height),
+        } : null,
     };
 };
 
@@ -215,6 +230,8 @@ export const parseQidahenRegionGraph = (raw: unknown): QidahenRegionGraph => {
             if (!from || !to || !nodeIds.has(from) || !nodeIds.has(to) || from === to) return null;
             const bidirectional = item.bidirectional !== false;
             const boundaryType = parseBoundaryType(item.boundaryType);
+            const fortificationId = item.fortificationId;
+            if (fortificationId !== undefined && fortificationId !== 'outer-wall' && fortificationId !== 'inner-wall') throw new Error(`Unknown wall owner: ${fortificationId}`);
             const meta = boundaryMetaById.get(boundaryType) ?? DEFAULT_BOUNDARY_META_BY_ID.get(boundaryType) ?? DEFAULT_BOUNDARY_TYPES[0];
             const reverseBoundaryType = bidirectional
                 ? parseOptionalBoundaryType(item.reverseBoundaryType) ?? boundaryType
@@ -226,6 +243,7 @@ export const parseQidahenRegionGraph = (raw: unknown): QidahenRegionGraph => {
                 : null;
             return {
                 id: toStringOrEmpty(item.id) || normalizeQidahenPassageId(from, to),
+                fortificationId,
                 from,
                 to,
                 bidirectional,
@@ -390,6 +408,8 @@ export const QIDAHEN_RUNTIME_REGION_BY_ID = new Map(QIDAHEN_RUNTIME_REGION_DEFIN
 export const QIDAHEN_RUNTIME_REGION_IDS_BY_PRINTED_REGION_ID = QIDAHEN_RUNTIME_REGION_DEFINITIONS.reduce<Map<string, string[]>>(
     (map, region) => {
         for (const printedRegionId of region.printedRegionIds) {
+            // 城镇挂在土地下面，不参与把土地像素再次切成假地块。
+            if (region.mapRole === 'city') continue;
             const current = map.get(printedRegionId) ?? [];
             if (!current.includes(region.id)) {
                 current.push(region.id);

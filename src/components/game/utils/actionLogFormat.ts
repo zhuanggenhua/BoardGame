@@ -3,6 +3,7 @@ import i18n from '../../../lib/i18n';
 
 export interface ActionLogRow {
     id: string;
+    actorId: string | number;
     timeLabel: string;
     playerLabel: string;
     text: string;
@@ -192,6 +193,7 @@ export const buildActionLogRows = (
         const segments = resolvePlayerIdParams(entry.segments || [], getPlayerLabel);
         return {
             id: entry.id,
+            actorId: entry.actorId,
             timeLabel: formatTime(entry.timestamp),
             playerLabel: getPlayerLabel(entry.actorId),
             text: formatActionLogSegments(segments) || entry.kind,

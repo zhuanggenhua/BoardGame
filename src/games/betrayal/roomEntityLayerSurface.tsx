@@ -1,4 +1,7 @@
 import React from "react";
+import { useTouchInspectGesture } from "../../hooks/ui/useTouchInspectGesture";
+import { resolveRoomEntitySlots } from "./roomEntitySceneModel";
+import { inferMonsterDefinitionId } from "./monsterReadModel";
 import { useTranslation } from "react-i18next";
 
 import type { EntityRelation } from "../../engine/primitives";
@@ -11,6 +14,7 @@ import type {
 } from "./game";
 import type { BetrayalAttackImpactState } from "./attackImpactPresentation";
 import { BetrayalAttackImpactSurface } from "./attackImpactSurface";
+import type { BetrayalTraitDelta } from "./activityPresentation";
 import { formatMonsterTraitSummary } from "./entityPresentation";
 import type { BetrayalHauntTokenInstanceSummary } from "./hauntTokenModel";
 import { resolvePlayerName } from "./playerPresentation";
@@ -35,13 +39,16 @@ type RoomEntityMaskTarget = {
 };
 
 type HealFeedback = {
-  kind: "heal";
+  kind: "heal" | "traitChange";
   targetName: string | null;
+  targetPlayerId?: string | null;
   traitSummary: string;
   traitCount: number;
+  deltaText?: string;
 };
 
 type RoomEntityLayerSurfaceProps = {
+  sceneArtwork?: boolean;
   roomId: string;
   occupants: readonly BetrayalExplorerSummary[];
   monsters: readonly BetrayalMonsterSummary[];
@@ -49,6 +56,7 @@ type RoomEntityLayerSurfaceProps = {
   canSelectRoom: boolean;
   canPickUpMummyGirl: boolean;
   currentExplorerPlayerId: string;
+  interactionMode: string;
   traitorPlayerId: string | null;
   mummyMonsterId?: string | null;
   activeHauntTargetGuide?: RoomEntityHauntTargetGuide | null;
@@ -74,6 +82,10 @@ type RoomEntityLayerSurfaceProps = {
   selectedPreviewTradeTargetPlayerId: string | null;
   selectedDustTargetPlayerId: string | null;
   visibleFeedback: HealFeedback | null;
+  traitChangeFeedbackByPlayerId: ReadonlyMap<
+    string,
+    { presentationKey: string; deltas: readonly BetrayalTraitDelta[] }
+  >;
   movingExplorerPlayerId?: string | null;
   isHauntTargetRoom: boolean;
   isHelpingHandsTrollHandMoveMode: boolean;
@@ -99,9 +111,15 @@ type RoomEntityLayerSurfaceProps = {
   attackImpactByPlayerId: ReadonlyMap<string, BetrayalAttackImpactState>;
   onSelectExplorerTarget: (explorer: BetrayalExplorerSummary) => void;
   onOpenExplorerDetails: (playerId: string) => void;
+  movableExplorerPlayerId?: string | null;
+  explorerMoveSelected?: boolean;
+  onToggleExplorerMove?: () => void;
   onSelectMonsterTarget: (monsterId: string) => void;
   onSelectHelpingHandsTrollHandMoveMonster: (monsterId: string) => void;
-  onSelectMonsterMoveMonster: (monsterId: string) => void;
+  onSelectMonsterMoveMonster: (
+    monsterId: string,
+    sourceElement?: HTMLElement,
+  ) => void;
   onSelectMonsterAttackMonster: (monsterId: string) => void;
   onOpenMonsterDetails: (monsterId: string) => void;
   onPickUpMummyGirl: () => void;
@@ -125,6 +143,7 @@ function hasMaskTarget(
 }
 
 export function BetrayalRoomEntityLayerSurface({
+  sceneArtwork = false,
   roomId,
   occupants,
   monsters,
@@ -132,6 +151,7 @@ export function BetrayalRoomEntityLayerSurface({
   canSelectRoom,
   canPickUpMummyGirl,
   currentExplorerPlayerId,
+  interactionMode,
   traitorPlayerId,
   mummyMonsterId,
   activeHauntTargetGuide,
@@ -157,6 +177,7 @@ export function BetrayalRoomEntityLayerSurface({
   selectedPreviewTradeTargetPlayerId,
   selectedDustTargetPlayerId,
   visibleFeedback,
+  traitChangeFeedbackByPlayerId,
   movingExplorerPlayerId,
   isHauntTargetRoom,
   isHelpingHandsTrollHandMoveMode,
@@ -179,6 +200,9 @@ export function BetrayalRoomEntityLayerSurface({
   attackImpactByPlayerId,
   onSelectExplorerTarget,
   onOpenExplorerDetails,
+  movableExplorerPlayerId,
+  explorerMoveSelected = false,
+  onToggleExplorerMove,
   onSelectMonsterTarget,
   onSelectHelpingHandsTrollHandMoveMonster,
   onSelectMonsterMoveMonster,
@@ -187,6 +211,20 @@ export function BetrayalRoomEntityLayerSurface({
   onPickUpMummyGirl,
 }: RoomEntityLayerSurfaceProps) {
   const { t } = useTranslation("game-betrayal");
+  const slots = resolveRoomEntitySlots([
+    ...occupants.map(explorer => `player:${explorer.playerId}`),
+    ...monsters.map(monster => `monster:${monster.id}`),
+  ]);
+  const slotStyle = (id: string, width: number, height: number): React.CSSProperties | undefined => {
+    if (!sceneArtwork) return undefined;
+    const slot = slots.get(id)!;
+    return { position: 'absolute', left: slot.x + slot.size / 2, top: slot.y + slot.size / 2,
+      width, height, transform: `translate(-50%, -50%) scale(${slot.size / Math.max(width, height)})`, transformOrigin: 'center' };
+  };
+  const inspectGesture = useTouchInspectGesture<string, string>({
+    enabled: true,
+    onInspect: onOpenExplorerDetails,
+  });
   const hasPlayers = occupants.length > 0;
   const hasMonsters = monsters.length > 0;
   const hasCrowdedEntityRoom = hasPlayers && hasMonsters;
@@ -233,15 +271,15 @@ export function BetrayalRoomEntityLayerSurface({
 
   return (
     <div
-      className={`pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${
+      className={sceneArtwork ? "pointer-events-none absolute inset-0 z-10" : `pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${
         hasCrowdedEntityRoom ? "gap-2" : "gap-0"
       }`}
       data-room-token-layout={
-        hasCrowdedEntityRoom ? "stable-entity-lanes" : "single-entity-cluster"
+        sceneArtwork ? "scene-identity-slots" : hasCrowdedEntityRoom ? "stable-entity-lanes" : "single-entity-cluster"
       }
     >
       {hasPlayers ? (
-        <div className="flex max-h-[146px] flex-col items-center justify-center gap-2">
+        <div className={sceneArtwork ? "contents" : "flex max-h-[146px] flex-col items-center justify-center gap-2"}>
           {occupants.map((occupant) => {
             const canSelectTraitorTarget =
               activeHauntTargetGuide?.kind === "explorer" &&
@@ -289,27 +327,49 @@ export function BetrayalRoomEntityLayerSurface({
               (isDustSicknessExchangeMode &&
                 occupant.playerId === selectedDustTargetPlayerId) ||
               activeHauntTargetGuide?.playerId === occupant.playerId;
+            const isMovementSource = occupant.playerId === movableExplorerPlayerId;
             const tokenLabel = resolvePlayerName(
               occupant.playerId,
               occupant.displayName,
               matchData,
             );
             const isVisibleFeedbackTarget =
-              visibleFeedback?.kind === "heal" &&
-              (visibleFeedback.targetName === tokenLabel ||
+              (visibleFeedback?.kind === "heal" ||
+                visibleFeedback?.kind === "traitChange") &&
+              ((visibleFeedback.targetPlayerId &&
+                visibleFeedback.targetPlayerId === occupant.playerId) ||
+                visibleFeedback.targetName === tokenLabel ||
                 visibleFeedback.targetName === occupant.displayName);
+            const traitChangeFeedback = traitChangeFeedbackByPlayerId.get(
+              occupant.playerId,
+            );
+            const resolvedTraitDeltaText = traitChangeFeedback?.deltas
+              .map(
+                ({ trait, amount }) =>
+                  `${amount > 0 ? "+" : ""}${amount} ${resolveTraitLabel(trait)}`,
+              )
+              .join(" / ");
+            const resolvedFeedbackText =
+              resolvedTraitDeltaText ||
+              (visibleFeedback?.kind === "traitChange"
+                ? visibleFeedback.deltaText ?? visibleFeedback.traitSummary
+                : visibleFeedback?.traitSummary
+                  ? `恢复 ${visibleFeedback.traitSummary}`
+                  : "属性恢复");
+            const hasAttackImpact = attackImpactByPlayerId.has(occupant.playerId);
             const occupantCarriesGirl =
               girlHeldByExplorer &&
               visibleGirlToken?.ownerPlayerId === occupant.playerId;
             const isMovingExplorerAnchor =
               occupant.playerId === movingExplorerPlayerId;
             const tokenContent = (
-              <>
+              <span className="relative inline-flex items-end justify-center">
                 <span className="relative z-10 inline-flex items-end gap-1.5">
                   {renderAttackImpactSurface(
                     occupant.playerId,
                     "map",
                     <ExplorerFigureToken
+                      sceneArtwork={sceneArtwork}
                       explorer={occupant}
                       locale={locale}
                       label={tokenLabel}
@@ -321,9 +381,9 @@ export function BetrayalRoomEntityLayerSurface({
                       missingTokenLabel={t(
                         "board.hauntTokens.officialTokenMissing",
                       )}
-                      targetHighlight={canSelectExplorerTarget}
+                      targetHighlight={canSelectExplorerTarget || (isMovementSource && explorerMoveSelected)}
                       targetHighlightSelected={
-                        isSelectedExplorerTarget || isHauntGuideExplorerTarget
+                        isSelectedExplorerTarget || isHauntGuideExplorerTarget || (isMovementSource && explorerMoveSelected)
                       }
                       targetHighlightTestId={`betrayal-room-occupant-target-outline-${roomId}-${occupant.playerId}`}
                     />,
@@ -344,30 +404,68 @@ export function BetrayalRoomEntityLayerSurface({
                     {activeHauntTargetGuide.cue}
                   </span>
                 ) : null}
-                {isVisibleFeedbackTarget && visibleFeedback ? (
+                {traitChangeFeedback && !hasAttackImpact && !isVisibleFeedbackTarget ? (
+                  <span
+                    data-testid={`betrayal-room-occupant-trait-change-${roomId}-${occupant.playerId}`}
+                    data-feedback-style="floating-text"
+                    data-feedback-anchor="target-token"
+                    data-trait-change-presentation-key={
+                      traitChangeFeedback.presentationKey
+                    }
+                    aria-label={traitChangeFeedback.deltas
+                      .map(
+                        ({ trait, amount }) =>
+                          `${amount > 0 ? "+" : ""}${amount} ${resolveTraitLabel(trait)}`,
+                      )
+                      .join(" / ")}
+                    className="betrayal-trait-change-floating pointer-events-none z-40 text-[16px] font-black leading-none [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(96,165,250,0.76),0_0_18px_rgba(96,165,250,0.48)]"
+                  >
+                    {traitChangeFeedback.deltas.map(({ trait, amount }) => (
+                      <span
+                        key={`${trait}-${amount}`}
+                        className={
+                          amount > 0 ? "text-emerald-300" : "text-rose-300"
+                        }
+                      >
+                        {amount > 0 ? "+" : ""}
+                        {amount} {resolveTraitLabel(trait)}
+                      </span>
+                    ))}
+                  </span>
+                ) : isVisibleFeedbackTarget && visibleFeedback ? (
                   <span
                     data-testid={`betrayal-room-occupant-feedback-${roomId}-${occupant.playerId}`}
                     data-feedback-style="floating-text"
                     data-feedback-anchor="target-token"
-                    aria-label={`${t("board.feedback.healTraitCount", {
-                      count: visibleFeedback.traitCount || 1,
-                    })}：${visibleFeedback.traitSummary}`}
-                    className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 -translate-x-1/2 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
+                    aria-label={resolvedFeedbackText}
+                    className="pointer-events-none absolute bottom-[calc(100%+4px)] left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-0.5 whitespace-nowrap text-[16px] font-black leading-none text-[#dcfce7] [text-shadow:0_2px_3px_rgba(0,0,0,0.96),0_0_10px_rgba(34,197,94,0.76),0_0_18px_rgba(34,197,94,0.48)]"
                   >
-                    {t("board.feedback.healFloatingText", {
-                      count: visibleFeedback.traitCount || 1,
-                    })}
+                    {traitChangeFeedback
+                      ? traitChangeFeedback.deltas.map(({ trait, amount }) => (
+                          <span
+                            key={`${trait}-${amount}`}
+                            className={
+                              amount > 0 ? "text-emerald-300" : "text-rose-300"
+                            }
+                          >
+                            {amount > 0 ? "+" : ""}
+                            {amount} {resolveTraitLabel(trait)}
+                          </span>
+                        ))
+                      : resolvedFeedbackText}
                   </span>
                 ) : null}
-              </>
+              </span>
             );
 
             if (canSelectExplorerTarget) {
               return (
                 <button
                   key={occupant.playerId}
+                  style={slotStyle(`player:${occupant.playerId}`, 66, 72)}
                   type="button"
                   data-testid={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
+                  data-zoom-pan-target={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
                   data-highlight-shape="pentagon"
                   data-direct-target="true"
                   data-visual-transition-anchor-hidden={
@@ -408,30 +506,44 @@ export function BetrayalRoomEntityLayerSurface({
             return (
               <button
                 key={occupant.playerId}
+                  style={slotStyle(`player:${occupant.playerId}`, 66, 72)}
                 type="button"
                 className={`relative outline-none transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d1b05f] ${
                   isMovingExplorerAnchor ? "invisible" : ""
                 } ${
-                  canSelectRoom
+                  canSelectRoom && !isMovementSource
                     ? "pointer-events-none cursor-default"
                     : "pointer-events-auto cursor-pointer hover:drop-shadow-[0_0_14px_rgba(209,176,95,0.34)]"
                 }`}
                 data-testid={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
+                data-zoom-pan-target={`betrayal-room-occupant-${roomId}-${occupant.playerId}`}
+                data-tutorial-id={
+                  occupant.playerId === currentExplorerPlayerId
+                    ? "betrayal-current-explorer-token"
+                    : undefined
+                }
                 data-visual-transition-anchor-hidden={
                   isMovingExplorerAnchor ? "true" : undefined
                 }
-                tabIndex={canSelectRoom ? -1 : undefined}
-                title={t("board.players.detailsAria", {
+                tabIndex={canSelectRoom && !isMovementSource ? -1 : undefined}
+                title={isMovementSource ? t("board.players.moveTokenAria", { player: tokenLabel }) : t("board.players.detailsAria", {
                   player: tokenLabel,
                 })}
-                aria-label={t("board.players.detailsAria", {
+                aria-label={isMovementSource ? t("board.players.moveTokenAria", { player: tokenLabel }) : t("board.players.detailsAria", {
                   player: tokenLabel,
                 })}
-                onPointerDown={(event) => event.stopPropagation()}
-                onPointerUp={(event) => event.stopPropagation()}
+                {...inspectGesture.getTouchInspectProps(occupant.playerId, occupant.playerId)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  onOpenExplorerDetails(occupant.playerId);
+                }}
+                data-move-source={isMovementSource ? "true" : undefined}
+                aria-pressed={isMovementSource ? explorerMoveSelected : undefined}
                 onClick={(event) => {
                   event.stopPropagation();
-                  onOpenExplorerDetails(occupant.playerId);
+                  if (inspectGesture.shouldBlockInspectClick(occupant.playerId)) return;
+                  if (isMovementSource) onToggleExplorerMove?.();
+                  else onOpenExplorerDetails(occupant.playerId);
                 }}
               >
                 {tokenContent}
@@ -442,7 +554,7 @@ export function BetrayalRoomEntityLayerSurface({
       ) : null}
       {hasMonsters ? (
         <div
-          className={`relative flex justify-center ${
+          className={sceneArtwork ? "contents" : `relative flex justify-center ${
             isHauntTargetRoom
               ? "max-w-[176px] flex-row gap-1"
               : "max-h-[146px] flex-col gap-2"
@@ -453,10 +565,12 @@ export function BetrayalRoomEntityLayerSurface({
               selectedInventoryUseEffectMode === "moveOthersInRoom" &&
               hasMaskTarget(maskTargetTokens, "monster", monster.id);
             const canSelectHelpingHandsTrollMoveMonster =
-              isHelpingHandsTrollHandMoveMode &&
-              helpingHandsMovableTrollHandIds.has(monster.id);
+              helpingHandsMovableTrollHandIds.has(monster.id) &&
+              (interactionMode === "default" ||
+                isHelpingHandsTrollHandMoveMode);
             const canSelectMonsterMoveMonster =
-              isMonsterMoveMode && monsterMovableIds.has(monster.id);
+              monsterMovableIds.has(monster.id) &&
+              (interactionMode === "default" || isMonsterMoveMode);
             const canSelectMonsterAttackMonster =
               isMonsterAttackMode && monsterAttackableIds.has(monster.id);
             const canSelectPeekabooMonsterTarget =
@@ -496,7 +610,7 @@ export function BetrayalRoomEntityLayerSurface({
                 <span
                   className={
                     monsterCarriesGirl
-                      ? "relative z-10 inline-flex min-h-[58px] min-w-[112px] items-end justify-center gap-1.5"
+                      ? "relative z-10 inline-flex min-h-[98px] min-w-[58px] flex-col items-center justify-center gap-0"
                       : "relative z-10 inline-flex items-end gap-1.5"
                   }
                   data-monster-token-cluster={
@@ -504,6 +618,7 @@ export function BetrayalRoomEntityLayerSurface({
                   }
                 >
                   <MonsterBoardToken
+                    sceneArtwork={sceneArtwork}
                     monster={monster}
                     locale={locale}
                     t={t}
@@ -521,11 +636,12 @@ export function BetrayalRoomEntityLayerSurface({
                     }
                   />
                   {monsterCarriesGirl && visibleGirlToken ? (
-                    <span className="pointer-events-none z-30 inline-flex translate-y-[2px]">
+                    <span className="pointer-events-none z-30 inline-flex translate-x-0 translate-y-0">
                       <GirlBoardToken
                         token={visibleGirlToken}
                         t={t}
                         attachedTo="mummy"
+                        displaySize="mummy-carry"
                       />
                     </span>
                   ) : null}
@@ -545,6 +661,7 @@ export function BetrayalRoomEntityLayerSurface({
               return (
                 <button
                   key={monster.id}
+                  style={slotStyle(`monster:${monster.id}`, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52)}
                   type="button"
                   data-testid={`betrayal-room-monster-${roomId}-${monster.id}`}
                   data-highlight-shape="token"
@@ -595,7 +712,10 @@ export function BetrayalRoomEntityLayerSurface({
                       return;
                     }
                     if (canSelectMonsterMoveMonster) {
-                      onSelectMonsterMoveMonster(monster.id);
+                      onSelectMonsterMoveMonster(
+                        monster.id,
+                        event.currentTarget as HTMLElement,
+                      );
                       return;
                     }
                     if (canSelectMonsterAttackMonster) {
@@ -613,6 +733,7 @@ export function BetrayalRoomEntityLayerSurface({
             return (
               <button
                 key={monster.id}
+                  style={slotStyle(`monster:${monster.id}`, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52, inferMonsterDefinitionId(monster) === "mummy" ? 70 : 52)}
                 type="button"
                 className={`relative border-0 bg-transparent p-0 outline-none transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d1b05f] ${
                   isMovingMonsterAnchor ? "invisible" : ""

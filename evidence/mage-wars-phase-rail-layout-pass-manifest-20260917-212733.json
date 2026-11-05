@@ -1,0 +1,54 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-proxy-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "阶段轨道不再显示“回合流程 / Turn Flow”这类组件自称标题。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：删除 MageWarsPhaseProgressIndicator 内部可见 phaseProgressTitle 文本，仅保留 aria-label。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言阶段轨道文本不包含“回合流程 / Turn Flow”。",
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts -> 5 passed。"
+      ]
+    },
+    {
+      "requirement": "1920 与 2560x1304 桌面阶段轨道按视口自然放大，不再缩成小角标。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：阶段轨道宽度、内边距、行高、字号和圆点尺寸改为 clamp 视口比例。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言阶段轨道宽度下限、竖排轴和 2560x1304 宽屏布局通过。",
+        "test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png 与 e2e-desktop-2560x1304-board.png：当前截图证据。"
+      ]
+    },
+    {
+      "requirement": "眼睛、缩放读数、弃牌堆等辅助控件避让正式 UI，不要求阶段轨道或主操作反向让位。",
+      "status": "PASS",
+      "evidence": [
+        "src/games/mage-wars/Board.tsx：生命显示眼睛放到阶段轨道右侧，缩放读数放到同层工具右侧，弃牌堆在右侧主按钮上方并向内保留安全距。",
+        "e2e/mage-wars/foundation-board-runtime.e2e.ts：断言阶段轨道不为眼睛下移，眼睛/缩放读数/阶段轨道不重叠，弃牌堆不被主按钮遮挡。",
+        "npm run test:e2e:file -- e2e/mage-wars/foundation-board-runtime.e2e.ts -> 5 passed。"
+      ]
+    }
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-for-pureref/phase-rail-layout-20260917-212733/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-for-pureref/phase-rail-layout-20260917-212733/01-labeled-e2e-desktop-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-for-pureref/phase-rail-layout-20260917-212733/02-labeled-e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/_labeled-for-pureref/phase-rail-layout-20260917-212733/03-labeled-e2e-mobile-landscape-board.png"
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-desktop-2560x1304-board.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/mage-wars/foundation-board-runtime/e2e-mobile-landscape-board.png"
+  ],
+  "notes": [
+    "本清单只覆盖本轮阶段轨道标题、桌面比例和辅助控件避让，不代表 Mage Wars 全游戏完整验收。",
+    "图片来自 2026-09-17 当前工作树目标 E2E 通过后的截图。"
+  ]
+}

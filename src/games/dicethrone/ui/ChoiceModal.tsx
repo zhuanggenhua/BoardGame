@@ -7,8 +7,13 @@ import type { StatusAtlases } from './statusEffects';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 import { resolveI18nList } from './utils';
 import { getVisualMetaById } from '../domain/statusEffects';
+import type { CardPreviewRef } from '../../../core';
+import type { HeroState } from '../domain/types';
+import { getPortraitStyle } from './assets';
+import { Dice2D } from './Dice2D';
+import type { ChoiceRequestedEvent } from '../domain/events';
 
-interface ChoiceOption {
+export interface ChoiceOption {
     id: string;
     label: string;
     labelParams?: Record<string, string | number>;
@@ -17,6 +22,13 @@ interface ChoiceOption {
     customId?: string;
     value?: number;
     disabled?: boolean;
+    previewRef?: CardPreviewRef;
+    dicePreview?: ChoiceRequestedEvent['payload']['options'][number]['dicePreview'];
+    targetPlayerId?: string;
+    choiceKind?: 'card' | 'player' | 'status' | 'skip';
+    cardId?: string;
+    cardSourceZone?: 'hand' | 'deck' | 'discard' | 'preparedSpells';
+    candidateStatusId?: string;
 }
 
 /** slider 配置（从领域层透传） */
@@ -55,7 +67,8 @@ const translateInterpolatedParam = (
     if (typeof value !== 'string') return value;
     const separator = ', ';
     return value.split(separator).map(part => {
-        if (!part.startsWith('cards.') && !part.startsWith('characters.')) return part;
+        if (!part.startsWith('cards.') && !part.startsWith('characters.')
+            && !part.startsWith('tokens.') && !part.startsWith('statusEffects.')) return part;
         return translateRuntimeKey(t, part, { defaultValue: part });
     }).join(separator);
 };
@@ -67,6 +80,8 @@ export const ChoiceModal = ({
     onResolveWithValue,
     locale,
     statusIconAtlas,
+    players,
+    playerNames,
 }: {
     choice: ChoiceData | null | undefined;
     canResolve: boolean;
@@ -76,6 +91,8 @@ export const ChoiceModal = ({
     onResolveWithValue?: (optionId: string, mergedValue: unknown) => void;
     locale?: string;
     statusIconAtlas?: StatusAtlases | null;
+    players?: Record<string, HeroState>;
+    playerNames?: Record<string, string>;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     // 防御性检查：如果 choice 存在但 options 为空，不显示模态框
@@ -140,12 +157,12 @@ export const ChoiceModal = ({
 
                 {isSlider && confirmOption ? (
                     maxValue === 1 ? (
-                        <div className="flex gap-4">
+                        <div className="flex w-full flex-col gap-3">
                             <GameButton
                                 onClick={() => handleSliderConfirm(1)}
                                 disabled={!canResolve}
-                                variant="primary"
-                                className="min-w-[140px]"
+                                variant="option"
+                                fullWidth
                                 data-option-id={confirmOption.id}
                                 data-choice-custom-id={confirmOption.customId}
                             >
@@ -155,8 +172,8 @@ export const ChoiceModal = ({
                                 <GameButton
                                     onClick={handleSliderSkip}
                                     disabled={!canResolve}
-                                    variant="secondary"
-                                    className="min-w-[100px]"
+                                    variant="option"
+                                    fullWidth
                                     data-option-id={skipOption.id}
                                     data-choice-custom-id={skipOption.customId}
                                 >
@@ -224,20 +241,41 @@ export const ChoiceModal = ({
 
                         // 默认按钮模式
                         return (
-                            <div className="flex flex-wrap gap-4 w-full justify-center">
+                            <div className="flex w-full flex-col gap-3" data-testid="dt-choice-options">
                                 {choice?.options.map(option => {
+                                    const target = option.targetPlayerId ? players?.[option.targetPlayerId] : undefined;
                                     const isCancelOption = option.id === '__cancel__';
                                     return (
                                         <GameButton
                                             key={option.id}
                                             onClick={() => onResolve(option.id)}
                                             disabled={!canResolve || option.disabled}
-                                            variant={isCancelOption ? 'secondary' : canResolve ? 'primary' : 'secondary'}
-                                            className="min-w-[120px]"
+                                            variant={isCancelOption ? 'secondary' : 'option'}
+                                            fullWidth
+                                            className={option.dicePreview || target ? 'flex-col' : undefined}
                                             data-option-id={option.id}
                                             data-choice-custom-id={option.customId}
                                         >
+                                            {option.dicePreview && (
+                                                <span className="flex gap-3 mb-2" data-choice-dice-preview="true">
+                                                    {option.dicePreview.dice.map(die => (
+                                                        <span key={die.index} className="flex flex-col items-center gap-2">
+                                                            <Dice2D value={die.value} characterId={option.dicePreview!.characterId}
+                                                                isRolling={false} locale={locale} size="48px" />
+                                                            <span className="text-sm">{die.value}</span>
+                                                        </span>
+                                                    ))}
+                                                </span>
+                                            )}
+                                            {target && (
+                                                <span className="mx-auto mb-2 block h-20 w-20 rounded-full border border-amber-400/40"
+                                                    data-choice-target-player={option.targetPlayerId}
+                                                    style={getPortraitStyle(target.characterId, locale)} />
+                                            )}
                                             {resolveOptionLabel(option)}
+                                            {option.targetPlayerId && playerNames?.[option.targetPlayerId] && (
+                                                <span className="block text-xs text-slate-300">{playerNames[option.targetPlayerId]}</span>
+                                            )}
                                         </GameButton>
                                     );
                                 })}

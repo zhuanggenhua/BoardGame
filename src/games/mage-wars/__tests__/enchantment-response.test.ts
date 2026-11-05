@@ -8,13 +8,14 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import { RESPONSE_WINDOW_COMMANDS } from '../../../engine/systems/ResponseWindowSystem';
 import { completeResolutionFrame, updateResolutionFrame } from '../../../engine/systems/resolutionStack';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
-import { getPresetSpellbookEntriesFromConfig } from '../data/configPackage';
+import { getMageWarsSpellCardFromConfig, getPresetSpellbookEntriesFromConfig } from '../data/configPackage';
 import { MAGE_WARS_EVENTS } from '../domain/events';
 import { MAGE_WARS_COMMANDS } from '../domain/commands';
 import { MageWarsDomain } from '../domain';
 import { ARENA_ZONE_IDS, MAGE_IDS } from '../domain/ids';
 import type { MageWarsArenaObjectState, MageWarsCommand, MageWarsCore } from '../domain/types';
 import { engineConfig } from '../game';
+import { getCurrentPrompt } from './helpers/domainFlowHarness';
 
 const fixedRandom: RandomFn = {
     random: () => 0.5,
@@ -90,7 +91,7 @@ function makeHiddenResponse(
     ownerId: string,
     zoneId: typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS],
     targetObjectId: string | undefined,
-    spellCardId: 1825 | 1901 | 1904,
+    spellCardId: 1812 | 1825 | 1901 | 1904 | 1905,
     targetPlayerId?: string,
 ): MageWarsArenaObjectState {
     return {
@@ -109,6 +110,60 @@ function makeHiddenResponse(
         statusTokens: {},
         revealed: false,
         ...(targetObjectId ? { anchoredToObjectId: targetObjectId } : { anchoredToPlayerId: targetPlayerId }),
+    };
+}
+
+function makeFamiliar(
+    id: string,
+    ownerId: string,
+    zoneId: typeof ARENA_ZONE_IDS[keyof typeof ARENA_ZONE_IDS],
+): MageWarsArenaObjectState {
+    const spellcastingSource = getMageWarsSpellCardFromConfig(2908)?.spellcastingSource;
+    if (!spellcastingSource) throw new Error('missing familiar spellcasting source');
+    return {
+        id,
+        kind: 'creature',
+        ownerId,
+        sourceSpellCardId: 2908,
+        sourceObjectId: `spell-card-2908-${id}`,
+        name: '乌鸦魔宠胡金',
+        zoneId,
+        life: 5,
+        damage: 0,
+        armor: 0,
+        actionReady: true,
+        guarding: false,
+        statusTokens: {},
+        mana: 3,
+        spellcastingSource,
+        preparedSpellCardId: 3411,
+        preparedSpellCount: 1,
+    };
+}
+
+function withWizardSpellbook(state: MatchState<MageWarsCore>): MatchState<MageWarsCore> {
+    const spellbookEntries = getPresetSpellbookEntriesFromConfig(MAGE_IDS.WIZARD_APPRENTICE);
+    return {
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...state.core.players,
+                '0': {
+                    ...state.core.players['0'],
+                    mageId: MAGE_IDS.WIZARD_APPRENTICE,
+                    spellbookCount: countSpellbookEntries(spellbookEntries),
+                    spellbookEntries,
+                    mana: 20,
+                    preparedSpellCardIds: [],
+                    preparedSpellSlots: 0,
+                },
+                '1': {
+                    ...state.core.players['1'],
+                    mana: 20,
+                },
+            },
+        },
     };
 }
 
@@ -156,19 +211,62 @@ function withPreparedSpell(
 
 function responseCommand(
     state: MatchState<MageWarsCore>,
-    overrides: { interactionId?: string; playerId?: string } = {},
+    overrides: { interactionId?: string; playerId?: string; optionId?: string } = {},
 ): Command<string, unknown> {
     return {
         type: INTERACTION_COMMANDS.RESPOND,
         playerId: overrides.playerId ?? '1',
         payload: {
             interactionId: overrides.interactionId ?? state.sys.interaction.current?.id,
-            optionId: 'reveal',
+            optionId: overrides.optionId ?? 'reveal',
         },
     };
 }
 
 describe('mage-wars enchantment response windows', () => {
+    it('1812 teleports its attached creature to the selected arena zone and destroys itself', () => {
+        let state = setupState('initiativeQuickcast');
+        const target = makeCreature('interference-target-creature', '1', ARENA_ZONE_IDS.A2);
+        const response = makeHiddenResponse(
+            'interference-response',
+            '1',
+            target.zoneId,
+            target.id,
+            1812,
+        );
+        state = withPreparedSpell({
+            ...state,
+            core: addObject(addObject(state.core, target), response),
+        }, 1800);
+
+        const blockedCast = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: { spellCardId: 1800, manaCost: 5, targetObjectId: target.id },
+        });
+        const resolved = runCommand(
+            blockedCast.state,
+            responseCommand(blockedCast.state, { optionId: `teleport:${ARENA_ZONE_IDS.D3}` }),
+        );
+        expect(blockedCast.success).toBe(true);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.map((event) => event.type)).toEqual(expect.arrayContaining([
+            MAGE_WARS_EVENTS.SPELL_TELEPORT_RESOLVED,
+            MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+            MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
+        ]));
+        expect(resolved.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.SPELL_COUNTERED);
+        expect(resolved.state.core.objects[target.id]?.zoneId).toBe(ARENA_ZONE_IDS.D3);
+        expect(resolved.state.core.objects[response.id]).toBeUndefined();
+        expect(Object.values(resolved.state.core.objects)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'enchantment',
+                sourceSpellCardId: 1800,
+                anchoredToObjectId: target.id,
+            }),
+        ]));
+    });
+
     it('1901 counters an opponent enchantment target and cannot be passed', () => {
         let state = setupState('initiativeQuickcast');
         const target = makeCreature('target-creature', '1', ARENA_ZONE_IDS.A2);
@@ -540,6 +638,219 @@ describe('mage-wars enchantment response windows', () => {
         expect(cast.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.ENCHANTMENT_RESPONSE_REQUIRED);
         expect(cast.state.core.objects[response.id]).toMatchObject({ revealed: false });
         expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([3405]);
+    });
+
+    it('1905 redirects an object-cast spell, recalculates target-dependent cost, and resolves it on the original caster', () => {
+        let state = setupState('creatureAction');
+        const familiar = makeFamiliar('redirecting-familiar', '0', ARENA_ZONE_IDS.A2);
+        const target = makeCreature('redirect-target', '1', ARENA_ZONE_IDS.A2);
+        const response = makeHiddenResponse(
+            'hidden-redirect',
+            '1',
+            target.zoneId,
+            target.id,
+            1905,
+        );
+        state = withWizardSpellbook({
+            ...state,
+            core: addObject(addObject(addObject(state.core, familiar), target), response),
+        });
+
+        const blockedCast = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                casterObjectId: familiar.id,
+                spellCardId: 3411,
+                manaCost: 4,
+                targetObjectId: target.id,
+            },
+        });
+
+        expect(blockedCast.success).toBe(true);
+        expect(blockedCast.events.map((event) => event.type)).toEqual(expect.arrayContaining([
+            MAGE_WARS_EVENTS.SPELL_CAST_STARTED,
+            MAGE_WARS_EVENTS.ENCHANTMENT_RESPONSE_REQUIRED,
+        ]));
+        expect(blockedCast.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED);
+        expect(blockedCast.state.core.players['0'].mana).toBe(19);
+        expect(blockedCast.state.core.objects[familiar.id]).toMatchObject({ mana: 0, preparedSpellCardId: undefined });
+        expect(blockedCast.state.sys.responseWindow.current).toMatchObject({
+            windowType: 'spell-redirect',
+        });
+        expect(getCurrentPrompt(blockedCast.state)?.data.ai?.decisions?.[0]).toMatchObject({
+            metadata: expect.objectContaining({
+                mageWarsTimingOpportunity: 'mage-wars.enchantment-response',
+            }),
+        });
+        const responseContext = blockedCast.state.sys.resolution?.frames
+            .find((frame) => frame.id === blockedCast.state.sys.responseWindow.current?.resolutionFrameId)
+            ?.metadata?.mageWarsResponse as { kind?: string; originalCaster?: unknown; originalManaCost?: number } | undefined;
+        expect(responseContext).toMatchObject({
+            kind: 'spell-redirect',
+            originalManaCost: 4,
+            originalCaster: { kind: 'arena-object', objectId: familiar.id, ownerId: '0' },
+        });
+
+        const resolved = runCommand(blockedCast.state, responseCommand(blockedCast.state, { optionId: 'redirect' }));
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.events).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_REDIRECTED,
+                payload: expect.objectContaining({
+                    responseCardId: 1905,
+                    responseObjectId: response.id,
+                    spellCardId: 3411,
+                    originalCaster: { kind: 'arena-object', objectId: familiar.id, ownerId: '0' },
+                    redirectedCaster: { kind: 'mage', playerId: '1' },
+                    targetObjectId: familiar.id,
+                    originalManaCost: 4,
+                    newManaCost: 6,
+                    manaDifference: 2,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED,
+                payload: expect.objectContaining({
+                    playerId: '1',
+                    spellCardId: 3411,
+                    paymentAlreadyApplied: true,
+                    playerManaCost: 2,
+                    targetObjectId: familiar.id,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.STATUS_TOKEN_PLACED,
+                payload: expect.objectContaining({
+                    targetObjectId: familiar.id,
+                    statusTokenId: 'sleep',
+                    amount: 1,
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_SOURCE_CONSUME_AVAILABLE,
+                payload: expect.objectContaining({
+                    sourceObjectId: response.id,
+                    sourceAbilityId: 'mw.spell.1905.response',
+                }),
+            }),
+            expect.objectContaining({
+                type: MAGE_WARS_EVENTS.ARENA_OBJECT_DEFEATED,
+                payload: expect.objectContaining({
+                    objectId: response.id,
+                    sourceAbilityId: 'mw.spell.1905.response',
+                }),
+            }),
+        ]));
+        expect(resolved.events.map((event) => event.type)).not.toContain(MAGE_WARS_EVENTS.SPELL_COUNTERED);
+        expect(resolved.state.core.players['0'].mana).toBe(19);
+        expect(resolved.state.core.players['1'].mana).toBe(18);
+        expect(resolved.state.core.objects[familiar.id]?.statusTokens.sleep).toBe(1);
+        expect(resolved.state.core.objects[target.id]?.statusTokens.sleep).toBeUndefined();
+        expect(resolved.state.core.objects[response.id]).toBeUndefined();
+        expect(resolved.state.core.players['1'].discardSpellCardIds).toEqual(expect.arrayContaining([3411, 1905]));
+    });
+
+    it('1905 rejects wrong, stale, and duplicate redirect responses', () => {
+        let state = setupState('creatureAction');
+        const familiar = makeFamiliar('redirect-stale-familiar', '0', ARENA_ZONE_IDS.A2);
+        const target = makeCreature('redirect-stale-target', '1', ARENA_ZONE_IDS.A2);
+        const response = makeHiddenResponse(
+            'hidden-stale-redirect',
+            '1',
+            target.zoneId,
+            target.id,
+            1905,
+        );
+        state = withWizardSpellbook({
+            ...state,
+            core: addObject(addObject(addObject(state.core, familiar), target), response),
+        });
+
+        const blockedCast = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                casterObjectId: familiar.id,
+                spellCardId: 3411,
+                manaCost: 4,
+                targetObjectId: target.id,
+            },
+        });
+        expect(blockedCast.success).toBe(true);
+
+        const wrongResponder = runCommand(
+            blockedCast.state,
+            responseCommand(blockedCast.state, { playerId: '0', optionId: 'redirect' }),
+        );
+        expect(wrongResponder.success).toBe(false);
+
+        const staleInteraction = runCommand(
+            blockedCast.state,
+            responseCommand(blockedCast.state, { interactionId: 'old-interaction', optionId: 'redirect' }),
+        );
+        expect(staleInteraction.success).toBe(false);
+
+        const resolved = runCommand(
+            blockedCast.state,
+            responseCommand(blockedCast.state, { optionId: 'redirect' }),
+        );
+        expect(resolved.success).toBe(true);
+        const duplicate = runCommand(
+            resolved.state,
+            responseCommand(resolved.state, { playerId: '1', optionId: 'redirect' }),
+        );
+        expect(duplicate.success).toBe(false);
+        expect(resolved.state.core.objects[response.id]).toBeUndefined();
+    });
+
+    it('1905 can be placed through the normal hidden-enchantment cast entry', () => {
+        let state = setupState('creatureAction');
+        const target = makeCreature('placed-redirect-target', '0', ARENA_ZONE_IDS.A2);
+        const coreWithTarget = addObject(state.core, target);
+        state = withWizardSpellbook({
+            ...state,
+            core: coreWithTarget,
+        });
+        state = {
+            ...state,
+            core: {
+                ...state.core,
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...state.core.players['0'],
+                        preparedSpellCardIds: [1905],
+                        preparedSpellSlots: 1,
+                    },
+                },
+            },
+        };
+
+        const cast = runCommand(state, {
+            type: MAGE_WARS_COMMANDS.CAST_SPELL,
+            playerId: '0',
+            payload: {
+                spellCardId: 1905,
+                manaCost: 7,
+                targetObjectId: target.id,
+            },
+        });
+
+        expect(cast.success).toBe(true);
+        expect(cast.events.map((event) => event.type)).toContain(MAGE_WARS_EVENTS.SPELL_CAST_RESOLVED);
+        expect(cast.state.core.players['0'].mana).toBe(13);
+        expect(cast.state.core.players['0'].discardSpellCardIds).toEqual([1905]);
+        expect(Object.values(cast.state.core.objects)).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                kind: 'enchantment',
+                sourceSpellCardId: 1905,
+                revealed: false,
+                anchoredToObjectId: target.id,
+                rulesText: expect.stringContaining('重新指向施法者'),
+            }),
+        ]));
     });
 
     it('1904 reverses an avoidable object attack and keeps the original action cost', () => {

@@ -37,6 +37,7 @@ export type OnlineAiManualRecoveryCoordinatorHooks<TMatch extends OnlineAiManual
     buildSeatControllers: (match: TMatch) => Record<string, OnlineAiWatchdogSeatController>;
     isMatchExecuting: (match: TMatch) => boolean;
     isRecoveryInFlight: (matchId: string) => boolean;
+    waitForRecoveryAvailability?: (match: TMatch) => Promise<boolean>;
     resolvePrivateOverlay: (match: TMatch, playerId: string) => MatchState<unknown>;
     executeManualSetupCommand: (args: {
         match: TMatch;
@@ -64,7 +65,10 @@ export type OnlineAiManualRecoveryCoordinatorHooks<TMatch extends OnlineAiManual
         candidate: ForceEndTurnStalledAiResolution;
         progressMarker: string;
         seatControllers: Record<string, OnlineAiWatchdogSeatController>;
-        options: { allowManualImmediateAiContinuation: true };
+        options: {
+            allowManualImmediateAiContinuation: true;
+            forceManualCommandExecution: true;
+        };
     }) => Promise<void>;
     hasRecoveryResolved: (
         match: TMatch,
@@ -170,7 +174,14 @@ export class OnlineAiManualRecoveryCoordinator<TMatch extends OnlineAiManualReco
             return { accepted: false, reason: 'unavailable' };
         }
         if (this.hooks.isMatchExecuting(match) || this.hooks.isRecoveryInFlight(match.matchID)) {
-            return { accepted: false, reason: 'busy' };
+            const available = await this.hooks.waitForRecoveryAvailability?.(match) ?? false;
+            if (
+                !available
+                || this.hooks.isMatchExecuting(match)
+                || this.hooks.isRecoveryInFlight(match.matchID)
+            ) {
+                return { accepted: false, reason: 'busy' };
+            }
         }
 
         const manualSeatStates: Record<string, MatchState<unknown> | null | undefined> = Object.fromEntries(
@@ -212,7 +223,10 @@ export class OnlineAiManualRecoveryCoordinator<TMatch extends OnlineAiManualReco
                 candidate,
                 progressMarker,
                 seatControllers,
-                options: { allowManualImmediateAiContinuation: true },
+                options: {
+                    allowManualImmediateAiContinuation: true,
+                    forceManualCommandExecution: true,
+                },
             });
         } finally {
             this.hooks.finishInFlight(match.matchID);
@@ -330,7 +344,7 @@ export function resolveManualSetupSelectionIdFromAction(
     if (action.kind === 'setup-select-character') {
         return typeof payload.characterId === 'string' ? payload.characterId : null;
     }
-    if (action.kind === 'select-faction' || action.kind === 'setup-select-faction') {
+    if (action.kind === 'select-faction' || action.kind === 'setup-select-faction' || action.kind === 'faction-selection') {
         return typeof payload.factionId === 'string' ? payload.factionId : null;
     }
     return null;

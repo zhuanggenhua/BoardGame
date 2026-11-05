@@ -13,6 +13,7 @@ import type { PlayerId } from '../../../engine/types';
 import type { DiceThroneCore, DiceThroneRollContext, Die, DtResponseWindowType, TurnPhase } from './core-types';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
+import { ELECTROKINESIS_PASSIVE } from '../heroes/thor/passiveAbilities';
 import { resolveCurrentRollContext } from './rollContext';
 import { isPlayerAllowedToPassiveRerollCurrentRoll } from './rollContextPolicy';
 
@@ -30,6 +31,7 @@ export type PassiveActionTiming =
     | 'ownUpkeepPhase'    // 仅自己的维持阶段
     | 'responseWindow'    // 仅响应窗口
     | 'ownMainPhase'      // 仅自己的 main1/main2 主阶段
+    | 'ownMain2Phase'     // 仅自己的 main2 主阶段
     | 'anyMainPhase';     // 任意玩家的 main1/main2 主阶段
 
 /** 被动触发器条件 */
@@ -46,6 +48,8 @@ export interface PassiveTriggerDef {
 
 /** 单个被动动作定义 */
 export interface PassiveActionDef {
+    /** 弃牌型动作至少需要的真实手牌数；实际支付由正式选择结算。 */
+    requiresHandCards?: number;
     /** 动作类型 */
     type: PassiveActionType;
     /** 短按钮文案 i18n key；长描述仍放 descriptionKey / 提示板 */
@@ -84,7 +88,7 @@ export interface PassiveActionDef {
     oncePerTurnKey?: string;
     /** 要求当前玩家正在结算一次自己发起的攻击 */
     requiresCurrentAttack?: boolean;
-    /** 要求当前攻击已经成功造成过至少 1 点实际伤害 */
+    /** 要求共享伤害记录显示本回合最近一次正式攻击已造成至少 1 点净掉血 */
     requiresCurrentAttackDamageDealt?: boolean;
     /** 要求场上至少存在一个规则允许移除的状态效果 */
     requiresAnyRemovableStatus?: boolean;
@@ -131,7 +135,10 @@ export function getPlayerPassiveAbilities(
     playerId: PlayerId
 ): PassiveAbilityDef[] {
     const player = state.players[playerId];
-    return player?.passiveAbilities ?? [];
+    const passives = player?.passiveAbilities ?? [];
+    return player && (player.characterId === 'thor' || (player.tokens[TOKEN_IDS.ELECTROKINESIS] ?? 0) > 0)
+        ? [...passives, ELECTROKINESIS_PASSIVE]
+        : passives;
 }
 
 const TREANT_TREE_SPIRIT_TOKEN_IDS = new Set<string>([
@@ -244,6 +251,7 @@ export function isPassiveActionUsable(
     // CP 检查
     const player = state.players[playerId];
     if (!player) return false;
+    if (action.requiresHandCards && player.hand.length < action.requiresHandCards) return false;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
     if (
@@ -256,8 +264,7 @@ export function isPassiveActionUsable(
         if (!state.pendingAttack || state.pendingAttack.attackerId !== playerId) return false;
     }
     if (action.requiresCurrentAttackDamageDealt) {
-        if (!state.pendingAttack || state.pendingAttack.attackerId !== playerId) return false;
-        if ((state.pendingAttack.resolvedDamage ?? 0) <= 0) return false;
+        if ((state.lastResolvedAttackDamage ?? 0) <= 0) return false;
     }
     if (action.requiresAnyRemovableStatus && !hasAnyRemovableStatusEffect(state)) {
         return false;
@@ -348,6 +355,9 @@ export function isPassiveActionUsable(
     if (action.timing === 'ownMainPhase') {
         return playerId === state.activePlayerId && (phase === 'main1' || phase === 'main2');
     }
+    if (action.timing === 'ownMain2Phase') {
+        return playerId === state.activePlayerId && phase === 'main2';
+    }
     if (action.timing === 'anyMainPhase') {
         return phase === 'main1' || phase === 'main2';
     }
@@ -374,6 +384,26 @@ export function hasUsablePassiveAction(
     return false;
 }
 
+/** 检查当前响应窗口中可主动使用的被动动作。 */
+export function hasUsableResponseWindowPassiveAction(
+    state: DiceThroneCore,
+    playerId: string,
+    phase: TurnPhase,
+    context: { responseWindowType?: DtResponseWindowType } = {},
+): boolean {
+    const passives = getPlayerPassiveAbilities(state, playerId);
+    return passives.some((passive) => passive.actions.some((action, actionIndex) => (
+        (
+            action.timing === 'responseWindow'
+            || (
+                action.timing === 'anytime'
+                && context.responseWindowType !== 'afterAttackResolved'
+            )
+        )
+        && isPassiveActionUsable(state, playerId, passive.id, actionIndex, phase, context)
+    )));
+}
+
 /** 只识别明确要求玩家在维护阶段操作的被动动作。 */
 export function hasUsableOwnUpkeepPassiveAction(
     state: DiceThroneCore,
@@ -396,6 +426,10 @@ export function hasUsableDiceRerollPassiveAction(
     const passives = getPlayerPassiveAbilities(state, playerId);
     return passives.some((passive) => passive.actions.some((action, actionIndex) => (
         action.type === 'rerollDie'
+        && !(
+            action.timing === 'anytime'
+            && context.responseWindowType === 'afterAttackResolved'
+        )
         && isPassiveActionUsable(state, playerId, passive.id, actionIndex, phase, context)
     )));
 }

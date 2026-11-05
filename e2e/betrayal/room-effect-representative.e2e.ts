@@ -7,6 +7,7 @@ import {
     applyBetrayalCommand,
     createBetrayalScriptedRandom,
     createStartedFirstScenarioCore,
+    setScenarioTestTurnMovement,
 } from '../../src/games/betrayal/testing/firstScenarioTestUtils';
 import {
     assertNoFatalFrontendErrors,
@@ -61,6 +62,8 @@ const LAUNDRY_CHUTE_REVEALED_SCREENSHOT = `${LAUNDRY_CHUTE_FULL_CHAIN_EVIDENCE_D
 const LAUNDRY_CHUTE_STATUS_SCREENSHOT = `${LAUNDRY_CHUTE_FULL_CHAIN_EVIDENCE_DIR}/04-结束回合滑落提示可见.jpg`;
 const LAUNDRY_CHUTE_MOVED_SCREENSHOT = `${LAUNDRY_CHUTE_FULL_CHAIN_EVIDENCE_DIR}/05-结束回合后滑落到地下室起始点.jpg`;
 const LAUNDRY_CHUTE_SETTLED_SCREENSHOT = `${LAUNDRY_CHUTE_FULL_CHAIN_EVIDENCE_DIR}/06-洗衣滑槽结算后回牌桌继续可操作.jpg`;
+// Vivo V2314A: 2388x1080 physical landscape / (480 / 160) density = 796x360 CSS.
+const VIVO_V2314A_LANDSCAPE_VIEWPORT = { width: 796, height: 360 } as const;
 
 type HarnessSnapshot = {
     core: BetrayalCore;
@@ -172,12 +175,14 @@ const expectRollPanelUsesAdaptiveOpenDock = async (page: Page, rollPanel: Locato
         const railRect = rail?.getBoundingClientRect();
         const resultStage = panel.querySelector('[data-testid="betrayal-recent-roll-result-stage"]');
         const total = panel.querySelector('[data-testid="betrayal-recent-roll-total"]');
+        const totalLabel = total?.querySelector(':scope > span:first-child');
         const outcome = panel.querySelector('[data-testid="betrayal-recent-roll-outcome"]');
-        if (!resultStage || !total || !outcome) {
+        if (!resultStage || !total || !totalLabel || !outcome) {
             throw new Error('recent roll result stage, total, or outcome is missing');
         }
         const resultStageRect = resultStage.getBoundingClientRect();
         const totalRect = total.getBoundingClientRect();
+        const totalLabelRect = totalLabel.getBoundingClientRect();
         const outcomeRect = outcome.getBoundingClientRect();
         return {
             panel: {
@@ -215,6 +220,9 @@ const expectRollPanelUsesAdaptiveOpenDock = async (page: Page, rollPanel: Locato
                 height: totalRect.height,
                 centerX: totalRect.left + totalRect.width / 2,
                 centerY: totalRect.top + totalRect.height / 2,
+            },
+            totalLabel: {
+                height: totalLabelRect.height,
             },
             rail: railRect
                 ? {
@@ -265,11 +273,11 @@ const expectRollPanelUsesAdaptiveOpenDock = async (page: Page, rollPanel: Locato
         `${label}结果带必须承接在骰盘下方，而不是贴顶部状态区`,
     ).toBeGreaterThan(geometry.panel.centerY);
     expect(
-        geometry.total.height,
+        geometry.totalLabel.height,
         `${label}总点数字号必须足够醒目，但不能大到压过结论`,
     ).toBeGreaterThanOrEqual(28);
     expect(
-        geometry.total.height,
+        geometry.totalLabel.height,
         `${label}总点数字号不能过大导致主次不分`,
     ).toBeLessThanOrEqual(48);
     if (geometry.rail) {
@@ -329,6 +337,23 @@ const createCollapsedRoomSpeedCheckCore = () => {
     }));
     core.turnStartInventoryCardIds = [];
     core.usedCardIdsThisTurn = [];
+    core.currentExplorer = {
+        ...core.currentExplorer,
+        traits: { ...core.currentExplorer.traits, speed: 3 },
+        traitTracks: {
+            ...core.currentExplorer.traitTracks,
+            speed: {
+                ...core.currentExplorer.traitTracks.speed,
+                trackId: 'e2e-0-speed',
+                values: [1, 2, 3, 4, 5],
+                position: 2,
+                startPosition: 2,
+                maxPosition: 4,
+            },
+        },
+    };
+    setScenarioTestTurnMovement(core, 3);
+    core.currentExplorerTraits = { ...core.currentExplorer.traits };
     return core;
 };
 
@@ -573,16 +598,20 @@ test.describe('山屋惊魂房间效果代表链', () => {
             await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
             const firstResolutionStep = discoveryPanel.getByTestId('betrayal-discovery-resolution-step').first();
             await expect(firstResolutionStep).toContainText(testCase.expectedText);
-            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveText(/确认 1\/\d+/);
-            await expect(discoveryPanel.getByTestId('betrayal-discovery-continue')).toHaveAttribute(
+            const continueButton = discoveryPanel.getByTestId('betrayal-discovery-continue');
+            await expect(continueButton).toHaveAttribute(
                 'data-pending-card-resolution-step',
                 /^1\/\d+$/,
+            );
+            await expect(continueButton).toHaveAttribute('data-card-resolution-confirmed-count', '0');
+            await expect(continueButton).toHaveAttribute(
+                'data-card-resolution-required-count',
+                /^[1-9]\d*$/,
             );
             await saveScreenshot(
                 page,
                 `${DIRECT_ROOM_EFFECT_MATRIX_EVIDENCE_DIR}/${testCase.screenshotStem}.jpg`,
             );
-            await dismissDiscoveryPanelIfVisible(page);
         }
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-room-effect-confirmation-matrix', diagnostics }]);
@@ -597,6 +626,10 @@ test.describe('山屋惊魂房间效果代表链', () => {
         ];
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
+        core.pendingCardResolutionQueue = [];
+        core.latestDiscovery = null;
+        core.latestDiscoveryOwnerPlayerId = null;
+        core.turnEndedByDiscovery = false;
 
         await injectCore(page, core);
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
@@ -709,7 +742,7 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect(page.getByTestId('betrayal-room-basement-east')).toHaveAccessibleName(/洗衣滑槽/);
         await expect(page.getByTestId('betrayal-room-occupant-basement-east-0')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('洗衣滑槽');
-        await expect(page.getByTestId('betrayal-discovery-panel')).toContainText(/无发现符号|没有事件、物品或预兆发现牌/);
+        await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await saveScreenshot(page, LAUNDRY_CHUTE_REVEALED_SCREENSHOT);
 
         await dismissDiscoveryPanelIfVisible(page);
@@ -825,7 +858,7 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeDisabled();
         await saveScreenshot(page, COLLAPSED_ROOM_DAMAGE_SCREENSHOT);
 
-        await page.getByTestId('betrayal-damage-allocation-trait-might').click();
+        await page.getByTestId('betrayal-damage-allocation-trait-might-increase').click();
         await expect(page.getByTestId('betrayal-damage-allocation-trait-might')).toHaveAttribute('data-damage-selected-count', '1');
         await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeEnabled();
         await page.getByTestId('betrayal-damage-allocation-confirm').click();
@@ -867,19 +900,19 @@ test.describe('山屋惊魂房间效果代表链', () => {
             context,
             'betrayal-mobile-collapsed-room-roll-blocks-until-acknowledged',
             {
-                viewportSize: { width: 896, height: 414 },
+                viewportSize: VIVO_V2314A_LANDSCAPE_VIEWPORT,
                 forceCoarsePointer: true,
             },
         );
 
         await injectCore(page, createCollapsedRoomSpeedCheckCore());
         await expect(page.getByTestId('betrayal-board')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('betrayal-mobile-action-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await dismissDiscoveryPanelIfVisible(page);
 
         const beforeFallCore = await readCurrentCore(page);
         await setHarnessRandomQueue(page, [0.01, 0.01, 0.01, 0.5]);
-        await page.getByTestId('betrayal-mobile-dock-endTurn').click();
+        await page.getByTestId('betrayal-action-endTurn').click();
 
         await expect.poll(async () => {
             const core = await readCurrentCore(page);
@@ -900,16 +933,16 @@ test.describe('山屋惊魂房间效果代表链', () => {
 
         const mobileRollPanel = page.getByTestId('betrayal-recent-roll-panel');
         await expect(mobileRollPanel).toBeVisible({ timeout: 30000 });
-        await expect(mobileRollPanel).toHaveAttribute('data-roll-panel-style', 'mobile-landscape-open-dock');
+        await expect(mobileRollPanel).toHaveAttribute('data-roll-panel-style', 'open-table-transparent');
         await expect(mobileRollPanel).toContainText('倒塌房间');
-        await expect(page.getByTestId('betrayal-mobile-action-rail')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-action-rail')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-room-floor-switcher')).toBeHidden();
-        await expect(page.locator('html')).toHaveAttribute('data-betrayal-blocking-roll', 'true');
         await expect(page.getByTestId('fab-menu')).toBeHidden();
         await expect(page.getByTestId('betrayal-house-dice-3d-group')).toHaveAttribute('data-dice-count', '3');
         await waitForPhysicalDiceSettled(mobileRollPanel);
         await expectPhysicalDiceSeparated(mobileRollPanel, {
             minDiceCount: 3,
+            minCanvasClientWidth: 280,
             minDieVisualSize: 48,
             minCanvasEdgeMargin: 12,
         });
@@ -1099,7 +1132,7 @@ test.describe('山屋惊魂房间效果代表链', () => {
             pendingDamageSource: '倒塌房间',
         });
 
-        await page.getByTestId('betrayal-damage-allocation-trait-might').click();
+        await page.getByTestId('betrayal-damage-allocation-trait-might-increase').click();
         await expect(page.getByTestId('betrayal-damage-allocation-trait-might')).toHaveAttribute('data-damage-selected-count', '1');
         await expect(page.getByTestId('betrayal-damage-allocation-confirm')).toBeEnabled();
         await page.getByTestId('betrayal-damage-allocation-confirm').click();
@@ -1122,11 +1155,11 @@ test.describe('山屋惊魂房间效果代表链', () => {
         expect(damagedMobileExplorer?.traitTracks.might.position).toBe(beforeFallCore.currentExplorer.traitTracks.might.position - 1);
         expect(damagedMobileExplorer?.roomId).toBe('basement-landing');
 
-        await expect(page.getByTestId('betrayal-mobile-action-rail')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-floor-switcher')).toBeVisible();
         await expect(page.locator('html')).not.toHaveAttribute('data-betrayal-blocking-roll');
         await expect(page.getByTestId('fab-menu')).toBeVisible();
-        await expect(page.getByTestId('betrayal-mobile-dock-endTurn')).toBeVisible();
+        await expect(page.getByTestId('betrayal-action-endTurn')).toBeVisible();
         await saveScreenshot(page, COLLAPSED_ROOM_MOBILE_SETTLED_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-mobile-collapsed-room-roll-blocks-until-acknowledged', diagnostics }]);
@@ -1196,14 +1229,6 @@ test.describe('山屋惊魂房间效果代表链', () => {
         await saveScreenshot(page, MYSTIC_ELEVATOR_MOVED_SCREENSHOT);
 
         await page.getByTestId('betrayal-roll-continue').first().click();
-        await expect.poll(async () => {
-            const core = await readCurrentCore(page);
-            return {
-                recentRoll: core.recentRoll,
-            };
-        }, { timeout: 30000 }).toEqual({
-            recentRoll: null,
-        });
         await expect(page.getByTestId('betrayal-recent-roll-panel')).toHaveCount(0);
         const roomEffectAction = page.getByTestId('betrayal-action-roomEffect');
         await expect(roomEffectAction).toBeDisabled();

@@ -72,6 +72,7 @@ interface Props {
     interaction: InteractionDescriptor | undefined;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: PlayerId | null;
+    isSpectator?: boolean;
     playerNames?: Record<string, string>;
     core?: SmashUpCore;
     /** 通用卡牌展示模式（弃牌堆查看等）：展示卡牌列表 + 关闭按钮 */
@@ -499,7 +500,7 @@ function extractDeckReorderCards(prompt: unknown): DeckReorderCardItem[] {
 
 /** 鼠标滚轮转水平滚动 */
 
-export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, playerNames, core, displayCards }) => {
+export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, isSpectator = false, playerNames, core, displayCards }) => {
     const prompt = asSimpleChoice(interaction);
     const { t, i18n } = useTranslation('game-smashup');
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
@@ -938,7 +939,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             className={`absolute top-[0.3vw] right-[0.3vw] w-[2vw] h-[2vw] flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-xl border-2 border-white/30 z-50 cursor-zoom-in`}
                                             onClick={(e) => { e.stopPropagation(); setMagnifyTarget({ defId: card.defId, type: def?.type ?? 'action' }); }}
                                         >
-                                            <svg className="w-[1.1vw] h-[1.1vw] fill-current" viewBox="0 0 20 20">
+                                            <svg className="board-shell-fixed-icon w-[1.1vw] h-[1.1vw] fill-current" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                             </svg>
                                         </button>
@@ -996,7 +997,52 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
 
     if (!prompt) return null;
-    
+
+    if (isSpectator) {
+        return (
+            <motion.div
+                key={`spectator-prompt-${promptRenderKey}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('ui.spectator_read_only')}
+                data-testid="smashup-spectator-prompt-readonly"
+                className="fixed inset-0 flex items-center justify-center bg-black/78 p-4"
+                style={{ zIndex: UI_Z_INDEX.overlay }}
+            >
+                <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-sky-400/35 bg-slate-950/96 shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+                    <div className="border-b border-white/10 px-6 py-4 text-center">
+                        <div className="text-xs font-black uppercase tracking-[0.16em] text-sky-200/80">
+                            {t('ui.spectator_read_only')}
+                            {promptOwnerName ? ` · ${promptOwnerName}` : ''}
+                        </div>
+                        <h2 className="mt-2 text-lg font-black text-amber-100">{title}</h2>
+                    </div>
+                    <div className="max-h-[55vh] overflow-y-auto p-4" data-testid="smashup-spectator-prompt-options">
+                        {resolvedOptions.length > 0 ? (
+                            <ul className="flex flex-col gap-2">
+                                {resolvedOptions.map((option) => (
+                                    <li
+                                        key={option.id}
+                                        data-testid={`smashup-spectator-prompt-option-${option.id}`}
+                                        className="rounded-xl border border-white/10 bg-slate-800/80 px-4 py-3 text-center text-sm font-bold text-slate-100"
+                                    >
+                                        {option.label}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="py-5 text-center text-sm text-slate-400">
+                                {t('ui.prompt_no_options')}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
+
     // 【错误处理】如果是我的交互但选项为空，不显示 UI，只 toast 提示（已在 useEffect 中处理）
     if (isMyPrompt && !hasOptions) {
         return null;
@@ -1570,8 +1616,18 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             })
             : cardOptions;
         // 提取基地上下文信息（用于高亮和标题显示）
-        const contextBaseIndex = (prompt as any)?.continuationContext?.baseIndex;
-        const contextBaseDef = contextBaseIndex !== undefined ? getBaseDef(prompt.state?.bases?.[contextBaseIndex]?.defId) : undefined;
+        const continuationContext = prompt?.continuationContext;
+        const contextBaseIndex = typeof continuationContext === 'object'
+            && continuationContext !== null
+            && 'baseIndex' in continuationContext
+            ? continuationContext.baseIndex
+            : undefined;
+        const contextBaseDefId = typeof contextBaseIndex === 'number'
+            && Number.isInteger(contextBaseIndex)
+            && contextBaseIndex >= 0
+            ? core?.bases[contextBaseIndex]?.defId
+            : undefined;
+        const contextBaseDef = contextBaseDefId ? getBaseDef(contextBaseDefId) : undefined;
         const contextBaseName = contextBaseDef ? resolveCardName(contextBaseDef, t) : undefined;
 
         return (
@@ -1731,7 +1787,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                         setMagnifyTarget({ defId, type: cardType });
                                                     }}
                                                 >
-                                                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                                    <svg className="board-shell-fixed-icon w-4 h-4 fill-current" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                                     </svg>
                                                 </button>

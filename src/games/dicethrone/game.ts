@@ -19,9 +19,9 @@ import {
     createTutorialSystem,
     createTimingOpportunitySystem,
     createUndoSystem,
-    CharacterSelectionSystem,
 } from '../../engine';
 import { createGameEngine } from '../../engine/adapter';
+import type { GameEngineConfig } from '../../engine/transport/engineConfig';
 import { buildDamageBreakdownSegment, type DamageSourceResolver } from '../../engine/primitives/actionLogHelpers';
 import { DiceThroneDomain } from './domain';
 import { getDiceDefinition } from './domain/diceRegistry';
@@ -29,6 +29,8 @@ import { DICETHRONE_COMMANDS, TOKEN_IDS } from './domain/ids';
 import type {
     AbilityCard,
     DiceThroneCore,
+    DiceThroneCommand,
+    DiceThroneEvent,
     DtResponseWindowType,
     TurnPhase,
     ChoiceResolvedEvent,
@@ -47,10 +49,13 @@ import type {
     BonusDiceSettledEvent,
     BonusDieRerolledEvent,
     DamageShieldGrantedEvent,
+    DieModifiedEvent,
+    DieRerolledEvent,
 } from './domain/types';
 import { getCommandCategory, CommandCategory, validateCommandCategories } from './domain/commandCategories';
 import { createDiceThroneEventSystem } from './domain/systems';
-import { getNextPhase, getRollerId, getActiveDice } from './domain/rules';
+import { createDoctorStrangeSpellSystem } from './domain/doctorStrange/system';
+import { canAdvancePhase, getNextPhase, getRollerId, getActiveDice } from './domain/rules';
 import { isCurrentBonusRollSettlement, resolveCurrentRollContext } from './domain/rollContext';
 import { findPlayerAbility } from './domain/abilityLookup';
 import { DICETHRONE_CHEAT_COMMANDS, diceThroneCheatModifier } from './domain/cheatModifier';
@@ -73,6 +78,7 @@ import {
 } from '../../engine/ai';
 import { diceThroneAiRuntime } from './ai';
 import { resolveDiceThroneLocalPregameControlledPlayerId } from './localPregameControl';
+import { getDiceThroneCardPreviewRef, hasDiceThroneCharacterCard } from './ui/cardPreviewHelper';
 
 // ============================================================================
 // ActionLog 共享白名单 + 格式化
@@ -86,6 +92,7 @@ const ACTION_LOG_ALLOWLIST = [
     'UNDO_SELL_CARD',
     // 注意：阶段推进属于明确的规则行为，允许撤回 + 记录。
     'ADVANCE_PHASE',
+    'USE_DEJA_VU',
     'SELECT_ABILITY',
     'USE_TOKEN',
     'SKIP_TOKEN_RESPONSE',
@@ -102,6 +109,9 @@ const ACTION_LOG_ALLOWLIST = [
     'CONFIRM_COMPARE_ROLL',
     // 交互确认会承载关键选择结果（如暴击/精准），需要进入操作日志
     'SYS_INTERACTION_RESPOND',
+    // 状态选择类卡牌效果会直接发出 REMOVE_STATUS，后续 TOKEN_CONSUMED / STATUS_REMOVED
+    // 是玩家需要看到的结算结果。
+    'REMOVE_STATUS',
     // 调试/测试直接伤害仍走正式 DAMAGE_DEALT 事件链，需要验证 ActionLog 渲染。
     DICETHRONE_CHEAT_COMMANDS.DEAL_DAMAGE,
 ] as const;
@@ -112,6 +122,7 @@ const UNDO_ALLOWLIST = [
     'SELL_CARD',
     'SELECT_ABILITY',
     'ADVANCE_PHASE',
+    'USE_DEJA_VU',
 ] as const;
 
 const DT_NS = 'game-dicethrone';
@@ -178,6 +189,13 @@ function resolveAbilitySourceLabel(
             }
         }
     }
+    // 被动能力也会作为伤害来源，例如吸血鬼领主的“鲜血之力”加伤。
+    for (const player of Object.values(core.players)) {
+        const passive = player.passiveAbilities?.find(ability => ability.id === sourceAbilityId);
+        if (passive?.nameKey) {
+            return { label: passive.nameKey, isI18n: true, ns: DT_NS };
+        }
+    }
     // 卡牌 ID 解析
     if (sourceAbilityId.startsWith('card-')) {
         const card = findDiceThroneCard(core, sourceAbilityId);
@@ -204,6 +222,16 @@ function formatDiceThroneActionEntry({
     const entries: ActionLogEntry[] = [];
     const tokenDefinitions = core.tokenDefinitions ?? [];
     const shouldRecordCommandEntry = afterEventsRound === 0;
+    const eventStreamEntryIdByEvent = new Map<GameEvent, number>();
+    for (const eventStreamEntry of state.sys?.eventStream?.entries ?? []) {
+        eventStreamEntryIdByEvent.set(eventStreamEntry.event, eventStreamEntry.id);
+    }
+    const getEventLogIdentity = (event: GameEvent, eventIndex: number, entryTimestamp: number): string => {
+        const eventStreamId = eventStreamEntryIdByEvent.get(event);
+        return eventStreamId === undefined
+            ? `${entryTimestamp}-${eventIndex}`
+            : `event-${eventStreamId}`;
+    };
 
     // i18n segment 工厂：延迟翻译，渲染时由客户端 useTranslation 翻译
     const i18nSeg = (
@@ -232,6 +260,104 @@ function formatDiceThroneActionEntry({
         if (rawName.includes('.')) return rawName;
         return rawName;
     };
+
+    const getPlayerCharacterId = (playerId?: PlayerId): string | undefined => {
+        if (!playerId) return undefined;
+        const characterId = core.players[playerId]?.characterId;
+        return characterId && characterId !== 'unselected' ? characterId : undefined;
+    };
+
+    const resolveCardPreviewRef = (
+        cardId: string,
+        actorId?: PlayerId,
+        card?: AbilityCard,
+    ) => {
+        const characterId = getPlayerCharacterId(actorId);
+        if (characterId) {
+            const characterPreviewRef = getDiceThroneCardPreviewRef(cardId, characterId);
+            if (characterPreviewRef) return characterPreviewRef;
+            if (hasDiceThroneCharacterCard(cardId, characterId)) return undefined;
+        }
+
+        return card?.previewRef ?? getDiceThroneCardPreviewRef(cardId) ?? undefined;
+    };
+
+    const buildCardSegment = (
+        cardId: string,
+        actorId: PlayerId,
+        card?: AbilityCard,
+    ): ActionLogSegment => {
+        const resolvedCard = card ?? findDiceThroneCard(core, cardId, actorId) ?? findDiceThroneCard(core, cardId);
+        const previewText = resolvedCard?.name ?? cardId;
+        const isI18nKey = previewText.includes('.');
+        const previewRef = resolveCardPreviewRef(cardId, actorId, resolvedCard);
+        return {
+            type: 'card',
+            cardId,
+            previewText,
+            ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
+            ...(previewRef ? { previewRef } : {}),
+        };
+    };
+
+    const buildCardSource = (sourceId: string, actorId: PlayerId): {
+        actorId: PlayerId;
+        cardSegment: ActionLogSegment;
+    } => {
+        const card = findDiceThroneCard(core, sourceId, actorId) ?? findDiceThroneCard(core, sourceId);
+        return {
+            actorId,
+            cardSegment: buildCardSegment(sourceId, actorId, card),
+        };
+    };
+
+    const resolveCurrentInteractionSourceCard = (): {
+        actorId: PlayerId;
+        cardSegment: ActionLogSegment;
+    } | null => {
+        const currentInteraction = (state as MatchState<DiceThroneCore>).sys?.interaction?.current as {
+            kind?: unknown;
+            playerId?: unknown;
+            data?: unknown;
+        } | undefined;
+        if (currentInteraction?.kind !== 'dt:card-interaction') return null;
+        if (currentInteraction.playerId !== command.playerId) return null;
+        const interactionData = currentInteraction.data as { sourceId?: unknown; sourceCardId?: unknown } | undefined;
+        const sourceId = typeof interactionData?.sourceId === 'string'
+            ? interactionData.sourceId
+            : interactionData?.sourceCardId;
+        if (typeof sourceId !== 'string' || !sourceId.startsWith('card-')) return null;
+        return buildCardSource(sourceId, command.playerId);
+    };
+
+    const resolveConfirmedInteractionSourceCard = (): {
+        actorId: PlayerId;
+        cardSegment: ActionLogSegment;
+    } | null => {
+        const currentSource = resolveCurrentInteractionSourceCard();
+        if (currentSource) return currentSource;
+
+        for (let i = events.length - 1; i >= 0; i -= 1) {
+            const event = events[i] as GameEvent & {
+                payload?: {
+                    playerId?: unknown;
+                    sourceId?: unknown;
+                };
+            };
+            if (event.type !== 'SYS_INTERACTION_CONFIRMED') continue;
+            const sourceId = event.payload?.sourceId;
+            if (typeof sourceId !== 'string' || !sourceId.startsWith('card-')) continue;
+            const actorId = typeof event.payload?.playerId === 'string'
+                ? event.payload.playerId as PlayerId
+                : command.playerId;
+            return buildCardSource(sourceId, actorId);
+        }
+        return null;
+    };
+
+    const isRemoveStatusResolutionEvent = (event: GameEvent): boolean => (
+        (event as { sourceCommandType?: string }).sourceCommandType === 'REMOVE_STATUS'
+    );
 
     const buildCompareRollParticipantLabelSegment = (participant: {
         label?: string;
@@ -287,21 +413,13 @@ function formatDiceThroneActionEntry({
     if (shouldRecordCommandEntry && (command.type === 'PLAY_CARD' || command.type === 'PLAY_UPGRADE_CARD')) {
         const cardId = (command.payload as { cardId: string }).cardId;
         const card = findDiceThroneCard(core, cardId, command.playerId);
-        if (!card || !card.previewRef) return null;
+        if (!card) return null;
 
         const actionKey = command.type === 'PLAY_UPGRADE_CARD'
             ? 'actionLog.playUpgradeCard'
             : 'actionLog.playCard';
 
-        // card segment：如果 card.name 是 i18n key（含 .），存原始 key + ns，渲染时翻译
-        const isI18nKey = card.name?.includes('.');
-        const cardSegment: ActionLogSegment = {
-            type: 'card',
-            cardId: card.id,
-            previewText: card.name ?? cardId,
-            previewRef: card.previewRef,
-            ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
-        };
+        const cardSegment = buildCardSegment(card.id, command.playerId, card);
 
         entries.push({
             id: `${command.type}-${command.playerId}-${timestamp}`,
@@ -346,20 +464,8 @@ function formatDiceThroneActionEntry({
 
         const segments: ActionLogSegment[] = [
             i18nSeg('actionLog.sellCard'),
+            buildCardSegment(cardId, command.playerId, card),
         ];
-        if (card?.previewRef) {
-            const isI18nKey = card.name?.includes('.');
-            segments.push({
-                type: 'card',
-                cardId: card.id,
-                previewText: card.name ?? cardId,
-                previewRef: card.previewRef,
-                ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
-            });
-        } else {
-            const displayName = card?.name ?? cardId;
-            segments.push({ type: 'text', text: displayName });
-        }
         segments.push(i18nSeg('actionLog.sellCardCp'));
 
         entries.push({
@@ -377,20 +483,8 @@ function formatDiceThroneActionEntry({
 
         const segments: ActionLogSegment[] = [
             i18nSeg('actionLog.discardCard'),
+            buildCardSegment(cardId, command.playerId, card),
         ];
-        if (card?.previewRef) {
-            const isI18nKey = card.name?.includes('.');
-            segments.push({
-                type: 'card',
-                cardId: card.id,
-                previewText: card.name ?? cardId,
-                previewRef: card.previewRef,
-                ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
-            });
-        } else {
-            const displayName = card?.name ?? cardId;
-            segments.push({ type: 'text', text: displayName });
-        }
 
         entries.push({
             id: `DISCARD_CARD-${command.playerId}-${timestamp}`,
@@ -409,18 +503,8 @@ function formatDiceThroneActionEntry({
         const segments: ActionLogSegment[] = [
             i18nSeg('actionLog.undoSellCard'),
         ];
-        if (card?.previewRef) {
-            const isI18nKey = card.name?.includes('.');
-            segments.push({
-                type: 'card',
-                cardId: card.id,
-                previewText: card.name ?? cardId,
-                previewRef: card.previewRef,
-                ...(isI18nKey ? { previewTextNs: DT_NS } : {}),
-            });
-        } else if (cardId) {
-            const displayName = card?.name ?? cardId;
-            segments.push({ type: 'text', text: displayName });
+        if (cardId) {
+            segments.push(buildCardSegment(cardId, command.playerId, card));
         }
 
         entries.push({
@@ -450,30 +534,44 @@ function formatDiceThroneActionEntry({
             segments: [i18nSeg('actionLog.advancePhase', { phase: phaseI18nKey }, ['phase'])],
         });
 
-        // 检查是否有自动防御技能触发（onPhaseEnter 触发的防御技能）
-        // 这些 ABILITY_ACTIVATED 事件在 ADVANCE_PHASE 命令后产生，需要单独记录
-        const autoDefenseEvent = events.find(
-            (e): e is AbilityActivatedEvent =>
-                e.type === 'ABILITY_ACTIVATED' && (e as AbilityActivatedEvent).payload.isDefense === true
-        );
-        if (autoDefenseEvent) {
-            const { abilityId, playerId } = autoDefenseEvent.payload;
-            const match = findPlayerAbility(core, playerId, abilityId);
-            const rawAbilityName = match?.variant?.name ?? match?.ability.name ?? abilityId;
-            const abilityNameKey = getAbilityI18nKey(rawAbilityName) || abilityId;
-            const isI18nKey = abilityNameKey.includes('.');
-            entries.push({
-                id: `AUTO_DEFENSE-${playerId}-${abilityId}-${timestamp}`,
-                timestamp: timestamp + 0.5,
-                actorId: playerId,
-                kind: 'SELECT_ABILITY',
-                segments: [i18nSeg(
-                    'actionLog.abilityActivatedDefense',
-                    { abilityName: abilityNameKey },
-                    isI18nKey ? ['abilityName'] : undefined,
-                )],
-            });
-        }
+    }
+
+    // onPhaseEnter may emit this event in a later afterEvents round, so it must
+    // not be gated by shouldRecordCommandEntry (which is only true in round 0).
+    const autoDefenseEvent = command.type === 'ADVANCE_PHASE'
+        ? events.find(
+            (event): event is AbilityActivatedEvent => {
+                if (event.type !== 'ABILITY_ACTIVATED') return false;
+                const payload = event.payload;
+                return typeof payload === 'object'
+                    && payload !== null
+                    && 'isDefense' in payload
+                    && payload.isDefense === true
+                    && 'abilityId' in payload
+                    && typeof payload.abilityId === 'string'
+                    && 'playerId' in payload
+                    && typeof payload.playerId === 'string'
+                    && event.sourceCommandType === 'ADVANCE_PHASE';
+            }
+        )
+        : undefined;
+    if (autoDefenseEvent) {
+        const { abilityId, playerId } = autoDefenseEvent.payload;
+        const match = findPlayerAbility(core, playerId, abilityId);
+        const rawAbilityName = match?.variant?.name ?? match?.ability.name ?? abilityId;
+        const abilityNameKey = getAbilityI18nKey(rawAbilityName) || abilityId;
+        const isI18nKey = abilityNameKey.includes('.');
+        entries.push({
+            id: `AUTO_DEFENSE-${playerId}-${abilityId}-${timestamp}`,
+            timestamp: timestamp + 0.5,
+            actorId: playerId,
+            kind: 'SELECT_ABILITY',
+            segments: [i18nSeg(
+                'actionLog.abilityActivatedDefense',
+                { abilityName: abilityNameKey },
+                isI18nKey ? ['abilityName'] : undefined,
+            )],
+        });
     }
 
     if (shouldRecordCommandEntry && command.type === 'SELECT_ABILITY') {
@@ -679,7 +777,7 @@ function formatDiceThroneActionEntry({
             };
             const compareRoll = choiceRequestedEvent.payload?.compareRoll;
             const contestants = compareRoll?.contestants;
-            if (Array.isArray(contestants) && contestants.length === 2) {
+            if (compareRoll && Array.isArray(contestants) && contestants.length === 2) {
                 const first = contestants[0];
                 const second = contestants[1];
                 const firstDice = buildCompareRollDiceSegment(first);
@@ -735,7 +833,7 @@ function formatDiceThroneActionEntry({
             if (attackResolved) {
                 if (targetId === attackResolved.payload.defenderId) {
                     actorId = attackResolved.payload.attackerId;
-                } else if (sourceAbilityId === 'retribution-reflect') {
+                } else if (sourceAbilityId === 'retribution-reflect' && attackResolved.payload.defenderId) {
                     actorId = attackResolved.payload.defenderId;
                 }
             } else if (sourcePlayerId && sourcePlayerId !== targetId) {
@@ -763,6 +861,9 @@ function formatDiceThroneActionEntry({
                 },
                 {
                     resolve: (sid) => resolveAbilitySourceLabel(sid, core, actorId),
+                },
+                DT_NS,
+                {
                     // 自定义护盾渲染：解析护盾来源名称
                     renderShields: (shields) => shields.map(shield => {
                         const shieldSource = shield.sourceId
@@ -777,7 +878,6 @@ function formatDiceThroneActionEntry({
                         };
                     }),
                 },
-                DT_NS,
             );
 
             // 统一用 before + breakdown + after 模式
@@ -876,6 +976,27 @@ function formatDiceThroneActionEntry({
             const { targetId, statusId, stacks } = statusEvent.payload;
             const tokenKey = getTokenI18nKey(statusId);
             const isI18nKey = tokenKey.includes('.');
+            const sourceCard = isRemoveStatusResolutionEvent(event)
+                ? resolveConfirmedInteractionSourceCard()
+                : null;
+            if (sourceCard) {
+                entries.push({
+                    id: `STATUS_REMOVED-${targetId}-${entryTimestamp}-${index}`,
+                    timestamp: entryTimestamp,
+                    actorId: sourceCard.actorId,
+                    kind: 'STATUS_REMOVED',
+                    segments: [
+                        i18nSeg('actionLog.statusRemovedBySourcePrefix'),
+                        sourceCard.cardSegment,
+                        i18nSeg('actionLog.statusRemovedBySourceResult', {
+                            targetPlayerId: targetId,
+                            statusLabel: tokenKey,
+                            stacks,
+                        }, isI18nKey ? ['statusLabel'] : undefined),
+                    ],
+                });
+                return;
+            }
             entries.push({
                 id: `STATUS_REMOVED-${targetId}-${entryTimestamp}-${index}`,
                 timestamp: entryTimestamp,
@@ -919,6 +1040,28 @@ function formatDiceThroneActionEntry({
             const { playerId, tokenId, amount, newTotal } = tokenEvent.payload;
             const tokenKey = getTokenI18nKey(tokenId);
             const isI18nKey = tokenKey.includes('.');
+            const sourceCard = isRemoveStatusResolutionEvent(event)
+                ? resolveConfirmedInteractionSourceCard()
+                : null;
+            if (sourceCard) {
+                entries.push({
+                    id: `TOKEN_CONSUMED-${playerId}-${entryTimestamp}-${index}`,
+                    timestamp: entryTimestamp,
+                    actorId: sourceCard.actorId,
+                    kind: 'TOKEN_CONSUMED',
+                    segments: [
+                        i18nSeg('actionLog.tokenRemovedBySourcePrefix'),
+                        sourceCard.cardSegment,
+                        i18nSeg('actionLog.tokenRemovedBySourceResult', {
+                            targetPlayerId: playerId,
+                            tokenLabel: tokenKey,
+                            amount,
+                        }, isI18nKey ? ['tokenLabel'] : undefined),
+                        i18nSeg('actionLog.tokenRemaining', { total: newTotal }),
+                    ],
+                });
+                return;
+            }
             entries.push({
                 id: `TOKEN_CONSUMED-${playerId}-${entryTimestamp}-${index}`,
                 timestamp: entryTimestamp,
@@ -1039,6 +1182,7 @@ function formatDiceThroneActionEntry({
             const modifiedKey = target === 'pendingBonusDie'
                 ? 'actionLog.bonusDieModified'
                 : 'actionLog.dieModified';
+            const eventIdentity = getEventLogIdentity(event, index, entryTimestamp);
             
             const segments: ActionLogSegment[] = [
                 i18nSeg(modifiedKey, {
@@ -1054,7 +1198,7 @@ function formatDiceThroneActionEntry({
             }
             
             entries.push({
-                id: `DIE_MODIFIED-${playerId}-${entryTimestamp}-${index}`,
+                id: `DIE_MODIFIED-${playerId}-${eventIdentity}`,
                 timestamp: entryTimestamp,
                 actorId: playerId,
                 kind: 'DIE_MODIFIED',
@@ -1072,6 +1216,7 @@ function formatDiceThroneActionEntry({
             const rerollKey = target === 'pendingBonusDie'
                 ? 'actionLog.bonusDieRerolled'
                 : 'actionLog.dieRerolled';
+            const eventIdentity = getEventLogIdentity(event, index, entryTimestamp);
             
             const segments: ActionLogSegment[] = [
                 i18nSeg(rerollKey, {
@@ -1087,7 +1232,7 @@ function formatDiceThroneActionEntry({
             }
             
             entries.push({
-                id: `DIE_REROLLED-${playerId}-${entryTimestamp}-${index}`,
+                id: `DIE_REROLLED-${playerId}-${eventIdentity}`,
                 timestamp: entryTimestamp,
                 actorId: playerId,
                 kind: 'DIE_REROLLED',
@@ -1179,8 +1324,9 @@ function formatDiceThroneActionEntry({
         if (event.type === 'BONUS_DIE_REROLLED') {
             const bonusDieEvent = event as BonusDieRerolledEvent;
             const { dieIndex, oldValue, newValue, playerId } = bonusDieEvent.payload;
+            const eventIdentity = getEventLogIdentity(event, index, entryTimestamp);
             entries.push({
-                id: `BONUS_DIE_REROLLED-${playerId}-${entryTimestamp}-${index}`,
+                id: `BONUS_DIE_REROLLED-${playerId}-${eventIdentity}`,
                 timestamp: entryTimestamp,
                 actorId: playerId,
                 kind: 'BONUS_DIE_REROLLED',
@@ -1269,24 +1415,23 @@ function findDiceThroneCard(
 // FlowSystem 配置由 FlowHooks 提供，符合设计规范
 // 注意：撤销快照保留 1 个 + 极度缩减日志（maxEntries: 20）以避免 MongoDB 16MB 限制
 const systems = [
-    new CharacterSelectionSystem({ setupPhaseName: 'setup' }),
     createFlowSystem<DiceThroneCore>({ hooks: diceThroneFlowHooks }),
-    createEventStreamSystem(),
-    createActionLogSystem({
+    createEventStreamSystem<DiceThroneCore>(),
+    createActionLogSystem<DiceThroneCore>({
         commandAllowlist: ACTION_LOG_ALLOWLIST,
         formatEntry: formatDiceThroneActionEntry,
     }),
-    createUndoSystem({
-        maxSnapshots: 3,
+    createUndoSystem<DiceThroneCore>({
+        maxSnapshots: 10,
         // 只对白名单命令做撤回快照，避免 UI/系统行为导致“一进局就可撤回”。
         snapshotCommandAllowlist: UNDO_ALLOWLIST,
     }),
-    createInteractionSystem(),
-    createSimpleChoiceSystem(),
-    createCompareRollChoiceSystem(),
-    createMultistepChoiceSystem(),
-    createRematchSystem(),
-    createResponseWindowSystem({
+    createInteractionSystem<DiceThroneCore>(),
+    createSimpleChoiceSystem<DiceThroneCore>(),
+    createCompareRollChoiceSystem<DiceThroneCore>(),
+    createMultistepChoiceSystem<DiceThroneCore>(),
+    createRematchSystem<DiceThroneCore>(),
+    createResponseWindowSystem<DiceThroneCore>({
         // 使用分类系统（推荐）
         allowedCommandCategories: [
             CommandCategory.TACTICAL,
@@ -1304,7 +1449,7 @@ const systems = [
             'RESOLVE_INTERACTION',
         ],
         
-        responderExemptCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'USE_PASSIVE_ABILITY'],
+        responderExemptCommands: ['USE_TOKEN', 'SKIP_TOKEN_RESPONSE', 'USE_PASSIVE_ABILITY', 'USE_DEJA_VU'],
         allowNonResponderCommand: ({ state, command, currentWindow }) => {
             const matchState = state as MatchState<DiceThroneCore>;
             const currentInteraction = matchState.sys.interaction?.current as {
@@ -1336,6 +1481,7 @@ const systems = [
                         return command.type === 'RESOLVE_INTERACTION'
                             || command.type === 'REMOVE_STATUS';
                     case 'selectHandCard':
+                    case 'selectDeckCard':
                         return command.type === 'RESOLVE_INTERACTION';
                     default:
                         return command.type === 'RESOLVE_INTERACTION';
@@ -1415,8 +1561,9 @@ const systems = [
             requestEvent: 'INTERACTION_REQUESTED',
         },
     }),
-    createTutorialSystem(),
+    createTutorialSystem<DiceThroneCore>(),
     createDiceThroneEventSystem(),
+    createDoctorStrangeSpellSystem(),
     createTimingOpportunitySystem(DiceThroneDomain, createDiceThroneTimingOpportunitySystemConfig()),
     createCheatSystem<DiceThroneCore>(diceThroneCheatModifier),
 ];
@@ -1442,6 +1589,7 @@ const COMMAND_TYPES = [
     'PLAY_UPGRADE_CARD',
     // 选择与阶段
     'RESOLVE_CHOICE',
+    'USE_DEJA_VU',
     // 卡牌交互（骰子修改、状态移除/转移）
     'MODIFY_DIE',
     'REROLL_DIE',
@@ -1884,7 +2032,7 @@ const shouldReleaseDiceThroneManualSetupAttemptFromSharedState = (args: {
 };
 
 // 引擎配置
-export const engineConfig = {
+export const engineConfig: GameEngineConfig<DiceThroneCore, DiceThroneCommand, DiceThroneEvent> = {
     ...createGameEngine(adapterConfig),
     resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
     resolveLocalRuntimeControlledPlayerId: resolveDiceThroneLocalRuntimeControlledPlayerId,
@@ -1902,7 +2050,11 @@ export const engineConfig = {
         resolveOfflineAdjudicationCommand: resolveDiceThroneOfflineAdjudicationCommand,
         resolveSeatLegalOnlyRecovery: resolveDiceThroneSeatLegalOnlyRecovery,
         shouldSuppressUnsatisfiableInteractionFeedback: shouldSuppressDiceThroneUnsatisfiableInteractionFeedback,
-        allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
+        allowForceCommandAfterLegalActionExhausted: ({ state, phase }) => {
+            if (phase !== 'defensiveRoll') return false;
+            const core = state.core as DiceThroneCore | undefined;
+            return !!core && canAdvancePhase(core, phase);
+        },
     },
 };
 
@@ -1913,8 +2065,9 @@ export { formatDiceThroneActionEntry };
 
 // 注册卡牌预览获取函数
 import { registerCardPreviewGetter } from '../../components/game/registry/cardPreviewRegistry';
-import { getDiceThroneCardPreviewRef } from './ui/cardPreviewHelper';
-registerCardPreviewGetter('dicethrone', getDiceThroneCardPreviewRef);
+registerCardPreviewGetter('dicethrone', (cardId, context) => (
+    getDiceThroneCardPreviewRef(cardId, context?.characterId)
+));
 
 // 注册关键图片解析器
 import { registerCriticalImageResolver } from '../../core';

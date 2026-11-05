@@ -317,7 +317,7 @@ describe('炎术士 METEOR_2 升级后变体', () => {
 
     it('3 陨石 → meteor-shower 施加状态并进入 main2', () => {
         // 进攻骰: [6,6,6,1,1] → 3 meteor + 2 fire
-        // meteor-shower 只有 inflictStatus 效果，无伤害 → 不进入防御阶段
+        // meteor-shower 只有状态效果，不构成攻击，也不触发眩晕的攻击结束效果。
         const random = createQueuedRandom([6, 6, 6, 1, 1]);
         const runner = new GameTestRunner({
             domain: DiceThroneDomain, systems: testSystems,
@@ -334,14 +334,14 @@ describe('炎术士 METEOR_2 升级后变体', () => {
                 cmd('ADVANCE_PHASE', '0'),       // offensiveRoll exit → 额外攻击 offensiveRoll
             ],
             expect: {
-                turnPhase: 'offensiveRoll',
+                turnPhase: 'main2',
                 players: {
                     '1': {
                         hp: 50,  // 无伤害
                         statusEffects: {
                             [STATUS_IDS.KNOCKDOWN]: 1,
                             [STATUS_IDS.BURN]: 1,
-                            [STATUS_IDS.DAZE]: 0,
+                            [STATUS_IDS.DAZE]: 1,
                         },
                     },
                 },

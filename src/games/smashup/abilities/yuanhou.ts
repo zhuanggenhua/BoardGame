@@ -9,6 +9,7 @@ import {
     buildStandardDrawEvents,
     buildFieldSourceTargetPromptConfig,
     buildFieldSourceToBaseTargetOptions,
+    type FieldSourceToBaseTargetValue,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -370,7 +371,7 @@ function shapeshiftersGeneticShift(ctx: AbilityContext): AbilityResult {
             ...allMinions(ctx.state)
                 .filter(({ minion }) => minion.controller === ctx.playerId)
                 .map(({ minion }) =>
-                    buildMinionPromptOption(minion, { mode: 'single', minionUid: minion.uid }),
+                    buildMinionPromptOption(minion, { mode: 'single' as const, minionUid: minion.uid }),
                 ),
         ];
         const interaction = createSimpleChoice(
@@ -523,7 +524,7 @@ function shapeshiftersGelf(ctx: AbilityContext): AbilityResult {
                 cardUid: located.minion.uid,
                 defId: located.minion.defId,
                 ownerId: located.minion.owner,
-                sourcePlayerId: located.minion.owner !== ctx.playerId ? ctx.playerId : undefined,
+                sourcePlayerId: ctx.playerId,
                 reason: 'shapeshifters_gelf',
                 now: ctx.now,
                 expectedLocation: 'bases',
@@ -737,7 +738,7 @@ function buildMonkeyOnYourBackEvents(
             cardUid: action.uid,
             defId: action.defId,
             ownerId: action.ownerId,
-            sourcePlayerId: action.ownerId !== playerId ? playerId : undefined,
+            sourcePlayerId: playerId,
             reason: 'cyborg_apes_monkey_on_your_back',
             now,
             expectedLocation: 'bases',
@@ -1448,7 +1449,7 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
         ? direct
         : undefined;
     if (ctx.matchState && !target && candidates.length > 1) {
-        const interaction = createSimpleChoice(
+        const interaction = createSimpleChoice<{ skip: true } | { minionUid: string }>(
             `time_travelers_doctor_when_choose_${ctx.now}`,
             ctx.playerId,
             '时间博士：选择要返回手牌的另一个己方随从',
@@ -1468,7 +1469,7 @@ function timeTravelersDoctorWhen(ctx: AbilityContext): AbilityResult {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
     if (ctx.matchState && !target && candidates.length === 1) {
-        const interaction = createSimpleChoice(
+        const interaction = createSimpleChoice<{ skip: true } | { minionUid: string }>(
             `time_travelers_doctor_when_choose_${ctx.now}`,
             ctx.playerId,
             '时间博士：选择是否返回另一个己方随从',
@@ -1830,7 +1831,7 @@ function buildTimeTravelersWormholeEvents(
                 cardUid: minion.uid,
                 defId: minion.defId,
                 ownerId,
-                sourcePlayerId: ownerId !== sourcePlayerId ? sourcePlayerId : undefined,
+                sourcePlayerId,
                 reason: 'time_travelers_wormhole',
                 now,
                 expectedLocation: 'bases',
@@ -1850,7 +1851,7 @@ function baseFacelessCity(ctx: BaseAbilityContext): AbilityResult {
     if (!player) return { events: [] };
     const matchingCards = player.deck.filter(card => isMinionCard(card) && isSameNameDefId(card.defId, ctx.minionDefId));
     if (ctx.matchState && matchingCards.length > 0) {
-        const interaction = createSimpleChoice(
+        const interaction = createSimpleChoice<{ skip: true } | { cardUid: string }>(
             `base_faceless_city_choose_${ctx.now}`,
             ctx.playerId,
             '无面之城：选择是否搜寻同名随从加入手牌',
@@ -1917,7 +1918,7 @@ function baseTheNexus(ctx: BaseAbilityContext): AbilityResult {
     if (!winnerId) return { events: [] };
     const choices = ctx.state.baseDiscard ?? [];
     if (choices.length === 0 || !ctx.matchState) return { events: [] };
-    const interaction = createSimpleChoice(
+    const interaction = createSimpleChoice<{ skip: true } | { baseDefId: string }>(
         `base_the_nexus_choose_${ctx.now}`,
         winnerId,
         '联结点：选择一个基地放到基地牌库顶',
@@ -2101,7 +2102,9 @@ function queueFlyingMonkeyMoveInteraction(params: {
         destinations: params.destinations,
         reason: params.reason,
     });
-    const interaction = createSimpleChoice(
+    const interaction = createSimpleChoice<
+        { skip: true } | FieldSourceToBaseTargetValue<{ minionUid: string; actionUid: string; reason: string }>
+    >(
         `${params.interactionIdPrefix}_${params.now}`,
         getOngoingActionControllerId(params.action),
         params.title,
@@ -3204,6 +3207,7 @@ export function registerYuanhouAbilities(): void {
         const detached = iData?.detached && typeof iData.detached === 'object'
             ? iData.detached as Record<string, unknown>
             : undefined;
+        if (!detached) return { state, events: [] };
         const cardUid = typeof detached?.cardUid === 'string' ? detached.cardUid : undefined;
         const defId = typeof detached?.defId === 'string' ? detached.defId : undefined;
         const ownerId = typeof detached?.ownerId === 'string' ? detached.ownerId as PlayerId : undefined;
@@ -3320,7 +3324,7 @@ export function registerYuanhouAbilities(): void {
     });
 
     registerInteractionHandler('cyborg_apes_flying_monkey_move', (state, _playerId, value, _iData, _random, timestamp) => {
-        const selected = value as FlyingMonkeyMoveChoice | { skip?: true } | undefined;
+        const selected = value as FlyingMonkeyMoveChoice | { skip: true } | undefined;
         if (!selected || 'skip' in selected) return { state, events: [] };
         const move = normalizeFlyingMonkeyMove(selected);
         if (!move || !isAllowedFlyingMonkeyMove(move, _iData)) return { state, events: [] };
@@ -3560,7 +3564,7 @@ export function registerYuanhouAbilities(): void {
     });
 
     registerInteractionHandler('base_faceless_city_choose', (state, playerId, value, _iData, random, timestamp) => {
-        const selected = value as CardUidChoice | { skip?: true } | undefined;
+        const selected = value as CardUidChoice | { skip: true } | undefined;
         if (!selected || 'skip' in selected || !selected.cardUid) return { state, events: [] };
         const player = state.core.players[playerId];
         const allowedCardUids = Array.isArray(_iData?.allowedCardUids)

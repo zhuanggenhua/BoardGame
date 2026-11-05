@@ -9,6 +9,7 @@ import {
     buildStandardDrawEvents,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedBaseMoveEvents,
+    createSkipOption,
     grantContextualExtraAction,
     grantContextualExtraMinion,
     inspectDeck,
@@ -16,6 +17,14 @@ import {
     revealDeckTop,
 } from '../domain/abilityHelpers';
 import { registerBaseAbility } from '../domain/baseAbilities';
+import {
+    createAbilityRuntimeContinuation,
+    type AbilityProgram,
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 import { registerDiscardActionPlayProvider } from '../domain/discardActionPlayability';
 import { appendResolvedActionAbility } from '../domain/externalActionPlay';
@@ -35,10 +44,25 @@ import { SU_EVENTS } from '../domain/types';
 
 type CardChoice = { cardUid?: string; defId?: string };
 type MinionChoice = { minionUid?: string; defId?: string; baseIndex?: number };
+type DancingClownChoice = CardChoice & { skip?: boolean };
+type DancingClownContinuation = {
+    cardUid: string;
+    defId: string;
+    ownerId: PlayerId;
+    sourceId: string;
+    sourceCardUid: string;
+    sourceBaseIndex?: number;
+};
 type BananaPeelContext = {
     fromDiscard?: boolean;
     fromBaseIndex?: number;
     minions?: Array<{ minionUid: string; minionDefId: string }>;
+};
+type JugglingPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    sourcePlayerId: PlayerId;
+    pendingPlayerIds: PlayerId[];
+    now: number;
 };
 
 function getCardName(defId: string): string {
@@ -597,6 +621,13 @@ function diyClownsMcDonaldClown(ctx: AbilityContext): AbilityResult {
     };
 }
 
+function runtimeToAbilityResult(result: { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> }): AbilityResult {
+    return {
+        events: result.events,
+        ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
+}
+
 const mcDonaldHandler: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
     const selected = value as { cardUid?: string } | undefined;
     const actionUids = (data?.continuationContext as { actionUids?: string[] } | undefined)?.actionUids ?? [];
@@ -624,44 +655,93 @@ function diyClownsDancingClownTalent(ctx: AbilityContext): AbilityResult {
     if (!picked) return { events: [] };
 
     const sourceId = `diy_clowns_dancing_clown:${ctx.cardUid}`;
-    const events: SmashUpEvent[] = [
-        buildActionPlayedEvent({
-            playerId: ctx.playerId,
-            cardUid: picked.uid,
-            defId: picked.defId,
-            ownerId: picked.owner,
-            timestamp: ctx.now,
-            isExtraAction: true,
-            fromDiscard: true,
-            discardPlaySourceId: sourceId,
-        }),
-    ];
-    const appended = appendResolvedActionAbility({
-        state: ctx.matchState,
-        events,
-        playerId: ctx.playerId,
-        cardUid: picked.uid,
-        defId: picked.defId,
-        random: ctx.random,
-        timestamp: ctx.now,
-        baseIndex: ctx.baseIndex,
-        fromDiscard: true,
-    });
-    appended.events.push(...buildValidatedCardToDeckBottomEvents(ctx.state, {
+    const interaction = createSimpleChoice(
+        `diy_clowns_dancing_clown_${ctx.cardUid}_${ctx.now}`,
+        ctx.playerId,
+        '跳舞小丑：是否打出随机选择的标准行动？',
+        [
+            createSkipOption(),
+            {
+                id: picked.uid,
+                label: getCardName(picked.defId),
+                value: { cardUid: picked.uid, defId: picked.defId } satisfies DancingClownChoice,
+                displayMode: 'card' as const,
+            },
+        ],
+        {
+            sourceId: 'diy_clowns_dancing_clown',
+            titleKey: 'ui.diy_clowns_dancing_clown_title',
+            targetType: 'discard',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    interaction.data.continuationContext = {
         cardUid: picked.uid,
         defId: picked.defId,
         ownerId: picked.owner,
-        sourcePlayerId: ctx.playerId,
+        sourceId,
         sourceCardUid: ctx.cardUid,
-        sourceDefId: 'diy_clowns_dancing_clown',
-        sourceControllerId: ctx.playerId,
         sourceBaseIndex: ctx.baseIndex,
-        reason: sourceId,
-        now: ctx.now,
+    } satisfies DancingClownContinuation;
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+}
+
+const dancingClownHandler: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
+    const selected = value as DancingClownChoice | undefined;
+    if (selected?.skip) return { state, events: [] };
+
+    const continuation = data?.continuationContext as DancingClownContinuation | undefined;
+    if (!continuation || !selected?.cardUid || !selected.defId
+        || selected.cardUid !== continuation.cardUid
+        || selected.defId !== continuation.defId) {
+        return { state, events: [] };
+    }
+
+    const card = state.core.players[playerId]?.discard.find(candidate =>
+        candidate.uid === continuation.cardUid
+        && candidate.defId === continuation.defId
+        && isStandardAction(candidate));
+    if (!card) return { state, events: [] };
+
+    const events: SmashUpEvent[] = [
+        buildActionPlayedEvent({
+            playerId,
+            cardUid: card.uid,
+            defId: card.defId,
+            ownerId: card.owner,
+            timestamp,
+            isExtraAction: true,
+            fromDiscard: true,
+            discardPlaySourceId: continuation.sourceId,
+        }),
+    ];
+    const appended = appendResolvedActionAbility({
+        state,
+        events,
+        playerId,
+        cardUid: card.uid,
+        defId: card.defId,
+        random,
+        timestamp,
+        baseIndex: continuation.sourceBaseIndex,
+        fromDiscard: true,
+    });
+    appended.events.push(...buildValidatedCardToDeckBottomEvents(state, {
+        cardUid: card.uid,
+        defId: card.defId,
+        ownerId: card.owner,
+        sourcePlayerId: playerId,
+        sourceCardUid: continuation.sourceCardUid,
+        sourceDefId: 'diy_clowns_dancing_clown',
+        sourceControllerId: playerId,
+        sourceBaseIndex: continuation.sourceBaseIndex,
+        reason: continuation.sourceId,
+        now: timestamp,
         expectedLocation: 'discard',
     }));
     return appended;
-}
+};
 
 function diyClownsMrsClownTrigger(ctx: TriggerContext): TriggerResult {
     if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) {
@@ -694,22 +774,110 @@ function canDiyClownsMrsClownTrigger(ctx: TriggerContext): boolean {
         && Number(source?.metadata?.diyClownsMrsClownUsedTurn ?? -1) !== ctx.state.turnNumber;
 }
 
-function diyClownsJuggling(ctx: AbilityContext): AbilityResult {
+let diyClownsJugglingAdvanceProgram: AbilityProgram<JugglingPromptContext, SmashUpCore, SmashUpEvent>;
+
+const diyClownsJugglingPickActionProgram = createPromptProgram<JugglingPromptContext>({
+    sourceId: 'diy_clowns_juggling_pick_action',
+    buildInteraction: context => {
+        const playerId = context.pendingPlayerIds[0];
+        const topActions = (context.matchState.core.players[playerId]?.deck ?? [])
+            .slice(0, 3)
+            .filter(isAction);
+        return createAbilityRuntimeSimpleChoice(
+            `diy_clowns_juggling_pick_action_${context.now}_${playerId}`,
+            playerId,
+            '杂耍：选择要弃置的行动牌',
+            topActions.map(card => ({
+                id: card.uid,
+                label: getCardName(card.defId),
+                value: { cardUid: card.uid, defId: card.defId },
+                displayMode: 'card' as const,
+                displayCard: { defId: card.defId, cardUid: card.uid },
+            })),
+            {
+                titleKey: 'ui.diy_clowns_juggling_title',
+                sourceId: 'diy_clowns_juggling_pick_action',
+                targetType: 'generic',
+                genericIntent: 'card-pool',
+                autoResolveIfSingle: false,
+                autoRefresh: 'deck',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const currentPlayerId = context.pendingPlayerIds[0];
+        if (!currentPlayerId || playerId !== currentPlayerId) return { events: [] };
+        const selected = value as CardChoice | undefined;
+        const topCards = state.core.players[currentPlayerId]?.deck.slice(0, 3) ?? [];
+        const card = topCards.find(candidate => candidate.uid === selected?.cardUid && isAction(candidate));
+        if (!card) return { events: [] };
+        return {
+            events: [
+                revealDeckTop(
+                    currentPlayerId,
+                    'all',
+                    [{ uid: card.uid, defId: card.defId }],
+                    1,
+                    'diy_clowns_juggling',
+                    timestamp,
+                    context.sourcePlayerId,
+                ),
+                millFromDeck(currentPlayerId, [card.uid], 'diy_clowns_juggling', timestamp),
+            ],
+            continuation: createAbilityRuntimeContinuation({
+                ...context,
+                matchState: state,
+                pendingPlayerIds: context.pendingPlayerIds.slice(1),
+                now: timestamp,
+            }, diyClownsJugglingAdvanceProgram),
+        };
+    },
+});
+
+diyClownsJugglingAdvanceProgram = createEffectProgram<JugglingPromptContext, SmashUpCore, SmashUpEvent>(context => {
     const events: SmashUpEvent[] = [];
-    for (const pid of ctx.state.turnOrder) {
-        const deck = ctx.state.players[pid]?.deck ?? [];
-        const topCards = deck.slice(0, 3);
-        if (topCards.length === 0) continue;
-        const action = topCards.find(isAction);
-        events.push(inspectDeck(pid, pid, topCards.length, 'diy_clowns_juggling', ctx.now));
-        if (action) {
-            events.push(revealDeckTop(pid, 'all', [{ uid: action.uid, defId: action.defId }], 1, 'diy_clowns_juggling', ctx.now, ctx.playerId));
-            events.push(millFromDeck(pid, [action.uid], 'diy_clowns_juggling', ctx.now));
-        } else {
-            events.push(revealDeckTop(pid, 'all', topCards.map(card => ({ uid: card.uid, defId: card.defId })), topCards.length, 'diy_clowns_juggling', ctx.now, ctx.playerId));
+    let pendingPlayerIds = [...context.pendingPlayerIds];
+
+    while (pendingPlayerIds.length > 0) {
+        const playerId = pendingPlayerIds[0];
+        const topCards = context.matchState.core.players[playerId]?.deck.slice(0, 3) ?? [];
+        if (topCards.length === 0) {
+            pendingPlayerIds = pendingPlayerIds.slice(1);
+            continue;
         }
+
+        events.push(inspectDeck(playerId, playerId, topCards.length, 'diy_clowns_juggling', context.now));
+        const actions = topCards.filter(isAction);
+        if (actions.length > 0) {
+            return {
+                events,
+                continuation: createAbilityRuntimeContinuation({ ...context, pendingPlayerIds }, diyClownsJugglingPickActionProgram),
+            };
+        }
+
+        events.push(revealDeckTop(
+            playerId,
+            'all',
+            topCards.map(card => ({ uid: card.uid, defId: card.defId })),
+            topCards.length,
+            'diy_clowns_juggling',
+            context.now,
+            context.sourcePlayerId,
+        ));
+        pendingPlayerIds = pendingPlayerIds.slice(1);
     }
+
     return { events };
+});
+
+function diyClownsJuggling(ctx: AbilityContext): AbilityResult {
+    return runtimeToAbilityResult(executeAbilityProgram(diyClownsJugglingAdvanceProgram, {
+        matchState: ctx.matchState,
+        sourcePlayerId: ctx.playerId,
+        pendingPlayerIds: [...ctx.state.turnOrder],
+        now: ctx.now,
+    }));
 }
 
 function baseClownAcademy(ctx: { state: SmashUpCore; playerId: PlayerId; baseIndex: number; now: number; random?: { shuffle<T>(arr: T[]): T[] } }): { events: SmashUpEvent[] } {
@@ -835,6 +1003,7 @@ export function registerDiyClownsAbilities(): void {
     registerInteractionHandler('diy_clowns_pie_in_the_face', pieHandler);
     registerInteractionHandler('diy_clowns_clown_girl', clownGirlHandler);
     registerInteractionHandler('diy_clowns_mcdonald_clown', mcDonaldHandler);
+    registerInteractionHandler('diy_clowns_dancing_clown', dancingClownHandler);
     registerInteractionHandler('base_diy_clowns_circus_tent', circusTentHandler);
 
     registerBaseAbility('base_diy_clowns_clown_academy', 'onMinionPlayed', ctx => baseClownAcademy(ctx), {

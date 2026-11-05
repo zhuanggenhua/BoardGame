@@ -157,7 +157,7 @@ export function EndgameScreen({
           />
         </section>
       ) : (
-      <div className="mx-auto flex h-full min-h-full w-full max-w-[1760px] p-3 md:p-4">
+      <div className="mx-auto flex h-full min-h-full w-full max-w-[1760px] p-4">
         <div className="relative flex min-h-full w-full flex-col overflow-hidden border border-[#876a3c] bg-[rgba(9,15,13,0.95)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
           <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(132,170,82,0.08),transparent_28%)]" />
@@ -214,7 +214,7 @@ export function EndgameScreen({
               <div className="pointer-events-none absolute inset-x-3 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.12),transparent)]" />
               <div className="relative flex flex-1 overflow-hidden border border-[rgba(214,191,129,0.3)] bg-[linear-gradient(180deg,rgba(8,12,11,0.72),rgba(5,8,7,0.92))] shadow-[inset_0_0_0_1px_rgba(214,191,129,0.08)]">
                 <div className="pointer-events-none absolute inset-[3px] border border-[rgba(214,191,129,0.12)]" />
-                <div className="relative hidden w-[148px] overflow-hidden md:block">
+                <div className="relative block w-[148px] overflow-hidden">
                   <OptimizedImage
                     src={BETRAYAL_COVER_ASSET}
                     locale={effectiveLocale}
@@ -236,7 +236,7 @@ export function EndgameScreen({
             </div>
           </header>
 
-          <main className="grid min-h-0 flex-1 grid-cols-[318px_minmax(0,1.18fr)_286px] gap-0 px-4 pb-3 pt-3 xl:grid-cols-[336px_minmax(0,1.22fr)_304px]">
+          <main className="grid min-h-0 flex-1 grid-cols-[336px_minmax(0,1.22fr)_304px] gap-0 px-4 pb-3 pt-3">
             <section className="relative flex min-h-0 flex-col gap-3 px-2 pb-1 pt-1 pr-4">
               <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.2),rgba(214,191,129,0.2),transparent)]" />
               <div className="relative overflow-hidden px-3 py-3">

@@ -11,6 +11,7 @@ Board/UI 阶段的目标是让玩家通过正式页面控件完成核心交互�
 - 前置规则、素材、布局和 OpenSpec 缺口已闭合或明确批准为后续范围。
 - 真实页面主路径通过，不是组件存在、局部截图可看或测试夹具可跑。
 - AI 已复看截图并确认没有阻塞级 UI 问题。
+- 凡改动玩家可见 UI，必须按项目级 [`ui-change-gates`](../../../knowledge/standards/ui-change-gates.md) 在当前真实入口取得截图并完成图面核验；最终交付必须带当前 `VIEWER_URL` 或等价可打开入口。
 - 若对外声称“基础流程可理解”，已产出基础玩法截图链。
 
 ## UI 前置证据
@@ -74,7 +75,7 @@ DOM、HTML、TTS/Workshop JSON、XmlUI、对象 Transform、截图、PureRef、�
 
 对包含 UI / runtime 的 change，未完成以下任一项，不得把 UI-facing 数据模型标记完成，不得写 Board、运行时 HUD、动作条、PromptOverlay，不得启动真实页面实现 E2E，也不得宣称进入 UI 实施阶段：
 
-- Open Design artifact 已创建且可渲染；
+- Open Design artifact 已创建且可渲染；当前工作稿指针与用户可见截图身份见 [`boardgame-ui-imagegen`](../../boardgame-ui-imagegen/SKILL.md)「当前工作稿身份」。
 - 导出设计图已完成 AI 图面核验；
 - 当前设计稿已获用户明确批准；
 - 设计稿对应的 UI 前置包、素材账本和风格合同可回查。
@@ -114,6 +115,8 @@ DOM、HTML、TTS/Workshop JSON、XmlUI、对象 Transform、截图、PureRef、�
 - 溢出、折叠或展开策略。
 
 如果玩家第一眼看不出“我现在能点什么、点了选谁、怎么确认、结果是什么”，不得进入设计稿或实现。
+
+实现时，凡玩家可见规则结果导致生命、属性、资源、状态层级 / 计数、位置归属或其它读数变化，必须同时接入可感知反馈；具体反馈类型、例外和验收口径以 [`animation-effects`](../../../knowledge/standards/animation-effects.md) 为唯一主源。只更新数字、日志、toast 或最终静态值而没有目标本体变化、跳字 / 数字变化、状态 token、资源飞行、短闪等同等反馈时，UI 实施不能标记完成。
 
 ## Board 实现边界
 

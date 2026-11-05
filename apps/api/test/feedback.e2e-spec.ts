@@ -13,6 +13,9 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { gunzipSync } from 'node:zlib';
+import { capturePrivateFeedbackReplay } from '../../../src/engine/transport/feedbackPrivateReplay';
+import { buildOnlineAiRecoveryFeedbackRequestBody } from '../../../src/engine/transport/transportFeedbackReporter';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { AuthService } from '../src/modules/auth/auth.service';
 import { FeedbackModule } from '../src/modules/feedback/feedback.module';
@@ -157,6 +160,136 @@ describe('Feedback Module (e2e)', () => {
 
         return { adminToken, adminId, developerToken, developerId, userToken, userId };
     };
+
+    it('同一自动反馈现场重发时只保存一条记录', async () => {
+        const body = {
+            content: '[auto][react.error_boundary] retry', source: 'react-error-boundary', type: 'bug', severity: 'high',
+            gameName: 'dicethrone', diagnosticPacket: {
+                schemaVersion: 1, captureId: 'feedback-delivery-idempotency', capturedAt: '2026-10-29T00:00:00.000Z',
+                source: 'client-auto', collectionStatus: 'complete', replayability: 'partial', missingFields: [],
+            },
+        };
+        const first = await request(app.getHttpServer()).post('/feedback').send(body).expect(201);
+        const second = await request(app.getHttpServer()).post('/feedback').send(body).expect(201);
+        expect(second.body._id).toBe(first.body._id);
+        expect(await feedbackModel.countDocuments({ 'diagnosticPacket.captureId': body.diagnosticPacket.captureId })).toBe(1);
+    });
+
+    it('自动反馈传入序列化诊断包时应解析并用于幂等', async () => {
+        const packet = {
+            schemaVersion: 1, captureId: 'feedback-delivery-json-string', capturedAt: '2026-10-29T00:00:00.000Z',
+            source: 'client-auto', collectionStatus: 'partial', replayability: 'partial', missingFields: ['snapshots.before'],
+            phase: 'offensiveRoll', interaction: { id: 'choice-before' },
+        };
+        const body = {
+            content: '[auto][react.error_boundary] json', source: 'react-error-boundary', type: 'bug', severity: 'high',
+            gameName: 'dicethrone', diagnosticPacket: JSON.stringify(packet),
+        };
+        const first = await request(app.getHttpServer()).post('/feedback').send(body).expect(201);
+        const second = await request(app.getHttpServer()).post('/feedback').send(body).expect(201);
+        expect(second.body._id).toBe(first.body._id);
+        expect(first.body.diagnosticPacket).toMatchObject(packet);
+    });
+
+    it('watchdog 重发同一诊断包不应重复计数或替换首次现场', async () => {
+        const body = {
+            content: '[system][online-ai-watchdog] force-end-turn-failed', source: 'online-ai-watchdog',
+            autoReportKind: 'force-end-turn-failed', incidentKey: '1:visible-interaction:key',
+            type: 'bug', severity: 'high', gameName: 'dicethrone',
+            stateSnapshot: JSON.stringify({ phase: 'offensiveRoll', reason: 'visible-interaction' }),
+            clientContext: { gameId: 'dicethrone', matchId: 'match-1', playerId: '1' },
+            diagnosticPacket: JSON.stringify({
+                schemaVersion: 1, captureId: 'watchdog-first-capture', source: 'server',
+                capturedAt: '2026-10-29T00:00:00.000Z', collectionStatus: 'partial', replayability: 'partial', missingFields: [],
+            }),
+        };
+        const post = (requestBody: typeof body) => request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN).send(requestBody).expect(201);
+        const first = await post(body);
+        const retry = await post(body);
+        expect(retry.body._id).toBe(first.body._id);
+        expect(retry.body.occurrenceCount).toBe(1);
+        const next = { ...body, diagnosticPacket: body.diagnosticPacket.replace('watchdog-first-capture', 'watchdog-second-capture') };
+        await post(next);
+        const nextRetry = await post(next);
+        expect(nextRetry.body.occurrenceCount).toBe(2);
+        expect(nextRetry.body.diagnosticPacket.captureId).toBe('watchdog-first-capture');
+    });
+
+    it('服务端权威复现场景仅管理员可读取，公开详情与列表不得泄露', async () => {
+        const { adminToken, userToken, developerToken } = await seedUsers();
+        const privateReplay = JSON.stringify({ seed: 'SECRET_SEED', state: { core: { secretHand: ['SECRET_CARD'] } } });
+        const created = await request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ content: '[system] private replay', source: 'online-ai-watchdog', type: 'bug', gameName: 'dicethrone', privateReplay })
+            .expect(201);
+        const id = created.body._id as string;
+        const publicDetail = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`).expect(200);
+        expect(JSON.stringify(publicDetail.body)).not.toContain('SECRET_CARD');
+        expect(JSON.stringify((await request(app.getHttpServer()).get('/admin-api/feedback?limit=20').expect(200)).body)).not.toContain('SECRET_CARD');
+        const signedInList = await request(app.getHttpServer()).get('/admin-api/feedback?limit=20')
+            .set('Authorization', `Bearer ${userToken}`).expect(200);
+        expect(JSON.stringify(signedInList.body)).not.toContain('SECRET_CARD');
+        await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`).expect(401);
+        await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`).set('Authorization', `Bearer ${userToken}`).expect(403);
+        await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`).set('Authorization', `Bearer ${developerToken}`).expect(403);
+        const admin = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200);
+        expect(admin.body.privateReplay).toBe(privateReplay);
+        const spoofed = await request(app.getHttpServer()).post('/feedback')
+            .send({ content: 'public spoof', privateReplay: 'attacker-controlled' });
+        if (spoofed.status === 201) {
+            const persisted = await feedbackModel.findById(spoofed.body._id).select('+privateReplay').lean().exec();
+            expect(persisted?.privateReplay).toBeUndefined();
+        } else {
+            expect(spoofed.status).toBe(400);
+        }
+    });
+
+    it('一次 watchdog 故障经真实 API 保存并取回原始撤回点和随机游标', async () => {
+        const { adminToken } = await seedUsers();
+        const replay = capturePrivateFeedbackReplay({
+            matchID: 'replay-match', gameId: 'dicethrone', stateID: 17,
+            randomSeed: 'private-rng-seed', getRandomCursor: () => 7,
+            state: { core: { secretHand: ['private-card'] }, sys: {
+                phase: 'offensiveRoll', interaction: { current: { id: 'before-choice' }, queue: [] },
+                undo: { snapshots: [{ core: { health: 42 } }], snapshotCursors: [4] },
+            } } as any,
+        });
+        const body = buildOnlineAiRecoveryFeedbackRequestBody({
+            matchId: 'replay-match', gameId: 'dicethrone', playerId: '1', incidentKind: 'force-end-turn-failed',
+            severity: 'high', reason: 'visible-interaction', trackerKey: 'tracker', progressMarker: 'before',
+            stateSnapshot: '{"phase":"offensiveRoll"}', privateReplay: replay.data,
+        });
+        const created = await request(app.getHttpServer()).post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN).send(body).expect(201);
+        const id = created.body._id as string;
+        const publicDetail = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`).expect(200);
+        expect(JSON.stringify(publicDetail.body)).not.toContain('private-rng-seed');
+        const admin = await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200);
+        const archive = JSON.parse(gunzipSync(Buffer.from(admin.body.privateReplay, 'base64')).toString('utf8'));
+        expect(archive).toMatchObject({ matchId: 'replay-match', stateId: 17, randomSeed: 'private-rng-seed', randomCursor: 7,
+            state: { core: { secretHand: ['private-card'] }, sys: { interaction: { current: { id: 'before-choice' } }, undo: { snapshotCursors: [4] } } } });
+        expect(archive.state.sys.undo.snapshots[0].core.health).toBe(42);
+    });
+
+    it('用户反馈只能由对应对局和座位绑定服务端私有现场', async () => {
+        const { adminToken } = await seedUsers();
+        const created = await request(app.getHttpServer()).post('/feedback').send({
+            content: '玩家反馈', gameName: 'dicethrone', clientContext: { matchId: 'm1', playerId: '0', gameId: 'dicethrone' },
+        }).expect(201);
+        const id = created.body._id as string;
+        const attach = (matchId: string, playerId: string) => request(app.getHttpServer())
+            .post(`/internal/feedback/${id}/private-replay`).set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({ matchId, playerId, privateReplay: 'private-data' });
+        await attach('m2', '0').expect(404);
+        await attach('m1', '1').expect(404);
+        await attach('m1', '0').expect(201);
+        await request(app.getHttpServer()).get(`/admin-api/feedback/${id}/private-replay`)
+            .set('Authorization', `Bearer ${adminToken}`).expect(200).expect(({ body }) => expect(body.privateReplay).toBe('private-data'));
+        expect(JSON.stringify((await request(app.getHttpServer()).get(`/admin-api/feedback/${id}`).expect(200)).body)).not.toContain('private-data');
+    });
 
     it('未登录可以匿名提交反馈', async () => {
         const res = await request(app.getHttpServer())
@@ -394,10 +527,59 @@ describe('Feedback Module (e2e)', () => {
                 gameName: 'smashup',
                 actionLog: '[12:00] click feedback entry',
                 stateSnapshot: JSON.stringify({ gameId: 'smashup', phase: 'feedback' }),
+                diagnosticPacket: {
+                    schemaVersion: 1,
+                    captureId: 'capture-feedback-1',
+                    chainId: 'chain-feedback-1',
+                    capturedAt: '2026-10-06T10:00:00.000Z',
+                    source: 'user',
+                    collectionStatus: 'complete',
+                    replayability: 'partial',
+                    missingFields: ['correlation.roomId', 'snapshots.before'],
+                    correlation: {
+                        matchId: 'match-lazy-load',
+                        requestId: 'feedback-request-1',
+                    },
+                    snapshots: {
+                        at: { gameId: 'smashup', phase: 'feedback' },
+                    },
+                },
                 clientContext: {
                     route: '/play/smashup/match/lazy-load',
                     gameId: 'smashup',
                     appVersion: 'test-build',
+                    performance: {
+                        capturedAt: '2026-10-06T10:00:01.000Z',
+                        windowMs: 30_000,
+                        frame: {
+                            averageFps: 24.5,
+                            minFps: 12.1,
+                            averageFrameTimeMs: 40.8,
+                            maxFrameTimeMs: 82.4,
+                            bucketCount: 2,
+                        },
+                        longTasks: {
+                            count: 3,
+                            totalDurationMs: 220,
+                            maxDurationMs: 120,
+                        },
+                        network: {
+                            connectionRttMs: 160,
+                            effectiveType: '3g',
+                            downlinkMbps: 1.5,
+                            requestCount: 2,
+                            averageDurationMs: 480,
+                            maxDurationMs: 900,
+                            averageTtfbMs: 210,
+                            recentRequests: [{
+                                path: '/api/feedback',
+                                initiatorType: 'fetch',
+                                durationMs: 900,
+                                ttfbMs: 210,
+                                connectMs: 40,
+                            }],
+                        },
+                    },
                     lastUserAction: {
                         type: 'click',
                         at: '2026-03-14T10:00:00.000Z',
@@ -427,9 +609,12 @@ describe('Feedback Module (e2e)', () => {
         expect(summaryItem.hasEmbeddedImage).toBe(true);
         expect(summaryItem.hasActionLog).toBe(true);
         expect(summaryItem.hasStateSnapshot).toBe(true);
+        expect(summaryItem.hasDiagnosticPacket).toBe(true);
+        expect(summaryItem.diagnosticReplayability).toBe('partial');
         expect(summaryItem.hasClientContext).toBe(true);
         expect(summaryItem.hasErrorContext).toBe(true);
         expect(summaryItem.clientContext?.route).toBe('/play/smashup/match/lazy-load');
+        expect(summaryItem.clientContext?.performance?.network?.connectionRttMs).toBe(160);
         expect(summaryItem.errorContext?.name).toBe('SlowFeedbackPanel');
         expect(summaryItem.canManage).toBe(true);
 
@@ -441,9 +626,18 @@ describe('Feedback Module (e2e)', () => {
         expect(detailRes.body.content).toContain('data:image/png;base64,AAAA');
         expect(detailRes.body.actionLog).toContain('click feedback entry');
         expect(detailRes.body.stateSnapshot).toContain('"phase":"feedback"');
+        expect(detailRes.body.diagnosticPacket.captureId).toBe('capture-feedback-1');
+        expect(detailRes.body.diagnosticPacket.missingFields).toContain('snapshots.before');
         expect(detailRes.body.clientContext?.lastUserAction?.target?.testId).toBe('feedback-entry');
+        expect(detailRes.body.clientContext?.performance?.frame?.minFps).toBe(12.1);
         expect(detailRes.body.errorContext?.jsStack).toContain('Feedback.tsx');
         expect(detailRes.body.canManage).toBe(true);
+
+        const replayabilityRes = await request(app.getHttpServer())
+            .get('/admin-api/feedback?summaryOnly=true&replayability=partial')
+            .set('Authorization', 'Bearer ' + adminToken)
+            .expect(200);
+        expect(replayabilityRes.body.items).toHaveLength(1);
     });
 
     it('普通用户反馈关闭时不填写关闭理由会返回 400', async () => {

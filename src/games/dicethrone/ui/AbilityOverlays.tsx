@@ -23,6 +23,12 @@ import {
     getUpgradeCardForAbilityLevel,
 } from './abilityOverlayHelpers';
 import type { HeroState } from '../domain/types';
+import {
+    buildBoardShellInlineUnitValue,
+    buildBoardShellScreenPixelValue,
+} from '../../../shared/runtimeLayoutUnits';
+
+const dtUnit = buildBoardShellInlineUnitValue;
 
 // 被动能力配置（按角色）
 const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId?: string }[]> = {
@@ -405,7 +411,21 @@ const buildAbilityHighlightStyle = (
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
         const highlightOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-10 animate-pulse';
         const selectedOverlayClassName = 'absolute inset-0 rounded-lg pointer-events-none z-20';
-        const inspectButtonClassName = 'absolute right-[0.2vw] top-[0.2vw] z-20 flex h-[1.15vw] w-[1.15vw] min-h-[14px] min-w-[14px] items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_0.18vw_0.42vw_rgba(0,0,0,0.45)] transition-[background-color,border-color,opacity] duration-200 hover:border-amber-300/45 hover:bg-amber-500/78';
+        const inspectButtonClassName = 'absolute z-20 flex items-center justify-center p-0 text-white transition-[filter,opacity] duration-200 hover:brightness-125';
+        const inspectButtonVisualClassName = 'absolute top-0 right-0 flex items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_2px_7px_rgba(0,0,0,0.45)]';
+        const inspectButtonVisualStyle = {
+            width: dtUnit(1.15),
+            height: dtUnit(1.15),
+        };
+        const inspectButtonStyle: React.CSSProperties = {
+            right: dtUnit(0.2),
+            top: dtUnit(0.2),
+            width: buildBoardShellScreenPixelValue(44),
+            height: buildBoardShellScreenPixelValue(44),
+            minWidth: buildBoardShellScreenPixelValue(44),
+            minHeight: buildBoardShellScreenPixelValue(44),
+            boxShadow: `0 ${dtUnit(0.18)} ${dtUnit(0.42)} rgba(0,0,0,0.45)`,
+        };
         const abilityHighlightTone = React.useMemo(
             () => getAbilityHighlightTone(characterId),
             [characterId],
@@ -612,6 +632,7 @@ const buildAbilityHighlightStyle = (
                             data-ability-slot={slot.id}
                             data-ability-slot-scope={slotScope}
                             data-resolved-ability-id={displayAbilityId ?? ''}
+                            data-tutorial-id={`ability-slot-${slot.id}`}
                             data-available-ability-id={availableAbilityId ?? ''}
                             data-selected-ability-id={selectedSlotAbilityId ?? ''}
                             data-activating-ability-id={activatingSlotAbilityId ?? ''}
@@ -684,6 +705,7 @@ const buildAbilityHighlightStyle = (
                                 <button
                                     type="button"
                                     className={inspectButtonClassName}
+                                    style={inspectButtonStyle}
                                     aria-label={`查看${slotLabel}升级卡`}
                                     data-testid={`dt-upgrade-magnify-button-${slot.id}`}
                                     onClick={(event) => {
@@ -691,9 +713,20 @@ const buildAbilityHighlightStyle = (
                                         onMagnifyCard?.(upgradeCard);
                                     }}
                                 >
-                                    <svg className="h-[0.44vw] w-[0.44vw] min-h-[8px] min-w-[8px] fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                                    <span
+                                        className={inspectButtonVisualClassName}
+                                        style={inspectButtonVisualStyle}
+                                        data-fixed-control-visual="true"
+                                    >
+                                    <svg
+                                        className="board-shell-fixed-icon min-h-[8px] min-w-[8px] fill-current"
+                                        style={{ width: dtUnit(0.84), height: dtUnit(0.84) }}
+                                        viewBox="0 0 20 20"
+                                        aria-hidden="true"
+                                    >
                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                     </svg>
+                                    </span>
                                 </button>
                             )}
                             {isEditing && (

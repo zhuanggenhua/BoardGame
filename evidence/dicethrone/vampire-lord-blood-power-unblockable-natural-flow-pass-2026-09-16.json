@@ -1,0 +1,55 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "基础魅惑之力作为不可防御攻击被选中后，当前攻击仍保留对手目标、4 点预期伤害和吸血鬼领主已有 4 个鲜血之力。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 通过：node scripts/infra/run-e2e-command.mjs isolated e2e/dicethrone/vampire-lord-real-entry.e2e.ts --grep \"基础魅惑之力不可防御攻击后应暂停并允许鲜血之力 4 档吸血\"",
+        "原图 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/吸血鬼领主-魅惑之力不可防御攻击已选中.jpg 显示基础魅惑之力已选中，本次攻击不可防御且待结算。"
+      ]
+    },
+    {
+      "requirement": "点击结算攻击后，系统必须先造成伤害并暂停到鲜血之力第 4 档可选窗口，而不是直接进入主要阶段二。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言攻击者 HP=40、攻击者 CP=3、对手 HP=46、鲜血之力=4、催眠=1、攻击状态为伤害后等待、已造成伤害=4、伤害已落地=true、攻击尚未收口=false，并且窗口显示“是否发动鲜血之力”“本次攻击已经造成 4 点伤害”“发动吸血治疗”“不发动，继续”。",
+        "原图 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/吸血鬼领主-魅惑之力不可防御攻击后鲜血之力弹窗-使用前.jpg 显示伤害后鲜血之力机会窗口。"
+      ]
+    },
+    {
+      "requirement": "发动四档后必须消耗 4 个鲜血之力，按已造成 4 点伤害治疗吸血鬼领主，并收口到主要阶段二。",
+      "status": "PASS",
+      "evidence": [
+        "E2E 断言 phase=main2、pendingAttack 清空、吸血鬼领主 HP 40->44、对手 HP 保持 46、鲜血之力 4->0，并出现伤害、治疗、Token 消耗和攻击收口事件。",
+        "原图 D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/吸血鬼领主-魅惑之力不可防御攻击后鲜血之力治疗后收口.jpg 显示治疗后已经回到主要阶段二。"
+      ]
+    },
+    {
+      "requirement": "旧审计漏掉的是自然流程触发，不是鲜血之力四档消费规则本身；代表态 / 预置伤害后窗口不得继续冒充自然端到端证据。",
+      "status": "PASS",
+      "evidence": [
+        "首跑红测失败现场：test-results/playwright-artifacts/dicethrone-vampire-lord-re-0f9d4-魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血-chromium/error-context.md，当时对手 HP 已从 50 到 46，但没有 dicethrone-passive-opportunity-modal。",
+        "审计总账已原地回写：evidence/dicethrone/dicethrone-vampire-lord-mechanics-audit-2026-08-28.md。"
+      ]
+    }
+  ],
+  "sourceImages": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/吸血鬼领主-魅惑之力不可防御攻击已选中.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/吸血鬼领主-魅惑之力不可防御攻击后鲜血之力弹窗-使用前.jpg",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/吸血鬼领主-魅惑之力不可防御攻击后鲜血之力治疗后收口.jpg"
+  ],
+  "images": [
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/_labeled-for-user-20260916-blood-power-unblockable-natural-flow/00-sequence-index.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/_labeled-for-user-20260916-blood-power-unblockable-natural-flow/01-labeled-吸血鬼领主-魅惑之力不可防御攻击已选中.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/_labeled-for-user-20260916-blood-power-unblockable-natural-flow/02-labeled-吸血鬼领主-魅惑之力不可防御攻击后鲜血之力弹窗-使用前.png",
+    "D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/vampire-lord-real-entry.e2e/基础魅惑之力不可防御攻击后应暂停并允许鲜血之力-4-档吸血/_labeled-for-user-20260916-blood-power-unblockable-natural-flow/03-labeled-吸血鬼领主-魅惑之力不可防御攻击后鲜血之力治疗后收口.png"
+  ]
+}

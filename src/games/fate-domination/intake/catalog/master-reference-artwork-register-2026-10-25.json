@@ -1,0 +1,923 @@
+{
+  "purpose": "只读角色资料；51图面、49正面记录及2关联牌背，不是51技能。",
+  "records": [
+    {
+      "sourceHeading": "宿敌",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215124_712.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "5dab0b8e7a0f4f2608fa60dde44bef2fea04694efbadfb27761ca123a2510fce",
+      "dimensions": [
+        537,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kariya",
+      "componentId": "nemesis",
+      "name": "宿敌",
+      "role": "state",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kariya/nemesis.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "崩坏",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215129_967.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "63b10d8bd00df29770198762377aa3a5de34f9736c110e96952360e39245ab95",
+      "dimensions": [
+        532,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kariya",
+      "componentId": "collapse",
+      "name": "崩坏",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kariya/collapse.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215134_528.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "43ffdece04beeb490a9a837ba582e6c38c4a00a0e7e411f9904c7fb85a6fb094",
+      "dimensions": [
+        537,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kariya",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kariya/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "人体反应堆",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215139_168.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "df65bba18f0a4eb9eac30b88ed657d0e75aa3391ee62ae1f06fedb271362d5c9",
+      "dimensions": [
+        540,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kariya",
+      "componentId": "human-reactor",
+      "name": "人体反应堆",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kariya/human-reactor.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "伪臣之书",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194540_736.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "39401fa88bb91fd3bcbfe759308cf2496352db7a77c6557c6fce2bcf1a2c0e98",
+      "dimensions": [
+        547,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shinji",
+      "componentId": "borrowed-book-without-sakura",
+      "name": "伪臣之书（间桐樱不在场）",
+      "role": "state",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shinji/borrowed-book-without-sakura.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "伪臣之书",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194545_992.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "60d3bd7f71692a4d805d321e9a7f5c617c0ce990b1710f18d4f75e910345f681",
+      "dimensions": [
+        540,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shinji",
+      "componentId": "borrowed-book-with-sakura",
+      "name": "伪臣之书（间桐樱在场）",
+      "role": "state",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shinji/borrowed-book-with-sakura.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194550_681.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "1647fafc0dd0224f3b5451e04a8aa90b2a7b916a1abffdcf0e5ce1a5c7304321",
+      "dimensions": [
+        552,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shinji",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shinji/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "圣杯核心",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194556_480.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "3cf557e92ff8e6abbd7f212b10eafaf5eae3b7bde1facd1c86467e6f9675b45b",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shinji",
+      "componentId": "grail-core",
+      "name": "圣杯核心",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shinji/grail-core.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "力量",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_231030_087.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "ed6ec6696f309bf35dc7f15af25eb220ab0ec9b69cc91b550ba441b9bb9294b0",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shirou_emiya",
+      "componentId": "kanshou-bakuya",
+      "name": "干将·莫邪",
+      "role": "skill-attack",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shirou_emiya/kanshou-bakuya.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_231034_648.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "0f48ea4325924501d040e3ebc49a3119bc6b499c9026e38e64225d019a9bebea",
+      "dimensions": [
+        546,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shirou_emiya",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shirou_emiya/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "米",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_231039_063.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "bbe1e3426d5a91c6e3a3cb8c079a2797871ecdeaac7f465e693091dee529bf6d",
+      "dimensions": [
+        534,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_shirou_emiya",
+      "componentId": "golden-sword",
+      "name": "必胜黄金之剑",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_shirou_emiya/golden-sword.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "死亡之美",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_185906_190.png",
+      "sourceStatus": "partial",
+      "sha256": "9ef6a8faca99bdb81e9b3a71aac733c23472095f3921356272a170c846bbd292",
+      "dimensions": [
+        551,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_ryuunosuke",
+      "componentId": "art-of-death-back",
+      "name": "死亡之美",
+      "role": "back",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_ryuunosuke/art-of-death-back.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "死之艺术",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_185824_941.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "71920445546a65fdac48a31dfdeb31e446c48a929bc1d3e75cd20f67a77d14a4",
+      "dimensions": [
+        536,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_ryuunosuke",
+      "componentId": "art-of-death",
+      "name": "死之艺术",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_ryuunosuke/art-of-death.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_185829_286.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "bfa8d073a89de6ec845ee245f19a3dfa270689d12220ad549678bae775038f9d",
+      "dimensions": [
+        552,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_ryuunosuke",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_ryuunosuke/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "特殊",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_185834_446.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "1ff3e7fc26a4671afdcc037c15046b325fc2b21a8c78b1cf6fc952e09a38adb9",
+      "dimensions": [
+        543,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_ryuunosuke",
+      "componentId": "defile",
+      "name": "渎神者",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_ryuunosuke/defile.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "Magic",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214500_536.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "c6237bfb39af67583e730d3fbd2b8867a1b9b5600d91d37d40fb691fe211333c",
+      "dimensions": [
+        542,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "fireball",
+      "name": "火炎弹",
+      "role": "skill-attack",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/fireball.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "水银剑",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214505_472.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "1576294a5bd1d4ad0241bd1125b5c49683d2839c0dfe334d71d910f5317ec517",
+      "dimensions": [
+        538,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "mercury-sword",
+      "name": "水银剑",
+      "role": "item",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/mercury-sword.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "魔导书",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214510_496.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "9d14ea48f232159e1627061eb8f639a0ea007ed636a6767ee28255421de10974",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "grimoire",
+      "name": "魔导书",
+      "role": "item",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/grimoire.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "宝石",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214515_800.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "74948f2201ec22a775fb92a7ef73d02f0b063a99873fbb449997eddd573871e7",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "gem",
+      "name": "宝石",
+      "role": "item",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/gem.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "魔力计",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214520_264.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "37dadc35e5aa1c2ebd17eb761d3373d141fa9d32a2728ee0d846594d7db2e137",
+      "dimensions": [
+        541,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "mana-meter",
+      "name": "魔力计",
+      "role": "item",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/mana-meter.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214525_056.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "e8b48727f6c1a8b230b736b2da4ec1036bc37d216629917eac67f87bd5048334",
+      "dimensions": [
+        535,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "赫须绅士的令印",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_214530_296.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "b28d90adb8073b85e16cf5ece2008a43ea0705ce50f07edfedc9fc6cfc9d1532",
+      "dimensions": [
+        547,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_tokiomi",
+      "componentId": "gentleman-command",
+      "name": "赫须绅士的令印",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_tokiomi/gentleman-command.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "天之衣",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163940_753.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "d89df419deb22b8b741b81b6f4f5f1df13ec3cdbf0f7e5d85d21e3b2418d3867",
+      "dimensions": [
+        545,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_iliya",
+      "componentId": "dress-of-heaven",
+      "name": "天之衣",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_iliya/dress-of-heaven.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163945_657.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "a21a5897fc1ef4c5453c95be95ff7d6c31abad4cc8119641b7bef0b7b36b73b7",
+      "dimensions": [
+        544,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_iliya",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_iliya/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "第三法",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163951_216.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "2bfc9be9ce5b55868e391946c1c1e8b2b1ce3a48fdef90df2fea237123ca1c97",
+      "dimensions": [
+        541,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_iliya",
+      "componentId": "third-magic",
+      "name": "第三法",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_iliya/third-magic.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "黑泥",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_183133_096.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "cd60ffac8d300e464f020463efc83d7ae5c5630de15b1418f700399bf6309cd8",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_sakura",
+      "componentId": "black-mud",
+      "name": "黑泥",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_sakura/black-mud.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "被污染的圣杯",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_183138_193.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "bf8fe39a6eefcab584be7afe1a010051b60565a18e2a50d01caa50e47ea20135",
+      "dimensions": [
+        538,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_sakura",
+      "componentId": "corrupted-grail",
+      "name": "被污染的圣杯",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_sakura/corrupted-grail.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_183143_000.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "8dbdf099c41245b5e1675de6b19e0d9cf484e6e86d80fe2ca92113dfb09b2ae0",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_sakura",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_sakura/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "腐蚀",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_183147_728.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "6c941190d8fe0ac2ef79562f7799d9dd5c476d5518beac46e11d33daced8ffd3",
+      "dimensions": [
+        540,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_sakura",
+      "componentId": "corrosion",
+      "name": "腐蚀",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_sakura/corrosion.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_201646_421.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "0eaa0af67bfb89d0211cc88a27d4629621e49a84bd8a5b5c329493b1a160db00",
+      "dimensions": [
+        542,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_waver",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_waver/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "埃尔梅罗二世事件簿",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_201651_349.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "ac3f9b00d8a9cf3543d14da16e029b429a291d62df477dbfe1fcbfe2bcedbacd",
+      "dimensions": [
+        544,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_waver",
+      "componentId": "case-files",
+      "name": "埃尔梅罗二世事件簿",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_waver/case-files.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "监督者",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215004_479.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "e56035eb85b0959285862ad5f62439040a34726040568bf06ca445c539f94594",
+      "dimensions": [
+        532,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kirei",
+      "componentId": "supervisor",
+      "name": "监督者",
+      "role": "state",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kirei/supervisor.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "执行者",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215009_327.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "d91c19549ac4a376f063e0987a5c5bfe0c6080967e4c44e5f9c6a7938efa4b9c",
+      "dimensions": [
+        542,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kirei",
+      "componentId": "executor",
+      "name": "执行者",
+      "role": "state",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kirei/executor.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215013_177.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "5f2feab62904d105e8922b91282fe6c8e69700ed145b4ceb0888ce9089543d7c",
+      "dimensions": [
+        534,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kirei",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kirei/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "恶的庇护者",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215017_728.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "74c29b7e986052ec9cf75c0722b0e2c79a60fac705f79cc6569c71d2e83b91e0",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kirei",
+      "componentId": "evil-protector",
+      "name": "恶的庇护者",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kirei/evil-protector.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "魔術",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163045_049.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "27f899a69f7df7699ef685cfb809fa4e545df796d1c579bf82ef86b8f945ab6a",
+      "dimensions": [
+        543,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kayneth",
+      "componentId": "mercury-cleave",
+      "name": "月灵髓液",
+      "role": "independent-deck",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kayneth/mercury-cleave.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "魔術",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163051_633.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "3b8ff42a3419ff9de2e897445aecadcdac0485ec258fb3c434fbeec98ed5acbd",
+      "dimensions": [
+        547,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kayneth",
+      "componentId": "mercury-track",
+      "name": "月灵髓液",
+      "role": "independent-deck",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kayneth/mercury-track.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "特殊",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163058_193.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "d1f7d34d6cb05b4fe6f6f7f40f027857eca7d3107111fbe5613c50bbd0d47ca6",
+      "dimensions": [
+        542,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kayneth",
+      "componentId": "mercury-boil",
+      "name": "月灵髓液",
+      "role": "independent-deck",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kayneth/mercury-boil.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163104_009.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "edb299ce7d73a025916d455feb755d5c65c5fd18c3f112180f3e81ff3ca06f6b",
+      "dimensions": [
+        545,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kayneth",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kayneth/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "流体力学",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_163109_825.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "5225e52bb96b50f3b1c967d3ee2b4308b7565246edb93ce7eef533d95aee5c43",
+      "dimensions": [
+        546,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kayneth",
+      "componentId": "fluid-dynamics",
+      "name": "流体力学",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kayneth/fluid-dynamics.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "创造者",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194141_962.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "ffc7230aa8586e732b8c591e1622e3e804cc179b59496f1b6fdfcebc115cc5df",
+      "dimensions": [
+        543,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_zouken",
+      "componentId": "creator",
+      "name": "创造者",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_zouken/creator.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "五百年的执着",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194158_474.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "b016b05487d5da0cb090df100cd1b15d895a2d368924170b77172ab0931e73f6",
+      "dimensions": [
+        550,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_zouken",
+      "componentId": "five-hundred-years",
+      "name": "五百年的执着",
+      "role": "ability",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_zouken/five-hundred-years.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "幕后主使",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_194202_905.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "94ac33efc65720206130d4c9ee8b90141214cccbb877cb985554c9e4f4d9d555",
+      "dimensions": [
+        539,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_zouken",
+      "componentId": "mastermind",
+      "name": "幕后主使",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_zouken/mastermind.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "Agility",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215428_559.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "0f019003143964dea4bfecb4d4c229b6ffeebb325634b5de5d259dde34778359",
+      "dimensions": [
+        549,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kiritsugu",
+      "componentId": "origin-bullet",
+      "name": "起源弹",
+      "role": "attack",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kiritsugu/origin-bullet.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215432_872.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "40c91ad9df42c121f89b78242fd5180b711cc5816b2cd6d4f5bfafc6c336ac1c",
+      "dimensions": [
+        548,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kiritsugu",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kiritsugu/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "冷血杀手",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-29_215437_375.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "49a65383d8db3a3c55e1b66843feb37dc6692c200cbed4712be5dc5350bb8ce6",
+      "dimensions": [
+        535,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_kiritsugu",
+      "componentId": "cold-blooded",
+      "name": "冷血杀手",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_kiritsugu/cold-blooded.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "宝石",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191817_604.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "da4756ced223996db9ccf1a21bce891ed95f799ca60bc9071ad8c85838fc37a1",
+      "dimensions": [
+        545,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_rin",
+      "componentId": "gems",
+      "name": "宝石",
+      "role": "resource",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_rin/gems.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "宝石",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191823_075.png",
+      "sourceStatus": "partial",
+      "sha256": "d9a048509af36ea8b63972bb2627216edca706215213cf69006c527f83336306",
+      "dimensions": [
+        542,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_rin",
+      "componentId": "gems-back",
+      "name": "宝石牌背",
+      "role": "back",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_rin/gems-back.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "Magic",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191828_124.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "58bee71c443cbdb5cc08b3ed44f80f8f2bd5097fddc2832a33de19fc1688569a",
+      "dimensions": [
+        541,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_rin",
+      "componentId": "gandr-shot",
+      "name": "阴炁弹",
+      "role": "attack",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_rin/gandr-shot.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "令咒",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191834_723.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "d039ab45cd144a9f4d060125c837983b10812db1b3845c7ee9f4dbdd53096285",
+      "dimensions": [
+        543,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_rin",
+      "componentId": "command-seal",
+      "name": "令咒",
+      "role": "seal",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_rin/command-seal.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    },
+    {
+      "sourceHeading": "魔術",
+      "source": "temp/fate-domination-intake/chm-images/图包/ScreenShot_2025-10-30_191839_829.png",
+      "sourceStatus": "locked（authority-summary；OCR 原文保留）",
+      "sha256": "0fb0409a9a4eeea3c44a97234f637423082cb00e10747329c82bf2d44c5a9419",
+      "dimensions": [
+        542,
+        768
+      ],
+      "disposition": "runtime",
+      "reason": "御主关联物件资料；不生成持有、激活、牌库或技能区状态，不推断未核效果。",
+      "masterId": "m_rin",
+      "componentId": "jewel-sword",
+      "name": "宝石剑泽尔里奇",
+      "role": "ascension",
+      "target": "public/assets/i18n/zh-CN/fate-domination/master-components/m_rin/jewel-sword.png",
+      "runtimePurpose": "选角原图阅读，不代表卡效已实现"
+    }
+  ]
+}

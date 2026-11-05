@@ -148,6 +148,9 @@ describe('clientAutoReport', () => {
                     gameId: 'smashup',
                     mobileLayoutPreset: 'board-shell',
                 },
+                performance: {
+                    windowMs: 30_000,
+                },
             },
             errorContext: {
                 name: 'SmashUpRuntimeStateNormalized',

@@ -8,6 +8,7 @@ import { MOBILE_MAX_VIEWPORT_WIDTH } from "../../shared/mobileSupport";
 import { useRuntimeViewport } from "../../hooks/ui/useRuntimeViewport";
 import { OptimizedImage } from "../common/media/OptimizedImage";
 import type { TutorialStepSnapshot } from "../../engine/types";
+import { isHiddenTutorialAutomationStep } from "../../engine/tutorialStepAutomation";
 
 const TUTORIAL_NEXT_SOUND_KEY =
   "ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.buttons.tab_switching_button.uiclick_tab_switching_button_01_krst_none";
@@ -78,7 +79,7 @@ const getCompactTutorialPanelMetrics = (
   viewportHeight: number,
   safeArea: { top: number; right: number; bottom: number; left: number },
 ) => {
-  const edgeInset = 12;
+  const edgeInset = 8;
   const safeWidth = Math.max(
     220,
     viewportWidth - safeArea.left - safeArea.right - edgeInset * 2,
@@ -129,17 +130,13 @@ const escapeTutorialTargetSelector = (value: string): string => {
   return value.replace(/["\\]/g, "\\$&");
 };
 
-const isPureAutomaticTutorialStep = (
-  step: TutorialStepSnapshot | null | undefined,
-) => Boolean(step?.aiActions?.length) && !step.requireAction && !step.infoStep;
-
 const hasPreviousVisibleTutorialStep = (
   steps: TutorialStepSnapshot[],
   currentIndex: number,
 ) => {
   for (let index = currentIndex - 1; index >= 0; index -= 1) {
     const step = steps[index];
-    if (step && !isPureAutomaticTutorialStep(step)) {
+    if (step && !isHiddenTutorialAutomationStep(step)) {
       return true;
     }
   }
@@ -231,10 +228,56 @@ export const TutorialOverlay: React.FC = () => {
       setPositionedStepId((prev) => (prev === stepId ? prev : stepId));
     };
 
+    // 轮询仍读取真实几何；输入未变时复用同一 effect 的定位结果。
+    // 步骤/视口等闭包依赖变化会重建此缓存，不能跨步骤复用。
+    let previousLayoutGeometry: string | undefined;
+
     /** 从 DOMRect 直接算出提示框位置，和 targetRect 一起原子更新 */
-    const applyLayout = (rect: DOMRect | null) => {
-      // 1. 更新高亮区域
+    const applyLayout = (highlightRect: DOMRect | null, rect: DOMRect | null = highlightRect) => {
+      const protectedGap = 8;
+      const measured = tooltipRef.current?.getBoundingClientRect();
+      const measuredContent = tooltipRef.current?.querySelector<HTMLElement>('[data-testid="tutorial-overlay-content"]');
+      const hiddenContentHeight = measuredContent ? Math.max(0, measuredContent.scrollHeight - measuredContent.clientHeight) : 0;
+      const protectedRegionRects = [
+        ...(currentStep.avoidOverlapSelectors ?? []),
+        ...(isCompactTutorialLayout
+          ? currentStep.compactAvoidOverlapSelectors ?? []
+          : []),
+      ].flatMap((selector) =>
+        Array.from(document.querySelectorAll(selector)).map((element) =>
+          element.getBoundingClientRect(),
+        ),
+      );
+      const geometry = JSON.stringify({
+        highlight: highlightRect && [highlightRect.left, highlightRect.top, highlightRect.right, highlightRect.bottom, highlightRect.width, highlightRect.height],
+        target: rect && [rect.left, rect.top, rect.right, rect.bottom, rect.width, rect.height],
+        tooltip: measured && [measured.width, measured.height],
+        hiddenContentHeight,
+        protected: protectedRegionRects.map(bounds => [bounds.left, bounds.top, bounds.right, bounds.bottom]),
+      });
+      if (geometry === previousLayoutGeometry) return;
+      previousLayoutGeometry = geometry;
+      const getProtectedOverlapArea = (bounds: {
+        left: number;
+        top: number;
+        right: number;
+        bottom: number;
+      }) =>
+        protectedRegionRects.reduce(
+          (area, protectedBounds) =>
+            area +
+            getRectIntersectionArea(bounds, {
+              left: protectedBounds.left - protectedGap,
+              top: protectedBounds.top - protectedGap,
+              right: protectedBounds.right + protectedGap,
+              bottom: protectedBounds.bottom + protectedGap,
+            }),
+          0,
+        );
+
+      // 1. 高亮/场景焦点与说明的实际阅读锚点分别承担职责。
       setTargetRect((prev) => {
+        const rect = highlightRect;
         if (!rect) return null;
         if (
           prev &&
@@ -257,9 +300,19 @@ export const TutorialOverlay: React.FC = () => {
           viewportHeight,
           safeArea,
         );
+        // 显式宽度限制在触屏布局同样生效，才能把提示放进真实候选之间的空位。
+        if (currentStep.compactTooltipWidth) {
+          compactPanel.panelWidth = Math.min(
+            currentStep.compactTooltipWidth,
+            Math.floor((viewportWidth - safeArea.left - safeArea.right - compactPanel.edgeInset * 2) / compactPanel.panelScale),
+          );
+        } else if (currentStep.tooltipMaxWidth) {
+          compactPanel.panelWidth = Math.min(compactPanel.panelWidth, currentStep.tooltipMaxWidth);
+        }
         const scaledWidth = compactPanel.panelWidth * compactPanel.panelScale;
-        const estimatedHeight =
-          compactPanel.panelMaxHeight * compactPanel.panelScale;
+        const estimatedHeight = measured && measured.height > 1
+          ? Math.min(compactPanel.panelMaxHeight * compactPanel.panelScale, measured.height + hiddenContentHeight * compactPanel.panelScale)
+          : compactPanel.panelMaxHeight * compactPanel.panelScale;
         const lateralTop = rect
           ? rect.bottom >= viewportHeight * 0.68
             ? safeArea.top + compactPanel.edgeInset
@@ -410,7 +463,31 @@ export const TutorialOverlay: React.FC = () => {
               );
             })()
           : false;
-        const rankedCompactCandidates = compactCandidates
+        const adjustedCompactCandidates = compactCandidates.flatMap(candidate => {
+          const horizontal = candidate.placement === 'top' || candidate.placement === 'bottom';
+          const positions = protectedRegionRects.flatMap(bounds => horizontal
+            ? [bounds.left - scaledWidth - protectedGap, bounds.right + protectedGap]
+            : [bounds.top - estimatedHeight - protectedGap, bounds.bottom + protectedGap]);
+          return [candidate, ...positions.map(position => {
+            const left = horizontal ? clampNumber(position, safeArea.left + compactPanel.edgeInset, viewportWidth - safeArea.right - compactPanel.edgeInset - scaledWidth) : candidate.bounds.left;
+            const top = horizontal ? candidate.bounds.top : clampNumber(position, safeArea.top + compactPanel.edgeInset, viewportHeight - safeArea.bottom - compactPanel.edgeInset - estimatedHeight);
+            return { ...candidate,
+              style: { ...candidate.style, left, right: undefined, top, bottom: undefined, transform: `scale(${compactPanel.panelScale})`, transformOrigin: 'left top' },
+              bounds: { left, top, right: left + scaledWidth, bottom: top + estimatedHeight },
+            };
+          })];
+        });
+        const compactLefts = [...new Set(protectedRegionRects.flatMap(bounds => [bounds.left - scaledWidth - protectedGap, bounds.right + protectedGap]))];
+        const compactTops = [...new Set(protectedRegionRects.flatMap(bounds => [bounds.top - estimatedHeight - protectedGap, bounds.bottom + protectedGap]))];
+        for (const rawLeft of compactLefts) for (const rawTop of compactTops) {
+          const left = clampNumber(rawLeft, safeArea.left + compactPanel.edgeInset, viewportWidth - safeArea.right - compactPanel.edgeInset - scaledWidth);
+          const top = clampNumber(rawTop, safeArea.top + compactPanel.edgeInset, viewportHeight - safeArea.bottom - compactPanel.edgeInset - estimatedHeight);
+          adjustedCompactCandidates.push({ ...compactCandidates[1],
+            style: { ...compactCandidates[1].style, left, top, right: undefined, bottom: undefined, transform: `scale(${compactPanel.panelScale})`, transformOrigin: 'left top' },
+            bounds: { left, top, right: left + scaledWidth, bottom: top + estimatedHeight },
+          });
+        }
+        const rankedCompactCandidates = adjustedCompactCandidates
           .map((candidate, index) => {
             const overlap = compactTargetBounds
               ? getRectIntersectionArea(candidate.bounds, compactTargetBounds)
@@ -438,9 +515,11 @@ export const TutorialOverlay: React.FC = () => {
                     (rect.left + rect.right) / 2,
                 )
               : 0;
+            const protectedOverlap = getProtectedOverlapArea(candidate.bounds);
             return {
               candidate,
               overlap,
+              protectedOverlap,
               lateralPenalty,
               axisClearance,
               preferencePenalty,
@@ -449,6 +528,8 @@ export const TutorialOverlay: React.FC = () => {
             };
           })
           .sort((a, b) => {
+            if (a.protectedOverlap !== b.protectedOverlap)
+              return a.protectedOverlap - b.protectedOverlap;
             if (a.overlap !== b.overlap) return a.overlap - b.overlap;
             if (a.lateralPenalty !== b.lateralPenalty)
               return a.lateralPenalty - b.lateralPenalty;
@@ -461,7 +542,8 @@ export const TutorialOverlay: React.FC = () => {
             return a.index - b.index;
           });
         const explicitVerticalCandidate =
-          preferredPlacement === "top" || preferredPlacement === "bottom"
+          protectedRegionRects.length === 0 &&
+          (preferredPlacement === "top" || preferredPlacement === "bottom")
             ? compactCandidates.find(
                 (candidate) => candidate.placement === preferredPlacement,
               )
@@ -470,9 +552,25 @@ export const TutorialOverlay: React.FC = () => {
           explicitVerticalCandidate ??
           rankedCompactCandidates[0]?.candidate ??
           compactCandidates[0];
+        const compactOffsetY = currentStep.tooltipOffsetY ?? 0;
+        const chosenCompactStyle = chosenCompactCandidate.style;
+        const offsetCompactStyle = compactOffsetY === 0
+          ? chosenCompactStyle
+          : typeof chosenCompactStyle.top === 'number'
+            ? {
+                ...chosenCompactStyle,
+                top: clampNumber(
+                  chosenCompactStyle.top + compactOffsetY,
+                  safeArea.top + compactPanel.edgeInset,
+                  viewportHeight - safeArea.bottom - compactPanel.edgeInset - estimatedHeight,
+                ),
+              }
+            : typeof chosenCompactStyle.bottom === 'number'
+              ? { ...chosenCompactStyle, bottom: Math.max(0, chosenCompactStyle.bottom - compactOffsetY) }
+              : chosenCompactStyle;
 
         commitTooltipLayout({
-          style: chosenCompactCandidate.style,
+          style: offsetCompactStyle,
           arrowClass: "hidden",
           placement: chosenCompactCandidate.placement,
         });
@@ -490,7 +588,14 @@ export const TutorialOverlay: React.FC = () => {
           maxWidth: targetlessMaxWidth,
         };
         const targetlessStyle: React.CSSProperties =
-          !rect && position === "top"
+          !rect && currentStep.targetlessPlacement === "center"
+            ? {
+                ...baseTargetlessStyle,
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }
+            : !rect && position === "top"
             ? {
                 ...baseTargetlessStyle,
                 top: safeArea.top + 24,
@@ -528,20 +633,26 @@ export const TutorialOverlay: React.FC = () => {
       }
 
       const padding = currentStep.requireAction ? 20 : 12;
-      const tooltipWidth = hasStepVisual ? 520 : 384;
+      const safeMargin = 8;
+      const defaultTooltipWidth = hasStepVisual ? 520 : 384;
+      const tooltipWidth = Math.min(
+        currentStep.tooltipMaxWidth ?? defaultTooltipWidth,
+        viewportWidth - safeArea.left - safeArea.right - safeMargin * 2,
+      );
       // 用实际 DOM 尺寸；首次渲染前使用偏保守的高度，避免提示卡短暂压住玩家要点的目标。
-      const measured = tooltipRef.current?.getBoundingClientRect();
       const hasMeasuredTooltip = Boolean(
         measured && measured.width > 1 && measured.height > 1,
       );
       const tooltipHeight = hasMeasuredTooltip
-        ? measured!.height
+        ? measured!.height + hiddenContentHeight
         : hasStepVisual
           ? 480
           : 220;
-      const actualTooltipWidth = hasMeasuredTooltip
-        ? measured!.width
-        : tooltipWidth;
+      const actualTooltipWidth = currentStep.tooltipMaxWidth
+        ? tooltipWidth
+        : hasMeasuredTooltip
+          ? measured!.width
+          : tooltipWidth;
 
       const spaceRight = viewportWidth - rect.right;
       const spaceLeft = rect.left;
@@ -564,7 +675,6 @@ export const TutorialOverlay: React.FC = () => {
 
       const arrowBase =
         "bg-white w-4 h-4 absolute rotate-45 border-gray-100 z-0";
-      const safeMargin = 8;
       const minTop = safeArea.top + safeMargin;
       const maxTop =
         viewportHeight - tooltipHeight - safeArea.bottom - safeMargin;
@@ -577,11 +687,14 @@ export const TutorialOverlay: React.FC = () => {
         right: rect.right,
         bottom: rect.bottom,
       };
-      const buildPlacement = (placement: TooltipPlacement) => {
+      const buildPlacement = (placement: TooltipPlacement, offset: { left?: number; top?: number } = {}) => {
         const styles: React.CSSProperties = {
           position: "fixed",
           zIndex: UI_Z_INDEX.tutorial,
         };
+        if (currentStep.tooltipMaxWidth) {
+          styles.width = actualTooltipWidth;
+        }
         let arrow = "";
         switch (placement) {
           case "right":
@@ -605,9 +718,18 @@ export const TutorialOverlay: React.FC = () => {
             arrow = "-bottom-[6px] left-1/2 -translate-x-1/2 border-b border-r";
             break;
         }
+        if (offset.left !== undefined) styles.left = offset.left;
+        if (offset.top !== undefined) styles.top = offset.top;
+        if (offset.left !== undefined || offset.top !== undefined) arrow = 'hidden';
         // 视口边界约束后再计算真实重叠，避免“先不遮挡、夹紧后遮挡”。
         if (typeof styles.top === "number") {
           styles.top = Math.max(minTop, Math.min(styles.top as number, maxTop));
+          if (currentStep.tooltipOffsetY) {
+            styles.top = Math.max(
+              minTop,
+              Math.min(styles.top + currentStep.tooltipOffsetY, maxTop),
+            );
+          }
         }
         if (typeof styles.left === "number") {
           styles.left = Math.max(
@@ -617,18 +739,34 @@ export const TutorialOverlay: React.FC = () => {
         }
         if (typeof styles.left !== "number" || typeof styles.top !== "number")
           return null;
+        if (currentStep.tooltipAnchorTarget && arrow !== "hidden") {
+          if (placement === "right" || placement === "left") {
+            const top = clampNumber(rect.top + rect.height / 2 - styles.top - 8, 12, tooltipHeight - 28);
+            arrow = arrow.replace("top-[40px]", "top-[var(--tutorial-arrow-top)]");
+            (styles as Record<string, unknown>)["--tutorial-arrow-top"] = `${top}px`;
+          } else {
+            const left = clampNumber(rect.left + rect.width / 2 - styles.left, 20, actualTooltipWidth - 20);
+            arrow = arrow.replace("left-1/2", "left-[var(--tutorial-arrow-left)]");
+            (styles as Record<string, unknown>)["--tutorial-arrow-left"] = `${left}px`;
+          }
+        }
         const bounds = {
           left: styles.left,
           top: styles.top,
           right: styles.left + actualTooltipWidth,
           bottom: styles.top + tooltipHeight,
         };
+        const horizontalGap = Math.max(0, bounds.left - targetBounds.right, targetBounds.left - bounds.right);
+        const verticalGap = Math.max(0, bounds.top - targetBounds.bottom, targetBounds.top - bounds.bottom);
         return {
           styles,
           arrow,
           placement,
           bounds,
           overlapArea: getRectIntersectionArea(bounds, targetBounds),
+          protectedOverlapArea: getProtectedOverlapArea(bounds),
+          // 侧向滑移出了正常贴附间距后，不能只因枚举顺序优先而胜过近处空位。
+          detachmentDistance: Math.max(0, Math.hypot(horizontalGap, verticalGap) - padding - protectedGap),
         };
       };
 
@@ -642,11 +780,24 @@ export const TutorialOverlay: React.FC = () => {
         (placement, index, placements) =>
           placements.indexOf(placement) === index,
       ) as TooltipPlacement[];
-      const selectedPlacement = placementOrder
-        .map((placement, index) => ({
-          candidate: buildPlacement(placement),
-          index,
-        }))
+      const placementCandidates = placementOrder
+        .flatMap((placement, index) => {
+          // 沿目标同一侧滑动避让散布的保护区，不能把所有保护区合成一堵横跨牌桌的墙。
+          const offsets = protectedRegionRects.flatMap<{ left?: number; top?: number }>(bounds =>
+            placement === 'top' || placement === 'bottom'
+              ? [{ left: bounds.left - actualTooltipWidth - protectedGap }, { left: bounds.right + protectedGap }]
+              : [{ top: bounds.top - tooltipHeight - protectedGap }, { top: bounds.bottom + protectedGap }]);
+          return [{ candidate: buildPlacement(placement), index },
+            ...offsets.map(offset => ({ candidate: buildPlacement(placement, offset), index }))];
+        });
+      const freeLefts = [...new Set(protectedRegionRects.flatMap(bounds => [bounds.left - actualTooltipWidth - protectedGap, bounds.right + protectedGap]))];
+      const freeTops = [...new Set(protectedRegionRects.flatMap(bounds => [bounds.top - tooltipHeight - protectedGap, bounds.bottom + protectedGap]))];
+      // 完全避开目标和保护区的相邻候选已是最优；更低优先级的自由组合不可能胜出。
+      const hasPerfectAdjacentPlacement = placementCandidates.some(({ candidate }) => candidate?.protectedOverlapArea === 0 && candidate.overlapArea === 0 && candidate.detachmentDistance === 0);
+      if (!hasPerfectAdjacentPlacement) {
+        for (const left of freeLefts) for (const top of freeTops) placementCandidates.push({ candidate: buildPlacement('top', { left, top }), index: placementOrder.length });
+      }
+      const selectedPlacement = placementCandidates
         .filter(
           (
             entry,
@@ -657,7 +808,10 @@ export const TutorialOverlay: React.FC = () => {
         )
         .sort(
           (left, right) =>
+            left.candidate.protectedOverlapArea -
+              right.candidate.protectedOverlapArea ||
             left.candidate.overlapArea - right.candidate.overlapArea ||
+            left.candidate.detachmentDistance - right.candidate.detachmentDistance ||
             left.index - right.index,
         )[0]?.candidate;
       const styles = selectedPlacement?.styles ?? {
@@ -668,7 +822,7 @@ export const TutorialOverlay: React.FC = () => {
         selectedPlacement?.placement === "left" ||
         selectedPlacement?.placement === "right";
       const minimumLateralHeight = Math.min(
-        320,
+        tooltipHeight,
         viewportHeight - safeArea.top - safeArea.bottom - safeMargin * 2,
       );
       const topValue =
@@ -711,7 +865,9 @@ export const TutorialOverlay: React.FC = () => {
           document.querySelector(`[data-testid="${escapedHighlightTarget}"]`);
         if (el) {
           const rect = el.getBoundingClientRect();
-          applyLayout(rect);
+          const anchorId = currentStep.tooltipAnchorTarget;
+          const anchor = anchorId ? document.querySelector(`[data-tutorial-id="${escapeTutorialTargetSelector(anchorId)}"], [data-testid="${escapeTutorialTargetSelector(anchorId)}"]`) || document.getElementById(anchorId) : null;
+          applyLayout(rect, anchor?.getBoundingClientRect() ?? rect);
           if (!hasAutoScrolledRef.current) {
             const tolerance = 50;
             const inView =
@@ -779,22 +935,20 @@ export const TutorialOverlay: React.FC = () => {
     return null;
   }
 
-  const isPureAiStep =
-    currentStep.aiActions &&
-    currentStep.aiActions.length > 0 &&
-    !currentStep.requireAction &&
-    !currentStep.infoStep;
+  if (currentStep.hideOverlay) {
+    return null;
+  }
+
+  const isPureAiStep = isHiddenTutorialAutomationStep(currentStep);
 
   // 纯自动步骤不显示遮罩层；若当前玩家仍需操作/阅读，浮层必须继续出现。
   if (isPureAiStep) {
     return null;
   }
 
-  // 依赖高亮目标的步骤必须等目标真实出现在 DOM 后再显示，
-  // 否则提示卡会提前盖在 loading 或未完成装载的页面上。
-  if (currentStep.highlightTarget && !visibleTargetRect) {
-    return null;
-  }
+  const isHighlightTargetMissing = Boolean(
+    currentStep.highlightTarget && !visibleTargetRect,
+  );
 
   // 矢量路径用于带孔洞的遮罩
   const viewportWidth = rootViewportWidth;
@@ -822,6 +976,7 @@ export const TutorialOverlay: React.FC = () => {
     : undefined;
   const showHighlightFrame = currentStep.highlightFrame !== "none";
   const currentVisual = currentStep.visual;
+  const isCompactActionStrip = isCompactTutorialLayout && currentStep.requireAction && currentStep.hideActionHint && Boolean(currentStep.compactTooltipWidth) && !currentVisual;
   const visualAlt = currentVisual ? t(currentVisual.alt) : undefined;
   const visualCaption = currentVisual?.caption
     ? t(currentVisual.caption)
@@ -829,17 +984,25 @@ export const TutorialOverlay: React.FC = () => {
   const canGoPrevious =
     tutorial.active &&
     hasPreviousVisibleTutorialStep(tutorial.steps ?? [], tutorial.stepIndex);
-  const navigationButtonSizeClass = isBottomConfirmStep
-    ? "rounded-sm py-2.5 text-xs tracking-[0.12em]"
-    : isCompactTutorialLayout
-      ? "rounded-lg py-2 text-[12px] tracking-[0.14em]"
+  const hasPendingAiActions = Boolean(
+    currentStep.aiActions?.length || tutorial.aiActions?.length,
+  );
+  const navigationButtonSizeClass =
+    isBottomConfirmStep
+      ? "min-h-[56px] min-w-[176px] rounded-lg px-6 py-3 text-[16px] tracking-[0.08em]"
+      : isCompactTutorialLayout
+        ? "min-h-[48px] min-w-[176px] rounded-lg px-5 py-2 text-[15px] tracking-[0.06em]"
       : "py-2 text-sm tracking-widest";
-  const navigationButtonBaseClass = `touch-target-min font-bold uppercase transition-all cursor-pointer flex items-center justify-center text-center relative z-10 pointer-events-auto ${navigationButtonSizeClass}`;
-  const previousButtonClass = `${navigationButtonBaseClass} shrink-0 border border-[#c9b995] bg-[#fcfbf9] px-3 text-[#5f4a2f] hover:bg-[#f3f0e6]`;
-  const nextButtonClass = `${navigationButtonBaseClass} ${canGoPrevious ? "flex-1" : "w-full"} bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] ${
+  const navigationDisabledClass = hasPendingAiActions
+    ? "cursor-not-allowed opacity-55"
+    : "cursor-pointer";
+  const navigationButtonBaseClass = `touch-target-min font-bold uppercase transition-all flex items-center justify-center text-center relative z-10 pointer-events-auto ${navigationButtonSizeClass} ${navigationDisabledClass}`;
+  const previousButtonClass = `${navigationButtonBaseClass} shrink-0 border border-[#c9b995] bg-[#fcfbf9] px-3 text-[#5f4a2f] ${hasPendingAiActions ? "" : "hover:bg-[#f3f0e6]"}`;
+  const nextButtonClass = `${navigationButtonBaseClass} ${canGoPrevious ? "flex-1" : "w-full"} bg-[#433422] ${hasPendingAiActions ? "" : "hover:bg-[#2b2114]"} text-[#fcfbf9] ${
     isBottomConfirmStep ? "border border-[#f3e8cc]/70 shadow-[0_6px_18px_rgba(0,0,0,0.34)]" : ""
   }`;
   const handlePreviousStep = () => {
+    if (hasPendingAiActions) return;
     playSound(TUTORIAL_NEXT_SOUND_KEY);
     previousStep();
   };
@@ -849,6 +1012,9 @@ export const TutorialOverlay: React.FC = () => {
       className="fixed inset-0 pointer-events-none"
       style={{ zIndex: UI_Z_INDEX.tutorial }}
       data-tutorial-step={currentStep.id ?? "unknown"}
+      data-tutorial-highlight-missing={
+        isHighlightTargetMissing ? "true" : undefined
+      }
     >
       {/* 遮罩层 - 仅在遮罩开关为真且目标存在时阻止点击 */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300">
@@ -895,11 +1061,12 @@ export const TutorialOverlay: React.FC = () => {
         <div
           data-testid="tutorial-overlay-card"
           data-tutorial-placement={tooltipStyles.placement}
-          className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex flex-col ${currentStep.requireAction || isBottomConfirmStep ? "pointer-events-none" : "pointer-events-auto"} ${
+          data-tutorial-anchor={currentStep.tooltipAnchorTarget ?? currentStep.highlightTarget}
+          className={`animate-in fade-in zoom-in-95 duration-200 relative font-serif flex ${isCompactActionStrip ? "flex-row items-center gap-3" : "flex-col"} ${currentStep.requireAction || isBottomConfirmStep ? "pointer-events-none" : "pointer-events-auto"} ${
             isBottomConfirmStep
               ? "w-[min(320px,calc(100vw-2rem))]"
               : isCompactTutorialLayout
-                ? "w-full max-w-full rounded-xl p-4 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
+                ? "w-full max-w-full rounded-xl px-2 py-1 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
                 : hasStepVisual
                   ? "w-[min(520px,calc(100vw-2rem))] max-w-[520px] rounded-sm p-4 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
                   : "max-w-sm w-72 rounded-sm p-5 bg-[#fcfbf9] shadow-[0_8px_30px_rgba(67,52,34,0.12)] border border-[#e5e0d0]"
@@ -917,22 +1084,13 @@ export const TutorialOverlay: React.FC = () => {
             <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t border-r border-[#c0a080] opacity-40" />
           ) : null}
 
-          {tutorial.skippedStepIds && tutorial.skippedStepIds.length > 0 ? (
-            <div
-              data-testid="tutorial-skipped-notice"
-              className="mb-3 border border-[#e5d8b8] bg-[#f8f2e4] px-3 py-2 text-left text-xs font-bold leading-relaxed text-[#765f3d]"
-            >
-              {t("overlay.skipped", { count: tutorial.skippedStepIds.length })}
-            </div>
-          ) : null}
-
           <div
             data-testid="tutorial-overlay-content"
             className={`text-[#433422] font-bold overflow-y-auto flex-1 min-h-0 whitespace-pre-line ${
               isBottomConfirmStep
                 ? "mb-2 max-h-[92px] rounded-sm border border-[#f3e8cc]/20 bg-[rgba(252,251,249,0.92)] px-3 py-2 text-left font-serif text-[12px] leading-[1.45] shadow-[0_6px_18px_rgba(0,0,0,0.22)]"
                 : isCompactTutorialLayout
-                  ? `${hasStepVisual ? "mb-2" : "mb-2.5"} text-left text-[15px] leading-[1.55]`
+                  ? `${isCompactActionStrip ? "mb-0" : "mb-1"} text-left text-[15px] leading-[1.55]`
                   : hasStepVisual
                     ? "mb-3 text-left text-sm leading-relaxed"
                     : "mb-4 text-left text-lg leading-relaxed"
@@ -972,6 +1130,7 @@ export const TutorialOverlay: React.FC = () => {
               {canGoPrevious ? (
                 <button
                   data-testid="tutorial-previous-button"
+                  disabled={hasPendingAiActions}
                   onClick={handlePreviousStep}
                   className={previousButtonClass}
                 >
@@ -980,7 +1139,9 @@ export const TutorialOverlay: React.FC = () => {
               ) : null}
               <button
                 data-testid="tutorial-next-button"
+                disabled={hasPendingAiActions}
                 onClick={() => {
+                  if (hasPendingAiActions) return;
                   playSound(TUTORIAL_NEXT_SOUND_KEY);
                   nextStep("manual");
                 }}
@@ -995,24 +1156,25 @@ export const TutorialOverlay: React.FC = () => {
             </div>
           )}
 
-          {currentStep.requireAction && (
-            <div className="flex w-full items-stretch gap-2">
+          {currentStep.requireAction && (canGoPrevious || !currentStep.hideActionHint) && (
+            <div className={`flex ${isCompactActionStrip ? "w-auto shrink-0" : "w-full"} items-stretch gap-2`}>
               {canGoPrevious ? (
                 <button
                   data-testid="tutorial-previous-button"
+                  disabled={hasPendingAiActions}
                   onClick={handlePreviousStep}
                   className={previousButtonClass}
                 >
                   {t("overlay.previous")}
                 </button>
               ) : null}
-              <div
+              {!currentStep.hideActionHint && <div
                 data-testid="tutorial-action-hint"
                 className={`flex items-center gap-2 font-bold text-[#8c7b64] bg-[#f3f0e6]/50 border border-[#e5e0d0]/50 justify-center italic ${canGoPrevious ? "flex-1" : "w-full"} ${isCompactTutorialLayout ? "text-[11px] rounded-lg p-2" : "text-sm p-2"}`}
               >
                 <span className="animate-pulse w-2 h-2 rounded-full bg-[#c0a080]"></span>
                 {t("overlay.clickToContinue")}
-              </div>
+              </div>}
             </div>
           )}
         </div>

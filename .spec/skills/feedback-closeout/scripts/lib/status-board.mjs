@@ -126,10 +126,17 @@ function toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt) {
     };
 }
 
-function mergeItem(baseItem, existingItem, summaryPath) {
+function mergeItem(baseItem, existingItem, summaryPath, fetchedAt) {
     if (!existingItem) {
         return baseItem;
     }
+
+    const existingUpdatedAt = Date.parse(existingItem.updatedAt || '');
+    const summaryFetchedAt = Date.parse(fetchedAt || '');
+    const preserveNewerFetchedStatus = Number.isFinite(existingUpdatedAt)
+        && Number.isFinite(summaryFetchedAt)
+        && existingUpdatedAt > summaryFetchedAt
+        && typeof existingItem.lastFetchedStatus === 'string';
 
     return {
         ...baseItem,
@@ -148,7 +155,9 @@ function mergeItem(baseItem, existingItem, summaryPath) {
         packetPath: baseItem.packetPath,
         summaryPath,
         duplicateIds: baseItem.duplicateIds,
-        lastFetchedStatus: baseItem.lastFetchedStatus,
+        lastFetchedStatus: preserveNewerFetchedStatus
+            ? existingItem.lastFetchedStatus
+            : baseItem.lastFetchedStatus,
         evidence: mergeUnique(
             normalizeStringArray(existingItem.evidence),
             baseItem.evidence,
@@ -187,8 +196,14 @@ export function buildBoardFromSummary(summary, summaryPath, existingBoard = null
         for (const feedbackId of groupFeedbackIds(group)) {
             const baseItem = toBoardItem(group, feedbackId, summaryPath, nowIso, fetchedAt);
             const existingItem = existingMap.get(feedbackId);
-            mergedItems.push(mergeItem(baseItem, existingItem, summaryPath));
+            const mergedItem = mergeItem(baseItem, existingItem, summaryPath, fetchedAt);
+            mergedItems.push(mergedItem);
+            existingMap.delete(feedbackId);
         }
+    }
+
+    for (const item of existingMap.values()) {
+        mergedItems.push(item);
     }
 
     return {
@@ -223,6 +238,17 @@ export async function syncBoardFromSummaryFile(summaryPath, boardPath) {
 
 function hasText(value) {
     return typeof value === 'string' && value.trim().length > 0;
+}
+
+function hasOwn(object, key) {
+    return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function updateTextField(update, item, key) {
+    if (hasOwn(update, key)) {
+        return typeof update[key] === 'string' ? update[key] : '';
+    }
+    return typeof item[key] === 'string' ? item[key] : '';
 }
 
 export function assertItemCanUseStatus(item) {
@@ -262,15 +288,23 @@ export function updateBoardItems(board, ids, update) {
         if (!item) {
             throw new Error(`状态板中未找到反馈: ${id}`);
         }
+        const targetStatus = update.status || item.status;
+        const targetClosedReason = targetStatus === 'closed'
+            ? updateTextField(update, item, 'closedReason')
+            : '';
+        const targetResolvedMethod = targetStatus === 'resolved'
+            ? updateTextField(update, item, 'resolvedMethod')
+            : '';
 
         const nextItem = {
             ...item,
-            status: update.status || item.status,
+            status: targetStatus,
+            lastFetchedStatus: update.lastFetchedStatus || item.lastFetchedStatus,
             updatedAt: nowIso,
             owner: update.owner || item.owner || '',
             notes: update.notes || item.notes || '',
-            closedReason: update.closedReason || item.closedReason || '',
-            resolvedMethod: update.resolvedMethod || item.resolvedMethod || '',
+            closedReason: targetClosedReason,
+            resolvedMethod: targetResolvedMethod,
             evidence: mergeUnique(
                 Array.isArray(item.evidence) ? item.evidence : [],
                 normalizeStringArray(update.evidence),

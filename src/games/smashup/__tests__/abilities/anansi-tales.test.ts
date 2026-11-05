@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { isAbilityRuntimeContinuationEvent, resumeAbilityRuntimeContinuationEvent } from '../../domain/abilityRuntime';
 import { collectTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { getEffectiveBreakpoint } from '../../domain/ongoingModifiers';
@@ -8,6 +9,7 @@ import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import { ANANSI_TALES_BASES, ANANSI_TALES_CARDS } from '../../data/factions/anansi_tales';
 import {
     expectRegisteredAbilityContract,
+    applyEvents,
     getSimpleChoicePrompt,
     invokeRegisteredAbilityContract,
     makeBase,
@@ -28,6 +30,22 @@ const FIXED_RANDOM = {
     range: (min: number) => min,
     shuffle: <T>(items: T[]) => [...items],
 };
+
+function resumeFirstRuntimeContinuation(
+    core: ReturnType<typeof makeState>,
+    events: unknown[],
+) {
+    const domainEvents = events.filter(event => !isAbilityRuntimeContinuationEvent(event as any));
+    const continuation = events.find(event => isAbilityRuntimeContinuationEvent(event as any));
+    if (!continuation) throw new Error('Expected Smash Up ability runtime continuation event.');
+    const resumed = resumeAbilityRuntimeContinuationEvent(
+        makeMatchState(applyEvents(core, domainEvents as any)),
+        continuation as any,
+        FIXED_RANDOM,
+    );
+    if (!resumed) throw new Error('Expected Smash Up ability runtime continuation to resume.');
+    return resumed.state;
+}
 
 function makeTransferEvent(cardUid: string, defId: string, fromPlayerId = '0', toPlayerId = '1') {
     return {
@@ -60,6 +78,39 @@ describe('阿南西传说代表性玩法行为', () => {
             'base_anansis_web',
             'base_storytellers_hut',
         ]);
+    });
+
+    it('行动自身已有目标交互时，阿南西之网触发不得抢在行动目标选择之前', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('broadside-card', 'pirate_broadside', 'action', '0')],
+                    deck: [
+                        makeCard('draw-1', 'anansi_tales_pot_of_beans', 'action', '0'),
+                        makeCard('draw-2', 'anansi_tales_feather_gifts', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_anansis_web', [
+                    makeMinion('web-ally', 'anansi_tales_akye_the_turtle', '0', 3),
+                    makeMinion('web-enemy', 'ninja_acolyte', '1', 2),
+                ]),
+                makeBase('base_storytellers_hut'),
+            ],
+        });
+
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'broadside-card' },
+            timestamp: 1,
+        } as any, FIXED_RANDOM);
+
+        const currentSourceId = (result.finalState.sys.interaction?.current?.data as { sourceId?: string } | undefined)?.sourceId;
+        expect(currentSourceId).toBe('pirate_broadside_choose_base');
+        expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
     });
 
     it('阿南西传说核心主动能力入口已注册', () => {
@@ -193,6 +244,216 @@ describe('阿南西传说代表性玩法行为', () => {
         expect(selected.finalState.core.players['1'].hand.map(card => card.uid).sort()).toEqual(
             ['gift-1', 'gift-2', 'gift-3'].sort(),
         );
+    });
+
+    it('玉米穗最多洗回三张弃牌堆行动、获得额外行动并把自己给出', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-card', 'anansi_tales_trading_stories', 'action', '0')],
+                    discard: [
+                        makeCard('corn-card', 'anansi_tales_ear_of_corn', 'action', '0'),
+                        makeCard('recycle-1', 'anansi_tales_pot_of_beans', 'action', '0'),
+                        makeCard('recycle-2', 'anansi_tales_pot_of_wisdom', 'action', '0'),
+                        makeCard('recycle-3', 'anansi_tales_feather_gifts', 'action', '0'),
+                        makeCard('ignored-minion', 'anansi_tales_akye_the_turtle', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('anansi_tales_ear_of_corn', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'corn-card',
+            defId: 'anansi_tales_ear_of_corn',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 40,
+        });
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'anansi_tales_ear_of_corn');
+        const selectedIds = prompt.options
+            .filter((option: any) => ['recycle-1', 'recycle-2', 'recycle-3'].includes(option.value?.cardUid))
+            .map((option: any) => option.id);
+        expect(selectedIds).toHaveLength(3);
+
+        const recycled = respondToPromptOptions(result.matchState!, selectedIds, '0', FIXED_RANDOM);
+        expect(recycled.success, recycled.error).toBe(true);
+        const gifted = respondToPromptOption(
+            recycled.finalState,
+            option => option.value?.targetPlayerId === '1',
+            'gift 玉米穗',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(gifted.finalState.core.players['0'].deck.map(card => card.uid)).toEqual([
+            'deck-card',
+            'recycle-1',
+            'recycle-2',
+            'recycle-3',
+        ]);
+        expect(gifted.finalState.core.players['0'].discard.map(card => card.uid)).toEqual(['ignored-minion']);
+        expect(gifted.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['corn-card']);
+        expect(gifted.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(gifted.finalState.sys?.interaction?.current).toBeFalsy();
+    });
+
+    it('智慧之锅按其他玩家数量抽牌、分别给牌并获得额外行动', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('hand-card', 'anansi_tales_trading_stories', 'action', '0')],
+                    deck: [
+                        makeCard('draw-1', 'anansi_tales_pot_of_beans', 'action', '0'),
+                        makeCard('draw-2', 'anansi_tales_feather_gifts', 'action', '0'),
+                    ],
+                    discard: [makeCard('wisdom-card', 'anansi_tales_pot_of_wisdom', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('anansi_tales_pot_of_wisdom', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'wisdom-card',
+            defId: 'anansi_tales_pot_of_wisdom',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 50,
+        });
+        const promptState = resumeFirstRuntimeContinuation(core, result.events);
+        const prompt = getSimpleChoicePrompt(promptState, 'anansi_tales_pot_of_wisdom');
+        const playerOneChoice = prompt.options.find((option: any) => (
+            option.value?.cardUid === 'hand-card' && option.value?.targetPlayerId === '1'
+        ));
+        const playerTwoChoice = prompt.options.find((option: any) => (
+            option.value?.targetPlayerId === '2' && option.value?.cardUid !== 'hand-card'
+        ));
+        expect(playerOneChoice).toBeDefined();
+        expect(playerTwoChoice).toBeDefined();
+        const giftedToPlayerTwoUid = playerTwoChoice!.value.cardUid as string;
+
+        const resolved = respondToPromptOptions(
+            promptState,
+            [playerOneChoice!.id, playerTwoChoice!.id],
+            '0',
+            FIXED_RANDOM,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.finalState.core.players['0'].hand.map(card => card.uid).sort()).toEqual(
+            ['draw-1', 'draw-2'].filter(uid => uid !== giftedToPlayerTwoUid).sort(),
+        );
+        expect(resolved.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['hand-card']);
+        expect(resolved.finalState.core.players['2'].hand.map(card => card.uid)).toEqual([giftedToPlayerTwoUid]);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(resolved.finalState.sys?.interaction?.current).toBeFalsy();
+    });
+
+    it('让它吃饱先抽两张牌，再把自己放入另一名玩家手中', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-1', 'anansi_tales_pot_of_beans', 'action', '0'),
+                        makeCard('draw-2', 'anansi_tales_feather_gifts', 'action', '0'),
+                    ],
+                    discard: [makeCard('eat-card', 'anansi_tales_let_it_be_full_and_eat', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = invokeRegisteredAbilityContract('anansi_tales_let_it_be_full_and_eat', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'eat-card',
+            defId: 'anansi_tales_let_it_be_full_and_eat',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 60,
+        });
+        const promptState = resumeFirstRuntimeContinuation(core, result.events);
+        const gifted = respondToPromptOption(
+            promptState,
+            option => option.value?.targetPlayerId === '1',
+            'gift 让它吃饱',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(gifted.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-1', 'draw-2']);
+        expect(gifted.finalState.core.players['0'].discard).toEqual([]);
+        expect(gifted.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['eat-card']);
+        expect(gifted.finalState.core.players['0'].actionLimit).toBe(1);
+        expect(gifted.finalState.sys?.interaction?.current).toBeFalsy();
+    });
+
+    it('羽毛礼物只允许选择己方随从，移动到另一基地后再把自己给出', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('feather-card', 'anansi_tales_feather_gifts', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_anansis_web', [
+                    makeMinion('own-minion', 'anansi_tales_akye_the_turtle', '0', 3),
+                    makeMinion('enemy-minion', 'pirate_first_mate', '1', 2),
+                ]),
+                makeBase('base_storytellers_hut'),
+            ],
+        });
+
+        const result = invokeRegisteredAbilityContract('anansi_tales_feather_gifts', 'onPlay', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'feather-card',
+            defId: 'anansi_tales_feather_gifts',
+            baseIndex: 0,
+            random: FIXED_RANDOM,
+            now: 70,
+        });
+        const sourcePrompt = getSimpleChoicePrompt(result.matchState!, 'anansi_tales_feather_gifts');
+        expect(sourcePrompt.options.some((option: any) => option.value?.minionUid === 'own-minion')).toBe(true);
+        expect(sourcePrompt.options.some((option: any) => option.value?.minionUid === 'enemy-minion')).toBe(false);
+
+        const moved = respondToPromptOption(
+            result.matchState!,
+            option => option.value?.minionUid === 'own-minion' && option.value?.baseIndex === 0,
+            '选择己方随从移动',
+            '0',
+            FIXED_RANDOM,
+        );
+        const destination = respondToPromptOption(
+            moved.finalState,
+            option => option.value?.baseIndex === 1,
+            '选择羽毛礼物目的基地',
+            '0',
+            FIXED_RANDOM,
+        );
+        const gifted = respondToPromptOption(
+            destination.finalState,
+            option => option.value?.targetPlayerId === '1',
+            'gift 羽毛礼物',
+            '0',
+            FIXED_RANDOM,
+        );
+
+        expect(gifted.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['enemy-minion']);
+        expect(gifted.finalState.core.bases[1].minions.map(minion => minion.uid)).toEqual(['own-minion']);
+        expect(gifted.finalState.core.players['1'].hand.map(card => card.uid)).toEqual(['feather-card']);
+        expect(gifted.finalState.core.players['0'].discard).toEqual([]);
+        expect(gifted.finalState.sys?.interaction?.current).toBeFalsy();
     });
 
     it('收集故事会从另一名玩家手中额外打出自己拥有的行动', () => {
@@ -545,7 +806,6 @@ describe('阿南西传说代表性玩法行为', () => {
             playerId: '0',
             baseIndex: 0,
             baseDefId: 'base_anansis_web',
-            actionTargetBaseIndex: 0,
             triggerCardUid: 'web-action',
             triggerCardDefId: 'anansi_tales_trading_stories',
             triggerCardOwnerId: '0',
@@ -579,7 +839,6 @@ describe('阿南西传说代表性玩法行为', () => {
             playerId: '0',
             baseIndex: 0,
             baseDefId: 'base_anansis_web',
-            actionTargetBaseIndex: 0,
             triggerCardUid: 'second-action',
             triggerCardDefId: 'anansi_tales_pot_of_wisdom',
             triggerCardOwnerId: '0',

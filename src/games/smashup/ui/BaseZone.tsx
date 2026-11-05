@@ -166,7 +166,7 @@ export const BaseZone: React.FC<{
     const layout = getLayoutConfig(playerCount, { isMobileViewport });
     
     const baseDef = getBaseDef(base.defId);
-    const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) : base.defId;
+    const resolvedBaseDefId = baseDef ? getBasePodVariantId(baseDef, selectedFactions) ?? base.defId : base.defId;
     const localizedBaseDef = getBaseDef(resolvedBaseDefId) ?? baseDef;
     const baseName = localizedBaseDef ? (resolveCardName(localizedBaseDef, t) || resolvedBaseDefId) : base.defId;
     const totalPower = getTotalEffectivePowerOnBase(core, base, baseIndex);
@@ -417,7 +417,11 @@ export const BaseZone: React.FC<{
         const actionTitle = actionText ? `${actionName}\n${actionText}` : actionName;
         const ongoingControllerId = ((oa.metadata?.sourceControllerId as string | undefined) ?? oa.ownerId);
         const pConf = PLAYER_CONFIG[parseInt(ongoingControllerId) % PLAYER_CONFIG.length];
-        const hasOngoingTalent = actionDef?.abilityTags?.includes('talent') ?? false;
+        const hasOngoingTalent = actionDef?.type === 'fusion'
+            ? actionDef.actionAbilityTags?.includes('talent') ?? false
+            : actionDef?.type === 'action'
+                ? actionDef.abilityTags?.includes('talent') ?? false
+                : false;
         const canUseOngoingTalent = !!usableOngoingTalentUids?.has(oa.uid);
         const hasExtraTalentReady =
             oa.metadata?.mythicHorsesSeastarExtraTalent === true
@@ -429,13 +433,14 @@ export const BaseZone: React.FC<{
         const isMultiSelectedOngoing = !!multiSelectedOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
-        const ongoingAccentHighlightActive =
+        const ongoingAccentHighlightActive = !!(
             isSelectedOngoing ||
             isMultiSelectedOngoing ||
             isSelectableOngoing ||
             isOngoingActivationArmed ||
             canUseOngoingTalent ||
-            showUsedOngoingState;
+            showUsedOngoingState
+        );
         const ongoingAccessoryChromeClass = getAccessoryChromeClass(ongoingAccentHighlightActive, 'border-[0.1vw] border-white shadow-md');
         const ongoingPowerCounterSurfaceClass = getAccessorySurfaceClass(ongoingAccentHighlightActive, 'bg-amber-400', 'bg-gradient-to-br from-amber-300 to-amber-500');
         const showOngoingInspectButton = !isSelectableOngoing && (
@@ -605,7 +610,7 @@ export const BaseZone: React.FC<{
                                 : 'absolute top-[0.15vw] right-[0.15vw] flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
                         >
                             <svg
-                                className={isCoarsePointer ? 'h-4 w-4 fill-current' : 'h-[0.8vw] w-[0.8vw] fill-current'}
+                                className={isCoarsePointer ? 'board-shell-fixed-icon h-4 w-4 fill-current' : 'board-shell-fixed-icon h-[0.8vw] w-[0.8vw] fill-current'}
                                 viewBox="0 0 20 20"
                             >
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -830,7 +835,7 @@ export const BaseZone: React.FC<{
                         : 'absolute top-[0.15vw] right-[0.15vw] z-60 flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
                 >
                     <svg
-                        className={isCoarsePointer ? 'h-4 w-4 fill-current' : 'h-[0.8vw] w-[0.8vw] fill-current'}
+                        className={isCoarsePointer ? 'board-shell-fixed-icon h-4 w-4 fill-current' : 'board-shell-fixed-icon h-[0.8vw] w-[0.8vw] fill-current'}
                         viewBox="0 0 20 20"
                     >
                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -1083,7 +1088,7 @@ export const BaseZone: React.FC<{
                         onClick={(e) => { e.stopPropagation(); onViewBase(base.defId); }}
                         className="absolute top-[0.6vw] left-[0.6vw] w-[1.6vw] h-[1.6vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover/base:opacity-100 group-hover/base:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-30 cursor-zoom-in"
                     >
-                        <svg className="w-[0.9vw] h-[0.9vw] fill-current" viewBox="0 0 20 20">
+                        <svg className="board-shell-fixed-icon w-[0.9vw] h-[0.9vw] fill-current" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                         </svg>
                     </button>
@@ -1356,7 +1361,7 @@ export const BaseZone: React.FC<{
                                                                     }}
                                                                     className="absolute top-[0.15vw] right-[0.15vw] z-40 flex h-[1.25vw] w-[1.25vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in"
                                                                 >
-                                                                    <svg className="h-[0.72vw] w-[0.72vw] fill-current" viewBox="0 0 20 20">
+                                                                    <svg className="board-shell-fixed-icon h-[0.72vw] w-[0.72vw] fill-current" viewBox="0 0 20 20">
                                                                         <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                                                                     </svg>
                                                                 </button>
@@ -1406,6 +1411,7 @@ export const BaseZone: React.FC<{
                                             armOrActivate={armOrActivate}
                                             isMobileViewport={isMobileViewport}
                                             layout={layout}
+                                            renderStoredCardsUnderHost={renderStoredCardsUnderHost}
                                             turnOrder={turnOrder}
                                             isCoarsePointer={isCoarsePointer}
                                             shouldAnimateEntry={enteringMinionUidsByController[pid]?.has(m.uid) ?? false}
@@ -1575,12 +1581,13 @@ const MinionCard: React.FC<{
     isMobileViewport?: boolean;
     /** 响应式布局配置 */
     layout: ReturnType<typeof getLayoutConfig>;
+    renderStoredCardsUnderHost: (hostUid: string, compact?: boolean) => React.ReactNode;
     /** 玩家回合顺序（用于判断是否是最右边玩家） */
     turnOrder: string[];
     isCoarsePointer: boolean;
     /** 该随从是否是本次状态变更中新进入基地的实体 */
     shouldAnimateEntry?: boolean;
-}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, selectedOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
+}> = ({ minion, effectivePower, core, index, pid, baseIndex, dispatch, isMinionSelectMode, isMultiSelected, isSelected, isDuelParticipant = false, isDimmed, onMinionSelect, onView, onViewAction, selectableOngoingUids, selectedOngoingUids, multiSelectedOngoingUids, onOngoingSelect, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, isExpanded, onToggleExpanded, onExpandMinion, onAttachedOverlayVisibilityChange, isActivationArmed, clearArmedActivation, armOrActivate, isMobileViewport: _isMobileViewport = false, layout, renderStoredCardsUnderHost, turnOrder, isCoarsePointer, shouldAnimateEntry = false }) => {
     const { t } = useTranslation('game-smashup');
     // 兼容融合卡：Wolf Pact 这类作为随从打出时仍使用融合卡定义的图与文案
     const minionDef = getMinionDef(minion.defId);
@@ -1614,7 +1621,7 @@ const MinionCard: React.FC<{
     const shouldShowAttachedActions =
         !isSelectionContext && (Boolean(selectableOngoingUids) || (isCoarsePointer ? !!isExpanded : false));
     const [isAttachedOverlayPinned, setIsAttachedOverlayPinned] = React.useState(false);
-    const attachedOverlayHideTimerRef = React.useRef<ReturnType<typeof window.setTimeout> | null>(null);
+    const attachedOverlayHideTimerRef = React.useRef<number | null>(null);
     const attachedOverlayVisibilityChangeRef = React.useRef(onAttachedOverlayVisibilityChange);
     const attachedActionsPositionClass = shouldShowAttachedLeft
         ? 'right-full flex-col-reverse pr-[0.6vw]'
@@ -1802,10 +1809,10 @@ const MinionCard: React.FC<{
             : { rotate: rotation };
 
     const rotationTransition = isSelectableMinion
-        ? { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } }
+        ? { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' as const } }
         : canActivate
-            ? { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } }
-            : { type: 'spring', stiffness: 320, damping: 26 };
+            ? { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' as const } }
+            : { type: 'spring' as const, stiffness: 320, damping: 26 };
 
     return (
         <motion.div
@@ -1914,7 +1921,7 @@ const MinionCard: React.FC<{
                         onClick={(e) => { e.stopPropagation(); onView(); }}
                         className="absolute top-[0.15vw] right-[0.15vw] w-[1.4vw] h-[1.4vw] flex items-center justify-center bg-black/60 hover:bg-amber-500/80 text-white rounded-full opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-[opacity,background-color] duration-200 shadow-lg z-[110] cursor-zoom-in"
                     >
-                        <svg className="w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
+                        <svg className="board-shell-fixed-icon w-[0.8vw] h-[0.8vw] fill-current" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
                         </svg>
                     </button>
@@ -1975,6 +1982,8 @@ const MinionCard: React.FC<{
                     />
                 )}
 
+                {renderStoredCardsUnderHost(minion.uid)}
+
                 {showTouchActivationHint && (
                     <div
                         data-testid={`su-minion-activation-hint-${minion.uid}`}
@@ -2019,7 +2028,11 @@ const MinionCard: React.FC<{
                             const isSelectedAA = !!selectedOngoingUids?.has(aa.uid);
                             const isMultiSelectedAA = !!multiSelectedOngoingUids?.has(aa.uid);
                             const isDimmedAA = !!selectableOngoingUids && !selectableOngoingUids.has(aa.uid);
-                            const hasAATalent = actionDef?.abilityTags?.includes('talent') ?? false;
+                            const hasAATalent = actionDef?.type === 'fusion'
+                                ? actionDef.actionAbilityTags?.includes('talent') ?? false
+                                : actionDef?.type === 'action'
+                                    ? actionDef.abilityTags?.includes('talent') ?? false
+                                    : false;
                             const canUseAATalent = !!usableOngoingTalentUids?.has(aa.uid);
                             const attachedActivationKey = `attached-${aa.uid}`;
                             const isAttachedActivationArmed = isActivationArmed(attachedActivationKey);

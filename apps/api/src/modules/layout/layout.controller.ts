@@ -141,18 +141,18 @@ export class LayoutController {
             shellTranslateX,
             playerBoardTranslateY,
             magnifyButtonTop,
-            playerBoardBaseHeightVw,
-            tipBoardHeightVw,
-            centerBoardGapVw,
+            playerBoardBaseHeightUnits,
+            tipBoardHeightUnits,
+            centerBoardGapUnits,
         } = record;
 
         if (![
             shellTranslateX,
             playerBoardTranslateY,
             magnifyButtonTop,
-            playerBoardBaseHeightVw,
-            tipBoardHeightVw,
-            centerBoardGapVw,
+            playerBoardBaseHeightUnits,
+            tipBoardHeightUnits,
+            centerBoardGapUnits,
         ].every((value) => typeof value === 'number' && Number.isFinite(value))) {
             return null;
         }
@@ -161,9 +161,9 @@ export class LayoutController {
             shellTranslateX,
             playerBoardTranslateY,
             magnifyButtonTop,
-            playerBoardBaseHeightVw,
-            tipBoardHeightVw,
-            centerBoardGapVw,
+            playerBoardBaseHeightUnits,
+            tipBoardHeightUnits,
+            centerBoardGapUnits,
         } as PlayerBoardUiTuning;
     }
 }

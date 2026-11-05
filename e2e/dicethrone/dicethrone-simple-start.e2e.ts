@@ -1233,6 +1233,84 @@ const buildOnlineAiStalledMain2State = (state: any) => {
     return normalizeInjectedMatchState(next.sys.matchId ?? 'online-ai-main2-stall', next);
 };
 
+const buildFourPlayerOnlineAiDisplayOnlyRecoveryState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const turnOrder = Array.isArray(next.core?.turnOrder) ? [...next.core.turnOrder] : ['0', '1', '2', '3'];
+    const aiPlayerIndex = Math.max(0, turnOrder.indexOf('2'));
+
+    next.core = {
+        ...next.core,
+        activePlayerId: '2',
+        currentPlayerIndex: aiPlayerIndex,
+        turnOrder,
+        turnNumber: 11,
+        phase: 'defensiveRoll',
+        rollConfirmed: true,
+        rollCount: 1,
+        rollLimit: 1,
+        rollDiceCount: 3,
+        dice: [],
+        pendingAttack: {
+            attackerId: '2',
+            defenderId: '1',
+            isDefendable: true,
+            sourceAbilityId: 'holy-radiance',
+            defenseAbilityId: 'holy-defense',
+        },
+        pendingDamage: {
+            id: 'damage-online-4p-displayonly',
+            sourcePlayerId: '2',
+            targetPlayerId: '1',
+            originalDamage: 6,
+            currentDamage: 6,
+            sourceAbilityId: 'holy-radiance',
+            damageScope: 'attack',
+            responseType: 'beforeDamageDealt',
+            responderId: '2',
+            isFullyEvaded: false,
+        },
+        pendingBonusDiceSettlement: {
+            id: 'flight-display-online-4p',
+            sourceAbilityId: 'flight',
+            attackerId: '2',
+            targetId: '1',
+            displayOnly: true,
+            dice: [
+                { index: 0, value: 2, face: 'blade' },
+                { index: 1, value: 3, face: 'blade' },
+            ],
+        },
+        currentRollContext: {
+            id: 'bonus:flight-display-online-4p',
+            kind: 'bonus',
+            ownerPlayerId: '2',
+            targetPlayerId: '1',
+            sourceAbilityId: 'flight',
+            dice: [],
+            status: 'open',
+            policy: { blocksPhaseFlow: true },
+            display: { replayOnly: false },
+        },
+    };
+    next.sys = {
+        ...next.sys,
+        phase: 'defensiveRoll',
+        flowHalted: false,
+        interaction: {
+            ...(next.sys?.interaction ?? {}),
+            current: undefined,
+            queue: [],
+            isBlocked: true,
+        },
+        responseWindow: {
+            ...(next.sys?.responseWindow ?? {}),
+            current: undefined,
+        },
+    };
+
+    return normalizeInjectedMatchState(next.sys.matchId ?? 'online-ai-4p-displayonly', next);
+};
+
 const buildDiscardOverflowState = (state: any) => {
     const next = structuredClone(state);
     const fallbackTurnOrder = Array.isArray(next.sys?.turnOrder)
@@ -4329,6 +4407,105 @@ test.describe('DiceThrone Simple Start', () => {
             await saveEvidenceScreenshot(hostPage, testInfo, '20-online-ai-manual-force-end-human-response-after');
         } finally {
             await setup.hostContext.close();
+        }
+    });
+
+    test('Online 4-player 2v2 AI 展示态奖励骰卡死时，房主强制结束应清除奖励骰与伤害阻塞', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            joinPlayerIds: ['1', '3'],
+            gameServerBaseURL: getGameServerBaseURL(),
+            setupData: {
+                enableAi: true,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'human' },
+                    '2': { type: 'local-ai', minimumActionDelayMs: 5000 },
+                    '3': { type: 'human' },
+                },
+            },
+        });
+        if (!setup) {
+            test.skip(true, 'DiceThrone 四人 AI 联机房间创建失败');
+            return;
+        }
+
+        try {
+            const { hostPage, matchId, players } = setup;
+            await selectCharacter(players[0].page, 'shadow_thief');
+            await selectCharacter(players[1].page, 'paladin');
+            await selectCharacter(players[2].page, 'zhanshujia');
+            await waitForAiSeatReady(hostPage, matchId, '2');
+            await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+            await waitForGameBoard(hostPage, 30000);
+            await waitForHarnessPages(players.map((player) => player.page));
+            await applyOnlineMatchState(matchId, hostPage, buildFourPlayerOnlineAiDisplayOnlyRecoveryState);
+
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                return {
+                    phase: state.sys?.phase ?? null,
+                    activePlayerId: state.core?.activePlayerId ?? null,
+                    pendingDamageResponder: state.core?.pendingDamage?.responderId ?? null,
+                    pendingBonusDisplayOnly: state.core?.pendingBonusDiceSettlement?.displayOnly ?? null,
+                    rollContextKind: state.core?.currentRollContext?.kind ?? null,
+                    blocksPhaseFlow: state.core?.currentRollContext?.policy?.blocksPhaseFlow ?? null,
+                };
+            }, {
+                timeout: 10000,
+                message: '等待线上反馈同构的四人 defensiveRoll + displayOnly 奖励骰阻塞态',
+            }).toEqual({
+                phase: 'defensiveRoll',
+                activePlayerId: '2',
+                pendingDamageResponder: '2',
+                pendingBonusDisplayOnly: true,
+                rollContextKind: 'bonus',
+                blocksPhaseFlow: true,
+            });
+
+            const forceActionsPanel = await openForceActionsPanel(hostPage, { expectSheet: false });
+            const forceEndButton = hostPage.getByTestId('hud-force-end-ai-phase');
+            await expect(forceEndButton).toBeVisible({ timeout: 5000 });
+            await forceEndButton.click();
+
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                return {
+                    phase: state.sys?.phase ?? null,
+                    activePlayerId: state.core?.activePlayerId ?? null,
+                    hasPendingDamage: Boolean(state.core?.pendingDamage),
+                    hasPendingBonusDiceSettlement: Boolean(state.core?.pendingBonusDiceSettlement),
+                    hasCurrentRollContext: Boolean(state.core?.currentRollContext),
+                    interactionBlocked: state.sys?.interaction?.isBlocked ?? false,
+                };
+            }, {
+                timeout: 20000,
+                message: '等待四人 AI 展示态奖励骰与待处理伤害被强制恢复并离开 defensiveRoll',
+            }).toMatchObject({
+                activePlayerId: '2',
+                hasPendingDamage: false,
+                hasPendingBonusDiceSettlement: false,
+                hasCurrentRollContext: false,
+                interactionBlocked: false,
+            });
+
+            await expect.poll(async () => {
+                const state = await getMatchState(matchId, hostPage);
+                return state.sys?.phase ?? null;
+            }, {
+                timeout: 5000,
+                message: '强制恢复后阶段仍停在 defensiveRoll',
+            }).not.toBe('defensiveRoll');
+
+            await expect(forceActionsPanel).toBeHidden({ timeout: 5000 });
+            await expect(hostPage.getByText(/AI 强制结束失败|强制结束 AI 回合未成功/i)).toHaveCount(0);
+            await clearEvidenceScreenshotsForTest(testInfo);
+            await saveEvidenceScreenshot(hostPage, testInfo, '20-four-player-ai-display-only-force-end-after');
+        } finally {
+            await cleanupDTMatch(setup);
         }
     });
 

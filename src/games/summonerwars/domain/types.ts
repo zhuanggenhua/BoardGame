@@ -32,6 +32,9 @@ export type AttackRange = 1 | 2 | 3 | 4;
 /** 单位职业 */
 export type UnitClass = 'summoner' | 'champion' | 'common';
 
+/** 卡面 / 规则原文可筛选的单位身份标签 */
+export type UnitTag = 'undead' | 'carrier' | 'citadel';
+
 /** 卡牌类型 */
 export type CardType = 'unit' | 'event' | 'structure';
 
@@ -53,7 +56,7 @@ export type GamePhase =
 export const PHASE_ORDER: GamePhase[] = ['summon', 'move', 'build', 'attack', 'magic', 'draw'];
 
 /** 阵营 ID */
-export type FactionId = 'necromancer' | 'trickster' | 'paladin' | 'goblin' | 'frost' | 'barbaric' | 'mogu' | 'huijin' | 'shouren' | 'yongheng' | 'shadow';
+export type FactionId = 'necromancer' | 'trickster' | 'paladin' | 'goblin' | 'frost' | 'barbaric' | 'mogu' | 'huijin' | 'shouren' | 'yongheng' | 'shadow' | 'zhongcai';
 
 /**
  * 阵营目录的唯一权威来源：config/factions/index.ts 的 FACTION_CATALOG
@@ -77,6 +80,7 @@ export interface UnitCard {
   attackType: AttackType;
   attackRange: AttackRange; // 射程（近战1，远程通常3）
   abilities?: string[];  // 能力 ID 列表
+  unitTags?: UnitTag[];  // 卡面 / 规则原文可筛选的单位身份标签，如亡灵、疫病体 / Carrier、城塞 / Citadel
   deckSymbols: string[]; // 牌组符号
   spriteIndex?: number;  // 精灵图索引
   spriteAtlas?: 'hero' | 'cards' | 'portal'; // 精灵图集类型
@@ -149,6 +153,7 @@ export interface BoardUnit {
   healingMode?: boolean; // 治疗模式（圣殿牧师：本次攻击转为治疗）
   wasAttackedThisTurn?: boolean; // 本回合是否已被攻击（庇护判定用）
   tempAbilities?: string[]; // 临时技能（幻化复制，回合结束清除）
+  suppressedUntilTurnEnd?: boolean; // 抹消：直到回合结束失去所有技能
   originalOwner?: PlayerId; // 临时控制权转移前的原始拥有者（心灵操控）
   attachedUnits?: { cardId: string; card: UnitCard; owner: PlayerId }[]; // 附加的单位卡（冰霜战斧）
 }
@@ -474,6 +479,7 @@ export const SW_EVENTS = {
   EVENT_INTERACTION_REQUESTED: 'sw:event_interaction_requested',
   MAGIC_EVENT_CHOICE_REQUESTED: 'sw:magic_event_choice_requested',
   ACTIVE_EVENT_DISCARDED: 'sw:active_event_discarded',
+  ACTIVE_EVENT_CHARGED: 'sw:active_event_charged',
   // 阶段/回合事件
   PHASE_CHANGED: 'sw:phase_changed',
   TURN_CHANGED: 'sw:turn_changed',
@@ -485,6 +491,7 @@ export const SW_EVENTS = {
   SOUL_TRANSFER_REQUESTED: 'sw:soul_transfer_requested',
   FUNERAL_PYRE_PROMPTED: 'sw:funeral_pyre_prompted',
   FUNERAL_PYRE_CHARGED: 'sw:funeral_pyre_charged',
+  ZHONGCAI_DECREE_PROMPTED: 'sw:zhongcai_decree_prompted',
   EVENT_ATTACHED: 'sw:event_attached',
   // 推拉事件（欺心巫族核心机制）
   UNIT_PUSHED: 'sw:unit_pushed',

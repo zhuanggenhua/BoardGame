@@ -52,6 +52,16 @@ const createEvidence = (): EventCommitEvidence => ({
 });
 
 describe('onlineAiWatchdogFeedbackDiagnostics', () => {
+    it('真实 actionLog 与 EventStream 条目应保留身份和事件信息', () => {
+        const state = createState({ sys: {
+            phase: 'playCards', turnNumber: 1,
+            actionLog: { entries: [{ id: 'a-1', timestamp: 10, actorId: '1', kind: 'PLAY_CARD', segments: [{ type: 'text', text: '打出卡牌' }] }] },
+            eventStream: { nextId: 8, entries: [{ id: 7, event: { type: 'CARD_PLAYED', timestamp: 11, payload: { playerId: '1', cardId: 'card-a' } } }] },
+        } } as unknown as MatchState<unknown>);
+        const log = JSON.parse(buildOnlineAiDiagnosticActionLog({ state })!);
+        expect(log.actionLogTail[0]).toMatchObject({ id: 'a-1', timestamp: 10, actorId: '1', kind: 'PLAY_CARD' });
+        expect(log.eventStreamTail[0]).toMatchObject({ id: 7, type: 'CARD_PLAYED', timestamp: 11 });
+    });
     it('从 tracker key 只提取同一玩家和同一原因的 recovery fingerprint', () => {
         expect(extractOnlineAiRecoveryFingerprintFromTrackerKey(
             '1',
@@ -235,6 +245,54 @@ describe('onlineAiWatchdogFeedbackDiagnostics', () => {
             traceEntryId: 1,
             originalEventType: 'DAMAGE_DEALT',
         });
+    });
+
+    it('自定义交互未投影 options 时不应误报 empty-options', () => {
+        const snapshot = buildOnlineAiRecoveryStateSnapshot({
+            matchId: 'match-custom-interaction',
+            gameId: 'dicethrone',
+            state: createState(),
+            seatState: createState({
+                sys: {
+                    phase: 'main1',
+                    turnNumber: 1,
+                    interaction: {
+                        current: {
+                            id: 'dt-interaction-transfer',
+                            kind: 'dt:card-interaction',
+                            playerId: '1',
+                            data: {
+                                sourceId: 'card-transfer-status',
+                                type: 'selectStatus',
+                                targetPlayerIds: ['0', '1'],
+                                transferConfig: {},
+                            },
+                        },
+                    },
+                    eventStream: { entries: [] },
+                },
+            } as unknown as MatchState<unknown>),
+            candidate: createCandidate({ reason: 'visible-interaction' }),
+            trackerKey: 'tracker-custom-interaction',
+            progressMarker: 'marker-custom-interaction',
+            blockerFingerprint: 'blocker-custom-interaction',
+            aiSummary: {
+                seatControllerType: 'local-ai',
+                legalActions: { total: 1, truncated: false, items: [] },
+                decisionPreview: null,
+            },
+        });
+
+        const parsed = JSON.parse(snapshot) as {
+            interaction?: {
+                seat?: { optionsSource?: string };
+                seatSelectability?: { selectionState?: string };
+                seatUnsatisfiableReason?: string | null;
+            };
+        };
+        expect(parsed.interaction?.seat?.optionsSource).toBe('missing');
+        expect(parsed.interaction?.seatSelectability?.selectionState).toBe('options-not-projected');
+        expect(parsed.interaction?.seatUnsatisfiableReason).toBeNull();
     });
 
     it('unsatisfiable interaction snapshot 保留无解交互现场和 AI 摘要', () => {

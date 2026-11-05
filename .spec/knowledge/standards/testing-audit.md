@@ -1,6 +1,6 @@
 ---
 name: testing-audit
-description: 测试审计总入口：审计路由、证据边界和旧分卷兼容——做规则或玩法审计时查
+description: 测试审计总入口：审计路由和证据边界——做规则或玩法审计时查
 metadata:
   type: doc
   status: 已交付
@@ -12,7 +12,7 @@ metadata:
 
 本文件是 `index / adapter`，不承载独立审计规则正文。规则、玩法和机制审计的项目级主源是 [`description-to-implementation-audit.md`](description-to-implementation-audit.md)。
 
-旧 `testing-audit-core-principles.md`、`testing-audit-dimensions*.md` 和 `game-audit-workflow/references/*` 曾承载大量细表、D 编号和单游戏案例；现在只保留兼容入口，不能作为新的执行清单继续扩写。
+当前审计只从本文件列出的现行主源进入。
 
 ## 审计时先选主源
 
@@ -27,20 +27,10 @@ metadata:
 
 ## 口径归属
 
-本文件不定义审计完成标准。规则、玩法和机制审计口径回到 [`description-to-implementation-audit.md`](description-to-implementation-audit.md)；evidence 字段、结论等级和旧结论回写格式回到 [`audit-evidence-template.md`](audit-evidence-template.md)。旧分卷只作兼容入口。
+本文件不定义审计完成标准。规则、玩法和机制审计口径回到 [`description-to-implementation-audit.md`](description-to-implementation-audit.md)；evidence 字段和结论等级回到 [`audit-evidence-template.md`](audit-evidence-template.md)。
 
 ## 禁止
 
-- 禁止把旧 D 编号清单当成机械填表任务。
 - 禁止把单游戏规则、卡牌名、骰面、公共区对象、单位、场地/区域、教程章节或历史事故写回项目级审计正文。
 - 禁止用 `prompt/modal 出现`、按钮可点、截图目录存在、测试文件名或工具绿灯替代最终权威状态证明。
 - 禁止把 evidence、截图说明、测试报告或复盘文档写成新的规范来源。
-
-## 旧分卷处理
-
-旧链接命中时：
-
-1. 先读本文件和 [`description-to-implementation-audit.md`](description-to-implementation-audit.md)。
-2. 若旧分卷里有仍然有效的抽象方法，把它抽象后迁入对应 canonical-source。
-3. 若旧分卷只是单游戏案例、历史缺口或具体事故，把它下沉到 `evidence/`、`docs/games/<gameId>/...` 或对应游戏专项 workflow。
-4. 若无法判断主从关系，停止在“规范冲突未收敛”，不要继续执行审计或实现。

@@ -52,7 +52,7 @@ export {
     syncActiveResolutionWithResponseWindow,
     hasBlockingResolutionFrame,
 } from './resolutionStack';
-export { createCheatSystem, CHEAT_COMMANDS, type CheatCommandHandler, type CheatResourceModifier, type AddResourcePayload, type SetResourcePayload, type SetPhasePayload, type SetDicePayload } from './CheatSystem';
+export { createCheatSystem, CHEAT_COMMANDS, type CheatCommandHandler, type CheatResourceModifier, type AddResourcePayload, type AddTokenPayload, type SetResourcePayload, type SetPhasePayload, type SetDicePayload } from './CheatSystem';
 export { createTutorialSystem, TUTORIAL_COMMANDS, TUTORIAL_EVENTS, TUTORIAL_ERRORS } from './TutorialSystem';
 export { CharacterSelectionSystem, CHARACTER_SELECTION_COMMANDS, type CharacterSelectionSystemConfig, type SelectCharacterCommand, type PlayerReadyCommand, type PlayerUnreadyCommand, type HostStartGameCommand, type CharacterSelectedEvent, type PlayerReadyEvent, type PlayerUnreadyEvent, type HostStartedEvent } from './CharacterSelectionSystem';
 

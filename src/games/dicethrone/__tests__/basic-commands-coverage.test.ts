@@ -834,8 +834,8 @@ describe('AI legal actions', () => {
         expect(actions).toHaveLength(2);
         expect(actions.every((action) => action.kind === 'interaction-select-player')).toBe(true);
         expect(actions.map((action) => action.commands[0])).toEqual([
-            { type: 'RESOLVE_INTERACTION', payload: { selectedPlayerIds: ['1'] } },
-            { type: 'RESOLVE_INTERACTION', payload: { selectedPlayerIds: ['3'] } },
+            { type: 'RESOLVE_INTERACTION', payload: { selectedPlayerIds: ['1'], interactionId: 'dt-interaction-ai-select-player' } },
+            { type: 'RESOLVE_INTERACTION', payload: { selectedPlayerIds: ['3'], interactionId: 'dt-interaction-ai-select-player' } },
         ]);
     });
 
@@ -1393,7 +1393,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-select-player');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'RESOLVE_INTERACTION',
-            payload: { selectedPlayerIds: ['3'] },
+            payload: { selectedPlayerIds: ['3'], interactionId: 'dt-interaction-ai-select-player-low-hp' },
         });
     });
 
@@ -1432,7 +1432,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-select-player');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'RESOLVE_INTERACTION',
-            payload: { selectedPlayerIds: ['2'] },
+            payload: { selectedPlayerIds: ['2'], interactionId: 'dt-interaction-ai-select-friendly-buff-target' },
         });
     });
 
@@ -1467,7 +1467,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-select-player');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'RESOLVE_INTERACTION',
-            payload: { selectedPlayerIds: ['3'] },
+            payload: { selectedPlayerIds: ['3'], interactionId: 'dt-interaction-ai-select-best-cleanse-target' },
         });
     });
 
@@ -1519,7 +1519,7 @@ describe('AI legal actions', () => {
             kind: 'interaction-remove-status',
             commands: [{
                 type: 'REMOVE_STATUS',
-                payload: { targetPlayerId: '1', statusId: 'poison' },
+                payload: { targetPlayerId: '1', statusId: 'poison', interactionId: 'dt-interaction-ai-select-status' },
             }],
             metadata: expect.objectContaining({
                 strategyTags: ['purify-control'],
@@ -1597,7 +1597,7 @@ describe('AI legal actions', () => {
             kind: 'interaction-transfer-status',
             commands: [{
                 type: 'TRANSFER_STATUS',
-                payload: { fromPlayerId: '1', toPlayerId: '0', statusId: 'poison' },
+                payload: { fromPlayerId: '1', toPlayerId: '0', statusId: 'poison', interactionId: 'dt-interaction-ai-transfer-status' },
             }],
             metadata: expect.objectContaining({
                 strategyTags: ['purify-control'],
@@ -1607,7 +1607,7 @@ describe('AI legal actions', () => {
             kind: 'interaction-transfer-status',
             commands: [{
                 type: 'TRANSFER_STATUS',
-                payload: { fromPlayerId: '1', toPlayerId: '2', statusId: 'poison' },
+                payload: { fromPlayerId: '1', toPlayerId: '2', statusId: 'poison', interactionId: 'dt-interaction-ai-transfer-status' },
             }],
             metadata: expect.objectContaining({
                 strategyTags: ['purify-control'],
@@ -1647,7 +1647,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-remove-status');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'REMOVE_STATUS',
-            payload: { targetPlayerId: '0', statusId: STATUS_IDS.BURN },
+            payload: { targetPlayerId: '0', statusId: STATUS_IDS.BURN, interactionId: 'dt-interaction-ai-remove-own-debuff-first' },
         });
     });
 
@@ -1773,7 +1773,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-transfer-status');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'TRANSFER_STATUS',
-            payload: { fromPlayerId: '0', toPlayerId: '1', statusId: STATUS_IDS.POISON },
+            payload: { fromPlayerId: '0', toPlayerId: '1', statusId: STATUS_IDS.POISON, interactionId: 'dt-interaction-ai-transfer-own-debuff-to-enemy' },
         });
     });
 
@@ -1821,6 +1821,65 @@ describe('AI legal actions', () => {
         expect(result.state.sys.interaction?.current).toBeUndefined();
     });
 
+    it('transfer-status 不应把已达堆叠上限的目标列为 AI 合法动作', () => {
+        const state = createInitializedState(['0', '1', '2'], fixedRandom);
+        state.core.players['1'].statusEffects[STATUS_IDS.TARGETED] = 1;
+        state.core.players['0'].statusEffects[STATUS_IDS.TARGETED] = 1;
+
+        const interaction: InteractionDescriptor = {
+            id: 'ai-transfer-status-full-target',
+            playerId: '1',
+            sourceCardId: 'card-transfer-status',
+            type: 'selectStatus',
+            titleKey: 'interaction.selectStatusToTransfer',
+            selectCount: 1,
+            selected: [],
+            targetPlayerIds: ['0', '1', '2'],
+            transferConfig: {},
+        };
+        injectPendingInteraction(state, interaction);
+
+        const fullTargetCommand = {
+            type: 'TRANSFER_STATUS',
+            playerId: '1',
+            payload: {
+                fromPlayerId: '1',
+                toPlayerId: '0',
+                statusId: STATUS_IDS.TARGETED,
+                interactionId: 'dt-interaction-ai-transfer-status-full-target',
+            },
+            timestamp: Date.now(),
+        } as const;
+        expect(DiceThroneDomain.validate(state, fullTargetCommand).valid).toBe(false);
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '1',
+            state,
+        });
+        const isTransferTo = (action: typeof actions[number], targetPlayerId: string): boolean => {
+            const command = action.commands[0];
+            const payload = command?.payload as {
+                fromPlayerId?: string;
+                toPlayerId?: string;
+                statusId?: string;
+            } | undefined;
+            return command?.type === 'TRANSFER_STATUS'
+                && payload?.fromPlayerId === '1'
+                && payload?.toPlayerId === targetPlayerId
+                && payload?.statusId === STATUS_IDS.TARGETED;
+        };
+
+        expect(actions.some((action) => isTransferTo(action, '0'))).toBe(false);
+        const executableAction = actions.find((action) => isTransferTo(action, '2'));
+        expect(executableAction).toBeDefined();
+
+        const result = tryCmd(state, cmd('TRANSFER_STATUS', '1', executableAction!.commands[0].payload));
+        expect(result.success).toBe(true);
+        expect(result.state.core.players['1'].statusEffects[STATUS_IDS.TARGETED]).toBe(0);
+        expect(result.state.core.players['2'].statusEffects[STATUS_IDS.TARGETED]).toBe(1);
+        expect(result.state.sys.interaction?.current).toBeUndefined();
+    });
+
 
     it('本地 AI 在 selectTargetStatus 交互里会把已选中的己方减益转给更脆弱的敌人', async () => {
         const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);
@@ -1856,7 +1915,7 @@ describe('AI legal actions', () => {
         expect(resolution?.action.kind).toBe('interaction-transfer-status');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'TRANSFER_STATUS',
-            payload: { fromPlayerId: '0', toPlayerId: '1', statusId: STATUS_IDS.POISON },
+            payload: { fromPlayerId: '0', toPlayerId: '1', statusId: STATUS_IDS.POISON, interactionId: 'dt-interaction-ai-transfer-selected-status-target' },
         });
     });
 
@@ -2186,6 +2245,59 @@ describe('AI legal actions', () => {
             metadata: expect.objectContaining({ reason: 'empty-options' }),
         }));
         expect(rerollAction).toBeDefined();
+    });
+
+    it('线上反馈：奖励骰上下文缺失时仍应从 pending settlement 枚举可重掷骰子', () => {
+        const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);
+        state.sys.phase = 'main1';
+        state.core.activePlayerId = '0';
+        state.core.dice = [];
+        state.core.rollDiceCount = 0;
+        state.core.rollCount = 0;
+        state.core.rollConfirmed = false;
+        const settlement = {
+            id: 'online-card-give-hand-pending-only',
+            sourceAbilityId: 'card-give-hand',
+            attackerId: '0',
+            targetId: '3',
+            dice: [{ index: 0, value: 6, face: 'fist' }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            readyToSettle: false,
+            allowDiceModification: true,
+        } satisfies PendingBonusDiceSettlement;
+        state.core.pendingBonusDiceSettlement = settlement;
+        delete state.core.currentRollContext;
+        injectRawBlockingInteraction(state, {
+            id: 'dt-dice-select-card-give-hand-pending-only',
+            kind: 'multistep-choice',
+            playerId: '3',
+            data: {
+                title: 'interaction.selectDiceToReroll',
+                sourceId: 'card-give-hand',
+                minSteps: 1,
+                initialResult: { selectedDiceIds: [] },
+                allowedDieIds: [0],
+                meta: {
+                    dtType: 'selectDie',
+                    selectCount: 1,
+                    diceOwnerId: '0',
+                    targetOpponentDice: true,
+                },
+            },
+        });
+
+        const actions = buildDiceThroneAiLegalActions({ playerId: '3', state });
+        expect(actions).not.toContainEqual(expect.objectContaining({
+            kind: 'interaction-cancel',
+            metadata: expect.objectContaining({ reason: 'empty-options' }),
+        }));
+        expect(actions.some((action) => action.kind === 'interaction-multistep'
+            && action.commands.some((command) => (
+                command.type === 'REROLL_DIE'
+                && (command.payload as { dieId?: number }).dieId === 0
+            )))).toBe(true);
     });
 
     it('线上反馈：main1 中抬一手应从已确认普通骰区生成可执行重掷，而不是空选项取消', () => {
@@ -2584,7 +2696,7 @@ describe('AI legal actions', () => {
     });
 
     it('targetOpponentDice 的 set 交互应优先压低高点骰子', async () => {
-        const state = createInitializedState(['0', '1'], fixedRandom);
+        const state = createHeroMatchup('monk', 'thor')(['0', '1'], fixedRandom);
         state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
             ...die,
             id: index,
@@ -2688,6 +2800,38 @@ describe('AI legal actions', () => {
         expect(modifyCommand).toBeDefined();
         expect((modifyCommand?.payload as { dieId: number; newValue: number }).dieId).toBe(0);
         expect((modifyCommand?.payload as { dieId: number; newValue: number }).newValue).not.toBe(6);
+    });
+
+    it('AI 对固定目标值4或5的改骰只生成规则允许的点数', async () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 3][index]!,
+        }));
+        injectPendingInteraction(state, {
+            id: 'ai-thor-worthy-values',
+            playerId: '0',
+            sourceCardId: 'card-thor-worthy',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToChange',
+            selectCount: 1,
+            selected: [],
+            dieModifyConfig: { mode: 'set', allowedValues: [4, 5] },
+            diceOwnerId: '0',
+            targetOpponentDice: false,
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: { '0': { type: 'local-ai' } },
+        });
+        const modifyCommand = resolution?.action.commands.find((command) => command.type === 'MODIFY_DIE');
+
+        expect(modifyCommand).toBeDefined();
+        expect([4, 5]).toContain((modifyCommand?.payload as { newValue: number }).newValue);
     });
 
     it('targetOpponentDice 的 adjust 交互应生成向下调整方案，而不是只能 +1', async () => {
@@ -3146,6 +3290,12 @@ describe('AI legal actions', () => {
         const random = createQueuedRandom([1, 1, 1, 1, 1, 2]);
         let state = createNoResponseSetup()(playerIds as unknown as string[], random);
 
+        for (const player of Object.values(state.core.players)) {
+            player.hand = [];
+            player.deck = [];
+            player.discard = [];
+        }
+
         const setupCommands: CommandInput[] = [
             ...advanceTo('offensiveRoll', '0'),
             cmd('ROLL_DICE', '0'),
@@ -3162,7 +3312,7 @@ describe('AI legal actions', () => {
                 random,
                 [...playerIds],
             );
-            expect(result.success).toBe(true);
+            expect(result.success, `${input.type} ${input.playerId} ${JSON.stringify(input.payload)}: ${result.error ?? 'unknown error'}`).toBe(true);
             state = result.state as MatchState<DiceThroneCore>;
         }
 

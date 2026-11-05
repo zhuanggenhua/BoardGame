@@ -1,0 +1,4 @@
+interface:
+  display_name: "卡牌效果 Authoring"
+  short_description: "把卡牌规则、实现、AI 合法动作、测试和证据串成可审计工作流"
+  default_prompt: "按卡牌效果 authoring 流程锁定真相源、拆原子语义、实现效果并补齐 AI 与验证证据。"

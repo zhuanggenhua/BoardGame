@@ -1,0 +1,28 @@
+{
+  "verdict": "PASS",
+  "scope": "current-user-request",
+  "generatedAt": "2026-09-19T13:00:00+08:00",
+  "display": {
+    "purpose": "final-user-visible-delivery",
+    "trigger": "user-requested-open",
+    "viewer": "web",
+    "finalPassBeforeOpen": true
+  },
+  "requirements": [
+    {
+      "requirement": "英雄剧本书使用书内关闭、翻页和页码控件，不显示重复标题。",
+      "status": "PASS",
+      "evidence": [
+        "主线教程真实浏览器 E2E 通过。",
+        "自然触发作祟真实浏览器 E2E 通过。",
+        "展示组中的四张截图均来自本轮最新通过证据。"
+      ]
+    }
+  ],
+  "images": [
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\book-ui-final-open-20260919\\01-主线-英雄剧本书目标页说明图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\book-ui-final-open-20260919\\02-主线-读完目标关闭剧本书.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\book-ui-final-open-20260919\\03-自然作祟-英雄剧本书目标页与图书馆原因.jpg",
+    "D:\\gongzuo\\webgame\\BoardGame\\evidence\\betrayal-tutorial\\book-ui-final-open-20260919\\04-自然作祟-读完剧本书目标准备关闭.jpg"
+  ]
+}

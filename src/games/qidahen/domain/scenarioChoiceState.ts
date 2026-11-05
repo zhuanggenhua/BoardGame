@@ -1,3 +1,5 @@
+import { addFactionHandCards, appendDrawnHandCards, drawFromFactionPile } from './handCardState';
+import { getQidahenScenarioPreset } from './scenarioPresets';
 import {
     getArmamentNameById,
 } from './armamentCatalogState';
@@ -311,17 +313,21 @@ const resolveQidahenScenarioArmamentChoice = (
         return null;
     }
     const selectedNames = selectedIds.map(dependencies.getArmamentNameById);
+    const faction = state.factions[group.factionId];
+    const drawPile = [...faction.drawPile];
+    const developedCards = [...faction.developedCards];
+    const armaments = faction.armaments.map(armament => {
+        if (!selectedIds.includes(armament.id) || armament.level > 0) return armament;
+        const index = drawPile.findIndex(card => card.armamentId === armament.id);
+        if (index < 0) throw new Error(`Missing scenario armament card: ${group.factionId}/${armament.id}`);
+        const [card] = drawPile.splice(index, 1);
+        developedCards.push(card);
+        return { ...armament, level: 1, sourceCardDefIds: [card.cardDefId!] };
+    });
     return {
         factions: {
             ...state.factions,
-            [group.factionId]: {
-                ...state.factions[group.factionId],
-                armaments: state.factions[group.factionId].armaments.map((armament) => (
-                    selectedIds.includes(armament.id)
-                        ? { ...armament, level: Math.max(armament.level, 1) }
-                        : armament
-                )),
-            },
+            [group.factionId]: { ...faction, armaments, drawPile, drawPileCount: drawPile.length, developedCards },
         },
         pendingScenarioArmamentChoices: state.pendingScenarioArmamentChoices.filter((choice) => choice.id !== groupId),
         logText: `${group.factionName}确认剧本军备：${selectedNames.join('、')}。`,
@@ -379,9 +385,21 @@ export const resolveQidahenScenarioChoiceResolvedEvent = (
             if (!resolution) {
                 return state;
             }
+            let factions = resolution.factions;
+            let handCards = state.handCards;
+            if (resolution.pendingScenarioArmamentChoices.length === 0) {
+                const preset = getQidahenScenarioPreset(state.scenarioId);
+                for (const factionId of ['ming', 'mongol', 'jin'] as const) {
+                    const draw = drawFromFactionPile(factions, factionId, preset.factions[factionId].handCount);
+                    factions = addFactionHandCards(draw.factions, factionId, draw.drawnCards);
+                    handCards = appendDrawnHandCards(handCards, draw.cards, factionId);
+                }
+            }
             return dependencies.updateTurnLabel({
                 ...state,
-                factions: resolution.factions,
+                factions,
+                handCards,
+                drawPileCount: factions.ming.drawPileCount,
                 pendingScenarioArmamentChoices: resolution.pendingScenarioArmamentChoices,
                 actionLog: [
                     {

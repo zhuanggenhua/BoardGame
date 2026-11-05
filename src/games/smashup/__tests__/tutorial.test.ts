@@ -46,6 +46,7 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
         expect(setup).toBeDefined();
         expect(setup!.aiActions).toBeDefined();
         expect(setup!.aiActions!.length).toBeGreaterThan(0);
+        expect(setup!.hiddenAutomation?.kind).toBe('setup-precondition');
     });
 
     it('setup 步骤蛇形选秀让玩家使用巫师和机器人，不再使用疯狂教学派系', () => {
@@ -136,6 +137,7 @@ describe('SmashUp Tutorial Manifest 结构验证', () => {
 
         const playTechCenter = SMASH_UP_BASIC_TUTORIAL.steps.find(s => s.id === 'playTechCenter');
         expect(playTechCenter?.allowedTargets).toEqual(['tut-tech']);
+        expect(playTechCenter?.hiddenAutomation).toBeUndefined();
     });
 
     it('allowedTargets 只引用教学手牌中存在的 uid', () => {

@@ -49,6 +49,7 @@ import { isBaseAbilitySuppressed } from './ongoingEffects';
 import { registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import { shouldGenerateSmashUpPodAlias } from './variantBindingRuntime';
+import { getEffectiveBaseAbilitySourceIds } from './effectiveBaseAbilities';
 import {
     appendPendingPostScoringActions,
     getDeferredReplacementBaseDefId,
@@ -99,6 +100,8 @@ export interface BaseAbilityContext {
     destroyerId?: PlayerId;
     /** onMinionDestroyed 时：被消灭随从的控制者 */
     controllerId?: PlayerId;
+    /** 批量移动时的同批随从 UID；同批随从不应互相见证。 */
+    simultaneousMoveBatchMinionUids?: string[];
     /** onMinionDestroyed / onMinionMoved 时：本次事件的来源 reason */
     reason?: string;
     /** afterScoring 时：排名信息 */
@@ -117,6 +120,8 @@ export interface BaseAbilityContext {
     triggerCardUid?: string;
     triggerCardDefId?: string;
     triggerCardOwnerId?: PlayerId;
+    /** onActionPlayed 时：行动是否已声明替代去向。 */
+    actionDestinationOverride?: 'hand';
     /** queued trigger 所属 frame 身份；用于排序/诊断/后续上下文对齐 */
     frameId?: string;
     /** queued trigger 源事件身份；用于运行时上下文恢复 */
@@ -145,6 +150,8 @@ export type BaseAbilityRegistrationOptions = {
     effectContract?: import('./types').SmashUpReactionResourceFootprint;
     /** 显式 program-style footprint；用于无法通过 runtime artifacts 还原的只读依赖。 */
     deriveFootprint?: (ctx: BaseAbilityContext) => import('./types').SmashUpReactionResourceFootprint | undefined;
+    /** onActionPlayed 的触发作用域；默认只检查行动目标基地。 */
+    onActionPlayedScope?: 'targetBase' | 'allBases';
 };
 
 export type ActiveBaseAbilityRegistrationOptions = {
@@ -380,7 +387,7 @@ function getPlayerIdsFromCurrentPlayersLeft(state: SmashUpCore): PlayerId[] {
 type BaseAbilityEntry = {
     executor: BaseAbilityExecutor;
     options: Required<Pick<BaseAbilityRegistrationOptions, 'mandatory'>>
-        & Pick<BaseAbilityRegistrationOptions, 'canTrigger' | 'ownerPlayerId' | 'effectContract' | 'deriveFootprint'>;
+        & Pick<BaseAbilityRegistrationOptions, 'canTrigger' | 'ownerPlayerId' | 'effectContract' | 'deriveFootprint' | 'onActionPlayedScope'>;
 };
 type ActiveBaseAbilityEntry = {
     executor: BaseAbilityExecutor;
@@ -419,7 +426,8 @@ export function registerBaseAbility(
                 ...(options.ownerPlayerId ? { ownerPlayerId: options.ownerPlayerId } : {}),
                 ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}),
                 ...(options.deriveFootprint ? { deriveFootprint: options.deriveFootprint } : {}),
-                ...(options.effectContract ? { effectContract: options.effectContract } : {}) } });
+                ...(options.effectContract ? { effectContract: options.effectContract } : {}),
+                ...(options.onActionPlayedScope ? { onActionPlayedScope: options.onActionPlayedScope } : {}) } });
     // Make this base ability runnable by the global reaction queue.
     registerBaseAbilityAsQueuedTrigger(baseDefId, timing);
 }
@@ -461,6 +469,32 @@ export function triggerActiveBaseAbility(
     return entry.executor(ctx);
 }
 
+export function getActiveBaseAbilitySources(state: SmashUpCore, baseIndex: number): string[] {
+    return getEffectiveBaseAbilitySourceIds(state, baseIndex)
+        .filter(sourceDefId => activeBaseAbilityRegistry.has(sourceDefId));
+}
+
+export function triggerActiveBaseAbilities(ctx: BaseAbilityContext): BaseAbilityResult {
+    if (isBaseAbilitySuppressed(ctx.state, ctx.baseIndex)) return { events: [] };
+    const events: SmashUpEvent[] = [];
+    let matchState = ctx.matchState;
+    for (const sourceDefId of getActiveBaseAbilitySources(ctx.state, ctx.baseIndex)) {
+        const entry = activeBaseAbilityRegistry.get(sourceDefId);
+        if (!entry) continue;
+        const result = entry.executor({
+            ...ctx,
+            baseDefId: sourceDefId,
+            matchState,
+        });
+        events.push(...result.events);
+        if (result.matchState) matchState = result.matchState;
+    }
+    return {
+        events,
+        ...(matchState ? { matchState } : {}),
+    };
+}
+
 /** 触发所有基地在指定时机的能力 */
 export function triggerAllBaseAbilities(
     timing: BaseTriggerTiming,
@@ -491,9 +525,15 @@ export function triggerAllBaseAbilities(
             minionDefId: minionContext?.minionDefId,
             minionPower: minionContext?.minionPower,
             now };
-        const result = triggerBaseAbility(base.defId, timing, ctx);
-        events.push(...result.events);
-        if (result.matchState) ms = result.matchState;
+        for (const sourceDefId of getEffectiveBaseAbilitySourceIds(state, i)) {
+            const result = triggerBaseAbility(sourceDefId, timing, {
+                ...ctx,
+                baseDefId: sourceDefId,
+                matchState: ms,
+            });
+            events.push(...result.events);
+            if (result.matchState) ms = result.matchState;
+        }
     }
     return { events, matchState: ms };
 }

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fate/Domination 牌桌沉浸式设计稿 v3</title>
+  <style>
+    :root {
+      --void: #11100f;
+      --floor: #4c4034;
+      --floor-dark: #2b2521;
+      --wood: #241d19;
+      --wood-soft: #3a2e26;
+      --ink: #151a1d;
+      --ink-soft: #20282b;
+      --paper: #f1ece3;
+      --muted: #b5aca0;
+      --gold: #e9b949;
+      --gold-bright: #ffe4a0;
+      --cyan: #73d8e9;
+      --red: #bd6257;
+      --green: #9acb6e;
+      --shadow: rgba(0,0,0,.62);
+      --veil: rgba(11,14,16,.74);
+      --line: rgba(241,236,227,.2);
+      --line-gold: rgba(233,185,73,.68);
+      font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+      color: var(--paper);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-width: 320px; min-height: 100%; background: var(--void); }
+    body { overflow: hidden; }
+    button { font: inherit; color: inherit; }
+
+    .stage { position: relative; width: 100vw; height: 100vh; min-height: 760px; overflow: hidden; background: var(--floor); }
+    .stage::before { content: ""; position: absolute; inset: 0; opacity: .42; background: repeating-linear-gradient(45deg, rgba(255,255,255,.035) 0 2px, transparent 2px 12px), repeating-linear-gradient(-45deg, rgba(0,0,0,.08) 0 2px, transparent 2px 16px); }
+    .stage::after { content: ""; position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 160px rgba(0,0,0,.58); }
+    .top-hud, .scene, .hand-dock, .bottom-hud { position: absolute; z-index: 2; }
+
+    .top-hud { top: 0; right: 0; left: 0; height: 86px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; padding: 16px 32px; background: rgba(13,13,13,.76); border-bottom: 1px solid rgba(233,185,73,.22); }
+    .match-title { align-self: center; border-left: 3px solid var(--gold); padding-left: 12px; }
+    .match-title span { display: block; color: var(--gold-bright); font-size: 11px; letter-spacing: .13em; }
+    .match-title strong { display: block; margin-top: 4px; font-size: 18px; }
+    .match-title small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .top-deck { position: relative; width: 270px; height: 84px; margin-top: 2px; }
+    .top-deck img { position: absolute; top: 0; width: 57px; height: 79px; object-fit: cover; border: 1px solid rgba(255,255,255,.44); box-shadow: 0 6px 14px var(--shadow); }
+    .top-deck img:nth-child(1) { left: 16px; transform: rotate(-14deg); }
+    .top-deck img:nth-child(2) { left: 57px; transform: rotate(-7deg); }
+    .top-deck img:nth-child(3) { left: 102px; top: -3px; }
+    .top-deck img:nth-child(4) { left: 147px; transform: rotate(7deg); }
+    .top-deck img:nth-child(5) { left: 188px; transform: rotate(14deg); }
+    .top-actions { justify-self: end; display: flex; gap: 21px; align-items: center; }
+    .top-action { display: grid; gap: 5px; justify-items: center; cursor: pointer; border: 0; background: transparent; color: var(--paper); }
+    .top-action .glyph { display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid rgba(241,236,227,.65); color: var(--gold-bright); font-size: 17px; }
+    .top-action span:last-child { font-size: 10px; letter-spacing: .08em; }
+
+    .scene { top: 102px; right: 0; bottom: 190px; left: 0; }
+    .board { position: absolute; top: 16px; left: 50%; width: min(910px, 58vw); aspect-ratio: 1927 / 1179; transform: translateX(-50%) perspective(1500px) rotateX(2deg); border: 14px solid var(--wood); outline: 1px solid var(--gold); box-shadow: 0 24px 50px var(--shadow), 0 0 0 8px rgba(36,29,25,.62); }
+    .board > img { display: block; width: 100%; height: 100%; object-fit: cover; filter: saturate(.78) contrast(1.08) brightness(.72); }
+    .board::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(8,12,15,.08), rgba(8,12,15,.22)); }
+    .board-label { position: absolute; top: 14px; left: 14px; z-index: 1; padding: 8px 12px; background: var(--veil); border-left: 3px solid var(--gold); }
+    .board-label strong { display: block; font-size: 17px; color: var(--gold-bright); }
+    .board-label span { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .board-status { position: absolute; top: 14px; right: 14px; z-index: 1; display: flex; gap: 7px; }
+    .board-status span { padding: 7px 9px; border: 1px solid rgba(115,216,233,.48); background: var(--veil); color: var(--cyan); font-size: 10px; }
+    .zone { position: absolute; z-index: 1; min-width: 116px; padding: 8px 10px; cursor: pointer; border: 1px solid rgba(241,236,227,.3); background: rgba(16,22,25,.83); box-shadow: 0 6px 15px rgba(0,0,0,.32); text-align: left; }
+    .zone:hover, .zone.is-active { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(233,185,73,.2), 0 7px 18px rgba(0,0,0,.38); }
+    .zone b { display: block; color: var(--paper); font-size: 12px; }
+    .zone small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .zone em { margin-right: 4px; color: var(--gold); font-style: normal; }
+    .zone-a { left: 12%; bottom: 25%; }
+    .zone-b { left: 37%; top: 48%; }
+    .zone-c { right: 23%; top: 43%; }
+    .zone-d { right: 8%; top: 17%; }
+    .map-note { position: absolute; bottom: 9px; left: 50%; z-index: 1; transform: translateX(-50%); width: max-content; padding: 7px 12px; background: rgba(16,22,25,.78); color: var(--paper); font-size: 10px; }
+    .map-note b { color: var(--gold-bright); }
+
+    .seat { position: absolute; z-index: 1; width: 250px; }
+    .seat-left { top: 30%; left: 20px; }
+    .seat-right { top: 30%; right: 20px; }
+    .seat-row { display: grid; grid-template-columns: 62px 1fr 28px; min-height: 62px; align-items: center; gap: 10px; margin: 0 0 18px; padding: 6px 12px 6px 6px; border: 1px solid rgba(241,236,227,.28); background: linear-gradient(90deg, rgba(16,20,22,.9), rgba(16,20,22,.58)); box-shadow: 0 8px 18px rgba(0,0,0,.34); }
+    .seat-right .seat-row { grid-template-columns: 28px 1fr 62px; background: linear-gradient(270deg, rgba(16,20,22,.9), rgba(16,20,22,.58)); }
+    .seat-avatar { width: 56px; height: 56px; object-fit: cover; border: 2px solid var(--gold); border-radius: 50%; }
+    .seat-arrow { display: grid; place-items: center; color: var(--muted); font-size: 23px; }
+    .seat-copy b { display: block; color: var(--paper); font-size: 15px; }
+    .seat-copy small { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .seat-right .seat-avatar { grid-column: 3; }
+    .seat-right .seat-copy { grid-column: 2; grid-row: 1; text-align: right; }
+    .seat-right .seat-arrow { grid-column: 1; grid-row: 1; }
+
+    .hand-dock { right: 50%; bottom: -39px; z-index: 4; width: min(900px, 58vw); height: 280px; transform: translateX(50%); pointer-events: none; }
+    .hand-dock::before { content: ""; position: absolute; right: -40px; bottom: 12px; left: -40px; height: 210px; border: 1px solid rgba(241,236,227,.5); background: linear-gradient(rgba(25,25,22,.72), rgba(25,25,22,.92)); box-shadow: 0 -9px 26px rgba(0,0,0,.34); }
+    .hand-title { position: absolute; top: 3px; left: -27px; z-index: 2; pointer-events: auto; color: var(--paper); font-size: 12px; }
+    .hand-title b { color: var(--gold-bright); }
+    .hand-card { position: absolute; bottom: 1px; width: 164px; height: 234px; padding: 0; cursor: pointer; pointer-events: auto; border: 4px solid var(--paper); background: var(--ink); box-shadow: 0 14px 25px rgba(0,0,0,.58); transition: transform .16s ease, border-color .16s ease; }
+    .hand-card:hover, .hand-card.is-selected { border-color: var(--gold-bright); transform: translateY(-26px) rotate(0deg) !important; z-index: 9 !important; }
+    .hand-card img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .hand-card .card-top { position: absolute; top: 5px; right: 7px; left: 7px; display: flex; justify-content: space-between; color: var(--paper); font-size: 11px; text-shadow: 0 1px 4px #000; }
+    .hand-card .card-top b { color: var(--gold-bright); }
+    .hand-card .inspect { position: absolute; right: -12px; top: -13px; z-index: 2; width: 26px; height: 26px; cursor: pointer; border: 1px solid var(--cyan); border-radius: 50%; background: var(--ink); color: var(--cyan); }
+    .card-1 { left: 5%; z-index: 1; transform: rotate(-18deg); }
+    .card-2 { left: 21%; z-index: 3; transform: rotate(-9deg); }
+    .card-3 { left: 38%; z-index: 5; transform: rotate(-1deg); }
+    .card-4 { left: 55%; z-index: 4; transform: rotate(8deg); }
+    .card-5 { left: 72%; z-index: 2; transform: rotate(17deg); }
+
+    .bottom-hud { right: 0; bottom: 0; left: 0; z-index: 5; height: 172px; pointer-events: none; }
+    .you-panel { position: absolute; bottom: 21px; left: 27px; display: flex; align-items: center; gap: 12px; width: 290px; min-height: 74px; padding: 8px 14px 8px 8px; pointer-events: auto; border: 1px solid var(--line-gold); background: linear-gradient(90deg, rgba(11,13,14,.94), rgba(11,13,14,.46)); }
+    .you-avatar { width: 54px; height: 54px; object-fit: cover; border: 2px solid var(--gold); border-radius: 50%; }
+    .you-copy b { display: block; color: var(--gold-bright); font-size: 15px; }
+    .you-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .resources { display: flex; gap: 8px; margin-top: 7px; }
+    .resources span { color: var(--paper); font-size: 10px; }
+    .resources b { color: var(--gold); }
+    .phase-control { position: absolute; right: 30px; bottom: 25px; display: flex; align-items: center; gap: 14px; pointer-events: auto; }
+    .phase-disc { display: grid; place-items: center; width: 86px; height: 86px; border: 3px solid var(--paper); border-radius: 50%; background: var(--red); box-shadow: 0 8px 17px rgba(0,0,0,.45); text-align: center; }
+    .phase-disc b { display: block; font-size: 16px; }
+    .phase-disc small { display: block; margin-top: 2px; font-size: 10px; }
+    .next-phase { min-width: 220px; cursor: pointer; padding: 14px 17px; border: 1px solid var(--paper); background: rgba(12,14,15,.86); color: var(--paper); text-align: left; }
+    .next-phase:hover { border-color: var(--gold-bright); color: var(--gold-bright); }
+    .next-phase span { display: block; color: var(--muted); font-size: 10px; }
+    .next-phase b { display: flex; justify-content: space-between; margin-top: 5px; font-size: 18px; }
+    .next-phase b i { color: var(--gold); font-style: normal; font-size: 24px; line-height: 18px; }
+
+    .overlay { position: fixed; inset: 0; z-index: 20; display: none; place-items: center; padding: 24px; background: rgba(7,8,8,.78); }
+    .overlay.is-open { display: grid; }
+    .inspect-panel { position: relative; display: grid; grid-template-columns: 230px 1fr; gap: 20px; width: min(580px, 100%); padding: 22px; border: 1px solid var(--gold); background: var(--ink); box-shadow: 0 26px 80px rgba(0,0,0,.72); }
+    .inspect-panel img { width: 230px; height: 328px; object-fit: cover; }
+    .inspect-panel h2 { margin: 11px 0 0; color: var(--gold-bright); font-size: 25px; }
+    .inspect-panel p { margin-top: 16px; color: var(--muted); font-size: 13px; line-height: 1.8; }
+    .close { position: absolute; top: 8px; right: 8px; width: 29px; height: 29px; cursor: pointer; border: 1px solid var(--line); background: var(--ink-soft); font-size: 20px; }
+    .eyebrow { color: var(--cyan); font-size: 10px; letter-spacing: .1em; }
+    .toast { position: fixed; top: 98px; left: 50%; z-index: 10; display: none; transform: translateX(-50%); padding: 10px 14px; border: 1px solid var(--gold); background: var(--veil); color: var(--gold-bright); font-size: 12px; }
+    .toast.is-open { display: block; }
+
+    @media (max-width: 1250px) {
+      .seat { width: 205px; }
+      .seat-left { left: 8px; }
+      .seat-right { right: 8px; }
+      .board { width: min(820px, 62vw); }
+      .hand-dock { width: min(820px, 68vw); }
+    }
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .stage { min-height: 980px; height: auto; overflow: hidden; }
+      .top-hud { position: relative; height: 90px; grid-template-columns: 1fr auto; padding: 12px 14px; }
+      .top-deck { display: none; }
+      .top-actions { gap: 10px; }
+      .top-action span:last-child { display: none; }
+      .scene { position: relative; top: auto; bottom: auto; height: 570px; }
+      .board { top: 40px; width: 94vw; border-width: 8px; }
+      .seat { display: none; }
+      .zone { min-width: 96px; padding: 7px; }
+      .zone-a { left: 9%; bottom: 18%; }
+      .zone-b { left: 34%; top: 48%; }
+      .zone-c { right: 20%; top: 42%; }
+      .zone-d { right: 5%; top: 20%; }
+      .map-note { bottom: 6px; max-width: 86vw; text-align: center; }
+      .hand-dock { position: relative; right: auto; bottom: auto; width: 100%; height: 300px; transform: none; }
+      .hand-dock::before { right: 8px; left: 8px; height: 235px; }
+      .hand-title { top: 8px; left: 19px; }
+      .hand-card { width: 122px; height: 184px; }
+      .card-1 { left: 6%; }
+      .card-2 { left: 20%; }
+      .card-3 { left: 35%; }
+      .card-4 { left: 50%; }
+      .card-5 { left: 65%; }
+      .bottom-hud { position: relative; height: 165px; }
+      .you-panel { bottom: 12px; left: 12px; width: 210px; }
+      .phase-control { right: 12px; bottom: 12px; gap: 7px; }
+      .phase-disc { width: 62px; height: 62px; }
+      .next-phase { min-width: 135px; padding: 10px; }
+      .next-phase b { font-size: 14px; }
+    }
+    @media (max-width: 520px) {
+      .match-title strong { font-size: 15px; }
+      .match-title small { font-size: 9px; }
+      .top-action .glyph { width: 26px; height: 26px; }
+      .scene { height: 500px; }
+      .board { top: 34px; }
+      .board-label { top: 8px; left: 8px; padding: 6px 8px; }
+      .board-label strong { font-size: 13px; }
+      .board-status { top: 8px; right: 8px; }
+      .board-status span { padding: 5px; font-size: 8px; }
+      .zone { min-width: 75px; padding: 5px; }
+      .zone b { font-size: 9px; }
+      .zone small { font-size: 8px; }
+      .hand-card { width: 94px; height: 142px; border-width: 3px; }
+      .hand-dock { height: 245px; }
+      .hand-dock::before { height: 190px; }
+      .you-panel { width: 178px; gap: 7px; padding-right: 6px; }
+      .you-avatar { width: 42px; height: 42px; }
+      .you-copy b { font-size: 12px; }
+      .resources { gap: 4px; }
+      .resources span { font-size: 8px; }
+      .phase-disc { display: none; }
+      .next-phase { min-width: 132px; }
+      .inspect-panel { grid-template-columns: 110px 1fr; gap: 12px; padding: 15px; }
+      .inspect-panel img { width: 110px; height: 157px; }
+      .inspect-panel h2 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="top-hud">
+      <div class="match-title"><span>FATE / DOMINATION</span><strong>冬木市圣杯战争</strong><small>Round 04 · 行动阶段 · 你的回合</small></div>
+      <div class="top-deck" aria-label="事件牌库"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"><img src="assets/event-back.webp" alt="事件牌背"></div>
+      <nav class="top-actions" aria-label="桌面工具"><button class="top-action" data-toast="供应区已打开"><span class="glyph">▣</span><span>SUPPLY</span></button><button class="top-action" data-toast="行动记录已打开"><span class="glyph">▤</span><span>LOG</span></button><button class="top-action" data-toast="菜单已打开"><span class="glyph">⚙</span><span>MENU</span></button></nav>
+    </header>
+
+    <section class="scene" data-od-id="immersive-table">
+      <div class="seat seat-left" data-od-id="opponent-seats"><div class="seat-row"><img class="seat-avatar" src="assets/master-slot-b.webp" alt="间桐慎二"><div class="seat-copy"><b>间桐慎二</b><small>深山町 · 05 VP</small></div><span class="seat-arrow">›</span></div><div class="seat-row"><img class="seat-avatar" src="assets/master-emiya.webp" alt="言峰绮礼"><div class="seat-copy"><b>言峰绮礼</b><small>新都中心 · 04 VP</small></div><span class="seat-arrow">›</span></div></div>
+      <div class="seat seat-right"><div class="seat-row"><span class="seat-arrow">‹</span><div class="seat-copy"><b>Enemy</b><small>未部署 · 03 VP</small></div><img class="seat-avatar" src="assets/master-slot-b.webp" alt="Enemy"></div><div class="seat-row"><span class="seat-arrow">‹</span><div class="seat-copy"><b>Rival</b><small>侦察线 · 02 VP</small></div><img class="seat-avatar" src="assets/master-emiya.webp" alt="Rival"></div></div>
+      <section class="board" data-od-id="fuyuki-board" aria-label="冬木市主棋盘"><img src="assets/fuyuki-city.webp" alt="冬木市地图"><div class="board-label"><strong>冬木市 · 战场</strong><span>部署 / 移动 / 区域争夺</span></div><div class="board-status"><span>行动点 02</span><span>魔力 04</span></div><button class="zone zone-a is-active" data-location="远坂工房"><b><em>A</em>远坂工房</b><small>卫宫士郎 · 地形 +2</small></button><button class="zone zone-b" data-location="深山町"><b><em>B</em>深山町</b><small>事件区 · 移动 2</small></button><button class="zone zone-c" data-location="新都中心"><b><em>C</em>新都中心</b><small>容量 2 · 移动 2</small></button><button class="zone zone-d" data-location="侦察线"><b><em>D</em>侦察线</b><small>伏击 +1 · 移动 3</small></button><div class="map-note"><b>当前部署：</b>卫宫士郎 · Saber 已占据远坂工房</div></section>
+    </section>
+
+    <section class="hand-dock" data-od-id="fan-hand"><div class="hand-title">我的手牌 <b>02 / 05 已编成</b></div><div class="hand-card card-1" data-hand-card="skill-moment" role="button" tabindex="0"><img src="assets/skill-moment.webp" alt="技能：瞬间"><span class="card-top"><b>10</b><span>02 M</span></span><button class="inspect" data-card="skill-moment" aria-label="检查技能瞬间">+</button></div><div class="hand-card card-2" data-hand-card="attack-magic-low" role="button" tabindex="0"><img src="assets/attack-magic-low.webp" alt="魔术：低阶"><span class="card-top"><b>12</b><span>02 M</span></span><button class="inspect" data-card="attack-magic-low" aria-label="检查魔术低阶">+</button></div><div class="hand-card card-3 is-selected" data-hand-card="attack-strength-high" role="button" tabindex="0"><img src="assets/attack-strength-high.webp" alt="力量：高阶"><span class="card-top"><b>18</b><span>03 M</span></span><button class="inspect" data-card="attack-strength-high" aria-label="检查力量高阶">+</button></div><div class="hand-card card-4" data-hand-card="skill-luck" role="button" tabindex="0"><img src="assets/skill-luck.webp" alt="技能：幸运"><span class="card-top"><b>08</b><span>01 M</span></span><button class="inspect" data-card="skill-luck" aria-label="检查技能幸运">+</button></div><div class="hand-card card-5" data-hand-card="attack-strength-high" role="button" tabindex="0"><img src="assets/attack-strength-high.webp" alt="力量：高阶"><span class="card-top"><b>18</b><span>03 M</span></span><button class="inspect" data-card="attack-strength-high" aria-label="检查力量高阶">+</button></div></section>
+
+    <footer class="bottom-hud"><section class="you-panel" data-od-id="player-status"><img class="you-avatar" src="assets/master-emiya.webp" alt="卫宫士郎"><div class="you-copy"><b>YOU · 卫宫士郎</b><small>Saber · 远坂工房</small><div class="resources"><span>魔力 <b>04</b></span><span>VP <b>06</b></span><span>咒 <b>02</b></span></div></div></section><div class="phase-control" data-od-id="phase-control"><div class="phase-disc"><div><b>行动</b><small>PHASE 04</small></div></div><button class="next-phase" id="next-phase"><span>当前阶段 · 已编成 02 张攻击牌</span><b><span>下一阶段</span><i>↗</i></b></button></div></footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="卡牌检查"><div class="inspect-panel"><button class="close" id="close" aria-label="关闭">×</button><img id="inspect-image" src="assets/attack-strength-high.webp" alt="力量：高阶"><div><span class="eyebrow">CARD INSPECTION</span><h2 id="inspect-title">力量：高阶</h2><p id="inspect-copy">基础威力 18，消耗 3 魔力。与另一张攻击牌组合后确认本轮战斗。</p><span class="eyebrow">正式素材 · 已核验</span></div></div></div>
+  <script>
+    const cards = { 'skill-moment': ['assets/skill-moment.webp', '技能：瞬间', '移动后保留一次行动机会。'], 'attack-magic-low': ['assets/attack-magic-low.webp', '魔术：低阶', '基础威力 12，消耗 2 魔力。'], 'attack-strength-high': ['assets/attack-strength-high.webp', '力量：高阶', '基础威力 18，消耗 3 魔力。'], 'skill-luck': ['assets/skill-luck.webp', '技能：幸运', '战斗结算时可重掷一次判定。'] };
+    const overlay = document.querySelector('#overlay');
+    const openCard = id => { const data = cards[id]; if (!data) return; document.querySelector('#inspect-image').src = data[0]; document.querySelector('#inspect-image').alt = data[1]; document.querySelector('#inspect-title').textContent = data[1]; document.querySelector('#inspect-copy').textContent = data[2]; overlay.classList.add('is-open'); };
+    document.querySelectorAll('[data-card]').forEach(button => button.addEventListener('click', event => { event.stopPropagation(); openCard(button.dataset.card); }));
+    document.querySelectorAll('.hand-card').forEach(button => button.addEventListener('click', () => button.classList.toggle('is-selected')));
+    document.querySelectorAll('.zone').forEach(button => button.addEventListener('click', () => { document.querySelectorAll('.zone').forEach(item => item.classList.remove('is-active')); button.classList.add('is-active'); showToast(`已选中 ${button.dataset.location}`); }));
+    document.querySelectorAll('[data-toast]').forEach(button => button.addEventListener('click', () => showToast(button.dataset.toast)));
+    document.querySelector('#next-phase').addEventListener('click', () => { document.querySelector('#next-phase b span').textContent = '等待对手响应'; showToast('攻击已确认 · 等待对手响应'); });
+    document.querySelector('#close').addEventListener('click', () => overlay.classList.remove('is-open'));
+    overlay.addEventListener('click', event => { if (event.target === overlay) overlay.classList.remove('is-open'); });
+    let toastTimer;
+    function showToast(message) { const toast = document.querySelector('#toast'); toast.textContent = message; toast.classList.add('is-open'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('is-open'), 1800); }
+  </script>
+</body>
+</html>

@@ -194,6 +194,7 @@ export const AttackShowcaseOverlay: React.FC<AttackShowcaseOverlayProps> = ({
 
                         {/* 继续按钮 */}
                         <GameButton
+                            data-tutorial-id="defense-start-button"
                             variant="primary"
                             size="md"
                             onClick={onDismiss}
