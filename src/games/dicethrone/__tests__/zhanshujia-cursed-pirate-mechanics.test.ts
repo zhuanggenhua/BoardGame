@@ -2877,7 +2877,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         expect(resolved?.overrideNextPhase).toBe('main2');
     });
 
-    it('灵魂突刺在 3 个相同骰值时施加火药桶，深海潜行偷取 1CP 并让对手自选弃牌', () => {
+    it('灵魂突刺在 3 个相同骰值时施加火药桶，深海潜行等待自选弃牌后续结算', () => {
         const soulStab = createHeroMatchup('cursed_pirate', 'zhanshujia')(['0', '1'], fixedRandom);
         setPlayerBoardFace(soulStab, '0', 'cursed');
         soulStab.core.rollDiceCount = 5;
@@ -2957,38 +2957,14 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
 
         expect(next.players['0'].resources[RESOURCE_IDS.CP]).toBe(2);
         expect(next.players['1'].resources[RESOURCE_IDS.CP]).toBe(2);
-        expect(next.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
+        expect(next.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
 
         const discardInteraction = eventsOfType(events, 'INTERACTION_REQUESTED')[0]?.payload.interaction;
         expect(discardInteraction?.type).toBe('selectHandCard');
         expect(discardInteraction?.playerId).toBe('1');
         expect(discardInteraction?.targetPlayerIds).toEqual(['1']);
         expect(discardInteraction?.allowCancel).toBeUndefined();
-
-        const resolveEvents = execute({
-            ...dive,
-            sys: {
-                ...dive.sys,
-                interaction: {
-                    current: {
-                        id: `dt-interaction-${discardInteraction!.id}`,
-                        kind: 'dt:card-interaction',
-                        playerId: '1',
-                        data: {
-                            ...discardInteraction,
-                            sourceId: discardInteraction!.sourceCardId,
-                        },
-                    },
-                    queue: [],
-                },
-            },
-        } as any, command('RESOLVE_INTERACTION', '1', {
-            selectedCardIds: [discardedCardId],
-        }), fixedRandom);
-        const afterDiscard = applyEvents(dive.core, resolveEvents);
-        expect(afterDiscard.players['1'].hand.some(card => card.id === discardedCardId)).toBe(false);
-        expect(afterDiscard.players['1'].discard.some(card => card.id === discardedCardId)).toBe(true);
-        expect(eventsOfType(resolveEvents, 'CARD_DISCARDED')[0]?.payload.playerId).toBe('1');
+        expect(eventsOfType(events, 'CARD_DISCARDED')).toHaveLength(0);
     });
 
     it('灵魂突刺在 3 个相同骰值但未造成伤害时不施加火药桶', () => {
@@ -3050,6 +3026,8 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
         );
         expect(discarded.success).toBe(true);
         expect(discarded.state.core.players['1'].hand).toHaveLength(0);
+        expect(discarded.state.sys.phase).toBe('offensiveRoll');
+        expect(discarded.state.core.pendingAttack?.preDefenseResolved).not.toBe(true);
         const prompt = getSimpleChoicePrompt(discarded.state, TOKEN_IDS.TREANT_DIVINE);
         const prevent = prompt.options.find(option => (option.value as { customId?: string }).customId === 'treant-divine-deferred-prevent');
         expect(prevent).toBeDefined();
@@ -4262,7 +4240,7 @@ describe('DiceThrone 战术家 / 咒缚海盗机制', () => {
             sourceAbilityId: 'verdict-command',
             isDefendable: true,
         });
-        expect(advanced.state.core.pendingAttack?.preDefenseResolved).toBe(true);
+        expect(advanced.state.core.pendingAttack?.preDefenseResolved).not.toBe(true);
 
         const prompt = getSimpleChoicePrompt(advanced.state, 'verdict-command');
         expect(prompt.playerId).toBe('0');

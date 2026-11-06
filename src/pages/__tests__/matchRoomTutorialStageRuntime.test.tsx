@@ -15,6 +15,7 @@ let latestModalEntry: null | {
 } = null;
 let latestLocalProviderProps: null | {
     seed: string;
+    randomSeed?: string;
     numPlayers: number;
     setupData?: Record<string, unknown>;
     persistSession?: boolean;
@@ -128,6 +129,7 @@ vi.mock('../../engine/transport/react', () => ({
     }),
     LocalGameProvider: (props: {
         seed: string;
+    randomSeed?: string;
         numPlayers: number;
         setupData?: Record<string, unknown>;
         persistSession?: boolean;
@@ -147,6 +149,7 @@ vi.mock('../../engine/transport/react', () => ({
         }, [mountedSeed]);
         latestLocalProviderProps = {
             seed: props.seed,
+            randomSeed: props.randomSeed,
             numPlayers: props.numPlayers,
             setupData: props.setupData,
             persistSession: props.persistSession,
@@ -381,8 +384,8 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(runtime.gameId ?? '', seed))).toBeNull();
     });
 
-    it('manifest revision 变化后不会让真实教程页挂载旧章节 seed', async () => {
-        const revisedManifest: TutorialManifest = { ...manifest, revision: 2 };
+    it('manifest revision 变化时隔离旧进度键，但固定教学场景随机种子不变', async () => {
+        const revisedManifest: TutorialManifest = { ...manifest, revision: 2, randomSeed:'authored-scenario' };
         const revisedRuntime: MatchRoomTutorialBoardRuntimeModel = {
             ...runtime,
             tutorialManifest: revisedManifest,
@@ -408,6 +411,7 @@ describe('MatchRoomTutorialBoardRuntime 教程进度恢复', () => {
         expect(openModal).not.toHaveBeenCalled();
         await waitFor(() => expect(latestLocalProviderProps?.seed).toBe(revisedSeed));
         expect(latestLocalProviderProps?.seed).not.toBe(legacySeed);
+        expect(latestLocalProviderProps?.randomSeed).toBe('authored-scenario');
         expect(window.localStorage.getItem(buildLocalMatchSnapshotKey(revisedRuntime.gameId ?? '', legacySeed))).not.toBeNull();
     });
 

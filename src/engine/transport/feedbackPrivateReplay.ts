@@ -11,8 +11,24 @@ type PrivateReplayMatch = {
     getRandomCursor?: () => number;
 };
 
+export type PrivateFeedbackReplayTrigger = {
+    source: 'authoritative-command-failure' | 'authoritative-command' | 'online-ai-watchdog';
+    commandType?: string;
+    playerId?: string;
+    payload?: unknown;
+    stateIdBefore?: number;
+    stateIdAfter?: number;
+    randomCursorBefore?: number;
+    randomCursorAfter?: number;
+    reason?: string;
+    progressMarker?: string;
+};
+
 /** 仅供服务端诊断；压缩后的内容必须保存在管理员权限字段中。 */
-export function capturePrivateFeedbackReplay(match: PrivateReplayMatch): { data?: string; error?: string } {
+export function capturePrivateFeedbackReplay(
+    match: PrivateReplayMatch,
+    trigger?: PrivateFeedbackReplayTrigger,
+): { data?: string; error?: string } {
     try {
         const archive = JSON.stringify({
             schemaVersion: 1,
@@ -22,6 +38,7 @@ export function capturePrivateFeedbackReplay(match: PrivateReplayMatch): { data?
             randomSeed: match.randomSeed,
             randomCursor: match.getRandomCursor?.(),
             state: match.state,
+            ...(trigger ? { trigger } : {}),
         });
         const data = gzipSync(archive).toString('base64');
         if (data.length > 1_000_000) return { error: 'private_replay_capture_failed:compressed_size_exceeds_limit' };

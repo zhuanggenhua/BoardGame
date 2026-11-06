@@ -8,13 +8,26 @@ describe('权威故障现场采集', () => {
             matchID: 'm1', gameId: 'dicethrone', stateID: 21, randomSeed: 'secret-seed', getRandomCursor: () => 7,
             state: { core: { secretHand: ['card-1'] }, sys: { phase: 'offensiveRoll', undo: { snapshots: [{ core: { health: 42 } }], snapshotCursors: [4] } } },
         } as any;
-        const result = capturePrivateFeedbackReplay(match);
+        const trigger = {
+            source: 'authoritative-command-failure' as const,
+            commandType: 'PLAY_CARD',
+            playerId: '0',
+            payload: { cardId: 'card-1' },
+            stateIdBefore: 21,
+            stateIdAfter: 21,
+            randomCursorBefore: 7,
+            randomCursorAfter: 7,
+            reason: 'invalid-card-target',
+            progressMarker: 'phase:offensiveRoll',
+        };
+        const result = capturePrivateFeedbackReplay(match, trigger);
         expect(result.error).toBeUndefined();
         match.state.core.secretHand.push('later');
         const archive = JSON.parse(gunzipSync(Buffer.from(result.data!, 'base64')).toString('utf8'));
         expect(archive).toMatchObject({
             matchId: 'm1', gameId: 'dicethrone', stateId: 21, randomSeed: 'secret-seed', randomCursor: 7,
             state: { core: { secretHand: ['card-1'] }, sys: { undo: { snapshotCursors: [4] } } },
+            trigger,
         });
         expect(archive.state.sys.undo.snapshots[0].core.health).toBe(42);
     });

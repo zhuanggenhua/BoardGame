@@ -635,6 +635,7 @@ export function execute(
             if (currentInteraction?.kind !== 'dt:defender-choice') {
                 break;
             }
+            const currentInteractionId = (currentInteraction as { id?: unknown }).id;
             const pendingChoice = currentInteraction.data as {
                 attackerId?: PlayerId;
                 chooserPlayerId?: PlayerId;
@@ -652,6 +653,7 @@ export function execute(
             const event: DefenderSelectionResolvedEvent = {
                 type: 'DEFENDER_SELECTION_RESOLVED',
                 payload: {
+                    ...(typeof currentInteractionId === 'string' ? { interactionId: currentInteractionId } : {}),
                     attackerId: pendingChoice.attackerId,
                     chooserPlayerId: pendingChoice.chooserPlayerId,
                     defenderId: command.payload.defenderId,

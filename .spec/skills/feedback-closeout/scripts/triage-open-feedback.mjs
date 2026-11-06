@@ -3,9 +3,17 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {
+    isProductionFeedbackBaseUrl,
     normalizeBaseUrl,
     updateFeedbackStatusesViaBestAvailableWriter,
 } from './lib/feedback-status-writer.mjs';
+import {
+    MAX_TARGETED_FEEDBACK_IDS,
+    readPrivateFeedbackReplaysViaMongoSsh,
+    summarizeFeedbackDiagnosticPacket,
+    summarizeLegacyFeedbackDiagnostics,
+    summarizePrivateFeedbackReplay,
+} from './lib/private-replay-diagnostic.mjs';
 
 const EMBEDDED_IMG_RE = /!\[[^\]]*\]\((data:image\/[^)]+)\)/g;
 const VALID_STATUSES = new Set(['open', 'in_progress', 'resolved', 'closed']);
@@ -25,6 +33,8 @@ function parseArgs(argv) {
         slots: 4,
         outDir: '',
         markInProgress: false,
+        ids: [],
+        idsSpecified: false,
     };
 
     for (let index = 0; index < argv.length; index += 1) {
@@ -54,6 +64,11 @@ function parseArgs(argv) {
             options.outDir = argv[++index] || '';
             continue;
         }
+        if (arg === '--ids') {
+            options.idsSpecified = true;
+            options.ids = [...new Set((argv[++index] || '').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean))];
+            continue;
+        }
         if (arg === '--mark-in-progress') {
             options.markInProgress = true;
             continue;
@@ -74,6 +89,15 @@ function parseArgs(argv) {
     }
     if (!Number.isFinite(options.slots) || options.slots <= 0) {
         throw new Error('--slots 必须是正整数');
+    }
+    if (options.idsSpecified && options.ids.length === 0) {
+        throw new Error('--ids 必须至少指定一个反馈 ID');
+    }
+    if (options.ids.some((id) => !/^[0-9a-fA-F]{24}$/.test(id))) {
+        throw new Error('--ids 只能包含有效的 Mongo ObjectId');
+    }
+    if (options.ids.length > MAX_TARGETED_FEEDBACK_IDS) {
+        throw new Error(`--ids 最多指定 ${MAX_TARGETED_FEEDBACK_IDS} 个反馈 ID`);
     }
     return options;
 }
@@ -308,6 +332,10 @@ function buildConflictKey(item) {
     return `${deriveGameId(item)}::${deriveModuleKey(item)}`;
 }
 
+function isOnlineAiWatchdogFeedback(item) {
+    return item?.source === 'online-ai-watchdog' && item?.reporterType === 'system';
+}
+
 function makeRunDir(inputDir) {
     if (inputDir) {
         return inputDir;
@@ -321,15 +349,17 @@ function buildPacket(group) {
     const text = extractText(item.content) || '(空)';
     const duplicateIds = group.members.slice(1).map((entry) => entry._id);
     const screenshots = Array.isArray(group.screenshotPaths) ? group.screenshotPaths : [];
-    const actionLog = typeof item.actionLog === 'string' && item.actionLog.trim()
-        ? item.actionLog.trim()
-        : '(未附带)';
-    const stateSnapshot = typeof item.stateSnapshot === 'string' && item.stateSnapshot.trim()
-        ? item.stateSnapshot.trim()
-        : '(未附带)';
-    const stack = typeof item?.errorContext?.stack === 'string' && item.errorContext.stack.trim()
-        ? item.errorContext.stack.trim()
-        : '(未附带)';
+    const compatibilityDiagnostics = summarizeLegacyFeedbackDiagnostics(item);
+    const diagnosticPacket = summarizeFeedbackDiagnosticPacket(item.diagnosticPacket);
+    const privateReplayDiagnostic = item.privateReplayDiagnostic || { status: 'not-checked' };
+    const privateReplayMemberDiagnostics = group.members
+        .filter(isOnlineAiWatchdogFeedback)
+        .map((member) => ({
+            feedbackId: String(member._id),
+            diagnostic: member.privateReplayDiagnostic || { status: 'not-checked' },
+        }));
+    const stack = typeof item?.errorContext?.stack === 'string' ? item.errorContext.stack : '';
+    const safeConflictKey = `conflict:${crypto.createHash('sha256').update(String(group.conflictKey)).digest('hex').slice(0, 16)}`;
 
     return [
         `# 反馈诊断包 ${item._id}`,
@@ -338,7 +368,7 @@ function buildPacket(group) {
         `- primaryId: ${item._id}`,
         `- duplicateIds: ${duplicateIds.length ? duplicateIds.join(', ') : '(无)'}`,
         `- classification: ${group.classification}`,
-        `- conflictKey: ${group.conflictKey}`,
+        `- conflictKey: ${safeConflictKey}`,
         `- gameId: ${deriveGameId(item)}`,
         `- type: ${item.type || '-'}`,
         `- severity: ${item.severity || '-'}`,
@@ -357,24 +387,45 @@ function buildPacket(group) {
             : []),
         '',
         '## 错误上下文',
-        `- source: ${item?.errorContext?.source || '-'}`,
-        `- name: ${item?.errorContext?.name || '-'}`,
-        `- message: ${item?.errorContext?.message || '-'}`,
-        `- route: ${item?.clientContext?.route || '-'}`,
+        '仅保留白名单错误类别和路由类型；异常文本及具体路由不写入诊断包。',
+        '```json',
+        JSON.stringify(compatibilityDiagnostics.errorContext, null, 2),
+        '```',
+        `- routeClass: ${compatibilityDiagnostics.routeClass || '(未附带)'}`,
         '',
-        '## 堆栈',
-        '```text',
-        stack,
+        '## 堆栈摘要',
+        `- hasStack: ${Boolean(stack.trim())}`,
+        `- stackLineCount: ${stack.trim() ? stack.split(/\r?\n/).filter(Boolean).length : 0}`,
+        '',
+        '## 结构化现场包摘要',
+        '```json',
+        diagnosticPacket ? JSON.stringify(diagnosticPacket, null, 2) : '(未附带)',
         '```',
         '',
+        '## 管理员私密回放摘要',
+        '仅输出阶段、关联 ID、交互和有限游戏状态摘要；不复制随机种子、手牌或隐藏选项内容。',
+        '```json',
+        JSON.stringify(privateReplayDiagnostic, null, 2),
+        '```',
+        ...(privateReplayMemberDiagnostics.length > 1
+            ? [
+                '',
+                '## 同组记录的私密回放检查',
+                '每条摘要仍绑定自己的反馈 ID；同组记录不能互相代替原始现场。',
+                '```json',
+                JSON.stringify(privateReplayMemberDiagnostics, null, 2),
+                '```',
+            ]
+            : []),
+        '',
         '## 操作日志',
-        '```text',
-        actionLog,
+        '```json',
+        JSON.stringify(compatibilityDiagnostics.actionLog || { present: false }, null, 2),
         '```',
         '',
         '## 状态快照',
-        '```text',
-        stateSnapshot,
+        '```json',
+        JSON.stringify(compatibilityDiagnostics.stateSnapshot || { present: false }, null, 2),
         '```',
     ].join('\n');
 }
@@ -403,7 +454,7 @@ function pickParallelCandidates(groups, slots) {
         picked.push({
             feedbackId: group.primary._id,
             duplicateIds: group.members.slice(1).map((entry) => entry._id),
-            conflictKey: group.conflictKey,
+            conflictKey: `conflict:${crypto.createHash('sha256').update(String(group.conflictKey)).digest('hex').slice(0, 16)}`,
             gameId: deriveGameId(group.primary),
             severity: group.primary.severity,
             type: group.primary.type,
@@ -425,11 +476,28 @@ async function main() {
     await fs.mkdir(outDir, { recursive: true });
 
     const fetchedByStatus = {};
-    const merged = [];
-    for (const status of options.statuses) {
-        const items = await fetchList(baseUrl, options.token, status, options.limit);
-        fetchedByStatus[status] = items.length;
-        merged.push(...items);
+    let merged = [];
+    if (options.ids.length > 0) {
+        const details = [];
+        for (const id of options.ids) {
+            details.push(await fetchDetail(baseUrl, options.token, id));
+        }
+        const allowedStatuses = new Set(options.statuses);
+        merged = details.filter((item) => allowedStatuses.has(item.status));
+        const foundIds = new Set(merged.map((item) => String(item._id).toLowerCase()));
+        const missingIds = options.ids.filter((id) => !foundIds.has(id));
+        if (missingIds.length > 0) {
+            throw new Error(`指定反馈不在当前状态筛选范围内或不存在: ${missingIds.join(', ')}`);
+        }
+        for (const status of options.statuses) {
+            fetchedByStatus[status] = merged.filter((item) => item.status === status).length;
+        }
+    } else {
+        for (const status of options.statuses) {
+            const items = await fetchList(baseUrl, options.token, status, options.limit);
+            fetchedByStatus[status] = items.length;
+            merged.push(...items);
+        }
     }
 
     for (let index = 0; index < merged.length; index += 1) {
@@ -464,7 +532,43 @@ async function main() {
     }
 
     const groups = sortGroups([...dedupeMap.values()]);
+    const privateReplayCandidates = groups
+        .flatMap((group) => group.members)
+        .filter(isOnlineAiWatchdogFeedback);
+    if (privateReplayCandidates.length > 0) {
+        if (!isProductionFeedbackBaseUrl(baseUrl)) {
+            for (const item of privateReplayCandidates) {
+                item.privateReplayDiagnostic = { status: 'not-read-non-production' };
+            }
+        } else {
+            let privateReplays = null;
+            let privateReplayReadError = false;
+            try {
+                privateReplays = readPrivateFeedbackReplaysViaMongoSsh(
+                    privateReplayCandidates.map((item) => item._id),
+                );
+            } catch {
+                privateReplayReadError = true;
+            }
+            for (const item of privateReplayCandidates) {
+                if (privateReplayReadError) {
+                    item.privateReplayDiagnostic = { status: 'read-failed' };
+                    continue;
+                }
+                const replay = privateReplays.get(String(item._id));
+                item.privateReplayDiagnostic = replay
+                    ? summarizePrivateFeedbackReplay(replay.privateReplay, replay.privateReplayError)
+                    : { status: 'record-not-found' };
+            }
+        }
+    }
     for (const group of groups) {
+        group.privateReplayMemberDiagnostics = group.members
+            .filter(isOnlineAiWatchdogFeedback)
+            .map((member) => ({
+                feedbackId: String(member._id),
+                diagnostic: member.privateReplayDiagnostic || { status: 'not-checked' },
+            }));
         group.screenshotPaths = await materializeImages(group.primary, outDir);
         const packetName = `${group.primary._id}.md`;
         group.packetPath = path.join(outDir, packetName);
@@ -503,12 +607,20 @@ async function main() {
         generatedAt: new Date().toISOString(),
         outDir,
         markInProgress: options.markInProgress,
+        privateReplayStatusCounts: groups
+            .flatMap((group) => group.members)
+            .filter(isOnlineAiWatchdogFeedback)
+            .reduce((counts, item) => {
+                const status = item.privateReplayDiagnostic?.status;
+                if (status) counts[status] = (counts[status] || 0) + 1;
+                return counts;
+            }, {}),
         claimedCandidates,
         parallelCandidates,
         groups: groups.map((group) => ({
             dedupeKey: group.dedupeKey,
             classification: group.classification,
-            conflictKey: group.conflictKey,
+            conflictKey: `conflict:${crypto.createHash('sha256').update(String(group.conflictKey)).digest('hex').slice(0, 16)}`,
             primaryId: group.primary._id,
             duplicateIds: group.members.slice(1).map((entry) => entry._id),
             groupSize: group.members.length,
@@ -516,6 +628,8 @@ async function main() {
             type: group.primary.type,
             severity: group.primary.severity,
             status: group.primary.status,
+            privateReplayStatus: group.primary.privateReplayDiagnostic?.status || null,
+            privateReplayMembers: group.privateReplayMemberDiagnostics,
             createdAt: group.primary.createdAt,
             summary: extractText(group.primary.content).slice(0, 140),
             packetPath: group.packetPath,

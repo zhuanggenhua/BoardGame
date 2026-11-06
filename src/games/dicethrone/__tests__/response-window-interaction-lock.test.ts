@@ -192,12 +192,13 @@ describe('响应窗口交互锁定：骰子修改类（modifyDie）', () => {
             name: '修改骰子并确认交互',
             setup: () => result1.finalState,
             commands: [
-                cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 4 }),
+                cmd('MODIFY_DIE', '1', { dieId: 0, newValue: 2 }),
                 cmd('SYS_INTERACTION_CONFIRM', '1'),
             ],
         });
 
-        expect(result2.finalState.core.dice.find((d: any) => d.id === 0)?.value).toBe(4);
+        expect(result2.assertionErrors).toEqual([]);
+        expect(result2.finalState.core.dice.find((d: any) => d.id === 0)?.value).toBe(2);
         expect(result2.finalState.sys.interaction?.current).toBeUndefined();
         expect(result2.finalState.sys.responseWindow?.current).toBeUndefined();
         expect((result2.finalState.sys.decisionEpoch ?? 0)).toBeGreaterThan(lockedDecisionEpoch);
@@ -655,12 +656,15 @@ describe('modifyDie 严格超限回归', () => {
         result = diceModifyReducer(result, { action: 'select', dieId: 4, dieValue: 6 }, { mode: 'copy' }, 2);
 
         expect(result).toEqual({
+            sourceDieId: 4,
             modifications: { 4: 6 },
             modCount: 1,
             totalAdjustment: 0,
         });
+        result = diceModifyReducer(result, { action: 'select', dieId: 2, dieValue: 1 }, { mode: 'copy' }, 2);
         expect(diceModifyToCommands(result, 2)).toEqual([
             { type: 'MODIFY_DIE', payload: { dieId: 4, newValue: 6 } },
+            { type: 'MODIFY_DIE', payload: { dieId: 2, newValue: 6 } },
         ]);
     });
 

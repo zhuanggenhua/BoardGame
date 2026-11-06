@@ -10,6 +10,8 @@ import { UI_Z_INDEX } from '../../core';
 interface AboutModalProps {
     onClose: () => void;
     showSponsors?: boolean;
+    presentation?: 'modal' | 'popover';
+    id?: string;
 }
 
 interface SponsorItem {
@@ -24,7 +26,7 @@ const ROW_HEIGHT = 48;
 const PAGE_SIZE = 50;
 const OVERSCAN = 6;
 
-export const AboutModal = ({ onClose, showSponsors = true }: AboutModalProps) => {
+export const AboutModal = ({ onClose, showSponsors = true, presentation = 'modal', id }: AboutModalProps) => {
     const { t } = useTranslation('game');
     const { success, error } = useToast();
     const backdropRef = useRef<HTMLDivElement>(null);
@@ -353,10 +355,11 @@ export const AboutModal = ({ onClose, showSponsors = true }: AboutModalProps) =>
 
     return (
         <div
+            id={id}
             ref={backdropRef}
             onClick={handleBackdropClick}
-            className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-serif"
-            style={{ zIndex: UI_Z_INDEX.modalContent }}
+            className={presentation === 'popover' ? 'about-popover font-serif' : 'fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-serif'}
+            style={presentation === 'modal' ? { zIndex: UI_Z_INDEX.modalContent } : undefined}
         >
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}

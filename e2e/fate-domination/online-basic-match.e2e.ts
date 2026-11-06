@@ -171,8 +171,6 @@ test('真实联网自然基础对局：浏览器主视角及两名正式传输�
                 const destination = destinationFor(state, id);
                 await record('主视角在印刷地图上部署', async () => {
                     await page.getByTestId(`fate-domination-location-${destination}`).click();
-                    expect((await read()).core.players[id].locationId).toBeNull();
-                    await clickPrimary();
                     await expect.poll(async () => (await read()).core.players[id].locationId).toBe(destination);
                 });
                 if (!usedMaster) {
@@ -188,16 +186,15 @@ test('真实联网自然基础对局：浏览器主视角及两名正式传输�
                 if (!usedMovement && actor.locationId === 'workshop' && resolveFateMovement(core, id, 'miyama').valid) {
                     const cost = resolveFateMovement(core, id, 'miyama').cost!;
                     const start = page.getByRole('button', {name: '从魔术工房开始常规移动'});
-                    await record('主视角选择常规移动目标但尚未提交', async () => {await start.click(); await page.getByTestId('fate-domination-location-miyama').click(); expect((await read()).core.players[id].locationId).toBe('workshop');});
-                    await capture('常规移动目标等待确认', 'target-highlight');
-                    await record('主视角取消移动且资源不变', async () => {await page.getByRole('button', {name: '取消移动', exact: true}).click(); expect((await read()).core.players[id].mana).toBe(actor.mana);});
-                    await start.click(); await page.getByTestId('fate-domination-location-miyama').click(); await clickPrimary();
-                    expect((await read()).core.players[id].mana).toBe(actor.mana - cost);
-                    await capture('常规移动确认并按费用结算', 'layout');
-                    await record('选择令咒移动目的地', async () => {await page.getByRole('button', {name: '使用令咒', exact: true}).click(); await page.getByRole('button', {name: '令咒移动', exact: false}).click(); await page.getByTestId('fate-domination-location-workshop').click();});
-                    await capture('令咒移动等待确认', 'target-highlight');
-                    const seal = (await read()).core.players[id]; await clickPrimary();
-                    expect((await read()).core.players[id].commandSpells).toBe(seal.commandSpells - 1); expect((await read()).core.players[id].mana).toBe(seal.mana);
+                    await record('选择本人来源后再点本人取消，不消耗资源',async()=>{await start.click();await page.getByRole('button',{name:/玩家1位于/}).click();expect((await read()).core.players[id].mana).toBe(actor.mana);});
+                    await start.click();await capture('常规移动选择来源与合法目的地','target-highlight');
+                    await record('点击目的地直接移动并支付费用',async()=>{await page.getByTestId('fate-domination-location-miyama').click();await expect.poll(async()=>(await read()).core.players[id].locationId).toBe('miyama');});
+                    expect((await read()).core.players[id].mana).toBe(actor.mana-cost);
+                    await capture('常规移动直接结算','layout');
+                    const seal=(await read()).core.players[id];
+                    await record('令咒移动点击目的地直接执行',async()=>{await page.getByRole('button',{name:'使用令咒',exact:true}).click();await page.getByRole('button',{name:'令咒移动',exact:false}).click();await page.getByTestId('fate-domination-location-workshop').click();await expect.poll(async()=>(await read()).core.players[id].locationId).toBe('workshop');});
+                    expect((await read()).core.players[id].commandSpells).toBe(seal.commandSpells-1);expect((await read()).core.players[id].mana).toBe(seal.mana);
+                    await capture('令咒移动直接执行后的实际位置','layout');
                     usedMovement = true; continue;
                 }
                 if (!usedSeal) {

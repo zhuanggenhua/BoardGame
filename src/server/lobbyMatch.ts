@@ -1,4 +1,4 @@
-import { resolveSeatPlayerDisplayName } from '../engine/ai';
+import { isAiSeatControllerLike, resolveSeatPlayerDisplayName } from '../engine/ai';
 import type { MatchMetadata } from '../engine/transport/storage';
 import { resolveMatchStatus } from '../engine/transport/storage';
 import type { LobbyMatch } from '../shared/lobby';
@@ -29,7 +29,7 @@ function normalizeGameName(name?: string): string {
     return (name || '').toLowerCase();
 }
 
-function buildMatchPlayers(metadata: MatchMetadata): Array<{ id: number; name?: string; isConnected?: boolean }> {
+function buildMatchPlayers(metadata: MatchMetadata): Array<{ id: number; name?: string; isConnected?: boolean; isAi: boolean }> {
     const setupDataRecord = readSetupDataRecord(metadata);
     const seatControllers = setupDataRecord?.seatControllers;
 
@@ -41,6 +41,7 @@ function buildMatchPlayers(metadata: MatchMetadata): Array<{ id: number; name?: 
             seatControllers,
         }),
         isConnected: data.isConnected,
+        isAi: isAiSeatControllerLike(seatControllers?.[String(id)]),
     }));
 }
 

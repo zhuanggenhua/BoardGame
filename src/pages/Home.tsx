@@ -31,6 +31,7 @@ import { ConfirmModal } from '../components/common/overlays/ConfirmModal';
 import { LanguageSwitcher } from '../components/common/i18n/LanguageSwitcher';
 import { UserMenu } from '../components/social/UserMenu';
 import { AuthorSupportButton } from '../components/system/AuthorSupport';
+import { AboutButton } from '../components/system/AboutButton';
 import { OperationGuideButton } from '../components/system/OperationGuidePanel';
 import { useModalStack } from '../contexts/ModalStackContext';
 import { useToast } from '../contexts/ToastContext';
@@ -246,7 +247,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
     const forceExitModalIdRef = useRef<string | null>(null);
 
     // Monitoring & Stats
-    const { mostPopularGameId } = useLobbyStats();
+    const { mostPopularGameId, hasSnapshot: hasLobbySnapshot, playerCountsByGame } = useLobbyStats();
     const gamePopularityRanking = useGamePopularityRanking();
 
     const { user, token, logout } = useAuth();
@@ -1091,8 +1092,9 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         });
     };
     const classicUtility = <>
-        <AuthorSupportButton />
         <OperationGuideButton surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" />
+        <AboutButton />
+        <AuthorSupportButton />
         {user ? <UserMenu onLogout={handleLogout} /> : <div className="flex items-center gap-6">
             <button type="button" onClick={() => openAuth('login')} className="group relative inline-flex h-6 items-center hover:text-[#2c2216] cursor-pointer font-bold text-sm tracking-wider">
                 {t('auth:menu.login')}<span className="underline-center" />
@@ -1124,14 +1126,15 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
             <PlatformHomeSurface onLibraryHome={closeLibraryDetails}
                 brand={<><HomeGridLogo /><span>{t('lobby:home.title')}</span></>}
                 utility={<>
-                    <span><AuthorSupportButton /></span>
                     <span><OperationGuideButton visualStyle="platform" surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /></span>
+                    <span><AboutButton /></span>
+                    <span><AuthorSupportButton /></span>
                     <span><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></span>
                 </>}
-                mobileUtility={close => <><AuthorSupportButton /><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
+                mobileUtility={close => <><OperationGuideButton visualStyle="platform" onOpen={close} surface={isNativeMobileRuntime() ? 'app' : 'web'} dataTestId="home-operation-guide-entry" /><AboutButton /><AuthorSupportButton /><LanguageSwitcher visualStyle="platform" className="platform-language-control" /></>}
                 games={filteredGames} allGames={getGamesByCategory('All')} category={activeCategory} onCategory={setActiveCategory}
                 onOpenGame={handleGameClick} onGameIntent={handleGameIntent}
-                onOpenLibraryGame={openLibraryGame}
+                onOpenLibraryGame={openLibraryGame} playerCountsByGame={playerCountsByGame} hasPlayerCounts={hasLobbySnapshot}
                 libraryDetails={!isMobileHome && searchParams.get('section') === 'library' && libraryGame ? <HomeModalErrorBoundary resetKey={libraryGame.id}>
                     <Suspense fallback={<p role="status">{t('platform.loading')}</p>}>
                         <LazyGameDetailsModal key={libraryGame.id} isOpen presentation="inline" onClose={closeLibraryDetails}

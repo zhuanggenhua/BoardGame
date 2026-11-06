@@ -26,7 +26,7 @@ it('首屏不提前介绍他席，首次能力直接在真实按钮实操，不�
  expect(shown.step?.content).toBe(ability.content);
 });
 
-it('开始移动后焦点交给本次目的地，选定后仍等待正式确认',()=>{
+it('开始移动后焦点交给本次目的地，目的地点选即执行',()=>{
  const step=buildFateTutorialPlan().steps.find(s=>s.fateCommand?.type==='MOVE_PLAYER')!;
  const tutorial={...DEFAULT_TUTORIAL_STATE,active:true,step};
  const closed={inspection:null,detail:null,seal:false,discard:false,movement:false,movementTarget:false,identity:false};
@@ -34,7 +34,6 @@ it('开始移动后焦点交给本次目的地，选定后仍等待正式确认'
  const choosing=presentFateTutorial(tutorial,{...closed,movement:true});
  expect(choosing.step?.highlightTarget).toBe('fate-location-'+step.fateCommand?.payload.locationId);
  expect(choosing.step?.id).toBe(step.id);
- expect(presentFateTutorial(tutorial,{...closed,movement:true,movementTarget:true}).step?.hideOverlay).toBe(true);
  expect(tutorial.step).toBe(step);
 });
 

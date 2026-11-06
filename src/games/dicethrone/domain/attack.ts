@@ -6,7 +6,7 @@ import type {
     AttackDefenseResolvedEvent,
     AttackResolvedEvent,
 } from './types';
-import { resolveEffectsToEvents, type EffectContext } from './effects';
+import { resolveEffectsToEvents, type EffectContext, type EffectResolutionCheckpoint } from './effects';
 import { getPlayerAbilityEffects } from './abilityLookup';
 import { applyEvents, getPendingAttackExpectedDamage } from './utils';
 import { reduce } from './reducer';
@@ -14,6 +14,53 @@ import { hasPendingBonusDiceSettlement } from './rules';
 import { STATUS_IDS } from './ids';
 import { getCustomActionMeta } from './effects';
 import type { PendingAttackUpdatedEvent, StatusRemovedEvent } from './types';
+import {
+    attachAttackEffectContinuation,
+    isAttackEffectSequenceBlocker,
+    type AttackEffectContinuationPayload,
+    type AttackEffectContinuationStage,
+} from './attackEffectContinuationTypes';
+
+type EffectResumeOptions = NonNullable<AttackEffectContinuationPayload['resolverOptions']>;
+
+function addEffectContinuation(
+    event: DiceThroneEvent,
+    pending: NonNullable<DiceThroneCore['pendingAttack']>,
+    stage: AttackEffectContinuationStage,
+    effectSourceAbilityId: string,
+    checkpoint: EffectResolutionCheckpoint,
+    resolverOptions?: EffectResumeOptions,
+): void {
+    attachAttackEffectContinuation(event, {
+        kind: 'attack-effect-sequence',
+        stage,
+        attackerId: pending.attackerId,
+        defenderId: pending.defenderId,
+        attackSourceAbilityId: pending.sourceAbilityId,
+        effectSourceAbilityId,
+        checkpoint,
+        resolverOptions,
+    });
+}
+
+function hasAttackEffectContinuation(events: DiceThroneEvent[]): boolean {
+    return events.some((event) => event.resolutionContinuation?.action === 'resume-attack-effect-sequence');
+}
+
+function updateAttackStageForContinuation(
+    pending: NonNullable<DiceThroneCore['pendingAttack']>,
+    timestamp: number,
+): PendingAttackUpdatedEvent {
+    return {
+        type: 'PENDING_ATTACK_UPDATED',
+        payload: {
+            attackerId: pending.attackerId,
+            patch: { settlementStage: 'readyToResolve' },
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    };
+}
 
 export const orderPowderKegExplosionBeforeAttackDamage = (
     events: DiceThroneEvent[],
@@ -124,13 +171,6 @@ const buildZhizhuxiaWebbedTriggerEvents = (
     ];
 };
 
-const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
-    event.type === 'CHOICE_REQUESTED'
-    || event.type === 'STRANGE_OPERATION_REQUESTED'
-    || event.type === 'TOKEN_RESPONSE_REQUESTED'
-    || event.type === 'COMPARE_ROLL_REQUESTED'
-    || event.type === 'INTERACTION_REQUESTED';
-
 const isInteractiveBonusDiceRerollEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'BONUS_DICE_REROLL_REQUESTED' && hasPendingBonusDiceSettlement(event.payload.settlement);
 
@@ -171,6 +211,7 @@ export const resolveOffensivePreDefenseEffects = (
     random?: RandomFn,
     timestamp: number = 0,
     startEffectIndex = 0,
+    checkpoint?: EffectResolutionCheckpoint,
 ): DiceThroneEvent[] => {
     const pending = state.pendingAttack;
     if (!pending || pending.preDefenseResolved) return [];
@@ -195,21 +236,15 @@ export const resolveOffensivePreDefenseEffects = (
 
     const events: DiceThroneEvent[] = [];
     events.push(...buildZhizhuxiaWebbedTriggerEvents(state, timestamp));
-    let suspended = false;
     events.push(...resolveEffectsToEvents(effects, 'preDefense', ctx, {
-        random, startEffectIndex,
-        onInteractionSuspended: (nextEffectIndex, event) => {
-            event.payload.preDefenseContinuation = { nextEffectIndex, sourceAbilityId };
-            suspended = true;
+        random,
+        startEffectIndex,
+        checkpoint,
+        onEffectSuspended: (effectCheckpoint, event) => {
+            addEffectContinuation(event, pending, 'preDefense', sourceAbilityId, effectCheckpoint);
         },
     }));
-    if (suspended) return events;
-    if (events.some(isBlockingInteractionEvent) || events.some(isInteractiveBonusDiceRerollEvent)) {
-        // 记录已完成的前置位置，但不能继续进入防御或主伤害。
-        // 奖励骰确认后从这个位置恢复，既不会重掷，也不会提前结算父攻击。
-        events.push(createPreDefenseResolvedEvent(attackerId, defenderId, sourceAbilityId, timestamp));
-        return events;
-    }
+    if (hasAttackEffectContinuation(events)) return events;
     events.push(createPreDefenseResolvedEvent(attackerId, defenderId, sourceAbilityId, timestamp));
     return events;
 };
@@ -217,7 +252,11 @@ export const resolveOffensivePreDefenseEffects = (
 const resolveDefenseEffects = (
     state: DiceThroneCore,
     random: RandomFn,
-    timestamp: number
+    timestamp: number,
+    resume?: {
+        stage: 'defenseWithDamage' | 'defensePostDamage';
+        checkpoint: EffectResolutionCheckpoint;
+    },
 ): { defenseEvents: DiceThroneEvent[]; stateAfterDefense: DiceThroneCore } => {
     const pending = state.pendingAttack;
     if (!pending?.defenseAbilityId || !pending.defenderId || pending.defenseResolved || pending.isDefendable === false) {
@@ -237,8 +276,34 @@ const resolveDefenseEffects = (
     };
 
     const defenseEvents: DiceThroneEvent[] = [];
-    defenseEvents.push(...resolveEffectsToEvents(defenseEffects, 'withDamage', defenseCtx, { random }));
-    defenseEvents.push(...resolveEffectsToEvents(defenseEffects, 'postDamage', defenseCtx, { random }));
+    const shouldResumeWithDamage = resume?.stage === 'defenseWithDamage';
+    const withDamageEvents = resume?.stage === 'defensePostDamage'
+        ? []
+        : resolveEffectsToEvents(defenseEffects, 'withDamage', defenseCtx, {
+            random,
+            ...(shouldResumeWithDamage ? { startEffectIndex: resume.checkpoint.nextEffectIndex, checkpoint: resume.checkpoint } : {}),
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, pending, 'defenseWithDamage', defenseAbilityId, checkpoint);
+            },
+        });
+    defenseEvents.push(...withDamageEvents);
+    if (hasAttackEffectContinuation(withDamageEvents)) {
+        return { defenseEvents, stateAfterDefense: applyEvents(state, defenseEvents, reduce) };
+    }
+
+    const shouldResumePostDamage = resume?.stage === 'defensePostDamage';
+    const postDamageEvents = resolveEffectsToEvents(defenseEffects, 'postDamage', defenseCtx, {
+        random,
+        ...(shouldResumePostDamage ? { startEffectIndex: resume.checkpoint.nextEffectIndex, checkpoint: resume.checkpoint } : {}),
+        onEffectSuspended: (checkpoint, event) => {
+            addEffectContinuation(event, pending, 'defensePostDamage', defenseAbilityId, checkpoint);
+        },
+    });
+    defenseEvents.push(...postDamageEvents);
+    if (hasAttackEffectContinuation(postDamageEvents)) {
+        return { defenseEvents, stateAfterDefense: applyEvents(state, defenseEvents, reduce) };
+    }
+
     defenseEvents.push(createDefenseResolvedEvent(attackerId, defenderId, defenseAbilityId, timestamp));
 
     if (defenseEvents.length === 0) {
@@ -274,13 +339,29 @@ export const resolveAttack = (
                 damageDealt: 0,
                 timestamp,
             };
-            events.push(...resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
+            const withDamageEvents = resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
                 bonusDamage: pending.bonusDamage ?? 0,
                 bonusDamageOnce: true,
                 random,
                 skipDamage: true,
-            }));
-            events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
+                onEffectSuspended: (checkpoint, event) => {
+                    addEffectContinuation(event, pending, 'attackWithDamage', sourceAbilityId, checkpoint, {
+                        bonusDamageOnce: true,
+                        skipDamage: true,
+                    });
+                },
+            });
+            events.push(...withDamageEvents);
+            if (hasAttackEffectContinuation(withDamageEvents)) return events;
+
+            const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, {
+                random,
+                onEffectSuspended: (checkpoint, event) => {
+                    addEffectContinuation(event, pending, 'attackPostDamage', sourceAbilityId, checkpoint);
+                },
+            });
+            events.push(...postDamageEvents);
+            if (hasAttackEffectContinuation(postDamageEvents)) return events;
         }
 
         events.push({
@@ -304,7 +385,7 @@ export const resolveAttack = (
         const preDefenseEvents = resolveOffensivePreDefenseEffects(state, random, timestamp);
         events.push(...preDefenseEvents);
 
-        const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
+        const hasChoice = preDefenseEvents.some(isAttackEffectSequenceBlocker);
         const hasInteractiveBonusDiceReroll = preDefenseEvents.some(isInteractiveBonusDiceRerollEvent);
         if (hasChoice || hasInteractiveBonusDiceReroll) return events;
 
@@ -320,7 +401,7 @@ export const resolveAttack = (
         : resolveDefenseEffects(stateAfterPreDefense, random, timestamp);
     const bonusDamage = stateAfterDefense.pendingAttack?.bonusDamage ?? pending.bonusDamage ?? 0;
     events.push(...defenseEvents);
-    const hasDefenseChoice = defenseEvents.some(isBlockingInteractionEvent);
+    const hasDefenseChoice = defenseEvents.some(isAttackEffectSequenceBlocker);
     const hasDefenseTokenResponse = defenseEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
     const hasDefenseInteractiveBonusDiceReroll = defenseEvents.some(isInteractiveBonusDiceRerollEvent);
     if (hasDefenseChoice || hasDefenseTokenResponse || hasDefenseInteractiveBonusDiceReroll) {
@@ -344,11 +425,16 @@ export const resolveAttack = (
             bonusDamage,
             bonusDamageOnce: true,
             random,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, stateAfterDefense.pendingAttack ?? pending, 'attackWithDamage', sourceAbilityId, checkpoint, {
+                    bonusDamageOnce: true,
+                });
+            },
         });
 
         const hasTokenResponse = withDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
         const hasInteractiveBonusDiceReroll = withDamageEvents.some(isInteractiveBonusDiceRerollEvent);
-        const hasChoiceInWithDamage = withDamageEvents.some(isBlockingInteractionEvent);
+        const hasChoiceInWithDamage = withDamageEvents.some(isAttackEffectSequenceBlocker);
         if (hasTokenResponse || hasInteractiveBonusDiceReroll || hasChoiceInWithDamage) {
             attackEvents.push(...withDamageEvents);
             events.push(...attackEvents);
@@ -356,10 +442,16 @@ export const resolveAttack = (
         }
 
         attackEvents.push(...withDamageEvents);
-        attackEvents.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
+        const resolvedPostDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, {
+            random,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, stateAfterDefense.pendingAttack ?? pending, 'attackPostDamage', sourceAbilityId, checkpoint);
+            },
+        });
+        attackEvents.push(...resolvedPostDamageEvents);
 
         const postDamageEvents = attackEvents.slice(withDamageEvents.length);
-        const hasChoiceInPostDamage = postDamageEvents.some(isBlockingInteractionEvent);
+        const hasChoiceInPostDamage = postDamageEvents.some(isAttackEffectSequenceBlocker);
         const hasTokenResponseInPostDamage = postDamageEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');
         const hasBonusDiceRerollInPostDamage = postDamageEvents.some(isInteractiveBonusDiceRerollEvent);
         if (hasChoiceInPostDamage || hasTokenResponseInPostDamage || hasBonusDiceRerollInPostDamage) {
@@ -388,6 +480,122 @@ export const resolveAttack = (
     return events;
 };
 
+export function resumeAttackEffectSequence(
+    state: DiceThroneCore,
+    cursor: AttackEffectContinuationPayload,
+    random: RandomFn,
+    timestamp: number,
+): DiceThroneEvent[] {
+    const pending = state.pendingAttack;
+    if (!pending
+        || pending.attackerId !== cursor.attackerId
+        || pending.defenderId !== cursor.defenderId
+        || pending.sourceAbilityId !== cursor.attackSourceAbilityId) {
+        throw new Error('[DiceThrone] 攻击效果游标与当前攻击不匹配');
+    }
+
+    if (cursor.stage === 'preDefense') {
+        return resolveOffensivePreDefenseEffects(
+            state,
+            random,
+            timestamp,
+            cursor.checkpoint.nextEffectIndex,
+            cursor.checkpoint,
+        );
+    }
+
+    if (cursor.stage === 'defenseWithDamage' || cursor.stage === 'defensePostDamage') {
+        return resolveDefenseEffects(state, random, timestamp, {
+            stage: cursor.stage,
+            checkpoint: cursor.checkpoint,
+        }).defenseEvents;
+    }
+
+    const effectAbilityId = cursor.effectSourceAbilityId;
+    const isDefensiveContext = cursor.stage.startsWith('defense');
+    if (isDefensiveContext) {
+        throw new Error(`[DiceThrone] 不支持的防御效果游标阶段 ${cursor.stage}`);
+    }
+    const effects = getPlayerAbilityEffects(state, pending.attackerId, effectAbilityId);
+    const effectContext: EffectContext = {
+        attackerId: pending.attackerId,
+        defenderId: pending.defenderId ?? pending.attackerId,
+        sourceAbilityId: effectAbilityId,
+        state,
+        damageDealt: cursor.checkpoint.damageDealt,
+        timestamp,
+    };
+
+    if (cursor.stage === 'attackWithDamage') {
+        const resolverOptions = cursor.resolverOptions ?? {};
+        const withDamageEvents = resolveEffectsToEvents(effects, 'withDamage', effectContext, {
+            bonusDamage: resolverOptions.skipDamage ? undefined : pending.bonusDamage ?? 0,
+            bonusDamageOnce: resolverOptions.bonusDamageOnce ?? true,
+            random,
+            skipDamage: resolverOptions.skipDamage,
+            skipNonDamage: resolverOptions.skipNonDamage,
+            continueAfterFirstDamage: resolverOptions.continueAfterFirstDamage,
+            startEffectIndex: cursor.checkpoint.nextEffectIndex,
+            checkpoint: cursor.checkpoint,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, pending, 'attackWithDamage', effectAbilityId, checkpoint, resolverOptions);
+            },
+        });
+        if (hasAttackEffectContinuation(withDamageEvents)) return withDamageEvents;
+
+        const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', effectContext, {
+            random,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, pending, 'attackPostDamage', effectAbilityId, checkpoint);
+            },
+        });
+        if (hasAttackEffectContinuation(postDamageEvents)) return [...withDamageEvents, ...postDamageEvents];
+        const events = [...withDamageEvents, ...postDamageEvents];
+        if (!pending.defenderId) {
+            events.push({
+                type: 'ATTACK_RESOLVED',
+                payload: {
+                    attackerId: pending.attackerId,
+                    defenderId: undefined,
+                    sourceAbilityId: pending.sourceAbilityId,
+                    defenseAbilityId: pending.defenseAbilityId,
+                    totalDamage: 0,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp,
+            } as AttackResolvedEvent);
+        } else {
+            events.push(updateAttackStageForContinuation(pending, timestamp));
+        }
+        return events;
+    }
+
+    const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', effectContext, {
+        random,
+        startEffectIndex: cursor.checkpoint.nextEffectIndex,
+        checkpoint: cursor.checkpoint,
+        onEffectSuspended: (checkpoint, event) => {
+            addEffectContinuation(event, pending, 'attackPostDamage', effectAbilityId, checkpoint);
+        },
+    });
+    if (hasAttackEffectContinuation(postDamageEvents)) return postDamageEvents;
+    if (!pending.defenderId) {
+        return [...postDamageEvents, {
+            type: 'ATTACK_RESOLVED',
+            payload: {
+                attackerId: pending.attackerId,
+                defenderId: undefined,
+                sourceAbilityId: pending.sourceAbilityId,
+                defenseAbilityId: pending.defenseAbilityId,
+                totalDamage: 0,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as AttackResolvedEvent];
+    }
+    return [...postDamageEvents, updateAttackStageForContinuation(pending, timestamp)];
+}
+
 export const resolveWithDamageAfterChoice = (
     state: DiceThroneCore,
     random: RandomFn,
@@ -413,6 +621,12 @@ export const resolveWithDamageAfterChoice = (
         bonusDamageOnce: true,
         random,
         skipNonDamage: true,
+        onEffectSuspended: (checkpoint, event) => {
+            addEffectContinuation(event, pending, 'attackWithDamage', pending.sourceAbilityId!, checkpoint, {
+                bonusDamageOnce: true,
+                skipNonDamage: true,
+            });
+        },
     });
 };
 
@@ -429,6 +643,7 @@ export const resolveAttackWithSneakImmunityAfterDefense = (
     const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = pending;
     const { defenseEvents, stateAfterDefense } = resolveDefenseEffects(state, random, timestamp);
     const events: DiceThroneEvent[] = [...defenseEvents];
+    if (hasAttackEffectContinuation(defenseEvents)) return events;
     const totalDamage = getPendingAttackExpectedDamage(stateAfterDefense, pending, 1);
 
     if (sourceAbilityId) {
@@ -447,13 +662,31 @@ export const resolveAttackWithSneakImmunityAfterDefense = (
             bonusDamageOnce: true,
             random,
             skipDamage: true,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, pending, 'attackWithDamage', sourceAbilityId, checkpoint, {
+                    bonusDamageOnce: true,
+                    skipDamage: true,
+                });
+            },
         });
-        const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random });
-        events.push(...[...withDamageEvents, ...postDamageEvents].filter((event) => (
+        events.push(...withDamageEvents.filter((event) => (
             event.type !== 'DAMAGE_DEALT'
             || event.payload.targetId !== defenderId
             || event.payload.damageScope === 'direct'
         )));
+        if (hasAttackEffectContinuation(withDamageEvents)) return events;
+        const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, {
+            random,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, pending, 'attackPostDamage', sourceAbilityId, checkpoint);
+            },
+        });
+        events.push(...postDamageEvents.filter((event) => (
+            event.type !== 'DAMAGE_DEALT'
+            || event.payload.targetId !== defenderId
+            || event.payload.damageScope === 'direct'
+        )));
+        if (hasAttackEffectContinuation(postDamageEvents)) return events;
     }
 
     const resolvedEvent: AttackResolvedEvent = {
@@ -500,13 +733,28 @@ export const resolvePostDamageEffects = (
         };
 
         if (options?.includeWithDamage !== false) {
-            events.push(...resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
+            const withDamageEvents = resolveEffectsToEvents(effects, 'withDamage', attackCtx, {
                 random,
                 skipDamage: true,
                 continueAfterFirstDamage: options?.continueWithDamageAfterFirstDamage,
-            }));
+                onEffectSuspended: (checkpoint, event) => {
+                    addEffectContinuation(event, pending, 'attackWithDamage', sourceAbilityId, checkpoint, {
+                        bonusDamageOnce: true,
+                        skipDamage: true,
+                        continueAfterFirstDamage: options?.continueWithDamageAfterFirstDamage,
+                    });
+                },
+            });
+            events.push(...withDamageEvents);
+            if (hasAttackEffectContinuation(withDamageEvents)) return events;
         }
-        events.push(...resolveEffectsToEvents(effects, 'postDamage', attackCtx, { random }));
+        const postDamageEvents = resolveEffectsToEvents(effects, 'postDamage', attackCtx, {
+            random,
+            onEffectSuspended: (checkpoint, event) => {
+                addEffectContinuation(event, pending, 'attackPostDamage', sourceAbilityId, checkpoint);
+            },
+        });
+        events.push(...postDamageEvents);
     }
 
     return events;

@@ -34,12 +34,9 @@ describe('征兵训练的正式候选与地图本体对应', () => {
     it.each(['field', 'city'] as const)('%s 两支普通部队各自对应可见兵牌，训练后重新投影', location => {
         const setup = initial();
         const regionId = 'city-region-24';
-        const cityRegion = setup.regions.find(region => region.cityState);
-        if (!cityRegion || !cityRegion.cityState) throw new Error('预期测试棋盘包含城市区域');
-        const city = cityRegion.cityState;
         const configured = syncQidahenCorePieceCollections({ ...setup, regions: setup.regions.map(region => region.id === regionId
             ? { ...region, controller: 'ming', troops: location === 'field' ? 2 : 0, specialTroops: [], siegeState: null,
-                cityState: location === 'city' ? { ...city, controller: 'ming', troops: 2, specialTroops: [] } : null }
+                cityState: location === 'city' ? { population: 1, troops: 2, specialTroops: [] } : null }
             : region) });
         const core = choose(beginQidahenWheelRecruitTrain(configured, 'wheel', 1, true), 'action:train');
         const input = getQidahenRecruitTrainMapInput(core);

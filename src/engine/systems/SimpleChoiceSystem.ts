@@ -67,8 +67,7 @@ export function createSimpleChoiceSystem<TCore>(
                 const allowedCommands = new Set(simpleChoiceData.allowedCommands ?? []);
                 const hasActiveResponseWindow = !!state.sys.responseWindow?.current;
                 if (
-                    isSamePlayerId(current.playerId, command.playerId)
-                    && !command.type.startsWith('SYS_')
+                    !command.type.startsWith('SYS_')
                     && !allowedCommands.has(command.type)
                     && !hasActiveResponseWindow
                 ) {

@@ -7260,6 +7260,8 @@
     "orderNext": "Choose the next card for the top of your deck",
     "bonusDie": "Doctor Strange bonus die",
     "preparedSpells": "Book of the Vishanti ({{count}})",
+    "hidePreparedCards": "Hide prepared spells to view the passive ability",
+    "showPreparedCards": "Show prepared spells",
     "privateChoice": "Private choice",
     "effects": {
       "attack": "Doctor Strange attack damage",

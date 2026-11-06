@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useContext, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { motion, AnimatePresence, useMotionValue } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls, useMotionValue } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { PulseGlow } from '../common/animations/PulseGlow';
 import { getHudPortalRoot, UI_Z_INDEX } from '../../core';
@@ -51,7 +52,15 @@ interface FabMenuProps {
     storageKey?: string;
     legacyOffsetStorageKey?: string;
     hudPlacement?: 'in-shell' | 'portal';
+    movePanelsWithMenu?: boolean;
 }
+
+const FabGroupDragContext = createContext<{
+    controls: ReturnType<typeof useDragControls>;
+    x: ReturnType<typeof useMotionValue<number>>;
+    y: ReturnType<typeof useMotionValue<number>>;
+    move: (dx: number, dy: number) => void;
+} | null>(null);
 
 type FabAlignment = { v: 'top' | 'bottom'; h: 'left' | 'right' };
 type SafeAreaInsets = { top: number; right: number; bottom: number; left: number };
@@ -144,6 +153,7 @@ export const FabMenu = ({
     storageKey = HUD_FAB_POSITION_KEY,
     legacyOffsetStorageKey = HUD_FAB_LEGACY_OFFSET_KEY,
     hudPlacement,
+    movePanelsWithMenu = false,
 }: FabMenuProps) => {
     // 响应式尺寸
     const viewport = useRuntimeViewport();
@@ -197,6 +207,7 @@ export const FabMenu = ({
     const [fabPosition, setFabPosition] = useState<FabPosition | null>(null);
     const dragX = useMotionValue(0);
     const dragY = useMotionValue(0);
+    const groupDragControls = useDragControls();
     const didDragRef = useRef(false);
     const [isDragging, setIsDragging] = useState(false);
     const [liveDragOffset, setLiveDragOffset] = useState({ x: 0, y: 0 });
@@ -316,12 +327,12 @@ export const FabMenu = ({
         return () => window.cancelAnimationFrame(frameId);
     }, [clampPosition, dockedButtonSize, getAlignmentForPosition, getInitialPosition, layoutViewportHeight, layoutViewportWidth, legacyOffsetStorageKey, normalizePosition, storageKey]);
 
-    const handleDragEnd = (_: any, info: any) => {
+    const moveGroup = (dx: number, dy: number) => {
         if (!fabPosition || layoutViewportWidth <= 0 || layoutViewportHeight <= 0) return;
         setIsDragging(false);
         const next = normalizePosition({
-            left: fabPosition.left + (info.offset.x / layoutScale),
-            top: fabPosition.top + (info.offset.y / layoutScale),
+            left: fabPosition.left + dx / layoutScale,
+            top: fabPosition.top + dy / layoutScale,
         });
         flushSync(() => {
             setFabPosition(next);
@@ -337,6 +348,8 @@ export const FabMenu = ({
         );
     };
 
+    const handleDragEnd = (_: any, info: any) => moveGroup(info.offset.x, info.offset.y);
+
     const handleDragStart = () => {
         didDragRef.current = true;
         setIsDragging(true);
@@ -344,6 +357,7 @@ export const FabMenu = ({
     };
 
     const handleDrag = (_: any, info: any) => {
+        if (movePanelsWithMenu) return;
         setLiveDragOffset({
             x: info.offset.x / layoutScale,
             y: info.offset.y / layoutScale,
@@ -566,11 +580,13 @@ export const FabMenu = ({
     const glowColor = isDark ? 'rgba(0, 243, 255, 0.55)' : 'rgba(140, 123, 100, 0.85)';
 
     const fabMenu = (
+        <FabGroupDragContext.Provider value={movePanelsWithMenu ? { controls: groupDragControls, x: dragX, y: dragY, move: moveGroup } : null}>
         <motion.div
             ref={containerRef}
             className={`fixed font-sans ${className}`}
             initial={false}
             drag
+            dragControls={groupDragControls}
             dragMomentum={false}
             onDragStart={handleDragStart}
             onDrag={handleDrag}
@@ -648,6 +664,7 @@ export const FabMenu = ({
                 layerZIndex={layerZIndex}
             />
         </motion.div>
+        </FabGroupDragContext.Provider>
     );
 
     if (hudPlacement === 'in-shell') {
@@ -881,6 +898,26 @@ const Panel = ({
     layerZIndex,
     onRequestClose,
 }: any) => {
+    const { t } = useTranslation('game');
+    const panelElement = useRef<HTMLDivElement | null>(null);
+    const groupDrag = useContext(FabGroupDragContext);
+    const panelDrag = useDragControls();
+    const panelX = useMotionValue(0);
+    const panelY = useMotionValue(0);
+    const [panelDragBounds, setPanelDragBounds] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+    const movePanel = useCallback((dx = 0, dy = 0) => {
+        const rect = panelElement.current?.getBoundingClientRect();
+        if (!rect) return;
+        const x = panelX.get(), y = panelY.get();
+        panelX.set(Math.min(Math.max(x + dx, x + safeAreaInsets.left - rect.left), x + viewportWidth - safeAreaInsets.right - rect.right));
+        panelY.set(Math.min(Math.max(y + dy, y + safeAreaInsets.top - rect.top), y + viewportHeight - safeAreaInsets.bottom - rect.bottom));
+    }, [panelX, panelY, safeAreaInsets.left, safeAreaInsets.right, safeAreaInsets.top, safeAreaInsets.bottom, viewportWidth, viewportHeight]);
+    useEffect(() => {
+        if (groupDrag) return;
+        if (!isActive) { panelX.set(0); panelY.set(0); return; }
+        const frame = requestAnimationFrame(() => movePanel());
+        return () => cancelAnimationFrame(frame);
+    }, [groupDrag, isActive, anchorPosition.left, anchorPosition.top, movePanel, panelX, panelY]);
     const panelGap = isMobileViewport ? FAB_PANEL_GAP_MOBILE : FAB_PANEL_GAP_DESKTOP;
     const logicalAnchor = {
         left: anchorPosition.left,
@@ -890,7 +927,7 @@ const Panel = ({
         width: buttonSize,
         height: buttonSize,
     };
-    const resolvedAnchor = anchorRect ?? logicalAnchor;
+    const resolvedAnchor = groupDrag ? logicalAnchor : anchorRect ?? logicalAnchor;
     const resolvedReference = referenceRect ?? resolvedAnchor;
     const resolvedHorizontalAnchor = resolvedReference;
     const verticalAnchorMode = item.mobilePopoverVerticalAnchor === 'column' ? 'column' : 'button';
@@ -939,7 +976,37 @@ const Panel = ({
     const panelMaxWidth = safeAvailableWidth > 0 ? `${safeAvailableWidth}px` : undefined;
     const panelMaxHeight = safeAvailableHeight > 0 ? `${safeAvailableHeight}px` : undefined;
     const panelHeading = (
-        <div data-fab-panel-heading className="mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70">
+        <div data-fab-panel-heading tabIndex={isMobileSheetPanel ? -1 : 0}
+            aria-label={isMobileSheetPanel ? undefined : String(t('hud.actions.movePanel', { title: item.label }))}
+            className={isMobileSheetPanel ? 'mb-2 truncate border-b border-white/10 pb-2 text-[10px] font-bold uppercase tracking-wider opacity-70' : 'mb-2 flex min-h-11 touch-none select-none items-center truncate border-b border-white/10 pb-2 text-xs font-bold tracking-wider opacity-80 cursor-grab active:cursor-grabbing'}
+            onPointerDown={event => {
+                if (isMobileSheetPanel || event.button !== 0) return;
+                if (groupDrag) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    groupDrag.controls.start(event);
+                    return;
+                }
+                const rect = panelElement.current?.getBoundingClientRect();
+                if (!rect) return;
+                event.preventDefault(); event.stopPropagation();
+                flushSync(() => setPanelDragBounds({
+                    left: panelX.get() + safeAreaInsets.left - rect.left,
+                    right: panelX.get() + viewportWidth - safeAreaInsets.right - rect.right,
+                    top: panelY.get() + safeAreaInsets.top - rect.top,
+                    bottom: panelY.get() + viewportHeight - safeAreaInsets.bottom - rect.bottom,
+                }));
+                panelDrag.start(event);
+            }}
+            onKeyDown={event => {
+                if (isMobileSheetPanel) return;
+                if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onRequestClose?.(); return; }
+                const direction = ({ ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] } as Record<string, number[]>)[event.key];
+                if (!direction) return;
+                event.preventDefault(); event.stopPropagation();
+                const step = event.shiftKey ? 4 : 16;
+                (groupDrag?.move ?? movePanel)(direction[0] * step, direction[1] * step);
+            }}>
             {item.label}
         </div>
     );
@@ -1034,7 +1101,7 @@ const Panel = ({
 
     return createPortal(
         <AnimatePresence>
-            <div
+            <motion.div
                 style={{
                     position: 'fixed',
                     left: resolvedHorizontalAnchor.left,
@@ -1043,19 +1110,30 @@ const Panel = ({
                     height: resolvedVerticalAnchor.height,
                     zIndex: layerZIndex.panel,
                     pointerEvents: 'none',
+                    x: groupDrag?.x,
+                    y: groupDrag?.y,
                 }}
             >
                 <motion.div
                     key="panel"
-                    initial={{ opacity: 0, scale: 0.95, x: horizontalPlacement === 'right' ? -10 : 10 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, x: horizontalPlacement === 'right' ? -10 : 10 }}
+                    ref={panelElement}
+                    drag={!groupDrag}
+                    dragControls={panelDrag}
+                    dragListener={false}
+                    dragConstraints={panelDragBounds}
+                    dragElastic={0}
+                    dragMomentum={false}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
                     className={`
                         absolute p-4 max-md:p-3 rounded-xl shadow-2xl backdrop-blur-xl border-l-[3px]
                         ${isDark ? "bg-black/95 border-white/20 border-l-neon-blue text-white" : "bg-[#fcfbf9]/95 border-[#d3ccba] border-l-[#8c7b64] text-[#433422]"}
                         overflow-y-auto overflow-x-hidden custom-scrollbar
                     `}
                     style={{
+                        x: panelX,
+                        y: panelY,
                         width: resolvedPanelWidth,
                         maxWidth: panelMaxWidth,
                         maxHeight: panelMaxHeight,
@@ -1067,14 +1145,13 @@ const Panel = ({
                         [verticalPlacement === 'top' ? 'top' : 'bottom']: 0,
                     }}
                     onPointerDown={(e) => e.stopPropagation()}
-                    onPointerDownCapture={(e) => e.stopPropagation()}
                     data-fab-panel-interactive="true"
                     data-testid={`fab-panel-${item.id}`}
                 >
                     {panelHeading}
                     {layeredContent}
                 </motion.div>
-            </div>,
+            </motion.div>,
         </AnimatePresence>,
         tooltipPortalRoot,
     );

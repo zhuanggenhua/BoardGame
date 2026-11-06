@@ -1,4 +1,4 @@
-import { test, expect, initHome, login, openGame, openHomeUpload, capture, record, beginHomeEvidence } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, openGame, openHomeUpload, openPlatformProfile, capture, record, beginHomeEvidence } from './helpers/homeAcceptance';
 
 const views = [
     { name:'桌面', width:1920, height:1080, minColumns:7, maxCardWidth:260 },
@@ -74,8 +74,7 @@ for (const view of views) {
                     await page.locator('.platform-menu-dialog [data-language-style="platform"] > button').click();
                     await page.getByRole('button',{name:/English/}).click();
                     await page.locator('.platform-menu-close').click();
-                    await page.getByTestId('user-menu-trigger').click();
-                    await page.getByTestId('user-menu-profile').click();
+                    await openPlatformProfile(page);
                     await expect(page.getByTestId('profile-plays').getByRole('heading',{name:'Match History',exact:true})).toBeVisible();
                     expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
                     await capture(page,'重构-窄手机-英文个人中心');

@@ -229,7 +229,7 @@ export function createUndoSystem<TCore>(
                 return handleApproveUndo(state, command.playerId);
             }
             if (command.type === UNDO_COMMANDS.REJECT_UNDO) {
-                return handleRejectUndo(state);
+                return handleRejectUndo(state, command.playerId);
             }
             if (command.type === UNDO_COMMANDS.CANCEL_UNDO) {
                 return handleCancelUndo(state, command.playerId);
@@ -654,7 +654,12 @@ function handleApproveUndo<TCore>(
     };
 }
 
-function handleRejectUndo<TCore>(state: MatchState<TCore>): HookResult<TCore> {
+function handleRejectUndo<TCore>(state: MatchState<TCore>, reviewerId: PlayerId): HookResult<TCore> {
+    const undo = state.sys.undo as UndoState & { aiSeatIds?: PlayerId[] };
+    if (!undo.pendingRequest) return { halt: true, error: '没有待处理的撤销请求' };
+    if (undo.pendingRequest.requesterId === reviewerId) return { halt: true, error: '请求者不能拒绝自己的撤销请求' };
+    if (normalizeAiSeatIds(undo.aiSeatIds).includes(reviewerId)) return { halt: true, error: 'AI 玩家不参与撤销投票' };
+    if (undo.pendingRequest.approvals.includes(reviewerId)) return { halt: true, error: '已批准过该撤销请求' };
     logUndoServer('request-rejected-by-review', {
         requesterId: state.sys.undo.pendingRequest?.requesterId,
     });
@@ -686,7 +691,7 @@ function handleCancelUndo<TCore>(
 
     logUndoServer('request-canceled', { playerId });
 
-    return handleRejectUndo(state);
+    return { halt: true, state: clearPendingRequest(state) };
 }
 
 // ============================================================================

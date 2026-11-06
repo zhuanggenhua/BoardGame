@@ -7,10 +7,11 @@ import { QidahenHoverTip, QidahenHoverTipBody } from './QidahenHoverTip';
 export const ActionButton: React.FC<{
     action: QidahenActionChoice;
     focused: boolean;
+    recommended?: boolean;
     engaged?: boolean;
     disabled?: boolean;
     onClick: () => void;
-}> = ({ action, focused, engaged = false, disabled = false, onClick }) => {
+}> = ({ action, focused, recommended = false, engaged = false, disabled = false, onClick }) => {
     const { t } = useTranslation('game-qidahen');
     const [tipOpen, setTipOpen] = React.useState(false);
     const [tipAnchor, setTipAnchor] = React.useState<Element | null>(null);
@@ -36,6 +37,7 @@ export const ActionButton: React.FC<{
                 type="button"
                 data-testid={`qidahen-action-${action.id}`}
                 data-tutorial-id={`qidahen-action-${action.id}`}
+                data-qidahen-tutorial-recommended={recommended ? 'true' : undefined}
                 title={action.detail}
                 disabled={disabled}
                 className="qidahen-faction-action group relative inline-flex h-[48px] min-w-[132px] items-center justify-between gap-2 overflow-visible border-[2px] px-3.5 text-left text-[14px] font-black tracking-[0.02em] transition-[background-color,transform,box-shadow] duration-150 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30 disabled:cursor-not-allowed disabled:opacity-50"
@@ -50,6 +52,8 @@ export const ActionButton: React.FC<{
                     color: UI_STYLE.ink,
                     boxShadow: `${UI_SURFACE.mapOpenPanelShadow}${glowShadow}`,
                     borderRadius: 9,
+                    outline: recommended && !engaged ? '3px solid #fff8dc' : undefined,
+                    outlineOffset: 3,
                 }}
             >
                 <span className="pointer-events-none absolute inset-y-0 left-0 w-[5px]" style={{ background: accentColor }} />

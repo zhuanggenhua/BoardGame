@@ -59,6 +59,7 @@
       "winners": "{{names}}赢得圣杯战争"
     },
     "hand": {
+      "enlargeCard": "放大{{name}}",
       "actions": {
         "activate": "发动",
         "cancelRideSelection": "取消骑乘选择",
@@ -257,6 +258,8 @@
     "resolveLocation": "结算地点"
   },
   "error": {
+    "skillCannotBeFaceDown": "技能牌不能暗置，请切回明置选牌。",
+    "skillAttackUnavailable": "未达到这张技能牌的出牌门槛，或本轮已经打出。",
     "unknownPlayer": "未知玩家",
     "gameOver": "对局已结束",
     "unknownMaster": "御主素材未登记",
@@ -275,10 +278,31 @@
     "needExactlyTwoCards": "需要恰好两张攻击牌",
     "cardNotVisible": "这张牌当前不可查看",
     "deploymentRequired": "请先部署御主",
-    "actionMustBeConfirmed": "请先确认攻击"
+    "actionMustBeConfirmed": "请先确认攻击",
+    "normalAttackAlreadyPlayed": "本轮已经进行过常规出牌。",
+    "notDeployed": "请先部署御主。",
+    "skillNotActive": "这张技能牌需要先明置打出，才能发动。",
+    "abilityNotImplemented": "该能力尚未实现。",
+    "abilityAlreadyUsed": "该能力在本次可用时机中已经使用。",
+    "abilitySuppressed": "当前能力被封印，无法发动。",
+    "specialAttackForbidden": "此地点禁止打出特殊牌。",
+    "noblePhantasmForbidden": "当前局势禁止使用宝具。",
+    "defeatActive": "当前处于败北状态，不能打出这张牌。",
+    "playerEliminated": "你已淘汰，只能观战。",
+    "engaged": "此处已有对手，你已交战，不能进行常规移动。",
+    "normalMoveAfterAttack": "常规出牌后不能再进行常规移动。",
+    "movementTargetRequired": "请选择一个合法移动目的地。"
   },
   "feedback": {
+    "tutorialTarget": "请先完成当前提示中的操作。",
+    "offline": "连接已断开，恢复连接后再试。",
+    "resolveChoice": "请先完成当前选择。",
+    "unavailable": "当前无法使用这张牌。",
+    "attackWrongPhase": "请在行动阶段出牌。",
+    "ridingOnlyAttacks": "骑乘只能选择当前手牌中的普通攻击牌。",
+    "ridingMaximum": "骑乘最多选择三张牌，请先撤回一张。",
     "skillUnavailable": "技能「{{skill}}」尚未实现，本次未生效，也未扣除资源。",
-    "abilityUnavailable": "该技能尚未实现，本次未生效，也未扣除资源。"
+    "abilityUnavailable": "该技能尚未实现，本次未生效，也未扣除资源。",
+    "tutorialDeployment": "本步请部署到{{location}}补充魔力。"
   }
 }

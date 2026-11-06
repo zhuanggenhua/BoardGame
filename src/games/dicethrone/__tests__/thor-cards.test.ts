@@ -48,6 +48,24 @@ describe('索尔物理牌、升级和最终效果',()=>{
    expect(THOR_CARDS.map(c=>c.previewRef?.type === 'atlas' ? c.previewRef.index : undefined).sort((a,b)=>a!-b!)).toEqual(Array.from({length:34},(_,i)=>i));
    expect(getThorStartingDeck(fixedRandom).some(c=>c.id==='card-thor-bifrost')).toBe(false);
  });
+ it.each([
+   {cardId:'card-double',cost:1,drawnIds:['card-get-away','card-what-status']},
+   {cardId:'card-super-double',cost:2,drawnIds:['card-get-away','card-what-status','card-one-throw-fortune']},
+ ])('$cardId按原卡费用从索尔牌库抽取指定数量',({cardId,cost,drawnIds})=>{
+   const state=scene();
+   const player=state.core.players['0'];
+   player.hand=[THOR_CARDS.find(card=>card.id===cardId)!];
+   player.deck=drawnIds.map(id=>THOR_CARDS.find(card=>card.id===id)!);
+   player.discard=[];
+   player.resources[R.CP]=5;
+   state.core.players['1'].hand=[];
+   const result=executePipeline(cfg,state,{type:'PLAY_CARD',playerId:'0',payload:{cardId},timestamp:10} as DiceThroneCommand,fixedRandom,['0','1']);
+   expect(result.success,result.error).toBe(true);
+   expect(result.state.core.players['0'].resources[R.CP]).toBe(5-cost);
+   expect(result.state.core.players['0'].hand.map(card=>card.id).sort()).toEqual([...drawnIds].sort());
+   expect(result.state.core.players['0'].deck).toHaveLength(0);
+   expect(result.state.core.players['0'].discard.some(card=>card.id===cardId)).toBe(true);
+ });
  it.each(THOR_CARDS.filter(c=>c.type==='upgrade').map(card=>({card})))('$card.id通过正式升级命令替换目标能力并扣对应费用',({card})=>{
    const state=scene(); state.core.players['0'].hand=[card];state.core.players['0'].resources[R.CP]=10;
    const replacement=card.effects!.find(e=>e.action?.type==='replaceAbility')!.action!;

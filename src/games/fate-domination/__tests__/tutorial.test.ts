@@ -8,10 +8,21 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import { cancelPrompt, createRespondToPromptCommand } from '../../../engine/testing/interactionTestFacade';
 import { engineConfig } from '../game';
 import { FateDominationTutorial, buildFateTutorialPlan, FATE_TUTORIAL_SEED } from '../tutorial';
+import {buildTutorialProgressSeed} from '../../../pages/useMatchRoomTutorialLifecycle';
 import {applyPlayerViewToState} from '../../../engine/ai/playerView';
 import type {AiDecisionContext} from '../../../engine/ai';
 import {buildFateAiLegalActions,chooseFateAiAction} from '../ai';
 import {fateTutorialAllows} from '../ui/tutorialContract';
+
+it('教程进度版本变化与固定教学牌序的随机种子独立',()=>{
+    const manifest=FateDominationTutorial;
+    const current=buildTutorialProgressSeed('fate-domination',manifest.id,manifest.id,manifest.revision);
+    const next=buildTutorialProgressSeed('fate-domination',manifest.id,manifest.id,(manifest.revision??0)+1);
+    expect(current).not.toBe(next);
+    expect(manifest.randomSeed).toBe(FATE_TUTORIAL_SEED);
+    expect(current).not.toBe(FATE_TUTORIAL_SEED);
+    expect(FATE_TUTORIAL_SEED.endsWith(':r30')).toBe(true);
+});
 import { fateDominationGameRuntimeAdapter } from '../runtimeAdapter';
 
 function buildTutorialDispatchCommand(
@@ -78,7 +89,7 @@ it('首席先占工房+2，学员面对三个合法+1点位并以正式输入部
     expect(firstSeatDeployment.hideOverlay).toBe(true);
     expect(deployment.highlightTarget).toBe('fate-deployment-workshop');
     expect(deployment.fateCopy?.passages).toContain('workshopOrder');
-    expect(new Set(deployment.fateCommandOptions?.map(option=>option.payload.locationId))).toEqual(new Set(['workshop','miyama','shinto']));
+    expect(new Set(deployment.fateCommandOptions?.map(option=>option.payload.locationId))).toEqual(new Set(['workshop']));
     expect(deployment.fateCommandOptions?.filter(option=>option.payload.locationId==='workshop').map(option=>option.payload.deploymentSlot)).toEqual([1,2,3]);
     const index = plan.steps.indexOf(deployment);
     expect(plan.steps[index+1].fateCommand?.type).toBe('PLAY_SKILL');
@@ -116,14 +127,15 @@ it('正式教程运行时按真实教程计划把学员放在第二顺位', () =
     })).toBeNull();
 });
 
-it.each(['miyama','shinto'] as const)('首次部署选择%s后，正式教程进入相应真实续程',locationId=>{
+it.each([1,2,3])('首次工房练习选择 +1 点位%s后，正式教程继续且拒绝其它地点',slot=>{
+    const locationId='workshop';
     const ids=['1','0','2'],random=createSeededRandom(FATE_TUTORIAL_SEED);
-    const planned=buildFateTutorialPlan(locationId).commands;let actionIndex=0;
+    const planned=buildFateTutorialPlan().commands;let actionIndex=0;
     let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,FATE_TUTORIAL_SEED)};
     const send=(type:string,payload:unknown,playerId='0',automatic=false)=>{
         const data=payload as Record<string,unknown>;
         if(['SELECT_MASTER','SELECT_SERVANT','DEPLOY_MASTER','SELECT_ATTACK_CARD','CONFIRM_ATTACK','INSPECT_CARD','ADVANCE_PHASE','MOVE_PLAYER','PASS_ACTION','RESOLVE_LOCATION','PLAY_SKILL','USE_COMMAND_SPELL',INTERACTION_COMMANDS.RESPOND,INTERACTION_COMMANDS.CANCEL].includes(type)){
-            const expected=planned[actionIndex++];const expectedPayload={...(expected?.payload as Record<string,unknown>??{})};delete expectedPayload.interactionId;
+            const expected=planned[actionIndex++];const expectedPayload={...(expected?.payload as Record<string,unknown>??{})};delete expectedPayload.interactionId;if(type==='DEPLOY_MASTER'&&playerId==='0'&&!state.core.players['0'].locationId&&actionIndex===planned.findIndex(command=>command.type==='DEPLOY_MASTER'&&command.playerId==='0')+1)expectedPayload.deploymentSlot=slot;
             const actualPayload={...data};delete actualPayload.interactionId;
             expect({type,playerId,payload:actualPayload},`首次部署${locationId}后，第${actionIndex-1}项实际动作应与真实复演计划一致`).toEqual({type:expected?.type,playerId:expected?.playerId,payload:expectedPayload});
         }
@@ -137,14 +149,16 @@ it.each(['miyama','shinto'] as const)('首次部署选择%s后，正式教程进
         const step=state.sys.tutorial.step!;
         if(step.aiActions?.length){for(const action of step.aiActions)send(action.commandType,action.payload,action.playerId,true);send('SYS_TUTORIAL_AI_CONSUMED',{stepId:step.id});if(state.sys.tutorial.step?.id===step.id)send('SYS_TUTORIAL_NEXT',{reason:step.autoAdvanceAfterAi===false?'manual':'auto'});continue;}
         if(step.fateCommandOptions?.length){
-            expect(new Set(step.fateCommandOptions.map(option=>option.payload.locationId))).toEqual(new Set(['workshop','miyama','shinto']));
+            expect(new Set(step.fateCommandOptions.map(option=>option.payload.locationId))).toEqual(new Set(['workshop']));
             expect(fateTutorialAllows(state.sys.tutorial,'DEPLOY_MASTER',{locationId:'recon',deploymentSlot:undefined})).toBe(false);
+            for(const id of ['miyama','shinto'])expect(fateTutorialAllows(state.sys.tutorial,'DEPLOY_MASTER',{locationId:id,deploymentSlot:0})).toBe(false);
             for(const option of step.fateCommandOptions.filter(candidate=>candidate.payload.locationId==='workshop'))
                 expect(fateTutorialAllows(state.sys.tutorial,option.type,option.payload)).toBe(true);
-            const option=step.fateCommandOptions.find(candidate=>candidate.payload.locationId===locationId)!;
+            const option=step.fateCommandOptions.find(candidate=>candidate.payload.locationId===locationId&&candidate.payload.deploymentSlot===slot)!;
             expect(fateTutorialAllows(state.sys.tutorial,option.type,option.payload)).toBe(true);
             send(option.type,option.payload);
-            branchChosen=state.sys.tutorial.selectedBranch;
+            branchChosen=String(option.payload.locationId);
+            expect(state.sys.tutorial.selectedBranch).toBeUndefined();
             expect(branchChosen).toBe(locationId);
             expect(state.sys.tutorial.steps.every(candidate=>!candidate.branch||candidate.branch===locationId)).toBe(true);
             continue;
@@ -283,7 +297,7 @@ it('课程重排仍保留交战限制和战场暗置决策，不能等到完整E
 
 
 it.each([FATE_TUTORIAL_SEED,FATE_TUTORIAL_SEED.replace(/:r\d+$/,':r11')])('不足8魔力的首次技能教学逐枚手动支付令咒，不能虚报门槛（%s）',seed=>{
-    const plan=buildFateTutorialPlan('workshop',seed),ids=['1','0','2'],random=createSeededRandom(seed);
+    const plan=buildFateTutorialPlan(seed),ids=['1','0','2'],random=createSeededRandom(seed);
     let state:MatchState<FateDominationCore>={core:FateDominationDomain.setup(ids,random),sys:createInitialSystemState(ids,engineConfig.systems,seed)};
     let completed=false,paid=0;
     for(const [index,command] of plan.commands.entries()){

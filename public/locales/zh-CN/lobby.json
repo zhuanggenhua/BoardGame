@@ -14,9 +14,15 @@
       "status": "当前进行中",
       "room": "房间 #{{id}}",
       "players": "{{count}} 人在席"
-    }
+    },
+    "appDownloadHint": "app可在悬浮球下载"
   },
   "homeV2": {
+    "gamePresence": {
+      "online": "在线 {{count}}",
+      "waiting": "等待 {{count}}",
+      "label": "在线 {{online}} 人，公开房间等待 {{waiting}} 人"
+    },
     "waitingPlayers": "等待玩家进入",
     "roomTitleFallback": "房间 {{id}}",
     "roomLedgerTitle": "房间列表",
@@ -2659,7 +2665,7 @@
           "rejected": "未通过"
         },
         "pendingLocked": "审核期间资料已锁定。需要修改时可撤回申请。",
-        "verificationInstructions": "验证短码：{{code}}，提交截止 {{deadline}}。请将短码放到作者主页供管理员核对，或提供后台控制权截图。",
+        "verificationInstructions": "验证短码：<strong>{{code}}</strong>，提交截止 {{deadline}}。请将短码放到作者主页供管理员核对，或提供后台控制权截图。",
         "authorProfile": "作者主页",
         "evidence": "认证截图",
         "evidencePreviewAlt": "认证截图预览",
@@ -2769,7 +2775,8 @@
       "emptySubmissions": "暂无待审核投稿。",
       "emptyClaims": "暂无待审核认证。",
       "emptyGames": "暂无已收录外部游戏。"
-    }
+    },
+    "favorited": "已收藏"
   },
   "homeAppearance": {
     "settings": "首页设置",

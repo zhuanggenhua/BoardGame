@@ -1,4 +1,4 @@
-import { test, expect, initHome, login, settings, capture, record, openHomeUpload } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, settings, openPlatformProfile, capture, record, openHomeUpload } from './helpers/homeAcceptance';
 
 for (const mobile of [false, true]) {
     test(`${mobile ? '手机触控' : '桌面鼠标'}浮球拖拽、刷新保留和设置仍可操作`, async ({ browser, accounts }, info) => {
@@ -34,8 +34,7 @@ for (const mobile of [false, true]) {
             await expect(page.getByTestId('fab-panel-settings')).toHaveCount(0);
             await login(page, accounts.alice);
             const anchor = await fab.evaluate(node => ({ left:node.style.left, top:node.style.top }));
-            await page.getByTestId('user-menu-trigger').click();
-            await page.getByTestId('user-menu-profile').click();
+            await openPlatformProfile(page);
             await page.getByRole('button', {name:'编辑个人资料',exact:true}).click();
             await expect(fab).toBeVisible();
             expect(await fab.evaluate(node => ({left:node.style.left,top:node.style.top}))).toEqual(anchor);

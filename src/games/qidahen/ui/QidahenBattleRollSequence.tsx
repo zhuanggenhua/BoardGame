@@ -4,20 +4,25 @@ import { DiceBoxPhysicsSource } from '../../../lib/dice-physics/DiceBoxPhysicsSo
 import type { DiceBoxDieType, DiceBoxDieSkin } from '../../../lib/dice-box-threejs/engine';
 import type { QidahenBattleRoll, QidahenBattleRolls } from '../domain/types';
 import { createQidahenD6Skin, QIDAHEN_BATTLE_DICE_STYLES } from './battleDiceAppearance';
+import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 
 export const QIDAHEN_BATTLE_DAMAGE_HOLD_MS = 1800;
 const battleLabelStyle: React.CSSProperties = { background: 'rgba(36,19,9,0.78)', padding: '2px 8px' };
+export type QidahenBattleActor = { name: string; markerSrc?: string };
 
 type Props = {
     rolls: QidahenBattleRolls;
     sourceName: string;
     targetName: string;
+    attacker: QidahenBattleActor;
+    defender: QidahenBattleActor;
     onComplete: () => void;
 };
 
 /** 领域已结算的骰值只播一次：双方同阶段同时投掷，全部停稳后显示损伤，再进下一阶段。 */
-export function QidahenBattleRollSequence({ rolls, sourceName, targetName, onComplete }: Props) {
+export function QidahenBattleRollSequence({ rolls, sourceName, targetName, attacker, defender, onComplete }: Props) {
     const { t } = useTranslation('game-qidahen');
+    const actors = { attacker, defender };
     const [index, setIndex] = React.useState(0);
     const [settled, setSettled] = React.useState<Set<string>>(() => new Set());
     const [showDamage, setShowDamage] = React.useState(false);
@@ -80,7 +85,10 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, onCom
             <div className={`mt-2 grid min-h-0 flex-1 gap-6 ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 {sides.map(side => (
                     <div key={side} data-testid={`qidahen-battle-side-${side}`} className="flex min-h-0 min-w-0 flex-col">
-                        <div className="shrink-0 text-center text-[16px] font-bold leading-6"><span data-qidahen-battle-label={side} style={battleLabelStyle}>{t(`board.battleRoll.${side}`)}</span></div>
+                        <div className="shrink-0 text-center text-[16px] font-bold leading-6"><span data-qidahen-battle-label={side} className="inline-flex items-center gap-1.5" style={battleLabelStyle}>
+                            {actors[side].markerSrc ? <OptimizedImage src={actors[side].markerSrc} alt="" className="h-5 w-5 shrink-0 object-contain" placeholder={false} /> : null}
+                            {t('board.battleRoll.sideOwner', { faction: actors[side].name, role: t(`board.battleRoll.${side}`) })}
+                        </span></div>
                         <div className="flex min-h-0 flex-1 gap-2">
                             {groups.filter(group => group.side === side).map(group => (
                                 <div key={group.id} data-testid={`qidahen-battle-dice-${group.id}`} className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -121,7 +129,7 @@ export function QidahenBattleRollSequence({ rolls, sourceName, targetName, onCom
             <div className={`mt-1 grid min-h-[52px] shrink-0 gap-6 text-center font-bold ${sides.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`} data-testid={showDamage ? 'qidahen-battle-stage-damage' : undefined} style={{ visibility: showDamage ? 'visible' : 'hidden' }}>
                 {sides.map(side => <div key={side} data-testid={`qidahen-battle-result-${side}`} style={{ ...battleLabelStyle, justifySelf: 'center' }}>
                     <div data-qidahen-battle-label={`${side}-total`} className="text-[22px] leading-7">{t('board.battleRoll.total', { total: side === 'attacker' ? stage.attackerTotal : stage.defenderTotal })}</div>
-                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[16px] leading-6">{t('board.battleRoll.inflictedDamage', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage })}</div>
+                    <div data-qidahen-battle-label={`${side}-damage`} className="text-[16px] leading-6">{t('board.battleRoll.damageTo', { damage: side === 'attacker' ? stage.attackerDamage : stage.defenderDamage, target: actors[side === 'attacker' ? 'defender' : 'attacker'].name })}</div>
                 </div>)}
             </div>
         </section>

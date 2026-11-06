@@ -48,6 +48,38 @@ async function chooseCustom(page: Page, game: GameTestContext, customId: string,
     await page.locator(`[data-option-id="${option.id}"]`).click();
 }
 
+test('索尔俺也一样通过原骰盘复制锁定骰', async ({ page, game }, info) => {
+    test.setTimeout(120000);
+    await scene(page, game, info, {
+        gameId: 'dicethrone', currentPlayer: '0', phase: 'offensiveRoll',
+        player0: { hand: ['card-me-too'], resources: { cp: 5, hp: 50 } },
+        player1: { hand: [], resources: { cp: 2, hp: 50 } },
+        extra: {
+            selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true,
+            rollCount: 3, rollLimit: 3, rollDiceCount: 5, rollConfirmed: false, pendingAttack: null,
+            dice: [
+                { id: 0, value: 6, isKept: true }, { id: 1, value: 5, isKept: true },
+                { id: 2, value: 4, isKept: false }, { id: 3, value: 2, isKept: false },
+                { id: 4, value: 3, isKept: false },
+            ],
+        },
+    });
+    await dragDiceThroneHandCardToPlay(page, 'card-me-too');
+    await expect.poll(async () => (await game.getState()).sys.interaction.current?.data?.meta?.dieModifyConfig?.mode).toBe('copy');
+    const source = page.getByTestId('die-button-0');
+    const target = page.getByTestId('die-button-1');
+    await shot(page, info, '01-原骰盘选择复制来源');
+    await source.click();
+    await expect(source).toHaveAttribute('data-selected', 'true');
+    await shot(page, info, '02-来源骰选定后选择目标骰');
+    await target.click();
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return { values: state.core.dice.slice(0, 2).map((die: { value: number }) => die.value), hand: state.core.players['0'].hand.length };
+    }).toEqual({ values: [6, 6], hand: 0 });
+    await shot(page, info, '03-复制完成且锁定骰点数更新');
+});
+
 test('索尔付费召回和驭电抽牌沿原主动栏与弃牌提示', async ({ page, game }, info) => {
     test.setTimeout(120000);
     await scene(page, game, info, { gameId: 'dicethrone', currentPlayer: '0', phase: 'main1',
@@ -65,6 +97,35 @@ test('索尔付费召回和驭电抽牌沿原主动栏与弃牌提示', async ({
     await expect.poll(async () => { const s = await game.getState(); return { electro: s.core.players['0'].tokens.electrokinesis, hand: s.core.players['0'].hand.length }; }).toEqual({ electro: 0, hand: 1 });
     await shot(page, info, '04-花四驭电抽一牌并禁用重复抽牌');
     await expect(page.getByTestId('passive-action-electrokinesis-draw-0')).toBeDisabled();
+});
+
+test('索尔弃牌飞掷通过原手牌区取消和支付', async ({ page, game }, info) => {
+    test.setTimeout(120000);
+    await scene(page, game, info, {
+        gameId: 'dicethrone', currentPlayer: '0', phase: 'main1',
+        player0: { hand: ['card-thor-hammer-time'], resources: { cp: 5, hp: 50 }, tokens: { mjolnir: 1 } },
+        player1: { hand: [], resources: { cp: 2, hp: 50 } },
+        extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true },
+    });
+    await page.getByTestId('passive-action-thor-mjolnir-0').click();
+    const hint = page.getByTestId('dicethrone-hand-discard-hint');
+    await expect(hint).toContainText('选择 1 张手牌弃置');
+    await expect(page.getByTestId('dt-card-pool-overlay')).toBeHidden();
+    await shot(page, info, '01-原手牌区选择弃牌成本');
+    await page.getByTestId('dicethrone-hand-discard-cancel').click();
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return { hand: state.core.players['0'].hand.length, holder: state.core.players['0'].tokens.mjolnir, hp: state.core.players['1'].resources.hp };
+    }).toEqual({ hand: 1, holder: 1, hp: 50 });
+    await shot(page, info, '02-取消后手牌与神锤保持');
+    await page.getByTestId('passive-action-thor-mjolnir-0').click();
+    await page.locator('[data-testid="hand-area"] [data-card-id="card-thor-hammer-time"]').click();
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return { hand: state.core.players['0'].hand.length, holder: state.core.players['1'].tokens.mjolnir, hp: state.core.players['1'].resources.hp };
+    }).toEqual({ hand: 0, holder: 1, hp: 49 });
+    await waitForDamageNumbersToSettle(page);
+    await shot(page, info, '03-支付后飞掷神锤造成一点伤害');
 });
 
 test('索尔起开沿原状态选择入口移除对手一层气', async ({ page, game }, info) => {
@@ -95,6 +156,36 @@ test('索尔起开沿原状态选择入口移除对手一层气', async ({ page,
         };
     }).toEqual({ taiji: 1, cp: 4, hand: 0, discarded: true });
     await shot(page, info, '03-确认后只移除一层气并完成出牌');
+});
+
+test('索尔拜拜了您内在投掷阶段沿原入口移除一层状态', async ({ page, game }, info) => {
+    test.setTimeout(120000);
+    await scene(page, game, info, {
+        gameId: 'dicethrone', currentPlayer: '0', phase: 'offensiveRoll',
+        player0: { hand: ['card-bye-bye'], resources: { cp: 5, hp: 50 } },
+        player1: { hand: [], tokens: { taiji: 2 }, resources: { cp: 2, hp: 50 } },
+        extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true, rollCount: 0, rollConfirmed: false, dice: [] },
+    });
+    await dragDiceThroneHandCardToPlay(page, 'card-bye-bye');
+    const modal = page.locator('#modal-root');
+    const target = modal.getByTestId('dt-status-owner-1').getByTestId('dt-status-effect-1-taiji');
+    await expect(target).toBeVisible();
+    await shot(page, info, '01-投掷阶段瞬时出牌后选择对手状态');
+    await target.click();
+    const confirm = modal.getByRole('button', { name: '确认', exact: true }).last();
+    await expect(confirm).toBeEnabled();
+    await shot(page, info, '02-选中一层状态后确认');
+    await confirm.click();
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            taiji: state.core.players['1'].tokens.taiji,
+            cp: state.core.players['0'].resources.cp,
+            phase: state.sys.phase,
+            discarded: state.core.players['0'].discard.some((card: { id: string }) => card.id === 'card-bye-bye'),
+        };
+    }).toEqual({ taiji: 1, cp: 3, phase: 'offensiveRoll', discarded: true });
+    await shot(page, info, '03-移除一层后回原投掷阶段');
 });
 
 test('索尔乾坤大挪移复用原状态转移并排除神锤', async ({ page, game }, info) => {
@@ -134,6 +225,37 @@ test('索尔乾坤大挪移复用原状态转移并排除神锤', async ({ page,
     await shot(page, info, '04-转移一层后神锤仍归索尔');
 });
 
+test('索尔状什么态沿原玩家选择移除对手全部状态', async ({ page, game }, info) => {
+    test.setTimeout(120000);
+    await scene(page, game, info, {
+        gameId: 'dicethrone', currentPlayer: '0', phase: 'main1',
+        player0: { hand: ['card-what-status'], resources: { cp: 5, hp: 50 } },
+        player1: { hand: [], statusEffects: { poison: 2 }, tokens: { taiji: 2 }, resources: { cp: 2, hp: 50 } },
+        extra: { selectedCharacters: { '0': 'thor', '1': 'monk' }, hostStarted: true },
+    });
+    await dragDiceThroneHandCardToPlay(page, 'card-what-status');
+    const modal = page.locator('#modal-root');
+    const target = modal.getByTestId('dt-player-target-1');
+    await expect(target).toBeVisible();
+    await shot(page, info, '01-原玩家选择入口显示有状态的对手');
+    await target.click();
+    const confirm = modal.getByRole('button', { name: '确认', exact: true }).last();
+    await expect(confirm).toBeEnabled();
+    await shot(page, info, '02-选中对手后原确认入口可用');
+    await confirm.click();
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            poison: state.core.players['1'].statusEffects.poison ?? 0,
+            taiji: state.core.players['1'].tokens.taiji ?? 0,
+            hammer: state.core.players['0'].tokens.mjolnir,
+            cp: state.core.players['0'].resources.cp,
+            discarded: state.core.players['0'].discard.some((card: { id: string }) => card.id === 'card-what-status'),
+        };
+    }).toEqual({ poison: 0, taiji: 0, hammer: 1, cp: 3, discarded: true });
+    await shot(page, info, '03-确认后对手状态清除且神锤仍在');
+});
+
 for (const upgraded of [false, true]) test(`索尔奥丁${upgraded ? '二级空选保留' : '基础无重掷'}效果骰原确认`, async ({ page, game }, info) => {
     test.setTimeout(120000);
     await attack(page, game, info, { dice: [1, 1, 4, 4, 4], slot: 'sky', upgrade: upgraded ? 'upgrade-thor-odinforce-2' : undefined, bonus: [4, 4, 6, 6, 6] });
@@ -141,7 +263,7 @@ for (const upgraded of [false, true]) test(`索尔奥丁${upgraded ? '二级空�
     await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
     if (upgraded) await expect(page.getByTestId('dice-interaction-hint')).toContainText('确认保留当前结果');
     else await expect(page.getByTestId('dice-interaction-hint')).toHaveText('确认效果骰结果并继续结算');
-    await expectDiceHintSurface(page, 'dice-tray-top');
+    await expectDiceHintSurface(page, 'dice-tray-left-center');
     await shot(page, info, '02-五颗效果骰与原确认保留结果');
     await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
     await expect.poll(async () => { const s = await game.getState(); return { phase: s.sys.phase, electro: s.core.players['0'].tokens.electrokinesis, cp: s.core.players['0'].resources.cp, reroll: s.core.pendingBonusDiceSettlement ?? null }; }).toEqual({ phase: 'defensiveRoll', electro: 3, cp: upgraded ? 9 : 11, reroll: null });
@@ -153,10 +275,10 @@ test('索尔连锁二级四颗效果骰保留六个组合选择', async ({ page,
     test.setTimeout(120000);
     await attack(page, game, info, { dice: [1, 1, 1, 6, 6], slot: 'lotus', upgrade: 'upgrade-thor-chain-lightning-2', bonus: [1, 2, 4, 6] });
     await expect.poll(async () => (await game.getState()).core.pendingBonusDiceSettlement?.dice.length).toBe(4);
-    await expectDiceHintSurface(page, 'dice-tray-top');
+    await expectDiceHintSurface(page, 'dice-tray-left-center');
     await shot(page, info, '02-四颗效果骰先由原骰盘确认');
     await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
-    await expectDiceHintSurface(page, 'game-hints-top-center');
+    await expectDiceHintSurface(page, 'dice-tray-left-center');
     await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择两颗效果骰');
     await expect(page.getByTestId('dicethrone-2d-dice-tray')).toHaveAttribute('data-dice-count', '4');
     await expect(page.locator('[data-option-id]')).toHaveCount(0);

@@ -47,26 +47,32 @@ const OperationGuideZoomableImage = ({
     alt,
     testId,
     onZoom,
-}: OperationGuideZoomableImageProps) => (
+}: OperationGuideZoomableImageProps) => {
+    const { t } = useTranslation('game');
+    const [failed, setFailed] = useState(false);
+    return (
     <button
         type="button"
         className="relative block w-full cursor-zoom-in overflow-hidden bg-transparent text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f4dfb8]"
-        aria-label={alt}
+        aria-label={failed ? String(t('hud.operationGuide.visual.retryImage')) : alt}
         data-testid={`${testId}-zoom-trigger`}
-        onClick={() => onZoom({ src: image.src, alt })}
+        onClick={() => failed ? setFailed(false) : onZoom({ src: image.src, alt })}
     >
-        <img
+        {failed ? <span role="alert" className="block p-6 text-center text-sm">{t('hud.operationGuide.visual.loadFailed')} <span className="underline">{t('hud.operationGuide.visual.retryImage')}</span></span> : <img
             className="block w-full object-contain"
             src={image.src}
             width={image.width}
             height={image.height}
             alt={alt}
             loading="lazy"
+            draggable={false}
+            onError={() => setFailed(true)}
             data-testid={testId}
-        />
-        <span aria-hidden="true" className="pointer-events-none absolute right-2 top-2 grid h-8 w-8 place-items-center border-2 border-black bg-white text-black shadow-sm"><Maximize2 size={16}/></span>
+        />}
+        {!failed && <span aria-hidden="true" className="pointer-events-none absolute right-2 top-2 grid h-8 w-8 place-items-center border-2 border-black bg-white text-black shadow-sm"><Maximize2 size={16}/></span>}
     </button>
-);
+    );
+};
 
 const OperationGuideScreenshotFigure = ({ t, surface, onZoom, showHomeScreenshot = true }: OperationGuideScreenshotFigureProps) => {
     const homeScreenshotAlt = String(t(operationGuideScreenshotAltKeys[surface]));
@@ -200,10 +206,18 @@ const OperationGuideModal = ({
 
                     <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4" data-testid="operation-guide-scroll-body">
                         {visualStyle === 'platform' && <section className="platform-guide-intro" aria-label={String(t('hud.operationGuide.platform.title'))}>
-                            {['browse','favorite','settings'].map(key => <div key={key}>
-                                <h3>{t(`hud.operationGuide.platform.${key}Title`)}</h3>
-                                <p>{t(`hud.operationGuide.platform.${key}Body`)}</p>
-                            </div>)}
+                            <div>
+                                <h3>{t('hud.operationGuide.platform.browseTitle')}</h3>
+                                <p>{t('hud.operationGuide.platform.browseBody')}</p>
+                            </div>
+                            <div>
+                                <h3>{t('hud.operationGuide.platform.favoriteTitle')}</h3>
+                                <p>{t('hud.operationGuide.platform.favoriteBody')}</p>
+                            </div>
+                            <div>
+                                <h3>{t('hud.operationGuide.platform.settingsTitle')}</h3>
+                                <p>{t('hud.operationGuide.platform.settingsBody')}</p>
+                            </div>
                             <h3>{t('hud.operationGuide.platform.gameImages')}</h3>
                         </section>}
                         <OperationGuideScreenshotFigure t={t} surface={surface} onZoom={openZoomScreenshot} showHomeScreenshot={visualStyle !== 'platform'} />
@@ -259,6 +273,7 @@ const OperationGuideModal = ({
                             className="block max-h-[calc(100dvh-6.5rem)] w-full border border-white/20 object-contain"
                             style={originalSize ? {width:'auto',maxWidth:'none',maxHeight:'none'} : undefined}
                             src={zoomScreenshot.src}
+                            draggable={false}
                             alt={zoomScreenshot.alt}
                             data-testid="operation-guide-image-viewer-image"
                         />

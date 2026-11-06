@@ -2,7 +2,10 @@ import { FEEDBACK_API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { isStaleChunkError } from '../staleChunkReloadGuard';
 import { buildFeedbackClientContext, getCurrentRouteContext } from './clientFeedbackContext';
 import { buildGameFeedbackActionLog, buildGameFeedbackStateSnapshot } from './gameFeedbackDiagnostics';
-import { getCurrentGameFeedbackContext } from './gameFeedbackContext';
+import {
+    getCurrentGameFeedbackContext,
+    getCurrentGameFeedbackDiagnosticContext,
+} from './gameFeedbackContext';
 import { setLastErrorContext } from './errorContext';
 import { deliverFeedbackWithRetry, FeedbackDeliveryHttpError } from './feedbackDelivery';
 import { prepareFeedbackReplayCapture, requestFeedbackReplayCapture } from './feedbackReplayBridge';
@@ -370,16 +373,19 @@ export async function reportClientAutoFeedbackOnce(signature: string, payload: C
     const gameId = resolveClientAutoReportGameId(payload.gameId, payload.gameName, gameIdFromRoute);
     const source = payload.source || DEFAULT_CLIENT_AUTO_REPORT_SOURCE;
     const gameFeedbackContext = getCurrentGameFeedbackContext();
+    const diagnosticContext = getCurrentGameFeedbackDiagnosticContext();
+    const state = diagnosticContext.state ?? gameFeedbackContext?.state;
     const playerId = payload.playerId ?? gameFeedbackContext?.playerId ?? undefined;
     const clientContext = buildFeedbackClientContext({ mode, matchId, playerId, gameId });
-    const actionLog = gameFeedbackContext?.state
-        ? buildGameFeedbackActionLog(gameFeedbackContext.state)
+    const actionLog = state
+        ? buildGameFeedbackActionLog(state)
         : undefined;
-    const stateSnapshot = gameFeedbackContext?.state
-        ? buildGameFeedbackStateSnapshot(gameFeedbackContext.state)
+    const stateSnapshot = state
+        ? buildGameFeedbackStateSnapshot(state)
         : undefined;
     const diagnostic = buildFeedbackDiagnosticPacket({
-        state: gameFeedbackContext?.state,
+        ...diagnosticContext,
+        state,
         clientContext,
         source: 'client-auto',
         chainId: 'auto-' + signature,

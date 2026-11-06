@@ -11,19 +11,16 @@ const movementCommand=(intent:FateMovementIntent,playerId:string,target:Location
 /** Local choice only. All destinations and final submission are checked by the domain validator. */
 export function useFateMovementInteraction(state:MatchState<FateDominationCore>,playerId:string|null){
  const [intent,setIntent]=useState<FateMovementIntent|null>(null);
- const [target,setTarget]=useState<LocationId|null>(null);
- const cancel=()=>{setIntent(null);setTarget(null);};
+ const cancel=()=>setIntent(null);
  useEffect(cancel,[playerId,state.core.currentPlayerId,state.core.phase,state.sys.tutorial.active ? `${state.sys.tutorial.step?.id}:${state.sys.undo.rollbackRevision}` : undefined]);
  const legalTargets=(candidate:FateMovementIntent)=>playerId?FATE_LOCATION_ORDER.filter(id=>validate(state,movementCommand(candidate,playerId,id)).valid):[];
- const begin=(candidate:FateMovementIntent)=>{if(legalTargets(candidate).length){setIntent(candidate);setTarget(null);}};
+ const begin=(candidate:FateMovementIntent)=>{if(legalTargets(candidate).length)setIntent(candidate);};
  const targets=intent?legalTargets(intent):[];
  const targetKey=targets.join('|');
  useEffect(()=>{
   if(!intent)return;
-  if(!targetKey){setIntent(null);setTarget(null);return;}
-  if(target&&!targetKey.split('|').includes(target))setTarget(null);
- },[intent,target,targetKey]);
- const command=intent&&playerId&&target&&targets.includes(target)?movementCommand(intent,playerId,target):null;
- return {intent,target,targets,command,begin,cancel,normalAvailable:legalTargets({kind:'normal'}).length>0,
-  select:(id:LocationId)=>{if(targets.includes(id))setTarget(id);},legalTargets};
+  if(!targetKey)setIntent(null);
+ },[intent,targetKey]);
+ const commandFor=(id:LocationId)=>intent&&playerId?movementCommand(intent,playerId,id):null;
+ return {intent,targets,commandFor,begin,cancel,normalAvailable:legalTargets({kind:'normal'}).length>0,legalTargets};
 }

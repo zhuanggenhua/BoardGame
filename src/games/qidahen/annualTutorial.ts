@@ -23,7 +23,7 @@ const HUD_PROTECTION = ['[data-testid="qidahen-faction-actions"]', '[data-testid
     '[data-testid="qidahen-draw-anchor"]', '[data-testid="qidahen-discard-anchor"]', '[data-testid="qidahen-tactic-card-selection-panel"]'];
 // 仅保留正式UI已标记的当前来源、目标、全部候选、交战与维护上下文。
 const CURRENT_MAP_TASK_PROTECTION = ['[data-qidahen-map-protected-token="true"]', '[data-qidahen-map-protected-population="true"]',
-    '[data-pending-committed-selectable="true"]', '[data-testid="qidahen-map-region-focus-name"]', '[data-qidahen-map-context-space]'];
+    '[data-pending-committed-selectable="true"]', '[data-testid="qidahen-map-region-focus-name"]', '[data-qidahen-map-context-space]', '[data-qidahen-fortification-context]'];
 const PROTECTED_UI = [...HUD_PROTECTION, ...CURRENT_MAP_TASK_PROTECTION];
 
 const action = (id: string, command: string, event: string, highlightTarget: string, match?: Record<string, unknown>, extra: Partial<TutorialStep> = {}): TutorialStep => ({
@@ -87,7 +87,10 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
         wheelChoice('dispatch-action', 'dispatch'),
         payChoice('dispatch-payment', 'dispatch-payment', ['deck-ming-11']),
         mapChoice('dispatch-source', 'dispatch-source', ['city-region-15']),
-        mapChoice('dispatch-troops', 'dispatch-troops', [...sourceInfantry, sourceArtillery], 'city-region-15'),
+        { ...mapChoice('dispatch-troops', 'dispatch-troops', [...sourceInfantry, sourceArtillery], 'city-region-15'),
+            position: 'top', tooltipMaxWidth: 380,
+            tooltipArrow: 'anchor',
+            tooltipAnchorTarget: `qidahen-map-token-city-region-15-army-${sourceInfantry[0]}` },
         mapChoice('dispatch-target', 'dispatch-target', ['city-region-7']),
         info('defender-response', 'qidahen-raid-intent', { aiActions: [response('defender-fight', '1')], autoAdvanceAfterAi: false }),
         action('tactic-card', 'PLAY_TACTIC_CARD', 'TACTIC_CARD_PLAYED', 'qidahen-hand-zone', undefined, { position: 'top', allowedTargets: ['hand-2'], compactTooltipWidth: 260 }),
@@ -145,7 +148,15 @@ export const QIDAHEN_ANNUAL_TUTORIAL: TutorialManifest = {
     ] satisfies TutorialStep[]).map(step => {
         const target = step.highlightTarget === 'qidahen-hand-zone' && step.allowedTargets?.length === 1
             ? `qidahen-hand-card-${step.allowedTargets[0]}` : step.highlightTarget;
-        const framed = step.highlightTarget === 'qidahen-hand-zone' || step.id === 'finish' ? { ...step, highlightTarget: target, highlightFrame: 'none' as const } : { ...step, highlightTarget: target };
+        const handAnchor = step.highlightTarget === 'qidahen-hand-zone' && step.allowedTargets?.length
+            ? `qidahen-hand-card-${step.allowedTargets[0]}` : undefined;
+        const anchored = { ...step, highlightTarget: target, tooltipAnchorTarget: handAnchor ?? step.tooltipAnchorTarget,
+            // 读手牌时地图属于背景，只有同层手牌、支付控件和常驻HUD参与避让。
+            ...(step.highlightTarget === 'qidahen-hand-zone' || step.id === 'upgrade-card'
+                ? { avoidOverlapSelectors: HUD_PROTECTION, tooltipMaxWidth: 380 } : {}),
+        };
+        const framed = step.highlightTarget === 'qidahen-hand-zone' || step.id === 'finish'
+            ? { ...anchored, highlightFrame: 'none' as const } : anchored;
         return SELF_EXPLANATORY_INPUTS.has(step.id) ? { ...framed, content: '', hideOverlay: true } : framed;
     }),
 };

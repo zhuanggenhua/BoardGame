@@ -573,7 +573,12 @@ const containsAsciiLetters = (value: string): boolean => /[A-Za-z]/.test(value);
 
 const normalizeVisibleTextLiteral = (value: string): string => value.replace(/\s+/g, ' ').trim();
 
-const normalizeLocaleAuditValue = (value: string): string => value
+// Trans 的基础排版标签不属于可见文案，标签内部文字仍须接受英文检查。
+const stripLocaleRichTextMarkup = (value: string): string => value
+    .replace(/<(strong|b|em|i|p|code|span)>([\s\S]*?)<\/\1>/g, (_match, _tag: string, content: string) => ` ${stripLocaleRichTextMarkup(content)} `)
+    .replace(/<br\s*\/?>/g, ' ');
+
+const normalizeLocaleAuditValue = (value: string): string => stripLocaleRichTextMarkup(value)
     .replace(/\{\{[^}]+\}\}/g, ' ')
     .replace(/\[[^\]]+\]/g, ' ')
     .replace(/[“”"'`]/g, ' ')

@@ -12,6 +12,18 @@ const privateAll = process.argv.includes('--all-diagnostic');
 const out = path.resolve(diagnostic ? '.tmp/home-full-diagnostic' : privateAll ? '.tmp/home-full-all-diagnostic' : process.env.HOME_REVIEW_OUT ?? 'test-results/evidence-screenshots/platform/home-full-20261030');
 mkdirSync(out, { recursive: true });
 const images = [];
+
+async function openPlatformProfile(page) {
+    const menuLabel = /^(菜单|Menu)$/;
+    const profileLabel = /^(个人主页|Profile)$/;
+    const desktopEntry = page.getByRole('navigation', { name: menuLabel }).getByRole('button', { name: profileLabel });
+    if (await desktopEntry.count() > 0) await desktopEntry.click();
+    else {
+        await page.getByRole('button', { name: menuLabel }).click();
+        await page.getByRole('dialog', { name: menuLabel }).getByRole('button', { name: profileLabel }).click();
+    }
+    await expect(page.getByTestId('profile-page')).toBeVisible();
+}
 const checks = [];
 let currentPage;
 const fixture = await createHomeVisualFixture();
@@ -116,7 +128,7 @@ async function fullReview(page, context, label, mobile) {
     await reset(page);
     await page.getByTestId('user-menu-trigger').click();
     await shot(page, label, '账户菜单', '账户菜单集中展示个人中心、社交、账户和反馈入口');
-    await page.getByTestId('user-menu-profile').click();
+    await openPlatformProfile(page);
     await page.getByTestId('profile-page').waitFor();
     await shot(page, label, '个人中心概览', '个人中心展示模拟的多条对局记录、外站游玩和账户统计');
     await page.getByRole('button', { name: '编辑个人资料', exact: true }).click();
@@ -205,8 +217,7 @@ async function fullReview(page, context, label, mobile) {
     await page.evaluate(() => { localStorage.removeItem('owner_active_match'); window.dispatchEvent(new Event('owner-active-match-changed')); });
     for (const [id, selector, state, description] of [
         ['settings', '[data-testid="fab-panel-settings"]', '浮球设置', '设置沿用浮球原浮窗，现代选中态与音量控件可见'],
-        ['about', '[data-platform-dialog="about"]', '关于平台', '关于弹层展示平台信息与赞助列表，没有新增支付入口'],
-        ['feedback', '[data-platform-dialog="feedback"]', '反馈表单', '反馈表单显示类型、描述和截图入口，未向服务端提交'],
+        ['feedback', '[data-platform-dialog="feedback"]', '反馈表单', '反馈表单显示类型、描述和截图粘贴说明，未向服务端提交'],
     ]) {
         await reset(page);
         await page.getByTestId('fab-menu').locator('button').first().click();

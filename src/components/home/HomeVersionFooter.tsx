@@ -259,11 +259,13 @@ export function HomeVersionFooter({
         : themeClasses.baseText;
 
     return (
+        <div className={`${positionMode} z-30 inline-flex max-w-[calc(100vw-1.5rem)] items-end gap-3 select-none ${positionClassName}`} data-testid="home-version-footer-row">
+        {!isNativeAndroid && !compact && <span className={`home-download-hint whitespace-nowrap text-[0.7rem] md:text-[0.78rem] ${themeClasses.mutedText}`}>{t('home.appDownloadHint')}</span>}
         <button
             type="button"
             data-testid={testId}
             onClick={handleVersionFooterClick}
-            className={`${positionMode} z-30 max-w-[min(72vw,20rem)] select-none text-[0.7rem] leading-none tracking-[0.08em] ${align === 'left' ? 'text-left' : 'text-right'} ${compact ? 'whitespace-nowrap' : ''} cursor-pointer md:text-[0.78rem] ${positionClassName}`}
+            className={`max-w-[min(72vw,20rem)] select-none text-[0.7rem] leading-none tracking-[0.08em] ${align === 'left' ? 'text-left' : 'text-right'} ${compact ? 'whitespace-nowrap' : ''} cursor-pointer md:text-[0.78rem]`}
             aria-label={shouldShowNativeAppVersion
                 ? otaEnabledForCurrentShell
                     ? otaVersionMismatch
@@ -314,5 +316,6 @@ export function HomeVersionFooter({
                 </span>
             )}
         </button>
+        </div>
     );
 }

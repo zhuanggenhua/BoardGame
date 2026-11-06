@@ -83,6 +83,20 @@ async function withNetworkMatch(run: (match: {
     }
 }
 
+it('真实网络查看本人手牌不向其他席位泄露牌实例或日志内容',async()=>{
+    await withNetworkMatch(async ({clients,state,send})=>{
+        await send('0','ADVANCE_PHASE');
+        const privateId=(await state()).core.players['0'].hand[0].id;
+        await send('0','INSPECT_CARD',{cardId:privateId});
+        for(const client of clients.slice(1)){
+            const view=client.latestState as State;
+            expect(JSON.stringify(view.sys.actionLog)).not.toContain(privateId);
+            expect(JSON.stringify(view.sys.eventStream)).not.toContain(privateId);
+        }
+        expect(JSON.stringify((clients[0].latestState as State).sys.actionLog)).toContain(privateId);
+    });
+},30000);
+
 it('真实三客户端网络自然推进十一轮，私有手牌裁剪与权威终局一致（协议层，非浏览器黄金链）', async () => {
     await withNetworkMatch(async ({clients, errors, state, send}) => {
         let commands = 0;

@@ -2,7 +2,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { randomBytes } from 'node:crypto';
 import { runE2ECommand } from './run-e2e-command.mjs';
 
-const mongo = await MongoMemoryServer.create({ instance: { dbName: 'feedback_capture_e2e' } });
+const mongo = await MongoMemoryServer.create({ instance: { dbName: 'feedback_capture_e2e', ip: '127.0.0.1', port: 55432 } });
 try {
     const uri = mongo.getUri('feedback_capture_e2e');
     await runE2ECommand({ mode: 'isolated', entrypoint: 'run-feedback-capture-e2e',

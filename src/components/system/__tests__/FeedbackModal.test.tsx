@@ -5,7 +5,10 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import * as AuthContextModule from '../../../contexts/AuthContext';
 import { ToastProvider } from '../../../contexts/ToastContext';
-import { setCurrentGameFeedbackContext } from '../../../lib/feedback/gameFeedbackContext';
+import {
+    recordGameFeedbackCommand,
+    setCurrentGameFeedbackContext,
+} from '../../../lib/feedback/gameFeedbackContext';
 
 const feedbackScreenshotMocks = vi.hoisted(() => ({
     captureCurrentFeedbackScreenshot: vi.fn(async () => 'data:image/jpeg;base64,manual-capture'),
@@ -305,6 +308,7 @@ describe('FeedbackModal', () => {
 
     it('游戏页全局反馈没有显式传参时仍附带当前游戏诊断', async () => {
         window.history.pushState({}, '', '/play/betrayal/match/tIB30DkkiVZ?playerID=0');
+        const privateCanary = 'hidden-card-option-seed-canary';
         setCurrentGameFeedbackContext({
             playerId: '0',
             isGameOver: false,
@@ -316,8 +320,10 @@ describe('FeedbackModal', () => {
                     actionLog: {
                         entries: [
                             {
-                                text: '玩家 0 结算事件：小机器人',
-                                event: { type: 'resolveEvent' },
+                                id: 'damage-resolution',
+                                actorId: '0',
+                                kind: 'DAMAGE_RESOLVED',
+                                segments: [{ type: 'text', text: privateCanary }],
                                 timestamp: 123,
                             },
                         ],
@@ -325,9 +331,12 @@ describe('FeedbackModal', () => {
                     eventStream: {
                         entries: [
                             {
-                                type: 'damage-pending',
-                                timestamp: 124,
-                                payload: { title: '小机器人', damageKind: 'physical' },
+                                id: 1,
+                                event: {
+                                    type: 'DAMAGE_PENDING',
+                                    timestamp: 124,
+                                    payload: { title: privateCanary, damageKind: 'physical' },
+                                },
                             },
                         ],
                     },
@@ -341,6 +350,7 @@ describe('FeedbackModal', () => {
                     },
                     interaction: { current: null },
                     responseWindow: { current: null },
+                    randomSeed: privateCanary,
                 },
                 core: {
                     pendingDamageAllocation: {
@@ -348,6 +358,7 @@ describe('FeedbackModal', () => {
                         amount: 2,
                         damageKind: 'physical',
                     },
+                    players: { '0': { hand: [{ id: privateCanary }] } },
                 },
             } as any,
         });
@@ -380,10 +391,111 @@ describe('FeedbackModal', () => {
             },
         });
         expect(body.actionLog).toContain('user-feedback-diagnostic');
-        expect(body.actionLog).toContain('玩家 0 结算事件：小机器人');
-        expect(body.actionLog).toContain('damage-pending');
+        expect(body.actionLog).toContain('DAMAGE_RESOLVED');
+        expect(body.actionLog).toContain('DAMAGE_PENDING');
         expect(body.stateSnapshot).toContain('pendingDamageAllocation');
         expect(body.stateSnapshot).toContain('physical');
+        expect(body.actionLog).not.toContain(privateCanary);
+        expect(body.stateSnapshot).not.toContain(privateCanary);
+    });
+
+    it('手动反馈附带命令关联及触发命令前后快照', async () => {
+        window.history.pushState({}, '', '/play/dicethrone/match/match-1');
+        const before = {
+            sys: {
+                phase: 'offensiveRoll',
+                stateId: 41,
+                revision: 7,
+                decisionEpoch: 3,
+                interaction: { current: { id: 'choice-request', kind: 'choice' } },
+                responseWindow: { current: undefined },
+                actionLog: { entries: [] },
+                eventStream: { entries: [] },
+                undo: { snapshots: [] },
+            },
+            core: { marker: 'before' },
+        } as any;
+        const after = {
+            ...before,
+            sys: {
+                ...before.sys,
+                phase: 'defensiveRoll',
+                stateId: 42,
+                revision: 8,
+                decisionEpoch: 4,
+                interaction: { current: undefined },
+            },
+            core: { marker: 'after' },
+        };
+        setCurrentGameFeedbackContext({
+            state: before,
+            scopeId: 'online:match-1',
+            playerId: '0',
+            isLocalMode: false,
+            stateId: 41,
+            stateRevision: 7,
+            randomCursor: 11,
+        });
+        recordGameFeedbackCommand({
+            commandType: 'RESOLVE_INTERACTION',
+            payload: { interactionId: 'choice-request', optionId: 'hidden-card-option-canary' },
+            playerId: '0',
+        });
+        setCurrentGameFeedbackContext({
+            state: after,
+            scopeId: 'online:match-1',
+            playerId: '0',
+            isLocalMode: false,
+            stateId: 42,
+            stateRevision: 8,
+            randomCursor: 13,
+        });
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    runtimeContext={{ mode: 'online', matchId: 'match-1', playerId: '0', gameId: 'dicethrone' }}
+                />
+            </TestWrapper>
+        );
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '手动反馈测试' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交反馈/ }));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+        const request = (global.fetch as any).mock.calls[0][1];
+        const body = JSON.parse(request.body);
+        const packet = JSON.parse(body.diagnosticPacket);
+        expect(packet.snapshots.before.sys.phase).toBe('offensiveRoll');
+        expect(packet.snapshots.after.sys.phase).toBe('defensiveRoll');
+        expect(packet.correlation).toMatchObject({ matchId: 'match-1', requestId: 'choice-request', stateId: 42, stateRevision: 8 });
+        expect(packet.randomCursor).toBe(13);
+        expect(packet.lastCommand).toMatchObject({ commandType: 'RESOLVE_INTERACTION', playerId: '0' });
+        expect(packet.lastCommand).not.toHaveProperty('payload');
+        expect(body.diagnosticPacket).not.toContain('hidden-card-option-canary');
+    });
+
+    it('取消附带状态快照时不发送状态快照与诊断状态包', async () => {
+        window.history.pushState({}, '', '/play/dicethrone/match/match-1');
+        const sensitiveState = {
+            sys: { phase: 'private-phase', interaction: { current: { id: 'private-choice', kind: 'choice' } } },
+            core: { privateMarker: 'must-not-send' },
+        } as any;
+        setCurrentGameFeedbackContext({ state: sensitiveState, playerId: '0', isLocalMode: true });
+        render(
+            <TestWrapper>
+                <FeedbackModal onClose={mockOnClose} />
+            </TestWrapper>
+        );
+
+        fireEvent.click(screen.getByLabelText(/附带状态快照/i));
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '隐私选项测试' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交反馈/ }));
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+        const body = JSON.parse((global.fetch as any).mock.calls[0][1].body);
+        expect(body.diagnosticPacket).toBeUndefined();
+        expect(body.stateSnapshot).toBeUndefined();
     });
 
     it('应该在取消勾选后不包含 actionLog', async () => {

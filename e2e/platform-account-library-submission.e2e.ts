@@ -10,6 +10,18 @@ import sharp from 'sharp';
 import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { E2E_SINGLE_WORKER_PORTS } from '../scripts/infra/e2e-port-config.js';
 
+async function openPlatformProfile(page: Page) {
+    const menuLabel = /^(菜单|Menu)$/;
+    const profileLabel = /^(个人主页|Profile)$/;
+    const desktopEntry = page.getByRole('navigation', { name: menuLabel }).getByRole('button', { name: profileLabel });
+    if (await desktopEntry.count() > 0) await desktopEntry.click();
+    else {
+        await page.getByRole('button', { name: menuLabel }).click();
+        await page.getByRole('dialog', { name: menuLabel }).getByRole('button', { name: profileLabel }).click();
+    }
+    await expect(page.getByTestId('profile-page')).toBeVisible();
+}
+
 test.use({ trace: 'retain-on-failure', launchOptions: {
     chromiumSandbox: true,
     ...(process.platform === 'win32' ? { args: ['--disable-gpu'] } : {}),
@@ -396,9 +408,7 @@ test('账户收藏写入服务端、刷新保留且账户互相隔离', async ({
             expect(savedLibrary.gameIds).toEqual(['betrayal']);
             firstAccountGameIds = savedLibrary.gameIds;
             await expect(first.page.getByRole('button', { name: '移出收藏：山屋惊魂' })).toHaveAttribute('aria-pressed', 'true');
-            await first.page.getByTestId('user-menu-trigger').click();
-            await first.page.getByTestId('user-menu-profile').click();
-            await expect(first.page.getByTestId('profile-page')).toBeVisible();
+            await openPlatformProfile(first.page);
             const favoriteCount = first.page.getByTestId('profile-rail').locator('dl div').filter({ hasText: '收藏' }).locator('dd');
             await expect(favoriteCount).toHaveText('1');
             chain.steps.push({ id: 'favorite-write', action: '登录账户甲后收藏山屋惊魂并查看个人中心计数', before: { visible: { favoritePressed: favoritePressedBefore === 'true' }, authoritative: { accountId: loginResult.userId } }, after: { visible: { favoritePressed: true, profileVisible: true, favoriteCount: '1' }, authoritative: { httpStatus: saveResponse.status(), gameIds: savedLibrary.gameIds } }, assertions: [{ name: '收藏接口写入账户集合', actual: savedLibrary.gameIds, expected: ['betrayal'] }, { name: '个人中心显示已收藏数量', actual: await favoriteCount.innerText(), expected: '1' }] });
@@ -475,6 +485,7 @@ test('账户收藏写入服务端、刷新保留且账户互相隔离', async ({
 
 test('外部投稿创建、编辑、上传图片、送审和列表读回并显示失败反馈', async ({ browser }, testInfo) => {
     testInfo.setTimeout(60_000);
+    const mobileSubmission = process.env.PLATFORM_E2E_SUBMISSION_MOBILE === 'true';
     const chain: Chain = { chainId: `submission-${RUN_ID}`, sourceRun: RUN_ID, sourceRevision: SOURCE_REVISION, evidenceFile: '投稿链行为追踪.json', status: 'IN_PROGRESS', outcome: '', steps: [], uiStates: [] };
     chains.push(chain);
     try {
@@ -484,13 +495,14 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             const loginResult = await login(page, alice);
             const initialList = await readSubmissionList(page, loginResult.token);
             expect(initialList.body.items).toEqual([]);
-            await page.getByRole('button', { name: '菜单', exact: true }).click();
+            if (mobileSubmission) await page.getByRole('button', { name: '菜单', exact: true }).tap();
             await page.getByRole('button', { name: '上传', exact: true }).click();
             await expect(page.getByRole('heading', { name: '上传新游戏' })).toBeVisible();
             await expect(page.getByRole('heading', { name: '基本资料', exact: true })).toBeVisible();
             await expect(page.getByRole('heading', { name: '介绍与规则', exact: true })).toBeVisible();
             await expect(page.getByRole('button', { name: '添加封面', exact: true })).toBeVisible();
-            await expect(page.locator('input[type="file"]')).toBeHidden();
+            const coverInput = page.getByLabel('封面', { exact: true });
+            await expect(coverInput).toBeHidden();
             const title = `合成桌游投稿-${RUN_ID.slice(-6)}`;
             const editedTitle = `${title}-已修改`;
             const fillDraft = async (name: string, description: string) => {
@@ -498,13 +510,12 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
                 await page.locator('input[name="url"]').fill('https://example.com/synthetic-boardgame');
                 await page.locator('select[name="minPlayers"]').selectOption('2');
                 await page.locator('select[name="maxPlayers"]').selectOption('4');
-                await page.locator('input[name="durationMinutes"]').fill('20');
                 await page.locator('input[name="author"]').fill('合成测试作者');
                 await page.locator('textarea[name="description"]').fill(description);
                 await page.locator('textarea[name="rules"]').fill('合成测试规则，不含真实投稿内容。');
             };
             await fillDraft(title, '第一次保存的合成介绍');
-            await page.locator('input[type="file"]').setInputFiles({ name: '损坏封面.png', mimeType: 'image/png', buffer: Buffer.from('synthetic invalid image bytes') });
+            await coverInput.setInputFiles({ name: '损坏封面.png', mimeType: 'image/png', buffer: Buffer.from('synthetic invalid image bytes') });
             const createResponsePromise = page.waitForResponse(response => response.url().endsWith('/ugc/submissions') && response.request().method() === 'POST');
             const invalidUploadResponsePromise = page.waitForResponse(response => /\/ugc\/submissions\/[^/]+\/cover$/.test(new URL(response.url()).pathname) && response.request().method() === 'POST');
             await page.getByRole('button', { name: '提交审核' }).click();
@@ -522,7 +533,7 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
 
             await fillDraft(editedTitle, '修订后的介绍已保存到投稿');
             const cover = await sharp({ create: { width: 32, height: 24, channels: 3, background: '#346789' } }).png().toBuffer();
-            await page.locator('input[type="file"]').setInputFiles({ name: '合成封面.png', mimeType: 'image/png', buffer: cover });
+            await coverInput.setInputFiles({ name: '合成封面.png', mimeType: 'image/png', buffer: cover });
             const beforeEditList = await readSubmissionList(page, loginResult.token);
             const draftBeforeEdit = beforeEditList.body.items.find(item => item.submissionId === id);
             expect(draftBeforeEdit).toMatchObject({ submissionId: id, name: title, status: 'draft' });
@@ -549,7 +560,6 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
             expect((await sharp(storedBytes).metadata()).format).toBe('webp');
             await expect(page.getByRole('status').filter({ hasText: '待审核' }).first()).toBeVisible();
             await expect.poll(async () => page.getByAltText('投稿封面预览').evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
-            const mobileSubmission = process.env.PLATFORM_E2E_SUBMISSION_MOBILE === 'true';
             if (mobileSubmission) await page.getByRole('button', { name: '工坊列表', exact: true }).click();
             await expect(page.getByRole('button', { name: new RegExp(`${editedTitle}.*待审核`) })).toBeVisible();
             const coverPreviewLoaded = await page.getByAltText('投稿封面预览').evaluate(image => (image as HTMLImageElement).naturalWidth > 0);
@@ -562,8 +572,8 @@ test('外部投稿创建、编辑、上传图片、送审和列表读回并显�
                 await page.evaluate(() => window.scrollTo(0, 0));
                 await capture(page, 'submission-pending-form', '手机送审后表单顶部.png', 'edit-upload-submit-readback', 'panel', '关闭工坊列表后，修订后的标题、表单与待审核状态可见');
             }
-            await page.getByRole('button', { name: '提交审核', exact: true }).scrollIntoViewIfNeeded();
-            await capture(page, 'submission-pending-cover', '送审后封面滚动可见.png', 'edit-upload-submit-readback', 'panel', '滚动至封面后，已上传图片与提交入口完整可见');
+            await page.getByAltText('投稿封面预览').scrollIntoViewIfNeeded();
+            await capture(page, 'submission-pending-cover', '送审后封面滚动可见.png', 'edit-upload-submit-readback', 'panel', '滚动至封面后，已上传图片仍可见');
         } finally {
             await context.close();
         }

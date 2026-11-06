@@ -12,18 +12,20 @@ export interface ImplementationStatusRibbonProps {
     label: string;
     testId?: string;
     className?: string;
+    unit?: string;
 }
 
 export const ImplementationStatusRibbon: React.FC<ImplementationStatusRibbonProps> = ({
     label,
     testId,
     className = 'absolute inset-0 z-40 overflow-hidden pointer-events-none',
+    unit,
 }) => (
     <div className={className} data-testid={testId}>
         <CharacterSelectionBadge
             badge={IMPLEMENTATION_BADGE}
             label={label}
-            inlineUnit={(value) => `${value}rem`}
+            inlineUnit={(value) => unit ? `calc(${value} * ${unit})` : `${value}rem`}
             testId={testId ? `${testId}-label` : 'implementation-status-ribbon-label'}
         />
     </div>

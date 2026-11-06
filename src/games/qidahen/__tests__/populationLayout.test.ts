@@ -8,7 +8,8 @@ import { createInitialCore } from '../domain/initialCoreSetup';
 
 const width = 1265, height = 893;
 let owners: (string | null)[];
-const regions = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map(region => ({
+// 城市使用独立字牌命中，不伪造为拥有土地像素的地区。
+const regions = QIDAHEN_RUNTIME_REGION_DEFINITIONS.filter(region => region.mapRole !== 'city').map(region => ({
     id: region.id, x: region.center!.x / width, y: region.center!.y / height,
     population: 2, isLogicalRegion: false,
 }));
@@ -20,9 +21,9 @@ beforeAll(async () => {
 });
 
 describe('七大恨人口标记的区域归属与占位', () => {
-    it('37区中心与内部锚点归属正确；完整方块留在本区，窄区引线指回本区且所有方块互不重叠', () => {
+    it('土地地区中心与内部锚点归属正确；完整方块留在本区，窄区引线指回本区且所有方块互不重叠', () => {
         const placements = layoutQidahenPopulation(sites, regions, [], width, height);
-        expect(placements).toHaveLength(37);
+        expect(placements.map(placement => placement.regionId).sort()).toEqual(regions.map(region => region.id).sort());
         for (const region of regions) {
             expect(owners[Math.round(region.y * height) * width + Math.round(region.x * width)], region.id).toBe(region.id);
         }

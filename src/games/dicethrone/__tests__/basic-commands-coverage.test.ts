@@ -402,6 +402,7 @@ describe('AI legal actions', () => {
 
         expect(rawCharacterIds).toContain('lieren');
         expect(rawCharacterIds).toContain('vampire_lord');
+        expect(contextCharacterIds).toContain('doctor_strange');
         expect(contextCharacterIds).not.toContain('lieren');
         expect(contextCharacterIds).not.toContain('vampire_lord');
     });
@@ -2850,7 +2851,7 @@ describe('AI legal actions', () => {
             titleKey: 'interaction.selectDieToAdjust',
             selectCount: 1,
             selected: [],
-            dieModifyConfig: { mode: 'adjust' },
+            dieModifyConfig: { mode: 'adjust', adjustRange: { min: -5, max: 5 } },
             diceOwnerId: '1',
             targetOpponentDice: true,
         };
@@ -2870,6 +2871,25 @@ describe('AI legal actions', () => {
         const payload = modifyCommand?.payload as { dieId: number; newValue: number };
         const originalValue = state.core.dice.find((die) => die.id === payload.dieId)?.value ?? 0;
         expect(payload.newValue).toBeLessThan(originalValue);
+    });
+
+    it('adjust 配置缺少范围时应拒绝骰值修改而不抛异常', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        injectPendingInteraction(state, {
+            id: 'ai-adjust-missing-range',
+            playerId: '0',
+            sourceCardId: 'adjust-missing-range-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToAdjust',
+            selectCount: 1,
+            selected: [],
+            dieModifyConfig: { mode: 'adjust' } as InteractionDescriptor['dieModifyConfig'],
+            diceOwnerId: '0',
+            targetOpponentDice: false,
+        });
+
+        expect(() => DiceThroneDomain.validate(state, cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 2 }))).not.toThrow();
+        expect(DiceThroneDomain.validate(state, cmd('MODIFY_DIE', '0', { dieId: 0, newValue: 2 })).valid).toBe(false);
     });
 
     it('simple-choice exact-multi 交互应枚举所有合法组合，而不是固定前两个选项', () => {

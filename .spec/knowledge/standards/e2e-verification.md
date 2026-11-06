@@ -82,6 +82,7 @@ metadata:
 - 清单 `behaviorChains` 每项包含 `chainId/sourceRun/sourceRevision/evidence/requiredSteps`。引用的真实运行日志包含同一游戏、链、跑次、源码版本、`status: PASS`、最终 `outcome` 以及有序 `steps`。每步记录稳定 `id`、真实 `action`、`before/after`（均含非空 `visible/authoritative` 记录）、非空 `assertions`（名称、实际值、期望值）。必要步骤须唯一且按声明顺序实际出现，断言必须相等；不能把一句 Vitest 通过当黄金链。日志还须绑定 `evidenceCategory`；黄金链各段使用同一跑次、源码及 `browserContextId`，`terminalStepId` 必须指向最后一步，该步可见及权威 `gameOver` 均为 true 且有实际 `terminal-gameover` 断言。
 - 日志 `uiStates` 登记本链首次出现的全部实质界面状态（`id/stepId/change/viewport/sha256`），保留原始记录。展示索引媒体增加 `uiStateId/uiChange/uiChangeReason/behaviorStepId/sourceRevision/requirements`；`uiChange` 为 `layout/panel/interaction-mode/target-highlight/error/empty/animation-phase`。清单需求可以引用本次行为日志或已审媒体。行为链即使没有新增展示图也必须纳入日志与需求覆盖。
 - 校验器检查同源关联、步骤/断言/终局、独特状态完整性、重复状态与重复内容、图片哈希及原有审查门禁。真实执行、语义去重、画面完整性和断言是否覆盖规则仍须人工审查，不能靠自填 JSON 宣称已执行。
+- 新采集的独特界面索引使用 `version: 2`。采集前在独立的必要截图合同中锁定 `version: 1/gameId/evidenceCategory/requiredStates/reviewFile`，清单以 `captureContract` 引用。运行日志以 `captureContract.sha256` 绑定采集时合同的原始字节，防止结束后删改必要状态。合同可用 `reviewerKind` 限定审查者类型。每个必要状态声明 `chainId/uiStateId/viewport/reason`，依据任务合同列出独特的关键决策、交互前后、动效阶段及适用的遮挡、滚动、继续状态，不能从已生成文件反推清单。校验器逐项核对实际日志、展示或内部媒体，以及必要媒体的全量逐图审查；缺图、漏审或任一 REVISE 均拒绝最终 PASS。`reviewFile` 相对清单目录解析，可复用展示审查报告或聚合原始审查条目，不能改写原裁决。旧版索引保留原验证合同。
 - 兼容旧清单不意味着允许新采集继续强制三帧；适配入口与采集器应显式采用本策略。修改采集策略不缩减功能验收范围。
 
 ### 内部验收与用户展示范围

@@ -105,6 +105,11 @@ export interface GameEngineConfig<
             phase: string;
             fallbackPlayerId: string | null;
         }) => string | null | undefined;
+        /** 为在线 AI watchdog 反馈生成游戏专属、去隐私的状态摘要。 */
+        buildFeedbackDiagnosticContext?: (args: {
+            state: MatchState<TCore>;
+            playerId: string;
+        }) => Record<string, unknown> | null | undefined;
         resolveManualSetupSelectionTakeoverPlayerId?: (args: {
             sharedState: MatchState<TCore>;
             seatControllers: Record<string, unknown>;

@@ -31,6 +31,12 @@ function harness() {
 }
 
 describe('连续年度教程生命周期', () => {
+    it('支付与多选弃牌说明显式贴近当前教学手牌', () => {
+        for (const [id, cardId] of [['recruit-payment', 'hand-3'], ['hand-limit', 'hand-1'], ['upgrade-payment', 'deck-ming-10']]) {
+            const step = QIDAHEN_ANNUAL_TUTORIAL.steps.find(candidate => candidate.id === id);
+            expect(step?.tooltipAnchorTarget).toBe(`qidahen-hand-card-${cardId}`);
+        }
+    });
     it('序列化恢复并重新绑定当前manifest，保留同一正式回合与下一输入', () => {
         const h = harness();
         const before = h.state.core;

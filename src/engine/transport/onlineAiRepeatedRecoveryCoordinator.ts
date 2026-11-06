@@ -86,12 +86,14 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
     }): Promise<OnlineAiRepeatedRecoveryUnblockResult> {
         // 解卡命令会替换权威状态。诊断必须引用执行前的状态与版本，
         // 否则上报的是下一名玩家的新交互，无法定位原卡点。
+        const randomCursorBefore = args.match.getRandomCursor?.();
         const beforeMatch = {
             ...args.match,
             state: args.match.state,
             stateID: args.match.stateID,
+            getRandomCursor: randomCursorBefore !== undefined ? () => randomCursorBefore : undefined,
         } as TMatch;
-        const privateReplay = capturePrivateFeedbackReplay(beforeMatch);
+        const forcedCommandTrace: Array<Record<string, unknown>> = [];
         const beforeCorrelation = resolveTransportFeedbackCorrelation({
             matchId: beforeMatch.matchID,
             state: beforeMatch.state,
@@ -109,13 +111,30 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
                 getCircuitSnapshot: this.hooks.getCircuitSnapshot,
                 beginSafeUnblock: this.hooks.beginSafeUnblock,
                 finishSafeUnblock: this.hooks.finishSafeUnblock,
-                executeCommand: (commandType, payload, options) => this.hooks.executeCommand({
-                    match: args.match,
-                    playerId: args.candidate.playerId,
-                    commandType,
-                    commandPayload: payload,
-                    options,
-                }),
+                executeCommand: async (commandType, payload, options) => {
+                    const stateIdBefore = args.match.stateID;
+                    const randomCursorBeforeCommand = args.match.getRandomCursor?.();
+                    const succeeded = await this.hooks.executeCommand({
+                        match: args.match,
+                        playerId: args.candidate.playerId,
+                        commandType,
+                        commandPayload: payload,
+                        options,
+                    });
+                    forcedCommandTrace.push({
+                        commandType,
+                        playerId: args.candidate.playerId,
+                        stateId: stateIdBefore,
+                        afterStateId: args.match.stateID,
+                        ...(randomCursorBeforeCommand !== undefined ? { randomCursor: randomCursorBeforeCommand } : {}),
+                        ...(args.match.getRandomCursor?.() !== undefined
+                            ? { afterRandomCursor: args.match.getRandomCursor?.() }
+                            : {}),
+                        succeeded,
+                        payload,
+                    });
+                    return succeeded;
+                },
                 reportSuppressed: (payload) => this.reportSuppressed({
                     match: args.match,
                     candidate: args.candidate,
@@ -149,6 +168,20 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
                         commands: payload.forcedCommands,
                     });
 
+                    const randomCursorAfter = args.match.getRandomCursor?.();
+                    const trigger = {
+                        source: 'online-ai-watchdog' as const,
+                        commandType: 'repeated-recovery-force-unblocked',
+                        playerId: args.candidate.playerId,
+                        payload: forcedCommandTrace,
+                        stateIdBefore: beforeMatch.stateID,
+                        stateIdAfter: args.match.stateID,
+                        randomCursorBefore,
+                        randomCursorAfter,
+                        reason: payload.reason,
+                        progressMarker: args.progressMarker,
+                    };
+                    const privateReplay = capturePrivateFeedbackReplay(beforeMatch, trigger);
                     await this.hooks.reportRecoveryFeedback({
                         matchId: args.match.matchID,
                         gameId: args.match.gameId,
@@ -161,6 +194,14 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
                         progressMarker: args.progressMarker,
                         privateReplay: privateReplay.data,
                         privateReplayError: privateReplay.error,
+                        randomCursor: randomCursorBefore,
+                        diagnosticSnapshots: {
+                            before: beforeMatch.state,
+                            at: beforeMatch.state,
+                            after: args.match.state,
+                        },
+                        lastCommand: forcedCommandTrace.at(-1),
+                        commandTraceTail: forcedCommandTrace,
                         ...beforeCorrelation,
                         stateSnapshot: await this.hooks.buildRecoveryStateSnapshot({
                             match: beforeMatch,
@@ -223,7 +264,18 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
             marker: args.progressMarker,
         });
 
-        const privateReplay = capturePrivateFeedbackReplay(args.match);
+        const randomCursor = args.match.getRandomCursor?.();
+        const trigger = {
+            source: 'online-ai-watchdog' as const,
+            playerId: args.candidate.playerId,
+            stateIdBefore: args.match.stateID,
+            stateIdAfter: args.match.stateID,
+            randomCursorBefore: randomCursor,
+            randomCursorAfter: randomCursor,
+            reason,
+            progressMarker: args.progressMarker,
+        };
+        const privateReplay = capturePrivateFeedbackReplay(args.match, trigger);
         await this.hooks.reportRecoveryFeedback({
             matchId: args.match.matchID,
             gameId: args.match.gameId,
@@ -236,6 +288,12 @@ export class OnlineAiRepeatedRecoveryCoordinator<TMatch extends OnlineAiRepeated
             progressMarker: args.progressMarker,
             privateReplay: privateReplay.data,
             privateReplayError: privateReplay.error,
+            randomCursor,
+            diagnosticSnapshots: {
+                before: args.match.state,
+                at: args.match.state,
+                after: args.match.state,
+            },
             ...resolveTransportFeedbackCorrelation({
                 matchId: args.match.matchID,
                 state: args.match.state,

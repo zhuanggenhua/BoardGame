@@ -2,6 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { focusQidahenMapRegion, clampQidahenMapViewport } from '../ui/mapRegionFocus';
 
 describe('整片地区在实际HUD空位中聚焦', () => {
+    it.each([{ left: 0, top: 0 }, { left: 1145, top: 793 }])('边缘地区没有满足地图覆盖约束的镜头时明确返回无解 $left/$top', origin => {
+        const region = { ...origin, width: 120, height: 100 };
+        const original = { ...region };
+        expect(focusQidahenMapRegion({ region, visibleRect: { left: 0, top: 0, width: 1920, height: 1080 },
+            mapOrigin: { x: 0, y: 0 }, mapScale: 1, protectedRects: [], padding: 8,
+            preferredZoom: 0.3, mapSize: { width: 1265, height: 893 } })).toBeNull();
+        expect(region).toEqual(original);
+    });
+    it('战斗镜头聚焦北方地区时，地图仍覆盖视口且完整保留交战地区', () => {
+        const region = { left: 820, top: 70, width: 180, height: 170 };
+        const viewport = focusQidahenMapRegion({ region, visibleRect: { left: 0, top: 0, width: 1920, height: 1080 },
+            mapOrigin: { x: 0, y: -137.7 }, mapScale: 1920 / 1265, protectedRects: [], padding: 8,
+            preferredZoom: 1.82, mapSize: { width: 1265, height: 893 } });
+        expect(viewport).not.toBeNull();
+        const top = -137.7 + viewport!.panY;
+        expect(top).toBeLessThanOrEqual(0);
+        expect(top + 893 * 1920 / 1265 * viewport!.zoom).toBeGreaterThanOrEqual(1080);
+        expect(top + region.top * 1920 / 1265 * viewport!.zoom).toBeGreaterThanOrEqual(8);
+    });
     it.each([
         { name: '桌面支付条之上', stage: { width: 1920, height: 1080 }, mapScale: 1920 / 1265,
             protectedRects: [

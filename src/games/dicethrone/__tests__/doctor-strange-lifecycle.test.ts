@@ -282,11 +282,11 @@ function runDoctorStrangeCard(
 }
 
 describe('奇异博士完成态与开局卡区', () => {
-    it('当前范围保持实施中、允许真人选择并保留实施中标记', () => {
+    it('完成态允许真人选择且不显示实施中标记', () => {
         const character = DICETHRONE_CHARACTER_CATALOG.find(candidate => candidate.id === 'doctor_strange');
-        expect(character?.setupOptionStatus).toBe('in_progress');
-        expect(character?.setupOptionStatusReason).toContain('真人确认');
-        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(true);
+        expect(character?.setupOptionStatus).toBeUndefined();
+        expect(character?.setupOptionStatusReason).toBeUndefined();
+        expect(character?.badges?.some(badge => badge.id === 'implementation_in_progress') ?? false).toBe(false);
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.some(candidate => candidate.id === 'doctor_strange')).toBe(true);
 
         const playerIds = ['0', '1'];
@@ -654,8 +654,9 @@ describe('奇异博士完成态与开局卡区', () => {
         state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
 
         const selection = getMultistepChoicePrompt(state, cardId);
-        expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: '0' });
-        expect(selection?.data).toMatchObject({
+        expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(selection).toMatchObject({
+            playerId: '0',
             sourceId: cardId,
             minSteps: 0,
             meta: {
@@ -701,8 +702,9 @@ describe('奇异博士完成态与开局卡区', () => {
         state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
 
         const selection = getMultistepChoicePrompt(state, cardId);
-        expect(selection).toMatchObject({ kind: 'multistep-choice', playerId: '0' });
-        expect(selection?.data).toMatchObject({
+        expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(selection).toMatchObject({
+            playerId: '0',
             sourceId: cardId,
             minSteps: 0,
             meta: {

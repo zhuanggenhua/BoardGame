@@ -487,10 +487,7 @@ export class GameTransportServer {
                 },
                 shouldReportCommandFailureFeedback: shouldAutoReportCommandFailure,
                 buildCommandFailureFeedbackPayload: (args) => {
-                    const replay = capturePrivateFeedbackReplay({ ...args.match,
-                        getRandomCursor: typeof args.randomCursorBefore === 'number' ? () => args.randomCursorBefore! : undefined });
-                    return {
-                        ...this.onlineAiFeedbackDiagnostics.buildCommandFailureFeedbackPayload({
+                    const payload = this.onlineAiFeedbackDiagnostics.buildCommandFailureFeedbackPayload({
                         match: args.match,
                         playerId: args.playerId,
                         commandType: args.commandType,
@@ -498,9 +495,15 @@ export class GameTransportServer {
                         commandPayload: args.commandPayload,
                         progressMarker: args.progressMarker,
                         stateIdBefore: args.stateIdBefore,
+                        randomCursorBefore: args.randomCursorBefore,
                         visibleState: args.visibleState,
                         feedbackSource: args.feedbackSource,
-                        }),
+                    });
+                    const replay = capturePrivateFeedbackReplay({ ...args.match,
+                        getRandomCursor: typeof args.randomCursorBefore === 'number' ? () => args.randomCursorBefore! : undefined },
+                    payload.privateReplayTrigger);
+                    return {
+                        ...payload,
                         privateReplay: replay.data,
                         privateReplayError: replay.error,
                     };
@@ -580,13 +583,20 @@ export class GameTransportServer {
                         playerId: args.playerId,
                         seatControllerType: args.seatControllerType,
                         commandType: args.commandType,
+                        commandPayload: args.commandPayload,
                         event: args.event,
                         progressMarkerBefore: args.progressMarkerBefore,
                         preCommandSeatView: args.preCommandSeatView,
+                        afterState: args.afterState,
+                        stateIdBefore: args.stateIdBefore,
+                        stateIdAfter: args.stateIdAfter,
+                        randomCursorBefore: args.randomCursorBefore,
+                        randomCursorAfter: args.randomCursorAfter,
                     });
                     if (!feedback) return null;
                     const replay = capturePrivateFeedbackReplay({ ...args.match,
-                        getRandomCursor: typeof args.randomCursorBefore === 'number' ? () => args.randomCursorBefore! : undefined });
+                        getRandomCursor: typeof args.randomCursorBefore === 'number' ? () => args.randomCursorBefore! : undefined },
+                    feedback.privateReplayTrigger);
                     return { ...feedback, privateReplay: replay.data, privateReplayError: replay.error };
                 },
                 buildPostTrainingState: (match, playerId) => this.stateSynchronizer.stripForTraining(
@@ -825,7 +835,8 @@ export class GameTransportServer {
                     });
 
                     if (shouldAutoReportCommandFailure(commandFailureReason, 'online-ai-watchdog')) {
-                        await this.transportFeedbackReporter.reportCommandFailureFeedback(this.onlineAiFeedbackDiagnostics.buildCommandFailureFeedbackPayload({
+                        const randomCursorBefore = match.getRandomCursor();
+                        const feedback = this.onlineAiFeedbackDiagnostics.buildCommandFailureFeedbackPayload({
                             match,
                             playerId,
                             commandType: command.type,
@@ -833,9 +844,20 @@ export class GameTransportServer {
                             commandPayload: command.payload,
                             progressMarker,
                             stateIdBefore: stateIDBefore,
+                            randomCursorBefore,
                             visibleState,
                             feedbackSource: 'online-ai-watchdog',
-                        }));
+                        });
+                        const replay = capturePrivateFeedbackReplay({
+                            ...match,
+                            stateID: stateIDBefore,
+                            getRandomCursor: () => randomCursorBefore,
+                        }, feedback.privateReplayTrigger);
+                        await this.transportFeedbackReporter.reportCommandFailureFeedback({
+                            ...feedback,
+                            privateReplay: replay.data,
+                            privateReplayError: replay.error,
+                        });
                     }
                 },
                 onStoppedAfterOwnershipChanged: ({ match, tracker, playerId, actionId, actionKind, executedCommandTypes, resolved }) => {
@@ -925,6 +947,9 @@ export class GameTransportServer {
                     payload.phaseLabel,
                     payload.progressMarkerBeforeRecovery,
                     payload.reason,
+                    payload.triggerState,
+                    payload.triggerStateId,
+                    payload.triggerRandomCursor,
                 ),
                 reportRecoverySuccessFeedback: async (payload) => {
                     await this.transportFeedbackReporter.reportOnlineAiRecoveryFeedback({
@@ -1492,6 +1517,9 @@ export class GameTransportServer {
         phaseLabel: OnlineAiRecoveryPhaseLabel,
         progressMarkerBeforeRecovery: string,
         reason: string,
+        triggerState: MatchState<unknown>,
+        triggerStateId: number,
+        triggerRandomCursor?: number,
     ): Promise<void> {
         const { nextTracker } = applyOnlineAiRecoveryFailureToTracker({
             tracker,
@@ -1519,7 +1547,27 @@ export class GameTransportServer {
         });
 
         if (nextTracker.failureCount >= this.onlineAiRecoveryFailureReportThreshold) {
-            const replay = capturePrivateFeedbackReplay(match);
+            const trigger = {
+                source: 'online-ai-watchdog' as const,
+                playerId: candidate.playerId,
+                stateIdBefore: triggerStateId,
+                stateIdAfter: match.stateID,
+                randomCursorBefore: triggerRandomCursor,
+                randomCursorAfter: match.getRandomCursor(),
+                reason: `${candidate.reason}:${phaseLabel}:${reason}`,
+                progressMarker: progressMarkerBeforeRecovery,
+            };
+            const replay = capturePrivateFeedbackReplay({
+                ...match,
+                state: triggerState,
+                stateID: triggerStateId,
+                ...(triggerRandomCursor !== undefined ? { getRandomCursor: () => triggerRandomCursor } : {}),
+            }, trigger);
+            const diagnosticMatch = {
+                ...match,
+                state: triggerState,
+                stateID: triggerStateId,
+            };
             await this.transportFeedbackReporter.reportOnlineAiRecoveryFeedback({
                 matchId: match.matchID,
                 gameId: match.gameId,
@@ -1533,18 +1581,32 @@ export class GameTransportServer {
                 privateReplayError: replay.error,
                 ...resolveTransportFeedbackCorrelation({
                     matchId: match.matchID,
-                    state: match.state,
-                    stateId: match.stateID,
+                    state: triggerState,
+                    stateId: triggerStateId,
                 }),
+                randomCursor: triggerRandomCursor,
+                diagnosticSnapshots: {
+                    before: triggerState,
+                    at: triggerState,
+                    after: match.state,
+                },
+                lastCommand: {
+                    commandType: 'online-ai-recovery',
+                    playerId: candidate.playerId,
+                    stateId: triggerStateId,
+                    afterStateId: match.stateID,
+                    ...(triggerRandomCursor !== undefined ? { randomCursor: triggerRandomCursor } : {}),
+                    afterRandomCursor: match.getRandomCursor(),
+                },
                 stateSnapshot: await this.onlineAiFeedbackDiagnostics.buildRecoveryStateSnapshot(
-                    match,
+                    diagnosticMatch,
                     candidate,
                     tracker.key,
                     progressMarkerBeforeRecovery,
                     reason,
                 ),
                 actionLog: this.onlineAiFeedbackDiagnostics.buildRecoveryActionLog(
-                    match,
+                    diagnosticMatch,
                     candidate,
                     tracker.key,
                     progressMarkerBeforeRecovery,
@@ -1977,6 +2039,7 @@ export class GameTransportServer {
             seatControllerType,
             stateIdBefore,
             randomCursorBefore,
+            randomCursorAfter: match.getRandomCursor(),
             progressMarkerBeforeCommand,
             preCommandSeatView: preTrainingState,
             suppressBroadcast: options?.suppressBroadcast,

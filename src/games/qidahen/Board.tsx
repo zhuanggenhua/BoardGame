@@ -12,6 +12,8 @@ import { QidahenHandActionControls } from './ui/QidahenHandActionControls';
 import { QIDAHEN_TUTORIAL_SETUP_CONTRACTS } from './tutorialSetup';
 import { QidahenRecruitTrainingPanel } from './ui/QidahenRecruitTrainingPanel';
 import { getQidahenRecruitTrainMapInput } from './ui/recruitTrainMapInput';
+import { getQidahenFortificationGeometry } from './ui/fortificationGeometry';
+import { QidahenFortificationHighlight } from './ui/QidahenFortificationHighlight';
 import { EndgameOverlay } from '../../components/game/framework/widgets/EndgameOverlay';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import {
@@ -80,7 +82,9 @@ import {
 import { QidahenFactionSelectionScreen } from './ui/QidahenFactionSelectionScreen';
 import { QidahenHoverTip, QidahenHoverTipBody } from './ui/QidahenHoverTip';
 import { QidahenInspectPanel, type QidahenInspectTarget } from './ui/QidahenInspectPanel';
-import { QidahenMapPopulationLayer } from './ui/QidahenMapPopulationLayer';
+import { QidahenMapPopulationLayer, QIDAHEN_MAP_REGION_GEOMETRY } from './ui/QidahenMapPopulationLayer';
+import { buildQidahenPopulationSites } from './ui/populationLayout';
+import { layoutQidahenFieldArmies } from './ui/fieldArmyLayout';
 import { QidahenOperationBanner } from './ui/QidahenOperationBanner';
 import { QidahenHandInteractionTray } from './ui/QidahenHandInteractionTray';
 import { QidahenTurnChoicePanel } from './ui/QidahenTurnChoicePanel';
@@ -125,6 +129,8 @@ import {
     QIDAHEN_REGION_GRAPH_NODE_BY_ID,
     getQidahenRuntimeRegionAnchorTargetPoint,
     QIDAHEN_REGION_ID_BY_MASK_COLOR,
+    QIDAHEN_RUNTIME_REGION_BY_ID,
+    QIDAHEN_MAP_NAMEPLATE_BOUNDS,
     getQidahenBoundaryTypeMeta,
     qidahenRegionColorKey,
     type QidahenPassageBoundaryType,
@@ -426,6 +432,11 @@ const ACTIONS_DOCK_RIGHT = 80;
 
 const getQidahenHandCardTutorialTargetId = (card: QidahenHandCard): string => (
     card.cardDefId ?? card.id
+);
+
+const matchesQidahenTutorialHandCard = (card: QidahenHandCard, targets?: readonly string[]): boolean => Boolean(
+    targets?.some(target => target === card.id || target === card.cardDefId
+        || target === `hand-card:${card.id}` || target === `hand-card:${card.cardDefId}`),
 );
 
 const getQidahenDirectHandActionIdsForFaction = (
@@ -1008,10 +1019,11 @@ const StaticMapScene: React.FC<{ locale?: string }> = ({ locale }) => (
 const PlayerChip: React.FC<{
     faction: QidahenCore['factions'][QidahenFactionId];
     current: boolean;
+    currentLabel?: string;
     effectiveVp: number;
     prestigeBonus: number;
     onInspect: () => void;
-}> = ({ faction, current, effectiveVp, prestigeBonus, onInspect }) => {
+}> = ({ faction, current, currentLabel, effectiveVp, prestigeBonus, onInspect }) => {
     const { t } = useTranslation('game-qidahen');
     const tone = factionTone[faction.id];
     const markedCharacters = faction.characters.filter((character) => character.defeatMarkers > 0);
@@ -1028,6 +1040,7 @@ const PlayerChip: React.FC<{
             type="button"
             className="relative flex h-[58px] min-w-0 flex-1 items-center gap-2 overflow-hidden border px-2.5 text-left"
             data-testid={`qidahen-player-${faction.id}`}
+            data-current={current ? 'true' : undefined}
             onClick={onInspect}
             style={{
                 borderColor: current ? tone.border : UI_STYLE.mapInk,
@@ -1096,7 +1109,7 @@ const PlayerChip: React.FC<{
                 ) : null}
                 {current ? (
                     <span
-                        className="grid h-[24px] w-[44px] shrink-0 place-items-center border text-[11px] font-black"
+                        className="grid h-[24px] min-w-[52px] shrink-0 place-items-center border px-1.5 text-[11px] font-black"
                         style={{
                             background: 'linear-gradient(180deg, rgba(216,123,82,0.78) 0%, rgba(180,76,54,0.72) 100%)',
                             borderColor: UI_STYLE.mapInk,
@@ -1105,7 +1118,7 @@ const PlayerChip: React.FC<{
                             borderRadius: 2,
                         }}
                     >
-                        {t('board.player.current', { defaultValue: '当前' })}
+                        {currentLabel ?? t('board.player.current', { defaultValue: '当前' })}
                     </span>
                 ) : null}
             </div>
@@ -1115,8 +1128,10 @@ const PlayerChip: React.FC<{
 
 const PlayerFloat: React.FC<{
     core: QidahenCore;
+    yearOpening?: boolean;
     onInspectFaction: (factionId: QidahenFactionId) => void;
-}> = ({ core, onInspectFaction }) => {
+}> = ({ core, yearOpening = false, onInspectFaction }) => {
+    const { t } = useTranslation('game-qidahen');
     const prestigeBonusByFaction = getQidahenPrestigeBonusByFaction(core);
     return (
         <div
@@ -1133,7 +1148,8 @@ const PlayerFloat: React.FC<{
                 <PlayerChip
                     key={id}
                     faction={core.factions[id]}
-                    current={core.currentPlayer === core.factions[id].playerId}
+                    current={yearOpening ? core.currentFactionOrder[0] === id : core.currentPlayer === core.factions[id].playerId}
+                    currentLabel={yearOpening ? t('board.player.yearFirst') : undefined}
                     effectiveVp={getQidahenEffectiveVpByFaction(core, id)}
                     prestigeBonus={prestigeBonusByFaction[id]}
                     onInspect={() => onInspectFaction(id)}
@@ -1153,6 +1169,8 @@ const MapToken: React.FC<{
     onSelectGrantPardonSource?: (regionId: string, tokenId: string) => void;
     pendingCommittedSelected?: boolean;
     pendingCommittedSelectable?: boolean;
+    tutorialRecommended?: boolean;
+    regionChoice?: { allowed: boolean; selected: boolean; label: string; choose: () => void };
     onSelectPendingCommittedTroops?: (committedTroops: number) => void;
     pincerAdvanceSelected?: boolean;
     pincerAdvanceSelectable?: boolean;
@@ -1172,6 +1190,8 @@ const MapToken: React.FC<{
     onSelectGrantPardonSource,
     pendingCommittedSelected = false,
     pendingCommittedSelectable = false,
+    tutorialRecommended = false,
+    regionChoice,
     onSelectPendingCommittedTroops,
     pincerAdvanceSelected = false,
     pincerAdvanceSelectable = false,
@@ -1252,19 +1272,22 @@ const MapToken: React.FC<{
         }
         : undefined;
     const resolvedSelectionTone = tutorialResultArtilleryTone ?? grantPardonSourceTone ?? wuzhenChaohaTone ?? instigateDefectionTone ?? pincerAdvanceTone ?? pendingCommittedTone;
-    const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable;
+    const tokenSelectable = grantPardonSourceSelectable || pendingCommittedSelectable || pincerAdvanceSelectable || instigateDefectionSelectable || wuzhenChaohaSelectable || Boolean(regionChoice?.allowed);
     const resolvedBoxShadow = resolvedSelectionTone?.boxShadow;
     return (
         <div
-            className={`${tokenSelectable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none'} absolute grid place-items-center text-[13px] font-black ${tokenShapeClass}`}
+            className={`${tokenSelectable ? 'pointer-events-auto cursor-pointer' : regionChoice ? 'pointer-events-auto cursor-default' : 'pointer-events-none'} absolute grid place-items-center text-[13px] font-black ${tokenShapeClass}`}
             data-testid={`qidahen-map-token-${token.id}`}
+            data-qidahen-tutorial-recommended={tutorialRecommended ? 'true' : undefined}
             data-qidahen-map-token-type={token.type}
+            data-qidahen-map-region-choice={regionChoice ? String(regionChoice.allowed) : undefined}
             data-qidahen-map-token-faction={token.faction}
             data-qidahen-map-token-region={token.regionId}
             data-qidahen-map-protected-token={layoutProtected ? "true" : undefined}
             data-qidahen-map-token-troop-kind={isArmyToken ? token.troopKind : undefined}
             data-qidahen-unit-level={isArmyToken && revealFront ? unitLevel : undefined}
-            title={isArmyToken && revealFront && unitLevel != null ? t('board.map.unitLevel', { level: unitLevel }) : undefined}
+            title={[regionChoice?.label, isArmyToken && revealFront && unitLevel != null
+                ? t('board.map.unitLevel', { level: unitLevel }) : undefined].filter(Boolean).join(' · ') || undefined}
             data-qidahen-map-token-outlined="true"
             data-qidahen-army-face={isArmyToken ? (revealFront ? 'front' : 'hidden-back') : undefined}
             data-grant-pardon-source-selectable={grantPardonSourceSelectable ? 'true' : undefined}
@@ -1277,7 +1300,7 @@ const MapToken: React.FC<{
             data-instigate-defection-selectable={instigateDefectionSelectable ? 'true' : undefined}
             data-wuzhen-chaoha-selectable={wuzhenChaohaSelectable ? 'true' : undefined}
             role={tokenSelectable ? 'button' : undefined}
-            aria-pressed={tokenSelectable && !instigateDefectionSelectable && !wuzhenChaohaSelectable
+            aria-pressed={regionChoice ? regionChoice.selected : tokenSelectable && !instigateDefectionSelectable && !wuzhenChaohaSelectable
                 ? (grantPardonSourceSelectable
                     ? grantPardonSourceSelected
                     : pincerAdvanceSelectable
@@ -1302,7 +1325,7 @@ const MapToken: React.FC<{
                     ? () => onTogglePincerAdvanceTroop?.(token.id)
                     : pendingCommittedSelectable && token.troopIndex
                         ? () => onSelectPendingCommittedTroops?.(token.troopIndex!)
-                        : undefined}
+                        : regionChoice ? event => { event.stopPropagation(); if (regionChoice.allowed) regionChoice.choose(); } : undefined}
             onKeyDown={tokenSelectable
                 ? (event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
@@ -1317,8 +1340,10 @@ const MapToken: React.FC<{
                             onResolveInstigateDefection?.(token.id);
                         } else if (pincerAdvanceSelectable) {
                             onTogglePincerAdvanceTroop?.(token.id);
-                        } else if (token.troopIndex) {
+                        } else if (pendingCommittedSelectable && token.troopIndex) {
                             onSelectPendingCommittedTroops?.(token.troopIndex);
+                        } else if (regionChoice?.allowed) {
+                            regionChoice.choose();
                         }
                     }
                 }
@@ -1378,13 +1403,13 @@ const MapToken: React.FC<{
                     {token.value}
                 </span>
             )}
-            {pendingCommittedSelectable ? (
+            {pendingCommittedSelectable || pendingCommittedSelected ? (
                 <span
                     aria-hidden="true"
                     data-testid={`qidahen-pending-committed-highlight-${token.id}`}
                     className={`pointer-events-none absolute inset-0 ${tokenShapeClass}`}
                     style={{
-                        border: pendingCommittedSelected ? '2px solid #ffe191' : '1.5px solid #69d873',
+                        border: pendingCommittedSelected ? '2px solid #ffe191' : tutorialRecommended ? '2px solid #fff8dc' : '1.5px solid #69d873',
                     }}
                 />
             ) : null}
@@ -1450,23 +1475,27 @@ const MapSceneLayer: React.FC<{
     tutorialHighlightsResultFeedback: boolean;
     tutorialGuideTargetRegionId?: string | null;
     tutorialRegionFocus?: { regionId: string; targetId: string } | null;
+    tutorialMapTokenFocusId?: string | null;
     mapSelectionCandidateIds: readonly string[];
     contextRegionIds?: readonly string[];
+    maintenanceFortificationId?: string | null;
     battleProtectedRegionIds?: readonly string[];
     turnSelectablePieceIds?: readonly string[];
     turnSelectableTokenIds?: readonly string[];
     turnUnitLevels?: ReadonlyMap<string, number>;
     turnSelectedPieceIds?: readonly string[];
+    tutorialRecommendedPieceIds?: readonly string[];
     onMapFocusBoundsChange?: (bounds: (QidahenRuntimeRegionBounds & { focusKey: string }) | null) => void;
     compactRegionTip: boolean;
     viewport: QidahenMapViewport;
     onViewportChange: (viewport: QidahenMapViewport) => void;
     locale?: string;
     onSelectRegion: (regionId: string, tokenId?: string) => void;
-}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, mapPlaybackLocked = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, tutorialRegionFocus, mapSelectionCandidateIds, contextRegionIds = [], battleProtectedRegionIds = [], turnSelectablePieceIds = [], turnSelectableTokenIds = [], turnUnitLevels, turnSelectedPieceIds = [], onMapFocusBoundsChange, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
+}> = ({ core, perspectiveFactionId, mapHitTestingDisabled = false, mapPlaybackLocked = false, wheelDispatchSelection, grantPardonSelection, grantPardonMapChoices, internalDispatchSelection, pendingTargetAction, pendingCommittedTroops, onSelectPendingCommittedTroops, onTogglePincerAdvanceTroop, onResolveInstigateDefection, onResolveWuzhenChaoha, tutorialStepId, tutorialHighlightsResultFeedback, tutorialGuideTargetRegionId, tutorialRegionFocus, tutorialMapTokenFocusId = null, mapSelectionCandidateIds, contextRegionIds = [], maintenanceFortificationId = null, battleProtectedRegionIds = [], turnSelectablePieceIds = [], turnSelectableTokenIds = [], turnUnitLevels, turnSelectedPieceIds = [], tutorialRecommendedPieceIds = [], onMapFocusBoundsChange, compactRegionTip, viewport, onViewportChange, locale, onSelectRegion }) => {
     const { t } = useTranslation('game-qidahen');
     const { t: tCommon } = useTranslation('common');
     const currentFactionId = perspectiveFactionId;
+    const armyCalloutMaskId = React.useId();
     const pixiMapBackgroundUrl = React.useMemo(() => (
         getOptimizedImageUrls(getLocalizedAssetPath(ASSETS.mainMap, locale ?? 'zh-CN')).webp
     ), [locale]);
@@ -1481,6 +1510,11 @@ const MapSceneLayer: React.FC<{
     const lastSeasonSummaryRegionSnapshotRef = React.useRef<Map<string, number> | null>(null);
     const lastSeasonSummaryIdRef = React.useRef<string | null>(null);
     const [runtimeRegionOwnership, setRuntimeRegionOwnership] = React.useState<Array<string | null> | null>(null);
+    const interiorSites = React.useMemo(() => runtimeRegionOwnership
+        ? buildQidahenPopulationSites(runtimeRegionOwnership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_GEOMETRY)
+        : new Map(), [runtimeRegionOwnership]);
+    const armyLayout = React.useMemo(() => layoutQidahenFieldArmies(core.mapTokens, interiorSites, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT), [core.mapTokens, interiorSites]);
+    const mapTokens = armyLayout.tokens;
     const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
     const regionTipHoverLockRef = React.useRef(false);
     const [maskVersion, setMaskVersion] = React.useState(0);
@@ -1602,8 +1636,9 @@ const MapSceneLayer: React.FC<{
 
     // 地区可选不意味着其中所有军队都成为本步的阅读/输入主体。
     // 候选蒙版与地图命中保持原职责，仅保护当前讲解、交战和维护上下文。
+    const fortificationGeometry = getQidahenFortificationGeometry(maintenanceFortificationId);
     const currentMapReadingRegionIds = [...new Set([
-        ...battleProtectedRegionIds, ...contextRegionIds,
+        ...battleProtectedRegionIds, ...(fortificationGeometry ? [] : contextRegionIds),
         ...(tutorialRegionFocus ? [tutorialRegionFocus.regionId] : []),
     ].flatMap(expandRuntimeRegionIds))];
 
@@ -1616,15 +1651,50 @@ const MapSceneLayer: React.FC<{
             return bounds ? [{ regionId, bounds }] : [];
         }) : [], [runtimeRegionOwnership, battleRegionIdsKey, mapFocusCandidateIdsKey, expandRuntimeRegionIds]);
     const mapFocusKey = battleRegionIdsKey ? `battle:${battleRegionIdsKey}` : tutorialRegionFocus?.regionId ?? mapFocusCandidateIdsKey;
+    const mapFocusTokenIdsKey = mapTokens.filter(token => turnSelectableTokenIds.includes(token.id)
+        || Boolean(token.pieceId && (turnSelectablePieceIds.includes(token.pieceId) || turnSelectedPieceIds.includes(token.pieceId))))
+        .map(token => token.id).join('|');
     const mapFocusBounds = React.useMemo(() => {
+        const fortification = getQidahenFortificationGeometry(maintenanceFortificationId);
+        if (fortification) return fortification.bounds;
         if (!runtimeRegionOwnership || !mapFocusKey) return null;
         const regionIds = Array.from(new Set([
             ...(battleRegionIdsKey ? battleRegionIdsKey.split('|')
                 : tutorialRegionFocus ? [tutorialRegionFocus.regionId]
                     : mapFocusCandidateIdsKey.split('|').filter(Boolean)),
         ].flatMap(expandRuntimeRegionIds)));
-        return getQidahenRuntimeRegionBounds(runtimeRegionOwnership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, regionIds);
-    }, [runtimeRegionOwnership, battleRegionIdsKey, mapFocusCandidateIdsKey, mapFocusKey, tutorialRegionFocus?.regionId, expandRuntimeRegionIds]);
+        const region = getQidahenRuntimeRegionBounds(runtimeRegionOwnership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, regionIds);
+        if (!region) return null;
+        const wanted = new Set(mapFocusTokenIdsKey.split('|'));
+        const focusRegionIds = new Set(regionIds);
+        if (battleRegionIdsKey) {
+            const battleTokens = mapTokens.filter(token => token.regionId && focusRegionIds.has(token.regionId));
+            if (!battleTokens.length) return region;
+            const tokenIds = new Set(battleTokens.map(token => token.id));
+            const labelBounds = regionIds.flatMap(id => QIDAHEN_RUNTIME_REGION_BY_ID.get(id)?.markerBounds ?? []);
+            const anchors = armyLayout.callouts.filter(callout => tokenIds.has(callout.tokenId)).map(callout => callout.anchor);
+            const xs = [...battleTokens.map(token => token.x * QIDAHEN_MAP_WIDTH), ...anchors.map(point => point.x), ...labelBounds.flatMap(bounds => [bounds.left, bounds.left + bounds.width])];
+            const ys = [...battleTokens.map(token => token.y * QIDAHEN_MAP_HEIGHT), ...anchors.map(point => point.y), ...labelBounds.flatMap(bounds => [bounds.top, bounds.top + bounds.height])];
+            return { left: Math.min(...xs) - 45, top: Math.min(...ys) - 45,
+                width: Math.max(...xs) - Math.min(...xs) + 90, height: Math.max(...ys) - Math.min(...ys) + 90 };
+        }
+        const objects = mapTokens.filter(token => wanted.has(token.id)
+            && (!tutorialRegionFocus || Boolean(token.regionId && focusRegionIds.has(token.regionId))));
+        const tokenFocus = mapTokens.find(token => token.id === tutorialMapTokenFocusId);
+        if (tokenFocus) {
+            // 阅读对象是兵牌时看同地区实际部队；不为远处省界把兵牌缩成符号。
+            const tokens = mapTokens.filter(token => token.regionId === tokenFocus.regionId);
+            const xs = tokens.map(token => token.x * QIDAHEN_MAP_WIDTH), ys = tokens.map(token => token.y * QIDAHEN_MAP_HEIGHT);
+            return { left: Math.min(...xs) - 24, top: Math.min(...ys) - 24,
+                width: Math.max(...xs) - Math.min(...xs) + 48, height: Math.max(...ys) - Math.min(...ys) + 48 };
+        }
+        // 城市标记范围不包含旁边的兵牌；真实输入候选也必须完整进入取景。
+        const left = Math.min(region.left, ...objects.map(token => token.x * QIDAHEN_MAP_WIDTH - 24));
+        const top = Math.min(region.top, ...objects.map(token => token.y * QIDAHEN_MAP_HEIGHT - 24));
+        return { left, top,
+            width: Math.max(region.left + region.width, ...objects.map(token => token.x * QIDAHEN_MAP_WIDTH + 24)) - left,
+            height: Math.max(region.top + region.height, ...objects.map(token => token.y * QIDAHEN_MAP_HEIGHT + 24)) - top };
+    }, [mapTokens, armyLayout.callouts, tutorialMapTokenFocusId, mapFocusTokenIdsKey, maintenanceFortificationId, runtimeRegionOwnership, battleRegionIdsKey, mapFocusCandidateIdsKey, mapFocusKey, tutorialRegionFocus?.regionId, expandRuntimeRegionIds]);
     React.useEffect(() => {
         onMapFocusBoundsChange?.(mapFocusBounds ? { ...mapFocusBounds, focusKey: mapFocusKey } : null);
     }, [mapFocusBounds, mapFocusKey, onMapFocusBoundsChange]);
@@ -1964,7 +2034,7 @@ const MapSceneLayer: React.FC<{
         if (!regionId || !factionId) {
             return [];
         }
-        return core.mapTokens
+        return mapTokens
             .filter((token) => token.type === 'army' && token.regionId === regionId && token.faction === factionId)
             .sort((left, right) => (
                 Number(left.troopIndex == null) - Number(right.troopIndex == null)
@@ -2380,8 +2450,8 @@ const MapSceneLayer: React.FC<{
     const mapSelectionGuideDrawsRoute = mapSelectionGuide != null
         && (tutorialStepId === 'choose-grant-pardon-source' || !mapSelectionGuideUsesRegionHighlight);
     const revealedBattleRegionIds = React.useMemo(
-        () => buildRevealedBattleRegionIds(pendingTargetAction, core.postBattleSelection),
-        [pendingTargetAction, core.postBattleSelection],
+        () => new Set([...buildRevealedBattleRegionIds(pendingTargetAction, core.postBattleSelection), ...battleProtectedRegionIds]),
+        [pendingTargetAction, core.postBattleSelection, battleRegionIdsKey],
     );
     const pendingCommittedSelectedCount = Math.min(
         pendingCommittedTroops ?? (pendingTargetAction?.actionId === 'raid' ? 0 : pendingTargetAction?.committedTroops ?? 0),
@@ -2432,6 +2502,7 @@ const MapSceneLayer: React.FC<{
             containerProps={{
                 'data-tutorial-id': 'qidahen-map-layer',
                 'data-map-layout': 'full-bleed-cover',
+                'data-map-playback-locked': mapPlaybackLocked,
                 'data-map-selected': core.explicitRegionId ?? '',
                 'data-map-hit-testing-ready': runtimeRegionOwnership != null,
                 'data-map-zoom': viewport.zoom,
@@ -2497,6 +2568,8 @@ const MapSceneLayer: React.FC<{
                     aria-hidden="true"
                     data-testid="qidahen-map-overlay"
                 >
+                    <QidahenFortificationHighlight id={maintenanceFortificationId}
+                        label={core.fortifications.find(item => item.id === maintenanceFortificationId)?.label ?? ''} />
                     <defs>
                         <filter id="qidahen-map-province-selected" x="-12%" y="-12%" width="124%" height="124%">
                             <feDropShadow dx="0" dy="0" stdDeviation="3.2" floodColor="rgba(255,248,233,0.58)" />
@@ -2630,9 +2703,11 @@ const MapSceneLayer: React.FC<{
                     <div key={regionId} data-testid={`qidahen-map-region-space-${regionId}`}
                         data-qidahen-battle-region-space={battleProtectedRegionIds.includes(regionId) ? regionId : undefined}
                         data-qidahen-map-selection-space={mapSelectionCandidateIds.includes(regionId) ? regionId : undefined}
-                        data-qidahen-map-context-space={contextRegionIds.includes(regionId) ? regionId : undefined}
+                        data-qidahen-map-context-space={!fortificationGeometry && contextRegionIds.includes(regionId) ? regionId : undefined}
                         className="pointer-events-none absolute" style={bounds} aria-hidden="true" />
                 ))}
+                {fortificationGeometry ? <div data-qidahen-fortification-context={maintenanceFortificationId}
+                    data-testid="qidahen-fortification-context" className="pointer-events-none absolute" style={fortificationGeometry.bounds} aria-hidden="true" /> : null}
                 {tutorialRegionBounds && tutorialRegionFocus ? (
                     <div
                         className="pointer-events-none absolute"
@@ -2644,6 +2719,7 @@ const MapSceneLayer: React.FC<{
                     >
                         <QidahenTutorialRegionLabel
                             anchorRef={tutorialRegionAnchorRef}
+                            objects={mapTokens}
                             viewport={viewport}
                             regionId={tutorialRegionFocus.regionId}
                             name={core.regions.find(region => region.id === tutorialRegionFocus.regionId)?.name ?? ''}
@@ -2662,7 +2738,19 @@ const MapSceneLayer: React.FC<{
                         aria-hidden="true"
                     />
                 ) : null}
-                {core.mapTokens.map((token) => {
+                <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${QIDAHEN_MAP_WIDTH} ${QIDAHEN_MAP_HEIGHT}`} aria-hidden="true" style={{ zIndex: 13 }}>
+                    <defs><mask id={armyCalloutMaskId} maskUnits="userSpaceOnUse" x={0} y={0} width={QIDAHEN_MAP_WIDTH} height={QIDAHEN_MAP_HEIGHT}>
+                        <rect width={QIDAHEN_MAP_WIDTH} height={QIDAHEN_MAP_HEIGHT} fill="white" />
+                        {QIDAHEN_MAP_NAMEPLATE_BOUNDS.map((bounds, index) => <rect key={index}
+                            x={bounds.left - 2} y={bounds.top - 2} width={bounds.width + 4} height={bounds.height + 4} fill="black" />)}
+                    </mask></defs>
+                    {armyLayout.callouts.map(({ tokenId, point, anchor }) => <g key={tokenId} mask={`url(#${armyCalloutMaskId})`}>
+                        <path data-testid={`qidahen-army-callout-${tokenId}`} d={`M ${point.x} ${point.y} L ${anchor.x} ${anchor.y}`}
+                            stroke="#1a1208" strokeWidth={2} fill="none" />
+                        <circle cx={anchor.x} cy={anchor.y} r={3} fill="#ffe566" stroke="#1a1208" />
+                    </g>)}
+                </svg>
+                {mapTokens.map((token) => {
                     const pincerAdvanceChoice = core.pincerAdvanceSelection?.choices.find((choice) => (
                         choice.tokenId === token.id
                     ));
@@ -2708,6 +2796,15 @@ const MapSceneLayer: React.FC<{
                                 || (token.regionId != null && (currentMapReadingRegionIds.includes(token.regionId)
                                     || (token.type === 'control' && mapSelectionCandidateIds.some(id => expandRuntimeRegionIds(id).includes(token.regionId!)))))}
                             revealFront={shouldRevealQidahenMapArmyToken(token, currentFactionId, revealedBattleRegionIds)}
+                            tutorialRecommended={formalPieceSelectable && token.pieceId != null && tutorialRecommendedPieceIds.includes(token.pieceId)}
+                            regionChoice={token.regionId && armyLayout.callouts.some(callout => callout.tokenId === token.id)
+                                && !pendingCommittedSelectable && !grantPardonSourceSelectable && !pincerAdvanceChoice && !instigateDefectionChoice && !wuzhenChaohaChoice ? {
+                                    allowed: !mapHitTestingDisabled && !mapPlaybackLocked && !pendingCommittedSelectionActive
+                                        && turnSelectablePieceIds.length === 0 && turnSelectableTokenIds.length === 0 && mapSelectionCandidateIds.includes(token.regionId),
+                                    selected: core.explicitRegionId === token.regionId,
+                                    label: core.regions.find(region => region.id === token.regionId)?.name ?? '',
+                                    choose: () => onSelectRegion?.(token.regionId!),
+                                } : undefined}
                             grantPardonSourceSelectable={grantPardonSourceSelectable || grantPardonSourceSelected}
                             grantPardonSourceSelected={grantPardonSourceSelected}
                             onSelectGrantPardonSource={onSelectRegion}
@@ -2730,7 +2827,7 @@ const MapSceneLayer: React.FC<{
                         />
                     );
                 })}
-                <QidahenMapPopulationLayer regions={core.regions} ownership={runtimeRegionOwnership} tokens={core.mapTokens}
+                <QidahenMapPopulationLayer regions={core.regions} ownership={runtimeRegionOwnership} tokens={mapTokens} interiorSites={interiorSites}
                     protectedRegionIds={currentMapReadingRegionIds} />
                 {activeResultFeedback != null ? (() => {
                     const resultRegion = core.regions.find((region) => region.id === activeResultFeedback.regionId);
@@ -2738,7 +2835,7 @@ const MapSceneLayer: React.FC<{
                         return null;
                     }
                     const troopDelta = activeResultFeedback.troopDelta;
-                    const resultTroop = core.mapTokens.find((token) => (
+                    const resultTroop = mapTokens.find((token) => (
                         token.type === 'army'
                         && token.regionId === activeResultFeedback.regionId
                         && token.imageSrc != null
@@ -3606,7 +3703,8 @@ const ChronologyZone: React.FC<{
     cards: QidahenYearCardSlot[];
     locale?: string;
     onMagnify?: (target: QidahenMagnifyTarget) => void;
-}> = ({ cards, locale, onMagnify }) => (
+    children?: React.ReactNode;
+}> = ({ cards, locale, onMagnify, children }) => (
     <div
         className="pointer-events-auto absolute left-[80px] top-[542px] z-20"
         data-testid="qidahen-chronology-zone"
@@ -3619,6 +3717,7 @@ const ChronologyZone: React.FC<{
                 <YearCardSlot key={card.id} card={card} locale={locale} onMagnify={onMagnify} />
             ))}
         </div>
+        {children ? <div className="absolute left-full top-0 ml-3" data-testid="qidahen-chronology-choice" style={{ width: CARD_DIMENSIONS.year.width * 2 + 12 }}>{children}</div> : null}
     </div>
 );
 
@@ -3734,6 +3833,7 @@ const ActionsZone: React.FC<{
     tutorialStepId?: string | null;
     tutorialInfoStepActive: boolean;
     tutorialHighlightTarget?: string;
+    tutorialAllowedTargets?: readonly string[];
     tutorialHighlightsSeasonSummary: boolean;
     actionPaymentPreviewVisible: boolean;
     handLimitDiscardSelection: QidahenHandLimitDiscardSelection | null;
@@ -3776,7 +3876,7 @@ const ActionsZone: React.FC<{
     onResolveWheelRecruitTrainChoice: (choiceId: string) => void;
     onReturnToWheel?: () => void;
     isTutorialCommandAllowed?: (commandType: string, targetId?: string) => boolean;
-}> = ({ core, battlePresentation, primaryStageMode, isTutorialActive, tutorialStepId, tutorialInfoStepActive, tutorialHighlightTarget, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, grantPardonSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection,  wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGrantPardonChoice, selectedGaoDiChoiceId, onResolveGaoDiDispatch, selectedInternalDispatchChoiceId, onResolveInternalDispatch, onClearInternalDispatchChoice, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent,    pendingCommittedTroops, onSelectPendingCommittedTroops, onResolvePendingAction, onResolvePincerAdvance, onCancelPincerAdvance, onResolveInfantryCavalryCombined, onCancelInstigateDefection, onCancelWuzhenChaoha, onResolvePostBattleDecision, onResolveWheelRecruitTrainChoice, onReturnToWheel, isTutorialCommandAllowed }) => {
+}> = ({ core, battlePresentation, primaryStageMode, isTutorialActive, tutorialStepId, tutorialInfoStepActive, tutorialHighlightTarget, tutorialAllowedTargets, tutorialHighlightsSeasonSummary, actionPaymentPreviewVisible, handLimitDiscardSelection, internalDispatchSelection, recruitSelection, grantPardonSelection, maShiTradeSelection, khanEdictSelection, diplomacySelection, driveTigerConsentSelection,  wheelDispatchSelection, pendingTargetAction, postBattleSelection, onExecuteAction, onSelectRegion, onResolveRecruitChoice, onResolveGrantPardonChoice, selectedGaoDiChoiceId, onResolveGaoDiDispatch, selectedInternalDispatchChoiceId, onResolveInternalDispatch, onClearInternalDispatchChoice, onResolveMaShiTradeChoice, onResolveKhanEdictChoice, onResolveDiplomacyChoice, onResolveDriveTigerConsent,    pendingCommittedTroops, onSelectPendingCommittedTroops, onResolvePendingAction, onResolvePincerAdvance, onCancelPincerAdvance, onResolveInfantryCavalryCombined, onCancelInstigateDefection, onCancelWuzhenChaoha, onResolvePostBattleDecision, onResolveWheelRecruitTrainChoice, onReturnToWheel, isTutorialCommandAllowed }) => {
     const { animationComplete, isPendingAnimation } = useTutorial();
     React.useEffect(() => {
         if (isPendingAnimation && battlePresentation.rolls && !battlePresentation.active) animationComplete();
@@ -3921,10 +4021,11 @@ const ActionsZone: React.FC<{
                 left: `calc(${ACTIONS_DOCK_LEFT}px + var(--qidahen-mobile-edge-pull, 0px))`,
                 top: ACTIONS_DOCK_TOP,
                 width: suppressPassiveActionContext ? ACTIONS_DOCK_WIDTH + 12 : ACTIONS_DOCK_WIDTH,
-                height: expandedSelectionPanel ? STAGE_HEIGHT - ACTIONS_DOCK_TOP - CARD_DIMENSIONS.deck.height - MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET - 24 : ACTIONS_DOCK_HEIGHT,
+                height: wheelRecruitTrainProgress && wheelRecruitTrainProgress.phase !== 'payment' ? 'auto'
+                    : expandedSelectionPanel ? STAGE_HEIGHT - ACTIONS_DOCK_TOP - CARD_DIMENSIONS.deck.height - MOBILE_LANDSCAPE_BOTTOM_DOCK_INSET - 24 : ACTIONS_DOCK_HEIGHT,
             }}
         >
-            <div ref={actionSlotRef} className={`min-h-0 flex-1 pr-1 ${wheelRecruitTrainProgress && wheelRecruitTrainProgress.phase !== 'payment' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}`} data-testid="qidahen-action-slot">
+            <div ref={actionSlotRef} className={`min-h-0 pr-1 ${wheelRecruitTrainProgress && wheelRecruitTrainProgress.phase !== 'payment' ? 'flex-none flex flex-col overflow-visible' : 'flex-1 overflow-y-auto'}`} data-testid="qidahen-action-slot">
             {onReturnToWheel ? <button type="button" onClick={onReturnToWheel} data-testid="qidahen-return-to-wheel"
                 className="mb-2 min-h-11 rounded border border-[#c7a26b] bg-[#f2e5c6] px-3 py-2 text-[15px] font-bold text-[#423118]">
                 {t('board.actions.returnToWheel', { defaultValue: '返回轮盘行动' })}
@@ -4153,10 +4254,12 @@ const ActionsZone: React.FC<{
                                     key={choice.id}
                                     type="button"
                                     data-testid={`qidahen-recruit-choice-${choice.id}`}
+                                    data-qidahen-tutorial-recommended={tutorialAllowedTargets?.includes(choice.id) ? 'true' : undefined}
                                     disabled={!(isTutorialCommandAllowed?.(INTERACTION_COMMANDS.RESPOND, choice.id) ?? true)}
                                     className="inline-flex min-h-[44px] items-start justify-between gap-3 border-[3px] px-3 py-2 text-left text-[14px] font-black transition hover:-translate-y-0.5 active:translate-y-0.5"
                                     onClick={() => onResolveRecruitChoice(choice.id)}
-                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3 }}
+                                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.paper, color: UI_STYLE.ink, boxShadow: UI_SURFACE.hardShadow, borderRadius: 3,
+                                        outline: tutorialAllowedTargets?.includes(choice.id) ? '3px solid #fff8dc' : undefined, outlineOffset: 3 }}
                                 >
                                     <span className="min-w-0">
                                         <span className="block text-[16px]">{choice.label}</span>
@@ -4660,12 +4763,8 @@ const ActionsZone: React.FC<{
                             {normalizeQidahenBattleRollSummary(postBattleSelection.battleRollSummary)}
                         </div>
                     ) : null}
-                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }}>
-                        {t('board.actions.postBattle.summary', {
-                            summary: postBattleSelection.summary,
-                            survivingTroops: postBattleSelection.survivingTroops,
-                            defaultValue: '{{summary}} · 幸存 {{survivingTroops}}',
-                        })}
+                    <div className="mt-1 text-[14px]" style={{ color: '#f3d1a5' }} data-testid="qidahen-post-battle-result-summary">
+                        {postBattleSelection.summary}
                     </div>
                     {postBattleMode == null ? (
                         <div className="mt-3 grid grid-cols-3 gap-2" data-testid="qidahen-post-battle-mode-selection">
@@ -4804,6 +4903,7 @@ const HandCard: React.FC<{
     card: QidahenHandCard;
     locale?: string;
     selected?: boolean;
+    recommended?: boolean;
     stackIndex: number;
     totalCards: number;
     width?: number;
@@ -4818,6 +4918,7 @@ const HandCard: React.FC<{
     card,
     locale,
     selected = false,
+    recommended = false,
     stackIndex,
     totalCards,
     width = CARD_DIMENSIONS.hand.width,
@@ -4925,6 +5026,7 @@ const HandCard: React.FC<{
                 data-testid={`qidahen-hand-card-${card.id}`}
                 data-tutorial-id={getQidahenHandCardTutorialTargetId(card)}
                 data-qidahen-hand-card-touch-inspect="long-press"
+                data-qidahen-hand-recommended={recommended ? 'true' : undefined}
                 tabIndex={disabled ? -1 : 0}
                 className={`z-20 h-full w-full origin-bottom rounded-[9px] bg-transparent hover:brightness-[1.03] ${selected ? 'brightness-[1.08]' : ''}`}
                 onClick={handleClick}
@@ -4986,6 +5088,12 @@ const HandCard: React.FC<{
                         {cardKindBadge}
                     </span>
                 ) : null}
+                {recommended && !selected ? <span aria-hidden="true"
+                    data-testid={`qidahen-hand-card-recommendation-${card.id}`}
+                    className="pointer-events-none absolute inset-0 z-40 rounded-[9px] border-[3px] border-[#fff8dc]"
+                    style={{ boxShadow: 'inset 0 0 0 1px #4b301c, 0 0 0 1px #4b301c' }}
+                ><span className="absolute left-2 top-[-12px] h-0 w-0 border-x-[7px] border-t-[9px] border-x-transparent border-t-[#fff8dc]"
+                    style={{ filter: 'drop-shadow(0 1px 1px #4b301c)' }} /></span> : null}
             </SelectableGameObject>
             {onMagnify ? (
                 <CardInspectButton
@@ -5008,7 +5116,7 @@ const HandZone: React.FC<{
     playerID: string | null;
     locale?: string;
     mapTargetSelectionActive?: boolean;
-    guidedPaymentCardId?: string | null;
+    guidedHandCardId?: string | null;
     actionPaymentPreviewVisible: boolean;
     selectedPaymentCardIds: string[];
     turnChoiceCardIds?: readonly string[];
@@ -5036,7 +5144,7 @@ const HandZone: React.FC<{
     playerID,
     locale,
     mapTargetSelectionActive = false,
-    guidedPaymentCardId,
+    guidedHandCardId,
     actionPaymentPreviewVisible,
     selectedPaymentCardIds,
     turnChoiceCardIds = [],
@@ -5061,17 +5169,17 @@ const HandZone: React.FC<{
     const { t } = useTranslation('game-qidahen');
     const handDockRef = React.useRef<HTMLDivElement>(null);
     React.useLayoutEffect(() => {
-        if (!guidedPaymentCardId) return;
+        if (!guidedHandCardId) return;
         const dock = handDockRef.current;
         const card = Array.from(dock?.querySelectorAll<HTMLElement>('[data-testid^="qidahen-hand-card-"]') ?? [])
-            .find((element) => element.dataset.testid === `qidahen-hand-card-${guidedPaymentCardId}`);
+            .find((element) => element.dataset.testid === `qidahen-hand-card-${guidedHandCardId}`);
         if (!dock || !card) return;
         const dockRect = dock.getBoundingClientRect();
         const cardRect = card.getBoundingClientRect();
         const scale = dockRect.width / dock.clientWidth;
         if (cardRect.right > dockRect.right) dock.scrollLeft += (cardRect.right - dockRect.right) / scale + 4;
         else if (cardRect.left < dockRect.left) dock.scrollLeft -= (dockRect.left - cardRect.left) / scale + 4;
-    }, [guidedPaymentCardId]);
+    }, [guidedHandCardId]);
     const [selectedTacticCardId, setSelectedTacticCardId] = React.useState<string | null>(null);
     const [tacticAnchor, setTacticAnchor] = React.useState<HTMLElement | null>(null);
     React.useLayoutEffect(() => {
@@ -5245,6 +5353,7 @@ const HandZone: React.FC<{
                                 card={card}
                                 locale={locale}
                                 selected={isHandCardSelected(card)}
+                                recommended={matchesQidahenTutorialHandCard(card, tutorialAllowedTargets)}
                                 stackIndex={index}
                                 totalCards={currentHandCards.length}
                                 width={handCardWidth}
@@ -6615,6 +6724,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
     const tutorialMapRegionFocusId = tutorialStep?.highlightTarget?.startsWith('qidahen-map-region-focus-')
         ? tutorialStep.highlightTarget.slice('qidahen-map-region-focus-'.length)
         : null;
+    const tutorialMapTokenFocusId = tutorialStep?.tooltipAnchorTarget?.startsWith('qidahen-map-token-')
+        ? tutorialStep.tooltipAnchorTarget.slice('qidahen-map-token-'.length) : null;
     const tutorialMapFocusRegionId = getQidahenTutorialMapFocusRegionId(tutorialStep?.highlightTarget);
     const tutorialMapFocusCandidateRegionId = tutorialMapFocusRegionId
         && topLevelMapSelectionGuide?.candidates.some((candidate) => candidate.targetRegionId === tutorialMapFocusRegionId)
@@ -6639,7 +6750,6 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             activeAutoFocusKeyRef.current = null;
             return;
         }
-        if (battlePresentation.active && !battleDiceFrame) return;
         const focusKey = battleFocusKey ?? tutorialRegionFocus?.regionId ?? autoFocusMapTargetRegionIdsKey;
         if (focusKey && mapFocusBounds?.focusKey !== focusKey) {
             return;
@@ -6654,17 +6764,21 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             '[data-testid="qidahen-korea-zone"]',
         ];
         const fitViewport = () => {
+            const hudRects = selectors.flatMap(selector => Array.from(document.querySelectorAll(selector)))
+                .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0);
+            // 实体选择不抢回玩家镜头；同层遮挡真实变化时仍须重新取景。
+            const requestKey = JSON.stringify({ target: autoFocusMapTargetKey, width: window.innerWidth,
+                height: window.innerHeight, dice: battlePresentation.active ? battleDiceFrame : null,
+                unitChoice: turnInput.pieceIds.length > 0,
+                bounds: mapFocusBounds, hud: hudRects.map(rect => [rect.left, rect.top, rect.width, rect.height]) });
+            if (activeAutoFocusKeyRef.current === requestKey) return;
             let viewport: QidahenMapViewport | null = null;
             if (mapFocusBounds) {
                 const mapRect = document.querySelector('[data-testid="qidahen-map-layer"]')?.getBoundingClientRect();
                 if (!mapRect || mapRect.width <= 0 || mapRect.height <= 0) return;
                 const scaleX = STAGE_WIDTH / mapRect.width;
                 const scaleY = STAGE_HEIGHT / mapRect.height;
-                const protectedRects = [
-                    ...selectors.flatMap(selector => Array.from(document.querySelectorAll(selector)))
-                        .map(element => element.getBoundingClientRect()).filter(rect => rect.width > 0 && rect.height > 0),
-                    ...(battlePresentation.active && battleDiceFrame ? [battleDiceFrame] : []),
-                ].map(rect => ({ left: (rect.left - mapRect.left) * scaleX, top: (rect.top - mapRect.top) * scaleY,
+                const protectedRects = hudRects.map(rect => ({ left: (rect.left - mapRect.left) * scaleX, top: (rect.top - mapRect.top) * scaleY,
                         width: rect.width * scaleX, height: rect.height * scaleY }));
                 viewport = focusQidahenMapRegion({ region: mapFocusBounds,
                     visibleRect: {
@@ -6673,7 +6787,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                         height: (Math.min(window.innerHeight, mapRect.bottom) - Math.max(0, mapRect.top)) * scaleY,
                     },
                     mapOrigin: { x: MAP_COVER_LEFT, y: MAP_COVER_TOP }, mapScale: MAP_COVER_SCALE,
-                    protectedRects, padding: 8 * Math.max(scaleX, scaleY), reservedLabelHeight: 24 * scaleY, preferredZoom: targetIds.length > 1 ? 1 : 1.82 });
+                    protectedRects, padding: 8 * Math.max(scaleX, scaleY), reservedLabelHeight: 24 * scaleY,
+                    preferredZoom: turnInput.pieceIds.length > 0 ? 1.3
+                        : battlePresentation.active || tutorialMapTokenFocusId || getQidahenFortificationGeometry(turnInput.maintenanceFortificationId)
+                        ? 1.82 : targetIds.length > 1 ? 1 : 1.82,
+                    ...(battlePresentation.active ? { mapSize: { width: QIDAHEN_MAP_WIDTH, height: QIDAHEN_MAP_HEIGHT } } : {}) });
             } else {
                 const points = [wheelDispatchSelection?.sourceRegionId, core.gaoDiDispatchSelection?.sourceRegionId,
                     internalDispatchSelection?.sourceRegionId, grantPardonSelection?.sourceRegionId, ...targetIds]
@@ -6681,13 +6799,14 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                     .filter((point): point is { x: number; y: number } => point != null);
                 viewport = buildQidahenFocusedMapViewportForPoints(points, points.length > 1 ? 1 : 1.48);
             }
-            if (!viewport) return;
-            const nextViewport = viewport;
             if (battlePresentation.active && battleDiceFrame && battlePresentation.identity) {
                 setBattleLayoutReady({ identity: battlePresentation.identity, frame: battleDiceFrame });
             }
+            // 无法自动取景时保留玩家当前合法视角，布局失败不阻塞权威结算的表现。
+            if (!viewport) return;
+            const nextViewport = viewport;
             setMapViewport(current => {
-                activeAutoFocusKeyRef.current = autoFocusMapTargetKey;
+                activeAutoFocusKeyRef.current = requestKey;
                 return current.zoom === nextViewport.zoom && current.panX === nextViewport.panX && current.panY === nextViewport.panY
                     ? current : nextViewport;
             });
@@ -6703,17 +6822,31 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             cancelAnimationFrame(resizeFrame);
             resizeFrame = requestAnimationFrame(fitViewport);
         };
+        // 支付托盘通过portal随当前事务挂载；必须纳入同层取景，不能只观察旧节点。
+        const hudObserver = new MutationObserver(records => {
+            const changedHud = records.some(record => [...record.addedNodes, ...record.removedNodes].some(node => node instanceof Element
+                && selectors.some(selector => node.matches(selector) || node.querySelector(selector))));
+            if (!changedHud) return;
+            for (const selector of selectors) document.querySelectorAll(selector).forEach(element => observer.observe(element));
+            fitAfterResize();
+        });
+        hudObserver.observe(document.body, { childList: true, subtree: true });
         window.addEventListener('resize', fitAfterResize);
         return () => {
-            observer.disconnect();
+            observer.disconnect(); hudObserver.disconnect();
             window.removeEventListener('resize', fitAfterResize);
             cancelAnimationFrame(resizeFrame);
         };
-    }, [battleFocusKey, battleDiceFrame, battlePresentation.active, battlePresentation.identity, autoFocusMapTargetKey, autoFocusMapTargetRegionIdsKey, tutorialMapRegionFocusId,
-        tutorialRegionFocus?.regionId, mapFocusBounds, getTopLevelGuideRegionMapPoint,
+    }, [displayCore.mapTokens, tutorialMapTokenFocusId, battleFocusKey, battleDiceFrame, battlePresentation.active, battlePresentation.identity, autoFocusMapTargetKey, autoFocusMapTargetRegionIdsKey, tutorialMapRegionFocusId,
+        tutorialRegionFocus?.regionId, mapFocusBounds, getTopLevelGuideRegionMapPoint, turnInput.pieceIds.length,
         wheelDispatchSelection?.sourceRegionId, core.gaoDiDispatchSelection?.sourceRegionId,
         internalDispatchSelection?.sourceRegionId, grantPardonSelection?.sourceRegionId]);
 
+    const chronologyChoiceActive = turnInput.active && turnInput.step === 'chronology';
+    const turnChoicePanel = turnInput.active ? <QidahenTurnChoicePanel input={turnInput} inline={chronologyChoiceActive}
+        dock={{ left: ACTIONS_DOCK_LEFT, top: ACTIONS_DOCK_TOP, width: ACTIONS_DOCK_WIDTH }} locale={locale}
+        onInspect={(previewRef, title) => setMagnifyTarget({ previewRef, title, rawWidth: CARD_DIMENSIONS.hand.rawWidth, rawHeight: CARD_DIMENSIONS.hand.rawHeight })} /> : null;
+    const battleParticipants = battlePresentation.participants;
     const boardScene = (
         <>
             <MapSceneLayer
@@ -6723,7 +6856,8 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 turnSelectablePieceIds={recruitTrainMapInput.targeting ? recruitTrainMapInput.pieceIds : turnInput.pieceIds}
                 turnSelectableTokenIds={recruitTrainMapInput.tokenIds}
                 turnUnitLevels={recruitTrainMapInput.levelsByToken}
-                turnSelectedPieceIds={[...turnInput.selectedPieceIds, ...turnInput.committedPieceIds]}
+                turnSelectedPieceIds={[...turnInput.selectedPieceIds, ...turnInput.committedPieceIds, ...battlePresentation.committedPieceIds]}
+                tutorialRecommendedPieceIds={isTutorialActive ? tutorialStep?.allowedTargets?.map(id => id.startsWith('train:') ? id.slice(6) : id) : []}
                 perspectiveFactionId={viewerFactionId}
                 mapHitTestingDisabled={!directMapRegionSelectionActive && (
                     actionPaymentPreviewVisible
@@ -6745,8 +6879,10 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 tutorialHighlightsResultFeedback={tutorialStep?.highlightTarget === 'qidahen-map-result-feedback'}
                 tutorialGuideTargetRegionId={tutorialMapFocusCandidateRegionId}
                 tutorialRegionFocus={tutorialRegionFocus}
+                tutorialMapTokenFocusId={tutorialMapTokenFocusId}
                 mapSelectionCandidateIds={mapSelectionCandidateIds}
                 contextRegionIds={maintenanceContextRegionIds}
+                maintenanceFortificationId={turnInput.maintenanceFortificationId}
                 onMapFocusBoundsChange={setMapFocusBounds}
                 compactRegionTip={compactMapRegionTip}
                 viewport={mapViewport}
@@ -6877,6 +7013,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
             />
             <PlayerFloat
                 core={core}
+                yearOpening={turnInput.yearOpening}
                 onInspectFaction={(factionId) => setDetailInspectTarget({ kind: 'faction', factionId })}
             />
             {operationPrompt ? (
@@ -6906,16 +7043,20 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 onExecuteMove={executeWheelMove}
             />
             <KoreaZone core={core} locale={locale} />
-            <ChronologyZone cards={core.yearCards} locale={locale} onMagnify={setMagnifyTarget} />
+            <ChronologyZone cards={core.yearCards} locale={locale} onMagnify={setMagnifyTarget}>
+                {chronologyChoiceActive ? turnChoicePanel : null}
+            </ChronologyZone>
             <QidahenSkipHandAction input={turnInput} />
-            <QidahenHandActionControls input={turnInput} />
-            {turnInput.active ? <QidahenTurnChoicePanel input={turnInput} dock={{ left: ACTIONS_DOCK_LEFT, top: ACTIONS_DOCK_TOP, width: ACTIONS_DOCK_WIDTH }} locale={locale}
-                onInspect={(previewRef, title) => setMagnifyTarget({ previewRef, title, rawWidth: CARD_DIMENSIONS.hand.rawWidth, rawHeight: CARD_DIMENSIONS.hand.rawHeight })} /> : null}
+            <QidahenHandActionControls input={turnInput} recommendedOptionIds={isTutorialActive ? tutorialStep?.allowedTargets : undefined} />
+            {!chronologyChoiceActive ? turnChoicePanel : null}
             {battlePresentation.active && battlePresentation.rolls ? <QidahenBattleRollOverlay
                 key={battlePresentation.identity}
                 rolls={battlePresentation.rolls}
                 sourceName={(core.pendingTargetAction ?? core.postBattleSelection)?.sourceRegionName ?? ''}
                 targetName={(core.pendingTargetAction ?? core.postBattleSelection)?.targetRegionName ?? ''}
+                attacker={{ name: core.factions[battleParticipants!.attackerFactionId].name, markerSrc: factionTone[battleParticipants!.attackerFactionId].chip }}
+                defender={{ name: battleParticipants!.defenderFactionId === 'neutral' ? battleParticipants!.defenderLabel : core.factions[battleParticipants!.defenderFactionId].name,
+                    markerSrc: battleParticipants!.defenderFactionId === 'neutral' ? undefined : factionTone[battleParticipants!.defenderFactionId].chip }}
                 onFrameChange={setBattleDiceFrame}
                 layoutReady={battleLayoutReady?.identity === battlePresentation.identity && battleLayoutReady?.frame === battleDiceFrame}
                 onComplete={battlePresentation.complete}
@@ -6928,6 +7069,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 tutorialStepId={tutorialStep?.id ?? null}
                 tutorialInfoStepActive={tutorialInfoStepActive}
                 tutorialHighlightTarget={tutorialStep?.highlightTarget}
+                tutorialAllowedTargets={isTutorialActive ? tutorialStep?.allowedTargets : undefined}
                 tutorialHighlightsSeasonSummary={tutorialShowsSeasonSummary}
                 actionPaymentPreviewVisible={actionPaymentPreviewVisible}
                 handLimitDiscardSelection={handLimitDiscardSelection}
@@ -6996,7 +7138,7 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale, playerID, i
                 playerID={playerID}
                 locale={locale}
                 mapTargetSelectionActive={mapTargetSelectionActive}
-                guidedPaymentCardId={isTutorialActive ? tutorialStep?.allowedTargets?.find(id => core.handCards.some(card => card.id === id)) ?? null : null}
+                guidedHandCardId={isTutorialActive ? core.handCards.find(card => matchesQidahenTutorialHandCard(card, tutorialStep?.allowedTargets))?.id ?? null : null}
                 actionPaymentPreviewVisible={actionPaymentPreviewVisible}
                 selectedPaymentCardIds={core.selectedPaymentCardIds}
                 turnChoiceCardIds={turnInput.cardIds}

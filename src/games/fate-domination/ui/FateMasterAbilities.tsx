@@ -29,7 +29,7 @@ export function FateMasterAbilities({abilities,onActivate,onReadingChange}:{abil
             <button type="button" data-tutorial-id={`fate-master-ability-${ability.id}`} aria-label={ability.actionable?`发动${ability.name}`:ability.name} aria-disabled={!ability.enabled} onFocus={()=>setReading(ability.id)} onBlur={()=>setReading(null)}
                 onPointerDown={event=>touch.handlePointerDown(event,ability.id,ability.id)} onPointerMove={event=>touch.handlePointerMove(event,ability.id)} onPointerUp={()=>touch.handlePointerUp(ability.id)} onPointerCancel={()=>touch.clearLongPressState(ability.id)}
                 onContextMenu={event=>{event.preventDefault();setReading(ability.id);}} onKeyDown={event=>{if(event.key==='Escape')setReading(null);}}
-                onClick={()=>{if(touch.shouldBlockClick(ability.id))return;if(ability.enabled){setReading(null);onActivate(ability.id);}}}>{ability.name}</button>
+                onClick={()=>{if(touch.shouldBlockClick(ability.id))return;if(ability.actionable){if(ability.enabled)setReading(null);onActivate(ability.id);}}}>{ability.name}</button>
             <InfoTooltip title={ability.name} content={[ability.description]} position="right" isVisible={reading===ability.id}/>
         </div>)}
     </section>;

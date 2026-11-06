@@ -23,10 +23,11 @@ export function QidahenRecruitTrainingPanel({ core, canChoose, onChoose }: {
             : progress.phase === 'choose-training-target' || progress.phase === 'extra-training-target' ? 'board.wheelRecruitTrain.trainingTargetTitle'
                 : progress.source === 'khan-edict' ? 'board.wheelRecruitTrain.khanTitle' : 'board.wheelRecruitTrain.title')}</h2>
         <div className="text-[15px]" data-testid="qidahen-wheel-recruit-train-progress">{t('board.wheelRecruitTrain.progress', { completed: progress.actionsCompleted, extra: progress.extraTrainingsCompleted })}</div>
-        {controls.length ? <div className="mt-3 grid gap-2">{controls.map(choice => <button key={choice.id} type="button"
+        {controls.length ? <div className="mt-3 grid grid-cols-2 gap-2">{controls.map(choice => <button key={choice.id} type="button"
             data-testid={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
             data-tutorial-id={`qidahen-wheel-recruit-train-choice-${encodeURIComponent(choice.id)}`}
             disabled={!canChoose(choice.id)} onClick={() => onChoose(choice.id)}
-            className="min-h-11 rounded border border-[#9a7d4f] px-3 py-2 text-left font-bold hover:bg-amber-100 disabled:opacity-40">{label(choice.id)}</button>)}</div> : null}
+            className="min-h-11 rounded px-3 py-2 text-left font-bold hover:brightness-105 disabled:opacity-40"
+            style={{ border: `2px solid ${UI_STYLE.bronze}`, background: UI_STYLE.paperLight, color: UI_STYLE.ink }}>{label(choice.id)}</button>)}</div> : null}
     </section>;
 }

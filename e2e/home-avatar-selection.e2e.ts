@@ -1,11 +1,9 @@
 import sharp from 'sharp';
 import type { CDPSession, Locator, Page } from '@playwright/test';
-import { test, expect, initHome, login, capture, record, rememberAvatarUpload } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, openPlatformProfile, capture, record, rememberAvatarUpload } from './helpers/homeAcceptance';
 
 async function profile(page: Page) {
-    await page.getByTestId('user-menu-trigger').click();
-    await page.getByTestId('user-menu-profile').click();
-    await expect(page.getByTestId('profile-page')).toBeVisible();
+    await openPlatformProfile(page);
 }
 async function logout(page: Page) {
     await page.getByTestId('user-menu-trigger').click();

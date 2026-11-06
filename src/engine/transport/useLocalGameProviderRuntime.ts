@@ -22,6 +22,7 @@ export function useLocalGameProviderRuntime(args: {
     config: GameEngineConfig;
     numPlayers: number;
     seed: string;
+    randomSeed?: string;
     setupData: unknown;
     onCommandRejected?: (commandType: string, error: string) => void;
     seatControllers: Record<string, AiSeatController>;
@@ -62,6 +63,7 @@ export function useLocalGameProviderRuntime(args: {
         config: args.config,
         numPlayers: args.numPlayers,
         seed: args.seed,
+        randomSeed: args.randomSeed,
         setupData: args.setupData,
         setupPlayerIds,
         aiSeatIds,
@@ -90,7 +92,7 @@ export function useLocalGameProviderRuntime(args: {
     const { dispatch } = useLocalAiRuntime({
         state,
         config: args.config,
-        seed: args.seed,
+        seed: args.randomSeed ?? args.seed,
         seatControllers: runtimeSeatControllers,
         localPregameControlledPlayerId,
         setState,
@@ -112,6 +114,7 @@ export function useLocalGameProviderRuntime(args: {
         followCurrentTurnPlayer: args.followCurrentTurnPlayer,
         localPlayerId: args.localPlayerId,
         resolveLocalRuntimeControlledPlayerId: args.config.resolveLocalRuntimeControlledPlayerId,
+        randomCursor: randomRef.current.getCursor(),
     });
 
     useLocalProviderDebugEffects({
@@ -122,5 +125,13 @@ export function useLocalGameProviderRuntime(args: {
         dispatch,
     });
 
-    return value;
+    const systemState = state.sys as unknown as { stateId?: unknown };
+    return {
+        ...value,
+        feedbackMetadata: {
+            scopeId: `local:${args.config.gameId}:${args.seed}`,
+            ...(typeof systemState.stateId === 'number' ? { stateId: systemState.stateId } : {}),
+            randomCursor: randomRef.current.getCursor(),
+        },
+    };
 }

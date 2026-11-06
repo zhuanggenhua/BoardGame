@@ -1068,9 +1068,15 @@ const checkStandardCardPlay = (
         const isAfterAttackRollResponse =
             responseWindowType === 'afterAttackResolved'
             && card.playCondition?.requireMinDamageDealt !== undefined;
+        const isPendingDamageResponse =
+            responseWindowType === 'afterAttackResolved'
+            && !!state.pendingDamage
+            && !!card.playCondition?.pendingDamage
+            && matchesPendingDamagePlayCondition(state, playerId, card.playCondition.pendingDamage);
         const isAfterRollConfirmedResponse = responseWindowType === 'afterRollConfirmed';
         if (
             !isAfterAttackRollResponse
+            && !isPendingDamageResponse
             && !isAfterRollConfirmedResponse
             && phase !== 'offensiveRoll'
             && phase !== 'targetingRoll'

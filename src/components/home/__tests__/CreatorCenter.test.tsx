@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CreatorClaimPanel, MySubmissions, MyWorks } from '../CreatorCenter';
 
@@ -36,6 +36,43 @@ function mount(ui: React.ReactElement) {
 beforeEach(() => { vi.clearAllMocks(); });
 
 describe('创作者中心空态与列表', () => {
+    it.each(['选择', '拖放'] as const)('%s认证图片共用格式和大小校验并提交同一文件', async method => {
+        const NativeURL = URL;
+        vi.stubGlobal('URL', class extends NativeURL {
+            static createObjectURL = vi.fn(() => 'blob:claim-evidence');
+            static revokeObjectURL = vi.fn();
+        });
+        try {
+            api.listCreatorClaims.mockResolvedValue({ items: [] });
+            api.createCreatorClaim.mockResolvedValue({ claimId: 'drop-claim' });
+            api.uploadClaimEvidence.mockResolvedValue({});
+            api.submitCreatorClaim.mockResolvedValue({});
+            mount(<CreatorClaimPanel token="t" userId="u" gameId="g1" gameName="山中小屋" onClose={() => {}} />);
+            await screen.findByRole('heading', { name: '申请认领' });
+            const upload = document.querySelector('.platform-cover-upload')!;
+            const input = screen.getByLabelText('认证截图上传');
+            const select = (file: File) => method === '拖放'
+                ? fireEvent.drop(upload, { dataTransfer: { files: [file] } })
+                : fireEvent.change(input, { target: { files: [file] } });
+            select(new File(['invalid'], 'rules.pdf', { type: 'application/pdf' }));
+            expect(await screen.findByRole('alert')).toHaveTextContent(/PNG/);
+            select(new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.png', { type: 'image/png' }));
+            expect(await screen.findByRole('alert')).toHaveTextContent('截图不能超过 5 MB');
+            expect(screen.queryByRole('img')).toBeNull();
+            const file = new File(['synthetic image'], 'proof.png', { type: 'image/png' });
+            select(file);
+            expect(screen.queryByRole('alert')).toBeNull();
+            expect(await screen.findByRole('img')).toHaveAttribute('src', 'blob:claim-evidence');
+            fireEvent.change(screen.getByLabelText('作者主页'), { target: { value: 'https://example.com/author' } });
+            fireEvent.change(screen.getByLabelText('你与游戏的关系'), { target: { value: '我是这款游戏的作者和开发者。' } });
+            fireEvent.click(screen.getByRole('button', { name: '提交审核' }));
+            await waitFor(() => expect(api.uploadClaimEvidence).toHaveBeenCalledWith('t', 'drop-claim', file));
+            await waitFor(() => expect(api.submitCreatorClaim).toHaveBeenCalledWith('t', 'drop-claim'));
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('投稿空态只保留一个投稿入口', async () => {
         api.listGameSubmissions.mockResolvedValue({ items: [] });
         const onOpen = vi.fn();
@@ -72,9 +109,9 @@ describe('创作者中心空态与列表', () => {
         }] });
         mount(<CreatorClaimPanel token="t" userId="u" gameId="g1" gameName="山中小屋" onClose={() => {}} />);
         expect(await screen.findByText(/验证短码/)).toBeTruthy();
-        expect(screen.getByText('BG-TEST').tagName).toBe('B');
+        expect(screen.getByText('BG-TEST').tagName).toBe('STRONG');
         expect(screen.getByText('当前游戏：山中小屋')).toBeTruthy();
-        expect(screen.getByLabelText('认证截图')).toBeTruthy();
+        expect(screen.getByLabelText('认证截图上传')).toBeTruthy();
         expect(screen.queryByLabelText('选择游戏')).toBeNull();
         expect(screen.queryByRole('button', { name: '创建认证申请' })).toBeNull();
         expect(screen.getByRole('button', { name: '提交审核' })).toHaveClass('platform-submit');

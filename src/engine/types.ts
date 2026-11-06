@@ -44,6 +44,16 @@ export interface GameEvent<TType extends string = string, TPayload = unknown> {
     payload: TPayload;
     sourceCommandType?: string;
     timestamp: number;
+    /**
+     * 可序列化的系统续接请求。领域事件只声明由哪个系统接管以及恢复参数；
+     * 运行中的结算游标由对应 ResolutionFrame 持有。
+     */
+    resolutionContinuation?: {
+        ownerGame: string;
+        ownerSystem: string;
+        action: string;
+        payload: unknown;
+    };
     /** 可选的音效 key（用于音频系统自定义播放） */
     sfxKey?: string;
     /** 事件级音效 key（优先级最高） */
@@ -413,6 +423,8 @@ export interface TutorialStepSnapshot {
     highlightTarget?: string;
     /** 说明贴近的真实阅读对象；省略时沿用高亮目标，不改变场景聚焦与输入权限。 */
     tooltipAnchorTarget?: string;
+    /** 显式锚点在避让后仍需直接指认时，按实际几何绘制短箭头；省略时保留原放置箭头。 */
+    tooltipArrow?: 'anchor';
     /**
      * CSS selectors for continuous reading surfaces or other protected regions
      * that the tutorial card must avoid covering when choosing a placement.
@@ -496,6 +508,8 @@ export interface TutorialStepSnapshot {
 
 export interface TutorialManifest {
     id: string;
+    /** 固定课程的随机场景；进度 revision 仅隔离存档，不必重新洗牌。 */
+    randomSeed?: string;
     /** 固定的学习者座位；声明后不随热座回合或他人响应切换控制身份。 */
     playerId?: PlayerId;
     /**
@@ -633,6 +647,8 @@ export interface SystemState {
     matchId?: string;
     /** 当前可决策面的显式版本号；交互/响应窗口等决策面变化时递增 */
     decisionEpoch?: number;
+    /** 成功命令提交的状态版本号；引擎每条成功命令递增一次，独立于决策面版本 `decisionEpoch`。 */
+    revision?: number;
     /** 撤销系统状态 */
     undo: UndoState;
     /** 交互系统状态（替代旧 PromptSystem） */

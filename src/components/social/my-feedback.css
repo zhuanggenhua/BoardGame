@@ -1,0 +1,48 @@
+.my-feedback-dialog { position:relative; display:flex; flex-direction:column; width:min(960px,100%); min-height:0; overflow:hidden; border:1px solid var(--color-parchment-card-border); border-radius:10px; background:var(--color-parchment-card-bg); color:var(--color-parchment-base-text); box-shadow:0 18px 60px #0004; }
+.my-feedback-header { display:flex; flex-shrink:0; align-items:center; justify-content:space-between; gap:16px; padding:20px 24px; border-bottom:1px solid #8884; }
+.my-feedback-heading { display:flex; align-items:center; gap:12px; min-width:0; }
+.my-feedback-heading h2 { margin:0; font-size:22px; line-height:1.3; font-weight:800; }
+.my-feedback-heading p { margin:4px 0 0; font-size:13px; color:var(--color-parchment-light-text); }
+.my-feedback-toolbar { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.my-feedback-toolbar button { display:flex; align-items:center; justify-content:center; gap:6px; min-width:44px; min-height:44px; padding:8px; border:0; background:transparent; font-size:14px; }
+.my-feedback-body { min-height:0; flex:1; overflow:auto; overscroll-behavior:contain; }
+.my-feedback-row { display:grid; grid-template-columns:minmax(0,1fr) 44px; gap:12px; padding:18px 24px; border-bottom:1px solid #8884; }
+.my-feedback-row:last-child { border-bottom:0; }
+.my-feedback-record { min-width:0; }
+.my-feedback-meta { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; font-size:12px; color:var(--color-parchment-light-text); }
+.my-feedback-status { display:inline-flex; border-radius:4px; padding:2px 6px; font-weight:700; }
+.my-feedback-type, .my-feedback-meta time { display:inline-flex; align-items:center; gap:4px; }
+.my-feedback-meta time { margin-left:auto; white-space:nowrap; }
+.my-feedback-expand { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; width:100%; min-height:44px; padding:8px 0; border:0; background:transparent; color:inherit; text-align:left; }
+.my-feedback-expand > svg { flex-shrink:0; margin-top:3px; transition:transform 160ms; }
+.my-feedback-chevron-open { transform:rotate(180deg); }
+.my-feedback-content { min-width:0; font-size:16px; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; }
+.my-feedback-expand[aria-expanded="true"] .my-feedback-content { user-select:text; }
+.my-feedback-clamp { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.my-feedback-result { font-size:13px; line-height:1.6; color:var(--color-parchment-light-text); overflow-wrap:anywhere; }
+.my-feedback-result p { margin:0; }
+.my-feedback-result[data-expanded] { user-select:text; }
+.my-feedback-delete { align-self:start; display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; background:transparent; color:var(--color-parchment-light-text); }
+.my-feedback-delete:hover { color:#d12b45; background:#e3264510; }
+.my-feedback-toolbar button:hover, .my-feedback-footer button:hover:not(:disabled) { background:#8882; }
+.my-feedback-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:260px; padding:24px; text-align:center; color:var(--color-parchment-light-text); }
+.my-feedback-error { margin:20px 24px; padding:12px; color:var(--platform-night-error,#b91c1c); border-left:3px solid currentColor; }
+.my-feedback-footer { display:flex; flex-shrink:0; align-items:center; justify-content:space-between; gap:12px; padding:12px 24px; border-top:1px solid #8884; font-size:12px; color:var(--color-parchment-light-text); }
+.my-feedback-footer nav { display:flex; align-items:center; gap:12px; }
+.my-feedback-footer button { display:inline-flex; align-items:center; justify-content:center; gap:4px; min-height:44px; min-width:44px; padding:6px; border:0; color:inherit; background:transparent; font-size:13px; }
+.my-feedback-dialog button:disabled { opacity:.4; cursor:not-allowed; }
+.my-feedback-dialog button:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+@media (max-width:600px) {
+ .my-feedback-header { padding:16px; gap:8px; }
+ .my-feedback-heading { gap:8px; }
+ .my-feedback-heading h2 { font-size:20px; }
+ .my-feedback-heading p { font-size:12px; }
+ .my-feedback-toolbar { gap:0; }
+ .my-feedback-toolbar button { font-size:12px; padding:4px; }
+ .my-feedback-row { padding:14px 16px; gap:4px; }
+ .my-feedback-meta { gap:6px 8px; }
+ .my-feedback-meta time { margin-left:0; }
+ .my-feedback-content { font-size:15px; }
+ .my-feedback-footer { padding:8px 12px; gap:4px; flex-wrap:wrap; }
+ .my-feedback-footer nav { gap:6px; margin-left:auto; }
+}

@@ -22,6 +22,7 @@ export interface LobbyMatch {
         id: number;
         name?: string;
         isConnected?: boolean;
+        isAi?: boolean;
     }>;
     totalSeats?: number;
     createdAt?: number;

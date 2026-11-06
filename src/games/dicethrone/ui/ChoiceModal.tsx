@@ -166,7 +166,10 @@ export const ChoiceModal = ({
                                 data-option-id={confirmOption.id}
                                 data-choice-custom-id={confirmOption.customId}
                             >
-                                {t(choice!.slider!.confirmLabelKey, { count: 1 })}
+                                {t(choice!.slider!.confirmLabelKey, {
+                                    count: 1,
+                                    defaultValue: choice!.slider!.confirmLabelKey,
+                                })}
                             </GameButton>
                             {skipOption && (
                                 <GameButton

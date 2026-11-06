@@ -59,6 +59,7 @@
       "winners": "{{names}} win the Holy Grail War"
     },
     "hand": {
+      "enlargeCard": "Enlarge {{name}}",
       "actions": {
         "activate": "Activate",
         "cancelRideSelection": "Remove ride selection for",
@@ -257,6 +258,8 @@
     "resolveLocation": "Resolve location"
   },
   "error": {
+    "skillCannotBeFaceDown": "Skill cards cannot be played face down. Switch back to face-up selection.",
+    "skillAttackUnavailable": "This skill's play requirements are unmet, or it has already been played this round.",
     "unknownPlayer": "Unknown player",
     "gameOver": "The game is over",
     "unknownMaster": "Master asset is not registered",
@@ -275,10 +278,31 @@
     "needExactlyTwoCards": "Select exactly two attack cards",
     "cardNotVisible": "This card is not currently visible",
     "deploymentRequired": "Deploy your Master first",
-    "actionMustBeConfirmed": "Confirm the attack first"
+    "actionMustBeConfirmed": "Confirm the attack first",
+    "normalAttackAlreadyPlayed": "You already played your normal attack this round.",
+    "notDeployed": "Deploy your Master first.",
+    "skillNotActive": "Play this skill face up before activating it.",
+    "abilityNotImplemented": "This ability is not implemented yet.",
+    "abilityAlreadyUsed": "This ability has already been used in this window.",
+    "abilitySuppressed": "Your abilities are currently suppressed.",
+    "specialAttackForbidden": "Special cards cannot be played at this location.",
+    "noblePhantasmForbidden": "The current situation prohibits Noble Phantasms.",
+    "defeatActive": "You cannot play this card while defeated.",
+    "playerEliminated": "You are eliminated and can only spectate.",
+    "engaged": "An opponent is here. You are engaged and cannot move normally.",
+    "normalMoveAfterAttack": "Normal movement must happen before normal attacks.",
+    "movementTargetRequired": "Choose a legal movement destination."
   },
   "feedback": {
+    "tutorialTarget": "Complete the action in the current lesson first.",
+    "offline": "Disconnected. Try again after reconnecting.",
+    "resolveChoice": "Finish the current choice first.",
+    "unavailable": "This card cannot be used right now.",
+    "attackWrongPhase": "Play cards during the action phase.",
+    "ridingOnlyAttacks": "Riding only accepts ordinary attack cards in your hand.",
+    "ridingMaximum": "Riding accepts at most three cards. Retract a card first.",
     "skillUnavailable": "{{skill}} is not implemented yet. No effect was applied and no resources were spent.",
-    "abilityUnavailable": "This ability is not implemented yet. No effect was applied and no resources were spent."
+    "abilityUnavailable": "This ability is not implemented yet. No effect was applied and no resources were spent.",
+    "tutorialDeployment": "Deploy to {{location}} to gain mana in this lesson."
   }
 }

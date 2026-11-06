@@ -55,6 +55,21 @@ const resolveQidahenOnlineAiCurrentPlayerId = (args: {
     const interaction = args.state.sys.interaction?.current;
     if (interaction && (interaction.data as { sourceId?: string }).sourceId === QIDAHEN_TURN_RESOLUTION_CHOICE) return interaction.playerId;
 
+    // AI 合法动作按 factionSelection -> scenarioVote -> 剧本人物/军备选择排序。
+    // 初始化时后两类选择会提前写入 core，但阵营选择未完成前它们尚不可执行。
+    // 必须先交给当前仍未选阵营的玩家，不能让预置选择抢走恢复归属。
+    if (core.factionSelection) {
+        const pendingSelectionPlayerId = core.playerIds.find((playerId) => (
+            core.factionSelection?.selections[playerId] == null
+        ));
+        return pendingSelectionPlayerId ?? args.fallbackPlayerId;
+    }
+    if (core.scenarioVote) {
+        const hostPlayerId = core.scenarioVote.hostPlayerId;
+        if (core.scenarioVote.votes[hostPlayerId] == null) return hostPlayerId;
+        return args.fallbackPlayerId;
+    }
+
     // 剧本前置选择是按势力归属的隐式决策窗口。历史线上房间可能已经把
     // currentPlayer 推进到下一势力，但前一势力仍有待选人物/军备；watchdog
     // 必须把恢复归属还原到真正拥有待选项的 seat，避免给下一位 AI 生成
@@ -66,6 +81,42 @@ const resolveQidahenOnlineAiCurrentPlayerId = (args: {
         : undefined;
 
     return pendingPlayerId ?? args.fallbackPlayerId;
+};
+
+const buildQidahenOnlineAiFeedbackDiagnosticContext = (args: {
+    state: MatchState<unknown>;
+}): Record<string, unknown> => {
+    const core = args.state.core as QidahenCore | undefined;
+    if (!core) return {};
+
+    const factionSelection = core.factionSelection;
+    const scenarioVote = core.scenarioVote;
+    return {
+        turnPhase: core.turnPhase,
+        factionCount: Object.keys(core.factions).length,
+        factionSelection: factionSelection
+            ? {
+                pendingCount: core.playerIds.filter((playerId) => factionSelection.selections[playerId] == null).length,
+                selectedCount: Object.keys(factionSelection.selections).length,
+            }
+            : null,
+        scenarioVote: scenarioVote
+            ? {
+                hasHost: Boolean(scenarioVote.hostPlayerId),
+                pendingCount: Object.entries(scenarioVote.votes)
+                    .filter(([, vote]) => vote == null)
+                    .length,
+            }
+            : null,
+        pendingScenarioCharacterChoices: core.pendingScenarioCharacterChoices.map((group) => ({
+            count: group.count,
+            optionCount: group.characterIds.length,
+        })),
+        pendingScenarioArmamentChoices: core.pendingScenarioArmamentChoices.map((group) => ({
+            count: group.count,
+            optionCount: group.armamentIds.length,
+        })),
+    };
 };
 
 const resolveQidahenManualSetupSelectionTakeoverPlayerId = (args: {
@@ -254,6 +305,7 @@ export const engineConfig = {
         // 的合法命令恢复，禁止 watchdog 发送未知命令污染线上房间。
         disableFallbackAdvancePhase: true,
         resolveCurrentPlayerId: resolveQidahenOnlineAiCurrentPlayerId,
+        buildFeedbackDiagnosticContext: buildQidahenOnlineAiFeedbackDiagnosticContext,
         resolveManualSetupSelectionTakeoverPlayerId: resolveQidahenManualSetupSelectionTakeoverPlayerId,
         shouldReleaseManualSetupAttemptFromSharedState: shouldReleaseQidahenManualSetupSelection,
         resolveManualSetupSelectionActionKindFromCommand: ({ type, payload }: { type: string; payload: unknown }) => (

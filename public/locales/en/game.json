@@ -126,7 +126,7 @@
       "backToLobbyHint": "Leave room completely",
       "social": "Friends",
       "feedback": "Feedback",
-      "downloadApp": "Download App",
+      "downloadApp": "Download app",
       "checkUpdate": "Check Update",
       "checkingUpdate": "Updating",
       "about": "About",
@@ -144,7 +144,8 @@
       "info": "Info",
       "room": "Room",
       "exit": "Exit",
-      "close": "Close"
+      "close": "Close",
+      "movePanel": "Move {{title}} window: drag title or use arrow keys"
     },
     "about": {
       "title": "Board Game",
@@ -176,6 +177,7 @@
       "contentLabel": "Description",
       "contentPlaceholder": "Describe the issue or suggestion...",
       "pasteHint": "Paste an image or capture the current game screen",
+      "pasteOnlyHint": "Paste an image",
       "imageAlt": "Feedback screenshot",
       "deleteImage": "Delete image",
       "imageAdded": "Screenshot added",
@@ -221,15 +223,17 @@
     "operationGuide": {
       "title": "Operation Guide",
       "visual": {
-        "webFabImageAlt": "Annotated web floating button screenshot",
-        "appFabImageAlt": "Annotated App floating button screenshot",
+        "webFabImageAlt": "Home floating controls",
+        "appFabImageAlt": "Home floating controls",
         "gameFabImageAlt": "Annotated in-game floating button screenshot",
         "opponentPublicInfoImageAlt": "Annotated opponent public info screenshot",
         "longPressImageAlt": "Annotated mobile long-press enlargement screenshot",
         "zoomDialogLabel": "Operation guide screenshot viewer",
         "originalSize": "Original size",
         "fitScreen": "Fit to screen",
-        "scrollOriginal": "Scroll horizontally or vertically to inspect the original image"
+        "scrollOriginal": "Scroll horizontally or vertically to inspect the original image",
+        "retryImage": "Reload illustration",
+        "loadFailed": "The illustration could not be loaded."
       },
       "platform": {
         "title": "Home controls",
@@ -238,7 +242,7 @@
         "favoriteTitle": "Organize your library with stars",
         "favoriteBody": "On desktop, hover over a game card and select its star to add or remove a favorite. On mobile, use Favorite in the game details. Your library shows saved games and their updates.",
         "settingsTitle": "The bottom-right gear opens quick settings",
-        "settingsBody": "Open the gear for display mode, fullscreen, About and feedback. On mobile, author support, language and this guide are in the top menu.",
+        "settingsBody": "Open the floating settings for display, fullscreen, app download and feedback. Drag the floating control or window title to move it. On mobile, guides, support and language are in the top menu.",
         "gameImages": "Inspecting cards and in-game controls"
       }
     },

@@ -1,8 +1,9 @@
-import React, { useEffect, useSyncExternalStore } from 'react';
+import React, { useEffect, useLayoutEffect, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import type { MatchState } from '../engine/types';
 import { getUndoSnapshotCount } from '../engine/systems/UndoSystem';
 import { clearCurrentGameFeedbackContext, setCurrentGameFeedbackContext } from '../lib/feedback/gameFeedbackContext';
+import { useOptionalGameClient } from '../engine/transport/reactContext';
 
 interface UndoContextValue {
     G: MatchState<unknown>;
@@ -43,26 +44,42 @@ interface UndoProviderProps {
  * ```
  */
 export const UndoProvider: React.FC<UndoProviderProps> = ({ children, value }) => {
+    const gameClient = useOptionalGameClient();
+    const valueRef = React.useRef(value);
+    const gameClientRef = React.useRef(gameClient);
+    useLayoutEffect(() => {
+        valueRef.current = value;
+        gameClientRef.current = gameClient;
+    }, [gameClient, value]);
+    const dispatchFromUndo = React.useCallback((type: string, payload?: unknown) => {
+        const currentValue = valueRef.current;
+        return currentValue.dispatch(type, payload);
+    }, []);
     const lastValueRef = React.useRef<UndoContextValue | null>(null);
     useEffect(() => {
         const prev = lastValueRef.current;
         const isSame = prev
             && prev.G === value.G
-            && prev.dispatch === value.dispatch
+            && prev.dispatch === dispatchFromUndo
             && prev.playerID === value.playerID
             && prev.isGameOver === value.isGameOver
             && prev.isLocalMode === value.isLocalMode;
         if (!isSame) {
-            lastValueRef.current = value;
-            setUndoState(value);
+            const nextValue = { ...value, dispatch: dispatchFromUndo };
+            lastValueRef.current = nextValue;
+            setUndoState(nextValue);
             setCurrentGameFeedbackContext({
                 state: value.G,
+                scopeId: gameClient?.feedbackMetadata?.scopeId,
                 playerId: value.playerID,
                 isGameOver: value.isGameOver,
                 isLocalMode: value.isLocalMode,
+                stateId: gameClient?.feedbackMetadata?.stateId,
+                stateRevision: typeof value.G.sys.revision === 'number' ? value.G.sys.revision : undefined,
+                randomCursor: gameClient?.feedbackMetadata?.randomCursor,
             });
         }
-    }, [value]);
+    }, [dispatchFromUndo, gameClient?.feedbackMetadata?.randomCursor, gameClient?.feedbackMetadata?.scopeId, gameClient?.feedbackMetadata?.stateId, value]);
     useEffect(() => () => {
         const lastState = lastValueRef.current?.G ?? null;
         lastValueRef.current = null;

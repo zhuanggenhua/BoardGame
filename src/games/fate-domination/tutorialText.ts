@@ -5,13 +5,14 @@ const play = 'intake/rules/chm-进行一场圣杯战争.md';
 const introduction = 'intake/rules/chm-前情提要与内容物介绍.md';
 const excerpt = (source: string, section: string, quote: string) => ({ source, section, quote });
 const paperExcerpt = (source:string,section:string,sourceQuote:string) => ({...excerpt(source,section,sourceQuote.replace(/\s*[（(][CDJK][）)]\s*/g,'')),sourceQuote,transcription:'omit-paper-figure-labels' as const});
+const punctuationExcerpt = (source:string,section:string,sourceQuote:string) => ({...excerpt(source,section,sourceQuote.replace('则不抽。）。','则不抽）。')),sourceQuote,transcription:'normalize-punctuation' as const});
 
 /** 同语种只摘取当前所需原句；定位与操作说明保留在作者数据，不进入玩家正文。 */
 export const FATE_TUTORIAL_PASSAGES = {
     duration: excerpt(introduction, '如何进行游戏', '圣杯战争将持续11天【回合】。'),
     victory: excerpt(introduction, '如何进行游戏', '在第 11 天【回合结束时】，拥有最多 VP 的玩家将获得圣杯并赢得游戏。'),
     order: excerpt(play, '游戏流程', '当所有玩家进行完了一个阶段后，进入下一阶段并重复上述过程。'),
-    preparation: excerpt(play, '准备阶段', '按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。'),
+    preparation: punctuationExcerpt(play, '准备阶段', '按回合顺位，所有玩家从他们的牌堆中抽牌，将他们的手牌补充到上限（通常为3，此时已经有3张以上则不抽。）。'),
     deployment: paperExcerpt(play, '前哨阶段（白天）', '按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查），若部署于魔术工房，该玩家立即获得部署处所标注的魔力值（C）。'),
     deploymentPlaces: excerpt(play, '前哨阶段（白天）', '按回合顺位，玩家们将自己的御主立牌部署于魔术工房或战场（不可部署于侦查）'),
     workshopOrder: excerpt(introduction, 'C –工房区', '玩家若选择部署于此，由数字的由高到低依次部署并立即获得等于其数字的魔力值。'),

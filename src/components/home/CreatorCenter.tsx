@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { UI_Z_INDEX } from '../../core';
 import { createCreatorClaim, getClaimEvidence, listCreatorClaims, listOwnedGames, submitCreatorClaim, uploadClaimEvidence, withdrawCreatorClaim } from '../../api/external-games';
@@ -91,6 +91,20 @@ function CreatorClaimForm({ claim, token, gameId, gameName, profileUrl = '', onS
     const [error, setError] = useState('');
     const pending = claim?.status === 'pending';
     const locked = pending || busy;
+    const evidenceInput = useRef<HTMLInputElement>(null);
+    const [dragging, setDragging] = useState(false);
+    const selectEvidence = (selected: File) => {
+        if (locked) return;
+        const supported = selected.type ? ['image/png', 'image/jpeg', 'image/webp', 'image/avif'].includes(selected.type) : /\.(png|jpe?g|webp|avif)$/i.test(selected.name);
+        if (!supported || selected.size > 5 * 1024 * 1024) {
+            setFile(undefined);
+            setError(t(supported ? 'platform.creatorCenter.claim.evidenceTooLarge' : 'platform.uploadWorkspace.coverInvalidType'));
+        } else {
+            setError('');
+            setFile(selected);
+        }
+        if (evidenceInput.current) evidenceInput.current.value = '';
+    };
     const claimStatusLabels = {
         draft: t('platform.creatorCenter.claim.status.draft'),
         pending: t('platform.creatorCenter.claim.status.pending'),
@@ -137,20 +151,29 @@ function CreatorClaimForm({ claim, token, gameId, gameName, profileUrl = '', onS
         <p className="creator-claim-target">{t('platform.creatorCenter.claim.currentGame', { name: gameName })}</p>
         {claim && <p role="status"><span className={`creator-status is-${claim.status}`}>{claimStatusLabels[claim.status]}</span>{claim.reviewComment ? ` · ${claim.reviewComment}` : ''}</p>}
         {pending && <p>{t('platform.creatorCenter.claim.pendingLocked')}</p>}
-        {claim && (claim.status === 'draft' || claim.status === 'pending') && <p className="creator-code">{t('platform.creatorCenter.claim.verificationInstructions', { code: claim.verificationCode, deadline: new Date(claim.verificationExpiresAt).toLocaleString() })}</p>}
+        {claim && (claim.status === 'draft' || claim.status === 'pending') && <p className="creator-code"><Trans ns="lobby" i18nKey="platform.creatorCenter.claim.verificationInstructions"
+            values={{ code: claim.verificationCode, deadline: new Date(claim.verificationExpiresAt).toLocaleString() }}
+            components={{ strong: <strong /> }} /></p>}
         <fieldset disabled={locked} className="platform-upload-fields">
             <label>{t('platform.creatorCenter.claim.authorProfile')}<input name="profileUrl" required type="url" placeholder="https://" maxLength={2048} defaultValue={claim?.profileUrl ?? profileUrl} readOnly={Boolean(claim)} /></label>
-            <label className="platform-cover-upload">{t('platform.creatorCenter.claim.evidence')}
-                {preview && <img src={preview} alt={t('platform.creatorCenter.claim.evidencePreviewAlt')} onError={() => { setPreview(''); setError(t('platform.creatorCenter.claim.previewFailed')); }} />}
-                <input type="file" aria-label={t('platform.creatorCenter.claim.evidenceUpload')} accept="image/png,image/jpeg,image/webp,image/avif" onChange={event => {
-                    const selected = event.target.files?.[0];
-                    if (selected && selected.size > 5 * 1024 * 1024) {
-                        setFile(undefined); event.currentTarget.value = ''; setError(t('platform.creatorCenter.claim.evidenceTooLarge')); return;
-                    }
-                    setError(''); setFile(selected);
-                }} />
+            <div className={`platform-cover-upload${dragging && !locked ? ' is-dragging' : ''}`}
+                onDragOver={event => { event.preventDefault(); if (!locked) setDragging(true); }}
+                onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
+                onDrop={event => {
+                    event.preventDefault(); setDragging(false);
+                    const selected = event.dataTransfer.files[0];
+                    if (selected) selectEvidence(selected);
+                }}>
+                <span>{t('platform.creatorCenter.claim.evidence')}</span>
+                <input ref={evidenceInput} type="file" hidden aria-label={t('platform.creatorCenter.claim.evidenceUpload')} accept="image/png,image/jpeg,image/webp,image/avif"
+                    onChange={event => { const selected = event.target.files?.[0]; if (selected) selectEvidence(selected); }} />
+                <button type="button" className={`platform-cover-picker${preview ? ' has-preview' : ''}`} disabled={locked} onClick={() => evidenceInput.current?.click()}>
+                    {preview && <img src={preview} alt={t('platform.creatorCenter.claim.evidencePreviewAlt')} onError={() => { setPreview(''); setError(t('platform.creatorCenter.claim.previewFailed')); }} />}
+                    <span>{t('platform.creatorCenter.claim.evidenceUpload')}</span>
+                    <small className="platform-cover-drag-hint">{t('platform.uploadWorkspace.dropCover')}</small>
+                </button>
                 <small>{t('platform.creatorCenter.claim.evidenceRequirement')}</small>
-            </label>
+            </div>
             <label className="creator-claim-explanation">{t('platform.creatorCenter.claim.relationship')}<textarea name="explanation" required minLength={10} maxLength={4000} placeholder={t('platform.creatorCenter.claim.relationshipPlaceholder')} defaultValue={claim?.explanation} readOnly={Boolean(claim)} /></label>
         </fieldset>
         {error && <p role="alert">{error}</p>}

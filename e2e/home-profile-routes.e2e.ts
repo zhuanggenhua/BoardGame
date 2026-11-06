@@ -1,4 +1,4 @@
-import { test, expect, initHome, login, switchStyle, openGame, capture, record, rememberAvatarUpload } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, switchStyle, openGame, openPlatformProfile, capture, record, rememberAvatarUpload } from './helpers/homeAcceptance';
 import sharp from 'sharp';
 
 for (const mobile of [false, true]) {
@@ -7,7 +7,7 @@ for (const mobile of [false, true]) {
         const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: mobile ? { width: 375, height: 812 } : { width: 1920, height: 1080 }, hasTouch: mobile, isMobile: mobile });
         try {
             const page = await context.newPage(); await initHome(page); await login(page, accounts.alice);
-            await page.getByTestId('user-menu-trigger').click(); await page.getByTestId('user-menu-profile').click();
+            await openPlatformProfile(page);
             await page.getByRole('button', { name: '编辑个人资料', exact: true }).click();
             await expect(page.getByTestId('fab-menu')).toBeVisible();
             const name = `验收昵称${mobile ? '手机' : '桌面'}`;
@@ -42,7 +42,7 @@ for (const mobile of [false, true]) {
             await expect.poll(() => page.getByTestId('profile-page').getByRole('img', { name, exact: true }).evaluate(image => (image as HTMLImageElement).naturalWidth > 0)).toBe(true);
             await page.getByTestId('user-menu-trigger').click(); await page.locator('[data-user-menu-panel] > button').last().click();
             await login(page, accounts.alice);
-            await page.getByTestId('user-menu-trigger').click(); await page.getByTestId('user-menu-profile').click();
+            await openPlatformProfile(page);
             await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
             await expect(page.getByTestId('profile-page').getByRole('img', { name, exact: true })).toHaveAttribute('src', savedAvatar);
             // 同一份资料必须能从经典既有账户设置读回，并能从该入口继续修改。

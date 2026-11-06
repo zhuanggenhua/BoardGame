@@ -27,6 +27,7 @@ export function useLocalProviderSession(args: {
     config: GameEngineConfig;
     numPlayers: number;
     seed: string;
+    randomSeed?: string;
     setupData: unknown;
     setupPlayerIds: string[];
     aiSeatIds: string[];
@@ -38,6 +39,7 @@ export function useLocalProviderSession(args: {
         config,
         numPlayers,
         seed,
+        randomSeed = seed,
         setupData,
         setupPlayerIds,
         aiSeatIds,
@@ -62,7 +64,7 @@ export function useLocalProviderSession(args: {
     // 初始状态和已消费的随机源必须一起创建。StrictMode重跑初始化时，
     // 每次使用独立随机源，避免被丢弃的setup继续推进保留下来的游标。
     const [initialSession] = useState(() => {
-        const random = createLocalProviderRandom(seed, persistedSnapshot?.randomCursor ?? 0);
+        const random = createLocalProviderRandom(randomSeed, persistedSnapshot?.randomCursor ?? 0);
         return {
             random,
             state: createInitialLocalProviderState({
@@ -94,7 +96,7 @@ export function useLocalProviderSession(args: {
     }, [numPlayers, persistSession, rejectedPersistedSnapshotSeed, seed, state, storageGameId]);
 
     const reset = useCallback(() => {
-        randomRef.current = createLocalProviderRandom(seed);
+        randomRef.current = createLocalProviderRandom(randomSeed);
         const random = randomRef.current;
         const core = config.domain.setup(setupPlayerIds, random, setupData);
         const sys = createInitialSystemState(
@@ -107,7 +109,7 @@ export function useLocalProviderSession(args: {
         );
         stateRef.current = nextState;
         setState(nextState);
-    }, [aiSeatIds, config, seed, setupData, setupPlayerIds]);
+    }, [aiSeatIds, config, randomSeed, setupData, setupPlayerIds]);
 
     return {
         state,

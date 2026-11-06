@@ -1153,12 +1153,46 @@ const validateModifyDie = (
     const validation = validateDieInteraction(state, pendingInteraction, playerId, cmd.payload.dieId, phase, 'modify_die_limit_reached', 'modify');
     if ('valid' in validation) return validation;
     // 检查新值是否在范围内
-    if (cmd.payload.newValue < 1 || cmd.payload.newValue > 6) {
+    if (!Number.isInteger(cmd.payload.newValue) || cmd.payload.newValue < 1 || cmd.payload.newValue > 6) {
         return fail('invalid_die_value');
     }
-    const allowedValues = pendingInteraction?.dieModifyConfig?.allowedValues;
+    const config = pendingInteraction?.dieModifyConfig;
+    const allowedValues = config?.allowedValues;
     if (Array.isArray(allowedValues) && !allowedValues.includes(cmd.payload.newValue)) {
         return fail('invalid_die_value');
+    }
+    if (config?.mode === 'set' && config.targetValue !== undefined && cmd.payload.newValue !== config.targetValue) {
+        return fail('invalid_die_value');
+    }
+    if (config?.mode === 'adjust' || config?.mode === 'copy') {
+        // 复制的第一步选来源骰，第二步必须使用该来源骰的权威点数。
+        const valueDieId = config.mode === 'copy'
+            ? (validation.interaction.completedDieIds?.[0] ?? cmd.payload.dieId)
+            : cmd.payload.dieId;
+        const currentDie = findCurrentRollDie(state, valueDieId, phase)?.die;
+        const snapshotIndex = getAttackSnapshotDieIndex(valueDieId);
+        const currentValue = currentDie?.value ?? (isAttackSnapshotDieId(valueDieId)
+            ? state.pendingAttack?.attackDiceValues?.[snapshotIndex]
+            : undefined);
+        if (currentValue === undefined) return fail('die_not_found');
+        if (config.mode === 'copy' && cmd.payload.newValue !== currentValue) {
+            return fail('invalid_die_value');
+        }
+        if (config.mode === 'adjust') {
+            const adjustRange = config.adjustRange;
+            if (
+                !adjustRange
+                || !Number.isFinite(adjustRange.min)
+                || !Number.isFinite(adjustRange.max)
+                || adjustRange.min > adjustRange.max
+            ) {
+                return fail('invalid_die_value');
+            }
+            const adjustment = cmd.payload.newValue - currentValue;
+            if (adjustment < adjustRange.min || adjustment > adjustRange.max) {
+                return fail('invalid_die_value');
+            }
+        }
     }
     return ok();
 };

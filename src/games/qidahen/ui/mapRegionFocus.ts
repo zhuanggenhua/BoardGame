@@ -44,6 +44,7 @@ export const focusQidahenMapRegion = (options: {
     padding: number;
     reservedLabelHeight?: number;
     preferredZoom: number;
+    mapSize?: { width: number; height: number };
 }): QidahenMapViewport | null => {
     const { visibleRect, padding, region, mapScale, mapOrigin } = options;
     const labelHeight = options.reservedLabelHeight ?? 0;
@@ -58,6 +59,16 @@ export const focusQidahenMapRegion = (options: {
         const viewport = clampQidahenMapViewport({ zoom,
             panX: frame.left + frame.width / 2 - mapOrigin.x - (region.left + region.width / 2) * mapScale * zoom,
             panY: frame.top + labelHeight + (frame.height - labelHeight) / 2 - mapOrigin.y - (region.top + region.height / 2) * mapScale * zoom });
+        if (options.mapSize) {
+            // 自动战斗镜头保持原地图覆盖视口，不能为排骰子露出地图外空白。
+            const width = options.mapSize.width * mapScale * viewport.zoom;
+            const height = options.mapSize.height * mapScale * viewport.zoom;
+            if (width < visibleRect.width || height < visibleRect.height) return [];
+            viewport.panX = Math.max(visibleRect.left + visibleRect.width - mapOrigin.x - width,
+                Math.min(visibleRect.left - mapOrigin.x, viewport.panX));
+            viewport.panY = Math.max(visibleRect.top + visibleRect.height - mapOrigin.y - height,
+                Math.min(visibleRect.top - mapOrigin.y, viewport.panY));
+        }
         const projected = { left: mapOrigin.x + viewport.panX + region.left * mapScale * viewport.zoom,
             top: mapOrigin.y + viewport.panY + region.top * mapScale * viewport.zoom,
             width: region.width * mapScale * viewport.zoom, height: region.height * mapScale * viewport.zoom };

@@ -72,6 +72,22 @@ export interface PipelineResult<TCore> {
     error?: string;
 }
 
+function advanceStateRevision<TCore>(
+    nextState: MatchState<TCore>,
+    previousState: MatchState<TCore>,
+): MatchState<TCore> {
+    const previousRevision = typeof previousState.sys.revision === 'number'
+        ? previousState.sys.revision
+        : 0;
+    return {
+        ...nextState,
+        sys: {
+            ...nextState.sys,
+            revision: previousRevision + 1,
+        },
+    };
+}
+
 const DEFAULT_MAX_AFTER_EVENTS_ROUNDS = 10;
 
 function applyGameoverCheck<TCore>(
@@ -112,6 +128,7 @@ export function createInitialSystemState(
         schemaVersion: 1,
         matchId,
         decisionEpoch: 0,
+        revision: 0,
         undo: {
             snapshots: [],
             maxSnapshots: 10,
@@ -831,6 +848,7 @@ export function executePipeline<
 
             // 持久化教程 sequence cursor
             currentState = persistRandomCursor(currentState);
+            currentState = advanceStateRevision(currentState, state);
 
             return buildResult({
                 success: true,
@@ -949,6 +967,7 @@ export function executePipeline<
 
     // 7. 持久化教程 sequence cursor
     currentState = persistRandomCursor(currentState);
+    currentState = advanceStateRevision(currentState, state);
 
     return buildResult({
         success: true,

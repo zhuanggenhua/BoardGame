@@ -177,7 +177,7 @@ function buildQidahenPostBattleInteraction(
         title: `${selection.title} · ${selection.targetRegionName}`,
         sourceId: QIDAHEN_POST_BATTLE_INTERACTION_SOURCE_ID,
         candidates,
-        subtitle: `${selection.summary} · 幸存 ${selection.survivingTroops}`,
+        subtitle: selection.summary,
     }) as QidahenPostBattleInteraction;
 
     interaction.data.qidahenPostBattleSelection = {

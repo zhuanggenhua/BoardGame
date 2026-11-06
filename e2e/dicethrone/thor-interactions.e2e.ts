@@ -62,7 +62,7 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await page.locator('[data-tutorial-id="advance-phase-button"]').click();
  await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toHaveCount(0);
  await expect(page.getByTestId('dice-interaction-hint')).toHaveText('选择要一起重掷的骰子，或确认保留当前结果');
- await expectDiceHintSurface(page,'dice-tray-top');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.locator('[data-testid^="die-button-"]')).toHaveCount(5);
  await expect(page.getByTestId('dice-reroll-selected-group')).toHaveCount(0);
  await expect(page.getByTestId('dice-bonus-settlement-confirm-button')).toHaveText('确认');
@@ -80,7 +80,7 @@ test('索尔正式素材、弃牌飞掷与奥丁整组重掷',async({page,game},
  await expect(settleBonusDice).toHaveText('确认');
  await expect(settleBonusDice).toHaveAttribute('data-tutorial-id','dice-confirm-button');
  await expect(page.getByTestId('dice-interaction-hint')).toHaveText('已选择2颗骰子，点击重掷；也可确认保留当前结果');
- await expectDiceHintSurface(page,'dice-tray-top');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await shot(page,info,'07-使用原整组重掷动作提交两颗所选骰子');
  await rerollSelected.click();
  await expect.poll(async()=>(await game.getState()).core.pendingBonusDiceSettlement?.rerollCount).toBe(1);
@@ -140,7 +140,7 @@ test('索尔奥丁之力II可用原确认入口跳过额外重掷', async ({ pag
 
  const confirm = page.getByTestId('dice-bonus-settlement-confirm-button');
  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要一起重掷的骰子');
- await expectDiceHintSurface(page,'dice-tray-top');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-selected', 'false');
  await expect(confirm).toHaveText('确认');
  await shot(page, info, '01-奥丁效果骰空选时沿用原确认入口');
@@ -180,7 +180,7 @@ test('索尔手牌可完整放大并通过当之无愧选择自己的骰子',asy
  await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
  await expect(page.getByText('选择骰子点数',{exact:true})).toHaveCount(0);
  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择目标点数');
- await expectDiceHintSurface(page,'game-hints-top-center');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('die-target-value-4')).toBeVisible();
  await expect(page.getByTestId('die-target-value-5')).toBeVisible();
  await expect(page.locator('[data-testid^="die-adjust-"]')).toHaveCount(0);
@@ -188,7 +188,7 @@ test('索尔手牌可完整放大并通过当之无愧选择自己的骰子',asy
  await expect.poll(async()=>(await game.getState()).core.currentRollContext?.dice.map((die:{value:number})=>die.value)).toEqual([1,1,1,1,1]);
  await page.getByTestId('die-target-value-4').click();
  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为4的骰子');
- await expectDiceHintSurface(page,'game-hints-top-center');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','1');
  await shot(page,info,'04-选择四后沿原固定值流程点选骰子');
  await page.getByTestId('die-button-0').click();
@@ -205,7 +205,7 @@ test('索尔当之无愧选择五后取消不提交改骰',async({page,game},inf
  await dragDiceThroneHandCardToPlay(page,'card-thor-worthy');
  await page.getByTestId('die-target-value-5').click();
  await expect(page.getByTestId('dice-interaction-hint')).toContainText('选择要设为5的骰子');
- await expectDiceHintSurface(page,'game-hints-top-center');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('die-button-0')).toHaveAttribute('data-display-value','1');await shot(page,info,'01-当之无愧取消前选择五但尚未改骰');
  const cancel=page.getByRole('button',{name:'取消',exact:true});await expect(cancel).toBeVisible();await cancel.click();
  await expect.poll(async()=>{const state=await game.getState();return {values:state.core.currentRollContext?.dice.map((die:{value:number})=>die.value),interaction:state.sys.interaction?.current?.kind??null,cp:state.core.players['0'].resources.cp,hand:state.core.players['0'].hand.map((card:{id:string})=>card.id),discard:state.core.players['0'].discard.map((card:{id:string})=>card.id)};}).toEqual({values:[1,1,1,1,1],interaction:null,cp:5,hand:['card-thor-worthy'],discard:[]});
@@ -237,7 +237,7 @@ test('索尔连锁闪电选择效果骰并自动结算唯一附属目标',async(
  await shot(page,info,'02-三颗效果骰等待确认');
  await page.locator('[data-tutorial-id="dice-confirm-button"]').click();
  await expect(page.getByText('选择两颗效果骰',{exact:true})).toBeVisible();
- await expectDiceHintSurface(page,'game-hints-top-center');
+ await expectDiceHintSurface(page,'dice-tray-left-center');
  await expect(page.getByTestId('dice-interaction-hint-title')).toHaveText('选择两颗效果骰');
  await expect(page.getByTestId('dicethrone-2d-dice-tray')).toHaveAttribute('data-dice-count','3');
  await expect(page.locator('[data-option-id]')).toHaveCount(0);

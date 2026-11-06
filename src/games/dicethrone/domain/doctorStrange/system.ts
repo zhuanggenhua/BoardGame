@@ -13,6 +13,7 @@ import { getPendingAttackSettlementStage } from '../utils';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from '../abilityLookup';
 import { DOCTOR_STRANGE_FACE as FACE, DOCTOR_STRANGE_TOKEN as TOKEN } from '../../heroes/doctor_strange/constants';
 import type { DoctorStrangeEvent, SpellCandidate, SpellProgram, SpellTask, SpellZone } from './types';
+import { getEffectSequenceBlockerId } from '../attackEffectContinuationTypes';
 import { isSpell } from './types';
 
 const FRAME_KIND = 'dicethrone:doctor-strange-spell';
@@ -173,6 +174,7 @@ function buildEffectEvents(core: DiceThroneCore, program: SpellProgram, task: Ex
     return resolveEffectsToEvents([{ action, timing: 'immediate', description: `doctorStrange.effects.${task.effect}` }], 'immediate', {
         state: core, attackerId: playerId, defenderId: targetId, sourceAbilityId, damageDealt: 0, timestamp,
         damageOrigin: 'card',
+        resolutionSequenceId: `doctor-strange-task:${playerId}:${sourceAbilityId}:${task.effect}:${timestamp}`,
     });
 }
 
@@ -211,15 +213,25 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                         sourceId: request.payload.sourceId,
                         operation: request.payload.operation,
                         ...(request.payload.values ? { values: request.payload.values } : {}),
+                        ...((request.payload.continuationRequestId ?? getEffectSequenceBlockerId(request))
+                            ? { continuationRequestId: request.payload.continuationRequestId ?? getEffectSequenceBlockerId(request) }
+                            : {}),
                     }))] },
                 }, sourceCommandType: command.type, timestamp: deferredRequests[0].timestamp } as DiceThroneEvent] };
             }
             for (const request of requested) {
                 const { playerId, targetId, sourceId, operation, values } = request.payload;
+                const continuationRequestId = request.payload.continuationRequestId ?? getEffectSequenceBlockerId(request);
                 const active = getActiveResolutionFrame(next);
                 const existing = active?.kind === FRAME_KIND ? getProgram(active) : undefined;
                 if (existing && existing.playerId === playerId) {
-                    next = writeProgram(next, active!, { ...existing, tasks: [{ kind: 'operation', operation, values }, ...existing.tasks] });
+                    next = writeProgram(next, active!, {
+                        ...existing,
+                        continuationRequestIds: continuationRequestId
+                            ? Array.from(new Set([...(existing.continuationRequestIds ?? []), continuationRequestId]))
+                            : existing.continuationRequestIds,
+                        tasks: [{ kind: 'operation', operation, values }, ...existing.tasks],
+                    });
                 } else {
                     const frame: ResolutionFrame = {
                         id: `strange:${playerId}:${sourceId}:${request.timestamp}`, kind: FRAME_KIND,
@@ -229,6 +241,7 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                         metadata: { program: { playerId, targetId: targetId ?? getOpponents(next.core, playerId)[0] ?? playerId,
                             sourceId, parentResponseWindowId: next.sys.responseWindow?.current?.id,
                             parentDamageId: next.core.pendingDamage?.id,
+                            ...(continuationRequestId ? { continuationRequestIds: [continuationRequestId] } : {}),
                             tasks: [{ kind: 'operation', operation, values }] } satisfies SpellProgram },
                     };
                     next = pushResolutionFrame(next, frame);
@@ -406,7 +419,13 @@ export function createDoctorStrangeSpellSystem(): EngineSystem<DiceThroneCore> {
                 state: completed,
                 events: [{
                     type: 'STRANGE_OPERATION_RESOLVED',
-                    payload: { playerId: program.playerId, sourceId: program.sourceId },
+                    payload: {
+                        playerId: program.playerId,
+                        sourceId: program.sourceId,
+                        ...(program.continuationRequestIds?.length
+                            ? { continuationRequestIds: program.continuationRequestIds }
+                            : {}),
+                    },
                     sourceCommandType: 'ABILITY_EFFECT',
                     timestamp,
                 }],

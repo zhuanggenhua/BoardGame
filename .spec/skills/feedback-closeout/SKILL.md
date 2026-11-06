@@ -326,7 +326,7 @@ worker 任务必须包含反馈 ID、诊断包路径、文件 / 模块边界、�
 
 ## 脚本入口
 
-- `triage-open-feedback.mjs`：线上口径下拉取开放反馈、排重、分类、生成诊断包与并行候选。
+- `triage-open-feedback.mjs`：线上口径下拉取开放反馈、排重、分类、生成诊断包与并行候选；包含结构化现场包摘要，以及线上 watchdog 私密回放的可用性和去隐私状态摘要；可用 `--ids` 定向读取指定记录。显式提供 `--ids` 时至少要有一个有效 ID；参数为空或无效必须在发起网络请求前报错，不能退化为全状态列表读取。
 - `sync-feedback-status-board.mjs`：从 `summary.json` 初始化或刷新本地状态镜像，覆盖代表项和同组反馈 ID。
 - `update-feedback-status.mjs`：线上口径下自动选择 HTTP 管理接口或生产机 Mongo 回写状态，并同步本地镜像。
 - `finalize-feedback-group.mjs`：按 `summary.json` 收口代表项，并默认同步同组反馈状态。
@@ -358,7 +358,10 @@ worker 任务必须包含反馈 ID、诊断包路径、文件 / 模块边界、�
 
 结构化现场包的字段合同以 .spec/knowledge/standards/feedback-system.md 为唯一来源；本 skill 只规定如何消费它、何时阻塞和如何收口，不复制字段定义。
 
-- 进入根因定位前，必须先读取 diagnosticPacket.replayability 和 missingFields。full 才能直接按原始故障时点回放；partial 只能做运行时消费验证或按反馈语义重建；unreplayable 只能记录证据缺口并继续补采集，不能把重建场景写成历史现场。
+- 进入根因定位前，必须先读取 diagnosticPacket.replayability 和 missingFields。full 才能直接按原始故障时点回放；partial 只能做运行时消费验证或按反馈语义重建；unreplayable 只能记录该结构化包的证据缺口并继续补采集，不能把重建场景写成历史现场。这一判定只描述 diagnosticPacket 自身，不代表记录没有其它可用现场源；私密回放须按下文独立检查。
+- 线上真实记录存在管理员私密回放能力时，必须把它作为独立证据源检查；管理详情接口未返回 `privateReplay` 不等于记录没有回放。线上 watchdog 记录由 `triage-open-feedback.mjs` 对目标 ID 做只读投影读取并生成去隐私摘要；其他记录按已确认的管理员只读入口检查，不得为了找证据扩大到整库导出。
+- 必须分别记录 `diagnosticPacket.replayability / missingFields` 与私密回放检查结果。私密回放结果至少区分“可用、记录未附带、记录未找到、读取失败、解码失败、未检查”；不得把结构化现场包标为 `partial` 直接推成整条反馈“缺证据”，也不得把“未检查 / 读取失败”说成“回放不存在”。
+- 私密回放可用时，先消费其故障时点并提取与根因有关的阶段、关联 ID、交互和有限状态摘要；原始回放只在内存中读取，诊断包与汇报不得复制随机种子、手牌或隐藏选项。若摘要仍不能回答关键问题，继续沿已授权源补查；只有实际数据源检查完成且能指出具体缺失字段如何阻断判断时，才可报告证据不足或要求用户补充。
 - 现场包中的 captureId 是单次采集标识，chainId 是前 / 中 / 后证据链标识；不得把不同运行、不同房间、不同版本或不同对象拼成同一条故障链。
 - 对 AI 卡死、结算阻塞、自动结束失败，现场包至少要能关联 matchId / roomId / requestId / stateId / decisionEpoch 中实际可用的字段，并记录 interaction、legal actions、AI decision preview、实际 responder / 视角、watchdog 条件和最近堆栈；缺失项必须原样列入 missingFields。
 - 收口汇报必须分开写：反馈状态、现场回放能力、运行时消费结果、原始故障是否复现、根因是否确认、代码是否修改、真实入口是否验收。任何一项不能由另一项代替。

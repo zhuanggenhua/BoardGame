@@ -8,6 +8,7 @@ import {
     type LocalRuntimeControlResolver,
 } from './followCurrentTurnPlayer';
 import type { GameClientContextValue } from './reactContext';
+import { recordGameFeedbackCommand } from '../../lib/feedback/gameFeedbackContext';
 
 export function useLocalProviderViewModel(args: {
     state: MatchState<unknown>;
@@ -20,6 +21,7 @@ export function useLocalProviderViewModel(args: {
     followCurrentTurnPlayer: boolean;
     localPlayerId: string | null;
     resolveLocalRuntimeControlledPlayerId?: LocalRuntimeControlResolver;
+    randomCursor?: number;
 }): GameClientContextValue {
     const {
         state,
@@ -32,6 +34,7 @@ export function useLocalProviderViewModel(args: {
         followCurrentTurnPlayer,
         localPlayerId,
         resolveLocalRuntimeControlledPlayerId,
+        randomCursor,
     } = args;
 
     const matchPlayers = useMemo(() => (
@@ -73,9 +76,24 @@ export function useLocalProviderViewModel(args: {
         state,
     ]);
 
+    const dispatchObservedCommand = useCallback((type: string, payload: unknown) => {
+        const payloadPlayerId = payload && typeof payload === 'object' && !Array.isArray(payload)
+            ? (payload as Record<string, unknown>).playerId
+            : undefined;
+        const stateId = (state.sys as unknown as { stateId?: unknown }).stateId;
+        recordGameFeedbackCommand({
+            commandType: type,
+            payload,
+            playerId: typeof payloadPlayerId === 'string' ? payloadPlayerId : localBoardPlayerId,
+            stateId: typeof stateId === 'number' ? stateId : undefined,
+            randomCursor,
+        });
+        dispatchCommand(type, payload);
+    }, [dispatchCommand, localBoardPlayerId, randomCursor, state]);
+
     const dispatchSingleCommand = useCallback((type: string, payload: unknown) => {
         if (!localBoardPlayerId) {
-            dispatchCommand(type, payload);
+            dispatchObservedCommand(type, payload);
             return;
         }
 
@@ -83,27 +101,27 @@ export function useLocalProviderViewModel(args: {
         // 让 localDispatchCommand 根据 state.sys.interaction.current.playerId 解析，
         // 避免年中/新年等跨席位交互被误发成当前视角玩家。
         if (type.startsWith('SYS_INTERACTION_')) {
-            dispatchCommand(type, payload);
+            dispatchObservedCommand(type, payload);
             return;
         }
 
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-            dispatchCommand(type, payload);
+            dispatchObservedCommand(type, payload);
             return;
         }
 
         const payloadRecord = payload as Record<string, unknown>;
         if (typeof payloadRecord.__internalPlayerId === 'string') {
-            dispatchCommand(type, payload);
+            dispatchObservedCommand(type, payload);
             return;
         }
 
         // 仅本地 Provider 用它表达“当前本地视角玩家”，不能当成跨 transport 的业务执行者真相。
-        dispatchCommand(type, {
+        dispatchObservedCommand(type, {
             ...payloadRecord,
             __internalPlayerId: localBoardPlayerId,
         });
-    }, [dispatchCommand, localBoardPlayerId]);
+    }, [dispatchObservedCommand, localBoardPlayerId]);
 
     const dispatch = useCallback((type: string, payload: unknown) => {
         if (type === TRANSPORT_BATCH_COMMAND) {

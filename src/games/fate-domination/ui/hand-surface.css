@@ -1,6 +1,6 @@
 .fd-runtime-table {
-    --fd-hand-card-width: clamp(140px, 9.4vw, 240px);
-    --fd-hand-floor: max(8px, env(safe-area-inset-bottom));
+    --fd-hand-card-width: clamp(164px, 10.8vw, 276px);
+    --fd-hand-floor: env(safe-area-inset-bottom, 0px);
 }
 .fd-runtime-hand-grid {
     --fd-hand-hud-clearance: 244px;
@@ -13,7 +13,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: stretch;
-    gap: clamp(36px, 4vw, 84px);
+    gap: clamp(24px, 3vw, 56px);
     box-sizing: border-box;
     min-width: 0;
     width: auto;
@@ -36,31 +36,52 @@
 
 .fd-attack-hand-zone {
     z-index: 2;
-    /* The attack zone takes the width left after the skill zone's natural
-       content width. Its card rows browse internally when they overflow. */
+    /* 攻击牌承接右侧技能以外的空间，容量增加时重叠而不缩牌。 */
     flex: 1 1 0;
     width: auto;
+    container-type: inline-size;
 }
-.fd-skill-hand-zone { z-index: 1; flex: 0 1 max-content; width: max-content; }
+.fd-skill-hand-zone { z-index: 1; flex: 0 0 min(42%, calc(var(--fd-hand-card-width) * 3 + 16px)); width: min(42%, calc(var(--fd-hand-card-width) * 3 + 16px)); container-type:inline-size; }
 
 .fd-runtime-card-row {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
-    /* 静息态仅占实际牌宽，避免透明排拦住地图点位；溢出时仍在父区内滚动。 */
-    width: max-content;
+    gap: 0;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     min-height: 34px;
-    /* 横向滚动末端为描边和小数像素舍入保留可见边距。 */
+    container-type: inline-size;
     box-sizing: border-box;
-    padding: 16px 6px 8px;
-    pointer-events: auto;
+    padding: 0;
+    pointer-events: none;
 }
 
-/* 没有可交互卡牌的排不占用地图命中区域；有牌时保留横向浏览。 */
+/* 只有卡牌本体命中，排内留白不拦截地图。 */
 .fd-runtime-card-row:not(:has(.fd-runtime-card)) {
     pointer-events: none;
+}
+
+.fd-runtime-card-shell,
+.fd-skill-slot {
+    position: relative;
+    flex: 0 0 var(--fd-hand-card-width);
+    width: var(--fd-hand-card-width);
+    min-width: var(--fd-hand-card-width);
+    max-width: var(--fd-hand-card-width);
+    pointer-events: none;
+}
+.fd-skill-cards { justify-content: flex-start; }
+.fd-skill-slot > .fd-runtime-card-shell { width: 100%; }
+.fd-runtime-card-shell:focus-within,
+.fd-runtime-card-shell:hover { z-index: 30; }
+.fd-card-inspect { pointer-events: none; }
+@media (hover: hover) and (pointer: fine) {
+    .fd-runtime-card-shell:hover > .fd-card-inspect,
+    .fd-card-inspect:focus-visible { pointer-events: auto; opacity: 1; }
+}
+@media (hover: none), (pointer: coarse) {
+    .fd-card-inspect { display: none; }
 }
 
 .fd-runtime-card {
@@ -76,7 +97,7 @@
     cursor: pointer;
     pointer-events: auto;
     box-shadow: none;
-    touch-action:pan-x;
+    touch-action:manipulation;
     user-select:none;
     -webkit-touch-callout:none;
 }
@@ -84,8 +105,8 @@
 .fd-runtime-card > img { display: block; width: 100%; height: auto; aspect-ratio: auto 544 / 768; object-fit: contain; }
 .fd-runtime-card:hover { filter: drop-shadow(0 3px 6px #0009); z-index: 3; }
 .fd-runtime-table .fd-runtime-card:focus-visible { outline: 2px solid #dcc68c; outline-offset: 2px; }
-.fd-runtime-card.is-available { outline: 1px solid #b8cba4; outline-offset: 1px; }
-.fd-runtime-card.is-staged { outline: 2px solid #dcc68c; outline-offset: 1px; }
+.fd-runtime-card.is-available { outline: 1px solid #b8cba4; outline-offset: -2px; }
+.fd-runtime-card.is-staged { outline: 2px solid #dcc68c; outline-offset: -2px; }
 .fd-runtime-card[aria-disabled="true"] { cursor: default; }
 
 .fd-runtime-play-area {
@@ -121,19 +142,23 @@
 .fd-play-power { color: #f5dc91; font-size: 18px; font-weight: 800; line-height: 1.35; }
 /* 用户要求放大可选手牌与技能，不改变上方已出/暂存排的原有尺寸。 */
 .fd-played-cards { --fd-hand-card-width: 120px; }
-.fd-played-cards.fd-hand-parallel { justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
-.fd-hand-parallel { justify-content: safe center; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #80745b transparent; }
-.fd-hand-parallel > .fd-runtime-card { transition: translate .18s ease, filter .18s ease; }
-.fd-hand-parallel > .fd-runtime-card:hover,
-.fd-hand-parallel > .fd-runtime-card:focus-visible { translate: 0 -8px; z-index: 30; }
+.fd-played-cards.fd-hand-parallel { justify-content: flex-start; }
+.fd-hand-parallel { justify-content: center; overflow: visible; }
+.fd-hand-parallel > .fd-runtime-card-shell + .fd-runtime-card-shell,
+.fd-hand-parallel > .fd-skill-slot + .fd-skill-slot { margin-left: min(8px, calc((100cqw - var(--fd-hand-card-width) * var(--card-count)) / max(1, var(--card-count) - 1))); }
+.fd-hand-parallel > .fd-runtime-card-shell,
+.fd-skill-slot > .fd-runtime-card-shell { transition: translate .18s ease, filter .18s ease; }
+.fd-runtime-card-shell:hover,
+.fd-runtime-card-shell:focus-within,
+.fd-runtime-card-shell:has(.is-requested) { translate: 0 -16px; z-index: 30; }
 .fd-runtime-hand-zone:focus-within,
 .fd-runtime-hand-zone:hover { z-index: 4; }
 
 .fd-runtime-empty-hand { min-height: 80px; display: grid; place-items: center; color: #b9ad8b; font-size: 13px; }
-.fd-hand-mode { align-self: flex-end; padding: 3px 8px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 14px; pointer-events: auto; }
+.fd-hand-mode { align-self: flex-start; padding: 3px 8px; border: 1px solid #758578; border-radius: 3px; background: #101717e0; color: #f0e7d0; font-size: 13px; white-space:nowrap; pointer-events: auto; }
 .fd-hand-mode[aria-pressed="true"] { background: #d2dccb; color: #14221b; }
 .fd-face-down-label { position: absolute; top: 4px; right: 4px; padding: 2px 5px; background: #152029ed; color: #fff; font-size: 12px; }
-.fd-runtime-card.is-riding-selected { outline: 2px solid #dcc68c; outline-offset: 1px; }
+.fd-runtime-card.is-riding-selected { outline: 2px solid #dcc68c; outline-offset: -2px; }
 
 .fd-riding-controls {
     display: flex;
@@ -162,7 +187,6 @@
     }
     .fd-played-cards { --fd-hand-card-width: 88px; }
     .fd-skill-hand-zone { max-width: 36vw; }
-    .fd-runtime-card-row { gap: 6px; }
     .fd-runtime-play-area { gap: 8px; }
     .fd-play-summary { min-width: 144px; padding-inline: 6px; font-size: 13px; }
     .fd-play-power { font-size: 16px; }
@@ -176,5 +200,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .fd-hand-parallel > .fd-runtime-card { transition: none; }
+    .fd-runtime-card-shell { transition: none; }
 }

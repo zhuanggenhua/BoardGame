@@ -182,6 +182,10 @@
     button:not(:disabled) {
         cursor: pointer;
     }
+    button, [role="button"], nav, [data-fab-panel-heading] {
+        -webkit-user-select: none;
+        user-select: none;
+    }
 }
 
 html[data-system-display-theme="night"],

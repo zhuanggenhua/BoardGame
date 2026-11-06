@@ -1,10 +1,18 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import type { PipelineStage } from 'mongoose';
 import { normalizeDeveloperGameIds } from '../auth/schemas/developer-game-access';
 import { User, type UserDocument } from '../auth/schemas/user.schema';
 import type { UserRole } from '../auth/schemas/user-role';
+import {
+    projectFeedbackActionLogText,
+    projectFeedbackDiagnosticPacket,
+    projectFeedbackReasonCode,
+    projectFeedbackSnapshotText,
+} from '../../../../../src/lib/feedback/diagnosticPacket';
+import { projectFeedbackDiagnosticMetadata } from '../../../../../src/lib/feedback/diagnosticPacketProjectionPolicy.mjs';
 import {
     Feedback,
     FeedbackDiagnosticPacket,
@@ -51,6 +59,194 @@ export const WATCHDOG_MAX_RECENT_RECORDS = 100;
 export const FEEDBACK_REWARD_POINTS = 1;
 const FEEDBACK_SUMMARY_PREVIEW_SOURCE_LENGTH = 360;
 const FEEDBACK_SUMMARY_PREVIEW_LENGTH = 180;
+const SAFE_FEEDBACK_ERROR_SOURCES = new Set([
+    'online-ai-watchdog',
+    'infra-cpu-watch',
+    'react.error_boundary',
+    'feedback.performance',
+    'client-auto-report',
+    'client-runtime-guard',
+    'client-window-error',
+    'client-unhandled-rejection',
+    'react-error-boundary',
+    'board-render-error',
+    'home-modal-error-boundary',
+]);
+const SAFE_ERROR_NAMES = new Set([
+    'Error', 'TypeError', 'RangeError', 'ReferenceError', 'SyntaxError',
+    'URIError', 'EvalError', 'AggregateError', 'DOMException', 'AbortError',
+    'NetworkError', 'TimeoutError',
+]);
+
+const asRecord = (value: unknown): Record<string, unknown> => (
+    value && typeof value === 'object' && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : {}
+);
+
+const ANONYMOUS_DIAGNOSTIC_IDENTIFIER_FIELDS = new Set([
+    'actorId', 'captureId', 'chainId', 'commandId', 'currentPlayer', 'currentPlayerId', 'decisionEpoch',
+    'id', 'interactionId', 'matchId', 'pendingInteractionId', 'playerId', 'requestId',
+    'requiredInteractionId', 'resolutionFrameId', 'responseWindowId', 'revision', 'roomId',
+    'selectedFactions', 'stateID', 'stateId', 'stateRevision', 'playerSelections',
+]);
+
+const removeAnonymousDiagnosticIdentifiers = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(removeAnonymousDiagnosticIdentifiers);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>)
+        .filter(([key]) => !ANONYMOUS_DIAGNOSTIC_IDENTIFIER_FIELDS.has(key))
+        .map(([key, nested]) => [key, removeAnonymousDiagnosticIdentifiers(nested)]));
+};
+
+const removeAnonymousDiagnosticTextIdentifiers = (value?: string): string | undefined => {
+    if (!value?.trim()) return undefined;
+    try {
+        return JSON.stringify(removeAnonymousDiagnosticIdentifiers(JSON.parse(value)), null, 2);
+    } catch {
+        return undefined;
+    }
+};
+
+const projectAnonymousDiagnosticPacket = (value: unknown): unknown => {
+    const metadata = projectFeedbackDiagnosticMetadata(value);
+    const projected = removeAnonymousDiagnosticIdentifiers(projectFeedbackDiagnosticPacket(value));
+    if (!projected || typeof projected !== 'object' || Array.isArray(projected)) return projected;
+    const anonymousPacket = { ...(projected as Record<string, unknown>) };
+    delete anonymousPacket.source;
+    delete anonymousPacket.collectionStatus;
+    delete anonymousPacket.replayability;
+    if (metadata.missingFields) anonymousPacket.missingFields = metadata.missingFields;
+    else delete anonymousPacket.missingFields;
+    return anonymousPacket;
+};
+
+const safeContextString = (value: unknown, maxLength = 128): string | undefined => (
+    typeof value === 'string' && value.trim().length > 0
+        ? value.trim().slice(0, maxLength)
+        : undefined
+);
+
+const safeContextNumber = (value: unknown): number | undefined => (
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined
+);
+
+const projectOpaqueFeedbackKey = (value: unknown, kind: string): string | undefined => (
+    typeof value === 'string' && value.trim()
+        ? `${kind}:${createHash('sha256').update(value).digest('hex').slice(0, 16)}`
+        : undefined
+);
+
+const projectFeedbackErrorContext = (value: unknown): Feedback['errorContext'] | undefined => {
+    const raw = asRecord(value);
+    if (Object.keys(raw).length === 0) return undefined;
+    const rawSource = safeContextString(raw.source, 128);
+    const rawName = safeContextString(raw.name, 120);
+    const source = rawSource && SAFE_FEEDBACK_ERROR_SOURCES.has(rawSource) ? rawSource : undefined;
+    const reasonName = projectFeedbackReasonCode(raw.name);
+    const name = rawName && SAFE_ERROR_NAMES.has(rawName)
+        ? rawName
+        : reasonName;
+    const message = projectFeedbackReasonCode(raw.message);
+    const result = {
+        ...(source ? { source } : {}),
+        ...(name ? { name } : {}),
+        ...(message ? { message } : {}),
+    };
+    return Object.keys(result).length > 0 ? result : undefined;
+};
+
+const projectFeedbackClientContext = (value: unknown): Feedback['clientContext'] | undefined => {
+    const raw = asRecord(value);
+    if (Object.keys(raw).length === 0) return undefined;
+    const route = safeContextString(raw.route, 512);
+    const safeRoute = route
+        ? /^\/play\/[^/?#]+\/match(?:\/[^/?#]+)?(?:[?#].*)?$/i.test(route)
+            ? '/play/:game/match'
+            : route.startsWith('/admin') ? '/admin' : route.startsWith('/play') ? '/play' : undefined
+        : undefined;
+    const performance = asRecord(raw.performance);
+    const frame = asRecord(performance.frame);
+    const longTasks = asRecord(performance.longTasks);
+    const network = asRecord(performance.network);
+    const projectedFrame = Object.fromEntries(
+        ['averageFps', 'minFps', 'averageFrameTimeMs', 'maxFrameTimeMs', 'bucketCount']
+            .flatMap((key) => safeContextNumber(frame[key]) !== undefined ? [[key, safeContextNumber(frame[key])]] : []),
+    );
+    const projectedLongTasks = Object.fromEntries(
+        ['count', 'totalDurationMs', 'maxDurationMs']
+            .flatMap((key) => safeContextNumber(longTasks[key]) !== undefined ? [[key, safeContextNumber(longTasks[key])]] : []),
+    );
+    const projectedNetwork = Object.fromEntries(
+        ['connectionRttMs', 'effectiveType', 'downlinkMbps', 'requestCount', 'averageDurationMs', 'maxDurationMs', 'averageTtfbMs']
+            .flatMap((key) => {
+                const candidate = key === 'effectiveType'
+                    ? safeContextString(network[key], 32)
+                    : safeContextNumber(network[key]);
+                return candidate !== undefined ? [[key, candidate]] : [];
+            }),
+    );
+    const projectedPerformance = {
+        ...(safeContextString(performance.capturedAt, 40) ? { capturedAt: safeContextString(performance.capturedAt, 40) } : {}),
+        ...(safeContextNumber(performance.windowMs) !== undefined ? { windowMs: safeContextNumber(performance.windowMs) } : {}),
+        ...(Object.keys(projectedFrame).length > 0 ? { frame: projectedFrame } : {}),
+        ...(Object.keys(projectedLongTasks).length > 0 ? { longTasks: projectedLongTasks } : {}),
+        ...(Object.keys(projectedNetwork).length > 0 ? { network: projectedNetwork } : {}),
+    };
+    const viewport = asRecord(raw.viewport);
+    const lastAction = asRecord(raw.lastUserAction);
+    const lastRouteChange = asRecord(raw.lastRouteChange);
+    const activeElement = asRecord(raw.activeElement);
+    const pageFlags = asRecord(raw.pageFlags);
+    const recentRouteChanges = Array.isArray(raw.recentRouteChanges) ? raw.recentRouteChanges : undefined;
+    const result = {
+        ...(safeRoute ? { route: safeRoute } : {}),
+        ...(safeContextString(raw.mode, 32) && ['online', 'local', 'spectator', 'tutorial'].includes(String(raw.mode).toLowerCase())
+            ? { mode: String(raw.mode).toLowerCase() }
+            : {}),
+        ...(safeContextString(raw.matchId, 64) ? { matchId: safeContextString(raw.matchId, 64) } : {}),
+        ...(safeContextString(raw.playerId, 64) ? { playerId: safeContextString(raw.playerId, 64) } : {}),
+        ...(safeContextString(raw.gameId, 64) ? { gameId: safeContextString(raw.gameId, 64) } : {}),
+        ...(safeContextString(raw.appVersion, 64) ? { appVersion: safeContextString(raw.appVersion, 64) } : {}),
+        ...(safeContextString(raw.appCommitSha, 64) ? { appCommitSha: safeContextString(raw.appCommitSha, 64) } : {}),
+        ...(safeContextString(raw.appBuildTime, 64) ? { appBuildTime: safeContextString(raw.appBuildTime, 64) } : {}),
+        ...(safeContextString(raw.appReleaseChannel, 64) ? { appReleaseChannel: safeContextString(raw.appReleaseChannel, 64) } : {}),
+        ...(safeContextNumber(viewport.width) !== undefined && safeContextNumber(viewport.height) !== undefined
+            ? { viewport: { width: safeContextNumber(viewport.width), height: safeContextNumber(viewport.height) } }
+            : {}),
+        ...(safeContextString(raw.language, 32) ? { language: safeContextString(raw.language, 32) } : {}),
+        ...(safeContextString(lastAction.type, 32) ? { lastUserAction: { type: safeContextString(lastAction.type, 32)!, ...(safeContextString(lastAction.at, 40) ? { at: safeContextString(lastAction.at, 40) } : {}) } } : {}),
+        ...(safeContextString(activeElement.tagName, 32) || safeContextString(activeElement.role, 32)
+            ? { activeElement: {
+                ...(safeContextString(activeElement.tagName, 32) ? { tagName: safeContextString(activeElement.tagName, 32) } : {}),
+                ...(safeContextString(activeElement.role, 32) ? { role: safeContextString(activeElement.role, 32) } : {}),
+            } }
+            : {}),
+        ...(safeContextString(lastRouteChange.trigger, 32) ? { lastRouteChange: { trigger: safeContextString(lastRouteChange.trigger, 32)!, ...(safeContextString(lastRouteChange.at, 40) ? { at: safeContextString(lastRouteChange.at, 40) } : {}) } } : {}),
+        ...(Array.isArray(raw.recentUserActions) ? { recentUserActions: raw.recentUserActions.slice(-8).map((entry) => {
+            const action = asRecord(entry);
+            return {
+                ...(safeContextString(action.type, 32) ? { type: safeContextString(action.type, 32) } : {}),
+                ...(safeContextString(action.at, 40) ? { at: safeContextString(action.at, 40) } : {}),
+            };
+        }) } : {}),
+        ...(recentRouteChanges ? { recentRouteChanges: recentRouteChanges.slice(-6).map((entry) => {
+            const routeChange = asRecord(entry);
+            return {
+                ...(safeContextString(routeChange.trigger, 32) ? { trigger: safeContextString(routeChange.trigger, 32) } : {}),
+                ...(safeContextString(routeChange.at, 40) ? { at: safeContextString(routeChange.at, 40) } : {}),
+            };
+        }) } : {}),
+        ...(typeof pageFlags.isGamePage === 'boolean' || typeof pageFlags.hasModalOpen === 'boolean'
+            ? { pageFlags: {
+                ...(typeof pageFlags.isGamePage === 'boolean' ? { isGamePage: pageFlags.isGamePage } : {}),
+                ...(typeof pageFlags.hasModalOpen === 'boolean' ? { hasModalOpen: pageFlags.hasModalOpen } : {}),
+            } }
+            : {}),
+        ...(Object.keys(projectedPerformance).length > 0 ? { performance: projectedPerformance } : {}),
+    };
+    return Object.keys(result).length > 0 ? result as Feedback['clientContext'] : undefined;
+};
 
 const normalizeDiagnosticPacket = (
     value: unknown,
@@ -64,7 +260,9 @@ const normalizeDiagnosticPacket = (
         }
     }
     if (!value || typeof value !== 'object') return undefined;
-    const raw = value as Partial<FeedbackDiagnosticPacket>;
+    const projected = projectFeedbackDiagnosticPacket(value);
+    if (!projected) return undefined;
+    const raw = projected as Partial<FeedbackDiagnosticPacket>;
     const missingFields = Array.isArray(raw.missingFields)
         ? raw.missingFields.filter((item): item is string => typeof item === 'string' && item.length > 0)
         : [];
@@ -82,7 +280,7 @@ const normalizeDiagnosticPacket = (
         return undefined;
     }
     return {
-        ...raw,
+        ...projected,
         schemaVersion: typeof raw.schemaVersion === 'number' ? raw.schemaVersion : 1,
         captureId: raw.captureId,
         capturedAt: typeof raw.capturedAt === 'string' ? raw.capturedAt : new Date().toISOString(),
@@ -139,6 +337,18 @@ export class FeedbackService {
         const autoCaptureKey = this.isPublicAutoFeedbackSource(source) && diagnosticPacket && diagnosticPacket.captureId.length <= 128
             ? `${source}:${diagnosticPacket.captureId}`
             : undefined;
+        if (autoCaptureKey) {
+            const existing = await this.feedbackModel.findOne({ autoCaptureKey }).exec();
+            if (existing) {
+                if (existing.content !== dto.content
+                    || String(existing.userId ?? '') !== String(userId ?? '')) {
+                    throw new ConflictException('自动反馈现场标识冲突');
+                }
+                const anonymousSystem = !userId && existing.reporterType === FeedbackReporterType.SYSTEM;
+                const projected = this.projectPublicFeedbackRecord(existing, false, false, anonymousSystem, !anonymousSystem);
+                return projected;
+            }
+        }
         let created: FeedbackDocument;
         try {
             created = await this.feedbackModel.create({
@@ -148,10 +358,10 @@ export class FeedbackService {
             gameName: dto.gameName,
             autoReportKind: dto.autoReportKind,
             contactInfo: dto.contactInfo,
-            actionLog: dto.actionLog,
-            stateSnapshot: dto.stateSnapshot,
-            clientContext: dto.clientContext,
-            errorContext: dto.errorContext,
+            actionLog: projectFeedbackActionLogText(dto.actionLog),
+            stateSnapshot: projectFeedbackSnapshotText(dto.stateSnapshot),
+            clientContext: projectFeedbackClientContext(dto.clientContext),
+            errorContext: projectFeedbackErrorContext(dto.errorContext),
             configProposal: dto.configProposal,
             configProposals: dto.configProposals,
             gameId: this.normalizeFeedbackGameIdCandidates(
@@ -174,7 +384,9 @@ export class FeedbackService {
                 || String(existing.userId ?? '') !== String(userId ?? '')) {
                 throw new ConflictException('自动反馈现场标识冲突');
             }
-            return existing;
+            const anonymousSystem = !userId && existing.reporterType === FeedbackReporterType.SYSTEM;
+            const projected = this.projectPublicFeedbackRecord(existing, false, false, anonymousSystem, !anonymousSystem);
+            return projected;
         }
         if (userId && rewardPoints > 0) {
             await this.userModel.updateOne(
@@ -182,7 +394,9 @@ export class FeedbackService {
                 { $inc: { feedbackPoints: rewardPoints } },
             ).exec();
         }
-        return created;
+        const anonymousSystem = !userId && created.reporterType === FeedbackReporterType.SYSTEM;
+        const projected = this.projectPublicFeedbackRecord(created, false, false, anonymousSystem, !anonymousSystem);
+        return projected;
     }
 
     async createSystem(dto: CreateSystemFeedbackDto): Promise<Feedback> {
@@ -191,21 +405,43 @@ export class FeedbackService {
         const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
         const diagnosticPacket = normalizeDiagnosticPacket(dto.diagnosticPacket, 'server');
         if (dto.diagnosticPacket !== undefined && !diagnosticPacket) throw new BadRequestException('反馈诊断包格式无效');
-        if (this.shouldAggregateSystemFeedback(dto, source, gameId)) {
-            return this.createOrUpdateAggregatedSystemFeedback(
-                diagnosticPacket ? { ...dto, diagnosticPacket } : dto,
+        const projectedDto: CreateSystemFeedbackDto = {
+            ...dto,
+            actionLog: projectFeedbackActionLogText(dto.actionLog),
+            stateSnapshot: projectFeedbackSnapshotText(dto.stateSnapshot),
+            clientContext: projectFeedbackClientContext(dto.clientContext),
+            errorContext: projectFeedbackErrorContext(dto.errorContext),
+            ...(diagnosticPacket ? { diagnosticPacket: diagnosticPacket as FeedbackDiagnosticPacket } : {}),
+        };
+        const aggregationDto: CreateSystemFeedbackDto = {
+            ...dto,
+            ...(diagnosticPacket ? { diagnosticPacket: diagnosticPacket as FeedbackDiagnosticPacket } : { diagnosticPacket: undefined }),
+        };
+        const saved = this.shouldAggregateSystemFeedback(dto, source, gameId)
+            ? await this.createOrUpdateAggregatedSystemFeedback(
+                aggregationDto,
+                projectedDto,
                 source,
                 gameId,
-            );
+            )
+            : await this.feedbackModel.create({
+                ...projectedDto,
+                source,
+                reporterType: FeedbackReporterType.SYSTEM,
+                gameId,
+                ...(diagnosticPacket ? { diagnosticPacket } : {}),
+                ...(resolvedMethod ? { resolvedMethod } : {}),
+            });
+
+        // Internal writers still receive an explicit allow-listed view rather than a raw Mongoose document.
+        // Preserve canonical keys needed by trusted server tracing, while withholding config values, private
+        // replay, contact information, user fields, and the aggregation's capture-id list.
+        const response = this.projectPublicFeedbackRecord(saved, false, false, false, true);
+        const raw = this.toFeedbackObject(saved);
+        for (const key of ['incidentKey', 'latestIncidentKey', 'aggregationKey', 'aggregationActiveKey'] as const) {
+            if (typeof raw[key] === 'string') response[key] = raw[key];
         }
-        return this.feedbackModel.create({
-            ...dto,
-            source,
-            reporterType: FeedbackReporterType.SYSTEM,
-            gameId,
-            ...(diagnosticPacket ? { diagnosticPacket } : {}),
-            ...(resolvedMethod ? { resolvedMethod } : {}),
-        });
+        return response;
     }
 
     async findAll(actorUserId: string | null, query: QueryFeedbackDto) {
@@ -233,6 +469,15 @@ export class FeedbackService {
             };
         }
         const filter: Record<string, unknown> = {};
+        if (manager) {
+            const accessScope = this.buildMutationScopeFilter(manager);
+            if (Object.keys(accessScope).length > 0) {
+                const accessConditions = Array.isArray(filter.$and) ? filter.$and as Record<string, unknown>[] : [];
+                filter.$and = [...accessConditions, accessScope];
+            }
+        } else {
+            filter.reporterType = FeedbackReporterType.SYSTEM;
+        }
         if (status) filter.status = status;
         if (type) filter.type = type;
         if (severity) filter.severity = severity;
@@ -317,9 +562,25 @@ export class FeedbackService {
             return null;
         }
         const decorated = this.decorateLegacyOrigin(item);
+        if (!manager) {
+            if (decorated.reporterType !== FeedbackReporterType.SYSTEM) return null;
+            return {
+                ...this.projectPublicFeedbackRecord(decorated, false, false, true, false),
+                canManage: false,
+            };
+        }
+        const canManage = this.canActorManageFeedbackItem(manager, decorated);
+        if (!canManage) return null;
+        const projected = this.projectPublicFeedbackRecord(
+            decorated,
+            canManage,
+            manager.role === 'admin',
+            false,
+            true,
+        );
         return {
-            ...decorated,
-            canManage: manager ? this.canActorManageFeedbackItem(manager, decorated) : false,
+            ...projected,
+            canManage,
         };
     }
 
@@ -369,7 +630,7 @@ export class FeedbackService {
             if (!this.isAutomaticFeedbackLike(current) && !closedReason) {
                 throw new BadRequestException('关闭理由不能为空');
             }
-            return this.feedbackModel.findOneAndUpdate(
+            const updated = await this.feedbackModel.findOneAndUpdate(
                 { _id: id, ...scopeFilter },
                 {
                     $set: {
@@ -384,6 +645,9 @@ export class FeedbackService {
                 },
                 { new: true },
             );
+            return updated
+                ? this.projectPublicFeedbackRecord(updated, true, manager.role === 'admin', false, true)
+                : null;
         }
         const current = await this.feedbackModel.findOne({ _id: id, ...scopeFilter }).select({
             _id: 1,
@@ -441,11 +705,14 @@ export class FeedbackService {
                 },
             };
         try {
-            return await this.feedbackModel.findOneAndUpdate(
+            const updated = await this.feedbackModel.findOneAndUpdate(
                 { _id: id, ...scopeFilter },
                 updatePayload,
                 { new: true },
             );
+            return updated
+                ? this.projectPublicFeedbackRecord(updated, true, manager.role === 'admin', false, true)
+                : null;
         } catch (error) {
             if (shouldRestoreAggregationActiveKey && this.isDuplicateKeyError(error)) {
                 throw new ConflictException('同一聚合键已存在活跃反馈，不能直接重新打开归档记录');
@@ -883,6 +1150,7 @@ export class FeedbackService {
 
     private async createOrUpdateAggregatedSystemFeedback(
         dto: CreateSystemFeedbackDto,
+        storageDto: CreateSystemFeedbackDto,
         source: string,
         gameId?: string,
         retryDepth = 0,
@@ -893,7 +1161,7 @@ export class FeedbackService {
         if (!aggregationPlan) {
             const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
             return this.feedbackModel.create({
-                ...dto,
+                ...storageDto,
                 source,
                 reporterType: FeedbackReporterType.SYSTEM,
                 gameId,
@@ -903,7 +1171,7 @@ export class FeedbackService {
         if (!lockAcquired) {
             return this.runWithWatchdogAggregationLock(
                 aggregationPlan.dedupeKey,
-                () => this.createOrUpdateAggregatedSystemFeedback(dto, source, gameId, retryDepth, true),
+                () => this.createOrUpdateAggregatedSystemFeedback(dto, storageDto, source, gameId, retryDepth, true),
             );
         }
         await this.enforceWatchdogFeedbackRetention(now);
@@ -961,7 +1229,7 @@ export class FeedbackService {
             try {
                 const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
                 const created = await this.feedbackModel.create({
-                    ...dto,
+                    ...storageDto,
                     source,
                     reporterType: FeedbackReporterType.SYSTEM,
                     gameId,
@@ -991,7 +1259,7 @@ export class FeedbackService {
                     try {
                         const resolvedMethod = this.resolveSystemFeedbackResolvedMethod(dto);
                         const created = await this.feedbackModel.create({
-                            ...dto,
+                            ...storageDto,
                             source,
                             reporterType: FeedbackReporterType.SYSTEM,
                             gameId,
@@ -1046,11 +1314,11 @@ export class FeedbackService {
                     gameName: dto.gameName ?? existing.gameName,
                     autoReportKind: dto.autoReportKind ?? existing.autoReportKind,
                     contactInfo: dto.contactInfo ?? existing.contactInfo,
-                    actionLog: existing.actionLog ?? dto.actionLog,
-                    stateSnapshot: existing.stateSnapshot ?? dto.stateSnapshot,
-                    diagnosticPacket: existing.diagnosticPacket ?? dto.diagnosticPacket,
-                    clientContext: dto.clientContext ?? existing.clientContext,
-                    errorContext: dto.errorContext ?? existing.errorContext,
+                    actionLog: existing.actionLog ?? storageDto.actionLog,
+                    stateSnapshot: existing.stateSnapshot ?? storageDto.stateSnapshot,
+                    diagnosticPacket: existing.diagnosticPacket ?? storageDto.diagnosticPacket,
+                    clientContext: storageDto.clientContext ?? existing.clientContext,
+                    errorContext: storageDto.errorContext ?? existing.errorContext,
                     incidentKey: aggregationKey,
                     aggregationKey,
                     aggregationActiveKey,
@@ -1074,7 +1342,7 @@ export class FeedbackService {
             if (retryDepth >= 1) {
                 throw new Error('failed_to_update_aggregated_system_feedback_after_retry');
             }
-            return this.createOrUpdateAggregatedSystemFeedback(dto, source, gameId, retryDepth + 1, true);
+            return this.createOrUpdateAggregatedSystemFeedback(dto, storageDto, source, gameId, retryDepth + 1, true);
         }
         await this.enforceWatchdogFeedbackRetention(now);
         return updated.toObject() as Feedback;
@@ -1332,9 +1600,17 @@ export class FeedbackService {
     ): Record<string, unknown> {
         if (!summaryOnly) {
             const decorated = this.decorateLegacyOrigin(item as FeedbackDocument | Feedback);
+            const canManage = manager ? this.canActorManageFeedbackItem(manager, decorated) : false;
+            const projected = this.projectPublicFeedbackRecord(
+                decorated,
+                canManage,
+                manager?.role === 'admin' && canManage,
+                !manager && decorated.reporterType === FeedbackReporterType.SYSTEM,
+                Boolean(manager),
+            );
             return {
-                ...decorated,
-                canManage: manager ? this.canActorManageFeedbackItem(manager, decorated) : false,
+                ...projected,
+                canManage,
             };
         }
 
@@ -1345,12 +1621,21 @@ export class FeedbackService {
         } as Feedback;
         const decorated = this.decorateLegacyOrigin(originInput);
         const canManage = manager ? this.canActorManageFeedbackItem(manager, decorated) : false;
-        const summary: Record<string, unknown> = { ...decorated };
-        const previewSource = typeof summary.contentPreviewSource === 'string'
-            ? summary.contentPreviewSource
-            : '';
+        const projected = this.projectPublicFeedbackRecord(
+            decorated,
+            false,
+            false,
+            !manager && decorated.reporterType === FeedbackReporterType.SYSTEM,
+            false,
+        ) as FeedbackListRecord;
+        const summary: Record<string, unknown> = { ...projected };
+        const previewSource = typeof originInput.content === 'string'
+            ? originInput.content
+            : typeof raw.contentPreviewSource === 'string' ? raw.contentPreviewSource : '';
 
-        summary.contentPreview = this.buildContentPreview(previewSource);
+        summary.contentPreview = !manager && decorated.reporterType === FeedbackReporterType.SYSTEM
+            ? '系统自动诊断'
+            : this.buildContentPreview(previewSource);
         summary.canManage = canManage;
         delete summary.contentPreviewSource;
         delete summary.content;
@@ -1358,6 +1643,115 @@ export class FeedbackService {
         delete summary.stateSnapshot;
 
         return summary;
+    }
+
+    private projectPublicFeedbackRecord(
+        item: FeedbackDocument | Feedback,
+        includeManageableDetails: boolean,
+        includeContactInfo: boolean,
+        anonymousSystem: boolean,
+        includeContent: boolean,
+    ): Feedback {
+        const raw = this.toFeedbackObject(item);
+        const projectConfigProposal = (value: unknown): Record<string, unknown> | undefined => {
+            const proposal = asRecord(value);
+            if (Object.keys(proposal).length === 0) return undefined;
+            const safeFields = includeManageableDetails
+                ? [
+                    'gameId', 'configVersion', 'objectId', 'objectDisplayName', 'objectType',
+                    'fieldPath', 'fieldDisplayName', 'currentValue', 'suggestedValue',
+                    'currentDisplayValue', 'updatedDisplayValue', 'reason', 'evidence', 'status',
+                ]
+                : ['gameId', 'configVersion', 'objectType', 'status'];
+            const projected = Object.fromEntries(safeFields.flatMap((key) => (
+                proposal[key] !== undefined ? [[key, proposal[key]]] : []
+            )));
+            if (includeManageableDetails) {
+                const sourceContext = asRecord(proposal.sourceContext);
+                const safeSourceContext = Object.fromEntries(
+                    ['route', 'tableId', 'rowId', 'cellKey', 'language']
+                        .flatMap((key) => sourceContext[key] !== undefined ? [[key, sourceContext[key]]] : []),
+                );
+                if (Object.keys(safeSourceContext).length > 0) projected.sourceContext = safeSourceContext;
+            }
+            return Object.keys(projected).length > 0 ? projected : undefined;
+        };
+        const safeSource = anonymousSystem
+            ? SAFE_FEEDBACK_ERROR_SOURCES.has(String(raw.source || '')) || PUBLIC_AUTO_FEEDBACK_SOURCES.has(String(raw.source || ''))
+                ? raw.source
+                : 'unknown'
+            : raw.source;
+        const projected: Partial<Feedback> & Record<string, unknown> = {
+            _id: raw._id,
+            ...(includeContent ? { content: raw.content } : {}),
+            type: raw.type,
+            severity: raw.severity,
+            status: raw.status,
+            closedReason: raw.closedReason,
+            resolvedMethod: raw.resolvedMethod,
+            reporterType: raw.reporterType,
+            source: safeSource,
+            ...(!anonymousSystem && raw.autoReportKind ? { autoReportKind: raw.autoReportKind } : {}),
+            occurrenceCount: raw.occurrenceCount,
+            firstOccurredAt: raw.firstOccurredAt,
+            lastOccurredAt: raw.lastOccurredAt,
+            createdAt: raw.createdAt,
+            updatedAt: raw.updatedAt,
+            gameName: raw.gameName,
+            gameId: raw.gameId,
+            rewardPoints: raw.rewardPoints,
+            ...(typeof raw.hasEmbeddedImage === 'boolean' ? { hasEmbeddedImage: raw.hasEmbeddedImage } : {}),
+            ...(typeof raw.hasActionLog === 'boolean' ? { hasActionLog: raw.hasActionLog } : {}),
+            ...(typeof raw.hasStateSnapshot === 'boolean' ? { hasStateSnapshot: raw.hasStateSnapshot } : {}),
+            ...(typeof raw.hasDiagnosticPacket === 'boolean' ? { hasDiagnosticPacket: raw.hasDiagnosticPacket } : {}),
+            ...(typeof raw.hasClientContext === 'boolean' ? { hasClientContext: raw.hasClientContext } : {}),
+            ...(typeof raw.hasErrorContext === 'boolean' ? { hasErrorContext: raw.hasErrorContext } : {}),
+            ...(!anonymousSystem
+                && (raw.diagnosticReplayability === 'full' || raw.diagnosticReplayability === 'partial' || raw.diagnosticReplayability === 'unreplayable')
+                ? { diagnosticReplayability: raw.diagnosticReplayability }
+                : {}),
+            actionLog: anonymousSystem
+                ? removeAnonymousDiagnosticTextIdentifiers(projectFeedbackActionLogText(raw.actionLog))
+                : projectFeedbackActionLogText(raw.actionLog),
+            stateSnapshot: anonymousSystem
+                ? removeAnonymousDiagnosticTextIdentifiers(projectFeedbackSnapshotText(raw.stateSnapshot))
+                : projectFeedbackSnapshotText(raw.stateSnapshot),
+            clientContext: anonymousSystem
+                ? removeAnonymousDiagnosticIdentifiers(projectFeedbackClientContext(raw.clientContext)) as Feedback['clientContext']
+                : projectFeedbackClientContext(raw.clientContext),
+            errorContext: projectFeedbackErrorContext(raw.errorContext),
+            ...(raw.diagnosticPacket
+                ? {
+                    diagnosticPacket: (anonymousSystem
+                        ? projectAnonymousDiagnosticPacket(raw.diagnosticPacket)
+                        : projectFeedbackDiagnosticPacket(raw.diagnosticPacket)) as FeedbackDiagnosticPacket,
+                }
+                : {}),
+            ...(includeContactInfo && raw.contactInfo ? { contactInfo: raw.contactInfo } : {}),
+            ...(!anonymousSystem && raw.configProposal
+                ? { configProposal: projectConfigProposal(raw.configProposal) }
+                : {}),
+            ...(!anonymousSystem && Array.isArray(raw.configProposals)
+                ? { configProposals: raw.configProposals.slice(0, 20).map(projectConfigProposal).filter(Boolean) }
+                : {}),
+        };
+        if (!anonymousSystem) {
+            projected.incidentKey = includeManageableDetails
+                ? raw.incidentKey
+                : projectOpaqueFeedbackKey(raw.incidentKey, 'incident');
+            projected.latestIncidentKey = includeManageableDetails
+                ? raw.latestIncidentKey
+                : projectOpaqueFeedbackKey(raw.latestIncidentKey, 'incident');
+            projected.aggregationKey = includeManageableDetails
+                ? raw.aggregationKey
+                : projectOpaqueFeedbackKey(raw.aggregationKey, 'aggregation');
+            projected.aggregationActiveKey = includeManageableDetails
+                ? raw.aggregationActiveKey
+                : projectOpaqueFeedbackKey(raw.aggregationActiveKey, 'aggregation');
+        }
+        delete projected.privateReplay;
+        delete projected.diagnosticCaptureIds;
+        return projected as Feedback;
     }
 
     private buildContentPreview(source: string): string {
@@ -1416,7 +1810,10 @@ export class FeedbackService {
             && feedbackUserId
             && feedbackUserId === String(manager.actorUserObjectId),
         );
-        if (ownFeedback) {
+        if (manager.role === 'user') {
+            return item.reporterType === FeedbackReporterType.USER && ownFeedback;
+        }
+        if (ownFeedback && item.reporterType === FeedbackReporterType.USER) {
             return true;
         }
 
@@ -1465,7 +1862,10 @@ export class FeedbackService {
         if (ownScope.length === 0) {
             return { _id: { $exists: false } };
         }
-        return ownScope.length === 1 ? ownScope[0] : { $or: ownScope };
+        return {
+            reporterType: FeedbackReporterType.USER,
+            ...(ownScope.length === 1 ? ownScope[0] : { $or: ownScope }),
+        };
     }
 
     private buildMutationScopeFilter(manager: FeedbackManagerScope): Record<string, unknown> {
@@ -1481,7 +1881,10 @@ export class FeedbackService {
             if (ownScope.length === 0) {
                 return { _id: { $exists: false } };
             }
-            return ownScope.length === 1 ? ownScope[0] : { $or: ownScope };
+            return {
+                reporterType: FeedbackReporterType.USER,
+                ...(ownScope.length === 1 ? ownScope[0] : { $or: ownScope }),
+            };
         }
 
         const gameScopes = manager.developerGameIds.length > 0
@@ -1492,7 +1895,11 @@ export class FeedbackService {
             ]
             : [];
 
-        const combinedScopes = [...ownScope, ...gameScopes];
+        const ownUserFeedbackScopes = ownScope.map((scope) => ({
+            reporterType: FeedbackReporterType.USER,
+            ...scope,
+        }));
+        const combinedScopes = [...ownUserFeedbackScopes, ...gameScopes];
         if (combinedScopes.length === 0) {
             return { _id: { $exists: false } };
         }

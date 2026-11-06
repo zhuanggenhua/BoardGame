@@ -42,7 +42,7 @@ describe('连续年度教程正式管线', () => {
             // 核对讲解赖以成立的真实前因，不能只证明输入能够走通。
             if (process.env.QIDAHEN_CHECKPOINT_EXPORT_DIR && (Boolean(step.content && step.tooltipAnchorTarget) || ['battle-roll', 'occupy', 'abandon-jinzhou', 'training-recruit-target'].includes(step.id))) {
                 mkdirSync(process.env.QIDAHEN_CHECKPOINT_EXPORT_DIR, { recursive: true });
-                writeFileSync(`${process.env.QIDAHEN_CHECKPOINT_EXPORT_DIR}/${step.id}.json`, JSON.stringify({ version: 1, gameId: 'qidahen', seed: 'tutorial-progress:v1:qidahen:basic-opening:r23', numPlayers: 3, randomCursor: 0, savedAt: 1, state }));
+                writeFileSync(`${process.env.QIDAHEN_CHECKPOINT_EXPORT_DIR}/${step.id}.json`, JSON.stringify({ version: 1, gameId: 'qidahen', seed: `tutorial-progress:v1:qidahen:basic-opening:r${QIDAHEN_ANNUAL_TUTORIAL.revision}`, numPlayers: 3, randomCursor: 0, savedAt: 1, state }));
             }
             const liaodong = state.core.regions.find(region => region.id === 'city-region-15-liaodong')!;
             if (step.id === 'reclaim-target') {

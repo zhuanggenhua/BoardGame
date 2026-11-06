@@ -585,6 +585,35 @@ describe('InteractionSystem', () => {
         expect(viewForOther?.interaction?.isBlocked).toBe(true);
     });
 
+    it('simple-choice 未完成时禁止非 owner 越过交互执行普通命令', () => {
+        const system = createSimpleChoiceSystem<TestCore>();
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current: createSimpleChoice(
+                        'interaction-owner-only',
+                        '0',
+                        '先完成这个选择',
+                        [{ id: 'continue', label: '继续', value: 'continue' }],
+                    ),
+                    queue: [],
+                },
+                responseWindow: { current: undefined },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const result = system.beforeCommand?.({
+            state,
+            command: { type: 'PLAY_CARD', playerId: '1', payload: {}, timestamp: 1 },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result).toMatchObject({ halt: true, error: '请先完成当前选择' });
+    });
+
     it('非 slider simple-choice 允许追加 mergedValue 字段，但不允许覆盖原字段', () => {
         const system = createSimpleChoiceSystem<TestCore>();
         const current = createSimpleChoice(

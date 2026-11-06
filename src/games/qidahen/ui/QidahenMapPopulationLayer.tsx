@@ -1,21 +1,16 @@
 import React from 'react';
 import { QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_WIDTH } from './mapRegions';
 import { buildQidahenPopulationSites, layoutQidahenPopulation, QIDAHEN_POPULATION_SIZE, type PopulationSite } from './populationLayout';
-import { QIDAHEN_RUNTIME_REGION_DEFINITIONS } from './mapGraph';
+import { QIDAHEN_RUNTIME_REGION_DEFINITIONS, QIDAHEN_MAP_NAMEPLATE_OBSTACLES } from './mapGraph';
 
-const geometry = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map(region => ({
+export const QIDAHEN_MAP_REGION_GEOMETRY = QIDAHEN_RUNTIME_REGION_DEFINITIONS.map(region => ({
     id: region.id, x: region.center!.x / QIDAHEN_MAP_WIDTH, y: region.center!.y / QIDAHEN_MAP_HEIGHT,
     isLogicalRegion: false, population: 0,
 }));
 
-const nameplateObstacles = QIDAHEN_RUNTIME_REGION_DEFINITIONS.flatMap(definition => {
-        const bounds = definition.markerBounds;
-        return bounds ? [{
-            x: (bounds.left + bounds.width / 2) / QIDAHEN_MAP_WIDTH,
-            y: (bounds.top + bounds.height / 2) / QIDAHEN_MAP_HEIGHT,
-            size: Math.max(bounds.width, bounds.height) + 4,
-        }] : [];
-    });
+const nameplateObstacles = QIDAHEN_MAP_NAMEPLATE_OBSTACLES.map(obstacle => ({
+    ...obstacle, x: obstacle.x / QIDAHEN_MAP_WIDTH, y: obstacle.y / QIDAHEN_MAP_HEIGHT,
+}));
 
 export type QidahenMapPopulationRegion = {
     id: string;
@@ -31,10 +26,11 @@ export const QidahenMapPopulationLayer: React.FC<{
     ownership: readonly (string | null)[] | null;
     tokens: readonly { x: number; y: number; size?: number }[];
     protectedRegionIds?: readonly string[];
-}> = ({ regions, ownership, tokens, protectedRegionIds = [] }) => {
+    interiorSites?: ReadonlyMap<string, PopulationSite>;
+}> = ({ regions, ownership, tokens, protectedRegionIds = [], interiorSites }) => {
     const sites = React.useMemo(() => {
-        const result = ownership
-            ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, geometry)
+        const result = interiorSites ? new Map(interiorSites) : ownership
+            ? buildQidahenPopulationSites(ownership, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT, QIDAHEN_MAP_REGION_GEOMETRY)
             : new Map<string, PopulationSite>();
         for (const definition of QIDAHEN_RUNTIME_REGION_DEFINITIONS) {
             if (definition.mapRole === 'point' && definition.markerBounds) {
@@ -53,7 +49,7 @@ export const QidahenMapPopulationLayer: React.FC<{
             });
         }
         return result;
-    }, [ownership]);
+    }, [ownership, interiorSites]);
     const placements = React.useMemo(() => layoutQidahenPopulation(
         sites, regions, [...tokens, ...nameplateObstacles], QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT,
     ), [sites, regions, tokens]);

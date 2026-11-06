@@ -43,6 +43,7 @@ import type { AbilityDef } from './combat';
 import { reduce as reduceDiceThroneCore } from './reducer';
 import { assertValidBonusDiceContinuation, attackModifierBonusDiceContinuation } from './utils';
 import { applyCurrentAttackDamageModifiers } from './attackDamageModifiers';
+import { attachEffectSequenceContinuation, isAttackEffectSequenceBlocker } from './attackEffectContinuationTypes';
 
 // ============================================================================
 // 效果上下文
@@ -64,6 +65,17 @@ export interface EffectContext {
     damageOrigin?: DamageOrigin;
     /** 攻击修正牌插入的骰子属于子过程，不能改变父攻击的结算进度。 */
     isAttackModifierCard?: boolean;
+    /** 同一时点内区分多个同源效果序列，续接帧只使用此稳定身份。 */
+    resolutionSequenceId?: string;
+}
+
+export interface EffectResolutionCheckpoint {
+    nextEffectIndex: number;
+    bonusApplied: boolean;
+    nyraAttackBonusApplied: boolean;
+    passedFirstDamage: boolean;
+    accumulatedBonusDamage: number;
+    damageDealt: number;
 }
 
 const getAttackDamageBeforePercent = (breakdown: DamageBreakdown): number | undefined => {
@@ -1511,13 +1523,17 @@ export function resolveEffectsToEvents(
         skipNonDamage?: boolean;
         continueAfterFirstDamage?: boolean;
         startEffectIndex?: number;
-        onInteractionSuspended?: (nextEffectIndex: number, event: Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }>) => void;
+        checkpoint?: Partial<EffectResolutionCheckpoint>;
+        onEffectSuspended?: (checkpoint: EffectResolutionCheckpoint, event: DiceThroneEvent) => void;
     }
 ): DiceThroneEvent[] {
     const events: DiceThroneEvent[] = [];
-    let bonusApplied = false;
-    let nyraAttackBonusApplied = false;
-    let passedFirstDamage = false;
+    let bonusApplied = config?.checkpoint?.bonusApplied ?? false;
+    let nyraAttackBonusApplied = config?.checkpoint?.nyraAttackBonusApplied ?? false;
+    let passedFirstDamage = config?.checkpoint?.passedFirstDamage ?? false;
+    if (config?.checkpoint?.accumulatedBonusDamage !== undefined) {
+        ctx.accumulatedBonusDamage = config.checkpoint.accumulatedBonusDamage;
+    }
     const shouldInlineBonusDamage =
         (timing === 'withDamage' || timing === 'postDamage')
         && ctx.state.pendingAttack?.attackerId === ctx.attackerId;
@@ -1545,6 +1561,42 @@ export function resolveEffectsToEvents(
 
     const timedEffects = combatAbilityManager.instance.getEffectsByTiming(effects, timing);
 
+    const attachDefaultContinuation = (
+        checkpoint: EffectResolutionCheckpoint,
+        event: DiceThroneEvent,
+    ) => {
+        if (event.resolutionContinuation) return;
+        if (checkpoint.nextEffectIndex >= timedEffects.length && checkpoint.accumulatedBonusDamage <= 0) return;
+        const sequenceId = ctx.resolutionSequenceId
+            ?? `${ctx.attackerId}:${ctx.defenderId}:${ctx.sourceAbilityId}:${timing}:${ctx.timestamp ?? 0}`;
+        attachEffectSequenceContinuation(event, {
+            kind: 'effect-sequence',
+            sequenceId,
+            effects,
+            timing,
+            context: {
+                attackerId: ctx.attackerId,
+                defenderId: ctx.defenderId,
+                sourceAbilityId: ctx.sourceAbilityId,
+                damageDealt: checkpoint.damageDealt,
+                accumulatedBonusDamage: checkpoint.accumulatedBonusDamage,
+                timestamp: ctx.timestamp,
+                isDefensiveContext: ctx.isDefensiveContext,
+                damageOrigin: ctx.damageOrigin,
+                isAttackModifierCard: ctx.isAttackModifierCard,
+            },
+            checkpoint,
+            resolverOptions: {
+                bonusDamage: config?.bonusDamage,
+                bonusDamageOnce: config?.bonusDamageOnce,
+                skipDamage: config?.skipDamage,
+                skipNonDamage: config?.skipNonDamage,
+                continueAfterFirstDamage: config?.continueAfterFirstDamage,
+            },
+        });
+    };
+
+    let suspendedOnBlocker = false;
     for (let effectIndex = 0; effectIndex < timedEffects.length; effectIndex += 1) {
         if (effectIndex < (config?.startEffectIndex ?? 0)) continue;
         const effect = timedEffects[effectIndex];
@@ -1552,6 +1604,8 @@ export function resolveEffectsToEvents(
             continue;
         }
         const isAttackBonusDiceAlreadyResolved = (
+            (config?.startEffectIndex ?? 0) === 0
+            &&
             ctx.state.pendingAttack?.bonusDiceResolved === true
             && ctx.isDefensiveContext !== true
             && timing !== 'immediate'
@@ -1711,35 +1765,23 @@ export function resolveEffectsToEvents(
             ? getAttackDiceFaceCounts(ctx.state)
             : getFaceCounts(updatedDice);
 
-        const interactionRequest = immediateEvents.find(
-            (event): event is Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }> => event.type === 'INTERACTION_REQUESTED',
-        );
-        if (interactionRequest && config?.onInteractionSuspended && effectIndex + 1 < timedEffects.length) {
-            config.onInteractionSuspended(effectIndex + 1, interactionRequest);
-            break;
+        // 当前效果本身即使同时发出伤害和阻塞请求，也已经消费了一次性加成。
+        // 将该边界写进游标，恢复后不会把同一份奖励重复附加到后续伤害。
+        if (immediateEvents.some(e => e.type === 'DAMAGE_DEALT') && config?.bonusDamageOnce) {
+            bonusApplied = true;
+            ctx.accumulatedBonusDamage = 0;
         }
+        resolutionCtx.damageDealt = ctx.damageDealt;
 
-        // TOKEN_RESPONSE_REQUESTED 意味着伤害被挂起等待玩家响应，
-        // 后续效果（如 rollDie）应在 Token 响应完成后由 resolvePostDamageEffects 执行。
-        // 此处必须中断，否则 rollDie 会消耗 random 值，导致后续重新执行时 random 队列偏移。
-        if (immediateEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED')) {
-            break;
-        }
-
-        // withDamage 中的奖励骰必须先等响应窗口或自身重投规则确定最终骰面。
-        // 不能在临时骰尚未收口时继续生成后面的主伤害，否则确认后恢复父攻击
-        // 会再按最终 bonusDamage 生成一次，导致同一笔攻击重复落地。
-        if (immediateEvents.some((event) => (
-            event.type === 'BONUS_DICE_REROLL_REQUESTED'
-            && hasPendingBonusDiceSettlement(event.payload.settlement)
-        ))) {
-            break;
-        }
-
-        // CHOICE_REQUESTED 同样需要中断：用户选择完成前不应执行后续效果
-        // 例如：taiji-combo 的 rollDie=莲花 产生选择，后续的 damage(6) 应等待选择完成后再执行
-        // 否则会导致伤害在选择前就被应用，破坏游戏流程
-        if (immediateEvents.some(e => e.type === 'CHOICE_REQUESTED')) {
+        // 任何需要玩家或响应窗口接管的事件都中断当前时点，并携带同一效果游标。
+        // 多个阻塞事件由同一 ResolutionFrame 绑定；只有全部收口后才恢复下一项效果。
+        const suspensionEvents = immediateEvents.filter((event) => (
+            isAttackEffectSequenceBlocker(event)
+            || (event.type === 'BONUS_DICE_REROLL_REQUESTED'
+                && hasPendingBonusDiceSettlement(event.payload.settlement))
+        ));
+        if (suspensionEvents.length > 0) {
+            suspendedOnBlocker = true;
             if (
                 timing === 'withDamage'
                 && ctx.state.pendingAttack?.sourceAbilityId === ctx.sourceAbilityId
@@ -1753,23 +1795,26 @@ export function resolveEffectsToEvents(
                     }));
                 }
             }
+            const checkpoint: EffectResolutionCheckpoint = {
+                nextEffectIndex: effectIndex + 1,
+                bonusApplied,
+                nyraAttackBonusApplied,
+                passedFirstDamage,
+                accumulatedBonusDamage: ctx.accumulatedBonusDamage ?? 0,
+                damageDealt: ctx.damageDealt,
+            };
+            for (const event of suspensionEvents) {
+                if (config?.onEffectSuspended) config.onEffectSuspended(checkpoint, event);
+                else attachDefaultContinuation(checkpoint, event);
+            }
             break;
         }
 
-        // 如果产生伤害且只允许一次加成
-        if (immediateEvents.some(e => e.type === 'DAMAGE_DEALT') && config?.bonusDamageOnce) {
-            bonusApplied = true;
-            // 伤害已应用，清空累加的额外伤害
-            ctx.accumulatedBonusDamage = 0;
-        }
-
-        // 更新 resolutionCtx.damageDealt 用于后续条件检查
-        resolutionCtx.damageDealt = ctx.damageDealt;
     }
 
     // rollDie 累加的 bonusDamage 未被后续 damage 动作消费时，作为独立伤害事件发出
     // 场景：正义冲击 damage(5) 在 rollDie 之前，rollDie 的 bonusDamage 无后续 damage 消费
-    if (ctx.accumulatedBonusDamage && ctx.accumulatedBonusDamage > 0) {
+    if (!suspendedOnBlocker && ctx.accumulatedBonusDamage && ctx.accumulatedBonusDamage > 0) {
         const timestamp = ctx.timestamp ?? 0;
         const targetId = ctx.defenderId;
         const target = ctx.state.players[targetId];

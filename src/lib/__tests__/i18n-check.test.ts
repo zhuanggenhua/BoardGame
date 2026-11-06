@@ -864,6 +864,30 @@ describe('i18n 静态检查工具', () => {
         expect(result.newWarnings).toEqual([newWarning]);
     });
 
+    it('检查Trans强调标签内的可见文字而不把标签名误报为英文', () => {
+        const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'temp-i18n-rich-text-'));
+        try {
+            fs.writeFileSync(path.join(tempDir, 'lobby.json'), JSON.stringify({
+                valid: '验证短码：<strong>{{code}}</strong>，请核对。',
+                nested: '<strong>请阅读<em>中文说明</em></strong><br/>然后继续。',
+                englishBody: '请点<strong>Submit</strong>继续。',
+                englishOutside: '请阅读<strong>说明</strong> then continue。',
+                unknownTag: '请阅读<unknown>说明</unknown>。',
+                unbalanced: '请阅读<strong>说明。',
+                visibleAttribute: '请阅读<strong title="Important">说明</strong>。',
+            }));
+            const keys = collectZhCnLocaleEnglishWarnings(tempDir).map(warning => warning.source);
+            expect(keys).not.toContain('zh-CN:lobby.valid');
+            expect(keys).not.toContain('zh-CN:lobby.nested');
+            expect(keys).toEqual(expect.arrayContaining([
+                'zh-CN:lobby.englishBody', 'zh-CN:lobby.englishOutside',
+                'zh-CN:lobby.unknownTag', 'zh-CN:lobby.unbalanced', 'zh-CN:lobby.visibleAttribute',
+            ]));
+        } finally {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+
     it('会识别中文语言包中的纯英文或中英混写可见文案', () => {
         const tempDir = fs.mkdtempSync(path.join(process.cwd(), 'temp-i18n-check-'));
         const filePath = path.join(tempDir, 'common.json');

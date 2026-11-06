@@ -103,6 +103,23 @@ export interface FeedbackErrorContext {
 export type FeedbackReplayability = 'full' | 'partial' | 'unreplayable';
 export type FeedbackCollectionStatus = 'complete' | 'partial' | 'failed';
 
+export interface FeedbackDiagnosticSnapshots {
+    before?: unknown;
+    at?: unknown;
+    after?: unknown;
+}
+
+export interface FeedbackCommandSummary {
+    commandId?: string;
+    commandType?: string;
+    playerId?: string | null;
+    issuedAt?: number;
+    stateId?: number;
+    randomCursor?: number;
+    afterStateId?: number;
+    afterRandomCursor?: number;
+}
+
 export interface FeedbackDiagnosticPacket {
     schemaVersion: 1;
     captureId: string;
@@ -140,6 +157,8 @@ export interface FeedbackDiagnosticPacket {
     };
     actionLogTail?: unknown[];
     eventStreamTail?: unknown[];
+    commandTraceTail?: FeedbackCommandSummary[];
+    lastCommand?: FeedbackCommandSummary;
     undo?: unknown;
     randomCursor?: number;
     collectionErrors?: string[];

@@ -11,6 +11,7 @@ vi.mock('../../../lib/dice-physics/DiceBoxPhysicsSource', () => ({
 }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); inputs.length = 0; });
+const participants = { attacker: { name: '大明' }, defender: { name: '蒙古' } };
 
 describe('战斗权威骰果的物理显示投影', () => {
     it('同侧混合骰种仍归同侧，双方所有骰子停稳前不揭示结果', async () => {
@@ -21,7 +22,7 @@ describe('战斗权威骰果的物理显示投影', () => {
             phase: 'melee', attackerRolls: [{ dieSides: 6, raw: 3, value: 3 }, { dieSides: 10, raw: 5, value: 5 }],
             defenderRolls: [{ dieSides: 8, raw: 4, value: 4 }], attackerTotal: 8, defenderTotal: 4, attackerDamage: 2, defenderDamage: 1,
         }] } as unknown as QidahenBattleRolls;
-        const view = render(<QidahenBattleRollSequence rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
+        const view = render(<QidahenBattleRollSequence {...participants} rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
         expect(view.getByTestId('qidahen-battle-roll-context')).toBeVisible();
         expect(view.getByTestId('qidahen-battle-roll-context').textContent).toBe('辽北 → 叶赫部');
         const attacker = view.getByTestId('qidahen-battle-side-attacker');
@@ -45,7 +46,7 @@ describe('战斗权威骰果的物理显示投影', () => {
             phase: 'infantry', attackerRolls: [{ dieSides: 10, raw: 10, value: 10 }],
             defenderRolls: [], attackerTotal: 10, defenderTotal: 0, attackerDamage: 0, defenderDamage: 1,
         }] } as unknown as QidahenBattleRolls;
-        const view = render(<QidahenBattleRollSequence rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
+        const view = render(<QidahenBattleRollSequence {...participants} rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
         expect(inputs.at(-1)!.dice[0].value).toBe(10);
         await act(async () => { inputs.at(-1)!.onSettledChange!(true); });
         expect(view.getByText('0（10）')).toBeTruthy();
@@ -58,7 +59,7 @@ describe('战斗权威骰果的物理显示投影', () => {
             phase: 'artillery', attackerRolls: [{ dieSides: 6, raw: 1, value: 3 }, { dieSides: 6, raw: 6, value: 8 }],
             defenderRolls: [], attackerTotal: 11, defenderTotal: 0, attackerDamage: 0, defenderDamage: 1,
         }] } as unknown as QidahenBattleRolls;
-        render(<QidahenBattleRollSequence rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
+        render(<QidahenBattleRollSequence {...participants} rolls={rolls} sourceName="辽北" targetName="叶赫部" onComplete={() => {}} />);
         const initial = inputs.at(-1)!;
         expect(initial.dice.map(die => die.value)).toEqual([1, 6]);
         expect(initial.dieSkins!.map(skin => skin!.readableFaceValue)).toEqual([1, 6]);

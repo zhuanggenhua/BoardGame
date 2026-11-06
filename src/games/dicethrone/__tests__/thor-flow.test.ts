@@ -154,6 +154,58 @@ describe('索尔正式命令流程',()=>{
     expect(state.core.players['1'].resources[R.HP]).toBe(hp);
     expect(state.core.players['0'].tokens[T.ELECTROKINESIS]).toBe(electrokinesis);
  });
+ it.each([
+   {value:1,invalid:[0,3],valid:2},
+   {value:6,invalid:[7,4],valid:5},
+ ])('索尔弹一手在点数$value拒绝越界和超过一格，仅允许$valid',({value,invalid,valid})=>{
+    let state=createHeroMatchup('thor','monk')(['0','1'],fixedRandom);
+    state.core.players['0'].hand=[THOR_CARDS.find(card=>card.id==='card-flick')!];
+    state.core.players['0'].resources[R.CP]=5;
+    state.core.players['1'].hand=[];
+    state=send(state,'ADVANCE_PHASE');
+    state=send(state,'ROLL_DICE',{},'0',createQueuedRandom([value,2,3,4,5]));
+    state=send(state,'PLAY_CARD',{cardId:'card-flick'});
+    for(const newValue of invalid){
+      const rejected=executePipeline(cfg,state,{type:'MODIFY_DIE',playerId:'0',payload:{dieId:0,newValue},timestamp:101} as DiceThroneCommand,fixedRandom,['0','1']);
+      expect(rejected.success).toBe(false);
+      expect(rejected.state.core.dice.find(die=>die.id===0)?.value).toBe(value);
+    }
+    state=send(state,'MODIFY_DIE',{dieId:0,newValue:valid});
+    state=send(state,'SYS_INTERACTION_CONFIRM');
+    expect(state.core.dice.find(die=>die.id===0)?.value).toBe(valid);
+ });
+ it('索尔玩得六啊只允许将目标骰设为六',()=>{
+    let state=createHeroMatchup('thor','monk')(['0','1'],fixedRandom);
+    state.core.players['0'].hand=[THOR_CARDS.find(card=>card.id==='card-play-six')!];
+    state.core.players['0'].resources[R.CP]=5;
+    state.core.players['1'].hand=[];
+    state=send(state,'ADVANCE_PHASE');
+    state=send(state,'ROLL_DICE',{},'0',createQueuedRandom([3,2,3,4,5]));
+    state=send(state,'PLAY_CARD',{cardId:'card-play-six'});
+    const rejected=executePipeline(cfg,state,{type:'MODIFY_DIE',playerId:'0',payload:{dieId:0,newValue:5},timestamp:101} as DiceThroneCommand,fixedRandom,['0','1']);
+    expect(rejected.success).toBe(false);
+    expect(rejected.state.core.dice.find(die=>die.id===0)?.value).toBe(3);
+    state=send(state,'MODIFY_DIE',{dieId:0,newValue:6});
+    expect(state.core.dice.find(die=>die.id===0)?.value).toBe(6);
+ });
+ it('索尔俺也一样只复制来源骰原值到另一颗骰子',()=>{
+    let state=createHeroMatchup('thor','monk')(['0','1'],fixedRandom);
+    state.core.players['0'].hand=[THOR_CARDS.find(card=>card.id==='card-me-too')!];
+    state.core.players['0'].resources[R.CP]=5;
+    state.core.players['1'].hand=[];
+    state=send(state,'ADVANCE_PHASE');
+    state=send(state,'ROLL_DICE',{},'0',createQueuedRandom([1,3,2,4,5]));
+    state=send(state,'PLAY_CARD',{cardId:'card-me-too'});
+    const invalidSource=executePipeline(cfg,state,{type:'MODIFY_DIE',playerId:'0',payload:{dieId:0,newValue:2},timestamp:101} as DiceThroneCommand,fixedRandom,['0','1']);
+    expect(invalidSource.success).toBe(false);
+    expect(invalidSource.state.core.dice.find(die=>die.id===0)?.value).toBe(1);
+    state=send(state,'MODIFY_DIE',{dieId:0,newValue:1});
+    const invalidTarget=executePipeline(cfg,state,{type:'MODIFY_DIE',playerId:'0',payload:{dieId:1,newValue:4},timestamp:102} as DiceThroneCommand,fixedRandom,['0','1']);
+    expect(invalidTarget.success).toBe(false);
+    expect(invalidTarget.state.core.dice.find(die=>die.id===1)?.value).toBe(3);
+    state=send(state,'MODIFY_DIE',{dieId:1,newValue:1});
+    expect(state.core.dice.slice(0,2).map(die=>die.value)).toEqual([1,1]);
+ });
  it('同伴独立伤害响应关闭不跳过父攻击',()=>{
     let state=createHeroMatchup('thor','monk')(['0','1'],fixedRandom);
     state.core.players['1'].tokens[T.TAIJI]=1;

@@ -16,6 +16,40 @@ vi.mock('react-i18next', async () => {
 
 vi.mock('../../../../components/common/media/OptimizedImage', () => ({OptimizedImage: ({src, alt}: {src: string; alt: string}) => <img src={src} alt={alt}/> }));
 
+it('不可用普通牌与技能仍响应拒绝原因，不能静默吞掉点击或改变草稿',()=>{
+ const core=preparedHandCore('unavailable-card-input');
+ const player=core.players['0'];
+ const onRejectCard=vi.fn(),onSelect=vi.fn();
+ const skill={id:'unavailable-skill',name:'未激活技能'};
+ render(<FateHandSurface player={player} power={0} skills={[{skill,assetPath:'test-skill',available:false}]} canSelect={false} onSelect={onSelect} onPlaySkill={vi.fn()} onInspect={vi.fn()} onRejectCard={onRejectCard}/>);
+ fireEvent.click(screen.getByTestId('fate-domination-hand').querySelector('button')!);
+ expect(onRejectCard).toHaveBeenLastCalledWith(player.hand[0].id,false);
+ fireEvent.click(screen.getByRole('button',{name:'选择 未激活技能'}));
+ expect(onRejectCard).toHaveBeenLastCalledWith(skill.id,false);
+ expect(onSelect).not.toHaveBeenCalled();expect(player.selectedAttackIds).toEqual([]);
+});
+
+it('暗置模式不能把技能牌静默改成明置选择，须报告拒绝原因',()=>{
+ const player=preparedHandCore('skill-face-down-rejected').players['0'];
+ const skill={id:'face-up-skill',name:'技能候选'};
+ const onSelect=vi.fn(),onRejectCard=vi.fn();
+ render(<FateHandSurface player={player} power={0} skills={[{skill,assetPath:'skill-art',available:true}]} canSelect onSelect={onSelect} onRejectCard={onRejectCard} onPlaySkill={vi.fn()} onInspect={vi.fn()}/>);
+ fireEvent.click(screen.getByRole('button',{name:'暗置选牌'}));
+ fireEvent.click(screen.getByRole('button',{name:'选择 技能候选'}));
+ expect(onSelect).not.toHaveBeenCalled();expect(onRejectCard).toHaveBeenCalledExactlyOnceWith(skill.id,true);
+});
+
+it('卡牌换区时清除旧的鼠标预览，不让已离开来源的卡面滞留',()=>{
+ const player=preparedHandCore('retire-hover-source').players['0'];
+ const dismiss=vi.fn();
+ const props={player,power:0,skills:[],canSelect:true,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn(),onDismissHoverInspection:dismiss};
+ const view=render(<FateHandSurface {...props}/>);dismiss.mockClear();
+ view.rerender(<FateHandSurface {...props} player={{...player,hand:player.hand.slice(1)}}/>);
+ expect(dismiss).toHaveBeenCalledOnce();
+ dismiss.mockClear();view.rerender(<FateHandSurface {...props} player={{...player,hand:player.hand.slice(1)}}/>);
+ expect(dismiss).not.toHaveBeenCalled();
+});
+
 const preparedHandCore = (seed: string, servantId?: string) => {
  const adapter=createReplayAdapter(FateDominationDomain,seed);
  let state=adapter.setup(['0','1','2']);
@@ -38,7 +72,7 @@ it('本人攻击牌区直接显示暂选与已打出实例，零张时仍显示�
  const props={power:7,player,skills:[],canSelect:true,onSelect:vi.fn(),onPlaySkill:vi.fn(),onInspect:vi.fn()};
  const view=render(<FateHandSurface {...props}/>);
  expect(screen.getByTestId('fate-play-area').previousElementSibling?.getAttribute('data-testid')).not.toBe('fate-played-browser-trigger');
- expect(screen.getByText('已打出 · 0')).toBeTruthy();
+ expect(screen.queryByText('已打出 · 0')).toBeNull();
  expect(screen.getByText('合计威力 7')).toBeTruthy();
 
  view.rerender(<FateHandSurface {...props} player={{...player,selectedAttackIds:[first.id],activeAttackIds:[second.id]}}/>);

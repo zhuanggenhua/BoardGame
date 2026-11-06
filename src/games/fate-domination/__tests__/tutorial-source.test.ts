@@ -10,7 +10,7 @@ import {FATE_TUTORIAL_MAP_PROTECTION} from '../ui/tutorialPresentation';
 
 const normalize = (text:string) => text.replace(/\s+/g,'');
 it('手牌课程始终保护实际卡牌、威力、身份和席位；地图关系课程另保护印刷读数',()=>{
-    const steps=buildFateTutorialPlan('workshop').steps;
+    const steps=buildFateTutorialPlan().steps;
     const dark=steps.find(step=>step.fateCopy?.lessonId==='battlefieldDarkAttack')!;
     for(const selector of ['.fd-runtime-card','.fd-play-summary','.fd-self-dock','.fd-master-abilities','.fd-runtime-seat','.fd-runtime-map-card-hit','.fd-runtime-pawn'])expect(dark.avoidOverlapSelectors).toContain(selector);
     const movement=steps.find(step=>step.fateCopy?.lessonId==='movement')!;
@@ -28,7 +28,7 @@ it('中文规则摘句能逐项在指定CHM原文转写中找到，不能以改�
         const source=readFileSync(resolve(dirname(fileURLToPath(import.meta.url)),'..',passage.source),'utf8');
         const raw='sourceQuote' in passage ? passage.sourceQuote : passage.quote;
         expect(normalize(source),id).toContain(normalize(raw));
-        if('transcription' in passage)expect(normalize(passage.quote)).toBe(normalize(raw.replace(/\s*[（(][CDJK][）)]/g,'')));
+        if('transcription' in passage)expect(normalize(passage.quote)).toBe(normalize(passage.transcription==='normalize-punctuation' ? raw.replace('则不抽。）。','则不抽）。') : raw.replace(/\s*[（(][CDJK][）)]/g,'')));
     }
 });
 
@@ -63,19 +63,15 @@ it('每张可见课程来自登记摘句与必要功能说明，首课不要求�
     }
 });
 
-it('同一来源语义只在一个真实用途处教学，普通他席出牌不先替学员讲课',()=>{
-    for(const branch of ['workshop','miyama','shinto'] as const){
-        const plan=buildFateTutorialPlan(branch);
-        const passages=plan.steps.flatMap(step=>step.fateCopy?.passages??[]);
-        expect(new Set(passages).size,branch).toBe(passages.length);
-        const firstAttack=plan.steps.find(step=>step.fateCopy?.passages.includes('attack'))!;
-        expect(firstAttack.fateCommand?.type,branch).toBe('CONFIRM_ATTACK');
-        const learnerAttacks=plan.steps.filter(step=>step.fateCommand?.type==='CONFIRM_ATTACK' && !(step.fateCommand.payload.faceDownIds as string[]).length);
-        expect(learnerAttacks,branch).toHaveLength(1);
-        expect(plan.steps.some(step=>step.id==='first-deployment-result'||step.id==='map-camera'),branch).toBe(false);
-        const opening=plan.steps.find(step=>step.fateCommandOptions?.some(option=>option.type==='DEPLOY_MASTER'))!;
-        expect(opening.fateDeploymentChoiceCopies?.miyama?.passages).toContain('terrain');
-        expect(opening.fateDeploymentChoiceCopies?.shinto?.passages).toContain('terrain');
-        if(branch!=='workshop')expect(plan.steps.filter(step=>step.fateCopy?.passages.includes('terrain'))).toHaveLength(0);
-    }
+it('教程开局只提供工房部署；同一规则摘句只在一个真实用途处教学',()=>{
+    const plan=buildFateTutorialPlan();
+    const passages=plan.steps.flatMap(step=>step.fateCopy?.passages??[]);
+    expect(new Set(passages).size).toBe(passages.length);
+    const firstAttack=plan.steps.find(step=>step.fateCopy?.passages.includes('attack'))!;
+    expect(firstAttack.fateCommand?.type).toBe('CONFIRM_ATTACK');
+    const learnerAttacks=plan.steps.filter(step=>step.fateCommand?.type==='CONFIRM_ATTACK' && !(step.fateCommand.payload.faceDownIds as string[]).length);
+    expect(learnerAttacks).toHaveLength(1);
+    expect(plan.steps.some(step=>step.id==='first-deployment-result'||step.id==='map-camera')).toBe(false);
+    const opening=plan.steps.find(step=>step.fateCommandOptions?.some(option=>option.type==='DEPLOY_MASTER'))!;
+    expect(opening.fateCommandOptions?.filter(option=>option.type==='DEPLOY_MASTER').map(option=>option.payload.locationId)).toEqual(['workshop','workshop','workshop']);
 });

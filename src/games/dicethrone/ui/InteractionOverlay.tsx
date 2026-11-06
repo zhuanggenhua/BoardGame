@@ -150,7 +150,7 @@ export interface InteractionOverlayProps {
     allowBackgroundInteraction?: boolean;
     /** 限制是否可提交；复用选择界面承载 ChoiceRequest 时对应原交互权限。 */
     canResolve?: boolean;
-    /** 操作按钮翻译 key 覆盖，用于选择器内明确显示“清空选择”或“跳过”。 */
+    /** 操作按钮翻译 key 覆盖；调用方可提供规则运行时携带的 key。 */
     cancelLabelKey?: string;
     confirmLabelKey?: string;
     /** 是否允许清空当前本地选择。 */
@@ -180,6 +180,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     canCancel = true,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
+    const confirmActionLabel = t(confirmLabelKey, { defaultValue: confirmLabelKey });
+    const cancelActionLabel = t(cancelLabelKey, { defaultValue: cancelLabelKey });
     const interactionType = interaction.type;
     const selectedItems = interaction.selected ?? [];
     const isDoctorStrangeInteraction = players[interaction.playerId]?.characterId === 'doctor_strange';
@@ -566,7 +568,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     className="col-start-1 row-start-1 justify-self-end"
                                     data-testid="dt-interaction-clear"
                                 >
-                                    {t(cancelLabelKey)}
+                                    {cancelActionLabel}
                                 </GameButton>
                             )}
                             <GameButton
@@ -577,7 +579,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 className="col-start-2 row-start-1"
                                 data-testid="dt-interaction-confirm"
                             >
-                                {t(confirmLabelKey)}
+                                {confirmActionLabel}
                             </GameButton>
                         </div>
                     </div>
@@ -612,7 +614,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                             className="px-8 -translate-y-0.5 shadow-[0_6px_0_#334155] active:translate-y-[3px] active:shadow-[0_2px_0_#334155]"
                             data-testid="dt-interaction-clear"
                         >
-                            {t(cancelLabelKey)}
+                            {cancelActionLabel}
                         </GameButton>
                     )}
                     <GameButton
@@ -622,7 +624,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                         className="px-8 -translate-y-0.5 shadow-[0_6px_0_#b45309] active:translate-y-[3px] active:shadow-[0_2px_0_#b45309]"
                         data-testid="dt-interaction-confirm"
                     >
-                        {t(confirmLabelKey)}
+                        {confirmActionLabel}
                     </GameButton>
                 </>
             }

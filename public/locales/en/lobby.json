@@ -14,9 +14,15 @@
       "status": "In Progress",
       "room": "Room #{{id}}",
       "players": "{{count}} seated"
-    }
+    },
+    "appDownloadHint": "Download the app from the floating controls"
   },
   "homeV2": {
+    "gamePresence": {
+      "online": "Online {{count}}",
+      "waiting": "Waiting {{count}}",
+      "label": "{{online}} online, {{waiting}} waiting in public rooms"
+    },
     "waitingPlayers": "Waiting for players",
     "roomTitleFallback": "Room {{id}}",
     "roomLedgerTitle": "Room List",
@@ -2650,7 +2656,7 @@
           "rejected": "Not approved"
         },
         "pendingLocked": "Your information is locked during review. Withdraw the application if you need to make changes.",
-        "verificationInstructions": "Verification code: {{code}}. Submit by {{deadline}}. Put the code on your author profile for an administrator to check, or provide a screenshot showing backend access.",
+        "verificationInstructions": "Verification code: <strong>{{code}}</strong>. Submit by {{deadline}}. Put the code on your author profile for an administrator to check, or provide a screenshot showing backend access.",
         "authorProfile": "Author profile",
         "evidence": "Verification screenshot",
         "evidencePreviewAlt": "Verification screenshot preview",
@@ -2760,7 +2766,8 @@
       "emptySubmissions": "There are no submissions awaiting review.",
       "emptyClaims": "There are no author claims awaiting review.",
       "emptyGames": "There are no listed external games yet."
-    }
+    },
+    "favorited": "Favorited"
   },
   "homeAppearance": {
     "settings": "Home settings",

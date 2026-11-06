@@ -382,6 +382,118 @@ test('独特界面策略以一张实质变化图和完整行为日志验收，�
     assert.equal(f.validate().capturePolicy, 'distinct-ui-state');
 });
 
+const addCaptureContract = (fixture) => {
+    fixture.index.version = 2;
+    fixture.manifest.captureContract = 'capture-contract.json';
+    const contract = {
+        version: 1, gameId: 'fixture', evidenceCategory: 'golden', reviewFile: '.visual-review.json',
+        reviewerKind: 'subagent',
+        requiredStates: [{ chainId: 'fixture-chain', uiStateId: 'hand-parallel', viewport: 'desktop', reason: '首次选牌操作与候选反馈' }],
+    };
+    const reviewPath = path.join(fixture.dir, '.visual-review.json');
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    for (const [i, entry] of review.media.entries()) Object.assign(entry, {
+        source: entry.path,
+        sha256: fixture.trace.uiStates[i].sha256,
+        independentReviewFile: '.original-visual-review.json',
+        sourceReviewEntry: `/media/${i}`,
+    });
+    writeFileSync(reviewPath, JSON.stringify(review));
+    writeFileSync(path.join(fixture.dir, '.original-visual-review.json'), JSON.stringify(review));
+    fixture.save();
+    const saveContract = () => {
+        const bytes = JSON.stringify(contract);
+        writeFileSync(path.join(fixture.dir, 'capture-contract.json'), bytes);
+        fixture.trace.captureContract = { sha256: createHash('sha256').update(bytes).digest('hex') };
+        fixture.save();
+    };
+    saveContract();
+    return { contract, saveContract };
+};
+
+test('第二版索引核对预先声明的必要截图及逐图审查', () => {
+    const fixture = makeDistinctFixture();
+    addCaptureContract(fixture);
+    assert.doesNotThrow(fixture.validate);
+});
+
+test('必要截图子集与重构展示全集分别核对且保留完整基线门禁', () => {
+    const f = makeDistinctFixture();
+    const { contract, saveContract } = addCaptureContract(f);
+    const reviewPath = path.join(f.dir, '.visual-review.json');
+    const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
+    contract.reviewFile = '.required-review.json';
+    writeFileSync(path.join(f.dir, contract.reviewFile), JSON.stringify(review));
+    saveContract();
+    const secondPath = 'second.png';
+    writeFileSync(path.join(f.dir, secondPath), 'second-frame');
+    const hash = createHash('sha256').update('second-frame').digest('hex');
+    f.index.media.push({ ...f.index.media[0], path: secondPath, chainStep: '02', uiStateId: 'result-panel', behaviorStepId: 'confirm' });
+    f.trace.uiStates.push({ ...f.trace.uiStates[0], id: 'result-panel', stepId: 'confirm', sha256: hash });
+    f.manifest.media.push(path.join('evidence', secondPath));
+    f.manifest.requirements[0].evidence.push(path.join('evidence', secondPath));
+    review.media.push({ ...review.media[0], path: secondPath, source: secondPath, sha256: hash, sourceReviewEntry: '/media/1' });
+    writeFileSync(reviewPath, JSON.stringify(review));
+    writeFileSync(path.join(f.dir, '.original-visual-review.json'), JSON.stringify(review));
+    const before = path.join(f.root, 'before.png');
+    writeFileSync(before, 'before-frame');
+    const baseline = { status: 'PASS', requirements: [{
+        requirement: f.manifest.requirements[0].requirement, status: 'PASS', before: [before], after: [...f.manifest.media],
+        baselineSource: '原始牌桌截图', preservedInformation: '手牌与结果可读', preservedActions: '选牌与确认可达',
+        changes: '恢复正式交互', duplicateDecision: '单一交互入口', changeAuthority: '用户要求重构',
+    }] };
+    writeFileSync(path.join(f.dir, 'original-baseline.json'), JSON.stringify(baseline));
+    Object.assign(baseline.requirements[0], { independentReviewFile: 'original-baseline.json', sourceReviewEntry: '/requirements/0' });
+    writeFileSync(path.join(f.dir, 'baseline.json'), JSON.stringify(baseline));
+    f.manifest.changeType = 'refactor';
+    f.manifest.visualReview.baselineReviewFile = 'baseline.json';
+    f.save();
+    assert.doesNotThrow(f.validate);
+    delete f.manifest.visualReview.baselineReviewFile;
+    assert.throws(f.validate, /baselineReviewFile/);
+});
+
+test('运行后篡改必要截图合同不能沿用原运行身份', () => {
+    const fixture = makeDistinctFixture();
+    const { contract } = addCaptureContract(fixture);
+    contract.requiredStates[0].reason = '运行后更改合同';
+    writeFileSync(path.join(fixture.dir, 'capture-contract.json'), JSON.stringify(contract));
+    assert.throws(fixture.validate, /实际运行记录的哈希不一致/);
+});
+
+for (const [name, mutate, pattern] of [
+    ['合同缺失', (f) => { delete f.manifest.captureContract; }, /行为证据文件/],
+    ['必要画面漏拍且漏登记', (_f, c) => { c.requiredStates.push({ ...c.requiredStates[0], uiStateId: 'unrecorded-choice' }); }, /缺少必要截图状态/],
+    ['必要视口不符', (_f, c) => { c.requiredStates[0].viewport = 'narrow'; }, /缺少必要截图状态/],
+    ['必要状态重复', (_f, c) => { c.requiredStates.push(c.requiredStates[0]); }, /重复状态/],
+    ['必要截图漏审', (f, c) => { c.reviewFile = 'missing-review.json'; }, /缺少逐图视觉审计报告/],
+    ['必要截图裁决未通过', (f) => {
+        const file = path.join(f.dir, '.visual-review.json');
+        const review = JSON.parse(readFileSync(file, 'utf8'));
+        review.media[0].status = 'REVISE';
+        writeFileSync(file, JSON.stringify(review));
+    }, /未 PASS/],
+    ['替换图片并同步日志但沿用旧审查', (f) => {
+        const file = path.join(f.dir, f.index.media[0].path);
+        writeFileSync(file, 'replacement-frame');
+        f.trace.uiStates[0].sha256 = createHash('sha256').update('replacement-frame').digest('hex');
+    }, /SHA 不一致/],
+    ['原始审查观察被改写', (f) => {
+        const file = path.join(f.dir, '.visual-review.json');
+        const review = JSON.parse(readFileSync(file, 'utf8'));
+        review.media[0].observation = '未经实际看图改写的通过观察';
+        writeFileSync(file, JSON.stringify(review));
+    }, /原审查观察/],
+    ['指定子代理却由主代理代审', (f) => { f.manifest.visualReview.reviewer.kind = 'primary-agent'; }, /审查者类型/],
+]) test(`第二版必要截图合同拒绝${name}`, () => {
+    const fixture = makeDistinctFixture();
+    const { contract, saveContract } = addCaptureContract(fixture);
+    mutate(fixture, contract);
+    saveContract();
+    fixture.save();
+    assert.throws(fixture.validate, pattern);
+});
+
 const makeInternalEvidenceFixture = () => {
     const f = makeDistinctFixture();
     const internalPath = path.join(f.root, 'internal-short-window.jpg');

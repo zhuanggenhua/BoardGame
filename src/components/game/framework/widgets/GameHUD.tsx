@@ -27,7 +27,6 @@ import { FabMenu, type FabAction, type FabMenuPosition } from '../../../system/F
 import { UNDO_COMMANDS } from '../../../../engine';
 import type { ManualForceEndAiPhaseResult } from '../../../../engine/transport/protocol';
 import { AudioControlSection } from './AudioControlSection';
-import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -415,7 +414,6 @@ export const GameHUD = ({
     };
 
     // 弹窗
-    const [showAbout, setShowAbout] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     const [socialModalId, setSocialModalId] = useState<string | null>(null);
 
@@ -465,7 +463,7 @@ export const GameHUD = ({
     const useChatAsMain = isOnline || isTutorial;
     const canForceEndAiPhase = Boolean(showForceEndAiPhase && onForceEndAiPhase);
     const topModalId = stack[stack.length - 1]?.id ?? null;
-    const hasLocalClosableForegroundUi = Boolean(showAbout || showFeedback || socialModalId || stack.length > 0);
+    const hasLocalClosableForegroundUi = Boolean(showFeedback || socialModalId || stack.length > 0);
     const canForceDismissPopup = Boolean(showForceDismissPopup || onForceDismissPopup || hasLocalClosableForegroundUi);
     const handleForceEndAiPhaseClick = useCallback(async (closePanel: () => void) => {
         if (!onForceEndAiPhase || isForceEndingAiPhase) {
@@ -527,9 +525,6 @@ export const GameHUD = ({
                 } else if (showFeedback) {
                     setShowFeedback(false);
                     handled = true;
-                } else if (showAbout) {
-                    setShowAbout(false);
-                    handled = true;
                 }
             }
 
@@ -547,7 +542,6 @@ export const GameHUD = ({
         closeTop,
         isForceDismissingPopup,
         onForceDismissPopup,
-        showAbout,
         showFeedback,
         socialModalId,
         topModalId,
@@ -590,7 +584,7 @@ export const GameHUD = ({
         icon: <Settings size={20} />,
         label: t('hud.actions.settings'),
         content: (
-            <div>
+            <div className="select-none">
                 {/* 本地同屏模式信息 */}
                 {isLocal && (
                     <div className="mb-4 p-3 rounded-lg bg-neon-blue/10 border border-neon-blue/30">
@@ -1032,7 +1026,6 @@ export const GameHUD = ({
                 hudPlacement={hudPlacement}
             />
 
-            {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (
                 <FeedbackModal
                     onClose={() => setShowFeedback(false)}

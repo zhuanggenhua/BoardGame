@@ -7292,6 +7292,8 @@
     "orderNext": "选择放回牌库顶的下一张牌",
     "bonusDie": "奇异博士奖励骰",
     "preparedSpells": "维山帝之书（{{count}}）",
+    "hidePreparedCards": "隐藏已准备法术，查看被动能力",
+    "showPreparedCards": "显示已准备法术",
     "privateChoice": "私有选择",
     "effects": {
       "attack": "奇异博士攻击伤害",

@@ -4,8 +4,8 @@ import type { AbilityCard } from '../core-types';
 export type SpellZone = 'hand' | 'deck' | 'discard' | 'preparedSpells';
 
 export type DoctorStrangeEvent =
-    | GameEvent<'STRANGE_OPERATION_REQUESTED', { playerId: string; targetId?: string; operation: string; sourceId: string; values?: number[] }>
-    | GameEvent<'STRANGE_OPERATION_RESOLVED', { playerId: string; sourceId: string }>
+    | GameEvent<'STRANGE_OPERATION_REQUESTED', { playerId: string; targetId?: string; operation: string; sourceId: string; values?: number[]; continuationRequestId?: string }>
+    | GameEvent<'STRANGE_OPERATION_RESOLVED', { playerId: string; sourceId: string; continuationRequestIds?: string[] }>
     | GameEvent<'STRANGE_CARD_MOVED', { playerId: string; cardId: string; from: SpellZone; to: SpellZone; position?: 'top' | 'bottom'; passive?: boolean }>
     | GameEvent<'STRANGE_DECK_ORDERED', { playerId: string; cardIds: string[] }>
     | GameEvent<'STRANGE_BANDS_ACTIVATED', { playerId: string }>;
@@ -47,6 +47,7 @@ export interface SpellProgram {
     playerId: string;
     targetId: string;
     sourceId: string;
+    continuationRequestIds?: string[];
     parentResponseWindowId?: string;
     parentDamageId?: string;
     tasks: SpellTask[];

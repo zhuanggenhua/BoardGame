@@ -82,4 +82,63 @@ describe('自动反馈投递', () => {
         delete (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
         window.history.pushState({}, '', '/');
     });
+
+    it('首次自动反馈保留触发命令、请求关联和命令前后快照', async () => {
+        window.history.pushState({}, '', '/play/dicethrone/match/m1');
+        (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__ = 'online';
+        const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ _id: '0123456789abcdef01234567' }) });
+        vi.stubGlobal('fetch', fetchMock);
+        const { setCurrentGameFeedbackContext, recordGameFeedbackCommand } = await import('../feedback/gameFeedbackContext');
+        const before = {
+            sys: {
+                schemaVersion: 1,
+                matchId: 'm1',
+                roomId: 'room-1',
+                stateId: 41,
+                revision: 7,
+                phase: 'offensiveRoll',
+                turnNumber: 2,
+                decisionEpoch: 3,
+                interaction: { current: { id: 'choice-request', kind: 'choice' } },
+                responseWindow: { current: undefined },
+                actionLog: { entries: [] },
+                eventStream: { entries: [] },
+                undo: { snapshots: [] },
+            },
+            core: { currentPlayer: '0' },
+        } as any;
+        const after = {
+            ...before,
+            sys: {
+                ...before.sys,
+                stateId: 42,
+                revision: 8,
+                phase: 'defensiveRoll',
+                decisionEpoch: 4,
+                interaction: { current: undefined },
+            },
+        };
+        setCurrentGameFeedbackContext({ state: before, scopeId: 'online:match-1', playerId: '0', isLocalMode: false, stateId: 41, stateRevision: 7, randomCursor: 11 });
+        recordGameFeedbackCommand({ commandType: 'RESOLVE_INTERACTION', payload: { interactionId: 'choice-request', optionId: 'hidden-card-option-canary' }, playerId: '0' });
+        setCurrentGameFeedbackContext({ state: after, scopeId: 'online:match-1', playerId: '0', isLocalMode: false, stateId: 42, stateRevision: 8, randomCursor: 13 });
+
+        const { reportClientAutoFeedbackOnce } = await import('../feedback/clientAutoReport');
+        await reportClientAutoFeedbackOnce('first-trigger-context', { ...payload, playerId: '0' });
+
+        const body = JSON.parse(feedbackCalls(fetchMock)[0][1].body);
+        const packet = JSON.parse(body.diagnosticPacket);
+        expect(packet.correlation).toMatchObject({ matchId: 'm1', roomId: 'room-1', requestId: 'choice-request', stateId: 42, stateRevision: 8 });
+        expect(packet.snapshots.before.sys.phase).toBe('offensiveRoll');
+        expect(packet.snapshots.after.sys.phase).toBe('defensiveRoll');
+        expect(packet.snapshots.at.sys.phase).toBe('defensiveRoll');
+        expect(packet.randomCursor).toBe(13);
+        expect(packet.lastCommand).toMatchObject({ commandType: 'RESOLVE_INTERACTION', playerId: '0' });
+        expect(packet.commandTraceTail).toEqual(expect.arrayContaining([
+            expect.objectContaining({ commandType: 'RESOLVE_INTERACTION', playerId: '0' }),
+        ]));
+        expect(packet.lastCommand).not.toHaveProperty('payload');
+        expect(body.diagnosticPacket).not.toContain('hidden-card-option-canary');
+        delete (window as Window & { __BG_GAME_MODE__?: string }).__BG_GAME_MODE__;
+        window.history.pushState({}, '', '/');
+    });
 });

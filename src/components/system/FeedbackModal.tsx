@@ -19,7 +19,10 @@ import {
     buildFeedbackDiagnosticPacket,
     serializeFeedbackDiagnosticPacket,
 } from '../../lib/feedback/diagnosticPacket';
-import { getCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackContext';
+import {
+    getCurrentGameFeedbackContext,
+    getCurrentGameFeedbackDiagnosticContext,
+} from '../../lib/feedback/gameFeedbackContext';
 import { prepareFeedbackReplayCapture, requestFeedbackReplayCapture } from '../../lib/feedback/feedbackReplayBridge';
 import type { FeedbackConfigProposalDraft } from '../../lib/feedback/feedbackPayload';
 import type { GameManifestEntry } from '../../shared/gameManifest.types';
@@ -553,9 +556,13 @@ export const FeedbackModal = ({
                     componentStack: lastErrorContext.componentStack,
                 }
                 : undefined;
-            const diagnosticPacket = currentGameFeedbackContext?.state
+            const diagnosticContext = attachState
+                ? getCurrentGameFeedbackDiagnosticContext()
+                : undefined;
+            const diagnosticPacket = attachState && currentGameFeedbackContext?.state
                 ? serializeFeedbackDiagnosticPacket(buildFeedbackDiagnosticPacket({
-                    state: attachState ? currentGameFeedbackContext.state : undefined,
+                    ...diagnosticContext,
+                    state: diagnosticContext?.state ?? currentGameFeedbackContext.state,
                     clientContext,
                     source: 'user',
                     collectionErrors: shouldCaptureReplay && !captureId ? ['private_replay_prepare_failed'] : undefined,
@@ -868,10 +875,10 @@ export const FeedbackModal = ({
                             {!pastedImage && !content && (
                                 <div
                                     className="absolute bottom-3 right-3 text-[10px] text-parchment-light-text/60 pointer-events-none flex items-center gap-1"
-                                    data-testid="feedback-auto-screenshot-status"
+                                    data-testid="feedback-paste-hint"
                                 >
                                     <ImageIcon size={12} />
-                                    <span>{t('hud.feedback.pasteHint')}</span>
+                                    <span>{t(isInGame ? 'hud.feedback.pasteHint' : 'hud.feedback.pasteOnlyHint')}</span>
                                 </div>
                             )}
                         </div>

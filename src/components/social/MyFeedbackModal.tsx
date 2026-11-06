@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, Clock3, Lightbulb, MessageSquareWarning, RefreshCw, Trash2, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock3, Lightbulb, MessageSquareWarning, RefreshCw, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { ADMIN_API_URL } from '../../config/server';
@@ -8,6 +8,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { RewardPointsBadge } from '../common/labels/RewardPointsBadge';
 import { useAuthModalSession } from '../../hooks/ui/useAuthModalSession';
+import { getGameById } from '../../config/games.config';
+import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import './my-feedback.css';
+
+const PAGE_SIZE = 6;
 
 type ModalViewportCssVars = {
     '--modal-active-viewport-height': string;
@@ -82,8 +87,18 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
     useAuthModalSession(isOpen, onClose);
     const { token } = useAuth();
     const { success, error } = useToast();
-    const { t } = useTranslation(['auth', 'admin']);
+    const { t } = useTranslation(['lobby', 'auth', 'admin']);
+    const tokenRef = useRef(token);
+    const isOpenRef = useRef(isOpen);
+    tokenRef.current = token;
+    isOpenRef.current = isOpen;
     const [items, setItems] = useState<MyFeedbackItem[]>([]);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [refreshVersion, setRefreshVersion] = useState(0);
+    const listRequest = useRef<AbortController | null>(null);
+    const detailRequests = useRef(new Map<string, AbortController>());
+    const scrollBody = useRef<HTMLDivElement | null>(null);
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
@@ -104,14 +119,20 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
     }), [t]);
 
     const fetchItems = useCallback(async () => {
+        listRequest.current?.abort();
+        const controller = new AbortController();
+        listRequest.current = controller;
         if (!token) {
             setItems([]);
+            setTotal(0);
+            setLoading(false);
             return;
         }
         setLoading(true);
         setErrorMessage('');
         try {
-            const response = await fetch(`${ADMIN_API_URL}/feedback?mineOnly=true&limit=50&sort=newest&summaryOnly=true`, {
+            const response = await fetch(`${ADMIN_API_URL}/feedback?mineOnly=true&page=${page}&limit=${PAGE_SIZE}&sort=newest&summaryOnly=true`, {
+                signal: controller.signal,
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -119,21 +140,43 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
             if (!response.ok) {
                 throw new Error(t('admin:feedback.messages.fetchFailed'));
             }
-            const data = await response.json() as { items?: MyFeedbackItem[] };
+            const data = await response.json() as { items?: MyFeedbackItem[]; total?: number };
+            if (controller.signal.aborted) return;
+            const nextTotal = data.total ?? data.items?.length ?? 0;
+            setTotal(nextTotal);
+            const lastPage = Math.max(1, Math.ceil(nextTotal / PAGE_SIZE));
+            if (page > lastPage) { setPage(lastPage); return; }
             setItems(data.items ?? []);
         } catch (error) {
+            if (controller.signal.aborted) return;
             setErrorMessage(error instanceof Error ? error.message : t('admin:feedback.messages.fetchFailed'));
         } finally {
-            setLoading(false);
+            if (!controller.signal.aborted) setLoading(false);
         }
-    }, [t, token]);
+    }, [page, t, token]);
 
     useEffect(() => {
         if (!isOpen) {
+            setItems([]); setPage(1); setTotal(0); setExpandedIds(new Set());
             return;
         }
         void fetchItems();
-    }, [fetchItems, isOpen]);
+        return () => listRequest.current?.abort();
+    }, [fetchItems, isOpen, refreshVersion]);
+
+    useEffect(() => {
+        const requests = detailRequests.current;
+        setDetailLoadingIds(new Set());
+        return () => {
+            requests.forEach((controller) => controller.abort());
+            requests.clear();
+        };
+    }, [isOpen, token]);
+
+    useEffect(() => {
+        setExpandedIds(new Set());
+        if (scrollBody.current) scrollBody.current.scrollTop = 0;
+    }, [page]);
 
     const loadItemDetail = useCallback(async (id: string) => {
         if (!token) {
@@ -149,9 +192,14 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
             next.add(id);
             return next;
         });
+        const requestToken = token;
+        const controller = new AbortController();
+        detailRequests.current.get(id)?.abort();
+        detailRequests.current.set(id, controller);
         setErrorMessage('');
         try {
             const response = await fetch(`${ADMIN_API_URL}/feedback/${id}`, {
+                signal: controller.signal,
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -160,19 +208,26 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                 throw new Error(t('admin:feedback.messages.fetchFailed'));
             }
             const detail = await response.json() as MyFeedbackItem;
+            if (controller.signal.aborted || !isOpenRef.current || tokenRef.current !== requestToken) return;
             setItems((prev) => prev.map((item) => (
                 item._id === id ? { ...item, ...detail } : item
             )));
         } catch (err) {
+            if (controller.signal.aborted || !isOpenRef.current || tokenRef.current !== requestToken) return;
             const message = err instanceof Error ? err.message : t('admin:feedback.messages.fetchFailed');
             setErrorMessage(message);
             error(message);
         } finally {
-            setDetailLoadingIds((prev) => {
-                const next = new Set(prev);
-                next.delete(id);
-                return next;
-            });
+            if (detailRequests.current.get(id) === controller) {
+                detailRequests.current.delete(id);
+                if (isOpenRef.current && tokenRef.current === requestToken) {
+                    setDetailLoadingIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(id);
+                        return next;
+                    });
+                }
+            }
         }
     }, [detailLoadingIds, error, items, t, token]);
 
@@ -210,6 +265,7 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
                 return next;
             });
             success(t('admin:feedback.messages.deleteSuccess'));
+            setRefreshVersion(version => version + 1);
         } catch (err) {
             const message = err instanceof Error ? err.message : t('admin:feedback.messages.deleteFailed');
             setErrorMessage(message);
@@ -248,174 +304,78 @@ export const MyFeedbackModal = ({ isOpen, onClose }: MyFeedbackModalProps) => {
             />
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                onClick={(event) => event.stopPropagation()}
-                className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-parchment-card-border/30 bg-parchment-card-bg shadow-2xl"
-                data-testid="my-feedback-modal"
-                data-platform-dialog="my-feedback"
-                style={{ maxHeight: 'min(760px, var(--modal-max-height, var(--runtime-modal-max-height)))' }}
+                initial={{ opacity: 0, scale: 0.97, y: 8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }}
+                onClick={event => event.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="my-feedback-title"
+                className="my-feedback-dialog" data-testid="my-feedback-modal" data-platform-dialog="my-feedback"
+                style={{ maxHeight: 'min(800px, var(--modal-max-height, var(--runtime-modal-max-height)))' }}
             >
-                <div className="flex items-center justify-between border-b border-parchment-card-border/30 bg-parchment-base-bg px-4 py-3">
-                    <div className="flex items-center gap-3 text-parchment-base-text">
-                        <MessageSquareWarning size={20} />
-                        <div>
-                            <h2 className="font-bold text-lg">{t('auth:menu.myFeedback')}</h2>
-                            <p className="text-xs text-parchment-light-text">{t('auth:menu.myFeedbackSubtitle')}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => void fetchItems()}
-                            className="inline-flex items-center gap-1 rounded-md border border-parchment-card-border/40 px-2.5 py-1.5 text-xs font-semibold text-parchment-base-text transition-colors hover:bg-parchment-card-border/10"
-                        >
-                            <RefreshCw size={14} className={clsx(loading && 'animate-spin')} />
-                            {t('admin:feedback.refresh')}
+                <header className="my-feedback-header">
+                    <div className="my-feedback-heading"><MessageSquareWarning aria-hidden="true" size={22} /><div>
+                        <h2 id="my-feedback-title">{t('auth:menu.myFeedback')}</h2>
+                        <p>{t('auth:menu.myFeedbackSubtitle')}</p>
+                    </div></div>
+                    <div className="my-feedback-toolbar">
+                        <button type="button" onClick={() => setRefreshVersion(version => version + 1)} disabled={loading}>
+                            <RefreshCw aria-hidden="true" size={18} className={clsx(loading && 'animate-spin')} />{t('admin:feedback.refresh')}
                         </button>
-                        <button
-                            onClick={onClose}
-                            className="rounded-full p-1.5 text-parchment-base-text transition-colors hover:bg-parchment-card-border/20"
-                        >
-                            <X size={18} />
-                        </button>
+                        <button type="button" className="my-feedback-close" onClick={onClose} aria-label={t('common:button.close')}><X size={22} /></button>
                     </div>
+                </header>
+                <div ref={scrollBody} className="my-feedback-body">
+                    {loading ? <p className="my-feedback-empty" role="status">{t('admin:feedback.polling')}</p>
+                        : errorMessage ? <div className="my-feedback-error" role="alert">{errorMessage}</div>
+                        : items.length === 0 ? <div className="my-feedback-empty"><CheckCircle2 size={28} aria-hidden="true" />
+                            <strong>{t('auth:menu.myFeedbackEmpty')}</strong><p>{t('auth:menu.myFeedbackEmptyHint')}</p></div>
+                        : <div className="my-feedback-list">{items.map(item => {
+                            const Icon = TYPE_ICONS[item.type];
+                            const expanded = expandedIds.has(item._id);
+                            const excerpt = resolveFeedbackExcerpt(item, t('admin:feedback.content.onlyImage'), t('admin:feedback.content.empty'), expanded);
+                            const result = item.status === 'closed' ? item.closedReason?.trim() || t('auth:menu.feedbackClosedReasonEmpty')
+                                : item.status === 'resolved' ? item.resolvedMethod?.trim() || t('auth:menu.feedbackResolvedMethodEmpty') : '';
+                            const resultLabel = item.status === 'closed' ? t('auth:menu.feedbackClosedReasonLabel') : t('auth:menu.feedbackResolvedMethodLabel');
+                            const game = item.gameName ? getGameById(item.gameName) : undefined;
+                            return <article className="my-feedback-row" data-testid="my-feedback-item" data-feedback-id={item._id} key={item._id}>
+                                <div className="my-feedback-record">
+                                    <button className="my-feedback-expand" type="button" data-testid="my-feedback-expand" aria-expanded={expanded}
+                                        aria-controls={`feedback-detail-${item._id}`} onClick={event => {
+                                            if (event.detail > 0 && window.getSelection()?.toString()) return;
+                                            setExpandedIds(previous => { const next = new Set(previous); if (next.has(item._id)) next.delete(item._id); else next.add(item._id); return next; });
+                                            if (!expanded) void loadItemDetail(item._id);
+                                        }}>
+                                        <span className={clsx('my-feedback-content', !expanded && 'my-feedback-clamp')}>{excerpt}</span>
+                                        <ChevronDown size={18} aria-hidden="true" className={clsx(expanded && 'my-feedback-chevron-open')} />
+                                    </button>
+                                    <div className="my-feedback-meta">
+                                        <span className={clsx('my-feedback-status', STATUS_STYLES[item.status])}>{statusLabels[item.status]}</span>
+                                        <span className="my-feedback-type"><Icon size={14} aria-hidden="true" />{typeLabels[item.type]}</span>
+                                        {item.gameName && <span>{game ? resolveGameDisplayName(game, t) : item.gameName}</span>}
+                                        <time dateTime={item.createdAt}><Clock3 size={13} aria-hidden="true" />{formatFeedbackTime(item.createdAt)}</time>
+                                        {!!item.rewardPoints && <RewardPointsBadge points={item.rewardPoints} signed />}
+                                    </div>
+                                    {detailLoadingIds.has(item._id) && <p data-testid="my-feedback-detail-loading" role="status">{t('admin:feedback.detail.loading')}</p>}
+                                    <div id={`feedback-detail-${item._id}`} className="my-feedback-result" data-expanded={expanded || undefined}>
+                                        {result && <p className={clsx(!expanded && 'my-feedback-clamp')}><strong>{resultLabel}</strong> {result}</p>}
+                                    </div>
+                                </div>
+                                <button type="button" className="my-feedback-delete" data-testid="my-feedback-delete" aria-label={t('auth:menu.feedbackDeleteLabel')}
+                                    title={t('admin:feedback.actions.delete')} onClick={() => void deleteItem(item._id)} disabled={deletingIds.has(item._id)}>
+                                    <Trash2 size={17} aria-hidden="true" />
+                                </button>
+                            </article>;
+                        })}</div>}
                 </div>
-
-                <div className="flex-1 overflow-y-auto p-4">
-                    {loading ? (
-                        <div className="flex min-h-48 items-center justify-center text-sm text-parchment-light-text">
-                            {t('admin:feedback.polling')}
-                        </div>
-                    ) : errorMessage ? (
-                        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                            {errorMessage}
-                        </div>
-                    ) : items.length === 0 ? (
-                        <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center text-parchment-light-text">
-                            <CheckCircle2 size={28} className="text-parchment-card-border" />
-                            <div>
-                                <p className="font-semibold text-parchment-base-text">{t('auth:menu.myFeedbackEmpty')}</p>
-                                <p className="text-xs">{t('auth:menu.myFeedbackEmptyHint')}</p>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {items.map((item) => {
-                                const Icon = TYPE_ICONS[item.type];
-                                const isExpanded = expandedIds.has(item._id);
-                                const isDetailLoading = detailLoadingIds.has(item._id);
-                                const excerpt = resolveFeedbackExcerpt(
-                                    item,
-                                    t('admin:feedback.content.onlyImage'),
-                                    t('admin:feedback.content.empty'),
-                                    isExpanded
-                                );
-                                return (
-                                    <article
-                                        key={item._id}
-                                        data-testid="my-feedback-item"
-                                        data-feedback-id={item._id}
-                                        className="rounded-lg border border-parchment-card-border/30 bg-white/80 px-4 py-3 shadow-sm"
-                                    >
-                                        <div className="flex flex-wrap items-start justify-between gap-3">
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-parchment-base-bg text-parchment-base-text">
-                                                        <Icon size={14} />
-                                                    </span>
-                                                    <span className={clsx('rounded-full border px-2 py-0.5 text-[11px] font-semibold', STATUS_STYLES[item.status])}>
-                                                        {statusLabels[item.status]}
-                                                    </span>
-                                                    <span className="text-[11px] font-semibold uppercase tracking-wide text-parchment-light-text">
-                                                        {typeLabels[item.type]}
-                                                    </span>
-                                                    {item.gameName ? (
-                                                        <span className="text-[11px] text-parchment-light-text">{item.gameName}</span>
-                                                    ) : null}
-                                                </div>
-                                                <p className={clsx(
-                                                    'mt-2 whitespace-pre-wrap break-words text-sm text-parchment-base-text',
-                                                    !isExpanded && 'line-clamp-3'
-                                                )}>
-                                                    {excerpt}
-                                                </p>
-                                                {isDetailLoading ? (
-                                                    <p
-                                                        data-testid="my-feedback-detail-loading"
-                                                        className="mt-2 inline-flex items-center gap-1.5 text-xs text-parchment-light-text"
-                                                    >
-                                                        <RefreshCw size={12} className="animate-spin" />
-                                                        {t('admin:feedback.detail.loading')}
-                                                    </p>
-                                                ) : null}
-                                            </div>
-
-                                            <div className="flex flex-col items-end gap-2">
-                                                {item.rewardPoints ? (
-                                                    <RewardPointsBadge points={item.rewardPoints} signed />
-                                                ) : null}
-                                                <span className="inline-flex items-center gap-1 text-[11px] text-parchment-light-text">
-                                                    <Clock3 size={12} />
-                                                    {formatFeedbackTime(item.createdAt)}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    data-testid="my-feedback-expand"
-                                                    onClick={() => {
-                                                        setExpandedIds((prev) => {
-                                                            const next = new Set(prev);
-                                                            if (next.has(item._id)) {
-                                                                next.delete(item._id);
-                                                            } else {
-                                                                next.add(item._id);
-                                                                void loadItemDetail(item._id);
-                                                            }
-                                                            return next;
-                                                        });
-                                                    }}
-                                                    className="inline-flex items-center gap-1 rounded-md border border-parchment-card-border/40 px-2 py-1 text-[11px] font-semibold text-parchment-base-text transition-colors hover:bg-parchment-card-border/10"
-                                                >
-                                                    {isExpanded ? t('admin:feedback.detail.collapse') : t('admin:feedback.detail.expand')}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    data-testid="my-feedback-delete"
-                                                    onClick={() => void deleteItem(item._id)}
-                                                    disabled={deletingIds.has(item._id)}
-                                                    className={clsx(
-                                                        'inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600 transition-colors',
-                                                        deletingIds.has(item._id)
-                                                            ? 'cursor-wait opacity-60'
-                                                            : 'hover:bg-red-100'
-                                                    )}
-                                                >
-                                                    <Trash2 size={12} />
-                                                    {t('admin:feedback.actions.delete')}
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {item.status === 'closed' ? (
-                                            <div className="mt-3 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
-                                                <span className="font-semibold">{t('auth:menu.feedbackClosedReasonLabel')}</span>
-                                                <span className="ml-1">{item.closedReason?.trim() || t('auth:menu.feedbackClosedReasonEmpty')}</span>
-                                            </div>
-                                        ) : null}
-
-                                        {item.status === 'resolved' ? (
-                                            <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
-                                                <span className="font-semibold">{t('auth:menu.feedbackResolvedMethodLabel')}</span>
-                                                <span className="ml-1">{item.resolvedMethod?.trim() || t('auth:menu.feedbackResolvedMethodEmpty')}</span>
-                                            </div>
-                                        ) : null}
-                                    </article>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                <footer className="my-feedback-footer">
+                    <span>{t('auth:menu.feedbackTotal', { count: total })}</span>
+                    <nav aria-label={t('auth:menu.feedbackPagination')}>
+                        <button type="button" disabled={loading || page <= 1} onClick={() => setPage(value => value - 1)}>
+                            <ChevronLeft size={17} aria-hidden="true" /><span>{t('auth:menu.feedbackPrevious')}</span>
+                        </button>
+                        <span aria-live="polite">{t('auth:menu.feedbackPage', { page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) })}</span>
+                        <button type="button" disabled={loading || page >= Math.ceil(total / PAGE_SIZE)} onClick={() => setPage(value => value + 1)}>
+                            <span>{t('auth:menu.feedbackNext')}</span><ChevronRight size={17} aria-hidden="true" />
+                        </button>
+                    </nav>
+                </footer>
             </motion.div>
         </div>
     );

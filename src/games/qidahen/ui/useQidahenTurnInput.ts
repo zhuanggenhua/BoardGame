@@ -67,9 +67,13 @@ export function useQidahenTurnInput(state: MatchState<QidahenCore>, playerId: st
         const option = handOptions.find(option => option.value.sourceHandCardId === cardId);
         if (option) choose(option.id);
     };
-    return { active, canAct, step, maintenanceFortificationId, title: active ? data.title : '', options, handOptions, handActionCardIds, chooseHandCard, selectedIds, mapCandidateIds, cardIds, pieceIds,
+    const actorName = active ? Object.values(state.core.factions).find(faction => faction.playerId === current?.playerId)?.name : undefined;
+    return { active, canAct, step, maintenanceFortificationId, actorName, title: active ? data.title : '', options, handOptions, handActionCardIds, chooseHandCard, selectedIds, mapCandidateIds, cardIds, pieceIds,
         committedPieceIds: step === 'dispatch-target' ? frame?.metadata.qidahenTurn.selectedPieceIds ?? [] : [],
         season: frame?.metadata.qidahenTurn.season ?? null, choose, isDirectChoice,
+        yearOpening: active && frame?.metadata.qidahenTurn.season === 'new-year'
+            && frame.metadata.qidahenTurn.yearCharacterIndex >= 0
+            && ['year-characters', 'character-conflict', 'wei-extra-character', 'reveal-next-year'].includes(step ?? ''),
         selectedPieceIds: selectedIds.filter(id => pieceIds.includes(id)), selectedCardIds: selectedIds.filter(id => cardIds.includes(id)), selectedRegionId: selectedIds.find(id => regionIds.has(id)),
         canConfirm: canAct && troopsCanReach && selectedIds.length >= min && selectedIds.length <= max, toggle, selectRegion, confirm,
     };

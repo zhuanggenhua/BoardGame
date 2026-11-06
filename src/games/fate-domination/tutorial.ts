@@ -3,7 +3,7 @@ import { createInitialSystemState, createSeededRandom, executePipeline } from '.
 import { applyPlayerViewToState } from '../../engine/ai/playerView';
 import type { AiDecisionContext } from '../../engine/ai';
 import { FateDominationDomain } from './domain';
-import type { FateDominationCore, LocationId } from './domain';
+import type { FateDominationCore } from './domain';
 import { buildFateAiLegalActions, chooseFateAiAction } from './ai';
 import { FATE_SERVANTS } from './data';
 import { engineConfig } from './game';
@@ -16,14 +16,15 @@ import {resolveFateAttack} from './domain/attackSelection';
 import {resolveFateMovement} from './domain/movement';
 
 export const FATE_TUTORIAL_ID = 'fate-domination-foundation';
-export const FATE_TUTORIAL_REVISION = 30;
-// 与正式页面 buildTutorialProgressSeed 合同一致，测试直接比对。
-export const FATE_TUTORIAL_SEED = `tutorial-progress:v1:fate-domination:${FATE_TUTORIAL_ID}:r${FATE_TUTORIAL_REVISION}`;
+export const FATE_TUTORIAL_REVISION = 31;
+// 教学牌序固定于已复演的场景种子；进度存储键由 revision 独立生成，二者不必相同。
+export const FATE_TUTORIAL_SEED = `tutorial-progress:v1:fate-domination:${FATE_TUTORIAL_ID}:r30`;
 // 学员排第二顺位：前一席正常占用工房 +2 后，学员能实际选择三个同值 +1 点位。
 const ids = ['1', '0', '2'];
 
 /** 先由正式管线复演，再将相同合法命令编成教程，不注入中途局面。 */
-export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='workshop', seed=FATE_TUTORIAL_SEED) {
+export function buildFateTutorialPlan(seed=FATE_TUTORIAL_SEED) {
+    const openingDeploymentLocation = 'workshop' as const;
     const random = createSeededRandom(seed);
     let state: MatchState<FateDominationCore> = { core: FateDominationDomain.setup(ids, random), sys: createInitialSystemState(ids, engineConfig.systems, seed) };
     const introCopy: FateTutorialCopy = fateLessonCopy('opening',{text:'你控制韦伯与伊斯坎达尔。',owner:'FateTutorialSetup'});
@@ -86,8 +87,6 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
             copy.input={text:'这次先去魔术工房补充魔力，选择一个亮起的点位。地图可拖动查看。',owner:'DEPLOY_MASTER'};
             step.fateCopy=copy;step.content=fateTutorialText(copy);step.hideOverlay=false;
             step.highlightTarget='fate-deployment-workshop';step.highlightFrame='none';step.fateCommandOptions=commandOptions;
-            step.fateDeploymentChoiceCopies={miyama:fateLessonCopy('battleDeployment'),shinto:fateLessonCopy('battleDeployment')};
-            if(openingDeploymentLocation!=='workshop')for(const passage of step.fateDeploymentChoiceCopies[openingDeploymentLocation]?.passages??[])passageSteps.set(passage,id);
             openingDeploymentStepId=id;
             for(const passage of copy.passages)passageSteps.set(passage,id);
         }
@@ -178,7 +177,7 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
         if(firstOpponentWorkshopDeployment)planned.add('opponent-opening-workshop');
         const command=chosen.commands[0];
         const isOpeningDeployment=firstDeployment&&command.type==='DEPLOY_MASTER';
-        const deploymentOptions=isOpeningDeployment?legalActions.flatMap(action=>action.commands).filter(candidate=>candidate.type==='DEPLOY_MASTER').map(candidate=>({type:candidate.type,payload:candidate.payload as Record<string,unknown>})):undefined;
+        const deploymentOptions=isOpeningDeployment?legalActions.flatMap(action=>action.commands).filter(candidate=>candidate.type==='DEPLOY_MASTER'&&(candidate.payload as {locationId?:string}).locationId==='workshop').map(candidate=>({type:candidate.type,payload:candidate.payload as Record<string,unknown>})):undefined;
         if (!publicCardsTaught && playerId === '0' && state.core.phase === 'battle') {
             ui('public-cards', fateLessonCopy('publicPower',{text:'悬停对手头像查看已打出的牌；触控可点玩家摘要展开。',owner:'FatePlayerRail'}), 'fate-opponents');
             publicCardsTaught = true;
@@ -186,7 +185,7 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
         if(playerId==='0' && ['USE_COMMAND_SPELL','CONFIRM_ATTACK'].includes(chosen.commands[0].type) && !planned.has('card-reading')){
             const riding=player.skills.find(skill=>skill.id.startsWith('sc_iskandar_1'));
             if(!riding)throw new Error('固定教程从者缺少首次读卡的骑乘牌');
-            planned.add('card-reading');ui('inspection',fateLessonCopy('cardReading',{text:'长按或右键检视“骑乘”。手牌较多时可横向滚动。',owner:'FateHandSurface'}),`fate-card-${riding.id}`);
+            planned.add('card-reading');ui('inspection',fateLessonCopy('cardReading',{text:'悬浮后点放大镜，或长按、右键检视“骑乘”。',owner:'FateHandSurface'}),`fate-card-${riding.id}`);
             steps[steps.length-1].fateUiInspectionSource='hand';
         }
         if (playerId === '0' && player.discard.length && !planned.has('nonempty-discard')) {
@@ -219,7 +218,6 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
     if (!state.sys.gameover) throw new Error('Fate教程自然链没有收口');
     const openingDeploymentIndex=openingDeploymentStepId?steps.findIndex(step=>step.id===openingDeploymentStepId):-1;
     if(openingDeploymentIndex<0)throw new Error('Fate教程未生成首次部署选择');
-    for(const step of steps.slice(openingDeploymentIndex+1))step.branch=openingDeploymentLocation;
     steps.unshift({id:'setup',content:'',aiActions:setupActions,hiddenAutomation:{kind:'setup-precondition',reason:'首张可见课程前通过正式命令设定固定学员身份；不预做部署、移动、支付或出牌。'},autoAdvanceAfterAi:true,aiDelayMs:0});
     const seenPassages = new Set<string>();
     for(const step of steps){
@@ -242,32 +240,9 @@ export function buildFateTutorialPlan(openingDeploymentLocation:LocationId='work
 }
 
 const plan = buildFateTutorialPlan();
-const alternativeDeploymentPlans=[buildFateTutorialPlan('miyama'),buildFateTutorialPlan('shinto')];
-const deploymentStepIndex=plan.steps.findIndex(step=>step.fateCommand?.type==='DEPLOY_MASTER');
-if(deploymentStepIndex<0||alternativeDeploymentPlans.some(candidate=>candidate.steps[deploymentStepIndex]?.id!==plan.steps[deploymentStepIndex]?.id))throw new Error('Fate教程部署分支前序不一致');
-const namespacedBranch=(steps:FateTutorialStep[],prefix:string)=>{
-    const branch=steps.slice(deploymentStepIndex+1);
-    const ids=new Map(branch.map(step=>[step.id,`${prefix}-${step.id}`]));
-    return branch.map(step=>{
-        const hiddenAutomation=step.hiddenAutomation;
-        return {
-            ...step,
-            id:ids.get(step.id)!,
-            hiddenAutomation:hiddenAutomation?.kind==='compressed-repeat'&&hiddenAutomation.equivalentStepIds
-                ? {...hiddenAutomation,equivalentStepIds:hiddenAutomation.equivalentStepIds.map(id=>ids.get(id)??id)}
-                : hiddenAutomation,
-        };
-    });
-};
-const tutorialSteps=[...plan.steps.slice(0,deploymentStepIndex+1),...plan.steps.slice(deploymentStepIndex+1),...namespacedBranch(alternativeDeploymentPlans[0].steps,'miyama'),...namespacedBranch(alternativeDeploymentPlans[1].steps,'shinto')];
+const tutorialSteps=plan.steps;
 export const FateDominationTutorial: TutorialManifest = {
-    id: FATE_TUTORIAL_ID, playerId: '0', revision: FATE_TUTORIAL_REVISION, numPlayers: 3, stayOnMatchAfterCompletion: true, closeOnGameOver:true, steps: tutorialSteps,
-    selectBranch:(_state,rawStep,command)=>{
-        const options=(rawStep as FateTutorialStep).fateCommandOptions;
-        if(command.type!=='DEPLOY_MASTER'||command.playerId!=='0'||!options?.length)return undefined;
-        const payload=command.payload as {locationId?:unknown;deploymentSlot?:unknown};
-        const selected=options.find(option=>option.type===command.type&&option.payload.locationId===payload.locationId&&option.payload.deploymentSlot===payload.deploymentSlot);
-        return selected?String(payload.locationId):undefined;
-    },
+    id: FATE_TUTORIAL_ID, randomSeed:FATE_TUTORIAL_SEED, playerId: '0', revision: FATE_TUTORIAL_REVISION, numPlayers: 3, stayOnMatchAfterCompletion: true, closeOnGameOver:true, steps: tutorialSteps,
+
 };
 export default FateDominationTutorial;

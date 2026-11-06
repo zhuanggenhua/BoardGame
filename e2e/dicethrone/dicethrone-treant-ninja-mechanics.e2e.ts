@@ -950,24 +950,35 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
 
             await clickAdvancePhase(match.hostPage, '0');
             await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeVisible({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const players = asRecordMap(core.players);
+                const treantResources = asRecord(asRecord(players['0']).resources) as Record<string, number>;
+                const ninjaResources = asRecord(asRecord(players['1']).resources) as Record<string, number>;
+                return {
+                    attackerHp: ninjaResources[RESOURCE_IDS.HP],
+                    defenderHp: treantResources[RESOURCE_IDS.HP],
+                    attackPending: Boolean(core.pendingAttack),
+                };
+            }, { timeout: 10000 }).toEqual({ attackerHp: 30, defenderHp: 50, attackPending: true });
             await screenshot(match.hostPage, testName, '03-rooted-choice-modal-after-defense-roll.png');
             await match.hostPage.getByRole('button', { name: '养成后：幼种 1' }).click();
             await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeHidden({ timeout: 10000 });
-            await clickAdvancePhase(match.hostPage, '0');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);
                 const players = asRecordMap(core.players);
                 const treant = asRecord(players['0']);
                 const treantTokens = asRecord(treant.tokens) as Record<string, number>;
                 const treantResources = asRecord(treant.resources) as Record<string, number>;
-                const ninjaResources = asRecord(ninja.resources) as Record<string, number>;
+                const ninjaResources = asRecord(asRecord(players['1']).resources) as Record<string, number>;
                 return {
                     attackerHp: ninjaResources[RESOURCE_IDS.HP],
                     defenderHp: treantResources[RESOURCE_IDS.HP],
                     seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
                     lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                    attackPending: Boolean(core.pendingAttack),
                 };
-            }, { timeout: 10000 }).toEqual({ attackerHp: 30, defenderHp: 46, seedling: 1, lifeSap: 0 });
+            }, { timeout: 10000 }).toEqual({ attackerHp: 30, defenderHp: 46, seedling: 1, lifeSap: 0, attackPending: false });
             await screenshot(match.hostPage, testName, '04-rooted-after-choice-and-resolve.png');
 
             await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
@@ -1390,12 +1401,20 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await expect(match.hostPage.getByRole('button', { name: '开始防御' })).toBeHidden({ timeout: 10000 });
             await clickAdvancePhase(match.hostPage, '0');
             await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeVisible({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const players = asRecordMap(core.players);
+                const treantResources = asRecord(asRecord(players['0']).resources) as Record<string, number>;
+                return {
+                    hp: treantResources[RESOURCE_IDS.HP],
+                    attackPending: Boolean(core.pendingAttack),
+                };
+            }, { timeout: 10000 }).toEqual({ hp: 50, attackPending: true });
             await screenshot(match.hostPage, testName, '04-rooted-2-choice-modal-after-roll.png');
 
             await match.hostPage.getByRole('button', { name: '养成后：幼种 1' }).click();
             await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeHidden({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '05-rooted-2-after-choice-selected.png');
-            await clickAdvancePhase(match.hostPage, '0');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);
                 const players = asRecordMap(core.players);
@@ -1406,8 +1425,9 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     hp: treantResources[RESOURCE_IDS.HP],
                     seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
                     lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                    attackPending: Boolean(core.pendingAttack),
                 };
-            }, { timeout: 10000 }).toEqual({ hp: 47, seedling: 1, lifeSap: 0 });
+            }, { timeout: 10000 }).toEqual({ hp: 47, seedling: 1, lifeSap: 0, attackPending: false });
             await screenshot(match.hostPage, testName, '06-rooted-2-after-resolve.png');
         } finally {
             await closeMatchContexts(match);

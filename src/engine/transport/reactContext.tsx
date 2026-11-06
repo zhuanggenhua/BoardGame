@@ -1,8 +1,11 @@
 import {
     createContext,
     useContext,
+    useEffect,
+    useRef,
 } from 'react';
 import type { MatchState } from '../types';
+import { clearCurrentGameFeedbackContext, setCurrentGameFeedbackContext } from '../../lib/feedback/gameFeedbackContext';
 import type {
     MatchPlayerInfo,
     GameBoardProps,
@@ -16,6 +19,13 @@ import type { AiSeatController } from '../ai/types';
 export interface GameClientContextValue {
     /** 完整游戏状态 */
     state: MatchState<unknown> | null;
+    /** 最近权威/本地运行时诊断版本；不包含随机种子或连接凭证。 */
+    feedbackMetadata?: {
+        /** 仅供客户端内存隔离不同对局的诊断轨迹，不写入反馈包。 */
+        scopeId?: string;
+        stateId?: number;
+        randomCursor?: number;
+    };
     /** 发送命令 */
     dispatch: (type: string, payload: unknown) => void;
     /** 当前已由服务端确认的管理员调试权限。 */
@@ -51,6 +61,40 @@ export interface GameClientContextValue {
 
 export const GameClientContext = createContext<GameClientContextValue | null>(null);
 
+/** Keep first-trigger diagnostics bound to the latest state exposed by the shared transport. */
+export function useGameFeedbackContext(value: GameClientContextValue): void {
+    const lastPublishedStateRef = useRef<MatchState<unknown> | null>(null);
+    useEffect(() => {
+        const state = value.state;
+        if (!state) {
+            if (lastPublishedStateRef.current) {
+                clearCurrentGameFeedbackContext(lastPublishedStateRef.current);
+            }
+            lastPublishedStateRef.current = null;
+            return;
+        }
+
+        const revision = state.sys?.revision;
+        setCurrentGameFeedbackContext({
+            state,
+            scopeId: value.feedbackMetadata?.scopeId,
+            playerId: value.playerId,
+            isGameOver: state.sys?.gameover != null,
+            isLocalMode: !value.isMultiplayer,
+            stateId: value.feedbackMetadata?.stateId,
+            stateRevision: typeof revision === 'number' ? revision : undefined,
+            randomCursor: value.feedbackMetadata?.randomCursor,
+        });
+        lastPublishedStateRef.current = state;
+    }, [value.feedbackMetadata, value.isMultiplayer, value.playerId, value.state]);
+
+    useEffect(() => () => {
+        if (lastPublishedStateRef.current) {
+            clearCurrentGameFeedbackContext(lastPublishedStateRef.current);
+        }
+    }, []);
+}
+
 export function useOptionalGameClient(): GameClientContextValue | null {
     return useContext(GameClientContext);
 }
@@ -70,6 +114,11 @@ export function useGameClient<
     }
     return ctx as {
         state: MatchState<TCore> | null;
+        feedbackMetadata?: {
+            scopeId?: string;
+            stateId?: number;
+            randomCursor?: number;
+        };
         dispatch: <K extends string & keyof TCommandMap>(type: K, payload: TCommandMap[K]) => void;
         adminDebugAvailable?: boolean;
         adminDebugDispatch?: (type: string, payload: unknown) => boolean;

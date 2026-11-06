@@ -3,6 +3,11 @@ import type { ReactNode } from 'react';
 import type { TFunction } from 'i18next';
 import { Check, Copy } from 'lucide-react';
 import type { FeedbackClientContext, FeedbackElementSummary, FeedbackErrorContext } from '../../../lib/feedback/feedbackPayload';
+import {
+    projectFeedbackActionLogText,
+    projectFeedbackDiagnosticPacket,
+    projectFeedbackSnapshotText,
+} from '../../../lib/feedback/diagnosticPacket';
 import { cn } from '../../../lib/utils';
 
 interface FeedbackItemLike {
@@ -31,6 +36,7 @@ interface FeedbackItemLike {
     contactInfo?: string;
     actionLog?: string;
     stateSnapshot?: string;
+    diagnosticPacket?: unknown;
     rewardPoints?: number;
     clientContext?: FeedbackClientContext;
     errorContext?: FeedbackErrorContext;
@@ -416,20 +422,23 @@ export function hasEmbeddedImage(content: string): boolean {
 }
 
 export function buildFeedbackAiDiagnosticPacket(item: FeedbackItemLike, t: TFunction<'admin'>): string {
-    const parsedSnapshot = parseStateSnapshot(item.stateSnapshot);
+    const safeActionLog = projectFeedbackActionLogText(item.actionLog);
+    const safeStateSnapshot = projectFeedbackSnapshotText(item.stateSnapshot);
+    const safeDiagnosticPacket = projectFeedbackDiagnosticPacket(item.diagnosticPacket);
+    const parsedSnapshot = parseStateSnapshot(safeStateSnapshot);
     const inferredGameId = inferGameId(parsedSnapshot, item.clientContext?.gameId, item.gameName);
     const gameLabel = item.gameName && inferredGameId && item.gameName !== inferredGameId
         ? `${item.gameName}(${inferredGameId})`
         : item.gameName ?? inferredGameId;
     const reporter = item.userId?.username || t('feedback.anonymous');
     const screenshots = extractEmbeddedImages(item.content);
-    const operationSummary = summarizeOperationLogs(item.actionLog);
+    const operationSummary = summarizeOperationLogs(safeActionLog);
     const stateSummary = summarizeStateSnapshot(parsedSnapshot);
     const factionSummary = extractFactionStateSummary(parsedSnapshot);
-    const actionLogMetrics = measureTextBlock(item.actionLog);
-    const stateSnapshotMetrics = measureTextBlock(item.stateSnapshot);
-    const prettyActionLog = prettyPrintJson(item.actionLog);
-    const prettyStateSnapshot = prettyPrintJson(item.stateSnapshot);
+    const actionLogMetrics = measureTextBlock(safeActionLog);
+    const stateSnapshotMetrics = measureTextBlock(safeStateSnapshot);
+    const prettyActionLog = prettyPrintJson(safeActionLog);
+    const prettyStateSnapshot = prettyPrintJson(safeStateSnapshot);
     const errorStack = item.errorContext?.stack?.trim() || null;
     const jsStack = item.errorContext?.jsStack?.trim() || null;
     const componentStack = item.errorContext?.componentStack?.trim() || null;
@@ -500,17 +509,26 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItemLike, t: TFunc
                 '```',
             ]
             : []),
+        ...(safeDiagnosticPacket
+            ? [
+                '',
+                '## 6. 安全诊断现场摘要',
+                '```json',
+                JSON.stringify(safeDiagnosticPacket, null, 2),
+                '```',
+            ]
+            : []),
         ...(operationSummary
             ? [
                 '',
-                '## 6. 操作日志摘要',
+                '## 7. 操作日志摘要',
                 operationSummary,
             ]
             : []),
         ...(prettyActionLog
             ? [
                 '',
-                '## 7. 操作日志原文',
+                '## 8. 操作流水白名单摘要',
                 '```json',
                 prettyActionLog,
                 '```',
@@ -519,14 +537,14 @@ export function buildFeedbackAiDiagnosticPacket(item: FeedbackItemLike, t: TFunc
         ...(stateSummary
             ? [
                 '',
-                '## 8. 状态快照摘要',
+                '## 9. 状态快照摘要',
                 stateSummary,
             ]
             : []),
         ...(prettyStateSnapshot
             ? [
                 '',
-                '## 9. 状态快照原文',
+                '## 10. 状态现场摘要',
                 '```json',
                 prettyStateSnapshot,
                 '```',

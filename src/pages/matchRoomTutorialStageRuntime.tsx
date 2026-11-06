@@ -195,6 +195,7 @@ const TutorialLocalGameRuntime = ({
             config={runtime.engineConfig}
             numPlayers={numPlayers}
             seed={progressSeed}
+            randomSeed={runtime.tutorialManifest?.randomSeed}
             playerId={runtime.tutorialManifest?.playerId ?? playerID ?? '0'}
             setupData={setupData}
             onCommandRejected={runtime.onCommandRejected}
