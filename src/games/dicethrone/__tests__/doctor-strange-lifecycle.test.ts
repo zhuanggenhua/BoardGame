@@ -17,6 +17,7 @@ import { DOCTOR_STRANGE_ABILITIES } from '../heroes/doctor_strange/abilities';
 import { DOCTOR_STRANGE_ABILITY, DOCTOR_STRANGE_ATLAS, DOCTOR_STRANGE_TOKEN } from '../heroes/doctor_strange/constants';
 import { getPendingAttackExpectedDamage } from '../domain/utils';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { cmd, createHeroMatchup, createQueuedRandom, fixedRandom, getSimpleChoicePrompt,
     advanceTo, createNoResponseSetup, expectNoPrompt, getMultistepChoicePrompt,
     interactionRespondCommandType, testSystems } from './test-utils';
@@ -654,7 +655,7 @@ describe('奇异博士完成态与开局卡区', () => {
         state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
 
         const selection = getMultistepChoicePrompt(state, cardId);
-        expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(getCurrentInteractionSummary(state).kind).toBe('multistep-choice');
         expect(selection).toMatchObject({
             playerId: '0',
             sourceId: cardId,
@@ -702,7 +703,7 @@ describe('奇异博士完成态与开局卡区', () => {
         state = dispatchDoctorStrangeCommand(state, 'PLAY_CARD', '1', { cardId }, random);
 
         const selection = getMultistepChoicePrompt(state, cardId);
-        expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+        expect(getCurrentInteractionSummary(state).kind).toBe('multistep-choice');
         expect(selection).toMatchObject({
             playerId: '0',
             sourceId: cardId,

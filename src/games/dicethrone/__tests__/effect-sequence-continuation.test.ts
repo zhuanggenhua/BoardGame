@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { executePipeline } from '../../../engine/pipeline';
+import { getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { DiceThroneDomain } from '../domain';
 import { RESOURCE_IDS } from '../domain/resources';
 import { STATUS_IDS } from '../domain/ids';
@@ -42,7 +43,7 @@ describe('即时效果序列的通用交互续接', () => {
         expect(requested.success).toBe(true);
         expect(requested.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHp);
         expect(requested.state.core.players['1'].statusEffects[STATUS_IDS.WITHER]).toBe(1);
-        expect(requested.state.sys.interaction.current?.kind).toBe('dt:card-interaction');
+        expect(getCurrentInteractionSummary(requested.state).kind).toBe('dt:card-interaction');
         expect(requested.state.sys.resolution?.frames).toHaveLength(1);
 
         const reloaded = JSON.parse(JSON.stringify(requested.state)) as typeof requested.state;
@@ -57,7 +58,7 @@ describe('即时效果序列的通用交互续接', () => {
         expect(resolved.success).toBe(true);
         expect(resolved.state.core.players['1'].statusEffects[STATUS_IDS.WITHER] ?? 0).toBe(0);
         expect(resolved.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(defenderHp - 3);
-        expect(resolved.state.sys.interaction.current).toBeUndefined();
+        expect(getCurrentInteractionSummary(resolved.state).id).toBeUndefined();
         expect(resolved.state.sys.resolution?.frames ?? []).toHaveLength(0);
     });
 });

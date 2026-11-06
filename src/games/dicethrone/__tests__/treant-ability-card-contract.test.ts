@@ -14,6 +14,7 @@ import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CA
 import { TREANT_CARDS } from '../heroes/treant/cards';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { executePipeline } from '../../../engine/pipeline';
+import { getCurrentInteractionData, getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import type { MatchState } from '../../../engine/types';
 import { DiceThroneDomain } from '../domain';
@@ -70,10 +71,10 @@ const respondToChoiceThroughPipeline = (
     playerId: string,
     labelKey: string,
 ) => {
-    const interaction = state.sys.interaction.current;
-    const options = (interaction?.data as { options?: Array<{ id: string; labelKey?: string }> } | undefined)?.options ?? [];
+    const interaction = getCurrentInteractionSummary(state);
+    const options = getCurrentInteractionData<{ options?: Array<{ id: string; labelKey?: string }> }>(state)?.options ?? [];
     const option = options.find((candidate) => candidate.labelKey === labelKey);
-    if (!interaction || !option) throw new Error(`Rooted option missing: ${labelKey}`);
+    if (!interaction.id || !option) throw new Error(`Rooted option missing: ${labelKey}`);
     return executePipeline(
         { domain: DiceThroneDomain, systems: testSystems },
         state,
@@ -285,7 +286,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const defense = advanceAttackThroughPipeline(state, '1');
         expect(defense.success).toBe(true);
         expect(defense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
-        expect(defense.state.sys.interaction.current?.kind).toBe('simple-choice');
+        expect(getCurrentInteractionSummary(defense.state).kind).toBe('simple-choice');
 
         const choice = respondToChoiceThroughPipeline(defense.state, '1', 'choices.treantRooted.s2_a0_d0_none');
         expect(choice.success).toBe(true);
@@ -316,7 +317,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const defense = advanceAttackThroughPipeline(state, '1');
         expect(defense.success).toBe(true);
         expect(defense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
-        expect(defense.state.sys.interaction.current?.kind).toBe('simple-choice');
+        expect(getCurrentInteractionSummary(defense.state).kind).toBe('simple-choice');
 
         const choice = respondToChoiceThroughPipeline(defense.state, '1', 'choices.treantRooted.none_p0');
         expect(choice.success).toBe(true);
@@ -587,7 +588,7 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         const defense = advanceAttackThroughPipeline(state, '1');
         expect(defense.success).toBe(true);
         expect(defense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
-        expect(defense.state.sys.interaction.current?.kind).toBe('simple-choice');
+        expect(getCurrentInteractionSummary(defense.state).kind).toBe('simple-choice');
 
         const choice = respondToChoiceThroughPipeline(defense.state, '1', 'choices.treantRooted.s0_a1_d0_p1');
         expect(choice.success).toBe(true);
