@@ -72,6 +72,9 @@
     .platform-catalog--library .platform-catalog-title { font-size:18px; }
     .platform-catalog--library .platform-catalog-tools select { width:auto; min-width:76px; max-width:104px; }
     .platform-game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; grid-auto-flow: dense; }
+    .platform-game-card.has-presence .platform-game-copy { flex-direction:column; align-items:flex-start; gap:2px; }
+    .platform-game-card.has-presence .platform-game-copy strong { flex:none; max-width:100%; overflow:visible; white-space:normal; text-overflow:clip; }
+    .platform-game-presence { gap:4px; }
     .platform-catalog--library .platform-game-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .platform-catalog--library .platform-game-copy { font-size: 12px; padding: 24px 6px 6px; }
     .platform-game-card[data-pressed="true"] .platform-game-surface { transform: scale(.96); }
