@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { BetrayalCore } from "../game";
-import { resolveScenarioReaderOpenPlan } from "../scenarioReader";
+import { buildScenarioReaderPages, resolveActiveHauntDossier, resolveScenarioReaderOpenPlan, resolveScenarioReaderScope } from "../scenarioReader";
+import { SPECTATOR_PLAYER_ID } from "../../../engine/playerView";
 
 const createHauntCore = (
   overrides: Partial<BetrayalCore> = {},
@@ -26,6 +27,16 @@ const createHauntCore = (
   }) as BetrayalCore;
 
 describe("Betrayal scenario reader open plan", () => {
+  it("旁观者只读公开段落，不继承当前玩家的阵营", () => {
+    const core = createHauntCore();
+    const scope = resolveScenarioReaderScope(core, SPECTATOR_PLAYER_ID);
+    expect(scope).toBe("public");
+    const pages = buildScenarioReaderPages(resolveActiveHauntDossier(core), scope);
+    const sections = pages.flatMap((page) => page.sections ?? []);
+    expect(sections.every((section) => section.audiences.includes("all"))).toBe(true);
+    expect(sections.some((section) => !section.audiences.includes("all"))).toBe(false);
+  });
+
   it("作祟首次打开私密英雄阅读流程时先停在开场过场", () => {
     const plan = resolveScenarioReaderOpenPlan(createHauntCore(), "0", {
       mode: "hauntReveal",

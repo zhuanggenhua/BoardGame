@@ -532,12 +532,15 @@ export function createPendingDamageAllocation(params: {
     const allowedTraits = resolveDamageAllocationAllowedTraits(params.damageKind);
     const reducedAmount = resolveReducedDamageAmount(params.explorer, params.damageKind, params.amount);
     const damageReductionAmount = Math.max(0, params.amount - reducedAmount);
-    const assignableAmount = resolveAssignableDamageAmount(
+    const availableAmount = resolveAssignableDamageAmount(
         params.explorer,
         allowedTraits,
         reducedAmount,
         { allowSkull: params.allowSkull },
     );
+    const assignableAmount = params.forcedTraitSequence
+        ? Math.min(availableAmount, params.forcedTraitSequence.length)
+        : availableAmount;
     if (assignableAmount <= 0) {
         return null;
     }

@@ -724,9 +724,10 @@ it('没有圣符或本回合刚获得圣符时，不能声明埋葬发现板块'
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'grand-staircase' });
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'upper-landing' });
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'upper-north' });
         const withoutHolySymbol = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north', useHolySymbol: true }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'upper-north', useHolySymbol: true }),
         );
         expect(withoutHolySymbol.valid).toBe(false);
         if (!withoutHolySymbol.valid) {
@@ -741,7 +742,7 @@ it('没有圣符或本回合刚获得圣符时，不能声明埋葬发现板块'
 
         const newlyGainedHolySymbol = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north', useHolySymbol: true }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'upper-north', useHolySymbol: true }),
         );
         expect(newlyGainedHolySymbol.valid).toBe(false);
         if (!newlyGainedHolySymbol.valid) {

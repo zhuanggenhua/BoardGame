@@ -147,7 +147,7 @@ export function resolveMummyForcedDamageTraits(
   options: { allowSkull?: boolean } = {},
 ): BetrayalTraitKey[] {
   const sequence: BetrayalTraitKey[] = [];
-  const speedSteps = resolveTraitDamageAssignableSteps(explorer, "speed", options);
+  const speedSteps = resolveTraitDamageAssignableSteps(explorer, "speed", { allowSkull: false });
   const mightSteps = resolveTraitDamageAssignableSteps(explorer, "might", options);
   const speedDamage = Math.min(amount, speedSteps);
   const mightDamage = Math.min(Math.max(0, amount - speedDamage), mightSteps);

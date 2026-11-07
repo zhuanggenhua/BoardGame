@@ -1,7 +1,7 @@
 /* Platform utilities retain the shared drag, focus and panel owners. */
-.platform-global-fab [data-fab-visual-id] { border-radius: 16px; border: 2px solid #171717; background: #fff; color: #171717; box-shadow: 3px 3px #171717; backdrop-filter: none; transition: background-color 120ms ease, color 120ms ease; }
+.platform-global-fab [data-fab-visual-id] { border-radius: 50%; border: 2px solid #171717; background: #fff; color: #171717; box-shadow: 3px 3px #171717; backdrop-filter: none; transition: background-color 120ms ease, color 120ms ease; }
 .platform-global-fab [data-fab-visual-id="settings"] { background: #d5ff00; }
 .platform-global-fab [data-fab-id]:hover [data-fab-visual-id], .platform-global-fab [data-fab-id]:focus-visible [data-fab-visual-id] { background: #ff008a; color: #fff; }
-.platform-global-fab [data-fab-id]:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; border-radius: 16px; }
+.platform-global-fab [data-fab-id]:focus-visible { outline: 3px solid #ff008a; outline-offset: 4px; border-radius: 50%; }
 .platform-global-fab [data-fab-id] { transition-duration: 120ms; }
 @media (prefers-reduced-motion: reduce) { .platform-global-fab [data-fab-id], .platform-global-fab [data-fab-visual-id] { transition: none; } }

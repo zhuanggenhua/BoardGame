@@ -33,7 +33,7 @@ import {
     resolveHauntFirstPlayerResolutionForTrigger,
     resolveHauntTraitorResolutionForTrigger,
 } from './hauntTraitorResolutionModel';
-import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
+import { resolveDustTraitorVictoryResult, resolveMummyAllHeroesDefeatedVictoryResult } from './hauntVictoryModel';
 import {
     cloneUseEffect,
     type UseEffectProfile,
@@ -470,7 +470,7 @@ export function applyBetrayalEventChoiceResolvedState(
     };
     const dustCompletedAfterEventChoice = pendingDamageAllocationAfterEventChoice
         ? null
-        : resolveDustTraitorVictoryResult(nextCore);
+        : resolveDustTraitorVictoryResult(nextCore) ?? resolveMummyAllHeroesDefeatedVictoryResult(nextCore);
     if (dustCompletedAfterEventChoice) {
         return {
             core: nextCore,
@@ -540,14 +540,15 @@ export function applyBetrayalEventRolledState(
         core.turnEndedByDiscovery = true;
         const pendingDamageAllocationAfterEventRoll = core.pendingDamageAllocation;
         const synced = syncCurrentExplorerProjection(core);
-        return {
-            core: {
-                ...synced,
-                recommendedAction: pendingDamageAllocationAfterEventRoll ? 'endTurn' : resolveRecommendedAction(synced),
-                activePlayerId: pendingDamageAllocationAfterEventRoll?.playerId ?? synced.activePlayerId,
-                activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
-            },
+        const nextCore = {
+            ...synced,
+            recommendedAction: pendingDamageAllocationAfterEventRoll ? 'endTurn' as const : resolveRecommendedAction(synced),
+            activePlayerId: pendingDamageAllocationAfterEventRoll?.playerId ?? synced.activePlayerId,
+            activityLog: appendActivity(synced, event.payload.logText, event.payload.discovery.tone),
         };
+        const scenarioCompletedResult = pendingDamageAllocationAfterEventRoll
+            ? null : resolveMummyAllHeroesDefeatedVictoryResult(nextCore);
+        return scenarioCompletedResult ? { core: nextCore, scenarioCompletedResult } : { core: nextCore };
     }
     if (event.payload.eventEffect || event.payload.nextPendingEventChoice) {
         core.pendingEventRollResolution = createPendingEventRollResolution(core, {
@@ -658,6 +659,9 @@ export function applyBetrayalEventRollFinalizedState(
         activePlayerId: pendingRolledDamageAllocation?.playerId ?? synced.activePlayerId,
         activityLog: appendActivity(synced, event.payload.logText, 'accent'),
     };
+    const scenarioCompletedResult = pendingRolledDamageAllocation
+        ? null : resolveMummyAllHeroesDefeatedVictoryResult(nextCore);
+    if (scenarioCompletedResult) return { core: nextCore, scenarioCompletedResult };
     if (event.payload.hauntTriggered) {
         return {
             core: nextCore,

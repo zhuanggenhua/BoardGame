@@ -780,6 +780,8 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
 export interface ChoiceResolvedEvent extends GameEvent<'CHOICE_RESOLVED'> {
     payload: {
         playerId: PlayerId;
+        /** 对应实际交互，供挂起的效果序列精确解除此选择阻塞。 */
+        interactionId?: string;
         /** 状态 ID（被动状态如击倒） */
         statusId?: string;
         /** Token ID（太极、闪避、净化） */
@@ -814,6 +816,8 @@ export interface DefenderSelectionRequestedEvent extends GameEvent<'DEFENDER_SEL
 
 export interface DefenderSelectionResolvedEvent extends GameEvent<'DEFENDER_SELECTION_RESOLVED'> {
     payload: {
+        /** 被本次选择关闭的真实交互 ID。 */
+        interactionId?: string;
         attackerId: PlayerId;
         chooserPlayerId: PlayerId;
         defenderId: PlayerId;

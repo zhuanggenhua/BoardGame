@@ -11,7 +11,7 @@ import {
     setExplorerTraitsToDeathsDoor,
 } from './damageResolutionModel';
 import { cloneScenarioRuntimeStatus } from './coreStateModel';
-import { applyDustEventEffectDeathIfNeeded } from './deathStateReadModel';
+import { applyEventEffectDeathIfNeeded } from './deathStateReadModel';
 import { rollBetrayalDicePips } from './diceRules';
 import {
     cloneExplorerSummary,
@@ -504,7 +504,7 @@ export function applyImmediateEventDeathPreventionIfNeeded(
             setExplorerTraitsToDeathsDoor(protectedExplorer);
         }
     } else {
-        applyDustEventEffectDeathIfNeeded(core);
+        applyEventEffectDeathIfNeeded(core);
     }
 }
 

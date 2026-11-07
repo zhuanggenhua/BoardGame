@@ -77,7 +77,6 @@ export function BetrayalRoomPlacementSurface({
   selectedTileAdjustmentOption,
   locale,
   onRotate,
-  onCancel,
   onConfirm,
   onSelectTileAdjustment,
 }: BetrayalRoomPlacementSurfaceProps) {
@@ -289,15 +288,7 @@ export function BetrayalRoomPlacementSurface({
           </div>
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-[1fr_1.4fr] gap-2">
-        <button
-          type="button"
-          data-testid="betrayal-room-placement-cancel"
-          onClick={onCancel}
-          className="min-h-[38px] rounded-[7px] border border-[rgba(238,204,126,0.26)] bg-[rgba(255,255,255,0.04)] px-2 text-[12px] font-black text-[#d7c08b] transition hover:bg-[rgba(255,255,255,0.08)]"
-        >
-          {t("board.rooms.cancelPlacement")}
-        </button>
+      <div className="mt-3 grid grid-cols-1 gap-2">
         <BetrayalConfirmButton
           type="button"
           data-testid="betrayal-room-placement-confirm"

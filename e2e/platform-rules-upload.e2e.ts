@@ -8,12 +8,11 @@ import { createHomeVisualFixture } from './helpers/homeVisualFixture.mjs';
 import { createRulesPdf } from './helpers/gameRulesFixture.mjs';
 
 test.describe.configure({ mode: 'serial' });
-const base = 'http://127.0.0.1:4273';
+let base: string;
 const mongoUri = process.env.MONGO_URI ?? '';
-if (!/^mongodb:\/\/127\.0\.0\.1:37022\/home_rules_upload_20261101$/.test(mongoUri)) throw new Error('规则文件 E2E 只允许本任务 Mongo 37022 新库');
-const out = path.resolve('test-results/evidence-screenshots/platform/home-rules-upload-20261101');
-const internal = path.resolve('.tmp/home-rules-upload-20261101-internal');
-mkdirSync(out, { recursive: true }); mkdirSync(internal, { recursive: true });
+const runId = process.env.PLATFORM_E2E_RUN_ID;
+const out = path.resolve(`test-results/evidence-screenshots/_temporary/home/rules-upload/${runId || 'missing-run'}`);
+const internal = path.resolve(`.tmp/home-rules-upload/${runId || 'missing-run'}`);
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const sourceFiles = ['src/shared/externalGames.ts', 'src/components/home/PlatformHomeSurface.tsx', 'src/components/home/PlatformUploadWorkspace.tsx', 'src/components/home/RulesDocumentField.tsx', 'src/components/home/platform-upload.css',
     'src/components/home/ExternalGameDetails.tsx', 'src/components/external/GameRulesDocumentLink.tsx', 'src/components/external/game-rules-document.css', 'src/pages/ExternalGamePage.tsx', 'src/pages/admin/CreatorReview.tsx',
@@ -37,7 +36,15 @@ async function login(request: APIRequestContext, account: typeof accounts[number
     expect(response.ok(), '真实登录接口').toBe(true);
     const result = await response.json(); return result.data;
 }
-test.beforeAll(async ({ request }) => {
+test.beforeAll(async ({ request }, info) => {
+    const isolation = process.env.PLATFORM_E2E_ISOLATION_ID;
+    if (!isolation || !/^[a-z0-9-]+$/.test(isolation) || !runId
+        || mongoUri !== `mongodb://127.0.0.1:37022/boardgame_home_acceptance_${isolation}`) {
+        throw new Error('规则文件验收必须使用首页独立 runtime、37022 端口及本轮唯一数据库');
+    }
+    base = String(info.project.use.baseURL || '');
+    if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error('规则文件验收必须使用隔离本机前端');
+    mkdirSync(out, { recursive: true }); mkdirSync(internal, { recursive: true });
     db = await mongoose.createConnection(mongoUri).asPromise();
     fixture = await createHomeVisualFixture({ roomCount: 0 });
     const nonce = Date.now().toString();
@@ -48,8 +55,9 @@ test.beforeAll(async ({ request }) => {
     }
 });
 test.afterAll(async () => {
+    if (!db) return;
     await fixture?.close(); await db?.close();
-    writeFileSync(path.join(out, 'capture-record.json'), JSON.stringify({ sources, media, internalMedia, steps, capturedAt: new Date().toISOString(), environment: { frontend: base, mongo: mongoUri, storage: '.tmp/home-rules-upload-20261101-ugc', apiMocked: false, lobbySocketFixture: true } }, null, 2));
+    writeFileSync(path.join(out, 'capture-record.json'), JSON.stringify({ sources, media, internalMedia, steps, capturedAt: new Date().toISOString(), environment: { frontend: base, mongo: mongoUri, storage: process.env.UGC_LOCAL_PATH, apiMocked: false, lobbySocketFixture: true } }, null, 2));
 });
 
 for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}真实投稿规则文件：草稿、锁定、发布与详情`, async ({ request }) => {

@@ -210,7 +210,7 @@ describe('HybridStorage 纯内存模式', () => {
         expect((await hybrid.fetch('guest-room-1', { metadata: true })).metadata?.players['0']?.name).toBe('Alice');
     });
 
-    it('finished guest room can be replaced safely', async () => {
+    it('finished guest room requires explicit authenticated removal before replacement', async () => {
         const mongoStub = buildMongoStub();
         const hybrid = new HybridStorage(mongoStub as unknown as typeof mongoStorage, {
             persistentEnabled: false,
@@ -229,15 +229,15 @@ describe('HybridStorage 纯内存模式', () => {
             },
         });
 
-        await hybrid.createMatch('guest-room-new', buildCreateData({
+        await expect(hybrid.createMatch('guest-room-new', buildCreateData({
             ownerKey: 'guest:finished-owner',
             guestId: 'finished-owner',
             ownerType: 'guest',
-        }));
+        }))).rejects.toThrow('ACTIVE_MATCH_EXISTS:tictactoe:guest-room-old');
 
         const matches = (await hybrid.listMatches()).sort();
-        expect(matches).toEqual(['guest-room-new']);
-        expect((await hybrid.fetch('guest-room-old', { metadata: true })).metadata).toBeUndefined();
+        expect(matches).toEqual(['guest-room-old']);
+        expect((await hybrid.fetch('guest-room-old', { metadata: true })).metadata).toBeDefined();
     });
 
     it('persistent=false 时缺失房间查询不应回退到 Mongo', async () => {

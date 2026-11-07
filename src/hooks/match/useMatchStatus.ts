@@ -281,6 +281,7 @@ export function persistAiSeatCredentials(matchID: string, seatCredentials: Store
 export type ClaimSeatOptions = {
     token?: string;
     guestId?: string;
+    ownerCredentials?: string;
     playerName?: string;
 };
 
@@ -315,13 +316,21 @@ export async function claimSeat(
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
-        if (options.token) {
+        const storedOwner = readStoredMatchCredentials(matchID);
+        const ownerCredentials = options.ownerCredentials ?? (storedOwner?.playerID === '0' ? storedOwner.credentials : undefined);
+        const activeOwner = getOwnerActiveMatch();
+        // A guest-created room remains a guest room after its owner logs in.
+        // Only use the locally held P0 proof, never identity from public DTOs.
+        const useGuestOwnerProof = playerID === '0' && Boolean(ownerCredentials)
+            && activeOwner?.matchID === matchID && activeOwner.ownerType === 'guest';
+        if (options.token && !useGuestOwnerProof) {
             headers.Authorization = `Bearer ${options.token}`;
         }
-        const payload: { playerID: string; guestId?: string; playerName?: string } = { playerID };
-        if (!options.token && options.guestId) {
+        const payload: { playerID: string; guestId?: string; ownerCredentials?: string; playerName?: string } = { playerID };
+        if ((!options.token || useGuestOwnerProof) && options.guestId) {
             payload.guestId = options.guestId;
         }
+        if ((!options.token || useGuestOwnerProof) && ownerCredentials) payload.ownerCredentials = ownerCredentials;
         if (options.playerName) {
             payload.playerName = options.playerName;
         }
@@ -332,7 +341,6 @@ export async function claimSeat(
         });
 
         if (!response.ok) {
-            const message = await response.text().catch(() => '');
             const status = response.status;
             let error: ClaimSeatError = 'network';
             if (status === 401) error = 'unauthorized';
@@ -343,7 +351,6 @@ export async function claimSeat(
             console.warn('[claimSeat] 请求失败', {
                 url,
                 status,
-                message,
                 matchID,
                 playerID,
                 error,
@@ -367,7 +374,9 @@ export async function claimSeat(
 
         return { success: true, credentials };
     } catch (err) {
-        console.error('[claimSeat] 请求异常:', err);
+        console.error('[claimSeat] 请求异常:', {
+            errorName: err instanceof Error ? err.name : typeof err,
+        });
         return { success: false, error: 'network' };
     }
 }
@@ -531,6 +540,22 @@ export function persistMatchCredentials(
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('match-credentials-changed'));
     }
+}
+
+/** Save a committed rematch without superseding a room chosen while it was pending. */
+export function persistRematchOwnerCredentials(
+    sourceMatchID: string,
+    data: StoredMatchCredentials & { playerID: '0'; credentials: string },
+): boolean {
+    const isRelated = (id: string) => id === sourceMatchID || id === data.matchID;
+    if (listStoredMatchCredentials().some(record => !isRelated(record.matchID))) return false;
+    const active = getOwnerActiveMatch();
+    if (active && !isRelated(active.matchID)) return false;
+    const existing = readStoredMatchCredentials(data.matchID);
+    // A later claim may already have rotated this room's proof or selected another seat.
+    if (existing?.credentials && (existing.credentials !== data.credentials || existing.playerID !== '0')) return false;
+    persistMatchCredentials(data.matchID, data);
+    return readStoredMatchCredentials(data.matchID)?.credentials === data.credentials;
 }
 
 /**

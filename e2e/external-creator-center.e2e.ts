@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, initHome, login, capture, record, sourceRevision } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, openPlatformProfile, capture, record, sourceRevision } from './helpers/homeAcceptance';
 
 const sourceFiles = ['e2e/external-creator-center.e2e.ts', 'src/shared/externalGames.ts', 'src/api/external-games.ts',
     'src/api/game-submissions.ts', 'src/components/home/PlatformHomeSurface.tsx', 'src/components/home/PlatformGameCatalog.tsx',
@@ -73,8 +73,7 @@ for (const mobile of [false, true]) {
             await page.getByTestId('game-details-close-button').click();
             await expect(page.getByRole('searchbox', { name: '搜索游戏' }).first()).toHaveValue('山中小屋');
 
-            await page.getByTestId('user-menu-trigger').click(); await page.getByTestId('user-menu-profile').click();
-            await expect(page.getByTestId('profile-page')).toBeVisible();
+            await openPlatformProfile(page);
             await capture(page, `${tag}-个人中心概览`);
             await page.getByRole('button', { name: '我的投稿', exact: true }).click();
             await expect(page.getByRole('heading', { name: '我的投稿' })).toBeVisible();
@@ -202,6 +201,45 @@ for (const mobile of [false, true]) {
             await record(`${tag}-真实链路`, { sourceRevision, changeRevision, sourceFileDigests, gameId, claimId, submissionApproved: true, claimApproved: true, authorEdit: true, embeddedFixture: '隔离测试页面，不是鸢一桑站点', fullscreenOrExplicitError: true, returnToWorks: true });
         } finally {
             await db.close(); await context.close(); await adminContext.close();
+        }
+    });
+}
+
+for (const mobile of [false, true]) {
+    test(`${mobile ? '手机' : '桌面'}外站详情提示在明暗主题均可读`, async ({ browser, baseURL }) => {
+        const contrast = (foreground: string, background: string) => {
+            const luminance = (color: string) => {
+                const [r, g, b] = (color.match(/\d+/g) ?? []).slice(0, 3).map(channel => {
+                    const value = Number(channel) / 255;
+                    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+                });
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            };
+            const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+            return (values[0] + 0.05) / (values[1] + 0.05);
+        };
+        for (const theme of ['light', 'night'] as const) {
+            const context = await browser.newContext({ baseURL, viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }, isMobile: mobile, hasTouch: mobile });
+            try {
+                await context.addInitScript(value => localStorage.setItem('system_display_theme', value), theme);
+                const page = await context.newPage();
+                await initHome(page);
+                await expect(page.locator('html')).toHaveAttribute('data-system-display-theme', theme);
+                await page.getByRole('searchbox', { name: '搜索游戏' }).first().fill('山中小屋');
+                const card = page.locator('[data-game-id="external-yuanyi-games"] .platform-game-open');
+                if (mobile) await card.tap(); else await card.click();
+                const notice = page.locator('.platform-details-notice').filter({ hasText: /不允许在本站嵌入/ });
+                await expect(notice).toBeVisible();
+                const colors = await notice.evaluate(node => {
+                    const style = getComputedStyle(node);
+                    return { foreground: style.color, background: style.backgroundColor };
+                });
+                const ratio = contrast(colors.foreground, colors.background);
+                expect(ratio).toBeGreaterThanOrEqual(4.5);
+                const label = `${mobile ? '手机' : '桌面'}-${theme === 'night' ? '夜间' : '日间'}-外站详情提示`;
+                await capture(page, label);
+                await record(label, { ...colors, contrast: ratio });
+            } finally { await context.close(); }
         }
     });
 }

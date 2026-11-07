@@ -677,6 +677,7 @@ function handlePistolWhipResolve({ attackerId, targetId, state, sourceAbilityId,
         state,
         damageDealt: 0,
         timestamp,
+        resolutionSequenceId: `pistol-whip:${attackerId}:${sourceAbilityId}:${timestamp}`,
     });
 }
 

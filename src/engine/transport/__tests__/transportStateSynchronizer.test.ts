@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { Decoder, Encoder, PacketType } from 'socket.io-msgpack-parser';
 import type { GameEngineConfig } from '../engineConfig';
 import { TransportStateSynchronizer } from '../transportStateSynchronizer';
 import type { TransportStateProjectionMatch } from '../stateProjection';
@@ -101,6 +102,40 @@ describe('TransportStateSynchronizer', () => {
         expect(match.lastBroadcastedViews.get('0')).toMatchObject({
             core: { publicValue: 'before', visibleTo: '0', privateHand: ['alpha'] },
         });
+    });
+
+    it('服务端私有随机策略在初次同步和重连时都不发送种子', () => {
+        const sync = new TransportStateSynchronizer(new MockIO() as unknown as never);
+        const sent: Array<{ event: string; args: unknown[] }> = [];
+        const socket = { emit: (event: string, ...args: unknown[]) => sent.push({ event, args }) };
+        const match = createMatch();
+        match.engineConfig = { ...match.engineConfig, randomSyncPolicy: 'server-only' };
+        sync.syncSocket({ socket, match, playerID: '0' });
+        sync.syncSocket({ socket, match, playerID: '0' });
+        expect(sent).toHaveLength(2);
+        for (const event of sent) {
+            expect(event.args[3]).toBeUndefined();
+            expect(event.args[4]).toEqual({ stateID: 1 });
+            expect(JSON.stringify(event.args)).not.toContain('seed-1');
+        }
+    });
+
+    it('私有随机策略经 Socket.IO 编解码保留空元数据和同步版本位置', () => {
+        const sync = new TransportStateSynchronizer(new MockIO() as unknown as never);
+        let args: unknown[] = [];
+        const socket = { emit: (_event: string, ...values: unknown[]) => { args = values; } };
+        const match = createMatch();
+        match.engineConfig = { ...match.engineConfig, randomSyncPolicy: 'server-only' };
+        sync.syncSocket({ socket, match, playerID: '0' });
+        const encoded = new Encoder().encode({ type: PacketType.EVENT, data: ['state:sync', ...args], nsp: '/game' });
+        const decoder = new Decoder();
+        let decoded: unknown[] | undefined;
+        decoder.on('decoded', (packet) => { decoded = packet.data as unknown[]; });
+        encoded.forEach((part) => decoder.add(part));
+        expect(decoded).toBeDefined();
+        expect([null, undefined]).toContain(decoded?.[4]);
+        expect(decoded?.[5]).toEqual({ stateID: 1 });
+        expect(JSON.stringify(decoded)).not.toContain('seed-1');
     });
 
     it('broadcast 首次发送全量 update，后续基于基线发送 patch', () => {

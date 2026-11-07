@@ -36,6 +36,7 @@ import { registerFeedbackReplayCapture } from '../../lib/feedback/feedbackReplay
 import type { EventStreamRollbackValue } from '../hooks/EventStreamRollbackContext';
 import type { GameClientContextValue } from './reactContext';
 import { useOptionalToast } from '../../contexts/useOptionalToast';
+import { recordGameFeedbackCommand } from '../../lib/feedback/gameFeedbackContext';
 
 const SERIALIZED_COMMAND_TYPES = new Set(['ADVANCE_PHASE']);
 const BUILTIN_PENDING_COMPANION_COMMAND_TYPES = new Set<string>([
@@ -80,6 +81,7 @@ function resolveExpectedStateIDForSingleCommand(args: {
 type DeferredCommand = {
     type: string;
     payload: unknown;
+    feedbackTraceRecorded?: boolean;
 };
 
 export function useGameProviderRuntime(args: {
@@ -113,6 +115,9 @@ export function useGameProviderRuntime(args: {
     // 但所有会改变对局的命令必须在公共入口变成 no-op。
     const isSpectator = playerId === null;
     const [state, setState] = useState<MatchState<unknown> | null>(null);
+    const [feedbackMetadata, setFeedbackMetadata] = useState<{ scopeId: string; stateId?: number; randomCursor?: number }>(() => ({ scopeId: matchId }));
+    const feedbackMetadataRef = useRef(feedbackMetadata);
+    feedbackMetadataRef.current = feedbackMetadata;
     const [matchPlayers, setMatchPlayers] = useState<MatchPlayerInfo[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const [adminDebugAvailable, setAdminDebugAvailable] = useState(false);
@@ -127,7 +132,7 @@ export function useGameProviderRuntime(args: {
     const inFlightSerializedCommandTypeRef = useRef<string | null>(null);
     const lastSerializedCommandRef = useRef<DeferredCommand | null>(null);
     const deferredSerializedCommandRef = useRef<DeferredCommand | null>(null);
-    const dispatchRef = useRef<((type: string, payload: unknown) => boolean) | null>(null);
+    const dispatchRef = useRef<((type: string, payload: unknown, recordFeedbackTrace?: boolean) => boolean) | null>(null);
     const engineConfigRef = useRef(engineConfig);
     const [rollbackSignal, setRollbackSignal] = useState<EventStreamRollbackValue>({
         watermark: null,
@@ -185,7 +190,7 @@ export function useGameProviderRuntime(args: {
         }
         // 只有命令真正交给 transport 后才能移除排队项。
         // 连接尚未就绪或发送被拒绝时保留它，等待后续权威同步/重连继续尝试。
-        if (dispatchCurrent(command.type, command.payload)) {
+        if (dispatchCurrent(command.type, command.payload, command.feedbackTraceRecorded !== true)) {
             deferredSerializedCommandRef.current = null;
         } else if (!deferredSerializedCommandRef.current) {
             // 发送失败的恢复路径会清理 deferred ref；把当前命令放回队列，
@@ -260,7 +265,9 @@ export function useGameProviderRuntime(args: {
     }, [engineConfig]);
 
     useEffect(() => {
-        if (!latencyConfig?.optimistic?.enabled || !engineConfig) {
+        // A server-only RNG must never reuse a synchronized seed or predict
+        // hidden random outcomes, even if a latency config opts in by mistake.
+        if (!latencyConfig?.optimistic?.enabled || !engineConfig || engineConfig.randomSyncPolicy === 'server-only') {
             optimisticEngineRef.current = null;
             return;
         }
@@ -366,6 +373,11 @@ export function useGameProviderRuntime(args: {
                 if (meta?.stateID !== undefined) {
                     lastConfirmedStateIDRef.current = meta.stateID;
                 }
+                setFeedbackMetadata((previous) => ({
+                    scopeId: matchId,
+                    stateId: meta?.stateID ?? previous.stateId,
+                    randomCursor: randomMeta?.cursor ?? meta?.randomCursor ?? previous.randomCursor,
+                }));
 
                 const engine = optimisticEngineRef.current;
                 let finalState: MatchState<unknown>;
@@ -414,6 +426,7 @@ export function useGameProviderRuntime(args: {
                     resetOptimisticProviderRuntime();
                 }
                 if (!connected) {
+                    setFeedbackMetadata({ scopeId: matchId });
                     commandDispatchBlockedUntilSyncRef.current = false;
                     inFlightSerializedCommandTypeRef.current = null;
                     lastSerializedCommandRef.current = null;
@@ -471,7 +484,7 @@ export function useGameProviderRuntime(args: {
         });
     }, [clearDeferredSerializedCommand, requestProviderResync, resetOptimisticProviderRuntime]);
 
-    const dispatch = useCallback((type: string, payload: unknown): boolean => {
+    const dispatch = useCallback((type: string, payload: unknown, recordFeedbackTrace = true): boolean => {
         if (isSpectator) {
             return false;
         }
@@ -514,6 +527,17 @@ export function useGameProviderRuntime(args: {
             });
             if (!sent && engine) {
                 rollbackOptimisticRenderAndResync();
+            }
+            if (sent && recordFeedbackTrace) {
+                for (const command of commands) {
+                    recordGameFeedbackCommand({
+                        commandType: command.type,
+                        payload: command.payload,
+                        playerId,
+                        stateId: feedbackMetadataRef.current.stateId,
+                        randomCursor: feedbackMetadataRef.current.randomCursor,
+                    });
+                }
             }
             return sent;
         }
@@ -569,7 +593,16 @@ export function useGameProviderRuntime(args: {
         }
         if (sent && serialized) {
             inFlightSerializedCommandTypeRef.current = type;
-            lastSerializedCommandRef.current = { type, payload };
+            lastSerializedCommandRef.current = { type, payload, feedbackTraceRecorded: recordFeedbackTrace };
+        }
+        if (sent && recordFeedbackTrace) {
+            recordGameFeedbackCommand({
+                commandType: type,
+                payload,
+                playerId,
+                stateId: feedbackMetadataRef.current.stateId,
+                randomCursor: feedbackMetadataRef.current.randomCursor,
+            });
         }
         return sent;
     }, [deferCommandWaitingForPreviousStep, isSpectator, notifyCommandWaitingForPreviousStep, pendingCompanionCommandTypes, playerId, recoverFromRejectedCommand, rollbackOptimisticRenderAndResync]);
@@ -625,6 +658,7 @@ export function useGameProviderRuntime(args: {
 
     const value = useMemo<GameClientContextValue>(() => ({
         state,
+        feedbackMetadata,
         dispatch,
         adminDebugAvailable,
         adminDebugDispatch,
@@ -637,7 +671,7 @@ export function useGameProviderRuntime(args: {
         isMultiplayer: true,
         sendUiEvent,
         subscribeUiEvent,
-    }), [adminDebugAvailable, adminDebugDispatch, dispatch, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
+    }), [adminDebugAvailable, adminDebugDispatch, dispatch, feedbackMetadata, isConnected, matchPlayers, playerId, requestForceEndAiPhase, requestManualSetupSelection, sendUiEvent, state, subscribeUiEvent]);
 
     return {
         rollbackSignal,

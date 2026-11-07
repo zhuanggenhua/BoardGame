@@ -1,3 +1,5 @@
+import { resolvePublicRoomCounts } from './roomRevealModel';
+import { resolveExplorableRoomSlots, resolveRoomPlacementPreview } from './roomDiscoveryModel';
 import {
     createAiLegalActionId,
     type AiDecisionContext,
@@ -135,6 +137,7 @@ interface BetrayalAiRoom {
 }
 
 interface BetrayalAiCore {
+    pendingRoomPlacement?: BetrayalCore['pendingRoomPlacement'];
     phase: 'characterSelect' | 'preHaunt' | 'haunt' | 'endgame';
     scenarioId: BetrayalScenarioId;
     proposedScenarioCardId: BetrayalScenarioCardId;
@@ -1712,13 +1715,17 @@ function buildTurnActions(
         }));
     }
 
-    if (core.phase === 'preHaunt') {
-        add(createValidatedAction({
+    if (core.phase === 'preHaunt' || core.pendingRoomPlacement) {
+        const roomCore = core as BetrayalCore;
+        const pending = core.pendingRoomPlacement;
+        const preview = pending ? resolveRoomPlacementPreview(roomCore, { roomId: pending.roomId }) : null;
+        const roomId = pending?.roomId ?? resolveExplorableRoomSlots(roomCore).find(room => resolvePublicRoomCounts(roomCore)[room.floor] > 0 && !(roomCore.latestRoomDrawResolution?.exhausted && roomCore.latestRoomDrawResolution.requestedFloor === room.floor))?.id;
+        if (roomId) add(createValidatedAction({
             validate,
             state,
             playerId,
-            type: BETRAYAL_COMMANDS.EXPLORE_ROOM,
-            payload: {},
+            type: pending ? BETRAYAL_COMMANDS.EXPLORE_ROOM : BETRAYAL_COMMANDS.REVEAL_ROOM,
+            payload: { roomId, ...(preview ? { orientationTurns: preview.defaultOrientationTurns, roomTileAdjustment: preview.tileAdjustmentOptions[0] } : {}) },
             kind: ACTION_KINDS.EXPLORE_ROOM,
             label: '探索未知房间',
             metadata: { visibleStepDelayPolicy: 'visible' },

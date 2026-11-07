@@ -395,6 +395,51 @@ describe('撤回后 EventStream 行为', () => {
     expect(state.sys.undo.snapshots).toHaveLength(1);
   });
 
+  it('拒绝撤回须有待处理请求且只能由对方处理', () => {
+    let state = makeState();
+    const noRequest = exec(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '1', payload: {}});
+    expect(noRequest.success).toBe(false);
+    state = exec(state, {type: 'INCREMENT', playerId: '0', payload: {}}).state;
+    state = exec(state, {type: UNDO_COMMANDS.REQUEST_UNDO, playerId: '0', payload: {}}).state;
+    const selfReject = exec(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '0', payload: {}});
+    expect(selfReject.success).toBe(false);
+    expect(selfReject.state.sys.undo.pendingRequest?.requesterId).toBe('0');
+    const otherReject = exec(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '1', payload: {}});
+    expect(otherReject.success).toBe(true);
+    expect(otherReject.state.sys.undo.pendingRequest).toBeUndefined();
+    expect(exec(otherReject.state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '1', payload: {}}).success).toBe(false);
+    const outsider = exec(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: 'outsider', payload: {}});
+    expect(outsider.success).toBe(false);
+    expect(outsider.state.sys.undo.pendingRequest?.requesterId).toBe('0');
+  });
+
+  it('AI 座位不能拒绝真人之间的撤回请求', () => {
+    const ids = ['0', '1', '2'];
+    const apply = (state: MatchState<TestCore>, command: TestCommand) => executePipeline({domain: testDomain, systems}, state, command, random, ids);
+    let state: MatchState<TestCore> = {core: testDomain.setup(), sys: createInitialSystemState(ids, systems, 'undo-ai-reject')};
+    state = setUndoAiSeatIds(state, ['2']);
+    state = apply(state, {type: 'INCREMENT', playerId: '0', payload: {}}).state;
+    state = apply(state, {type: UNDO_COMMANDS.REQUEST_UNDO, playerId: '0', payload: {}}).state;
+    const result = apply(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '2', payload: {}});
+    expect(result.success).toBe(false);
+    expect(result.state.sys.undo.pendingRequest?.requesterId).toBe('0');
+    expect(apply(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '1', payload: {}}).success).toBe(true);
+  });
+
+  it('已同意的玩家不能再次拒绝同一待处理请求', () => {
+    const ids = ['0', '1', '2'];
+    const localSystems = [createUndoSystem<TestCore>({requireApproval: true, requiredApprovals: 2, snapshotCommandAllowlist: ['INCREMENT']})];
+    const apply = (state: MatchState<TestCore>, command: TestCommand) => executePipeline({domain: testDomain, systems: localSystems}, state, command, random, ids);
+    let state: MatchState<TestCore> = {core: testDomain.setup(), sys: createInitialSystemState(ids, localSystems, 'undo-duplicate-review')};
+    state = apply(state, {type: 'INCREMENT', playerId: '0', payload: {}}).state;
+    state = apply(state, {type: UNDO_COMMANDS.REQUEST_UNDO, playerId: '0', payload: {}}).state;
+    state = apply(state, {type: UNDO_COMMANDS.APPROVE_UNDO, playerId: '1', payload: {}}).state;
+    const duplicate = apply(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '1', payload: {}});
+    expect(duplicate.success).toBe(false);
+    expect(duplicate.state.sys.undo.pendingRequest?.approvals).toEqual(['1']);
+    expect(apply(state, {type: UNDO_COMMANDS.REJECT_UNDO, playerId: '2', payload: {}}).success).toBe(true);
+  });
+
   it('没有可撤回快照时请求会被拒绝且 rollbackRevision 不变', () => {
     const state = makeState();
     const result = exec(state, {
@@ -576,5 +621,25 @@ describe('撤回后 EventStream 行为', () => {
     expect(state.sys.tutorial.stepIndex).toBe(0);
     expect(state.sys.undo.snapshots).toHaveLength(1);
     expect(state.sys.actionLog.entries).toHaveLength(1);
+  });
+});
+
+describe('opt-in information reveal barrier', () => {
+  it('clears prior snapshots and approval requests, while defaults retain undo', () => {
+    const guarded = [createUndoSystem<TestCore>({ snapshotCommandAllowlist: ['INCREMENT'], clearHistoryOnEventTypes: ['INCREMENTED'] })];
+    let state = exec(makeState(), { type: 'INCREMENT', playerId: '0', payload: {} }).state;
+    state = exec(state, { type: UNDO_COMMANDS.REQUEST_UNDO, playerId: '0', payload: {} }).state;
+    expect(state.sys.undo.pendingRequest).toBeDefined();
+    const invalidDomain = { ...testDomain, validate: () => ({ valid: false as const, error: 'rejected' }) };
+    const rejected = executePipeline({ domain: invalidDomain, systems: guarded }, state, { type: 'INCREMENT', playerId: '0', payload: {} }, random, playerIds);
+    expect(rejected.success).toBe(false);
+    expect(rejected.state.sys.undo).toEqual(state.sys.undo);
+    const revealed = execWithSystems(state, { type: 'INCREMENT', playerId: '0', payload: {} }, guarded);
+    expect(revealed.success).toBe(true);
+    expect(revealed.state.sys.undo.snapshots).toEqual([]);
+    expect(revealed.state.sys.undo.pendingRequest).toBeUndefined();
+    expect(execWithSystems(revealed.state, { type: UNDO_COMMANDS.APPROVE_UNDO, playerId: '1', payload: {} }, guarded).success).toBe(false);
+    const defaultResult = exec(makeState(), { type: 'INCREMENT', playerId: '0', payload: {} });
+    expect(defaultResult.state.sys.undo.snapshots).toHaveLength(1);
   });
 });

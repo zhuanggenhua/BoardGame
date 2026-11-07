@@ -10,8 +10,8 @@ html[data-home-entry-style="modern"] :is([data-platform-dialog], .platform-game-
     --color-parchment-gold: #d5ff00;
 }
 html[data-home-entry-style="modern"] [data-platform-dialog] {
-    color: #111;
-    background-color: #fff;
+    color:var(--platform-night-text,#111);
+    background-color:var(--platform-night-surface,#fff);
     border: 3px solid #111;
     border-radius: 0;
     box-shadow: 7px 7px #d5ff00;
@@ -21,9 +21,9 @@ html[data-home-entry-style="modern"] [data-platform-dialog] {
 html[data-home-entry-style="modern"] [data-platform-dialog] .font-serif { font-family: inherit; }
 html[data-home-entry-style="modern"] [data-platform-dialog] :is(h2, h3) { letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog] :is(input:not([type="checkbox"]):not([type="range"]):not([type="file"]), textarea, select) {
-    min-height: 44px; font-size: 16px; border: 2px solid #999; border-radius: 0; background: #f6f6f6; color: #111;
+    min-height: 44px; font-size: 16px; border: 2px solid #999; border-radius: 0; background:var(--platform-night-soft,#f6f6f6); color:var(--platform-night-text,#111);
 }
-html[data-home-entry-style="modern"] [data-platform-dialog] :is(input, textarea, select):focus { border-color: #111; outline: 2px solid #d5ff00; outline-offset: 1px; }
+html[data-home-entry-style="modern"] [data-platform-dialog] :is(input, textarea, select):focus { border-color:var(--platform-night-border,#111); outline: 2px solid #d5ff00; outline-offset: 1px; }
 html[data-home-entry-style="modern"] [data-platform-dialog] :is(button, a):focus-visible { outline: 3px solid #ff008a; outline-offset: 2px; }
 html[data-home-entry-style="modern"] [data-platform-dialog] button { min-height: 44px; cursor: pointer; }
 html[data-home-entry-style="modern"] [data-platform-dialog] button:disabled { cursor: not-allowed; }
@@ -39,23 +39,23 @@ html[data-home-entry-style="modern"] [data-platform-dialog="author"] h3 { font-s
 html[data-home-entry-style="modern"] .platform-author-placeholder { display: none; }
 html[data-home-entry-style="modern"] [data-platform-dialog="author"] .platform-author-action {
     border: 2px solid #111;
-    background: #fff;
-    color: #111;
+    background:var(--platform-night-surface,#fff);
+    color:var(--platform-night-text,#111);
     text-decoration: none;
 }
 html[data-home-entry-style="modern"] [data-platform-dialog="author"] .platform-author-action--claim { background: #d5ff00; }
 .platform-author-profile-link { overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 4px; }
-html[data-home-entry-style="modern"] .platform-author-profile-link { color: #333; }
+html[data-home-entry-style="modern"] .platform-author-profile-link { color:var(--platform-night-text,#333); }
 html[data-home-entry-style="modern"] .platform-author-profile-link:hover { color: #b00060; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child { text-align: left; padding-right: 40px; }
-html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:first-child { color: #111; font-size: 24px; font-weight: 800; letter-spacing: 0; }
+html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:first-child { color:var(--platform-night-text,#111); font-size: 24px; font-weight: 800; letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:first-child > div:last-child { display: none; }
-html[data-home-entry-style="modern"] [data-platform-dialog="email"] > div:first-child > div:first-child { color: #111; font-size: 24px; font-weight: 800; letter-spacing: 0; }
-html[data-home-entry-style="modern"] [data-platform-dialog="confirm"] > div:first-child { color: #111; font-size: 22px; letter-spacing: 0; }
+html[data-home-entry-style="modern"] [data-platform-dialog="email"] > div:first-child > div:first-child { color:var(--platform-night-text,#111); font-size: 24px; font-weight: 800; letter-spacing: 0; }
+html[data-home-entry-style="modern"] [data-platform-dialog="confirm"] > div:first-child { color:var(--platform-night-text,#111); font-size: 22px; letter-spacing: 0; }
 html[data-home-entry-style="modern"] [data-platform-dialog="confirm"] > div:last-child > button:last-child { border: 2px solid #111; border-radius: 0; background: #d5ff00; color: #111; }
-html[data-home-entry-style="modern"] [data-platform-dialog="social"] > button { z-index: 30; top: 8px; right: 8px; background: #fff; }
+html[data-home-entry-style="modern"] [data-platform-dialog="social"] > button { z-index: 30; top: 8px; right: 8px; background:var(--platform-night-surface,#fff); }
 html[data-home-entry-style="modern"] [data-platform-dialog="social"] h2 { padding-right: 36px; }
-html[data-home-entry-style="modern"] :is([data-platform-dialog="about"], [data-platform-dialog="feedback"]) > div:first-child .platform-dialog-close { color: #fff; }
+html[data-home-entry-style="modern"] :is([data-platform-dialog="about"], [data-platform-dialog="feedback"]) > div:first-child .platform-dialog-close { color:var(--platform-night-text,#fff); }
 html[data-home-entry-style="modern"] .platform-about-sponsors[data-empty="true"] { height: 64px; }
 html[data-home-entry-style="modern"] .platform-account-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; }
 html[data-home-entry-style="modern"] .platform-account-row > span { min-width: 0; font-size: 13px; }
@@ -63,7 +63,7 @@ html[data-home-entry-style="modern"] .platform-account-row > div { min-width: 0;
 html[data-home-entry-style="modern"] .platform-account-row > div > span { min-width: 0; overflow-wrap: anywhere; }
 html[data-home-entry-style="modern"] .platform-account-row button { flex-shrink: 0; white-space: nowrap; min-width: 44px; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
 html[data-home-entry-style="modern"] .platform-account-row [data-account-edit-password] { grid-column: 1 / -1; }
-html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:last-child button { width: 100%; border: 2px solid #111; border-radius: 0; background: #f3f3f3; font-size: 14px; }
+html[data-home-entry-style="modern"] [data-platform-dialog="account"] > div:last-child button { width: 100%; border: 2px solid #111; border-radius: 0; background:var(--platform-night-page,#f3f3f3); font-size: 14px; }
 html[data-home-entry-style="modern"] [data-testid="my-feedback-expand"] { min-width: 44px; }
 .platform-cursor-variant-scroll, .platform-cursor-variant-table { display: contents; }
 html[data-home-entry-style="modern"] .platform-cursor-label { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }

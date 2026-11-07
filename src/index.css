@@ -182,6 +182,10 @@
     button:not(:disabled) {
         cursor: pointer;
     }
+    button, [role="button"], nav, [data-fab-panel-heading] {
+        -webkit-user-select: none;
+        user-select: none;
+    }
 }
 
 html[data-system-display-theme="night"],
@@ -1276,6 +1280,46 @@ html[data-keyboard-visible="true"] .auth-modal-container {
     html[data-game-id="betrayal"]:has([data-testid="betrayal-scenario-reader-dialog"]) [data-testid="fab-menu"] {
         display: none !important;
     }
+}
+
+/* On phones the endgame is viewport-anchored; stack the full report
+   instead of squeezing a desktop-width grid into the short screen. */
+.betrayal-mobile-endgame .betrayal-endgame-report-scroll {
+    display: block;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px;
+}
+.betrayal-mobile-endgame .betrayal-endgame-report-frame {
+    min-height: 100%;
+    overflow: visible;
+}
+.betrayal-mobile-endgame .betrayal-endgame-report-header {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+}
+.betrayal-mobile-endgame .betrayal-endgame-report-main {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    min-height: auto;
+    /* Reserve space so the shared floating exit control cannot cover the
+       final statistics when the report is scrolled to its end. */
+    padding-bottom: 88px;
+}
+.betrayal-mobile-endgame .betrayal-endgame-report-main > section {
+    min-height: auto;
+}
+.betrayal-mobile-endgame .betrayal-endgame-report-actions {
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* The mobile HUD portal sits above the scaled board shell; endgame owns input. */
+html[data-betrayal-endgame="true"] .betrayal-hud-portal-region {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 html[data-game-id="betrayal"][data-betrayal-cinematic-stage="true"] [data-testid="fab-menu"],

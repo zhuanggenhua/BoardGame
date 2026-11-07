@@ -93,13 +93,14 @@ const setTianshiDice = (
 
 describe('炽天使规则分支矩阵', () => {
     it.each([
-        { percent: 0, expected: 7 },
-        { percent: -50, expected: 4 },
-    ])('神圣惩戒先合并攻击修正再按 $percent 百分比计算', ({ percent, expected }) => {
+        { modifier: 'dazzleDamagePercent' as const, percent: 0, expected: 7 },
+        { modifier: 'dazzleDamagePercent' as const, percent: -50, expected: 4 },
+        { modifier: 'zhizhuxiaDamagePercent' as const, percent: -50, expected: 4 },
+    ])('神圣惩戒先合并攻击修正再按 $modifier=$percent 计算', ({ modifier, percent, expected }) => {
         const state = createTianshiState();
         state.core.pendingAttack = {
             attackerId: '0', defenderId: '1', sourceAbilityId: 'divine-punishment',
-            isDefendable: false, damage: 0, bonusDamage: 3, dazzleCheckResolved: true, dazzleDamagePercent: percent,
+            isDefendable: false, damage: 0, bonusDamage: 3, dazzleCheckResolved: true, [modifier]: percent,
         };
         const ability = TIANSHI_ABILITIES.find(entry => entry.id === 'divine-punishment')!;
         const events = resolveAndSettleBonus(state, resolve(state, ability.id, ability.effects ?? [], 'preDefense', [1, 2, 5, 6]));

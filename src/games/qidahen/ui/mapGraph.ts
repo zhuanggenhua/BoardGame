@@ -85,6 +85,7 @@ export interface QidahenMaskRegionDefinition {
     mapRole: 'land' | 'city' | 'point';
     parentRegionId: string | null;
     markerBounds: { left: number; top: number; width: number; height: number } | null;
+    labelBounds?: { left: number; top: number; width: number; height: number } | null;
     homelandFaction: 'ming' | 'mongol' | 'jin' | 'neutral' | null;
 }
 
@@ -150,6 +151,11 @@ const parsePoint = (value: unknown): QidahenRegionGraphPoint | null => {
     return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
 };
 
+const parseMapBounds = (value: unknown) => isRecord(value) ? {
+    left: toFiniteNumber(value.left), top: toFiniteNumber(value.top),
+    width: toFiniteNumber(value.width), height: toFiniteNumber(value.height),
+} : null;
+
 const parseMaskRegionDefinition = (value: unknown): QidahenMaskRegionDefinition | null => {
     if (!isRecord(value)) return null;
     const id = toStringOrEmpty(value.id);
@@ -170,12 +176,8 @@ const parseMaskRegionDefinition = (value: unknown): QidahenMaskRegionDefinition 
         parentRegionId: typeof value.parentRegionId === 'string' ? value.parentRegionId : null,
         homelandFaction: ['ming', 'mongol', 'jin', 'neutral'].includes(String(value.homelandFaction))
             ? value.homelandFaction as 'ming' | 'mongol' | 'jin' | 'neutral' : null,
-        markerBounds: isRecord(value.markerBounds) ? {
-            left: toFiniteNumber(value.markerBounds.left),
-            top: toFiniteNumber(value.markerBounds.top),
-            width: toFiniteNumber(value.markerBounds.width),
-            height: toFiniteNumber(value.markerBounds.height),
-        } : null,
+        markerBounds: parseMapBounds(value.markerBounds),
+        labelBounds: parseMapBounds(value.labelBounds),
     };
 };
 
@@ -405,6 +407,12 @@ export const QIDAHEN_RUNTIME_REGION_DEFINITIONS: QidahenRuntimeRegionDefinition[
     };
 });
 export const QIDAHEN_RUNTIME_REGION_BY_ID = new Map(QIDAHEN_RUNTIME_REGION_DEFINITIONS.map((region) => [region.id, region]));
+export const QIDAHEN_MAP_NAMEPLATE_BOUNDS = QIDAHEN_RUNTIME_REGION_DEFINITIONS.flatMap(definition =>
+    [definition.markerBounds, definition.labelBounds].flatMap(bounds => bounds ? [bounds] : []));
+export const QIDAHEN_MAP_NAMEPLATE_OBSTACLES = QIDAHEN_MAP_NAMEPLATE_BOUNDS.map(bounds => ({
+    x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2,
+    size: Math.max(bounds.width, bounds.height) + 4,
+}));
 export const QIDAHEN_RUNTIME_REGION_IDS_BY_PRINTED_REGION_ID = QIDAHEN_RUNTIME_REGION_DEFINITIONS.reduce<Map<string, string[]>>(
     (map, region) => {
         for (const printedRegionId of region.printedRegionIds) {

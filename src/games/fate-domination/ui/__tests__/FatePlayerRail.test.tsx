@@ -48,3 +48,33 @@ it('宽限内进入牌排可以持续阅读，离开后才重新计时退场',()
         expect(screen.queryByLabelText('玩家 2已打出')).toBeNull();
     }finally{vi.useRealTimers();}
 });
+
+it('切换到新头像后，旧头像迟到的失焦不能关闭新牌排',()=>{
+    vi.useFakeTimers();
+    try {
+        render(<Table/>);
+        const first=screen.getByRole('button',{name:'查看玩家 2详情'});
+        const second=screen.getByRole('button',{name:'查看玩家 3详情'});
+        fireEvent.pointerEnter(first);
+        fireEvent.pointerEnter(second);
+        fireEvent.blur(first.closest('section')!);
+        act(()=>vi.advanceTimersByTime(2501));
+        expect(screen.getByLabelText('玩家 3已打出')).toBeVisible();
+    } finally { vi.useRealTimers(); }
+});
+
+it('旧席位迟到的离开事件不会取消新席位自己的收起计时',()=>{
+    vi.useFakeTimers();
+    try {
+        render(<Table/>);
+        const first=screen.getByRole('button',{name:'查看玩家 2详情'});
+        const second=screen.getByRole('button',{name:'查看玩家 3详情'});
+        fireEvent.pointerEnter(first);
+        fireEvent.pointerEnter(second);
+        fireEvent.pointerLeave(second);
+        act(()=>vi.advanceTimersByTime(1000));
+        fireEvent.pointerLeave(first);
+        act(()=>vi.advanceTimersByTime(1501));
+        expect(screen.queryByLabelText('玩家 3已打出')).toBeNull();
+    } finally { vi.useRealTimers(); }
+});

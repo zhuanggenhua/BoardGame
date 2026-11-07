@@ -6,6 +6,7 @@ import { createGameEngine, createInitialSystemState, createTutorialSystem } from
 import type { DomainCore, MatchState, Command, GameEvent } from '../../types';
 import { createLocalProviderRandom } from '../localProviderBootstrap';
 import { useLocalAiRuntime } from '../useLocalAiRuntime';
+import {readLocalMatchSnapshot} from '../localSession';
 
 vi.mock('../localAiAutomationEffect', () => ({ startLocalAiAutomationEffect: () => () => {} }));
 type Core = { roll: number; currentPlayerId: string };
@@ -52,4 +53,25 @@ it('StrictMode初始setup与随后游标同源，重复初始化不多消费一�
     expect((result.current.state.core as Core).roll).toBe(first);
     expect(result.current.randomRef.current.getCursor()).toBe(1);
     expect(result.current.randomRef.current.d(1000)).toBe(second);
+});
+
+it('固定场景随机源独立于进度键，刷新接续游标，重开重新使用同一场景',()=>{
+    const seed='scenario-progress-r31',randomSeed='authored-scenario-r30';
+    const randomDomain={...domain,setup:(_ids:string[],random:import('../../types').RandomFn)=>({roll:random.d(1000),currentPlayerId:'0',playerIds:['0']})};
+    const config=createGameEngine({domain:randomDomain,systems:[],minPlayers:1,maxPlayers:1,commandTypes:['ROLL']});
+    const expected=createLocalProviderRandom(randomSeed),first=expected.d(1000),second=expected.d(1000),third=expected.d(1000);
+    const args={config,numPlayers:1,seed,randomSeed,setupData:undefined,setupPlayerIds:['0'],aiSeatIds:[],persistSession:true};
+    const initial=renderHook(()=>useLocalProviderSession(args));
+    expect((initial.result.current.state.core as Core).roll).toBe(first);
+    act(()=>initial.result.current.setState(previous=>({...previous,core:{...(previous.core as Core),roll:initial.result.current.randomRef.current.d(1000)}})));
+    expect((initial.result.current.state.core as Core).roll).toBe(second);
+    expect(readLocalMatchSnapshot({gameId:config.gameId,seed,numPlayers:1})?.randomCursor).toBe(2);
+    initial.unmount();
+    const resumed=renderHook(()=>useLocalProviderSession(args));
+    expect((resumed.result.current.state.core as Core).roll).toBe(second);
+    expect(resumed.result.current.randomRef.current.d(1000)).toBe(third);
+    act(()=>resumed.result.current.reset());
+    expect((resumed.result.current.state.core as Core).roll).toBe(first);
+    expect(resumed.result.current.randomRef.current.d(1000)).toBe(second);
+    resumed.unmount();
 });

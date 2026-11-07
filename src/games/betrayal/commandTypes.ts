@@ -23,6 +23,7 @@ export type BetrayalCommandMap = {
     [BETRAYAL_COMMANDS.CONFIRM_SCENARIO_CARD]: Record<string, never>;
     [BETRAYAL_COMMANDS.START_SCENARIO]: { scenarioId?: BetrayalScenarioId };
     [BETRAYAL_COMMANDS.MOVE_TO_ROOM]: { roomId: string; useSkeletonKey?: boolean };
+    [BETRAYAL_COMMANDS.REVEAL_ROOM]: { roomId: string; useHolySymbol?: boolean };
     [BETRAYAL_COMMANDS.EXPLORE_ROOM]: BetrayalExploreRoomCommandPayload;
     [BETRAYAL_COMMANDS.ROLL_EVENT]: { sourceTitle?: string };
     [BETRAYAL_COMMANDS.USE_POSSESSION]: BetrayalPossessionUseCommandPayload;

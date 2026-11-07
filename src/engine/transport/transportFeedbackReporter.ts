@@ -1,10 +1,19 @@
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import {
+    projectFeedbackActionLogText,
+    projectFeedbackDiagnosticPacket,
+    projectFeedbackReasonCode,
+    projectFeedbackSnapshot,
+    projectFeedbackSnapshotText,
+} from '../../lib/feedback/diagnosticPacket';
+import type { FeedbackDiagnosticSnapshots } from '../../lib/feedback/feedbackPayload';
 import logger from '../../../server/logger.js';
 import { resolveRuntimeBuildInfo } from '../../lib/feedback/runtimeBuildInfo';
 import { deliverFeedbackWithRetry, FeedbackDeliveryHttpError } from '../../lib/feedback/feedbackDelivery';
 import type { MatchState } from '../types';
 import type { CommandFailureFeedbackPayload } from './commandFailureFeedbackPayload';
+import type { PrivateFeedbackReplayTrigger } from './feedbackPrivateReplay';
 
 export const DEFAULT_ONLINE_AI_RECOVERY_FEEDBACK_COOLDOWN_MS = 60_000;
 export const DEFAULT_COMMAND_FAILURE_FEEDBACK_COOLDOWN_MS = 60_000;
@@ -35,6 +44,11 @@ export type OnlineAiRecoveryFeedbackPayload = {
     stateId?: number;
     stateRevision?: number;
     decisionEpoch?: number;
+    randomCursor?: number;
+    diagnosticSnapshots?: FeedbackDiagnosticSnapshots;
+    lastCommand?: unknown;
+    commandTraceTail?: unknown[];
+    privateReplayTrigger?: PrivateFeedbackReplayTrigger;
     privateReplay?: string;
     privateReplayError?: string;
 };
@@ -77,7 +91,7 @@ export const resolveTransportFeedbackCorrelation = (args: {
             ? responseWindowId
             : undefined;
     const decisionEpoch = typeof sys?.decisionEpoch === 'number' ? sys.decisionEpoch : undefined;
-    const stateRevision = args.stateRevision ?? args.stateId;
+    const stateRevision = args.stateRevision ?? (typeof sys?.revision === 'number' ? sys.revision : undefined);
 
     return {
         ...(roomId ? { roomId } : {}),
@@ -130,6 +144,18 @@ function parseDiagnosticJson(value?: string): unknown {
     }
 }
 
+const asRecord = (value: unknown): Record<string, unknown> => (
+    value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+);
+
+const safeText = (value: unknown): string | undefined => (
+    typeof value === 'string' && value.trim().length > 0 ? value.trim().slice(0, 128) : undefined
+);
+
+const safeNumber = (value: unknown): number | undefined => (
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined
+);
+
 function buildServerDiagnosticPacket(args: {
     source: 'server';
     matchId: string;
@@ -142,11 +168,23 @@ function buildServerDiagnosticPacket(args: {
     stateId?: number;
     stateRevision?: number;
     decisionEpoch?: number;
+    randomCursor?: number;
+    diagnosticSnapshots?: FeedbackDiagnosticSnapshots;
+    lastCommand?: unknown;
+    commandTraceTail?: unknown[];
     privateReplayError?: string;
     privateReplayCaptured?: boolean;
 }): string {
-    const snapshot = parseDiagnosticJson(args.stateSnapshot);
-    const actionLog = parseDiagnosticJson(args.actionLog);
+    const rawSnapshot = asRecord(parseDiagnosticJson(args.stateSnapshot));
+    const snapshotsInput = asRecord(rawSnapshot.snapshots);
+    const snapshot = projectFeedbackSnapshot(args.diagnosticSnapshots?.at ?? snapshotsInput.at ?? rawSnapshot);
+    const beforeSnapshot = projectFeedbackSnapshot(args.diagnosticSnapshots?.before ?? snapshotsInput.before);
+    const afterSnapshot = projectFeedbackSnapshot(args.diagnosticSnapshots?.after ?? snapshotsInput.after);
+    const randomCursor = args.randomCursor ?? safeNumber(rawSnapshot.randomCursor);
+    const actionLog = parseDiagnosticJson(projectFeedbackActionLogText(args.actionLog));
+    const actionLogSummary = actionLog && typeof actionLog === 'object' && !Array.isArray(actionLog)
+        ? actionLog as Record<string, unknown>
+        : {};
     const missingFields = [
         ...(args.matchId ? [] : ['correlation.matchId']),
         ...(args.roomId ? [] : ['correlation.roomId']),
@@ -155,18 +193,31 @@ function buildServerDiagnosticPacket(args: {
         ...(args.stateRevision === undefined ? ['correlation.stateRevision'] : []),
         ...(args.decisionEpoch === undefined ? ['correlation.decisionEpoch'] : []),
         ...(snapshot === undefined ? ['snapshots.at'] : []),
-        'snapshots.before',
-        'snapshots.after',
+        ...(beforeSnapshot === undefined ? ['snapshots.before'] : []),
+        ...(afterSnapshot === undefined ? ['snapshots.after'] : []),
+        ...(randomCursor === undefined ? ['randomCursor'] : []),
+        ...(!args.privateReplayCaptured || args.privateReplayError ? ['privateReplay'] : []),
     ];
-    const replayability = snapshot === undefined
-        ? 'unreplayable'
-        : 'partial';
-    return JSON.stringify({
+    const replayability = snapshot === undefined ? 'unreplayable' : missingFields.length === 0 ? 'full' : 'partial';
+    const lastCommand = args.lastCommand ?? rawSnapshot.lastCommand;
+    const commandRecord = asRecord(lastCommand);
+    const safeLastCommand = {
+        ...(safeText(commandRecord.commandId) ? { commandId: safeText(commandRecord.commandId) } : {}),
+        ...(safeText(commandRecord.commandType) ? { commandType: safeText(commandRecord.commandType) } : {}),
+        ...(safeText(commandRecord.playerId) ? { playerId: safeText(commandRecord.playerId) } : {}),
+        ...(safeNumber(commandRecord.stateId) !== undefined ? { stateId: safeNumber(commandRecord.stateId) } : {}),
+        ...(safeNumber(commandRecord.randomCursor) !== undefined ? { randomCursor: safeNumber(commandRecord.randomCursor) } : {}),
+        ...(safeNumber(commandRecord.afterStateId) !== undefined ? { afterStateId: safeNumber(commandRecord.afterStateId) } : {}),
+        ...(safeNumber(commandRecord.afterRandomCursor) !== undefined ? { afterRandomCursor: safeNumber(commandRecord.afterRandomCursor) } : {}),
+    };
+    const packet = {
         schemaVersion: 1,
         captureId: 'feedback-server-' + randomUUID(),
         capturedAt: new Date().toISOString(),
         source: args.source,
-        collectionStatus: args.privateReplayError || !args.privateReplayCaptured ? 'partial' : 'complete',
+        collectionStatus: args.privateReplayError || missingFields.length > 0
+            ? 'partial'
+            : 'complete',
         replayability,
         missingFields,
         correlation: {
@@ -177,18 +228,31 @@ function buildServerDiagnosticPacket(args: {
             ...(args.stateRevision !== undefined ? { stateRevision: args.stateRevision } : {}),
             ...(args.decisionEpoch !== undefined ? { decisionEpoch: args.decisionEpoch } : {}),
         },
-        phase: snapshot && typeof snapshot === 'object' && typeof (snapshot as { phase?: unknown }).phase === 'string'
-            ? (snapshot as { phase: string }).phase
+        phase: snapshot && typeof snapshot === 'object'
+            ? typeof (snapshot as { phase?: unknown }).phase === 'string'
+                ? (snapshot as { phase: string }).phase
+                : typeof (snapshot as { sys?: { phase?: unknown } }).sys?.phase === 'string'
+                    ? (snapshot as { sys: { phase: string } }).sys.phase
+                    : undefined
             : undefined,
         snapshots: {
+            ...(beforeSnapshot ? { before: beforeSnapshot } : {}),
             at: snapshot,
+            ...(afterSnapshot ? { after: afterSnapshot } : {}),
         },
-        actionLogTail: actionLog,
+        actionLogTail: Array.isArray(actionLog)
+            ? actionLog
+            : Array.isArray(actionLogSummary.actionLogTail) ? actionLogSummary.actionLogTail : undefined,
+        eventStreamTail: Array.isArray(actionLogSummary.eventStreamTail) ? actionLogSummary.eventStreamTail : undefined,
         collectionErrors: args.privateReplayError ? [args.privateReplayError]
             : args.privateReplayCaptured ? [] : ['private_replay_not_captured'],
+        ...(randomCursor !== undefined ? { randomCursor } : {}),
+        ...(Object.keys(safeLastCommand).length > 0 ? { lastCommand: safeLastCommand } : {}),
+        ...(args.commandTraceTail ? { commandTraceTail: args.commandTraceTail } : {}),
         gameId: args.gameId,
         playerId: args.playerId,
-    });
+    };
+    return JSON.stringify(projectFeedbackDiagnosticPacket(packet) ?? packet);
 }
 
 export const buildOnlineAiRecoveryResolvedMethod = (
@@ -281,8 +345,11 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
     payload: OnlineAiRecoveryFeedbackPayload,
 ): Record<string, unknown> => {
     const buildInfo = resolveServerFeedbackBuildInfo();
+    const actionLog = projectFeedbackActionLogText(payload.actionLog);
+    const stateSnapshot = projectFeedbackSnapshotText(payload.stateSnapshot);
+    const publicReason = projectFeedbackReasonCode(payload.reason) ?? 'diagnostic_available';
     return {
-        content: `[system][online-ai-watchdog] ${payload.incidentKind} ${payload.reason}`,
+        content: `[system][online-ai-watchdog] ${payload.incidentKind} ${publicReason}`,
         type: 'bug',
         severity: payload.severity,
         ...(payload.status ? { status: payload.status } : {}),
@@ -291,19 +358,19 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
             : {}),
         source: 'online-ai-watchdog',
         autoReportKind: payload.incidentKind,
-        incidentKey: payload.trackerKey,
+        incidentKey: `${payload.incidentKind}:${payload.playerId}:${publicReason}`,
         gameName: payload.gameId,
         contactInfo: 'system:online-ai-watchdog',
-        actionLog: payload.actionLog,
-        stateSnapshot: payload.stateSnapshot,
+        actionLog,
+        stateSnapshot,
         ...(payload.privateReplay ? { privateReplay: payload.privateReplay } : {}),
         diagnosticPacket: buildServerDiagnosticPacket({
             source: 'server',
             matchId: payload.matchId,
             gameId: payload.gameId,
             playerId: payload.playerId,
-            stateSnapshot: payload.stateSnapshot,
-            actionLog: payload.actionLog,
+            stateSnapshot,
+            actionLog,
             requestId: payload.requestId,
             roomId: payload.roomId,
             stateId: payload.stateId,
@@ -311,6 +378,10 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
             decisionEpoch: payload.decisionEpoch,
             privateReplayError: payload.privateReplayError,
             privateReplayCaptured: Boolean(payload.privateReplay),
+            randomCursor: payload.randomCursor,
+            diagnosticSnapshots: payload.diagnosticSnapshots,
+            lastCommand: payload.lastCommand,
+            commandTraceTail: payload.commandTraceTail,
         }),
         clientContext: {
             route: 'server-watchdog',
@@ -323,7 +394,7 @@ export const buildOnlineAiRecoveryFeedbackRequestBody = (
         },
         errorContext: {
             source: 'online-ai-watchdog',
-            message: payload.reason,
+            message: publicReason,
             name: payload.incidentKind,
         },
     };
@@ -333,26 +404,29 @@ export const buildCommandFailureFeedbackRequestBody = (
     payload: CommandFailureFeedbackPayload,
 ): Record<string, unknown> => {
     const buildInfo = resolveServerFeedbackBuildInfo();
+    const actionLog = projectFeedbackActionLogText(payload.actionLog);
+    const stateSnapshot = projectFeedbackSnapshotText(payload.stateSnapshot);
     const isOnlineAiRecovery = payload.feedbackSource === 'online-ai-watchdog';
+    const publicReason = projectFeedbackReasonCode(payload.reason) ?? 'command_failed';
     return {
-        content: `[system][${payload.feedbackSource}] ${payload.commandType} ${payload.reason}`,
+        content: `[system][${payload.feedbackSource}] ${payload.commandType} ${publicReason}`,
         type: 'bug',
         severity: payload.severity,
         source: payload.feedbackSource,
         autoReportKind: isOnlineAiRecovery ? 'online-ai-command-failed' : payload.incidentKind,
-        incidentKey: payload.incidentKey,
+        incidentKey: `${payload.commandType}:${payload.playerId}:${payload.stateId ?? 'unknown'}:${publicReason}`,
         gameName: payload.gameId,
         contactInfo: `system:${payload.feedbackSource}`,
-        actionLog: payload.actionLog,
-        stateSnapshot: payload.stateSnapshot,
+        actionLog,
+        stateSnapshot,
         ...(payload.privateReplay ? { privateReplay: payload.privateReplay } : {}),
         diagnosticPacket: buildServerDiagnosticPacket({
             source: 'server',
             matchId: payload.matchId,
             gameId: payload.gameId,
             playerId: payload.playerId,
-            stateSnapshot: payload.stateSnapshot,
-            actionLog: payload.actionLog,
+            stateSnapshot,
+            actionLog,
             stateId: payload.stateId,
             stateRevision: payload.stateRevision,
             requestId: payload.requestId,
@@ -360,6 +434,10 @@ export const buildCommandFailureFeedbackRequestBody = (
             decisionEpoch: payload.decisionEpoch,
             privateReplayError: payload.privateReplayError,
             privateReplayCaptured: Boolean(payload.privateReplay),
+            randomCursor: payload.randomCursor,
+            diagnosticSnapshots: payload.diagnosticSnapshots,
+            lastCommand: payload.lastCommand,
+            commandTraceTail: payload.commandTraceTail,
         }),
         clientContext: {
             route: isOnlineAiRecovery ? 'server-watchdog-command' : 'server-command',
@@ -372,7 +450,7 @@ export const buildCommandFailureFeedbackRequestBody = (
         },
         errorContext: {
             source: payload.feedbackSource,
-            message: payload.reason,
+            message: publicReason,
             name: payload.commandType,
         },
     };
@@ -443,24 +521,24 @@ export class TransportFeedbackReporter {
 
         try {
             await this.onlineAiFeedbackReporter(payload);
+            const publicReason = projectFeedbackReasonCode(payload.reason) ?? 'diagnostic_available';
             logger.info('[GameTransport] online-ai-watchdog feedback reported', {
                 matchID: payload.matchId,
                 gameId: payload.gameId,
                 playerID: payload.playerId,
                 incidentKind: payload.incidentKind,
-                reason: payload.reason,
-                trackerKey: payload.trackerKey,
+                reason: publicReason,
             });
         } catch (error) {
             this.onlineAiRecoveryFeedbackCooldown.delete(dedupeKey);
+            const publicReason = projectFeedbackReasonCode(payload.reason) ?? 'diagnostic_available';
             logger.warn('[GameTransport] online-ai-watchdog feedback failed', {
                 matchID: payload.matchId,
                 gameId: payload.gameId,
                 playerID: payload.playerId,
                 incidentKind: payload.incidentKind,
-                reason: payload.reason,
-                trackerKey: payload.trackerKey,
-                error: error instanceof Error ? error.message : String(error),
+                reason: publicReason,
+                error: error instanceof FeedbackDeliveryHttpError ? `http_${error.status}` : 'delivery_failed',
             });
         }
     }
@@ -493,7 +571,7 @@ export class TransportFeedbackReporter {
                 commandType: payload.commandType,
                 reason: payload.reason,
                 incidentKey: payload.incidentKey,
-                error: error instanceof Error ? error.message : String(error),
+                error: error instanceof FeedbackDeliveryHttpError ? `http_${error.status}` : 'delivery_failed',
             });
         }
     }

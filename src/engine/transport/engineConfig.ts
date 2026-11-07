@@ -42,6 +42,10 @@ export interface GameEngineConfig<
 > {
     /** 游戏 ID */
     gameId: string;
+    /** 隐藏随机状态的游戏可选择仅由服务端掌握随机种子。 */
+    randomSyncPolicy?: 'client-synchronized' | 'server-only';
+    /** Network-only final projection after seat/system views; local play stays authoritative. */
+    transportView?: (state: MatchState<TCore>, playerId: string | null) => MatchState<TCore>;
     /** 领域内核 */
     domain: DomainCore<TCore, TCommand, TEvent>;
     /** 启用的系统 */
@@ -105,6 +109,11 @@ export interface GameEngineConfig<
             phase: string;
             fallbackPlayerId: string | null;
         }) => string | null | undefined;
+        /** 为在线 AI watchdog 反馈生成游戏专属、去隐私的状态摘要。 */
+        buildFeedbackDiagnosticContext?: (args: {
+            state: MatchState<TCore>;
+            playerId: string;
+        }) => Record<string, unknown> | null | undefined;
         resolveManualSetupSelectionTakeoverPlayerId?: (args: {
             sharedState: MatchState<TCore>;
             seatControllers: Record<string, unknown>;

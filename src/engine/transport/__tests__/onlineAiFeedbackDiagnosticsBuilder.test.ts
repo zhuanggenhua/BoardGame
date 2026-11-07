@@ -58,6 +58,46 @@ const createBuilder = (): OnlineAiFeedbackDiagnosticsBuilder => new OnlineAiFeed
 });
 
 describe('OnlineAiFeedbackDiagnosticsBuilder', () => {
+    it('buildRecoveryStateSnapshot 应附带游戏专属反馈诊断摘要', async () => {
+        const builder = createBuilder();
+        const baseMatch = createMatch();
+        const match: OnlineAiFeedbackDiagnosticsMatch = {
+            ...baseMatch,
+            engineConfig: {
+                ...baseMatch.engineConfig,
+                onlineAiRecovery: {
+                    buildFeedbackDiagnosticContext: () => ({
+                        turnPhase: 'action-window',
+                        factionCount: 2,
+                        factionSelection: { pendingCount: 1, selectedCount: 1 },
+                        scenarioVote: { hasHost: true, pendingCount: 1 },
+                        pendingScenarioCharacterChoices: [{ count: 1, optionCount: 3 }],
+                    }),
+                },
+            },
+        };
+
+        const stateSnapshot = await builder.buildRecoveryStateSnapshot(
+            match,
+            {
+                playerId: '1',
+                reason: 'active-turn-legal-only',
+                fingerprintHint: 'active-turn-legal-only:1:unknown-phase',
+                resolution: {} as never,
+            },
+            '1:active-turn-legal-only:test',
+            '0||3|0',
+        );
+
+        expect(JSON.parse(stateSnapshot).gameStateSummary).toEqual({
+            turnPhase: 'action-window',
+            factionCount: 2,
+            factionSelection: { pendingCount: 1, selectedCount: 1 },
+            scenarioVote: { hasHost: true, pendingCount: 1 },
+            pendingScenarioCharacterChoices: [{ count: 1, optionCount: 3 }],
+        });
+    });
+
     it('buildCommandFailureFeedbackPayload 通过 builder 保留命令失败诊断合同', () => {
         const builder = createBuilder();
         const match = createMatch();

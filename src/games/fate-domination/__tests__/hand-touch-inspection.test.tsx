@@ -46,3 +46,31 @@ it('长按抬手的兼容点击落到新遮罩时，关闭后下一次真实短�
  touch(button,'pointerdown');act(()=>vi.advanceTimersByTime(50));touch(button,'pointerup');fireEvent.click(button);
  expect(props.onSelect).toHaveBeenCalledExactlyOnceWith('touch-card',undefined);
 });
+
+it('通用放大镜与卡牌主操作分开，放大不选牌也不发动',()=>{
+ const {button,props,card,container}=setup();
+ const inspect=screen.getByRole('button',{name:`放大${card.name}`});
+ expect(inspect.dataset.secondaryInspect).toBe('true');
+ expect(button.contains(inspect)).toBe(false);
+ expect(container.querySelector('button button')).toBeNull();
+ fireEvent.pointerDown(inspect);fireEvent.click(inspect);
+ expect(props.onInspect).toHaveBeenCalledExactlyOnceWith(card.assetPath,card.name,true);
+ expect(props.onSelect).not.toHaveBeenCalled();expect(props.onPlaySkill).not.toHaveBeenCalled();
+ fireEvent.click(button);expect(props.onSelect).toHaveBeenCalledExactlyOnceWith('touch-card',undefined);
+});
+
+it('技能离开手牌后保留原槽位，少于三张仍预留三个位置',()=>{
+ const {props,rerender,container}=setup();
+ const skills=props.player.skills.slice(0,3).map(skill=>({skill,assetPath:`skills/${skill.id}`,available:true}));
+ expect(skills).toHaveLength(3);
+ rerender(<FateHandSurface {...props} skills={skills}/>);
+ const initial=Array.from(container.querySelectorAll('[data-skill-slot]')).map(slot=>slot.getAttribute('data-skill-slot'));
+ const player={...props.player,selectedAttackIds:[skills[0].skill.id]};
+ rerender(<FateHandSurface {...props} player={player} skills={skills}/>);
+ const slots=Array.from(container.querySelectorAll('[data-skill-slot]'));
+ expect(slots.map(slot=>slot.getAttribute('data-skill-slot'))).toEqual(initial);
+ expect(slots[0].querySelector('.fd-runtime-card')).toBeNull();
+ expect(slots[1].querySelector('.fd-runtime-card')).not.toBeNull();
+ rerender(<FateHandSurface {...props} skills={skills.slice(0,1)}/>);
+ expect(container.querySelectorAll('.fd-skill-slot')).toHaveLength(3);
+});

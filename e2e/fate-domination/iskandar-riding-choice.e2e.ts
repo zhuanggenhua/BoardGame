@@ -265,8 +265,6 @@ async function prepareRidingAction(page: Page, baseURL: string | undefined, seed
     await waitForState(page, state => state.core.currentPlayerId === '0' && state.core.phase === 'outpost', '等待前哨阶段开始');
 
     await page.getByTestId('fate-domination-location-workshop').click();
-    expect((await readState(page)).core.players['0'].locationId).toBeNull();
-    await page.getByTestId('fate-domination-primary-action').click();
     await waitForState(page, state => state.core.players['0'].locationId === 'workshop', '等待韦伯部署工房');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     const handBeforeMasterAbility = (await readState(page)).core.players['0'].hand.length;

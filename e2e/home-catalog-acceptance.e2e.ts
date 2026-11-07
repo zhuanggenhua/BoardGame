@@ -1,6 +1,49 @@
 import { test, expect, initHome, login, switchStyle, openGame, capture, record } from './helpers/homeAcceptance';
 
 for (const mobile of [false, true]) {
+    for (const style of ['modern', 'classic'] as const) {
+        const label = `${mobile ? '手机' : '桌面'}-${style === 'modern' ? '现代' : '经典'}`;
+        test(`${label}首页卡片回验`, async ({ browser }, info) => {
+            const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1080 }, hasTouch: mobile, isMobile: mobile });
+            try {
+                const page = await context.newPage();
+                await initHome(page);
+                if (style === 'classic') await switchStyle(page, style);
+                if (style === 'modern') {
+                    await openGame(page, style, 'dicethrone', '王权骰铸', mobile);
+                    const details = page.getByTestId('game-details-modal-root');
+                    await details.getByRole('button', { name: '收藏：王权骰铸', exact: true }).click();
+                    await page.getByTestId('game-details-close-button').click();
+                    const card = page.locator('[data-game-id="dicethrone"]').filter({ visible: true });
+                    await expect(card.locator(mobile ? '.platform-game-favorite-marker' : '.platform-game-favorite[aria-pressed="true"]')).toBeVisible();
+                    if (mobile) await capture(page, '手机-现代-发现首屏收藏星标');
+                }
+                const ribbon = page.locator(`[data-testid^="${style === 'modern' ? 'platform' : 'game-list'}-status-ribbon-"][data-testid$="-label"]`).filter({ visible: true }).first();
+                await expect(ribbon).toHaveText('实施中');
+                const ribbonLabel = ribbon.getByText('实施中', { exact: true });
+                const expectedFontSize = style === 'classic' ? 11.52 : mobile ? 20.16 : 23.04;
+                await expect.poll(() => ribbonLabel.evaluate(node => parseFloat(getComputedStyle(node).fontSize))).toBeCloseTo(expectedFontSize, 1);
+                await expect(ribbonLabel).toHaveCSS('color', 'rgb(255, 255, 255)');
+                await expect(ribbonLabel).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+                await expect(ribbonLabel).toHaveCSS('paint-order', 'normal');
+                await ribbon.scrollIntoViewIfNeeded();
+                await page.mouse.move(0, 0);
+                await expect.poll(() => page.evaluate(() => {
+                    const covers = [...document.querySelectorAll<HTMLImageElement>('[data-game-id] img')].filter(img => {
+                        const rect = img.getBoundingClientRect();
+                        return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight;
+                    });
+                    return covers.length > 0 && covers.every(img => img.complete && img.naturalWidth > 0);
+                })).toBe(true);
+                await capture(page, `${label}-首页卡片回验`);
+            } finally {
+                await context.close();
+            }
+        });
+    }
+}
+
+for (const mobile of [false, true]) {
     const style = 'modern';
     const label = `${mobile ? '手机' : '桌面'}-${style === 'modern' ? '现代' : '经典'}`;
     test(`${label}搜索分类详情收藏返回及账户隔离持久化`, async ({ browser, accounts }, info) => {

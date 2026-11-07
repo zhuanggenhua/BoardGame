@@ -1470,10 +1470,14 @@ export const Right = ({ game }: RightProps) => {
                 Object.entries(config.setupSelections ?? {}).map(([key, value]) => [key, Array.isArray(value) ? [...value] : value]),
             );
 
+            const previousOwnerMatch = getOwnerActiveMatch();
+            const previousOwnerSeat = previousOwnerMatch?.matchID ? readStoredMatchCredentials(previousOwnerMatch.matchID) : null;
             const result = await matchApi.createMatch(
                 game.id,
                 {
                     numPlayers: config.numPlayers,
+                    playerName: user?.username ?? guestName,
+                    previousOwnerCredentials: !token && previousOwnerSeat?.playerID === '0' ? previousOwnerSeat.credentials : undefined,
                     setupData: {
                         ...(config.setupData ?? {}),
                         ...(config.roomName ? { roomName: config.roomName } : {}),
@@ -1492,6 +1496,7 @@ export const Right = ({ game }: RightProps) => {
             const claimResult = await claimSeat(game.id, result.matchID, '0', {
                 token: token ?? undefined,
                 guestId,
+                ownerCredentials: result.ownerCredentials,
                 playerName: user?.username ?? guestName,
             });
 
@@ -1511,7 +1516,8 @@ export const Right = ({ game }: RightProps) => {
             navigateToMatch(result.matchID, '0');
         } catch (error) {
             console.error('[HomeV2Detail] 创建房间失败', error);
-            toast.error({ kind: 'i18n', key: 'error.createRoomFailed', ns: 'lobby' });
+            const message = error instanceof Error ? error.message : String(error);
+            toast.error({ kind: 'i18n', key: message.includes('GUEST_OWNER_PROOF_') ? 'error.guestOwnerProofRequired' : 'error.createRoomFailed', ns: 'lobby' });
         } finally {
             setIsLoading(false);
             createRoomInFlightRef.current = false;
@@ -1546,10 +1552,19 @@ export const Right = ({ game }: RightProps) => {
                 return;
             }
 
-            if (summary?.ownerKey && summary.ownerKey === ownerKey) {
+            const storedOwner = readStoredMatchCredentials(matchID);
+            const localOwner = getOwnerActiveMatch();
+            const ownsRoom = (storedOwner?.playerID === '0' && !!storedOwner.credentials)
+                || (!!ownerKey && localOwner?.matchID === matchID && localOwner.ownerKey === ownerKey);
+            if (ownsRoom) {
+                const recordedOwner = localOwner?.matchID === matchID ? localOwner : null;
+                const roomOwnerType = recordedOwner?.ownerType ?? summary.ownerType ?? getOwnerType(user?.id);
+                const ownerCredentials = storedOwner?.playerID === '0' ? storedOwner.credentials : undefined;
+                const useGuestProof = roomOwnerType === 'guest' && !!ownerCredentials;
                 const claimResult = await claimSeat(game.id, matchID, '0', {
-                    token: token ?? undefined,
-                    guestId,
+                    token: useGuestProof ? undefined : token ?? undefined,
+                    guestId: useGuestProof ? getOrCreateGuestId() : guestId,
+                    ownerCredentials,
                     playerName: user?.username ?? guestName,
                 });
                 if (!claimResult.success) {
@@ -1559,8 +1574,8 @@ export const Right = ({ game }: RightProps) => {
                 setOwnerActiveMatch({
                     matchID,
                     gameName: game.id,
-                    ownerKey,
-                    ownerType: getOwnerType(user?.id),
+                    ownerKey: recordedOwner?.ownerKey ?? (roomOwnerType === 'guest' ? getOwnerKey(undefined, getOrCreateGuestId()) : ownerKey),
+                    ownerType: roomOwnerType,
                 });
                 navigateToMatch(matchID, '0');
                 return;

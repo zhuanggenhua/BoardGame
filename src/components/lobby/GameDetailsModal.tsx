@@ -446,7 +446,6 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                 totalSeats: m.totalSeats,
                 gameName: m.gameName,
                 roomName: m.roomName,
-                ownerKey: m.ownerKey,
                 ownerType: m.ownerType,
                 isLocked: m.isLocked,
                 publicSetupSummary: m.publicSetupSummary,
@@ -507,40 +506,22 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             clearOwnerActiveMatch(ownerActive.matchID);
             return null;
         }
-        if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
+        if (ownerKey && ownerActive?.matchID && ownerActive.ownerKey === ownerKey) {
             return ownerActive.matchID;
         }
         return null;
     }, [latestStoredMatchCredentials, getOwnerKey]);
 
-    // 同步房主激活对局与房间列表（避免状态滞后或丢失）
-    useEffect(() => {
-        const ownerKey = getOwnerKey();
-        if (!ownerKey) return;
+    // Public lobby summaries intentionally contain no owner identity. Only local
+    // ownership records or a stored host credential can select the owner flow;
+    // the server still verifies authorization when the seat is claimed.
+    const isLocallyOwnedRoom = useCallback((matchID: string) => {
+        if (isOwnerActiveMatchSuppressed(matchID)) return false;
+        const stored = readStoredMatchCredentials(matchID);
+        if (stored?.playerID === '0' && stored.credentials) return true;
         const ownerActive = getOwnerActiveMatch();
-        const matchedRoom = rooms.find(r => r.ownerKey === ownerKey);
-        if (matchedRoom) {
-            if (isOwnerActiveMatchSuppressed(matchedRoom.matchID)) {
-                if (ownerActive?.matchID === matchedRoom.matchID) {
-                    clearOwnerActiveMatch(matchedRoom.matchID);
-                }
-                return;
-            }
-            if (!ownerActive || ownerActive.matchID !== matchedRoom.matchID) {
-                setOwnerActiveMatch({
-                    matchID: matchedRoom.matchID,
-                    gameName: matchedRoom.gameName || gameId,
-                    ownerKey,
-                    ownerType: matchedRoom.ownerType || getOwnerType(),
-                });
-            }
-            return;
-        }
-        if (ownerActive?.matchID && ownerActive.ownerKey === ownerKey) {
-            clearOwnerActiveMatch(ownerActive.matchID);
-        }
-    }, [rooms, gameId, getOwnerKey, getOwnerType]);
-
+        return !!getOwnerKey() && ownerActive?.matchID === matchID && ownerActive.ownerKey === getOwnerKey();
+    }, [getOwnerKey]);
 
     const handleOpenMobilePackageInstall = useCallback(() => {
         logMobileRuntimeCritical('GameDetailsModal', 'open-package-install-clicked', {
@@ -854,9 +835,19 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         options?: { navigateOnSuccess?: boolean },
     ) => {
         setMatchEntryLoadingPhase('joining');
-        const claimResult = user?.id && token
+        const activeOwner = getOwnerActiveMatch();
+        const localOwner = activeOwner?.matchID === matchID ? activeOwner : null;
+        const storedOwner = readStoredMatchCredentials(matchID);
+        const ownerCredentials = storedOwner?.playerID === '0' ? storedOwner.credentials : undefined;
+        const roomOwnerType = localOwner?.ownerType ?? rooms.find(room => room.matchID === matchID)?.ownerType ?? getOwnerType();
+        const useGuestProof = roomOwnerType === 'guest' && !!ownerCredentials;
+        const claimResult = user?.id && token && !useGuestProof
             ? await claimSeat(gameName, matchID, '0', { token, playerName: user.username })
-            : await claimSeat(gameName, matchID, '0', { guestId: getGuestId(), playerName: getGuestName() });
+            : await claimSeat(gameName, matchID, '0', {
+                guestId: getGuestId(),
+                ...(ownerCredentials ? { ownerCredentials } : {}),
+                playerName: user?.username ?? getGuestName(),
+            });
         if (!claimResult.success) {
             if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
                 clearMatchCredentials(matchID);
@@ -868,8 +859,8 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         setOwnerActiveMatch({
             matchID,
             gameName,
-            ownerKey: getOwnerKey(),
-            ownerType: getOwnerType(),
+            ownerKey: localOwner?.ownerKey ?? (roomOwnerType === 'guest' ? resolveOwnerKey(undefined, getGuestId()) : getOwnerKey()),
+            ownerType: roomOwnerType,
         });
         setLocalStorageTick(t => t + 1);
         setShowCreateRoomModal(false);
@@ -1018,12 +1009,15 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             void prefetchGameImplementation(gameId, { includeTutorial: false }).catch(() => {
                 // 具体失败链路由 prefetchGameImplementation 内部日志记录
             });
+            const previousOwnerMatch = getOwnerActiveMatch();
+            const previousOwnerSeat = previousOwnerMatch?.matchID ? readStoredMatchCredentials(previousOwnerMatch.matchID) : null;
             const result = await matchApi.createMatch(
                     gameId,
                     {
                         numPlayers,
                         setupData,
                         playerName: user?.username || getGuestName(),
+                        previousOwnerCredentials: !token && previousOwnerSeat?.playerID === '0' ? previousOwnerSeat.credentials : undefined,
                         forceReplaceOwnerRoom: options?.forceReplaceOwnerRoom,
                     },
                     token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
@@ -1144,6 +1138,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                                 const claimOptions = ownerType === 'guest'
                                     ? {
                                         guestId: guestId ?? getGuestId(),
+                                        ownerCredentials: result.ownerCredentials,
                                         playerName: aiPlayerName,
                                     }
                                     : {
@@ -1415,7 +1410,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         }
 
         setMatchEntryLoadingPhase('joining');
-        const canClaimSeat = !!(match.ownerKey && match.ownerKey === getOwnerKey());
+        const canClaimSeat = isLocallyOwnedRoom(matchID);
         if (canClaimSeat) {
             const claimResult = await tryClaimSeat(matchID, roomGameName);
             if (claimResult.success) {
@@ -1801,7 +1796,6 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             }
         });
 
-        const ownerKey = getOwnerKey();
         return rooms.map(room => {
             const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
             const hasOccupiedSeat = room.players.some(player => Boolean(player.name || player.isConnected));
@@ -1819,7 +1813,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             }
 
             const canReconnect = !!myCredentials;
-            const isOwnerRoom = !!ownerKey && room.ownerKey === ownerKey;
+            const isOwnerRoom = isLocallyOwnedRoom(room.matchID);
             const isMyRoom = !!myActiveRoomMatchID && room.matchID === myActiveRoomMatchID;
             const isHost = myPlayerID === '0';
 
@@ -1838,7 +1832,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                 gameKey: normalizeGameName(room.gameName)
             };
         });
-    }, [rooms, myActiveRoomMatchID, storedMatchCredentials, getOwnerKey]);
+    }, [rooms, myActiveRoomMatchID, storedMatchCredentials, isLocallyOwnedRoom]);
 
     const roomItems = useMemo(() => {
         return allRoomItems.filter(room => room.gameKey === normalizedGameId);
@@ -1867,7 +1861,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             clearOwnerActiveMatch(ownerActive.matchID);
             return null;
         }
-        if (ownerActive?.matchID && (!ownerActive.ownerKey || ownerActive.ownerKey === ownerKey)) {
+        if (ownerKey && ownerActive?.matchID && ownerActive.ownerKey === ownerKey) {
             const listMatch = rooms.find(r => r.matchID === ownerActive.matchID);
             const gameName = normalizeGameName(ownerActive.gameName || listMatch?.gameName) || normalizedGameId || 'tictactoe';
             return {

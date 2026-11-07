@@ -7,6 +7,7 @@ import {
     isMatchNotFoundError,
     persistAiSeatCredentials,
     readStoredAiSeatCredentials,
+    readStoredMatchCredentials,
 } from '../hooks/match/useMatchStatus';
 import { logMobileRuntimeCritical } from '../lib/mobile/mobileRuntimeDebug';
 import {
@@ -83,6 +84,10 @@ export function useOnlineAiSeatStateLoader(
                             matchInfo,
                             token: args.token,
                             guestId: args.guestId,
+                            ownerCredentials: (() => {
+                                const stored = readStoredMatchCredentials(matchId);
+                                return stored?.playerID === '0' ? stored.credentials : undefined;
+                            })(),
                             playerName: resolveAiSeatPlayerName(matchInfo, playerId),
                         }));
                         return result.playerCredentials;

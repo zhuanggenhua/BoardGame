@@ -353,40 +353,10 @@ test.describe('Lobby E2E', () => {
         releaseModalModuleRequest?.();
     });
 
-    test('关于弹窗赞助二维码会显示 public logos 静态图', async ({ page, game }, testInfo) => {
+    test('局内工具菜单不再提供关于入口', async ({ page }) => {
         await page.locator('[data-fab-id="settings"]').click();
-        await page.locator('[data-fab-id="about"]').click();
-
-        await expect(page.getByRole('heading', { name: '易桌游', level: 2 })).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText('如果喜欢这个项目，可以请作者喝杯咖啡。')).toBeVisible();
-
-        const wechatQr = page.getByAltText('微信支付二维码');
-        const alipayQr = page.getByAltText('支付宝支付二维码');
-
-        await expect(wechatQr).toBeVisible();
-        await expect(alipayQr).toBeVisible();
-
-        const qrStates = await Promise.all([
-            wechatQr.evaluate((img) => ({
-                naturalWidth: img.naturalWidth,
-                src: img.getAttribute('src') ?? '',
-                currentSrc: img.currentSrc,
-            })),
-            alipayQr.evaluate((img) => ({
-                naturalWidth: img.naturalWidth,
-                src: img.getAttribute('src') ?? '',
-                currentSrc: img.currentSrc,
-            })),
-        ]);
-
-        expect(qrStates[0].naturalWidth).toBeGreaterThan(0);
-        expect(qrStates[1].naturalWidth).toBeGreaterThan(0);
-        expect(qrStates[0].src).toContain('/logos/weixin.jpg');
-        expect(qrStates[1].src).toContain('/logos/zhifubao.jpg');
-        expect(qrStates[0].currentSrc).toContain('/logos/weixin.jpg');
-        expect(qrStates[1].currentSrc).toContain('/logos/zhifubao.jpg');
-
-        await game.screenshot('lobby-about-modal-support-qr-visible', testInfo);
+        await expect(page.locator('[data-fab-id="about"]')).toHaveCount(0);
+        await expect(page.locator('[data-platform-dialog="about"]')).toHaveCount(0);
     });
 
     test(WEB_APP_DOWNLOAD_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {

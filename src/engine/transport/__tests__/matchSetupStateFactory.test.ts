@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { GameEngineConfig } from '../engineConfig';
-import type { PlayerId } from '../../types';
+import type { MatchState, PlayerId } from '../../types';
+import { createSeededRandom, executePipeline } from '../../pipeline';
 import { createMatchSetupState } from '../matchSetupStateFactory';
+import { MAGE_WARS_COMMANDS, MageWarsDomain } from '../../../games/mage-wars/domain';
+import { engineConfig as mageWarsEngineConfig } from '../../../games/mage-wars/game';
+import type { MageWarsCore } from '../../../games/mage-wars/domain';
 
 type TestCore = {
     setupPlayerIds: PlayerId[];
@@ -130,5 +134,36 @@ describe('createMatchSetupState', () => {
 
         expect(result.state.sys.matchId).toBe('match-ai-undo');
         expect(result.state.sys.undo.aiSeatIds).toEqual(['1', '2']);
+    });
+
+    it('Mage Wars 开局自动流程仍属于初始态，初始 revision 为 0 且首条成功命令为 1', () => {
+        const result = createMatchSetupState({
+            matchID: 'mage-wars-initial-revision',
+            engineConfig: mageWarsEngineConfig,
+            playerIds: ['0', '1'],
+            seed: 'mage-wars-initial-revision-seed',
+        });
+        const initialState = result.state as MatchState<MageWarsCore>;
+
+        expect(initialState.sys.phase).toBe('planning');
+        expect(initialState.sys.revision).toBe(0);
+
+        const firstCommand = executePipeline(
+            {
+                domain: MageWarsDomain,
+                systems: mageWarsEngineConfig.systems,
+            },
+            initialState,
+            {
+                type: MAGE_WARS_COMMANDS.PLAN_SPELLS,
+                playerId: '0',
+                payload: { spellCardIds: [] },
+            },
+            createSeededRandom('mage-wars-initial-revision-command-seed'),
+            ['0', '1'],
+        );
+
+        expect(firstCommand.success).toBe(true);
+        expect(firstCommand.state.sys.revision).toBe(1);
     });
 });

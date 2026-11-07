@@ -7,6 +7,18 @@ import { PlatformGameCard } from '../PlatformGameCard';
 const pointer = vi.hoisted(() => ({ coarse: false, mobile: false }));
 vi.mock('../../../hooks/ui/useCoarsePointer', () => ({ useCoarsePointer: () => pointer.coarse }));
 vi.mock('../../../hooks/ui/useMobileViewport', () => ({ useMobileViewport: () => pointer.mobile }));
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, options?: Record<string, number | string>) => {
+            if (key === 'homeV2.gamePresence.online') return `在线 ${options?.count ?? 0}`;
+            if (key === 'homeV2.gamePresence.waiting') return `等待 ${options?.count ?? 0}`;
+            if (key === 'homeV2.gamePresence.label') return `在线 ${options?.online ?? 0}，等待 ${options?.waiting ?? 0}`;
+            if (key === 'platform.addFavorite') return `收藏：${options?.game ?? ''}`;
+            if (key === 'platform.removeFavorite') return `移出收藏：${options?.game ?? ''}`;
+            return key;
+        },
+    }),
+}));
 
 const game = {
     id: 'one',
@@ -40,6 +52,15 @@ describe('现代首页卡片悬浮与触控收藏入口', () => {
         expect(open).not.toHaveBeenCalled();
     });
 
+    it('收到空大厅快照后仍显示零在线和零等待', () => {
+        render(<PlatformGameCard game={game} mode="discover" favorite={false} favoritePending={false} onOpen={() => {}} onFavorite={() => {}} hasPlayerCounts />);
+        const presence = document.querySelector('.platform-game-presence');
+        expect(presence).not.toBeNull();
+        expect(presence?.children).toHaveLength(2);
+        expect(presence?.textContent).toContain('0');
+        expect(presence?.parentElement?.querySelector('strong')?.textContent).toBe('甲游戏');
+    });
+
     it('桌面收藏是封面星标，无可见文字', () => {
         const open = vi.fn();
         const favorite = vi.fn();
@@ -63,4 +84,5 @@ describe('现代首页卡片悬浮与触控收藏入口', () => {
         fireEvent.click(screen.getByRole('button', { name: '甲游戏' }));
         expect(open).toHaveBeenCalledWith('one');
     });
+
 });

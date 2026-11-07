@@ -21,6 +21,7 @@ import { buildAfterRollConfirmedSignature } from '../domain/responseWindowGuards
 import { playerView } from '../domain/view';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
 import { SHADOW_FANG_2 } from '../heroes/ninja/abilities';
+import { DOCTOR_STRANGE_CARDS } from '../heroes/doctor_strange/cards';
 import type { AbilityEffect } from '../domain/combat';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { GameTestRunner, type TestCase } from '../../../engine/testing';
@@ -59,6 +60,9 @@ import {
     type DiceThroneExpectation,
     type CommandInput,
 } from './test-utils';
+
+const expectedDoctorStrangeDeckAfterStartingHand = DOCTOR_STRANGE_CARDS
+    .filter(card => !card.spell?.starting).length - expectedHandSize;
 
 // ============================================================================
 // flow.test.ts 专用工具（不在 test-utils 中）
@@ -242,7 +246,7 @@ const baseTestCases: TestCase<DiceThroneExpectation>[] = [
                     hp: INITIAL_HEALTH,
                     cp: INITIAL_CP,
                     handSize: expectedHandSize,
-                    deckSize: expectedDeckAfterDraw4,
+                    deckSize: expectedDoctorStrangeDeckAfterStartingHand,
                 },
             },
         },
@@ -322,7 +326,7 @@ const baseTestCases: TestCase<DiceThroneExpectation>[] = [
                 '1': {
                     cp: expectedIncomeCp,
                     handSize: expectedHandSize + 1,
-                    deckSize: expectedDeckAfterDraw4 - 1,
+                    deckSize: expectedDoctorStrangeDeckAfterStartingHand - 1,
                 },
             },
         },
@@ -1694,8 +1698,8 @@ describe('王权骰铸流程测试', () => {
                 displayOnly: true,
                 continuation: {
                     kind: 'attack',
-                    settlementStage: 'preDamage',
-                    markBonusDiceResolved: true,
+                    settlementStage: 'preserve',
+                    markBonusDiceResolved: false,
                 },
             });
             expect(pendingBonusState.core.players['3'].statusEffects[STATUS_IDS.CONCUSSION] ?? 0).toBe(0);

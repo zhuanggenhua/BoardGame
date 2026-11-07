@@ -864,7 +864,7 @@ describe('resolveExitMatchErrorMessageKey', () => {
 });
 
 describe('onlineAiSeats', () => {
-    it('补领 guest 房间的 AI 凭据时，即使当前存在 token 也必须使用房间 ownerKey 的 guestId', () => {
+    it('补领 guest 房间的 AI 凭据时只使用本地游客身份和房主凭据', () => {
         const options = resolveOnlineAiSeatClaimOptions({
             matchInfo: {
                 matchID: 'match-guest-owner',
@@ -878,11 +878,13 @@ describe('onlineAiSeats', () => {
             },
             token: 'stale-user-token',
             guestId: '9999',
+            ownerCredentials: 'local-owner-credential',
             playerName: 'AI 2 号位',
         });
 
         expect(options).toEqual({
-            guestId: '2141',
+            guestId: '9999',
+            ownerCredentials: 'local-owner-credential',
             playerName: 'AI 2 号位',
         });
     });

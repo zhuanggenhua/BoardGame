@@ -31,6 +31,7 @@ export interface CreateMatchOptions {
     numPlayers: number;
     setupData?: Record<string, unknown>;
     playerName?: string;
+    previousOwnerCredentials?: string;
     forceReplaceOwnerRoom?: boolean;
 }
 
@@ -38,6 +39,7 @@ export interface CreateMatchResult {
     matchID: string;
     ownerPlayerID?: string;
     ownerCredentials?: string;
+    ownerType?: 'user' | 'guest';
 }
 
 export interface JoinMatchOptions {
@@ -116,7 +118,6 @@ async function apiPost<T = unknown>(url: string, body: unknown, extraHeaders?: R
             method: 'POST',
             baseUrl: baseUrl(),
             errorName: error instanceof Error ? error.name : typeof error,
-            errorMessage: error instanceof Error ? error.message : String(error),
             bodyKeys: body && typeof body === 'object' && !Array.isArray(body)
                 ? Object.keys(body as Record<string, unknown>)
                 : [],
@@ -130,7 +131,6 @@ async function apiPost<T = unknown>(url: string, body: unknown, extraHeaders?: R
             method: 'POST',
             status: response.status,
             statusText: response.statusText,
-            details: text,
         });
         // 401 仅上抛给调用方处理，避免业务接口误判时提前清空登录态
         if (response.status === 401) {
@@ -153,7 +153,6 @@ async function apiGet<T = unknown>(url: string, options: ApiRequestOptions = {})
             method: 'GET',
             baseUrl: baseUrl(),
             errorName: error instanceof Error ? error.name : typeof error,
-            errorMessage: error instanceof Error ? error.message : String(error),
         });
         throw error;
     }
@@ -166,7 +165,6 @@ async function apiGet<T = unknown>(url: string, options: ApiRequestOptions = {})
                 method: 'GET',
                 status: response.status,
                 statusText: response.statusText,
-                details: text,
             });
         }
         // 401 仅上抛给调用方处理，避免业务接口误判时提前清空登录态
@@ -195,6 +193,7 @@ export async function createMatch(
         numPlayers: options.numPlayers,
         setupData: options.setupData,
         playerName: options.playerName,
+        previousOwnerCredentials: options.previousOwnerCredentials,
         forceReplaceOwnerRoom: options.forceReplaceOwnerRoom,
     }, init?.headers);
 }
@@ -265,7 +264,7 @@ export async function claimSeat(
     gameName: string,
     matchID: string,
     playerID: string,
-    options: { token?: string; guestId?: string; playerName?: string },
+    options: { token?: string; guestId?: string; ownerCredentials?: string; playerName?: string },
 ): Promise<{ playerCredentials: string }> {
     const url = `${baseUrl()}/games/${gameName}/${matchID}/claim-seat`;
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -276,6 +275,7 @@ export async function claimSeat(
     if (!options.token && options.guestId) {
         body.guestId = options.guestId;
     }
+    if (!options.token && options.ownerCredentials) body.ownerCredentials = options.ownerCredentials;
     if (options.playerName) {
         body.playerName = options.playerName;
     }
@@ -299,31 +299,15 @@ export async function claimSeat(
 export async function playAgain(
     gameName: string,
     matchID: string,
-    options: { playerID: string; credentials: string; guestId?: string; token?: string },
-): Promise<{ nextMatchID: string }> {
-    // 先获取当前对局信息以复用 numPlayers 和 setupData
-    const matchInfo = await getMatch(gameName, matchID);
-    const numPlayers = matchInfo.players.length || 2;
-
-    const prevSetupData = (matchInfo.setupData ?? {}) as Record<string, unknown>;
-    const setupData = Object.fromEntries(
-        Object.entries(prevSetupData).filter(([key]) => ![
-            'ownerKey',
-            'ownerType',
-            'guestId',
-            'password',
-            'firstPlayerId',
-            'turnOrder',
-        ].includes(key)),
+    options: { playerID: string; credentials: string; token?: string; playerName?: string },
+): Promise<{ nextMatchID: string; ownerCredentials?: string; ownerType?: 'user' | 'guest' }> {
+    const { matchID: nextMatchID, ownerCredentials, ownerType } = await apiPost<CreateMatchResult>(
+        `${baseUrl()}/games/${gameName}/create`,
+        {
+            rematch: { matchID, playerID: options.playerID, credentials: options.credentials },
+            playerName: options.playerName,
+        },
+        options.token ? { Authorization: `Bearer ${options.token}` } : undefined,
     );
-    setupData.prevMatchID = matchID;
-    // 匿名用户需要传递 guestId 以通过服务端 owner 验证
-    if (options.guestId) setupData.guestId = options.guestId;
-
-    const { matchID: nextMatchID } = await createMatch(
-        gameName,
-        { numPlayers, setupData, forceReplaceOwnerRoom: true },
-        options.token ? { headers: { Authorization: `Bearer ${options.token}` } } : undefined,
-    );
-    return { nextMatchID };
+    return { nextMatchID, ownerCredentials, ownerType };
 }

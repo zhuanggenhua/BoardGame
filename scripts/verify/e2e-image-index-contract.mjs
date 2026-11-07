@@ -78,7 +78,7 @@ const readJsonFile = (filePath, label) => {
     }
 };
 
-const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestDir, projectRoot, indexDir, visualOnly = false }) => {
+const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestDir, projectRoot, indexDir, visualOnly = false, requiredStatesOnly = false }) => {
     // 新功能中的旧 UI 恢复仍须对照基线，不能靠 changeType 跳过。
     const requiresBaselineReview = manifest.changeType === 'refactor'
         || manifest.existingUiPolicy === 'restore-and-reuse';
@@ -145,7 +145,7 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
         if (reviewedPaths.has(resolvedPath)) {
             throw new Error(`逐图视觉审计存在重复媒体: ${entry.path}`);
         }
-        if (visualOnly || requiresBaselineReview) {
+        if (visualOnly || requiresBaselineReview || requiredStatesOnly) {
             const resolve = (reference) => resolveMediaReference(reference, { projectRoot, manifestDir, indexDir });
             const requireFile = (reference, label) => {
                 assertString(reference, label);
@@ -159,7 +159,7 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
                 throw new Error(`视觉媒体与来源 SHA 不一致: ${entry.path}`);
             }
             const originalReviewFile = requireFile(entry.independentReviewFile, 'independentReviewFile');
-            if (requiresBaselineReview) {
+            if (requiresBaselineReview || requiredStatesOnly) {
                 if (realpathSync(originalReviewFile) === realpathSync(reviewPath ?? manifestPath)) throw new Error('原审查报告不能指向聚合报告自身');
                 assertString(entry.sourceReviewEntry, 'sourceReviewEntry');
                 if (!entry.sourceReviewEntry.startsWith('/')) throw new Error('sourceReviewEntry 必须是 JSON Pointer');
@@ -181,7 +181,7 @@ const validateVisualReview = ({ manifest, manifestPath, manifestMedia, manifestD
         throw new Error('逐图视觉审计与 PASS 清单 media/images 未一一对应');
     }
 
-    if (requiresBaselineReview) {
+    if (requiresBaselineReview && !requiredStatesOnly) {
         assertString(visualReview.baselineReviewFile, 'baselineReviewFile');
         const baseline = readJsonFile(path.resolve(manifestDir, visualReview.baselineReviewFile), '旧新职责对照');
         if (baseline.status !== 'PASS' || !Array.isArray(baseline.requirements) || baseline.requirements.length !== manifest.requirements?.length) throw new Error('旧新职责对照缺项或未通过');
@@ -481,6 +481,37 @@ const validateDistinctUIEvidence = ({ manifest, index, outOfScopeMedia, projectR
         }
     }
     if (internalStates.size) throw new Error('内部媒体声明未关联未展示的界面状态');
+    // 第二版把预期状态与实际采集分开，避免漏拍后同时漏登记。
+    if (index.version >= 2 || manifest.captureContract !== undefined) {
+        const contractFile = requireFile(manifest.captureContract);
+        const contract = readJsonFile(contractFile, '必要截图合同');
+        if (contract.version !== 1 || contract.gameId !== manifest.gameId || contract.evidenceCategory !== manifest.evidenceCategory) throw new Error('必要截图合同版本或范围不一致');
+        if (!Array.isArray(contract.requiredStates) || !contract.requiredStates.length) throw new Error('必要截图合同缺少预期状态');
+        const requiredKeys = new Set();
+        const requiredMedia = [];
+        for (const state of contract.requiredStates) {
+            for (const field of ['chainId', 'uiStateId', 'viewport', 'reason']) assertString(state[field], `必要截图 ${field}`);
+            const key = JSON.stringify([state.chainId, state.uiStateId]);
+            if (requiredKeys.has(key)) throw new Error('必要截图合同存在重复状态');
+            requiredKeys.add(key);
+            const actual = traces.get(state.chainId)?.trace.uiStates.find(item => item.id === state.uiStateId);
+            if (!actual || actual.viewport !== state.viewport) throw new Error(`缺少必要截图状态: ${state.chainId}/${state.uiStateId}`);
+            const media = index.media.find(item => item.chainId === state.chainId && item.uiStateId === state.uiStateId)
+                ?? outOfScopeMedia.find(item => item.chainId === state.chainId && item.uiStateId === state.uiStateId);
+            if (!media) throw new Error(`必要截图状态未关联媒体: ${state.uiStateId}`);
+            requiredMedia.push(media.path);
+        }
+        assertString(contract.reviewFile, '必要截图逐图审查 reviewFile');
+        if (contract.reviewerKind !== undefined && contract.reviewerKind !== manifest.visualReview?.reviewer?.kind) throw new Error('必要截图审查者类型不符合合同');
+        const contractHash = createHash('sha256').update(readFileSync(contractFile)).digest('hex');
+        for (const chainId of new Set(contract.requiredStates.map(state => state.chainId))) {
+            if (traces.get(chainId).trace.captureContract?.sha256 !== contractHash) throw new Error('必要截图合同与实际运行记录的哈希不一致');
+        }
+        validateVisualReview({
+            manifest: { ...manifest, visualReview: { ...manifest.visualReview, reviewFile: contract.reviewFile } },
+            manifestMedia: requiredMedia, manifestDir, projectRoot, indexDir, requiredStatesOnly: true,
+        });
+    }
     if (new Set(manifest.requirements.map(req => req.requirement)).size !== manifest.requirements.length) throw new Error('重复需求名称');
     for (const chain of manifest.behaviorChains) {
         if (!manifest.requirements.some(req => req.evidence?.some(ref => normalizePath(resolve(ref)) === normalizePath(resolve(chain.evidence))))) throw new Error('行为链没有需求覆盖');

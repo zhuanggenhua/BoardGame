@@ -14,9 +14,15 @@
       "status": "In Progress",
       "room": "Room #{{id}}",
       "players": "{{count}} seated"
-    }
+    },
+    "appDownloadHint": "Download the app from the floating controls"
   },
   "homeV2": {
+    "gamePresence": {
+      "online": "Online {{count}}",
+      "waiting": "Waiting {{count}}",
+      "label": "{{online}} online, {{waiting}} waiting in public rooms"
+    },
     "waitingPlayers": "Waiting for players",
     "roomTitleFallback": "Room {{id}}",
     "roomLedgerTitle": "Room List",
@@ -2393,6 +2399,7 @@
   },
   "error": {
     "createRoomFailed": "Failed to create room",
+    "guestOwnerProofRequired": "The old room cannot be replaced without its saved owner credential. Try the original browser. An old room without a verifiable credential cannot be replaced automatically.",
     "createRoomNetwork": "Unable to connect to the game service. Make sure it is running and check CORS/proxy settings.",
     "createRoomCors": "The browser blocked the cross-origin request. Please use a local proxy or check CORS settings.",
     "createRoomInvalidToken": "Your login session is invalid or expired. Please sign in again.",
@@ -2412,7 +2419,7 @@
     "leaveForbidden": "Unable to leave the room: invalid or expired credentials. Please re-enter the match and try again.",
     "leaveNetwork": "Failed to leave the room due to network or service issues. Please try again later.",
     "roomFull": "Room is full",
-    "ownerClaimFailed": "Unable to reconnect: guest identity may be lost or credentials expired after server restart. Please retry with the original browser or create a new room.",
+    "ownerClaimFailed": "Unable to verify ownership of this seat. Guests need the owner credential saved in the original browser. Older seats without verifiable ownership cannot be restored automatically. Try the original browser or create a new room.",
     "roomCreatedButClaimFailed": "Room was created but failed to claim seat. Please go back to the lobby and try again.",
     "roomCreatedButEnterFailed": "Room was created, but automatic entry failed. Please go back to the lobby and enter it again.",
     "aiSeatClaimFailed": "Some AI seats failed to initialize. You have entered the room, but please verify the seat state.",
@@ -2712,7 +2719,7 @@
           "rejected": "Not approved"
         },
         "pendingLocked": "Your information is locked during review. Withdraw the application if you need to make changes.",
-        "verificationInstructions": "Verification code: {{code}}. Submit by {{deadline}}. Put the code on your author profile for an administrator to check, or provide a screenshot showing backend access.",
+        "verificationInstructions": "Verification code: <strong>{{code}}</strong>. Submit by {{deadline}}. Put the code on your author profile for an administrator to check, or provide a screenshot showing backend access.",
         "authorProfile": "Author profile",
         "evidence": "Verification screenshot",
         "evidencePreviewAlt": "Verification screenshot preview",
@@ -2822,7 +2829,8 @@
       "emptySubmissions": "There are no submissions awaiting review.",
       "emptyClaims": "There are no author claims awaiting review.",
       "emptyGames": "There are no listed external games yet."
-    }
+    },
+    "favorited": "Favorited"
   },
   "homeAppearance": {
     "settings": "Home settings",

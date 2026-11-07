@@ -11,6 +11,7 @@ import * as matchStatus from '../../../hooks/match/useMatchStatus';
 const navigateMock = vi.fn();
 const toastErrorMock = vi.fn();
 const toastWarningMock = vi.fn();
+const authMocks = vi.hoisted(() => ({ user: null as null | { id: string; username: string }, token: null as string | null }));
 const packageMocks = vi.hoisted(() => ({
     nativeAndroidRuntime: false,
     requestInstall: vi.fn(),
@@ -89,10 +90,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 vi.mock('../../../contexts/AuthContext', () => ({
-    useAuth: () => ({
-        user: null,
-        token: null,
-    }),
+    useAuth: () => authMocks,
 }));
 
 vi.mock('../../../contexts/ToastContext', () => ({
@@ -139,8 +137,8 @@ vi.mock('../../../features/mobile-packages/useGamePackageState', () => ({
 vi.mock('../../../hooks/match/ownerIdentity', () => ({
     getOrCreateGuestId: () => 'guest-1',
     getGuestName: () => 'Guest',
-    getOwnerKey: () => 'owner-1',
-    getOwnerType: () => 'guest',
+    getOwnerKey: (userId?: string) => userId ? `user:${userId}` : 'owner-1',
+    getOwnerType: (userId?: string) => userId ? 'user' : 'guest',
 }));
 
 vi.mock('../../../hooks/match/useMatchStatus', () => ({
@@ -235,6 +233,8 @@ vi.mock('../../lobby/gameDetailsContent', () => ({
 }));
 
 beforeEach(() => {
+    authMocks.user = null;
+    authMocks.token = null;
     packageMocks.nativeAndroidRuntime = false;
     packageMocks.hookResult = null;
     packageMocks.createRoomModalProps = null;
@@ -354,6 +354,7 @@ describe('HomeV2 GameDetails locked room join', () => {
         });
         const createMatchSpy = vi.spyOn(matchApi, 'createMatch').mockResolvedValueOnce({
             matchID: 'match-home-v2-mage-wars',
+            ownerCredentials: 'synthetic-owner-credential',
         });
         vi.mocked(matchStatus.claimSeat).mockResolvedValueOnce({ success: true, credentials: 'cred-0' });
 
@@ -385,6 +386,7 @@ describe('HomeV2 GameDetails locked room join', () => {
             await packageMocks.createRoomModalProps?.onConfirm?.({
                 roomName: 'Home V2 Mage Room',
                 numPlayers: 2,
+                playerName: 'Guest',
                 ttlSeconds: 0,
                 password: '',
                 enableAi: false,
@@ -426,6 +428,7 @@ describe('HomeV2 GameDetails locked room join', () => {
         );
         expect(matchStatus.claimSeat).toHaveBeenCalledWith('mage-wars', 'match-home-v2-mage-wars', '0', expect.objectContaining({
             guestId: 'guest-1',
+            ownerCredentials: 'synthetic-owner-credential',
             playerName: 'Guest',
         }));
         await waitFor(() => {
@@ -620,6 +623,43 @@ describe('HomeV2 GameDetails locked room join', () => {
 
         expect(await screen.findByTestId('home-v2-room-scenario-summary-match-qidahen-1'))
             .toHaveTextContent('剧本：剧本二：山海关之议（1622）');
+    });
+
+    it('公开房间没有 ownerKey 时用本地房主身份返回，不会作为新玩家加入', async () => {
+        mockMatches = [{ ...mockMatches[0], isLocked: false }];
+        Reflect.deleteProperty(mockMatches[0], 'ownerKey');
+        mockOwnerActiveMatch = { matchID: 'match-locked-1', gameName: 'tictactoe', ownerKey: 'owner-1', ownerType: 'guest' };
+        vi.mocked(matchStatus.claimSeat).mockResolvedValueOnce({ success: true, credentials: 'host-proof' });
+        const join = vi.spyOn(matchApi, 'joinMatch');
+        render(createElement(GameDetailsRight, { game: {
+            id: 'tictactoe', type: 'game', enabled: true, titleKey: 'games.tictactoe.title',
+            descriptionKey: 'games.tictactoe.description', category: 'abstract', playersKey: 'games.tictactoe.players', icon: 'XO', playerOptions: [2],
+        } }));
+        fireEvent.click(screen.getByTestId('home-v2-active-room-return-button'));
+        await waitFor(() => expect(matchStatus.claimSeat).toHaveBeenCalledWith('tictactoe', 'match-locked-1', '0', expect.any(Object)));
+        expect(join).not.toHaveBeenCalled();
+    });
+
+    it('guest 房主登录后重复恢复仍保留 guest 房间身份并使用私有凭证', async () => {
+        authMocks.user = { id: 'signed-in-user', username: 'Member' };
+        authMocks.token = 'signed-in-token';
+        mockMatches = [{ ...mockMatches[0], isLocked: false }];
+        Reflect.deleteProperty(mockMatches[0], 'ownerKey');
+        mockOwnerActiveMatch = { matchID: 'match-locked-1', gameName: 'tictactoe', ownerKey: 'owner-1', ownerType: 'guest' };
+        vi.mocked(matchStatus.setOwnerActiveMatch).mockImplementation(next => { mockOwnerActiveMatch = next; });
+        vi.mocked(matchStatus.readStoredMatchCredentials).mockReturnValue({ matchID: 'match-locked-1', gameName: 'tictactoe', playerID: '0', credentials: 'guest-host-proof' });
+        vi.mocked(matchStatus.claimSeat).mockResolvedValue({ success: true, credentials: 'guest-host-proof' });
+        render(createElement(GameDetailsRight, { game: {
+            id: 'tictactoe', type: 'game', enabled: true, titleKey: 'games.tictactoe.title', descriptionKey: 'games.tictactoe.description',
+            category: 'abstract', playersKey: 'games.tictactoe.players', icon: 'XO', playerOptions: [2],
+        } }));
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+            fireEvent.click(screen.getByRole('button', { name: /加锁房间/ }));
+            await waitFor(() => expect(matchStatus.setOwnerActiveMatch).toHaveBeenCalledTimes(attempt));
+            expect(mockOwnerActiveMatch).toMatchObject({ ownerType: 'guest', ownerKey: 'owner-1' });
+            expect(matchStatus.claimSeat).toHaveBeenLastCalledWith('tictactoe', 'match-locked-1', '0', expect.objectContaining({ ownerCredentials: 'guest-host-proof' }));
+            expect(vi.mocked(matchStatus.claimSeat).mock.lastCall?.[3].token).toBeUndefined();
+        }
     });
 
     it('当前房主房间会显示独立销毁入口，并在确认后调用销毁接口与隐藏房间行', async () => {

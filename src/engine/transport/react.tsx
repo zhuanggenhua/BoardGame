@@ -37,6 +37,7 @@ import { useGameProviderRuntime } from './useGameProviderRuntime';
 import { useLocalGameProviderRuntime } from './useLocalGameProviderRuntime';
 import {
     GameClientContext,
+    useGameFeedbackContext,
 } from './reactContext';
 export {
     useGameClient,
@@ -124,6 +125,7 @@ export function GameProvider({
         engineConfig,
         latencyConfig,
     });
+    useGameFeedbackContext(value);
 
     return (
         <EventStreamRollbackContext.Provider value={rollbackSignal}>
@@ -145,6 +147,8 @@ export interface LocalGameProviderProps {
     numPlayers: number;
     /** 随机种子 */
     seed: string;
+    /** 可选固定场景随机源；seed 仍负责会话与持久化身份。 */
+    randomSeed?: string;
     /** 本地对局 setupData，透传给领域 setup() */
     setupData?: unknown;
     /** 子组件 */
@@ -183,6 +187,7 @@ export function LocalGameProvider({
     config,
     numPlayers,
     seed,
+    randomSeed,
     setupData,
     children,
     onCommandRejected,
@@ -199,6 +204,7 @@ export function LocalGameProvider({
         config,
         numPlayers,
         seed,
+        randomSeed,
         setupData,
         onCommandRejected,
         seatControllers,
@@ -210,6 +216,7 @@ export function LocalGameProvider({
         shouldRestorePersistedSession,
         disableLocalAiAutomation,
     });
+    useGameFeedbackContext(value);
 
     return (
         <GameClientContext.Provider value={value}>

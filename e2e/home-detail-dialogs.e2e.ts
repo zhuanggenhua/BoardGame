@@ -187,7 +187,7 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             await activate(account.getByRole('button', { name: '修改', exact: true }).first());
             const avatar = page.locator('[data-platform-dialog="avatar"]');
             await modernDialog(avatar);
-            await activate(avatar.getByRole('button', { name: '取消', exact: true }));
+            await activate(avatar.getByRole('button', { name: '关闭', exact: true }));
             await expect(avatar).toHaveCount(0);
             await activate(page.getByTestId('account-settings-open-email'));
             const email = page.getByTestId('email-bind-modal');
@@ -240,40 +240,52 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             await activate(cursor.getByRole('button', { name: '关闭', exact: true }));
             await expect(cursor).toHaveCount(0);
 
+            // 同一正式入口切经典，仅核对样式隔离，不拍重复旧图。
+            await switchStyle(page, 'classic');
+            await openUserMenu(page); await activate(page.getByTestId('user-menu-account-settings'));
+            await expect(account).toBeVisible();
+            await expect(account).not.toHaveCSS('border-top-width', '3px');
+            await page.keyboard.press('Escape');
+            await record(`${label}-二级弹窗行为`, { supportExpandedClosed: true,
+                accountAvatarEmail: true, notificationFriendsCursor: true, cursorVariantsOpenedClosed: true,
+                historyPresentationOnly: true, classicStyleIsolated: true,
+                boundary: '只验证样式及入口/关闭，不发送支付、社交消息或邮箱验证码；截图只保留本轮不同UI变化' });
+        } finally { await context.close(); }
+    });
+    test(`${label}首页反馈粘贴图片与关闭`, async ({ browser }, info) => {
+        info.setTimeout(60_000);
+        const context = await browser.newContext({ baseURL: info.project.use.baseURL, viewport,
+            hasTouch: mobile, isMobile: mobile });
+        try {
+            const page = await context.newPage();
+            await initHome(page);
+            const activate = async (locator: Locator) => mobile ? locator.tap() : locator.click();
             const fab = page.getByTestId('fab-menu');
             await activate(fab.locator('button').first());
-            await activate(fab.locator('[data-fab-id="about"]'));
-            const about = page.locator('[data-platform-dialog="about"]');
-            await modernDialog(about);
-            await expect(about.locator('.platform-dialog-close')).toHaveCSS('color', 'rgb(255, 255, 255)');
-            await expect(about.locator('.author-support-content, .author-support-codes')).toHaveCount(0);
-            await capture(page, `${label}-关于`);
-            await activate(about.locator('.platform-dialog-close'));
-            await expect(about).toHaveCount(0);
-            const coverRect = await page.locator('[data-game-id="dicethrone"] .platform-game-art img').boundingBox();
-            expect(coverRect).not.toBeNull();
+            await expect(fab.locator('[data-fab-id="about"]')).toHaveCount(0);
+            await expect(page.locator('[data-platform-dialog="about"]')).toHaveCount(0);
+            const attachment = (await page.screenshot({ scale: 'css' })).toString('base64');
             await activate(fab.locator('[data-fab-id="feedback"]'));
             const feedback = page.locator('[data-platform-dialog="feedback"]');
             const feedbackCloseEvents: string[] = [];
             await page.exposeFunction('__homeFeedbackInput', (type: string) => { feedbackCloseEvents.push(type); });
             await expect(feedback.locator('textarea')).not.toHaveAttribute('placeholder', /Ctrl\+V/);
-            // 自动截屏会暂时隐藏弹窗本身；等待真实预览，避免在中间态抢读布局或采图。
-            await expect(page.getByTestId('feedback-image-preview')).toBeVisible({ timeout: 20_000 });
-            // 已加载的王权封面在导出图中也必须存在；空白占位只有低色差，不能以预览节点存在冒充成功。
-            await expect.poll(() => page.getByTestId('feedback-image-preview').locator('img').evaluate((node, args) => {
-                const img = node as HTMLImageElement;
-                if (!img.naturalWidth) return 0;
-                const canvas = document.createElement('canvas'); canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
-                const ctx = canvas.getContext('2d')!; ctx.drawImage(img, 0, 0);
-                let colorful = 0;
-                for (let x = 0; x < 10; x++) for (let y = 0; y < 10; y++) {
-                    const px = Math.floor((args.rect.x + args.rect.width * (.2 + x * .06)) / args.width * canvas.width);
-                    const py = Math.floor((args.rect.y + args.rect.height * (.2 + y * .06)) / args.height * canvas.height);
-                    const [r, g, b] = ctx.getImageData(px, py, 1, 1).data;
-                    if (Math.max(r, g, b) - Math.min(r, g, b) > 70) colorful++;
-                }
-                return colorful;
-            }, { rect: coverRect!, width: viewport.width, height: viewport.height })).toBeGreaterThan(20);
+            await expect(feedback).toBeVisible();
+            await expect(feedback.getByTestId('feedback-capture-screenshot')).toHaveCount(0);
+            await expect(feedback.getByTestId('feedback-paste-hint')).toHaveText('可粘贴图片');
+            const pastedPreview = feedback.getByTestId('feedback-image-preview');
+            await expect(pastedPreview).toHaveCount(0);
+
+            // 通过反馈输入框公开的粘贴入口提供真实图片字节。
+            await feedback.locator('textarea').evaluate((node, base64) => {
+                const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+                const clipboardData = new DataTransfer();
+                clipboardData.items.add(new File([bytes], '首页附件.png', { type: 'image/png' }));
+                node.dispatchEvent(new ClipboardEvent('paste', { clipboardData, bubbles: true, cancelable: true }));
+            }, attachment);
+            await expect(pastedPreview).toBeVisible();
+            await expect.poll(() => pastedPreview.locator('img').evaluate(node => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+            await record(`${label}-首页反馈截图入口`, { automaticCaptureAbsent: true, pastePreviewDecoded: true });
             await modernDialog(feedback);
             await expect(feedback.locator('.platform-dialog-close')).toHaveCSS('color', 'rgb(255, 255, 255)');
             await capture(page, `${label}-反馈表单`);
@@ -341,16 +353,7 @@ for (const { mobile, label, viewport } of SCREEN_CASES) {
             finally { await record(`${label}-反馈关闭输入`, { events:feedbackCloseEvents, closed:await feedback.count()===0 }); }
             await activate(fab.locator('button').first());
 
-            // 同一正式入口切经典，仅核对样式隔离，不拍重复旧图。
-            await switchStyle(page, 'classic');
-            await openUserMenu(page); await activate(page.getByTestId('user-menu-account-settings'));
-            await expect(account).toBeVisible();
-            await expect(account).not.toHaveCSS('border-top-width', '3px');
-            await page.keyboard.press('Escape');
-            await record(`${label}-二级弹窗行为`, { supportExpandedClosed: true,
-                accountAvatarEmail: true, notificationFriendsFeedbackCursorAbout: true, cursorVariantsOpenedClosed: true,
-                historyPresentationOnly: true, classicStyleIsolated: true,
-                boundary: '只验证样式及入口/关闭，不发送支付、社交消息或邮箱验证码；截图只保留本轮不同UI变化' });
         } finally { await context.close(); }
     });
+
 }

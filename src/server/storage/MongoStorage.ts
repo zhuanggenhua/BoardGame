@@ -7,6 +7,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import type {
     MatchStorage,
+    MatchReplacementStorage,
+    MatchReplacementSnapshot,
     MatchAuthMetadataProvider,
     MatchMetadata,
     ClaimSeatMetadataInput,
@@ -17,6 +19,7 @@ import type {
     FetchResult,
     ListMatchesOpts,
 } from '../../engine/transport/storage';
+import { MatchReplacementOutcomeUnknownError } from '../../engine/transport/storage';
 import { hasOccupiedPlayers, type PlayerSeat } from '../matchOccupancy';
 import logger from '../../../server/logger';
 
@@ -164,7 +167,10 @@ const resolveMetadataUpdatedAtDate = (metadata: MatchMetadata): Date => {
 /**
  * MongoDB 存储实现
  */
-export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
+export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider, MatchReplacementStorage {
+    private readonly replacementSnapshots = new WeakMap<object, {
+        matchID: string; document: mongoose.mongo.BSON.Document;
+    }>();
     private bootTimeMs = Date.now();
 
     async connect(): Promise<void> {
@@ -214,6 +220,92 @@ export class MongoStorage implements MatchStorage, MatchAuthMetadataProvider {
         });
 
         logger.info(`[MongoStorage] 创建房间 matchID=${matchID} ttlSeconds=${ttlSeconds} ownerKey=${ownerKey ?? 'null'} ownerType=${ownerType ?? 'unknown'}`);
+    }
+
+    async fetchMatchForReplacement(matchID: string): Promise<MatchReplacementSnapshot | undefined> {
+        // Read the entire raw BSON document. Projected/lean defaults cannot capture
+        // absent fields, unknown legacy fields, TTL changes, or document identity.
+        const document = await getMatchModel().collection.findOne({ matchID });
+        if (!document?.state || !document.metadata) return undefined;
+        const token = Object.freeze({});
+        this.replacementSnapshots.set(token, { matchID, document });
+        return {
+            state: structuredClone(document.state) as StoredMatchState,
+            metadata: structuredClone(document.metadata) as MatchMetadata,
+            token,
+        };
+    }
+
+    async replaceMatchIfUnchanged(
+        sourceMatchID: string, snapshot: MatchReplacementSnapshot,
+        nextMatchID: string, data: CreateMatchData,
+    ): Promise<'replaced' | 'conflict'> {
+        const expected = snapshot.token && typeof snapshot.token === 'object'
+            ? this.replacementSnapshots.get(snapshot.token) : undefined;
+        if (!expected || expected.matchID !== sourceMatchID || sourceMatchID === nextMatchID) return 'conflict';
+
+        const Match = getMatchModel();
+        const prepared = structuredClone(data);
+        const state = this.sanitizeStateForStorage(prepared.initialState);
+        const stateG = state.G as { __setupData?: { ttlSeconds?: unknown } } | undefined;
+        const metadataSetup = prepared.metadata.setupData as { ttlSeconds?: unknown } | undefined;
+        const ttl = stateG?.__setupData?.ttlSeconds ?? metadataSetup?.ttlSeconds;
+        const ttlSeconds = typeof ttl === 'number' ? ttl : 0;
+        const now = new Date();
+        const replacement = new Match({
+            _id: expected.document._id,
+            matchID: nextMatchID,
+            gameName: prepared.metadata.gameName,
+            state,
+            metadata: prepared.metadata,
+            ttlSeconds,
+            expiresAt: calculateExpiresAt(ttlSeconds),
+            createdAt: now,
+            updatedAt: now,
+        });
+        const validationError = replacement.validateSync();
+        if (validationError) throw validationError;
+        // Serialize before issuing any write, including the complete query/update
+        // envelope. Large documents can double in size in a full-snapshot CAS.
+        const document = mongoose.mongo.BSON.deserialize(mongoose.mongo.BSON.serialize(replacement.toObject()));
+        const filter = {
+            _id: expected.document._id,
+            matchID: sourceMatchID,
+            $expr: { $eq: ['$$ROOT', { $literal: expected.document }] },
+        };
+        const options = { upsert: false, collation: { locale: 'simple' } };
+        const command = { update: Match.collection.name, updates: [{ q: filter, u: document, ...options }] };
+        if (mongoose.mongo.BSON.serialize(command).byteLength > 16 * 1024 * 1024) {
+            throw new Error('Match replacement snapshot and new room exceed the safe BSON command size.');
+        }
+        try {
+            // One server-side compare-and-swap; no create/delete window, no upsert,
+            // no transaction prerequisite and no process-local lock masquerading as CAS.
+            const result = await Match.collection.replaceOne(filter, document, options);
+            if (!result.acknowledged) throw new Error('Replacement write was not acknowledged.');
+            if (result.matchedCount === 0) return 'conflict';
+            this.replacementSnapshots.delete(snapshot.token as object);
+            return 'replaced';
+        } catch (error) {
+            if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) return 'conflict';
+            // A lost response can follow a committed rename. Only an exact read
+            // of our prepared new document can confirm success; never rewrite.
+            try {
+                const committed = await Match.collection.findOne({
+                    _id: expected.document._id,
+                    matchID: nextMatchID,
+                    $expr: { $eq: ['$$ROOT', { $literal: document }] },
+                }, { collation: { locale: 'simple' } });
+                if (committed) {
+                    this.replacementSnapshots.delete(snapshot.token as object);
+                    return 'replaced';
+                }
+            } catch {
+                // Neither an unsuccessful read nor a changed document establishes
+                // whether the original write committed.
+            }
+            throw new MatchReplacementOutcomeUnknownError(error);
+        }
     }
 
     async setState(matchID: string, state: StoredMatchState): Promise<void> {

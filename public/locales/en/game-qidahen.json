@@ -140,7 +140,8 @@
       "armaments": "Armaments {{summary}}",
       "armamentsInspect": "Armament details",
       "defeatMarkers": "Defeats ×{{count}}",
-      "current": "Current"
+      "current": "Current turn",
+      "yearFirst": "First this year"
     },
     "map": {
       "mainMapAlt": "Qidahen main map",
@@ -389,7 +390,6 @@
         "tacticLevelBonus": "{{troop}} die level {{bonus}}"
       },
       "postBattle": {
-        "summary": "{{summary}} · Commit {{committedTroops}}",
         "modeOccupy": "Occupy",
         "modeBesiege": "Besiege",
         "modeWithdraw": "Withdraw",
@@ -490,11 +490,16 @@
       "confirmFaction": "Confirm faction"
     },
     "battleRoll": {
+      "layoutUnavailable": "No dice space",
+      "scrollReport": "Scroll to read the report.",
+      "continueResolution": "Continue resolution",
       "report": "Battle report",
       "total": "Total {{total}}",
       "inflictedDamage": "Deals {{damage}} damage",
       "attacker": "Attacker",
       "defender": "Defender",
+      "sideOwner": "{{faction}} · {{role}}",
+      "damageTo": "Deals {{damage}} damage to {{target}}",
       "totals": "Roll totals: attacker {{attacker}} · defender {{defender}}",
       "damage": "Attacker deals {{attacker}} damage; defender deals {{defender}} damage",
       "phase": {
@@ -539,17 +544,17 @@
         "reclaim-action": "You may also perform Reclamation in this space. Add 1 population to each of up to 5 controlled regions without exceeding their population limits. Population supports local troops and determines eligibility for midyear tax.",
         "reclaim-target": "At midyear, each controlled region with more population than troops and no siege provides 1 card. Liaodong currently has 3 population and 3 units. Reclaim it to qualify for that income.",
         "recruit-action": "You may still take one hand action this turn. Use your replenished cards to recruit troops for the attack on Yehe while retaining a garrison in Liaobei. Ming’s Raise Troops: discard 1 hand card to establish either 6 level-2 units or 2 level-4 Sichuan infantry units. Choose Raise Troops.",
-        "recruit-payment": "Silver has no special effect and is used by discarding it as a resource. Pay with this Silver card and retain your other cards. The magnifying glass opens a full-card view.",
+        "recruit-payment": "Silver is a resource to discard. Pay for recruitment with this card and keep your battle cards. Use the magnifier to read the whole card.",
         "recruit-source": "Regular units must be established in your homeland. Recruit in Liaobei, the source of this attack.",
-        "recruit-troops": "Establish 6 level-2 units: send two across the river and retain the rest. Each unit’s level determines its die: level 2 uses an eight-sided die, level 4 a twelve-sided die. At New Year, troops beyond local population require cards or removal.",
-        "midyear": "The wheel must stop when passing Midyear or New Year. The active player may take one action there or decline; all factions then resolve the season. At Midyear, each tax-eligible region provides 1 card, and Ming draws 5 extra transport cards. Reclaimed Liaodong now contributes. Character judgment conditions are also checked.",
-        "hand-limit": "Income provides more options, but Ming’s hand limit is 15. Discard excess cards at the start of your turn. Retain Mandarin Duck Formation and Artillery Technology for the coming battle; discard the six highlighted cards.",
+        "recruit-troops": "Build six level-2 units for the attack and the garrison. Level-2 units use a d8, while level-4 units use a d12.",
+        "midyear": "The wheel must stop at Midyear and New Year. The active player may perform one action in that space or pass, then everyone resolves the seasonal effects. Midyear has just resolved. Each qualifying tax region draws one card, and Ming draws five additional canal-transport cards. Reclaimed Liaodong contributed to this income. Midyear also checks character conditions. Next, resolve the hand limit.",
+        "hand-limit": "Ming must discard down to 15 cards at the start of its turn. Keep Mandarin Duck Formation and Artillery Technology. Select the six cards marked in white.",
         "battle-move": "Your frontier force is ready. Advance 1 space to Dispatch and Attack. Cross from Liaobei into Yehe this turn to improve your control-growth score.",
-        "upgrade-card": "Liaobei’s artillery will join this battle. Use your hand action to develop Artillery Technology before the wheel’s attack. You choose the order of your hand and wheel actions. Playing an armament requires discarding another hand card; the armament then remains in play. Each developed Artillery Technology adds 1 to artillery rolls and raises their training limit. Play Artillery Technology to strengthen your artillery.",
+        "upgrade-card": "Play this Artillery Technology for +1 to artillery rolls and a higher training limit. Then discard another card to pay. The developed card stays in play.",
         "upgrade-payment": "The played technology is not the payment card. Discard this separate Silver card to complete development.",
         "dispatch-action": "Dispatch and Attack: discard 1 card to move up to 6 units. Infantry and artillery move 1 space; cavalry move 2. Entering a region outside your control or friendship triggers combat. Dispatch your force toward Yehe.",
         "dispatch-payment": "This discard pays for the wheel action; your hand action was already used on the armament. Pay with this card and retain Mandarin Duck Formation for combat.",
-        "dispatch-troops": "The side with more surviving infantry and cavalry wins a field battle; ties favor the defender. The river to Yehe gives a battle width of 2, while artillery ignores that width. Select two level-2 infantry and the existing level-1 artillery, then confirm.",
+        "dispatch-troops": "The side with more surviving infantry and cavalry wins a field battle; ties favor the defender. The river to Yehe gives a battle width of 2, while artillery ignores that width. Select two level-2 infantry and one level-1 artillery, then confirm.",
         "dispatch-target": "Your force is selected. Choose Yehe as its destination. Mongol troops defend it; after you commit, the defender first decides whether to evade battle.",
         "defender-response": "Defending cavalry may evade into another controlled region; Mongol chooses to fight. Normally each 3 rolled points causes 1 damage, but its developed Cavalry Armor requires 4 here. Both sides may now play a tactic.",
         "tactic-card": "Normally you may play 1 tactic per battle. Mandarin Duck Formation changes these level-2 infantry to ten-sided dice without changing their levels; without it, each rolls an eight-sided die. Select and confirm the card to strengthen this attack.",

@@ -10,6 +10,7 @@ export type OnlineAiSeatState = {
 export type OnlineAiSeatClaimOptions = {
     token?: string;
     guestId?: string;
+    ownerCredentials?: string;
     playerName?: string;
 };
 
@@ -35,23 +36,20 @@ export function resolveOnlineAiSeatClaimOptions(args: {
     matchInfo: MatchInfo;
     token?: string | null;
     guestId?: string | null;
+    ownerCredentials?: string | null;
     playerName?: string;
 }): OnlineAiSeatClaimOptions {
     const setupData = toPlainRecord(args.matchInfo.setupData);
     const ownerType = readString(setupData.ownerType);
-    const ownerKey = readString(setupData.ownerKey);
-    const setupGuestId = readString(setupData.guestId);
-    const ownerGuestId = ownerKey.startsWith('guest:')
-        ? ownerKey.slice('guest:'.length).trim()
-        : '';
     const fallbackGuestId = readString(args.guestId);
+    const ownerCredentials = readString(args.ownerCredentials);
     const token = readString(args.token);
     const playerName = readString(args.playerName);
 
-    if (ownerType === 'guest' || ownerKey.startsWith('guest:')) {
-        const resolvedGuestId = setupGuestId || ownerGuestId || fallbackGuestId;
+    if (ownerType === 'guest') {
         return {
-            ...(resolvedGuestId ? { guestId: resolvedGuestId } : {}),
+            ...(fallbackGuestId ? { guestId: fallbackGuestId } : {}),
+            ...(ownerCredentials ? { ownerCredentials } : {}),
             ...(playerName ? { playerName } : {}),
         };
     }
@@ -65,6 +63,7 @@ export function resolveOnlineAiSeatClaimOptions(args: {
 
     return {
         ...(fallbackGuestId ? { guestId: fallbackGuestId } : {}),
+        ...(ownerCredentials ? { ownerCredentials } : {}),
         ...(playerName ? { playerName } : {}),
     };
 }

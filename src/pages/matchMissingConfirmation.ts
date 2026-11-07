@@ -9,12 +9,14 @@ export type ResolveMissingMatchConfirmationArgs = {
     isAutoJoining: boolean;
     autoJoinGraceActive: boolean;
     onlineTransportError?: string | null;
+    rematchInProgress?: boolean;
     matchStatusErrorKind?: 'not_found' | 'transient_unreachable' | null;
 };
 
 export function resolveMissingMatchConfirmationSignal(
     args: ResolveMissingMatchConfirmationArgs
 ): MissingMatchConfirmationSignal {
+    if (args.rematchInProgress) return null;
     if (args.isTutorialRoute || !args.matchId) return null;
     if (args.shouldAutoJoin || args.isAutoJoining || args.autoJoinGraceActive) return null;
     if (args.onlineTransportError === 'match_not_found' || args.matchStatusErrorKind === 'not_found') {

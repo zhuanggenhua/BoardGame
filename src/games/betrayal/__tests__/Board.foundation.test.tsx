@@ -1,11 +1,12 @@
 /* @vitest-environment happy-dom */
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import type { PixiMapSceneHostProps } from '../../../engine/mapRenderer';
 import {
   act,
   cleanup,
   fireEvent,
-  render,
+  render as renderWithoutRouter,
   screen,
   waitFor,
   within,
@@ -93,6 +94,9 @@ import {
 } from '../scenarioConfig';
 import gameLocale from '../../../../public/locales/zh-CN/game-betrayal.json';
 import commonLocale from '../../../../public/locales/zh-CN/common.json';
+
+// Match the production Router context, including later endgame rerenders.
+const render = (ui: React.ReactNode) => renderWithoutRouter(ui, { wrapper: MemoryRouter });
 
 type TranslationTree = Record<string, string | TranslationTree>;
 
@@ -858,6 +862,7 @@ function renderBoardTree(
         playerID?: string | null;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
         mode?: GameMode;
+        reset?: () => void;
     },
 ) {
     return (
@@ -872,6 +877,7 @@ function renderBoardTree(
                         dispatch={() => {}}
                         playerID={options && 'playerID' in options ? options.playerID! : '0'}
                         matchData={options?.matchData}
+                        reset={options?.reset}
                         isConnected
                     />
                 </GameModeProvider>
@@ -915,6 +921,7 @@ function renderBoard(
         playerID?: string | null;
         matchData?: Array<{ id: number; name: string; isConnected: boolean }>;
         mode?: GameMode;
+        reset?: () => void;
     },
 ) {
     return render(
@@ -5462,7 +5469,7 @@ describe('Betrayal Board foundation', () => {
         });
     });
 
-    it('圣符和雕像会在真实页面探索入口传入声明', async () => {
+    it('圣符在揭示后不可逆替换，雕像在放置前决定', async () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const firstEventRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'kitchen')!;
         const secondEventRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'diningRoom')!;
@@ -5505,17 +5512,17 @@ describe('Betrayal Board foundation', () => {
             />,
         );
 
+        expect(screen.queryByTestId('betrayal-explore-options')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
         expect(screen.getByTestId('betrayal-explore-options')).toBeInTheDocument();
         fireEvent.click(screen.getByTestId('betrayal-explore-option-holy-symbol'));
         fireEvent.click(screen.getByTestId('betrayal-explore-option-idol'));
-        expect(screen.getByTestId('betrayal-room-explore-target-ground-north')).toBeInTheDocument();
-        fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
         await confirmPendingRoomPlacement();
 
         expect(screen.queryByTestId('betrayal-discovery-panel')).not.toBeInTheDocument();
         expect(screen.queryByTestId('betrayal-discovery-no-card-result')).not.toBeInTheDocument();
         expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('圣符埋葬');
-        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用雕像跳过了事件：阴影扑面');
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('使用雕像跳过了事件');
     });
 
     it('刚获得圣符或雕像时真实页面不会显示探索前持有物按钮', () => {
@@ -5692,7 +5699,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.queryByTestId('betrayal-action-use')).not.toBeInTheDocument();
     });
 
-    it('探索放置面板会提示区域不匹配板块已被掩埋', () => {
+    it('探索放置面板不暴露只看背面埋底的区域不匹配板块', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const upperRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.upper.find((room) => room.visualId === 'tower')!;
         const basementRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.basement.find((room) => room.visualId === 'larder')!;
@@ -5729,11 +5736,11 @@ describe('Betrayal Board foundation', () => {
         fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
 
         expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveTextContent('火炉房');
-        expect(screen.getByTestId('betrayal-room-placement-buried-rooms')).toHaveTextContent('已掩埋：塔楼、储物间');
+        expect(screen.queryByTestId('betrayal-room-placement-buried-rooms')).not.toBeInTheDocument();
     });
 
     it('探索放置面板在教程步切换造成运行态刷新后会保留待放置房间', () => {
-        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        let core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const groundRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'furnaceRoom')!;
         core.drawOrder = ['item'];
         core.roomDiscoveryDeck = [
@@ -5755,11 +5762,11 @@ describe('Betrayal Board foundation', () => {
         core.activeRoomId = 'hallway';
         core.currentExplorerInventory = [];
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
         const view = renderBoard(core, {
             matchData: defaultMatchData,
         });
 
-        fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
 
         expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveTextContent('火炉房');
 
@@ -5771,7 +5778,7 @@ describe('Betrayal Board foundation', () => {
         expect(screen.getByTestId('betrayal-room-placement-confirm')).not.toBeDisabled();
     });
 
-    it('取消待放置探索房间后回默认模式且可选择另一个问号，不消耗领域资源', () => {
+    it('揭示后关闭或换门不能取消，必须立即放置且不提前扣移动', () => {
         const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const groundRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'furnaceRoom')!;
         core.drawOrder = ['item'];
@@ -5796,49 +5803,22 @@ describe('Betrayal Board foundation', () => {
         expect(legalSlots.length).toBeGreaterThan(1);
         const firstSlot = legalSlots[0]!;
         const nextSlot = legalSlots[1]!;
-        const initialState = {
-            movesRemaining: core.movesRemaining,
-            turnEndedByDiscovery: core.turnEndedByDiscovery,
-            exploreIndex: core.exploreIndex,
-            drawOrder: [...core.drawOrder],
-            roomDiscoveryDeck: JSON.stringify(core.roomDiscoveryDeck),
-            inventoryIds: core.currentExplorerInventory.map((card) => card.id),
-            roomStates: core.rooms.map(({ id, state }) => [id, state]),
-        };
-        const dispatch = vi.fn();
-        renderBoardWithDispatch(core, dispatch, { matchData: defaultMatchData });
-
-        expect(screen.queryByTestId('betrayal-action-explore')).not.toBeInTheDocument();
-        const initialTurnHint = screen.getByTestId('betrayal-turn-hint').textContent;
-        expect(initialTurnHint).toBeTruthy();
-        expect(screen.getByTestId(`betrayal-room-explore-target-${firstSlot.id}`)).toBeInTheDocument();
-        expect(screen.getByTestId(`betrayal-room-explore-target-${nextSlot.id}`)).toBeInTheDocument();
+        render(<HarnessBoard initialCore={core} matchData={defaultMatchData} />);
         fireEvent.click(screen.getByTestId(`betrayal-room-${firstSlot.id}`));
-        expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveTextContent('火炉房');
-
-        fireEvent.click(screen.getByTestId('betrayal-room-placement-cancel'));
-
-        expect(screen.queryByTestId('betrayal-room-placement-panel')).not.toBeInTheDocument();
-        expect(screen.getByTestId('betrayal-turn-hint').textContent).toBe(initialTurnHint);
-        expect(screen.getByTestId(`betrayal-room-explore-target-${nextSlot.id}`)).toBeInTheDocument();
-
+        expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveAttribute('data-room-placement-slot', firstSlot.id);
+        expect(screen.queryByTestId('betrayal-room-placement-cancel')).not.toBeInTheDocument();
+        fireEvent.keyDown(document, { key: 'Escape' });
         fireEvent.click(screen.getByTestId(`betrayal-room-${nextSlot.id}`));
-        expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveTextContent('火炉房');
-        expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveAttribute('data-room-placement-slot', nextSlot.id);
-        expect(dispatch).not.toHaveBeenCalled();
-        expect({
-            movesRemaining: core.movesRemaining,
-            turnEndedByDiscovery: core.turnEndedByDiscovery,
-            exploreIndex: core.exploreIndex,
-            drawOrder: [...core.drawOrder],
-            roomDiscoveryDeck: JSON.stringify(core.roomDiscoveryDeck),
-            inventoryIds: core.currentExplorerInventory.map((card) => card.id),
-            roomStates: core.rooms.map(({ id, state }) => [id, state]),
-        }).toEqual(initialState);
+        expect(screen.getByTestId('betrayal-room-placement-panel')).toHaveAttribute('data-room-placement-slot', firstSlot.id);
+        expect(screen.queryByTestId(`betrayal-room-explore-target-${nextSlot.id}`)).not.toBeInTheDocument();
+        expect(screen.getByTestId(`betrayal-room-${firstSlot.id}`)).toHaveAttribute('data-room-state', 'unexplored');
+        fireEvent.click(screen.getByTestId('betrayal-room-placement-confirm'));
+        expect(screen.queryByTestId('betrayal-room-placement-panel')).not.toBeInTheDocument();
+        expect(screen.getByTestId('betrayal-room-latest-feedback')).toHaveTextContent('火炉房');
     });
 
     it('探索放置面板会把玩家选择的新房间朝向交给正式探索命令', () => {
-        const core = createBetrayalFoundationCore(['0', '1', '2', '3']);
+        let core = createBetrayalFoundationCore(['0', '1', '2', '3']);
         const baseRoom = BETRAYAL_DISCOVERY_POOLS.roomDiscoveryByFloor.ground.find((room) => room.visualId === 'furnaceRoom')!;
         const roomWithChoice = {
             ...baseRoom,
@@ -5865,6 +5845,7 @@ describe('Betrayal Board foundation', () => {
         core.activeRoomId = 'hallway';
         core.currentExplorerInventory = [];
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
         const preview = resolveRoomPlacementPreview(core, { roomId: 'ground-north' });
         expect(preview?.orientationOptions.length).toBeGreaterThan(1);
 
@@ -5873,7 +5854,6 @@ describe('Betrayal Board foundation', () => {
             matchData: defaultMatchData,
         });
 
-        fireEvent.click(screen.getByTestId('betrayal-room-ground-north'));
 
         const initialOrientation = screen
             .getByTestId('betrayal-room-placement-panel')
@@ -8838,8 +8818,10 @@ describe('Betrayal Board foundation', () => {
     });
 
     it('能渲染首剧本真实终局屏', () => {
+        const reset = vi.fn();
         renderBoard(playFirstScenarioToSurvivorVictory(), {
             playerID: '0',
+            reset,
             matchData: defaultMatchData.slice(0, 3),
         });
 
@@ -8866,6 +8848,8 @@ describe('Betrayal Board foundation', () => {
         expect(within(endgameMain).getByText('测试玩家')).toBeInTheDocument();
         expect(within(endgameMain).getByText('队友一')).toBeInTheDocument();
         expect(endgameMain.querySelector('[data-trait-value-shape="square"]')).toBeInTheDocument();
+        fireEvent.click(within(endgameMain).getByRole('button', { name: '重赛' }));
+        expect(reset).toHaveBeenCalledOnce();
     });
 
     it('木乃伊英雄终局朗读使用英雄结局正文而不是翻译键', () => {

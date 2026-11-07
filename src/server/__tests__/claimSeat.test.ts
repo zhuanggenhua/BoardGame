@@ -9,12 +9,14 @@ const buildState = (ownerKey: string): StoredMatchState => ({
 });
 
 const buildMetadata = (ownerKey: string, playerName?: string): MatchMetadata => ({
-    gameName: 'tictactoe',
+    gameName: 'betrayal',
     players: {
-        0: { name: playerName },
+        0: { name: playerName, ownerKey, ...(ownerKey.startsWith('guest:') ? { credentials: 'guest-cred' } : {}) },
         1: { name: 'P1' },
     },
-    setupData: { ownerKey },
+    setupData: { ownerKey, enableAi: true, seatControllers: {
+        '0': { type: 'human' }, '1': { type: 'local-ai' }, '2': { type: 'local-ai' }, '3': { type: 'local-ai' },
+    } },
     createdAt: Date.now(),
     updatedAt: Date.now(),
 } as MatchMetadata);
@@ -103,7 +105,7 @@ describe('claim-seat handler', () => {
         expect((ctx.body as { playerCredentials?: string })?.playerCredentials).toBe('new-cred');
     });
 
-    it('游客 claim-seat 使用 guestId 且回填昵称', async () => {
+    it('游客 claim-seat 验证已有房主凭据并回填昵称', async () => {
         const jwtSecret = 'test-secret';
         const metadataRef = { current: buildMetadata('guest:g1') };
         const state = buildState('guest:g1');
@@ -119,7 +121,7 @@ describe('claim-seat handler', () => {
 
         const ctx: ClaimSeatContext = {
             get: () => '',
-            request: { body: { playerID: '0', guestId: 'g1', playerName: '游客001' } },
+            request: { body: { playerID: '0', guestId: 'g1', ownerCredentials: 'guest-cred', playerName: '游客001' } },
             throw: (status: number, message: string) => {
                 throw new Error(`${status}:${message}`);
             },
@@ -156,7 +158,7 @@ describe('claim-seat handler', () => {
 
         const ctx: ClaimSeatContext = {
             get: () => '',
-            request: { body: { playerID: '1', guestId: 'g1', playerName: 'AI-1' } },
+            request: { body: { playerID: '1', guestId: 'g1', ownerCredentials: 'guest-cred', playerName: 'AI-1' } },
             throw: (status: number, message: string) => {
                 throw new Error(`${status}:${message}`);
             },
@@ -197,7 +199,7 @@ describe('claim-seat handler', () => {
 
         const makeCtx = (playerID: string): ClaimSeatContext => ({
             get: () => '',
-            request: { body: { playerID, guestId: 'g1', playerName: `AI-${playerID}` } },
+            request: { body: { playerID, guestId: 'g1', ownerCredentials: 'host-cred', playerName: `AI-${playerID}` } },
             throw: (status: number, message: string) => {
                 throw new Error(`${status}:${message}`);
             },

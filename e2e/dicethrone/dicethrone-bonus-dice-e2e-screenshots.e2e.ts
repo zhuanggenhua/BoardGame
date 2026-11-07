@@ -471,6 +471,7 @@ async function readVisibleBonusSnapshot(page: Page) {
                 : null,
             diceValues: Array.isArray(settlement?.dice) ? settlement.dice.map((die: any) => die.value) : [],
             diceFaces: Array.isArray(settlement?.dice) ? settlement.dice.map((die: any) => die.face) : [],
+            pendingAttackSourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
             pendingAttackBonusDamage: state?.core?.pendingAttack?.bonusDamage ?? null,
             defenderHp: state?.core?.players?.['1']?.resources?.hp
                 ?? state?.core?.players?.['1']?.resources?.HP
@@ -979,6 +980,8 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
                 sourceAbilityId: 'thunder-strike',
                 allowDiceModification: true,
                 windowType: null,
+                pendingAttackSourceAbilityId: 'thunder-strike',
+                defenderHp: 50,
             });
             await expectRightTrayBonusDiceConfirmation(hostPage, () => readMatchState(hostPage) as Promise<MutableCore>, {
                 sourceAbilityId: 'thunder-strike',
@@ -1046,6 +1049,8 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
                 windowType: null,
                 diceValues: thunderAfterValues,
+                pendingAttackSourceAbilityId: 'thunder-strike',
+                defenderHp: 50,
                 currentTotalDamageBadge: {
                     currentDamage: thunderChoice.afterTotal,
                     originalDamage: 0,
@@ -1063,6 +1068,7 @@ test.describe('DiceThrone 奖励骰被弹一手改骰后的结算截图链', () 
             await expect.poll(() => readVisibleBonusSnapshot(hostPage), { timeout: 10000 }).toMatchObject({
                 phase: 'main2',
                 sourceAbilityId: null,
+                pendingAttackSourceAbilityId: null,
                 defenderHp: 50 - thunderChoice.afterTotal,
             });
             await closeCardSpotlightIfVisible(hostPage);

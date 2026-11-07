@@ -24,7 +24,7 @@ export function describeFateTutorialAction(state: MatchState<FateDominationCore>
         case 'SELECT_MASTER':
         case 'SELECT_SERVANT': return lesson('phaseOrder');
         case 'DEPLOY_MASTER': return {...lesson(place==='workshop'?'deployment':'battleDeployment', `这次选择${location}的亮起点位。`, `fate-deployment-${place}`),family:`${base.family}-${place==='workshop'?'workshop':'battlefield'}`};
-        case 'MOVE_PLAYER': return lesson('movement', `点棋盘上的韦伯，选择${location}，再确认移动${['miyama','shinto'].includes(place)?'，前往战场争夺事件战果':''}。`, 'fate-pawn-0');
+        case 'MOVE_PLAYER': return lesson('movement', `点击棋盘上的韦伯，再点${location}；也可直接把韦伯拖到${location}${['miyama','shinto'].includes(place)?'，前往战场争夺事件战果':''}。`, 'fate-pawn-0');
         case 'CONFIRM_ATTACK': {
             const names = (payload.cardIds as string[]).map(id => `${resolveFateAttack(player, id)?.definition.name ?? '攻击牌'}（${(payload.faceDownIds as string[]).includes(id) ? '暗置' : '明置'}）`).join('、');
             const mixed = cardIdsKind(player, payload.cardIds as string[]) !== 'ordinary';

@@ -63,7 +63,7 @@
 .fd-self-pile-info { position:absolute; left:calc(100% + 12px); top:0; white-space:nowrap; z-index:30; background:#111a17f5; padding:10px; font-size:12px; }
 /* 技能上方的推进槽向内避让全局离开按钮，保留两者独立的点击区域。 */
 /* Anchored to the table, not the asynchronously sized skill-card zone. */
-.fd-phase-control { position:absolute; right:calc(var(--fd-hud-inline) + 64px); bottom:calc(var(--fd-hand-floor) + var(--fd-hand-card-width,120px) * 214 / 148 + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:126px; pointer-events:auto; }
+.fd-phase-control { position:absolute; right:calc(var(--fd-hud-inline) + 64px); bottom:calc(var(--fd-hand-floor) + var(--fd-hand-card-width,120px) * 214 / 148 + 16px); z-index:25; display:flex; flex-direction:column; align-items:flex-end; gap:10px; width:max-content; max-width:240px; pointer-events:auto; }
 .fd-phase-control .fd-runtime-primary { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; width:79px; height:79px; border-radius:50%; border:3px solid #eed38a; background:#b9635b; box-shadow:0 4px 18px #0009; color:#f5efe5; font-size:15px; font-weight:800; }
 .fd-phase-control .fd-runtime-primary:disabled { filter:grayscale(.7); opacity:.5; cursor:not-allowed; }
 @media(max-width:1100px) {
@@ -121,8 +121,10 @@
  .fd-self-identity small { margin-top:4px; font-size:13px; }
  .fd-phase-copy small { font-size:12px; }
  .fd-phase-copy b { font-size:15px; }
- .fd-phase-control { right:calc(var(--fd-hud-inline) + 204px); flex-direction:column; align-items:center; width:100px; }
- .fd-phase-copy { max-width:100px; text-align:center; }
+ .fd-phase-control { right:calc(var(--fd-hud-inline) + 64px); bottom:calc(var(--fd-hand-floor) + var(--fd-hand-card-width) * 214 / 148 + 4px); flex-direction:row; align-items:center; width:max-content; max-width:calc(100vw - 640px); gap:8px; }
+ .fd-phase-control .fd-runtime-primary { width:48px; height:48px; border-width:2px; gap:2px; }
+ .fd-phase-copy { max-width:none; text-align:right; }
+ .fd-phase-copy b { white-space:nowrap; }
  .fd-runtime-inspection.is-pinned .fd-inspection-close { top:4px; right:4px; width:48px; height:48px; }
 }
 

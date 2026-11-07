@@ -1,4 +1,8 @@
+import { timingSafeEqual } from 'node:crypto';
 import jwt from 'jsonwebtoken';
+import type { MatchState } from '../engine/types';
+import { normalizeOnlineAiWatchdogSeatControllerType, resolveRawOnlineAiWatchdogSeatControllers } from '../engine/transport/onlineAiSeatControllers';
+import { GAME_MANIFEST_BY_ID } from '../games/manifest';
 import type { MatchMetadata, StoredMatchState } from '../engine/transport/storage';
 import logger from '../../server/logger';
 
@@ -30,7 +34,7 @@ type ClaimSeatDb = {
 type ClaimSeatContext = {
     get: (name: string) => string;
     throw: (status: number, message: string) => void;
-    request: { body?: { playerID?: string | number; guestId?: string; playerName?: string } };
+    request: { body?: { playerID?: string | number; guestId?: string; ownerCredentials?: string; playerName?: string } };
     body?: unknown;
 };
 
@@ -53,6 +57,53 @@ const verifyGameToken = (token: string, jwtSecret: string): GameJwtPayload | nul
         return null;
     }
 };
+
+// Recheck the metadata returned by the serialized claim mutation before any
+// credential is disclosed: a concurrent join may have changed the seat owner.
+function resolveSeatRecoveryError(
+    metadata: MatchMetadata,
+    state: StoredMatchState | undefined,
+    playerID: string,
+    requesterKey: string | null,
+    ownerCredentials: string,
+): string | null {
+    const setupDataFromMeta = metadata.setupData as { ownerKey?: string } | undefined;
+    const stateG = state?.G as Record<string, unknown> | undefined;
+    const setupDataFromState = stateG?.__setupData as { ownerKey?: string } | undefined;
+    const ownerKey = setupDataFromMeta?.ownerKey ?? setupDataFromState?.ownerKey;
+    if (!requesterKey) {
+        const ownerSeat = metadata.players['0'];
+        const storedOwnerCredentials = ownerSeat?.credentials;
+        const suppliedBuffer = Buffer.from(ownerCredentials);
+        const storedBuffer = Buffer.from(typeof storedOwnerCredentials === 'string' ? storedOwnerCredentials : '');
+        const validOwnerProof = typeof ownerKey === 'string'
+            && ownerKey.startsWith('guest:')
+            && (!ownerSeat?.ownerKey || ownerSeat.ownerKey === ownerKey)
+            && storedBuffer.length > 0
+            && suppliedBuffer.length === storedBuffer.length
+            && timingSafeEqual(suppliedBuffer, storedBuffer);
+        if (!validOwnerProof) return 'Invalid owner seat credentials';
+    }
+
+    const player = metadata.players[playerID];
+    if (!player) return 'Seat no longer exists';
+    const seatControllers = resolveRawOnlineAiWatchdogSeatControllers(
+        state?.G as MatchState<unknown> | undefined,
+        metadata.setupData,
+    );
+    const targetControllerType = GAME_MANIFEST_BY_ID[metadata.gameName]
+        ? normalizeOnlineAiWatchdogSeatControllerType(metadata.gameName, seatControllers?.[playerID], GAME_MANIFEST_BY_ID)
+        : 'human';
+    const isAiSeat = targetControllerType === 'local-ai' || targetControllerType === 'remote-ai';
+    // An old AI configuration must not expose a seat now bound to someone else.
+    const isOwnerManagedAiSeat = isAiSeat && (!player.ownerKey || player.ownerKey === ownerKey);
+    const canRecoverSeat = requesterKey
+        ? player.ownerKey === requesterKey || (ownerKey === requesterKey && isOwnerManagedAiSeat)
+        : playerID === '0' || isOwnerManagedAiSeat;
+    return canRecoverSeat
+        ? null
+        : 'Verified seat ownership is required; only AI seats may be claimed by the room owner';
+}
 
 export const createClaimSeatHandler = ({
     db,
@@ -80,6 +131,7 @@ export const createClaimSeatHandler = ({
         let expectedOwnerKey: string | null = null;
         let payload: GameJwtPayload | null = null;
         let actorLabel = '';
+        const ownerCredentials = typeof body?.ownerCredentials === 'string' ? body.ownerCredentials : '';
         if (rawToken) {
             payload = verifyGameToken(rawToken, jwtSecret);
             if (!payload?.userId) {
@@ -90,14 +142,13 @@ export const createClaimSeatHandler = ({
             expectedOwnerKey = `user:${payload.userId}`;
             actorLabel = expectedOwnerKey;
         } else {
-            const guestId = typeof body?.guestId === 'string' ? body.guestId.trim() : '';
-            if (!guestId) {
-                logger.warn(`[claim-seat] rejected reason=missing_guest matchID=${matchID} origin=${origin || ''}`);
-                ctx.throw(401, 'Guest id is required');
+            // Guest display IDs are public, short identifiers, not authority.
+            if (!ownerCredentials.trim()) {
+                logger.warn(`[claim-seat] rejected reason=missing_owner_credentials matchID=${matchID} origin=${origin || ''}`);
+                ctx.throw(401, 'Existing owner seat credentials are required');
                 return;
             }
-            expectedOwnerKey = `guest:${guestId}`;
-            actorLabel = expectedOwnerKey;
+            actorLabel = 'guest-owner';
         }
 
         logger.info(`[claim-seat] start matchID=${matchID} playerID=${resolvedPlayerID} actor=${actorLabel} origin=${origin || ''}`);
@@ -108,23 +159,16 @@ export const createClaimSeatHandler = ({
             return;
         }
 
-        const setupDataFromMeta = (metadata.setupData as { ownerKey?: string } | undefined) || undefined;
-        const stateG = state?.G as Record<string, unknown> | undefined;
-        const setupDataFromState = (stateG?.__setupData as { ownerKey?: string } | undefined) || undefined;
-        const ownerKey = setupDataFromMeta?.ownerKey ?? setupDataFromState?.ownerKey;
-        if (!ownerKey || ownerKey !== expectedOwnerKey) {
-            logger.warn(
-                `[claim-seat] rejected reason=owner_mismatch matchID=${matchID} ownerKey=${ownerKey || ''} expected=${expectedOwnerKey}`
-            );
-            ctx.throw(403, 'Not match owner');
-            return;
-        }
-
-        const players = metadata.players as Record<string, { name?: string; credentials?: string }> | undefined;
-        const player = players?.[resolvedPlayerID];
+        const player = metadata.players[resolvedPlayerID];
         if (!player) {
             logger.warn(`[claim-seat] rejected reason=player_not_found matchID=${matchID} playerID=${resolvedPlayerID}`);
             ctx.throw(404, 'Player ' + resolvedPlayerID + ' not found');
+            return;
+        }
+        const recoveryError = resolveSeatRecoveryError(metadata, state, resolvedPlayerID, expectedOwnerKey, ownerCredentials);
+        if (recoveryError) {
+            logger.warn(`[claim-seat] rejected reason=seat_authority_required matchID=${matchID} playerID=${resolvedPlayerID}`);
+            ctx.throw(403, recoveryError);
             return;
         }
 
@@ -148,6 +192,15 @@ export const createClaimSeatHandler = ({
         if (!claimResult.playerExists) {
             logger.warn(`[claim-seat] rejected reason=player_not_found_after_mutation matchID=${matchID} playerID=${resolvedPlayerID}`);
             ctx.throw(404, 'Player ' + resolvedPlayerID + ' not found');
+            return;
+        }
+
+        const latestRecoveryError = resolveSeatRecoveryError(
+            claimResult.metadata, state, resolvedPlayerID, expectedOwnerKey, ownerCredentials,
+        );
+        if (latestRecoveryError) {
+            logger.warn(`[claim-seat] rejected reason=seat_authority_changed matchID=${matchID} playerID=${resolvedPlayerID}`);
+            ctx.throw(403, latestRecoveryError);
             return;
         }
 

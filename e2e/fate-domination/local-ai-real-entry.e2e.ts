@@ -32,7 +32,7 @@ test('正式本地自动玩家独立出牌并交还真人，完成自然一轮�
  await page.getByTestId('fate-domination-primary-action').click();
  await expect.poll(async()=>{const s=await read(page);return s.core.phase==='outpost'&&s.core.currentPlayerId==='0';},{timeout:30000}).toBe(true);
  expect((await read(page)).core.phaseCompletedPlayerIds).toEqual([]);
- await page.getByTestId('fate-domination-location-workshop').click();await page.getByTestId('fate-domination-primary-action').click();
+ await page.getByTestId('fate-domination-location-workshop').click();
  await expect.poll(async()=>(await read(page)).core.players['0'].locationId).toBe('workshop');
  await page.getByTestId('fate-domination-primary-action').click();
  await expect.poll(async()=>{const s=await read(page);return s.core.phase==='action'&&s.core.currentPlayerId==='0';},{timeout:30000}).toBe(true);

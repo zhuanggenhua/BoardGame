@@ -19,7 +19,6 @@ import {
     attachPageDiagnostics,
 } from '../helpers/common';
 import {
-    clickDiscoveryBackdropAndExpectStillVisible,
     expectVisiblePhysicalDiceBox,
     expectPhysicalDiceSeparated,
     initBetrayalContext,
@@ -41,7 +40,7 @@ const IDOL_OPTION_SELECTED_SCREENSHOT = `${IDOL_FULL_CHAIN_EVIDENCE_DIR}/02-雕�
 const IDOL_EXPLORE_TARGET_SCREENSHOT = `${IDOL_FULL_CHAIN_EVIDENCE_DIR}/03-选择未知房间前.jpg`;
 const IDOL_SKIP_EVENT_SCREENSHOT = `${IDOL_FULL_CHAIN_EVIDENCE_DIR}/04-雕像跳过事件结果可见.jpg`;
 const IDOL_SKIP_SETTLED_SCREENSHOT = `${IDOL_FULL_CHAIN_EVIDENCE_DIR}/05-雕像跳过事件结算未扣力量.jpg`;
-const IDOL_DISMISSED_SCREENSHOT = `${IDOL_FULL_CHAIN_EVIDENCE_DIR}/06-关闭后回牌桌状态清空.jpg`;
+const IDOL_ACTIONS_READY_SCREENSHOT = `${IDOL_FULL_CHAIN_EVIDENCE_DIR}/06-跳过后行动栏可用.jpg`;
 const HUNTING_KNIFE_SELECTOR_SCREENSHOT = `${EVIDENCE_DIR}/08-砍刀攻击武器-选择前.jpg`;
 const HUNTING_KNIFE_TARGET_SCREENSHOT = `${EVIDENCE_DIR}/09-砍刀攻击武器-目标高亮.jpg`;
 const HUNTING_KNIFE_ATTACK_DICE_SCREENSHOT = `${EVIDENCE_DIR}/10-砍刀攻击武器-攻击投骰.jpg`;
@@ -193,18 +192,6 @@ const expectTraitorTargetHighlighted = async (
     await expect(page.getByTestId(`betrayal-room-occupant-target-outline-${roomId}-${traitorPlayerId}`))
         .toHaveAttribute('data-highlight-shape', 'pentagon');
     return traitorToken;
-};
-
-const dismissDiscoveryPanel = async (page: Page) => {
-    const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-    await clickDiscoveryBackdropAndExpectStillVisible(page, discoveryPanel);
-    const continueButton = page.getByTestId('betrayal-discovery-continue');
-    await expect(
-        continueButton,
-        '发现牌浮层必须通过明确继续/确认按钮关闭，不能用空白点击关闭。',
-    ).toBeEnabled();
-    await continueButton.click();
-    await expect(discoveryPanel).toBeHidden();
 };
 
 const createOrdinaryRollEventCore = () => {
@@ -1076,11 +1063,10 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         await page.getByTestId('betrayal-room-ground-north').click();
         await confirmPendingRoomPlacement(page);
 
-        const discoveryPanel = page.getByTestId('betrayal-discovery-panel');
-        await expect(discoveryPanel).toBeVisible({ timeout: 30000 });
-        await expect(discoveryPanel).toHaveAttribute('aria-label', /事件牌 阴影扑面/);
-        await expect(page.getByTestId('betrayal-discovery-detail')).toContainText('没有抽取或结算事件卡');
-        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用雕像跳过了事件：阴影扑面');
+        // The idol skips drawing, so no event card/panel is revealed.
+        await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).toContainText('使用雕像跳过了事件');
+        await expect(page.getByTestId('betrayal-room-latest-feedback')).not.toContainText('阴影扑面');
         await saveScreenshot(page, IDOL_SKIP_EVENT_SCREENSHOT);
 
         const coreAfterSkip = await page.evaluate(() => (window as Window & {
@@ -1094,13 +1080,12 @@ test.describe('山屋惊魂非 P0 发布级代表链', () => {
         expect(coreAfterSkip.currentExplorer.inventory.some((card) => card.id === 'idol')).toBe(true);
         await saveScreenshot(page, IDOL_SKIP_SETTLED_SCREENSHOT);
 
-        await dismissDiscoveryPanel(page);
         await expect(page.getByTestId('betrayal-discovery-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-event-choice-panel')).toHaveCount(0);
         await expect(page.getByTestId('betrayal-action-rail')).toBeVisible();
         await expect(page.getByTestId('betrayal-action-endTurn')).toBeVisible();
         await expect(page.getByTestId('betrayal-room-occupant-ground-north-0')).toBeVisible();
-        await saveScreenshot(page, IDOL_DISMISSED_SCREENSHOT);
+        await saveScreenshot(page, IDOL_ACTIONS_READY_SCREENSHOT);
 
         assertNoFatalFrontendErrors([{ label: 'betrayal-non-p0-idol-skip-event', diagnostics }]);
     });

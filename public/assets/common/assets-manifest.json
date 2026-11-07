@@ -56094,6 +56094,123 @@
         }
       }
     },
+    "audio/sfx/footsteps/Kenney Impact Sounds/compressed/footstep_carpet_000": {
+      "variants": {
+        "ogg": {
+          "sha256": "b9524658b52a99a20590f8feefc103088637fd13ea8ec35811aee785e1f2f330",
+          "bytes": 6353,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/compressed/footstep_carpet_001": {
+      "variants": {
+        "ogg": {
+          "sha256": "9af3c3f76705107339e72036e4053bdca3eaa50ad31c8c929f42ce8d40e5d781",
+          "bytes": 6411,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/compressed/footstep_concrete_000": {
+      "variants": {
+        "ogg": {
+          "sha256": "d7267e183067757c92c169de2a379abea592cfca6b39bb2e8feea15221ad79fe",
+          "bytes": 5808,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/compressed/footstep_concrete_001": {
+      "variants": {
+        "ogg": {
+          "sha256": "507a75eb19b897087855a3be3cf11a12d7fa37d143ad535eeebe0b8031c7325d",
+          "bytes": 6308,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/compressed/footstep_wood_000": {
+      "variants": {
+        "ogg": {
+          "sha256": "5f1c252942a220d658121bd9417448cd19649ded9fff2ff15f6e50899373ce8e",
+          "bytes": 5949,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/compressed/footstep_wood_001": {
+      "variants": {
+        "ogg": {
+          "sha256": "e4f68e1c9fd55b4dc8ca89ed2bbab6f200171bc54bdc18aa96b80d8e7336f462",
+          "bytes": 5929,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/footstep_carpet_000": {
+      "variants": {
+        "ogg": {
+          "sha256": "b9524658b52a99a20590f8feefc103088637fd13ea8ec35811aee785e1f2f330",
+          "bytes": 6353,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/footstep_carpet_001": {
+      "variants": {
+        "ogg": {
+          "sha256": "9af3c3f76705107339e72036e4053bdca3eaa50ad31c8c929f42ce8d40e5d781",
+          "bytes": 6411,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/footstep_concrete_000": {
+      "variants": {
+        "ogg": {
+          "sha256": "d7267e183067757c92c169de2a379abea592cfca6b39bb2e8feea15221ad79fe",
+          "bytes": 5808,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/footstep_concrete_001": {
+      "variants": {
+        "ogg": {
+          "sha256": "507a75eb19b897087855a3be3cf11a12d7fa37d143ad535eeebe0b8031c7325d",
+          "bytes": 6308,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/footstep_wood_000": {
+      "variants": {
+        "ogg": {
+          "sha256": "5f1c252942a220d658121bd9417448cd19649ded9fff2ff15f6e50899373ce8e",
+          "bytes": 5949,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/footstep_wood_001": {
+      "variants": {
+        "ogg": {
+          "sha256": "e4f68e1c9fd55b4dc8ca89ed2bbab6f200171bc54bdc18aa96b80d8e7336f462",
+          "bytes": 5929,
+          "mime": "audio/ogg"
+        }
+      }
+    },
+    "audio/sfx/footsteps/Kenney Impact Sounds/License": {
+      "variants": {
+        "txt": {
+          "sha256": "b49aa9c56b04528b95913de13e506a0f7c5e807b9925db9bfef86af1f91120db",
+          "bytes": 608,
+          "mime": "application/octet-stream"
+        }
+      }
+    },
     "audio/sfx/magic/dark/29.Dark_Resurrection/compressed/Dark_Resurrection": {
       "variants": {
         "ogg": {

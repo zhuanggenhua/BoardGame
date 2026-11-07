@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import sharp from 'sharp';
+import { createHash } from 'node:crypto';
 
 const rootDir = process.cwd();
-const sourceDir = path.join(
+const suppliedSourceDir = process.argv[2];
+const sourceDir = suppliedSourceDir ? path.resolve(suppliedSourceDir) : path.join(
   rootDir,
   'test-results',
   'evidence-screenshots',
@@ -58,6 +60,11 @@ const fabRuns = [
     ],
   },
 ];
+const selectedRuns = suppliedSourceDir ? fabRuns.slice(0, 2).map(run => ({
+  ...run,
+  source: `guide-source-${run.style === 'mobile' ? 'mobile-app-emulated' : 'desktop-web'}.png`,
+  rects: `guide-source-${run.style === 'mobile' ? 'mobile-app-emulated' : 'desktop-web'}.json`,
+})) : fabRuns;
 
 const styles = {
   desktop: {
@@ -120,8 +127,12 @@ const labelWidthFor = (text, style) => Math.max(
 const annotationFor = ({ id, text, rect, width, height, style }) => {
   const labelWidth = labelWidthFor(text, style);
   const maxLeft = rect.left - style.minArrowLength - labelWidth;
-  const left = clamp(Math.min(style.labelLeft, maxLeft), 16, Math.max(16, width - labelWidth - 16));
-  const top = clamp(rect.centerY - style.labelHeight / 2, 14, height - style.labelHeight - 14);
+  const belowTarget = id === 'about' && suppliedSourceDir;
+  const left = belowTarget
+    ? clamp(rect.centerX - labelWidth / 2, 16, width - labelWidth - 16)
+    : clamp(Math.min(style.labelLeft, maxLeft), 16, Math.max(16, width - labelWidth - 16));
+  const top = belowTarget ? rect.bottom + 76
+    : clamp(rect.centerY - style.labelHeight / 2, 14, height - style.labelHeight - 14);
   const labelRect = {
     left,
     top,
@@ -134,25 +145,26 @@ const annotationFor = ({ id, text, rect, width, height, style }) => {
   };
 
   const lineFrom = {
-    x: labelRect.right + style.arrowTailGap,
-    y: rect.centerY,
+    x: belowTarget ? rect.centerX : labelRect.right + style.arrowTailGap,
+    y: belowTarget ? labelRect.top - style.arrowTailGap : rect.centerY,
   };
   const lineTo = {
-    x: rect.left - style.targetGap,
-    y: rect.centerY,
+    x: belowTarget ? rect.centerX : rect.left - style.targetGap,
+    y: belowTarget ? rect.bottom + style.targetGap : rect.centerY,
   };
   const arrowHead = [
     { x: lineTo.x, y: lineTo.y },
-    { x: lineTo.x - style.arrowHeadLength, y: lineTo.y - style.arrowHeadHalfHeight },
-    { x: lineTo.x - style.arrowHeadLength, y: lineTo.y + style.arrowHeadHalfHeight },
+    { x: lineTo.x - (belowTarget ? style.arrowHeadHalfHeight : style.arrowHeadLength), y: lineTo.y + (belowTarget ? style.arrowHeadLength : -style.arrowHeadHalfHeight) },
+    { x: lineTo.x + (belowTarget ? style.arrowHeadHalfHeight : -style.arrowHeadLength), y: lineTo.y + (belowTarget ? style.arrowHeadLength : style.arrowHeadHalfHeight) },
   ];
 
-  return { id, text, targetRect: rect, labelRect, lineFrom, lineTo, arrowHead };
+  return { id, text, targetRect: rect, labelRect, lineFrom, lineTo, arrowHead, belowTarget };
 };
 
 const renderAnnotation = (annotation, style) => {
   const arrowPoints = annotation.arrowHead.map((point) => `${point.x},${point.y}`).join(' ');
-  const lineEndX = annotation.lineTo.x - style.arrowHeadLength * 0.55;
+  const lineEndX = annotation.belowTarget ? annotation.lineTo.x : annotation.lineTo.x - style.arrowHeadLength * 0.55;
+  const lineEndY = annotation.belowTarget ? annotation.lineTo.y + style.arrowHeadLength * 0.55 : annotation.lineTo.y;
   const textY = annotation.labelRect.centerY + style.fontSize * 0.03;
   return `
     <g filter="url(#labelShadow)">
@@ -182,7 +194,7 @@ const renderAnnotation = (annotation, style) => {
         x1="${annotation.lineFrom.x}"
         y1="${annotation.lineFrom.y}"
         x2="${lineEndX}"
-        y2="${annotation.lineTo.y}"
+        y2="${lineEndY}"
         stroke="rgba(38, 20, 5, 0.86)"
         stroke-width="${style.arrowStrokeWidth + 9}"
         stroke-linecap="round"
@@ -196,7 +208,7 @@ const renderAnnotation = (annotation, style) => {
         x1="${annotation.lineFrom.x}"
         y1="${annotation.lineFrom.y}"
         x2="${lineEndX}"
-        y2="${annotation.lineTo.y}"
+        y2="${lineEndY}"
         stroke="#ffe45c"
         stroke-width="${style.arrowStrokeWidth}"
         stroke-linecap="round"
@@ -250,7 +262,7 @@ const main = async () => {
   await fs.mkdir(outputDir, { recursive: true });
   const results = [];
 
-  for (const run of fabRuns) {
+  for (const run of selectedRuns) {
     const sourcePath = path.join(sourceDir, run.source);
     const outputPath = path.join(outputDir, run.output);
     const rectData = await readJson(path.join(sourceDir, run.rects));
@@ -295,7 +307,9 @@ const main = async () => {
         })),
     ).concat(
       annotations
-        .filter((annotation) => annotation.lineTo.x >= annotation.targetRect.left)
+        .filter((annotation) => annotation.belowTarget
+          ? annotation.lineTo.y <= annotation.targetRect.bottom
+          : annotation.lineTo.x >= annotation.targetRect.left)
         .map((annotation) => ({
           type: 'arrow-enters-target',
           label: annotation.text,
@@ -305,6 +319,12 @@ const main = async () => {
     results.push({
       source: sourcePath,
       output: outputPath,
+      sourceSha256: createHash('sha256').update(await fs.readFile(sourcePath)).digest('hex'),
+      coordinatesSource: path.join(sourceDir, run.rects),
+      coordinatesSha256: createHash('sha256').update(await fs.readFile(path.join(sourceDir, run.rects))).digest('hex'),
+      outputSha256: createHash('sha256').update(await fs.readFile(outputPath)).digest('hex'),
+      sourceRevision: rectData.sourceRevision,
+      nativeAppInterfaceEmulated: rectData.nativeAppInterfaceEmulated ?? false,
       width,
       height,
       annotationStyle: 'large-arrow',

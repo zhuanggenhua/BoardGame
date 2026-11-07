@@ -1,8 +1,19 @@
+import { timingSafeEqual } from 'node:crypto';
 import { getAiSeatIds } from '../engine/ai';
 import type { MatchMetadata } from '../engine/transport/storage';
 import type { RematchVoteState } from '../services/matchSocket';
 
 type SeatControllerRecord = Record<string, { type?: unknown } | undefined>;
+
+/** A public seat ID is not permission to subscribe to or vote in a rematch. */
+export function isAuthenticatedRematchPlayer(metadata: MatchMetadata | undefined, playerId: unknown, credentials: unknown): boolean {
+    if (typeof playerId !== 'string' || typeof credentials !== 'string' || !credentials) return false;
+    const expected = metadata?.players[playerId]?.credentials;
+    if (typeof expected !== 'string' || !expected) return false;
+    const actualBuffer = Buffer.from(credentials);
+    const expectedBuffer = Buffer.from(expected);
+    return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
+}
 
 export type RematchPlayerGroups = {
     requiredPlayerIds: string[];

@@ -205,7 +205,15 @@
       "hauntStatusWin": "Prevails",
       "completedStamp": "Complete",
       "endingNarrationLabel": "Ending Reading",
-      "continueToReport": "View Result Report"
+      "continueToReport": "View Result Report",
+      "recentDeathRoll": "{{name}}: most recent retained death check",
+      "deathRollNotCause": "This check may not have caused the victory",
+      "deathCheckPassed": "Death prevented",
+      "deathCheckFailed": "Death not prevented",
+      "beforeReroll": "Before reroll",
+      "afterReroll": "After reroll",
+      "dice": "Dice",
+      "deathRollTotal": "Total {{total}}; {{threshold}} needed to prevent death"
     },
     "hud": {
       "phaseLabel": "Phase",

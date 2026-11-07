@@ -79,7 +79,7 @@ const validateBetrayalBasicSetupStep = (
 
 const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
     id: 'basic-setup-and-turn',
-    revision: 3,
+    revision: 4,
     numPlayers: 3,
     allowManualSkip: true,
     stepValidator: validateBetrayalBasicSetupStep,
@@ -196,7 +196,8 @@ const BETRAYAL_BASIC_SETUP_AND_TURN: TutorialManifest = {
             highlightTarget: 'betrayal-room-ground-north',
             position: 'top',
             requireAction: true,
-            allowedCommands: [],
+            allowedCommands: [BETRAYAL_COMMANDS.REVEAL_ROOM],
+            advanceOnEvents: [{ type: 'ROOM_REVEALED', match: { playerId: '0' } }],
             viewAs: '0',
         },
         {
@@ -520,6 +521,11 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
             aiDelayMs: 0,
             aiActions: [
                 {
+                    commandType: BETRAYAL_COMMANDS.REVEAL_ROOM,
+                    playerId: '1',
+                    payload: { roomId: 'ground-east' },
+                },
+                {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
                     playerId: '1',
                     payload: { roomId: 'ground-east' },
@@ -556,6 +562,11 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
                     commandType: BETRAYAL_COMMANDS.MOVE_TO_ROOM,
                     playerId: '2',
                     payload: { roomId: 'ground-east' },
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.REVEAL_ROOM,
+                    playerId: '2',
+                    payload: { roomId: 'frontier-ground-east-east' },
                 },
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
@@ -600,6 +611,11 @@ const BETRAYAL_HAUNT_NATURAL_TRIGGER_FLOW: TutorialManifest = {
             viewAs: '0',
             aiDelayMs: 0,
             aiActions: [
+                {
+                    commandType: BETRAYAL_COMMANDS.REVEAL_ROOM,
+                    playerId: '1',
+                    payload: { roomId: 'frontier-ground-east-south' },
+                },
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
                     playerId: '1',
@@ -780,7 +796,7 @@ const BETRAYAL_HAUNT_ACTIONS_AND_FINISH: TutorialManifest = {
 
 const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
     id: 'basic-setup-and-turn',
-    revision: 7,
+    revision: 8,
     numPlayers: 3,
     allowManualSkip: true,
     stepValidator: validateBetrayalBasicSetupStep,
@@ -797,6 +813,11 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
                     commandType: BETRAYAL_COMMANDS.MOVE_TO_ROOM,
                     playerId: '1',
                     payload: { roomId: 'entrance-hall' },
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.REVEAL_ROOM,
+                    playerId: '1',
+                    payload: { roomId: 'ground-east' },
                 },
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
@@ -836,6 +857,11 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
                     commandType: BETRAYAL_COMMANDS.MOVE_TO_ROOM,
                     playerId: '2',
                     payload: { roomId: 'ground-east' },
+                },
+                {
+                    commandType: BETRAYAL_COMMANDS.REVEAL_ROOM,
+                    playerId: '2',
+                    payload: { roomId: 'frontier-ground-east-east' },
                 },
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
@@ -912,6 +938,11 @@ const BETRAYAL_MAIN_PLAYER_PATH: TutorialManifest = {
             randomPolicy: { mode: 'fixed', values: [3] },
             aiDelayMs: 0,
             aiActions: [
+                {
+                    commandType: BETRAYAL_COMMANDS.REVEAL_ROOM,
+                    playerId: '1',
+                    payload: { roomId: 'frontier-ground-east-south' },
+                },
                 {
                     commandType: BETRAYAL_COMMANDS.EXPLORE_ROOM,
                     playerId: '1',

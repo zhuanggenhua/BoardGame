@@ -28,19 +28,14 @@ it('本人确认准备后不再用选角弹窗遮住前哨之前的牌桌与他�
     render(<FateDominationBoard {...({G:state,dispatch:vi.fn(),playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
     expect(screen.queryByRole('region',{name:'选择御主与从者'})).toBeNull();
 });
-it('部署先选择、可取消或改选，确认前不发领域命令，确认后只提交一次',()=>{
-    const state=preparedBoardState('deployment-choice-ui');
+it('部署点位点击立即执行一次，不再提供待确认与取消控件',()=>{
+    const state=preparedBoardState('deployment-direct-ui');
     const dispatch=vi.fn();
     render(<FateDominationBoard {...({G:state,dispatch,playerID:'0',isMultiplayer:true,matchData:[]} as never)}/>);
     fireEvent.click(screen.getByRole('button',{name:'地点workshop'}));
-    expect(dispatch).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button',{name:'取消部署'}));
-    expect(dispatch).not.toHaveBeenCalled();
-    expect(screen.getByRole('button',{name:'选择部署点位'}).hasAttribute('disabled')).toBe(true);
-    fireEvent.click(screen.getByRole('button',{name:'地点miyama'}));
-    fireEvent.click(screen.getByRole('button',{name:'地点workshop'}));
-    fireEvent.click(screen.getByRole('button',{name:'确认部署至魔术工房'}));
     expect(dispatch).toHaveBeenCalledExactlyOnceWith('DEPLOY_MASTER',{locationId:'workshop'});
+    expect(screen.queryByRole('button',{name:'取消部署'})).toBeNull();
+    expect(screen.queryByRole('button',{name:'确认部署至魔术工房'})).toBeNull();
 });
 vi.mock('../../../contexts/RematchContext', () => ({ useRematch: () => ({ state: { votes: {}, ready: false, revision: 0 }, vote: vi.fn(), registerReset: vi.fn() }) }));
 vi.mock('../../../contexts/ToastContext', () => ({useToast: () => ({warning:vi.fn()})}));
@@ -350,7 +345,7 @@ it('进入令咒选择前关闭持久预览，不能覆盖新弹层', () => {
  expect(screen.getByRole('button',{name:/恢复魔力/})).toBeTruthy();
 });
 
-it('令咒移动在地图选目的地，确认前不消耗，取消不提交',()=>{
+it('令咒移动选择来源不消耗，点击目的地直接提交',()=>{
  const G=preparedBoardState('seal-map-choice', ['0','1','2']);G.core.phase='action';G.core.players['0'].locationId='miyama';
  G.core.players['0'].mana=12;
  // Interaction ownership only; random event locks are covered by movement contracts.
@@ -361,11 +356,9 @@ it('令咒移动在地图选目的地，确认前不消耗，取消不提交',()
  expect(screen.queryByRole('dialog',{name:'使用令咒'})).toBeNull();
  expect(dispatch).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'地点workshop'}));
- expect(dispatch).not.toHaveBeenCalled();
- fireEvent.click(screen.getByRole('button',{name:'确认移动至魔术工房',exact:true}));
  expect(dispatch).toHaveBeenCalledExactlyOnceWith('USE_COMMAND_SPELL',{effect:'move',targetLocationId:'workshop'});
 });
-it('已激活移动技能在地图选择合法目标，确认才提交技能目标',()=>{
+it('已激活移动技能点击合法目的地直接提交技能目标',()=>{
  const G=preparedBoardState('skill-map-choice', ['0','1','2']);G.core.phase='action';
  const servant=FATE_SERVANTS.find(s=>(s.skillCards??[]).some(card=>card.id==='sc_cu_2'))!;
  const actor=G.core.players['0'];actor.locationId='miyama';actor.mana=9;actor.servantId=servant.id;actor.skills=servant.skillCards!.map(s=>({...s}));actor.activeSkills=['sc_cu_2'];actor.normalAttackPlayed=true;
@@ -374,7 +367,6 @@ it('已激活移动技能在地图选择合法目标，确认才提交技能目�
  expect(screen.queryByRole('button',{name:'地点workshop'})).toBeNull();
  expect(dispatch).not.toHaveBeenCalled();
  fireEvent.click(screen.getByRole('button',{name:'地点recon'}));
- fireEvent.click(screen.getByRole('button',{name:'确认移动至侦察',exact:true}));
  expect(dispatch).toHaveBeenCalledExactlyOnceWith('PLAY_SKILL',{skillId:'sc_cu_2',targetLocationId:'recon'});
 });
 

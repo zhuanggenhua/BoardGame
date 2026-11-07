@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GameTransportClientConfig } from '../client';
 import { useGameProviderRuntime } from '../useGameProviderRuntime';
 import { TicTacToeDomain } from '../../../games/tictactoe/domain';
 import { createInitialSystemState } from '../../pipeline';
 import { ticTacToeLatencyConfig } from '../../../games/tictactoe/latencyConfig';
 import type { GameEngineConfig } from '../engineConfig';
+import { getCurrentGameFeedbackDiagnosticContext, setCurrentGameFeedbackContext } from '../../../lib/feedback/gameFeedbackContext';
 
 const network = vi.hoisted(() => ({ config: null as GameTransportClientConfig | null, send: vi.fn(() => true) }));
 vi.mock('../client', () => ({ GameTransportClient: class {
@@ -15,6 +16,7 @@ vi.mock('../client', () => ({ GameTransportClient: class {
     connect() {}
     disconnect() {}
     canSendCommand() { return true; }
+    requestAdminDebugAccess() {}
     updateLatestState() {}
     sendCommand = network.send;
     resync() {}
@@ -24,6 +26,7 @@ vi.mock('../../../lib/mobile/appVisibility', () => ({ onAppVisible: () => () => 
 const engineConfig: GameEngineConfig = { gameId: 'tictactoe', domain: TicTacToeDomain, systems: [], minPlayers: 2, maxPlayers: 2 };
 const initial = () => ({ core: TicTacToeDomain.setup(['0', '1'], {} as never), sys: createInitialSystemState(['0', '1'], [], 'test') });
 beforeEach(() => { network.send.mockClear(); network.config = null; });
+afterEach(() => setCurrentGameFeedbackContext(null));
 
 describe('公开联机派发的权威版本前置条件', () => {
     it.each([true, false])('第一步不把当前命令本身计入已完成版本，乐观预测=%s', predicted => {
@@ -41,5 +44,29 @@ describe('公开联机派发的权威版本前置条件', () => {
         act(() => { result.current.value.dispatch('CLICK_CELL', { cellId: 0 }); });
         act(() => { result.current.value.dispatch('COMPANION', {}); });
         expect(network.send).toHaveBeenLastCalledWith('COMPANION', {}, { expectedStateID: 1 });
+    });
+
+    it('共享在线 dispatch 只记录实际发送命令的安全摘要', () => {
+        const currentState = initial();
+        setCurrentGameFeedbackContext({
+            state: currentState,
+            scopeId: 'test',
+            playerId: '0',
+            stateId: 0,
+            stateRevision: 0,
+            randomCursor: 0,
+        });
+        const { result } = renderHook(() => useGameProviderRuntime({
+            server: 'test', matchId: 'test', playerId: '0', engineConfig, latencyConfig: ticTacToeLatencyConfig,
+        }));
+        act(() => network.config!.onStateUpdate!(currentState, [{ id: 0 }, { id: 1 }], { stateID: 0 }, { seed: 'test', cursor: 0 }));
+        act(() => {
+            expect(result.current.value.dispatch('CLICK_CELL', { cellId: 0, secret: 'private-payload-canary' })).toBe(true);
+        });
+
+        const trace = getCurrentGameFeedbackDiagnosticContext();
+        expect(trace.lastCommand).toMatchObject({ commandType: 'CLICK_CELL', playerId: '0', stateId: 0, randomCursor: 0 });
+        expect(trace.commandTraceTail).toHaveLength(1);
+        expect(JSON.stringify(trace)).not.toContain('private-payload-canary');
     });
 });

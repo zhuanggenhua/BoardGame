@@ -18,6 +18,7 @@ import { useGameLibrary } from './useGameLibrary';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { listExternalGames } from '../../api/external-games';
 import { getSessionStorage, readSessionStorageItem, writeSessionStorageItem } from '../../lib/browserStorage';
+import type { LobbyGamePlayerCounts } from '../../hooks/useLobbyStats';
 import './platform-home.css';
 import './platform-motion.css';
 import './platform-secondary-dialogs.css';
@@ -40,10 +41,12 @@ interface PlatformHomeSurfaceProps {
     onRegister: () => void;
     onLogout: () => void;
     activeMatch: ReactNode;
+    playerCountsByGame?: Readonly<Record<string, LobbyGamePlayerCounts>>;
+    hasPlayerCounts?: boolean;
 }
 
 /** The platform's view composition; game rules and room operations stay outside this owner. */
-export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allGames, category, onCategory, onOpenGame, onOpenLibraryGame, onLibraryHome, libraryDetails, onGameIntent, onLogin, onRegister, onLogout, activeMatch }: PlatformHomeSurfaceProps) {
+export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allGames, category, onCategory, onOpenGame, onOpenLibraryGame, onLibraryHome, libraryDetails, onGameIntent, onLogin, onRegister, onLogout, activeMatch, playerCountsByGame, hasPlayerCounts = false }: PlatformHomeSurfaceProps) {
     const { t } = useTranslation(['lobby', 'auth']);
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -97,18 +100,18 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
             }
         } catch { /* 列表仍可浏览；只放弃不可用的本次滚动位置。 */ }
     }, [external.isPending, location.pathname, location.search]);
-    const navigation = (mobile ? ['discover', 'library'] : ['discover', 'library', 'upload']).map(id => ({ id, label: t(`platform.${id}`) }));
+    const navigation = (mobile ? ['discover', 'library'] : ['discover', 'library', 'upload', 'profile']).map(id => ({ id, label: id === 'profile' ? t('auth:menu.profile') : t(`platform.${id}`) }));
     return <div className="platform-home">
         <header className="platform-home-header">
             <div className="platform-home-brand">{brand}</div>
             <PlatformNavigation items={navigation} selected={section} onSelect={id => setSection(id as HomeSection)}
                 menuLabel={t('platform.menu')} closeLabel={t('platform.closeMenu')} utility={utility} mobileUtility={mobileUtility}
-                drawerContent={close => <button type="button" className="platform-secondary-entry" onClick={() => {
-                    setSection('upload');
+                drawerContent={close => <>{(['upload', 'profile'] as const).map(id => <button key={id} type="button" className="platform-secondary-entry" onClick={() => {
+                    setSection(id);
                     close();
-                }}>{t('platform.upload')}</button>}
+                }}>{id === 'profile' ? t('auth:menu.profile') : t(`platform.${id}`)}</button>)}</>}
                 account={<div className="platform-home-account">
-                {user ? <UserMenu variant="platform" onLogout={onLogout} onProfile={() => setSection('profile')} /> : <>
+                {user ? <UserMenu variant="platform" onLogout={onLogout} /> : <>
                     <button type="button" onClick={onLogin}>{t('auth:menu.login')}</button>
                     <button type="button" onClick={onRegister}>{t('auth:menu.register')}</button>
                 </>}
@@ -139,6 +142,7 @@ export function PlatformHomeSurface({ brand, utility, mobileUtility, games, allG
                         beforeGames={section === 'library' ? <PlatformLibraryNews games={favorites} /> : undefined}
                         filters={section === 'discover' ? <CategoryPills variant="platform" activeCategory={category} onSelect={onCategory} /> : undefined}
                         games={section === 'library' ? allCards : [...games, ...visibleExternalCards]} mode={section} favoriteIds={favoriteIds} favoritePending={library.isSaving}
+                        playerCountsByGame={playerCountsByGame} hasPlayerCounts={hasPlayerCounts}
                         onOpen={id => openGame(id, section === 'library')} onIntent={id => { if (!externalGames.some(game => game.gameId === id)) onGameIntent(id); }} onFavorite={(gameId, favorite) => {
                             void library.setFavorite({ gameId, favorite }).catch(error => toast.error(error instanceof Error ? error.message : t('platform.favoriteError')));
                         }} />}

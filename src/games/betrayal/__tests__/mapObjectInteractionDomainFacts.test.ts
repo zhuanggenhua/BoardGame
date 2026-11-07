@@ -118,7 +118,7 @@ describe('Betrayal map interaction permissions match domain validation', () => {
         expect(moveRoom).toBeDefined();
         expect(exploreRoom).toBeDefined();
         expect(validate(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '1', { roomId: moveRoom!.id }).valid).toBe(true);
-        expect(validate(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: exploreRoom!.id }).valid).toBe(true);
+        expect(validate(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '1', { roomId: exploreRoom!.id }).valid).toBe(true);
     });
 
     it('keeps ordinary move and explore legal when the standard traitor/Mummy panel is active', () => {
@@ -138,7 +138,7 @@ describe('Betrayal map interaction permissions match domain validation', () => {
         expect(moveRoom).toBeDefined();
         expect(exploreRoom).toBeDefined();
         expect(validate(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '2', { roomId: moveRoom!.id }).valid).toBe(true);
-        expect(validate(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '2', { roomId: exploreRoom!.id })).toMatchObject({ valid: true });
+        expect(validate(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '2', { roomId: exploreRoom!.id })).toMatchObject({ valid: true });
     });
 
     it('blocks ordinary actions during Helping Hands, while preserving the Troll Hand command after discovery ended the turn', () => {
@@ -151,7 +151,7 @@ describe('Betrayal map interaction permissions match domain validation', () => {
         expect(exploreRoom).toBeDefined();
 
         expect(validate(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' }).valid).toBe(false);
-        expect(validate(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: exploreRoom!.id }).valid).toBe(false);
+        expect(validate(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: exploreRoom!.id }).valid).toBe(false);
 
         core.turnEndedByDiscovery = true;
         expect(validate(core, BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND, '0', {
@@ -179,7 +179,7 @@ describe('Betrayal map interaction permissions match domain validation', () => {
         expect(exploreRoom).toBeDefined();
 
         expect(validate(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' }).valid).toBe(false);
-        expect(validate(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: exploreRoom!.id }).valid).toBe(false);
+        expect(validate(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: exploreRoom!.id }).valid).toBe(false);
         expect(validate(core, BETRAYAL_COMMANDS.END_BLOOD_FROM_STONE_MONSTER_TURN, '0', {}).valid).toBe(true);
     });
 
@@ -218,6 +218,6 @@ describe('Betrayal map interaction permissions match domain validation', () => {
         expect(exploreRoom).toBeDefined();
 
         expect(validate(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, playerId, { roomId: moveRoomId }).valid).toBe(true);
-        expect(validate(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, playerId, { roomId: exploreRoom!.id }).valid).toBe(false);
+        expect(validate(core, BETRAYAL_COMMANDS.REVEAL_ROOM, playerId, { roomId: exploreRoom!.id }).valid).toBe(false);
     });
 });

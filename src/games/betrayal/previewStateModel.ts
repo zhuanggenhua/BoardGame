@@ -82,7 +82,7 @@ export type PreviewState = {
   selectedBloodFromStoneStoneCherubRoomIds: string[];
 };
 
-export function createInitialPreviewState(_core: BetrayalCore): PreviewState {
+export function createInitialPreviewState(core: BetrayalCore): PreviewState {
   return {
     selectedInventoryCardId: null,
     lastUsedInventoryCardId: null,
@@ -109,14 +109,14 @@ export function createInitialPreviewState(_core: BetrayalCore): PreviewState {
     useHolySymbolForExplore: false,
     useIdolForExplore: false,
     ignoreEventSymbolWithTraitorPower: false,
-    pendingRoomPlacementSlotId: null,
+    pendingRoomPlacementSlotId: core.pendingRoomPlacement?.roomId ?? null,
     pendingRoomPlacementFailure: null,
     pendingRoomOrientationTurns: 0,
     pendingRoomTileAdjustment: null,
     tradeSelectionTouched: false,
     dismissedLatestDiscoveryKey: null,
     dismissedRecentRollId: null,
-    interactionMode: "default",
+    interactionMode: core.pendingRoomPlacement ? "explore" : "default",
     hauntTargetingActionKind: null,
     selectedHelpingHandsTrollHandMoveMonsterId: null,
     selectedMonsterMoveMonsterId: null,
@@ -209,6 +209,11 @@ export function resolveNextPreviewStateAfterCoreChange(
   } = {},
 ): PreviewState {
   const nextInitialState = createInitialPreviewState(core);
+  if (core.pendingRoomPlacement) {
+    return { ...nextInitialState, ...resolvePreservedExplorePlacementState(core, {
+      ...previousState, interactionMode: "explore", pendingRoomPlacementSlotId: core.pendingRoomPlacement.roomId,
+    }) };
+  }
   if (options.authoritativeHistoryRewound) {
     return nextInitialState;
   }

@@ -7,6 +7,7 @@ import type { QidahenCore } from '../../src/games/qidahen/domain/types';
 import { clickVisibleButton } from './tutorialPointer';
 import { waitForQidahenVisualReady } from './visualReady';
 import { qidahenTutorialProgressIdentity as progressIdentity, readQidahenStoredTutorialStep as storedStep } from './tutorialPersistence';
+import { QIDAHEN_VISUAL_SOURCE_PATHS, requireCompleteQidahenSourceIdentity, trackQidahenSourceIdentity } from './sourceIdentity';
 
 // 七大恨的图集地图与物理骰子按正常浏览器GPU呈现；不继承Windows软件光栅化测试开关。
 test.use({ channel: 'chromium', launchOptions: { args: [] } });
@@ -24,6 +25,7 @@ test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退
     await setChineseLocale(page); await disableAudio(page);
     await page.addInitScript(() => { (window as any).__E2E_TEST_MODE__ = true; });
     const diagnostics = attachPageDiagnostics(page);
+    const verifySourceIdentity = trackQidahenSourceIdentity(page, 'e2e/qidahen/qidahen-tutorial-lifecycle.e2e.ts', ['e2e/qidahen/sourceIdentity.ts'], QIDAHEN_VISUAL_SOURCE_PATHS);
     const records: object[] = [];
     const waitStep = async (id: string) => {
         await expect(page.locator(`[data-tutorial-step="${id}"]`)).toBeVisible({ timeout: 90_000 });
@@ -83,6 +85,8 @@ test('qidahen tutorial 真实刷新继续、回退、重开、旧版失效及退
     await expect(page.getByTestId('tutorial-highlight-ring')).toHaveCount(0);
     records.push({ id: 'ordinary-room-after-exit', assertions: [{ name: 'ordinary-game-does-not-reactivate-old-tutorial', actual: true, expected: true }] });
     await assertNoFatalFrontendErrors([{ label: 'tutorial-lifecycle', diagnostics }]);
+    const sourceIdentity = await verifySourceIdentity();
+    requireCompleteQidahenSourceIdentity(sourceIdentity);
     const dir = resolve(process.env.QIDAHEN_ANNUAL_EVIDENCE_ROOT ?? 'test-results/qidahen-annual-current', 'lifecycle'); mkdirSync(dir, { recursive: true });
-    writeFileSync(resolve(dir, 'lifecycle-verification.json'), JSON.stringify({ gameId: 'qidahen', evidenceCategory: 'tutorial', status: 'PASS', revision: QIDAHEN_ANNUAL_TUTORIAL.revision, records }, null, 2));
+    writeFileSync(resolve(dir, 'lifecycle-verification.json'), JSON.stringify({ gameId: 'qidahen', evidenceCategory: 'tutorial', status: 'PASS', revision: QIDAHEN_ANNUAL_TUTORIAL.revision, sourceIdentity, records }, null, 2));
 });

@@ -8,6 +8,7 @@ import {
     isDustHaunt,
     isHelpingHandsHaunt,
     isMagicCameraHaunt,
+    isMummyHaunt,
     resolveHelpingHandsControllerPlayerId,
     resolveLivingHeroExplorers,
 } from './hauntScenarioReadModel';
@@ -71,6 +72,19 @@ export function createBetrayalCrimsonJackHeroVictoryResult(core: BetrayalCore): 
             eventsDrawn: countDrawnCards(core, 'event'),
         },
     };
+}
+
+export function resolveMummyAllHeroesDefeatedVictoryResult(
+    core: BetrayalCore,
+    options: { deferForRabbitFoot?: boolean } = {},
+): BetrayalEndgameResult | null {
+    if (!isMummyHaunt(core) || getAllExplorers(core).some((explorer) => (
+        explorer.playerId !== core.scenarioRuntime.traitorPlayerId
+        && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
+    ))) return null;
+    if (options.deferForRabbitFoot !== false && core.recentRoll?.kind === 'deathPrevention'
+        && shouldDeferDustTraitorVictoryForRabbitFoot(core, core.recentRoll.playerId)) return null;
+    return createMummyEndgameResult(core, 'traitor');
 }
 
 export function resolveMummyTraitorVictoryResult(core: BetrayalCore): BetrayalEndgameResult | null {

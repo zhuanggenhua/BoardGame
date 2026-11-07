@@ -70,6 +70,7 @@ function buildMatchRoomOnlineConnectionModel(args: {
     return {
         isSpectatorRoute: connection.isSpectatorRoute,
         rematch: {
+            onTransitionChange: connection.onRematchTransitionChange,
             matchId,
             playerId: connection.effectivePlayerID ?? undefined,
             autoAcceptedPlayerIds,

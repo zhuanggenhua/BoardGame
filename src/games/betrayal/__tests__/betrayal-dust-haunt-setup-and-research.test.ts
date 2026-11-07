@@ -1300,6 +1300,8 @@ it('灰尘阶段继续探索时圣符仍可埋葬第一张板块并继续发现�
         setTestExplorerInventory(core, '1', [{ id: 'holy-symbol', name: '圣符', kind: 'omen' }]);
         const speedBeforeExplore = core.currentExplorer.traits.speed;
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '1', { roomId: 'upper-north' });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '1', { roomId: 'upper-north', useHolySymbol: true });
         const holySymbolExplore = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: 'upper-north', useHolySymbol: true }),
@@ -1341,6 +1343,7 @@ it('灰尘阶段继续探索事件符号时雕像仍可跳过事件且不结算�
         const targetRoomId = resolveExplorableRoomSlots(core)[0]?.id;
         expect(targetRoomId).toBeTruthy();
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '1', { roomId: targetRoomId! });
         const idolExplore = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '1', { roomId: targetRoomId, useIdol: true }),
@@ -1353,7 +1356,7 @@ it('灰尘阶段继续探索事件符号时雕像仍可跳过事件且不结算�
         expect(core.latestDiscovery?.summary).toBe('已用雕像跳过');
         expect(core.latestDiscovery?.detail).toContain('没有抽取或结算事件卡');
         expect(core.currentExplorer.traits.might).toBe(mightBefore);
-        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件：阴影扑面');
+        expect(core.activityLog[0]?.text).toContain('使用雕像跳过了事件');
     });
 
 it('灰尘阶段骨制钥匙仍可穿墙移动到已发现相邻板块，但不能发现新房间', () => {

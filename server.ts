@@ -30,16 +30,21 @@ import { runStartupCleanupTasks, type StartupCleanupTask } from './src/server/st
 
 import { createClaimSeatHandler, claimSeatUtils } from './src/server/claimSeat';
 import { evaluateEmptyRoomJoinGuard } from './src/server/joinGuard';
-import { areAllSeatsOccupied, hasOccupiedPlayers, isSeatOccupied, isSupportedPlayerCount } from './src/server/matchOccupancy';
+import { areAllSeatsOccupied, isSeatOccupied, isSupportedPlayerCount } from './src/server/matchOccupancy';
+import {
+    createInitialOwnerSeat,
+    evaluateGuestOwnerReplacementProof,
+} from './src/server/guestRoomOwnership';
 import { resolveAllowedPlayerCountsForGame } from './src/shared/roomSetup';
 import {
-    createMatchWithOwnerConflictRetry,
+    parseActiveMatchExistsConflict,
     decideDuplicateOwnerRoomAction,
     DUPLICATE_OWNER_DISCONNECT_GRACE_MS,
     planDuplicateOwnerRoomCreate,
     resolveForceReplaceOwnerRoom,
 } from './src/server/duplicateOwnerRooms';
-import { applyRematchVoteToggle, resolveRematchPlayerGroups } from './src/server/rematch';
+import { applyRematchVoteToggle, isAuthenticatedRematchPlayer, resolveRematchPlayerGroups } from './src/server/rematch';
+import { prepareRematchCreate, RematchCreateError } from './src/server/rematchSetup';
 import {
     createMatchEmoteRateLimiter,
     type MatchEmoteRejectReason,
@@ -53,7 +58,7 @@ import { shouldRefreshPublicRoomSummaryAfterCommand } from './src/games/serverLo
 import { isGameEmoteAllowed } from './src/games/emotes';
 import { getAiSeatIds } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
-import type { ClaimSeatMetadataInput, MatchMetadata, MatchStorage } from './src/engine/transport/storage';
+import { isMatchReplacementStorage, MatchReplacementOutcomeUnknownError, type MatchReplacementSnapshot, type ClaimSeatMetadataInput, type MatchMetadata, type MatchStorage } from './src/engine/transport/storage';
 import { buildMatchDetailPayload } from './src/server/lobbyMatch';
 import { resolveSocketIoServerTransports } from './src/server/socketTransports';
 import logger, { gameLogger } from './server/logger';
@@ -90,6 +95,15 @@ interface RematchVoteState {
 }
 const rematchStateByMatch = new Map<string, RematchVoteState>();
 const matchSubscribers = new Map<string, Set<string>>();
+
+const fetchRematchMetadata = async (matchID: string): Promise<MatchMetadata | undefined> => {
+    try {
+        return (await storage.fetch(matchID, { metadata: true })).metadata;
+    } catch {
+        logger.warn('rematch_authorization_unavailable', { matchID });
+        return undefined;
+    }
+};
 
 const normalizeRematchPlayerIds = (value: unknown): string[] => {
     if (!Array.isArray(value)) return [];
@@ -562,7 +576,7 @@ app.use(async (ctx, next) => {
         const status = (err as { status?: number }).status ?? 500;
         const message = err instanceof Error ? err.message : 'Internal Server Error';
         ctx.status = status;
-        ctx.body = { error: message };
+        ctx.body = { error: status >= 500 && process.env.NODE_ENV === 'production' ? 'Internal Server Error' : message };
         // 非 4xx 错误打印日志
         if (status >= 500) {
             logger.error(`[Server] ${ctx.method} ${ctx.path} → ${status}:`, message);
@@ -616,16 +630,6 @@ const resolveOwnerFromRequest = (
     };
 };
 
-const resolveOwnerKeyFromMetadata = (metadata?: MatchMetadata | null): string | undefined => {
-    const setupData = metadata?.setupData as { ownerKey?: string } | undefined;
-    return setupData?.ownerKey;
-};
-
-const isEmptyRoomByMetadata = (metadata?: MatchMetadata | null): boolean => {
-    if (!metadata?.players) return false;
-    return !hasOccupiedPlayers(metadata.players as Record<string, { name?: string; credentials?: string; isConnected?: boolean | null }>);
-};
-
 const resolveJoinSeat = (
     players: MatchMetadata['players'],
     requestedPlayerID?: string,
@@ -660,41 +664,44 @@ type MatchCreateSetupData = Record<string, unknown> & {
     prevMatchID?: string;
 };
 
-const cleanupMatchRoom = async (
+/** Send only the successor URL to authenticated followers of the committed source. */
+const notifyRematchSuccessor = (matchID: string, metadata: MatchMetadata, nextMatchID: string): void => {
+    const url = `/play/${normalizeGameName(metadata.gameName)}/match/${nextMatchID}`;
+    for (const socketID of matchSubscribers.get(matchID) ?? []) {
+        const socket = lobbySocketIO.sockets.sockets.get(socketID);
+        if (!socket || socket.data.rematchMatchId !== matchID || socket.data.rematchPlayerId === '0'
+            || !socket.rooms.has(`rematch:${matchID}`)
+            || !isAuthenticatedRematchPlayer(metadata, socket.data.rematchPlayerId, socket.data.rematchCredentials)) continue;
+        socket.emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, { url });
+    }
+};
+
+/** Storage has already committed. Never delete persistence from runtime cleanup. */
+const cleanupReplacedMatchRuntime = (
     matchID: string,
     metadata?: MatchMetadata | null,
     emitRemoval = false,
-): Promise<boolean> => {
+): boolean => {
     const unloaded = gameTransport.unloadMatch(matchID, { disconnectSockets: true });
-    await storage.wipe(matchID);
-
+    matchSubscribers.delete(matchID);
+    rematchStateByMatch.delete(matchID);
+    chatHistoryByMatch.delete(matchID);
     const game = normalizeGameName(metadata?.gameName);
     if (emitRemoval && game && isSupportedGame(game)) {
         lobbyCoordinator.emitMatchEnded(game, matchID);
     } else {
         lobbyCoordinator.forgetLobbyMatch(matchID);
     }
-
-    matchSubscribers.delete(matchID);
-    rematchStateByMatch.delete(matchID);
-    chatHistoryByMatch.delete(matchID);
-
     return unloaded || Boolean(metadata);
 };
 
-const cleanupMissingOwnerRoom = async (
+const cleanupMatchRoom = async (
     matchID: string,
     metadata?: MatchMetadata | null,
-    context?: string,
     emitRemoval = false,
 ): Promise<boolean> => {
-    if (!isEmptyRoomByMetadata(metadata)) return false;
-    const ownerKey = resolveOwnerKeyFromMetadata(metadata);
-    if (ownerKey) return false;
-
-    await cleanupMatchRoom(matchID, metadata, emitRemoval);
-    logger.warn(`[RoomCleanup] reason=missing_owner context=${context ?? 'unknown'} matchID=${matchID}`);
-    return true;
+    await storage.wipe(matchID);
+    return cleanupReplacedMatchRuntime(matchID, metadata, emitRemoval);
 };
 
 const unloadRuntimeMatchesMissingFromStorage = async (reason: string): Promise<number> => {
@@ -794,14 +801,38 @@ router.post('/games/:name/create', async (ctx) => {
     const gameEngine = gameEntry?.engineConfig;
 
     const body = ctx.request.body as Record<string, unknown> | undefined;
-    const numPlayers = Number(body?.numPlayers ?? 2);
     const requestedOwnerName = typeof body?.playerName === 'string' && body.playerName.trim()
         ? body.playerName.trim()
         : undefined;
-    const rawSetupData =
-        body?.setupData && typeof body.setupData === 'object'
+    let rematch: Awaited<ReturnType<typeof prepareRematchCreate>> | undefined;
+    let replacement: { matchID: string; snapshot: MatchReplacementSnapshot } | undefined;
+    if (body && Object.hasOwn(body, 'rematch')) {
+        const rawToken = claimSeatUtils.parseBearerToken(ctx.get('authorization'));
+        const user = rawToken ? claimSeatUtils.verifyGameToken(rawToken, JWT_SECRET) : null;
+        try {
+            rematch = await prepareRematchCreate({
+                gameName, request: body.rematch, authenticatedUserId: user?.userId,
+                fetch: async (id) => {
+                    if (!isMatchReplacementStorage(storage)) {
+                        throw new RematchCreateError(409, 'ROOM_REPLACEMENT_UNSUPPORTED');
+                    }
+                    const snapshot = await storage.fetchMatchForReplacement(id);
+                    if (snapshot) replacement = { matchID: id, snapshot };
+                    return snapshot ?? {};
+                },
+            });
+        } catch (error) {
+            if (!(error instanceof RematchCreateError)) throw error;
+            ctx.status = error.status;
+            ctx.body = { error: error.code };
+            return;
+        }
+    }
+    const numPlayers = rematch?.numPlayers ?? Number(body?.numPlayers ?? 2);
+    const rawSetupData = rematch?.setupData ?? (
+        body?.setupData && typeof body.setupData === 'object' && !Array.isArray(body.setupData)
             ? (body.setupData as Record<string, unknown>)
-            : {};
+            : {});
     const minPlayers = gameEngine?.minPlayers ?? 2;
     const maxPlayers = gameEngine?.maxPlayers ?? 2;
     const playerOptions = resolveAllowedPlayerCountsForGame({
@@ -811,14 +842,88 @@ router.post('/games/:name/create', async (ctx) => {
     if (!isSupportedPlayerCount(numPlayers, minPlayers, maxPlayers, playerOptions)) {
         ctx.throw(400, 'Invalid numPlayers');
     }
-    const { ownerKey, ownerType, ownerName } = resolveOwnerFromRequest(ctx, rawSetupData, requestedOwnerName);
-    // 游客房间是临时资源：按 match-ownership 规范自动覆盖旧房。
+    const { ownerKey, ownerType, ownerName } = rematch
+        ? { ...rematch, ownerName: requestedOwnerName ?? rematch.ownerName }
+        : resolveOwnerFromRequest(ctx, rawSetupData, requestedOwnerName);
+    // 游客旧房只能在证明持有其 P0 凭据后覆盖。
     // 登录用户仍保留旧房保护，只有显式 forceReplaceOwnerRoom 才替换。
     const forceReplaceOwnerRoom = resolveForceReplaceOwnerRoom(
         ownerType,
-        body?.forceReplaceOwnerRoom === true,
+        Boolean(rematch) || body?.forceReplaceOwnerRoom === true,
     );
     const setupData: MatchCreateSetupData = { ...rawSetupData, ownerKey, ownerType };
+    // Authentication proof is request-only, never persisted as game setup.
+    delete setupData.previousOwnerCredentials;
+    const previousOwnerCredentials = rematch
+        ? (body?.rematch as { credentials: string }).credentials
+        : body?.previousOwnerCredentials;
+    const ownerMatches = supportsOwnerMatchLookup(storage)
+        ? await storage.findMatchesByOwnerKey(ownerKey)
+        : [];
+    const existingMatches = await Promise.all(ownerMatches.map(async (match) => {
+        const snapshot = replacement?.matchID === match.matchID
+            ? replacement.snapshot
+            : isMatchReplacementStorage(storage) ? await storage.fetchMatchForReplacement(match.matchID) : undefined;
+        const existingMetadata = snapshot?.metadata ?? (
+            !isMatchReplacementStorage(storage) ? (await storage.fetch(match.matchID, { metadata: true })).metadata : undefined
+        );
+        return {
+            ...match,
+            metadata: existingMetadata,
+            snapshot,
+            decision: decideDuplicateOwnerRoomAction(existingMetadata, {
+                disconnectGraceMs: DUPLICATE_OWNER_DISCONNECT_GRACE_MS,
+            }),
+        };
+    }));
+    const ownerProofFailure = evaluateGuestOwnerReplacementProof({
+        ownerType, ownerKey, previousOwnerCredentials, existingMatches,
+    });
+    if (ownerProofFailure) {
+        ctx.status = ownerProofFailure.status;
+        ctx.body = { error: ownerProofFailure.code };
+        return;
+    }
+
+    // Legacy client-supplied source IDs are not authority to read private state.
+    if (!rematch && Object.hasOwn(rawSetupData, 'prevMatchID')) {
+        ctx.status = 403;
+        ctx.body = { error: 'REMATCH_PROOF_REQUIRED' };
+        return;
+    }
+    // A source proof never authorizes replacing a different active room.
+    const otherRoom = rematch && existingMatches.find(match => match.matchID !== rematch.sourceMatchID);
+    if (otherRoom) {
+        ctx.status = 409;
+        ctx.body = { error: 'ACTIVE_MATCH_EXISTS', gameName: otherRoom.gameName, matchID: otherRoom.matchID, canForceReplace: false };
+        return;
+    }
+
+    // The source snapshot is the sole authority for proof, setup and CAS.
+    if (existingMatches.length > 0) {
+        const createPlan = planDuplicateOwnerRoomCreate(existingMatches, {
+            forceReplaceActive: forceReplaceOwnerRoom,
+        });
+        if (createPlan.action === 'block') {
+            const active = createPlan.activeMatch;
+            ctx.status = 409;
+            ctx.body = { error: 'ACTIVE_MATCH_EXISTS', gameName: active.gameName, matchID: active.matchID, canForceReplace: true };
+            return;
+        }
+        if (createPlan.cleanupMatches.length !== 1 || !isMatchReplacementStorage(storage)) {
+            ctx.status = 409;
+            ctx.body = { error: 'ROOM_REPLACEMENT_UNSUPPORTED' };
+            return;
+        }
+        const old = existingMatches.find(match => match.matchID === createPlan.cleanupMatches[0].matchID)!;
+        const oldSetup = old.snapshot?.metadata.setupData as { ownerKey?: unknown } | undefined;
+        if (!old.snapshot || oldSetup?.ownerKey !== ownerKey) {
+            ctx.status = 409;
+            ctx.body = { error: 'ROOM_REPLACEMENT_CONFLICT' };
+            return;
+        }
+        replacement = { matchID: old.matchID, snapshot: old.snapshot };
+    }
 
     const matchID = nanoid(11);
     const seed = nanoid(16);
@@ -827,13 +932,14 @@ router.post('/games/:name/create', async (ctx) => {
     // 清理客户端不应直接控制的先手字段（只允许通过 prevMatchID 间接设置）
     delete setupData.firstPlayerId;
     delete setupData.turnOrder;
+    if (rematch) setupData.prevMatchID = rematch.sourceMatchID;
 
     // 重赛先手轮换：从上一局状态中提取先手信息
     if (typeof setupData.prevMatchID === 'string') {
         try {
-            const prevMatch = await storage.fetch(setupData.prevMatchID, { state: true });
+            const prevMatch = replacement?.snapshot;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 跨游戏通用提取，state 结构不固定
-            const prevCore = (prevMatch.state as any)?.G?.core;
+            const prevCore = (prevMatch?.state as any)?.G?.core;
             if (prevCore) {
                 // 双人：轮换先手；多人：随机打乱顺序
                 if (numPlayers === 2) {
@@ -861,67 +967,6 @@ router.post('/games/:name/create', async (ctx) => {
         delete setupData.prevMatchID;
     }
 
-    if (ownerKey) {
-        const ownerMatches = supportsOwnerMatchLookup(storage)
-            ? await storage.findMatchesByOwnerKey(ownerKey)
-            : [];
-
-        if (ownerMatches.length > 0) {
-            const existingMatches = await Promise.all(ownerMatches.map(async (match) => {
-                const { metadata: existingMetadata } = await storage.fetch(match.matchID, { metadata: true });
-                return {
-                    ...match,
-                    metadata: existingMetadata,
-                    decision: decideDuplicateOwnerRoomAction(existingMetadata, {
-                        disconnectGraceMs: DUPLICATE_OWNER_DISCONNECT_GRACE_MS,
-                    }),
-                };
-            }));
-
-            const createPlan = planDuplicateOwnerRoomCreate(existingMatches, {
-                forceReplaceActive: forceReplaceOwnerRoom,
-            });
-
-            if (createPlan.action === 'block') {
-                const activeMatch = createPlan.activeMatch;
-                logger.info('duplicate_owner_room_blocked', {
-                    ownerKey,
-                    ownerType: ownerType ?? 'unknown',
-                    matchID: activeMatch.matchID,
-                    gameName: activeMatch.gameName,
-                    reason: activeMatch.decision.reason,
-                    canForceReplace: true,
-                });
-                ctx.status = 409;
-                ctx.body = {
-                    error: 'ACTIVE_MATCH_EXISTS',
-                    gameName: activeMatch.gameName,
-                    matchID: activeMatch.matchID,
-                    canForceReplace: true,
-                };
-                return;
-            }
-
-            const cleanableMatches = createPlan.cleanupMatches;
-            if (cleanableMatches.length > 0) {
-                logger.info(forceReplaceOwnerRoom ? 'force_cleanup_duplicate_owner_rooms' : 'cleanup_duplicate_owner_rooms', {
-                    ownerKey,
-                    ownerType: ownerType ?? 'unknown',
-                    count: cleanableMatches.length,
-                    matches: cleanableMatches.map((match) => ({
-                        matchID: match.matchID,
-                        gameName: match.gameName,
-                        reason: match.decision.reason,
-                    })),
-                });
-
-                await Promise.all(cleanableMatches.map(async (match) => {
-                    await cleanupMatchRoom(match.matchID, match.metadata, true);
-                }));
-            }
-        }
-    }
-
     // 初始化游戏状态
     const setupResult = await gameTransport.setupMatch(matchID, gameName, playerIds, seed, setupData);
     if (!setupResult) {
@@ -946,19 +991,9 @@ router.post('/games/:name/create', async (ctx) => {
     };
     metadata.players['0'] = {
         ...metadata.players['0'],
-        ownerKey,
+        ...createInitialOwnerSeat({ ownerKey, ownerType, ownerName, generateCredentials: () => nanoid(21) }),
     };
-
-    let ownerCredentials: string | undefined;
-    if (ownerName) {
-        ownerCredentials = nanoid(21);
-        metadata.players['0'] = {
-            ...metadata.players['0'],
-            name: ownerName,
-            credentials: ownerCredentials,
-            isConnected: false,
-        };
-    }
+    const ownerCredentials = metadata.players['0'].credentials;
 
     const createMatchData = {
         initialState: {
@@ -969,43 +1004,64 @@ router.post('/games/:name/create', async (ctx) => {
         },
         metadata,
     };
-    const createPersistResult = await createMatchWithOwnerConflictRetry({
-        createMatch: async () => {
+    if (replacement) {
+        if (!isMatchReplacementStorage(storage)) {
+            ctx.status = 409;
+            ctx.body = { error: 'ROOM_REPLACEMENT_UNSUPPORTED' };
+            return;
+        }
+        // A single backend operation compares the authorized snapshot and replaces
+        // the document. No delete/create fallback and no destructive conflict retry.
+        let result: 'replaced' | 'conflict';
+        try {
+            result = await storage.replaceMatchIfUnchanged(
+                replacement.matchID, replacement.snapshot, matchID, createMatchData,
+            );
+        } catch (error) {
+            if (!(error instanceof MatchReplacementOutcomeUnknownError)) throw error;
+            // The server could not establish whether the single atomic write
+            // committed. Never retry or claim that the original room survived.
+            ctx.status = 503;
+            ctx.body = { error: 'ROOM_REPLACEMENT_OUTCOME_UNKNOWN' };
+            logger.warn('room_replacement_outcome_unknown', { matchID: replacement.matchID, nextMatchID: matchID });
+            return;
+        }
+        if (result !== 'replaced') {
+            ctx.status = 409;
+            ctx.body = { error: 'ROOM_REPLACEMENT_CONFLICT' };
+            return;
+        }
+        if (rematch) {
+            try {
+                notifyRematchSuccessor(replacement.matchID, replacement.snapshot.metadata, matchID);
+            } catch {
+                logger.warn('rematch_successor_notification_failed', { matchID: replacement.matchID });
+            }
+        }
+        try {
+            cleanupReplacedMatchRuntime(replacement.matchID, replacement.snapshot.metadata, true);
+        } catch {
+            // Persistence committed. A notification failure must not report a
+            // failed creation or invoke a second replacement/deletion attempt.
+            logger.warn('replaced_match_runtime_cleanup_failed', { matchID: replacement.matchID });
+        }
+    } else {
+        try {
             await storage.createMatch(matchID, createMatchData);
-        },
-        fetchConflictMetadata: async (conflictMatchID) => {
-            const { metadata: conflictMetadata } = await storage.fetch(conflictMatchID, { metadata: true });
-            return conflictMetadata;
-        },
-        cleanupConflictMatch: async (conflictMatchID, conflictMetadata) => {
-            await cleanupMatchRoom(conflictMatchID, conflictMetadata, true);
-        },
-        forceReplaceActive: forceReplaceOwnerRoom,
-        onForceCleanup: async ({ attempt, conflict }) => {
-            logger.info('force_cleanup_duplicate_owner_rooms_race', {
-                ownerKey,
-                ownerType: ownerType ?? 'unknown',
-                matchID: conflict.matchID,
-                gameName: conflict.gameName,
-                attempt,
-            });
-        },
-    });
-    if (createPersistResult.action === 'conflict') {
-        ctx.status = 409;
-        ctx.body = {
-            error: 'ACTIVE_MATCH_EXISTS',
-            gameName: createPersistResult.conflict.gameName,
-            matchID: createPersistResult.conflict.matchID,
-            canForceReplace: true,
-        };
-        return;
+        } catch (error) {
+            const conflict = parseActiveMatchExistsConflict(error);
+            if (!conflict) throw error;
+            ctx.status = 409;
+            ctx.body = { error: 'ACTIVE_MATCH_EXISTS', ...conflict, canForceReplace: true };
+            return;
+        }
     }
 
     ctx.body = {
         matchID,
         ownerPlayerID: ownerCredentials ? '0' : undefined,
         ownerCredentials,
+        ...(rematch ? { ownerType } : {}),
     };
 
     setTimeout(() => void lobbyCoordinator.handleMatchCreated(matchID, gameName), 100);
@@ -1057,14 +1113,10 @@ router.post('/games/:name/:matchID/join', async (ctx) => {
         jwtSecret: JWT_SECRET,
     });
     if (!guard.allowed) {
-        if (guard.reason === 'missing_owner') {
-            const cleaned = await cleanupMissingOwnerRoom(matchID, result.metadata, 'join', true);
-            if (cleaned) {
-                ctx.throw(404, 'Match not found');
-                return;
-            }
-        }
-        ctx.throw(guard.status ?? 403, guard.message ?? 'Only match owner can rejoin');
+        // An unauthenticated join must never delete or recover an ownerless room.
+        // Return the explicit recovery error even under production middleware.
+        ctx.status = guard.status ?? 403;
+        ctx.body = { error: guard.message ?? 'Only match owner can rejoin' };
         return;
     }
 
@@ -1400,6 +1452,10 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.rematchMatchId = undefined;
         socket.data.rematchPlayerId = undefined;
+        socket.data.rematchCredentials = undefined;
+        socket.data.rematchOwnerKey = undefined;
+        socket.data.rematchGameName = undefined;
+        socket.data.rematchJoinRevision = Number(socket.data.rematchJoinRevision ?? 0) + 1;
 
         // 清理聊天订阅
 
@@ -1416,12 +1472,21 @@ lobbySocketIO.on('connection', (socket) => {
 
     // ========== 重赛投票事件处理 ==========
 
-    socket.on(REMATCH_EVENTS.JOIN_MATCH, async (payload?: { matchId?: string; playerId?: string; autoAcceptedPlayerIds?: unknown }) => {
-        const { matchId, playerId } = payload || {};
+    socket.on(REMATCH_EVENTS.JOIN_MATCH, async (payload?: { matchId?: string; playerId?: string; credentials?: string; autoAcceptedPlayerIds?: unknown }) => {
+        const { matchId, playerId, credentials } = payload || {};
         if (!matchId || !playerId) {
             logger.warn(`[RematchIO] ${socket.id} 加入对局失败：缺少 matchId 或 playerId`);
             return;
         }
+
+        const joinRevision = Number(socket.data.rematchJoinRevision ?? 0) + 1;
+        socket.data.rematchJoinRevision = joinRevision;
+        const metadata = await fetchRematchMetadata(matchId);
+        if (!metadata || !isAuthenticatedRematchPlayer(metadata, playerId, credentials)) return;
+        const autoAcceptedPlayerIds = await resolveAutoAcceptedRematchPlayerIds(matchId, payload?.autoAcceptedPlayerIds);
+        if (socket.data.rematchJoinRevision !== joinRevision) return;
+        const ownerSetup = metadata.setupData && typeof metadata.setupData === 'object'
+            ? metadata.setupData as { ownerKey?: unknown } : undefined;
 
         const prevMatchId = socket.data.rematchMatchId as string | undefined;
         if (prevMatchId && prevMatchId !== matchId) {
@@ -1431,6 +1496,10 @@ lobbySocketIO.on('connection', (socket) => {
 
         socket.data.rematchMatchId = matchId;
         socket.data.rematchPlayerId = playerId;
+        socket.data.rematchCredentials = credentials;
+        socket.data.rematchOwnerKey = playerId === '0' && typeof ownerSetup?.ownerKey === 'string'
+            ? ownerSetup.ownerKey : undefined;
+        socket.data.rematchGameName = metadata.gameName;
         if (!matchSubscribers.has(matchId)) {
             matchSubscribers.set(matchId, new Set());
         }
@@ -1442,7 +1511,6 @@ lobbySocketIO.on('connection', (socket) => {
         }
 
         const state = rematchStateByMatch.get(matchId)!;
-        const autoAcceptedPlayerIds = await resolveAutoAcceptedRematchPlayerIds(matchId, payload?.autoAcceptedPlayerIds);
         socket.data.rematchAutoAcceptedPlayerIds = autoAcceptedPlayerIds;
         socket.emit(REMATCH_EVENTS.STATE_UPDATE, state);
         logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})，登记 AI 自动同意席位=${autoAcceptedPlayerIds.join(',') || 'none'}`);
@@ -1461,13 +1529,28 @@ lobbySocketIO.on('connection', (socket) => {
         socket.data.rematchMatchId = undefined;
         socket.data.rematchPlayerId = undefined;
         socket.data.rematchAutoAcceptedPlayerIds = undefined;
+        socket.data.rematchCredentials = undefined;
+        socket.data.rematchOwnerKey = undefined;
+        socket.data.rematchGameName = undefined;
+        socket.data.rematchJoinRevision = Number(socket.data.rematchJoinRevision ?? 0) + 1;
         logger.info(`[RematchIO] ${socket.id} 离开对局`);
     });
 
-    socket.on(REMATCH_EVENTS.DEBUG_NEW_ROOM, (data?: { url?: string }) => {
+    socket.on(REMATCH_EVENTS.DEBUG_NEW_ROOM, async (data?: { matchID?: string; credentials?: string }) => {
         const matchId = socket.data.rematchMatchId as string | undefined;
-        if (!matchId || !data?.url) return;
-        socket.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, data);
+        const ownerKey = socket.data.rematchOwnerKey as string | undefined;
+        const gameName = socket.data.rematchGameName as string | undefined;
+        if (!matchId || socket.data.rematchPlayerId !== '0' || !ownerKey || !gameName
+            || typeof data?.matchID !== 'string' || data.matchID === matchId) return;
+        const metadata = await fetchRematchMetadata(data.matchID);
+        const setup = metadata?.setupData && typeof metadata.setupData === 'object'
+            ? metadata.setupData as { ownerKey?: unknown } : undefined;
+        if (!metadata || metadata.gameName !== gameName || setup?.ownerKey !== ownerKey
+            || !isAuthenticatedRematchPlayer(metadata, '0', data.credentials)
+            || socket.data.rematchMatchId !== matchId) return;
+        socket.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, {
+            url: `/play/${encodeURIComponent(gameName)}/match/${encodeURIComponent(data.matchID)}`,
+        });
     });
 
     socket.on(REMATCH_EVENTS.VOTE, async () => {
@@ -1478,11 +1561,13 @@ lobbySocketIO.on('connection', (socket) => {
         const state = rematchStateByMatch.get(matchId);
         if (!state || state.ready) return;
         const autoAcceptedPlayerIds = normalizeRematchPlayerIds(socket.data.rematchAutoAcceptedPlayerIds);
-        const matchResult = await storage.fetch(matchId, { metadata: true });
+        const metadata = await fetchRematchMetadata(matchId);
+        if (!isAuthenticatedRematchPlayer(metadata, playerId, socket.data.rematchCredentials)
+            || socket.data.rematchMatchId !== matchId) return;
         const nextState = applyRematchVoteToggle(state, {
             playerId,
             autoAcceptedPlayerIds,
-            playerGroups: resolveRematchPlayerGroups(matchResult.metadata),
+            playerGroups: resolveRematchPlayerGroups(metadata),
         });
         state.votes = nextState.votes;
 

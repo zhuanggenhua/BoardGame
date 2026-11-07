@@ -424,6 +424,7 @@ function handleResolveCardEffectsOnSelectedOpponent({
         timestamp,
         damageOrigin: 'card',
         isAttackModifierCard: card.isAttackModifier,
+        resolutionSequenceId: `selected-opponent-card:${attackerId}:${sourceAbilityId}:${timestamp}`,
     }, { random }));
 
     return events;

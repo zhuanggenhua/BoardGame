@@ -1,0 +1,34 @@
+/* 只消费现有系统显示偏好；封面、游戏素材与后台不参与颜色转换。 */
+html[data-home-entry-style="modern"][data-system-display-theme="night"] {
+ --platform-night-page:#151719;
+ --platform-night-surface:#222529;
+ --platform-night-soft:#2d3136;
+ --platform-night-text:#f1f2f4;
+ --platform-night-muted:#b8bdc7;
+ --platform-night-border:#707780;
+ --platform-night-error:#fca5a5;
+ --platform-night-hover:#3a421f;
+ --platform-night-link:#ff80bd;
+ --platform-night-notice-bg:#382d16;
+ --platform-night-notice-text:#ffe6a4;
+}
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-home,.platform-home-main,.platform-home-directory,.platform-game-details) { background-color:var(--platform-night-page); color:var(--platform-night-text); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-library-sidebar,.platform-profile,.platform-profile-tabs,.platform-upload-workspace,.platform-upload-list,.platform-details-summary,.platform-menu-dialog,.platform-menu-content,.platform-menu-header,[data-user-menu-panel]) { background-color:var(--platform-night-surface); color:var(--platform-night-text); border-color:var(--platform-night-border); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-navigation button:not([aria-current="page"]),.platform-catalog-filters button:not([aria-pressed="true"]),.platform-catalog-tools input,.platform-catalog-tools select,.platform-library-search input,.platform-details-close,.platform-profile button:not([aria-current="page"]),.platform-menu-close,.platform-secondary-entry) { background-color:var(--platform-night-surface); color:var(--platform-night-text); border-color:var(--platform-night-border); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-navigation button[aria-current="page"],.platform-catalog-filters button[aria-pressed="true"],.platform-profile .platform-profile-tabs button[aria-current="page"]) { background:#d5ff00; color:#111; }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-upload-workspace,.platform-profile) :is(input,textarea,select) { background:var(--platform-night-soft); color:var(--platform-night-text); border-color:var(--platform-night-border); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-menu-utilities > button,.platform-menu-utilities .author-support-trigger,.platform-menu-utilities .platform-language-control > button) { color:var(--platform-night-text); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is([data-platform-dialog],.platform-game-details) {
+ --color-parchment-card-bg:var(--platform-night-surface);
+ --color-parchment-base-bg:var(--platform-night-page);
+ --color-parchment-base-text:var(--platform-night-text);
+ --color-parchment-light-text:var(--platform-night-muted);
+ --color-parchment-card-border:var(--platform-night-border);
+ background-color:var(--platform-night-surface); color:var(--platform-night-text); border-color:var(--platform-night-border);
+}
+html[data-home-entry-style="modern"][data-system-display-theme="night"] [data-platform-dialog] :is(input:not([type="checkbox"]):not([type="range"]):not([type="file"]),textarea,select) { background:var(--platform-night-soft); color:var(--platform-night-text); border-color:var(--platform-night-border); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] :is(.platform-guide-intro p,.platform-external-history-row span,.home-download-hint,.platform-home-version button) { color:var(--platform-night-muted); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] .platform-home-version button > span { color:var(--platform-night-muted); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] [data-testid="operation-guide-modal"][data-visual-style="platform"],
+html[data-home-entry-style="modern"][data-system-display-theme="night"] [data-testid="operation-guide-modal"][data-visual-style="platform"] > header { background:var(--platform-night-surface); color:var(--platform-night-text); border-color:var(--platform-night-border); }
+html[data-home-entry-style="modern"][data-system-display-theme="night"] [data-testid="operation-guide-modal"][data-visual-style="platform"] :is(figure,[data-testid="operation-guide-close"]) { background:var(--platform-night-soft); color:var(--platform-night-text); }

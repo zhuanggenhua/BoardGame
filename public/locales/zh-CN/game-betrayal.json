@@ -205,7 +205,15 @@
       "hauntStatusWin": "达成",
       "completedStamp": "完成",
       "endingNarrationLabel": "结局朗读",
-      "continueToReport": "查看结果报告"
+      "continueToReport": "查看结果报告",
+      "recentDeathRoll": "{{name}} 最近保留的死亡检定",
+      "deathRollNotCause": "此检定不一定与本局胜利直接相关",
+      "deathCheckPassed": "阻止死亡",
+      "deathCheckFailed": "未阻止死亡",
+      "beforeReroll": "重投前",
+      "afterReroll": "重投后",
+      "dice": "骰面",
+      "deathRollTotal": "总计 {{total}}，阻止死亡需 {{threshold}}"
     },
     "hud": {
       "phaseLabel": "阶段",

@@ -38,7 +38,7 @@ export type AuthoritativeBatchCoordinatorHooks<
     restoreRandomCursor: (match: TMatch, randomCursor: number) => void;
     persistRollbackState: (match: TMatch, storedState: StoredMatchState) => Promise<void>;
     broadcastState: (match: TMatch) => void;
-    buildAuthoritativeState: (match: TMatch) => unknown;
+    buildAuthoritativeState: (match: TMatch, playerId: string) => unknown;
     resolveSeatControllerType: (match: TMatch, playerId: string) => AuthoritativeCommandSeatControllerType;
     admitOnlineAiCircuitCommand: (args: {
         matchId: string;
@@ -124,7 +124,7 @@ export class AuthoritativeBatchCoordinator<
             restoreRandomCursor: (randomCursor) => this.hooks.restoreRandomCursor(match, randomCursor),
             persistRollbackState: (storedState) => this.hooks.persistRollbackState(match, storedState),
             broadcastState: () => this.hooks.broadcastState(match),
-            buildAuthoritativeState: () => this.hooks.buildAuthoritativeState(match),
+            buildAuthoritativeState: () => this.hooks.buildAuthoritativeState(match, args.playerId),
         });
 
         if (batchResult.status === 'stale-rejected') {

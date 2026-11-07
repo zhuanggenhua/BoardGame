@@ -86,6 +86,7 @@ import {
 } from './statusEvents';
 import { getDiceThronePlayerChoiceLabel } from './playerDisplay';
 import { deferAttackDebuffFollowups } from './deferredAttackDebuff';
+import { isAttackEffectSequenceBlocker } from './attackEffectContinuationTypes';
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
@@ -156,13 +157,7 @@ const isSkirmishLeader = (state: DiceThroneCore, playerId: PlayerId): boolean =>
     return (state.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 0) === maxHealth;
 };
 
-const isBlockingInteractionEvent = (event: DiceThroneEvent): boolean =>
-    event.type === 'CHOICE_REQUESTED'
-    || event.type === 'STRANGE_OPERATION_REQUESTED'
-    || event.type === 'TOKEN_RESPONSE_REQUESTED'
-    || event.type === 'DEFENDER_SELECTION_REQUESTED'
-    || event.type === 'COMPARE_ROLL_REQUESTED'
-    || event.type === 'INTERACTION_REQUESTED';
+const isBlockingInteractionEvent = isAttackEffectSequenceBlocker;
 
 const isInteractiveBonusDiceRerollEvent = (event: DiceThroneEvent): boolean =>
     event.type === 'BONUS_DICE_REROLL_REQUESTED'
@@ -505,7 +500,11 @@ function resolvePassivePhaseTriggerEvents(args: {
     };
 
     const events: DiceThroneEvent[] = [];
-    const resolvePassiveEffects = (sourceAbilityId: string, effects: typeof player.abilities[number]['effects']) => {
+    const resolvePassiveEffects = (
+        sourceAbilityId: string,
+        sequenceId: string,
+        effects: typeof player.abilities[number]['effects'],
+    ) => {
         if (!effects?.length) return;
         events.push(...resolveEffectsToEvents(
             effects,
@@ -517,6 +516,7 @@ function resolvePassivePhaseTriggerEvents(args: {
                 state: args.state,
                 damageDealt: 0,
                 timestamp: args.timestamp,
+                resolutionSequenceId: sequenceId,
             },
             { random: args.random },
         ));
@@ -526,13 +526,17 @@ function resolvePassivePhaseTriggerEvents(args: {
         if (ability.type !== 'passive') continue;
 
         if (ability.trigger?.type === args.triggerType && evaluateTriggerCondition(ability.trigger, triggerCtx)) {
-            resolvePassiveEffects(ability.id, ability.effects);
+            resolvePassiveEffects(ability.id, `phase:${args.playerId}:${args.triggerType}:${ability.id}:base`, ability.effects);
         }
 
-        for (const variant of ability.variants ?? []) {
+        for (const [variantIndex, variant] of (ability.variants ?? []).entries()) {
             if (variant.trigger.type !== args.triggerType) continue;
             if (!evaluateTriggerCondition(variant.trigger, triggerCtx)) continue;
-            resolvePassiveEffects(ability.id, variant.effects);
+            resolvePassiveEffects(
+                ability.id,
+                `phase:${args.playerId}:${args.triggerType}:${ability.id}:variant:${variantIndex}`,
+                variant.effects,
+            );
         }
     }
 
@@ -2036,6 +2040,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 const localResolvedEvent: DiceThroneEvent = {
                     type: 'DEFENDER_SELECTION_RESOLVED',
                     payload: {
+                        ...(state.sys.interaction?.current?.kind === 'dt:defender-choice'
+                            ? { interactionId: state.sys.interaction.current.id }
+                            : {}),
                         attackerId,
                         chooserPlayerId: getTargetingRollChoiceOwnerId(core, attackerId, targetingValue) ?? attackerId,
                         defenderId: selectedDefenderId,
@@ -2086,6 +2093,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 const targetResolvedEvent: DiceThroneEvent = {
                     type: 'DEFENDER_SELECTION_RESOLVED',
                     payload: {
+                        ...(state.sys.interaction?.current?.kind === 'dt:defender-choice'
+                            ? { interactionId: state.sys.interaction.current.id }
+                            : {}),
                         attackerId,
                         chooserPlayerId: attackerId,
                         defenderId: autoDefenderId,
@@ -2190,6 +2200,9 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                             sourceId: operation.sourceId,
                             operation: operation.operation,
                             ...(operation.values ? { values: operation.values } : {}),
+                            ...(operation.continuationRequestId
+                                ? { continuationRequestId: operation.continuationRequestId }
+                                : {}),
                         },
                         sourceCommandType: command.type,
                         timestamp: timestamp + (index + 1) * 0.001,
@@ -2232,10 +2245,11 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 const resolvedDefenderId = targetingCore.pendingAttack.defenderId;
                 let replayCore = targetingCore;
 
-                deferredAttackModifierCardIds.forEach((cardId, index) => {
+                for (let index = 0; index < deferredAttackModifierCardIds.length; index += 1) {
+                    const cardId = deferredAttackModifierCardIds[index];
                     const card = findHeroCard(cardId);
                     if (!card?.effects?.length) {
-                        return;
+                        continue;
                     }
 
                     const replayTimestamp = timestamp + 0.01 + index * 0.01;
@@ -2251,6 +2265,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                             timestamp: replayTimestamp,
                             damageOrigin: 'card',
                             isAttackModifierCard: card.isAttackModifier,
+                            resolutionSequenceId: `deferred-attack-modifier:${attackerId}:${cardId}:${index}:${replayTimestamp}`,
                         },
                         { random },
                     );
@@ -2259,7 +2274,25 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         events.push(...replayEvents);
                         replayCore = applyEvents(replayCore, replayEvents, reduce);
                     }
-                });
+
+                    if (replayEvents.some(isBlockingInteractionEvent)
+                        || replayEvents.some(isInteractiveBonusDiceRerollEvent)
+                        || replayEvents.some(event => event.resolutionContinuation !== undefined)) {
+                        const remainingCardIds = deferredAttackModifierCardIds.slice(index + 1);
+                        const updateDeferredCards: DiceThroneEvent = {
+                            type: 'PENDING_ATTACK_UPDATED',
+                            payload: {
+                                attackerId,
+                                patch: { deferredAttackModifierCardIds: remainingCardIds },
+                            },
+                            sourceCommandType: command.type,
+                            timestamp: replayTimestamp + 0.001,
+                        };
+                        events.push(updateDeferredCards);
+                        targetingCore = applyEvents(replayCore, [updateDeferredCards], reduce);
+                        return { events, halt: true };
+                    }
+                }
 
                 const clearDeferredEvent: DiceThroneEvent = {
                     type: 'PENDING_ATTACK_UPDATED',
@@ -2533,7 +2566,13 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 }
 
                 if (pendingAttackStage === 'afterDefense') {
-                    const attackEvents = resolveAttack(core, random, { skipDefense: true }, timestamp);
+                    const defender = core.pendingAttack.defenderId
+                        ? core.players[core.pendingAttack.defenderId]
+                        : undefined;
+                    const sneakStacks = defender?.tokens[TOKEN_IDS.SNEAK] ?? 0;
+                    const attackEvents = sneakStacks > 0 && !core.pendingAttack.isUltimate
+                        ? resolveAttackWithSneakImmunityAfterDefense(core, random, timestamp)
+                        : resolveAttack(core, random, { skipDefense: true }, timestamp);
                     events.push(...attackEvents);
                     const hasAttackChoice = attackEvents.some(isBlockingInteractionEvent);
                     const hasTokenResponse = attackEvents.some((event) => event.type === 'TOKEN_RESPONSE_REQUESTED');
@@ -2740,6 +2779,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const resolvedDefenderSelectionThisRound = events.some(e => e.type === 'DEFENDER_SELECTION_RESOLVED');
             const hasCombatFlowResumeEvent = events.some(e =>
                 e.type === 'CHOICE_RESOLVED'
+                || e.type === 'ATTACK_PRE_DEFENSE_RESOLVED'
+                || e.type === 'ATTACK_DEFENSE_RESOLVED'
+                || e.type === 'ATTACK_RESOLVED'
+                || e.type === 'PENDING_ATTACK_UPDATED'
                 || e.type === 'BONUS_DICE_SETTLED'
                 || e.type === 'SYS_INTERACTION_RESOLVED'
                 || e.type === 'SYS_INTERACTION_CONFIRMED'

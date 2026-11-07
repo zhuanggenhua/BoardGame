@@ -52,6 +52,7 @@ export const resolveStoredRandomCursor = (state: StoredMatchState): number => {
 
 export class MatchRoomRegistry<CommandOptions = unknown> {
     private readonly activeMatches = new Map<string, MatchRoomRegistryActiveMatch<CommandOptions>>();
+    private readonly pendingLoads = new Map<string, Promise<MatchRoomRegistryActiveMatch<CommandOptions> | undefined>>();
     private readonly storage: MatchStorage;
     private readonly gameIndex: Map<string, GameEngineConfig>;
 
@@ -73,6 +74,8 @@ export class MatchRoomRegistry<CommandOptions = unknown> {
     }
 
     delete(matchID: string): boolean {
+        // 丢弃尚未完成的读取；同一 ID 后续仍可从存储正常重载。
+        this.pendingLoads.delete(matchID);
         return this.activeMatches.delete(matchID);
     }
 
@@ -100,17 +103,33 @@ export class MatchRoomRegistry<CommandOptions = unknown> {
     }
 
     async load(matchID: string): Promise<MatchRoomRegistryActiveMatch<CommandOptions> | undefined> {
-        const result = await this.storage.fetch(matchID, { state: true, metadata: true });
-        if (!result.state || !result.metadata) {
-            return undefined;
+        const pending = this.pendingLoads.get(matchID);
+        if (pending) {
+            return pending;
         }
 
-        const match = this.buildLoadedMatch(matchID, result.state, result.metadata);
-        if (!match) {
-            return undefined;
+        const load = async () => {
+            const result = await this.storage.fetch(matchID, { state: true, metadata: true });
+            if (this.pendingLoads.get(matchID) !== request || !result.state || !result.metadata) {
+                return undefined;
+            }
+
+            const match = this.buildLoadedMatch(matchID, result.state, result.metadata);
+            if (match) {
+                this.activeMatches.set(matchID, match);
+            }
+            return match;
+        };
+        const request = load();
+        this.pendingLoads.set(matchID, request);
+        try {
+            return await request;
+        } finally {
+            // 旧请求结束不能删除 unload 后发起的新请求。
+            if (this.pendingLoads.get(matchID) === request) {
+                this.pendingLoads.delete(matchID);
+            }
         }
-        this.activeMatches.set(matchID, match);
-        return match;
     }
 
     activeMatchesForLegacyAccess(): Map<string, MatchRoomRegistryActiveMatch<CommandOptions>> {

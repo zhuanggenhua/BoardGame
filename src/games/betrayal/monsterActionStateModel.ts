@@ -279,7 +279,9 @@ export function applyBetrayalMonsterAttackHeroResolvedState(
             : resolveRecommendedAction(syncedCore),
         activityLog: appendActivity(
             syncedCore,
-            event.payload.logText,
+            pendingMummyAttackReward
+                ? `${event.payload.monsterName}攻击${defender?.displayName ?? '英雄'}，可选择造成伤害或偷取`
+                : event.payload.logText,
             event.payload.damageToHero ? 'warning' : 'accent',
         ),
     };

@@ -51,6 +51,9 @@ const runCommand = (
     command: Command,
     random: RandomFn = createSeededRandom(`betrayal-action-log-${command.timestamp ?? 0}`),
 ): MatchState<BetrayalCore> => {
+    if (command.type === BETRAYAL_COMMANDS.EXPLORE_ROOM && !state.core.pendingRoomPlacement) {
+        state = runCommand(state, { ...command, type: BETRAYAL_COMMANDS.REVEAL_ROOM, payload: { roomId: (command.payload as {roomId: string}).roomId } }, random);
+    }
     const result = executePipeline(
         {
             domain: engineConfig.domain,

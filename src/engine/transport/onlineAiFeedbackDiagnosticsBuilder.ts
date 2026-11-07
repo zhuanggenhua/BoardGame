@@ -15,6 +15,8 @@ import {
     type CommandFailureFeedbackPayload,
 } from './commandFailureFeedbackPayload';
 import type { GameEngineConfig } from './engineConfig';
+import type { FeedbackDiagnosticSnapshots } from '../../lib/feedback/feedbackPayload';
+import type { PrivateFeedbackReplayTrigger } from './feedbackPrivateReplay';
 import {
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
@@ -87,6 +89,10 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
             progressMarker,
             failureReason,
         );
+        const gameStateSummary = match.engineConfig.onlineAiRecovery?.buildFeedbackDiagnosticContext?.({
+            state: match.state,
+            playerId: candidate.playerId,
+        });
 
         return buildOnlineAiRecoveryStateSnapshotJson({
             matchId: match.matchID,
@@ -98,6 +104,7 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
             progressMarker,
             blockerFingerprint,
             aiSummary,
+            gameStateSummary,
         });
     }
 
@@ -170,6 +177,12 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
         event: GameEvent;
         progressMarkerBefore: string;
         preCommandSeatView: MatchState<unknown>;
+        commandPayload?: unknown;
+        afterState?: MatchState<unknown>;
+        stateIdBefore?: number;
+        stateIdAfter?: number;
+        randomCursorBefore?: number;
+        randomCursorAfter?: number;
     }): Promise<OnlineAiRecoveryFeedbackPayload | null> {
         const eventType = args.event.type;
         if (
@@ -241,6 +254,43 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
             inferredReason,
             args.progressMarkerBefore,
         ].join(':');
+        const beforeState = args.match.state;
+        const afterState = args.afterState ?? beforeState;
+        const stateIdBefore = args.stateIdBefore ?? args.match.stateID;
+        const stateIdAfter = args.stateIdAfter ?? stateIdBefore;
+        const snapshots: FeedbackDiagnosticSnapshots = {
+            before: beforeState,
+            at: beforeState,
+            after: afterState,
+        };
+        const lastCommand = {
+            commandType: args.commandType,
+            playerId: args.playerId,
+            stateId: stateIdBefore,
+            afterStateId: stateIdAfter,
+            ...(args.randomCursorBefore !== undefined ? { randomCursor: args.randomCursorBefore } : {}),
+            ...(args.randomCursorAfter !== undefined ? { afterRandomCursor: args.randomCursorAfter } : {}),
+        };
+        const privateReplayTrigger: PrivateFeedbackReplayTrigger = {
+            source: 'authoritative-command',
+            commandType: args.commandType,
+            playerId: args.playerId,
+            payload: args.commandPayload,
+            stateIdBefore,
+            stateIdAfter,
+            randomCursorBefore: args.randomCursorBefore,
+            randomCursorAfter: args.randomCursorAfter,
+            reason: inferredReason,
+            progressMarker: args.progressMarkerBefore,
+        };
+        const stateSnapshot = await this.buildUnsatisfiableInteractionStateSnapshot({
+            match: args.match,
+            playerId: args.playerId,
+            reason: inferredReason,
+            commandType: args.commandType,
+            progressMarkerBefore: args.progressMarkerBefore,
+            preCommandSeatView: args.preCommandSeatView,
+        });
 
         return {
             matchId: args.match.matchID,
@@ -255,15 +305,17 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
             ...resolveTransportFeedbackCorrelation({
                 matchId: args.match.matchID,
                 state: args.match.state,
-                stateId: args.match.stateID,
+                stateId: stateIdBefore,
             }),
-            stateSnapshot: await this.buildUnsatisfiableInteractionStateSnapshot({
-                match: args.match,
-                playerId: args.playerId,
-                reason: inferredReason,
-                commandType: args.commandType,
-                progressMarkerBefore: args.progressMarkerBefore,
-                preCommandSeatView: args.preCommandSeatView,
+            ...(args.randomCursorBefore !== undefined ? { randomCursor: args.randomCursorBefore } : {}),
+            diagnosticSnapshots: snapshots,
+            lastCommand,
+            privateReplayTrigger,
+            stateSnapshot: JSON.stringify({
+                ...JSON.parse(stateSnapshot),
+                snapshots,
+                ...(args.randomCursorBefore !== undefined ? { randomCursor: args.randomCursorBefore } : {}),
+                lastCommand,
             }),
             actionLog: buildOnlineAiDiagnosticActionLog({
                 state: args.preCommandSeatView,
@@ -290,6 +342,7 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
         commandPayload: unknown;
         progressMarker: string;
         stateIdBefore: number;
+        randomCursorBefore?: number;
         visibleState: MatchState<unknown>;
         feedbackSource: CommandFailureFeedbackPayload['feedbackSource'];
     }): CommandFailureFeedbackPayload {
@@ -308,6 +361,7 @@ export class OnlineAiFeedbackDiagnosticsBuilder {
             commandPayload: args.commandPayload,
             progressMarker: args.progressMarker,
             stateIdBefore: args.stateIdBefore,
+            randomCursorBefore: args.randomCursorBefore,
             visibleState: args.visibleState,
             feedbackSource: args.feedbackSource,
             aiContext,

@@ -315,6 +315,52 @@ const isCommandValid = (state: DiceThroneState, playerId: PlayerId, type: string
     return result.valid;
 };
 
+const areInteractionCommandsValid = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    commands: Array<{ type: string; payload: unknown }>,
+): boolean => {
+    let validationState = state;
+
+    for (const command of commands) {
+        if (!isCommandValid(validationState, playerId, command.type, command.payload)) return false;
+
+        if (command.type !== 'MODIFY_DIE' && command.type !== 'REROLL_DIE') continue;
+        const interaction = validationState.sys.interaction?.current;
+        if (interaction?.kind !== 'multistep-choice') continue;
+        const data = interaction.data as Record<string, unknown> | undefined;
+        if (!data) continue;
+
+        const payload = command.payload as { dieId?: unknown } | undefined;
+        if (typeof payload?.dieId !== 'number') continue;
+        const completedDieIds = Array.isArray(data.completedDieIds)
+            ? data.completedDieIds.filter((dieId): dieId is number => typeof dieId === 'number')
+            : [];
+        const completedSteps = typeof data.completedSteps === 'number'
+            ? data.completedSteps
+            : completedDieIds.length;
+        validationState = {
+            ...validationState,
+            sys: {
+                ...validationState.sys,
+                interaction: {
+                    ...validationState.sys.interaction,
+                    current: {
+                        ...interaction,
+                        data: {
+                            ...data,
+                            completedDieIds: [...completedDieIds, payload.dieId],
+                            completedSteps: completedSteps + 1,
+                        },
+                    },
+                },
+            },
+        };
+    }
+
+    return true;
+};
+
 const isOffensiveRollRerollBlockedByBindCp = (
     state: DiceThroneState,
     playerId: PlayerId,
@@ -3205,7 +3251,7 @@ export function buildDiceThroneAiLegalActions(args: {
     const interactionActions = buildInteractionActions(state, args.playerId, phase);
     if (interactionActions !== null) {
         const validInteractionActions = interactionActions.filter((action) =>
-            action.commands.every((command) => isCommandValid(state, args.playerId, command.type, command.payload)),
+            areInteractionCommandsValid(state, args.playerId, action.commands),
         );
         if (validInteractionActions.length > 0) {
             return validInteractionActions;

@@ -231,6 +231,10 @@ describe('DiceThrone 即时行动牌与响应窗口边界', () => {
                 `${card.id} 应继续在受伤前的待结算伤害中可用`,
             ).toEqual({ ok: true });
             expect(
+                checkPlayCard(state.core, '1', card, 'main2', 'afterAttackResolved'),
+                `${card.id} 应在匹配的待伤害响应窗口继续可用`,
+            ).toEqual({ ok: true });
+            expect(
                 checkPlayCard(state.core, '1', card, 'offensiveRoll', 'afterRollConfirmed'),
                 `${card.id} 不能被错误放进改骰响应窗口`,
             ).toEqual({ ok: false, reason: 'wrongPhaseForCard' });

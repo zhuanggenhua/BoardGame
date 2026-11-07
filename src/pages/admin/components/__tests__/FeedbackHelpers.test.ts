@@ -113,4 +113,44 @@ describe('buildFeedbackAiDiagnosticPacket', () => {
         expect(packet).toContain('### JS 堆栈');
         expect(packet).toContain('### React 组件栈');
     });
+
+    it.each([
+        ['component helper', buildComponentPacket],
+        ['shared helper', buildSharedPacket],
+    ])('%s 原样保留反馈文字并将旧日志、状态快照和诊断包投影为安全摘要', (_label, buildPacket) => {
+        const canary = 'hidden-hand-option-random-seed-canary';
+        const originalFeedback = '进攻后选择才弹出，树灵应该在防御前触发。';
+        const packet = buildPacket({
+            ...feedbackItem,
+            content: originalFeedback,
+            actionLog: JSON.stringify({
+                kind: 'user-feedback-diagnostic',
+                phase: 'offensiveRoll',
+                actionLogTail: [{ id: 'log-1', kind: 'RESOLVE', text: canary, segments: [{ text: canary }] }],
+                eventStreamTail: [{ id: 3, event: { type: 'DAMAGE', timestamp: 4, payload: { optionId: canary } } }],
+                interaction: { id: 'choice-1', kind: 'simple-choice', data: { options: [{ id: canary }] } },
+                undoSnapshots: [{ core: { hand: [{ id: canary }] } }],
+            }),
+            stateSnapshot: JSON.stringify({
+                core: { players: { '0': { hand: [{ id: canary }] } } },
+                sys: { phase: 'offensiveRoll', decisionEpoch: 9, randomSeed: canary },
+            }),
+            diagnosticPacket: {
+                source: 'client-auto',
+                correlation: { matchId: 'match-1', stateId: 12, stateRevision: 4, decisionEpoch: 9 },
+                interaction: { id: 'choice-1', kind: 'simple-choice', data: { options: [{ id: canary }] } },
+                eventStreamTail: [{ id: 3, event: { type: 'DAMAGE', payload: { optionId: canary } } }],
+                snapshots: { at: { core: { players: { '0': { hand: [{ id: canary }] } } }, sys: { randomSeed: canary } } },
+                randomCursor: 17,
+            },
+        }, t);
+
+        expect(packet).toContain(originalFeedback);
+        expect(packet).toContain('offensiveRoll');
+        expect(packet).toContain('decisionEpoch');
+        expect(packet).toContain('stateRevision');
+        expect(packet).not.toContain(canary);
+        expect(packet).not.toContain('randomSeed');
+        expect(packet).not.toContain('"hand"');
+    });
 });

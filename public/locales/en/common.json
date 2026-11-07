@@ -58,6 +58,12 @@
     "disabledDescription": "Returned to websocket-only mode and reconnecting now."
   },
   "rematch": {
+    "stillWaiting": "The rematch request is taking longer than expected. Its result is not yet confirmed. Please do not start another request; this one will continue when a response arrives.",
+    "outcomeUnknown": "The rematch result is uncertain. Check your rooms in the lobby before starting another rematch.",
+    "setupUnsupported": "This room’s configuration cannot be safely reused. This rematch did not replace the original. Create a new room from the lobby.",
+    "failed": "Could not complete the rematch. Check the room status in the lobby before trying again.",
+    "waitTimeout": "Timed out waiting for the new room. Check the room status in the lobby.",
+    "missingCredentials": "Your seat credentials are missing. Rejoin the room before trying again.",
     "playAgain": "Play Again",
     "votePlayAgain": "Play Again",
     "cancelVote": "Cancel Vote",

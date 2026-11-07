@@ -1,15 +1,17 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import './CenterBoard.css';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 import { UI_Z_INDEX } from '../../../core';
 import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
-import { CardPreview } from '../../../components/common/media/CardPreview';
+import { CardPreview, getCardPreviewAspectRatio } from '../../../components/common/media/CardPreview';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
 import { ASSETS } from './assets';
-import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
+import { getAbilitySlotLayoutForCharacter, getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
 import type { AbilityCard } from '../types';
 import { hasDiceThroneTipBoard, type HeroState } from '../domain/types';
 import { NyraCompanionPanel, type NyraDamageResponse } from './NyraCompanionPanel';
@@ -43,6 +45,150 @@ export interface CenterBoardProps {
     nyraDamageResponse?: NyraDamageResponse;
     preparedSpells?: AbilityCard[];
 }
+
+const PreparedSpellsOverlay = ({ preparedSpells, locale, onMagnifyCard, showTouchMagnifyButton }: {
+    preparedSpells: AbilityCard[];
+    locale?: string;
+    onMagnifyCard: (card: AbilityCard) => void;
+    showTouchMagnifyButton: boolean;
+}) => {
+    const { t } = useTranslation('game-dicethrone');
+    const preparedScrollRef = React.useRef<HTMLDivElement>(null);
+    const zoneRef = React.useRef<HTMLDivElement>(null);
+    const [zoneCorner, setZoneCorner] = React.useState<{ left: number; bottom: number }>();
+    const [currentIndex, setPreparedIndex] = React.useState(0);
+    const [cardsHidden, setCardsHidden] = React.useState(false);
+    React.useLayoutEffect(() => {
+        const zone = zoneRef.current;
+        if (!zone) return;
+        let frame = 0;
+        const update = () => {
+            const rect = zone.getBoundingClientRect();
+            setZoneCorner(previous => previous?.left === rect.left && previous.bottom === rect.bottom
+                ? previous : { left: rect.left, bottom: rect.bottom });
+        };
+        const boardGroup = zone.closest('[data-tutorial-id="player-board"]')?.parentElement;
+        const followTransition = (event: Event) => {
+            if (!(event.target instanceof Node) || !boardGroup?.contains(event.target)) return;
+            cancelAnimationFrame(frame);
+            const until = performance.now() + 600;
+            const tick = () => {
+                update();
+                if (performance.now() < until) frame = requestAnimationFrame(tick);
+            };
+            tick();
+        };
+        const observer = new ResizeObserver(update);
+        observer.observe(zone);
+        window.addEventListener('resize', update);
+        window.addEventListener('scroll', update, true);
+        document.addEventListener('transitionrun', followTransition, true);
+        update();
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+            window.removeEventListener('resize', update);
+            window.removeEventListener('scroll', update, true);
+            document.removeEventListener('transitionrun', followTransition, true);
+        };
+    }, []);
+    const slot = getAbilitySlotLayoutForCharacter('doctor_strange').find(item => item.id === 'sky')!;
+    const goToSpell = (index: number) => {
+        const list = preparedScrollRef.current;
+        const first = list?.children[0] as HTMLElement | undefined;
+        const target = list?.children[index] as HTMLElement | undefined;
+        if (list && first && target) {
+            list.scrollTo({ left: target.offsetLeft - first.offsetLeft, behavior: 'auto' });
+            setPreparedIndex(index);
+        }
+    };
+        return (
+            <div
+                ref={zoneRef}
+                className="pointer-events-none absolute z-30"
+                style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%`, zIndex: UI_Z_INDEX.hud + 1 }}
+                data-prepared-spell-zone="public"
+                data-player-panel-slot="vishanti-book-prepared-spells"
+                onClick={event => event.stopPropagation()}
+            >
+                {zoneCorner && createPortal(<button
+                    type="button"
+                    data-testid="dt-prepared-spells-visibility"
+                    aria-label={t(cardsHidden ? 'doctorStrange.showPreparedCards' : 'doctorStrange.hidePreparedCards')}
+                    title={t(cardsHidden ? 'doctorStrange.showPreparedCards' : 'doctorStrange.hidePreparedCards')}
+                    aria-pressed={cardsHidden}
+                    onClick={() => setCardsHidden(hidden => !hidden)}
+                    className="pointer-events-auto fixed flex items-center justify-end bg-transparent"
+                    style={{ left: zoneCorner.left, top: zoneCorner.bottom, transform: 'translate(-100%, -100%)', zIndex: UI_Z_INDEX.hud + 1, width: showTouchMagnifyButton ? 44 : 32, height: showTouchMagnifyButton ? 44 : 32 }}
+                >
+                    <span className="flex items-center justify-center rounded-l-full border border-r-0 border-amber-300 bg-amber-900 text-amber-50" style={{ width: 30, height: 28 }}>
+                        {cardsHidden
+                            ? <Eye aria-hidden="true" style={{ width: 18, height: 18 }} />
+                            : <EyeOff aria-hidden="true" style={{ width: 18, height: 18 }} />}
+                    </span>
+                </button>, document.body)}
+                <div className="pointer-events-auto absolute inset-0" style={{ display: cardsHidden ? 'none' : undefined }}>
+                {preparedSpells.length > 1 && (
+                    <span className="pointer-events-none absolute right-0 top-0 z-10 rounded bg-slate-950/90 px-1 font-semibold text-amber-100" style={{ fontSize: buildBoardShellScreenPixelValue(11) }}>
+                        {currentIndex + 1}/{preparedSpells.length}
+                    </span>
+                )}
+                {preparedSpells.length > 1 && showTouchMagnifyButton && (
+                    <button
+                        type="button"
+                        aria-label={t('configReview.actions.nextPage')}
+                        data-prepared-spell-direction="next"
+                        onClick={() => goToSpell((currentIndex + 1) % preparedSpells.length)}
+                        className="absolute right-0 top-0 z-20 flex items-end justify-end bg-transparent"
+                        style={{ width: buildBoardShellScreenPixelValue(44), height: buildBoardShellScreenPixelValue(44) }}
+                    >
+                        <span className="flex items-center justify-center rounded-full bg-black/80 font-bold leading-none text-white" style={{ width: buildBoardShellScreenPixelValue(20), height: buildBoardShellScreenPixelValue(20), fontSize: buildBoardShellScreenPixelValue(16) }}>›</span>
+                    </button>
+                )}
+                {preparedSpells.length > 1 && !showTouchMagnifyButton && ([-1, 1] as const).map(direction => (
+                    <button
+                        key={direction}
+                        type="button"
+                        aria-label={t(direction < 0 ? 'configReview.actions.previousPage' : 'configReview.actions.nextPage')}
+                        disabled={direction < 0 ? currentIndex === 0 : currentIndex === preparedSpells.length - 1}
+                        onClick={() => goToSpell(currentIndex + direction)}
+                        className="absolute right-0 z-20 flex items-center justify-center rounded-full bg-black/80 font-bold leading-none text-white disabled:opacity-35"
+                        style={{ top: direction < 0 ? '35%' : '65%', width: buildBoardShellScreenPixelValue(20), height: buildBoardShellScreenPixelValue(20), fontSize: buildBoardShellScreenPixelValue(16), translate: 'none', transform: 'translateY(-50%)' }}
+                        data-prepared-spell-direction={direction < 0 ? 'previous' : 'next'}
+                    >
+                        {direction < 0 ? '‹' : '›'}
+                    </button>
+                ))}
+                <div
+                    ref={preparedScrollRef}
+                    className={`flex h-full w-full items-center gap-[3%] overflow-x-auto overflow-y-hidden ${preparedSpells.length === 1 ? 'justify-center' : ''}`}
+                    onScroll={event => {
+                        const list = event.currentTarget;
+                        const first = list.children[0] as HTMLElement | undefined;
+                        const second = list.children[1] as HTMLElement | undefined;
+                        if (first && second) setPreparedIndex(Math.round(list.scrollLeft / (second.offsetLeft - first.offsetLeft)));
+                    }}
+                >
+                    {preparedSpells.map(card => (
+                        <button
+                            key={card.id}
+                            type="button"
+                            className="h-full max-w-full shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
+                            style={{ aspectRatio: card.previewRef ? getCardPreviewAspectRatio(card.previewRef, locale) : undefined }}
+                            aria-label={t(card.name, { defaultValue: card.name })}
+                            data-prepared-spell-card={card.id}
+                            data-board-magnify-ignore="true"
+                            onClick={() => onMagnifyCard(card)}
+                        >
+                            <CardPreview previewRef={card.previewRef} locale={locale} alt={t(card.name, { defaultValue: card.name })}
+                                className="h-full w-full" />
+                        </button>
+                    ))}
+                </div>
+                </div>
+            </div>
+        );
+};
 
 export const CenterBoard = ({
     coreAreaHighlighted,
@@ -167,37 +313,8 @@ export const CenterBoard = ({
     };
 
     const renderPreparedSpells = () => {
-        if (characterId !== 'doctor_strange' || !preparedSpells?.length) return null;
-        return (
-            <div
-                className="absolute z-30 flex flex-col overflow-hidden rounded-md border border-amber-200/45 bg-slate-950/85 p-[1.5%] shadow-xl"
-                style={{ left: '0.6%', top: '60%', width: '15.5%', height: '38.2%', zIndex: UI_Z_INDEX.hud + 1 }}
-                data-prepared-spell-zone="public"
-                data-player-panel-slot="vishanti-book-prepared-spells"
-                onClick={event => event.stopPropagation()}
-            >
-                <span className="mb-[2%] truncate text-center font-semibold leading-tight text-amber-100" style={{ fontSize: 'clamp(6px, 0.78vw, 12px)' }}>
-                    {t('doctorStrange.preparedSpells', { count: preparedSpells.length })}
-                </span>
-                <div className="flex min-h-0 flex-1 items-start gap-[3%] overflow-x-auto overflow-y-hidden">
-                    {preparedSpells.map(card => (
-                        <button
-                            key={card.id}
-                            type="button"
-                            className="min-w-0 shrink-0 self-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300"
-                            style={{ width: '46%' }}
-                            aria-label={t(card.name, { defaultValue: card.name })}
-                            data-prepared-spell-card={card.id}
-                            data-board-magnify-ignore="true"
-                            onClick={() => onMagnifyCard(card)}
-                        >
-                            <CardPreview previewRef={card.previewRef} locale={locale} alt={t(card.name, { defaultValue: card.name })}
-                                className="w-full" />
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
+        if (characterId !== 'doctor_strange' || !preparedSpells?.length || isLayoutEditing) return null;
+        return <PreparedSpellsOverlay key={preparedSpells.map(card => card.id).join('|')} preparedSpells={preparedSpells} locale={locale} onMagnifyCard={onMagnifyCard} showTouchMagnifyButton={showTouchMagnifyButton} />;
     };
 
     return (

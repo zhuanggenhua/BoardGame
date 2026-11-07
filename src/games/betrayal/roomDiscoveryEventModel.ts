@@ -91,8 +91,9 @@ export function resolveBetrayalRoomExploredPayload(
     timestamp: number,
 ): BetrayalRoomExploredPayload | null {
     const explorableSlots = resolveExplorableRoomSlots(core);
-    const nextSlot = command.payload.roomId
-        ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? explorableSlots[0]!
+    const roomId = core.pendingRoomPlacement?.roomId ?? command.payload.roomId;
+    const nextSlot = roomId
+        ? explorableSlots.find((room) => room.id === roomId)!
         : explorableSlots[0]!;
     const placement = resolveRoomPlacementContext(core, nextSlot);
     const roomDraw = resolveRoomDraw(core, nextSlot.floor, {
@@ -266,7 +267,6 @@ export function resolveBetrayalRoomExploredPayload(
                 hauntTriggered: false,
             };
         }
-        const eventCard = resolveEvent(core);
         if (command.payload.useIdol && canUseIdolToSkipEvent(core)) {
             return {
                 playerId: command.playerId,
@@ -274,7 +274,7 @@ export function resolveBetrayalRoomExploredPayload(
                 room: roomExploredRoomPayload,
                 deckKind,
                 ...roomDiscoveryCards,
-                skippedEventWithIdol: { name: eventCard.name },
+                skippedEventWithIdol: {},
                 skippedRoomWithHolySymbol: skippedRoomTemplate
                     ? { name: skippedRoomTemplate.name }
                     : undefined,
@@ -282,12 +282,12 @@ export function resolveBetrayalRoomExploredPayload(
                 roomTileAdjustment,
                 discovery: {
                     kind: deckKind,
-                    title: eventCard.name,
+                    title: '跳过事件',
                     summary: '已用雕像跳过',
                     detail: '没有抽取或结算事件卡',
                     tone: 'accent',
                 },
-                logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，使用雕像跳过了事件：${eventCard.name}`,
+                logText: `${holySymbolLogPrefix}${tileAdjustmentLogPrefix}${core.currentExplorer.displayName}探索到${roomTemplate.name}，使用雕像跳过了事件`,
                 hauntTriggered: false,
             };
         }
@@ -326,6 +326,7 @@ export function resolveBetrayalRoomExploredPayload(
                 hauntTriggered: false,
             };
         }
+        const eventCard = resolveEvent(core);
         if (eventCard.roll) {
             return {
                 playerId: command.playerId,

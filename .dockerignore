@@ -79,6 +79,8 @@ public/**/*.bmp
 public/**/*.ico
 !public/logos/
 !public/logos/**
+!public/images/operation-guide/
+!public/images/operation-guide/*.png
 public/**/*.wav
 public/**/*.ogg
 public/**/*.mp3

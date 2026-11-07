@@ -14,9 +14,15 @@
       "status": "当前进行中",
       "room": "房间 #{{id}}",
       "players": "{{count}} 人在席"
-    }
+    },
+    "appDownloadHint": "app可在悬浮球下载"
   },
   "homeV2": {
+    "gamePresence": {
+      "online": "在线 {{count}}",
+      "waiting": "等待 {{count}}",
+      "label": "在线 {{online}} 人，公开房间等待 {{waiting}} 人"
+    },
     "waitingPlayers": "等待玩家进入",
     "roomTitleFallback": "房间 {{id}}",
     "roomLedgerTitle": "房间列表",
@@ -2402,6 +2408,7 @@
   },
   "error": {
     "createRoomFailed": "创建房间失败",
+    "guestOwnerProofRequired": "无法验证旧房间的房主凭据，因此不能替换该房间。请使用原浏览器重试；旧房间没有可验证凭据时无法自动替换。",
     "createRoomNetwork": "无法连接游戏服务，请确认服务已启动，并检查跨域/代理设置。",
     "createRoomCors": "浏览器拦截了跨域请求，请使用本地代理或检查 CORS 配置。",
     "createRoomInvalidToken": "登录信息已过期或无效，请重新登录后再试。",
@@ -2421,7 +2428,7 @@
     "leaveForbidden": "无法离开房间：凭证无效或已失效，请重新进入房间后再试。",
     "leaveNetwork": "离开房间失败：网络或服务异常，请稍后重试。",
     "roomFull": "房间已满",
-    "ownerClaimFailed": "无法重连该房间：可能是游客身份丢失或服务器重启导致凭据失效。请使用原浏览器重试，或重新创建房间。",
+    "ownerClaimFailed": "无法验证此席位的归属。游客需要原浏览器保存的房主凭据；旧席位缺少可验证的归属信息时无法自动恢复。请使用原浏览器重试，或重新创建房间。",
     "roomCreatedButClaimFailed": "房间已创建但入座失败，请返回大厅重试。",
     "roomCreatedButEnterFailed": "房间已创建，但自动进入失败，请返回大厅重新进入。",
     "aiSeatClaimFailed": "部分 AI 座位初始化失败，已进入房间，请检查座位状态。",
@@ -2721,7 +2728,7 @@
           "rejected": "未通过"
         },
         "pendingLocked": "审核期间资料已锁定。需要修改时可撤回申请。",
-        "verificationInstructions": "验证短码：{{code}}，提交截止 {{deadline}}。请将短码放到作者主页供管理员核对，或提供后台控制权截图。",
+        "verificationInstructions": "验证短码：<strong>{{code}}</strong>，提交截止 {{deadline}}。请将短码放到作者主页供管理员核对，或提供后台控制权截图。",
         "authorProfile": "作者主页",
         "evidence": "认证截图",
         "evidencePreviewAlt": "认证截图预览",
@@ -2831,7 +2838,8 @@
       "emptySubmissions": "暂无待审核投稿。",
       "emptyClaims": "暂无待审核认证。",
       "emptyGames": "暂无已收录外部游戏。"
-    }
+    },
+    "favorited": "已收藏"
   },
   "homeAppearance": {
     "settings": "首页设置",

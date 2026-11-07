@@ -1600,7 +1600,7 @@ it('怪异的镜子作祟中探索事件符号房间不抽事件且不结束回�
         setNextDiscoverySymbolRoomsForAllFloors(core, 'event');
         const eventCard: BetrayalCore['eventOrder'][number] = {
             name: '阴影扑面',
-            text: '阴影扑向你。失去 1 点力量。',
+            description: '阴影扑向你。失去 1 点力量。',
             effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
         };
         core.eventOrder = [eventCard];
@@ -1634,12 +1634,12 @@ it('作祟揭秘者镜中提示会把所选事件牌放一边且不结算事件'
         activateTestExplorer(core, '0');
         const hintedEvent: BetrayalCore['eventOrder'][number] = {
             name: '阴影扑面',
-            text: '阴影扑向你。失去 1 点力量。',
+            description: '阴影扑向你。失去 1 点力量。',
             effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
         };
         const remainingEvent: BetrayalCore['eventOrder'][number] = {
             name: '远处低语',
-            text: '远处有人低语。进行 1 次神志检定。',
+            description: '远处有人低语。进行 1 次神志检定。',
         };
         core.eventOrder = [hintedEvent, remainingEvent];
         core.deckCounts.event = core.eventOrder.length;
@@ -1675,7 +1675,7 @@ it('非作祟揭秘者不能使用镜中提示', () => {
         const core = triggerUponReflectionHaunt();
         core.eventOrder = [{
             name: '阴影扑面',
-            text: '阴影扑向你。失去 1 点力量。',
+            description: '阴影扑向你。失去 1 点力量。',
             effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
         }];
         core.deckCounts.event = core.eventOrder.length;
@@ -1698,12 +1698,12 @@ it('镜中提示不能选择不存在的事件牌，且同回合只能给一次�
         core.eventOrder = [
             {
                 name: '阴影扑面',
-                text: '阴影扑向你。失去 1 点力量。',
+                description: '阴影扑向你。失去 1 点力量。',
                 effect: { mode: 'trait', trait: 'might', amount: -1, recommendedAction: 'endTurn' },
             },
             {
                 name: '远处低语',
-                text: '远处有人低语。进行 1 次神志检定。',
+                description: '远处有人低语。进行 1 次神志检定。',
             },
         ];
         core.deckCounts.event = core.eventOrder.length;

@@ -29,7 +29,9 @@ const ACTION_ALLOWLIST = [
     'USE_COMMAND_SPELL',
 ] as const;
 
-function formatActionLog({ command, state }: { command: Command; state: MatchState<unknown>; events: GameEvent[]; afterEventsRound: number }): ActionLogEntry | null {
+function formatActionLog({ command, state, afterEventsRound }: { command: Command; state: MatchState<unknown>; events: GameEvent[]; afterEventsRound: number }): ActionLogEntry | null {
+    // Fate 的记录描述命令本身；派生事件轮不应再次记同一操作。
+    if (afterEventsRound > 0) return null;
     const core = state.core as FateDominationCore;
     const timestamp = typeof command.timestamp === 'number' ? command.timestamp : 0;
     const actionSequence = state.sys.eventStream?.nextId ?? 0;

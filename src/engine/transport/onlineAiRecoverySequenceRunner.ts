@@ -56,6 +56,7 @@ export type OnlineAiRecoverySequenceMatch = {
     engineConfig: GameEngineConfig;
     state: MatchState<unknown>;
     stateID: number;
+    getRandomCursor?: () => number;
     unloaded?: boolean;
 };
 
@@ -116,6 +117,9 @@ export type OnlineAiRecoverySequenceRunnerHooks<TMatch extends OnlineAiRecoveryS
         phaseLabel: OnlineAiRecoveryPhaseLabel;
         progressMarkerBeforeRecovery: string;
         reason: string;
+        triggerState: MatchState<unknown>;
+        triggerStateId: number;
+        triggerRandomCursor?: number;
     }) => Promise<void>;
     reportRecoverySuccessFeedback: (args: {
         match: TMatch;
@@ -177,6 +181,9 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
             seatControllers,
             options,
         } = args;
+        const triggerState = match.state;
+        const triggerStateId = match.stateID;
+        const triggerRandomCursor = match.getRandomCursor?.();
         if (match.unloaded) {
             tracker.autoSubmittedAt = null;
             return;
@@ -600,6 +607,9 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
                             phaseLabel: forcedFailureDecision.phaseLabel,
                             progressMarkerBeforeRecovery,
                             reason: forcedFailureDecision.reason,
+                            triggerState,
+                            triggerStateId,
+                            triggerRandomCursor,
                         });
                         return;
                     }
@@ -643,6 +653,9 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
                             phaseLabel,
                             progressMarkerBeforeRecovery,
                             reason: forcedExecutionFailureDecision.reason,
+                            triggerState,
+                            triggerStateId,
+                            triggerRandomCursor,
                         });
                         return;
                     }
@@ -705,6 +718,9 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
                         phaseLabel,
                         progressMarkerBeforeRecovery,
                         reason: stepFailureReason,
+                        triggerState,
+                        triggerStateId,
+                        triggerRandomCursor,
                     });
                     return;
                 }
@@ -884,6 +900,9 @@ export class OnlineAiRecoverySequenceRunner<TMatch extends OnlineAiRecoverySeque
                     phaseLabel: failurePhaseLabel,
                     progressMarkerBeforeRecovery,
                     reason: completionFailureDecision.reason,
+                    triggerState,
+                    triggerStateId,
+                    triggerRandomCursor,
                 });
                 return;
             }

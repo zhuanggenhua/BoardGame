@@ -710,7 +710,7 @@ it('搜索不存在的房间板块不会重洗或移除房间堆', () => {
         expect(result.core.roomDiscoveryDeck.map((entry) => entry.room.visualId)).toEqual(visualIdsBeforeSearch);
     });
 
-it('区域房间池耗尽时探索会被拒绝，且不消耗移动或结束回合', () => {
+it('区域房间池耗尽时揭示返回空结果，且不消耗移动或结束回合', () => {
         let core = createStartedFirstScenarioCore();
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
         core.roomDiscoveryOrderByFloor.ground = [];
@@ -721,13 +721,15 @@ it('区域房间池耗尽时探索会被拒绝，且不消耗移动或结束回�
 
         const validation = BetrayalDomain.validate(
             { core, sys: {} as never },
-            createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' }),
+            createBetrayalCommand(BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' }),
         );
 
         expect(validation).toMatchObject({
-            valid: false,
-            error: '当前区域没有可发现房间。',
+            valid: true,
         });
+core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
+        expect(core.pendingRoomPlacement).toBeNull();
+        expect(core.latestRoomDrawResolution?.exhausted).toBe(true);
         expect(core.movesRemaining).toBe(2);
         expect(core.turnEndedByDiscovery).toBe(false);
         expect(core.rooms.find((room) => room.id === 'ground-north')?.state).toBe('unexplored');
@@ -761,6 +763,7 @@ it('探索新房间会使用玩家选择的合法朝向', () => {
         );
         expect(chosenOrientation).toBeDefined();
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
         const validation = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(
@@ -819,7 +822,7 @@ it('区域不匹配的房间会先掩埋到底部，并继续翻找当前区域�
         ]);
         const preview = resolveRoomPlacementPreview(core, { roomId: 'ground-north' });
         expect(preview?.room.name).toBe('火炉房');
-        expect(preview?.buriedRoomNames).toEqual(['塔楼', '储物间']);
+        expect(preview?.buriedRoomNames).toEqual([]);
 
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north' });
 
@@ -862,6 +865,7 @@ it('探索抽牌读取房间符号，图书馆按预兆而不是运行时抽牌�
         expect(preview?.deckKind).toBe('omen');
 
         setTestExplorerInventory(core, '0', [{ id: 'idol', name: '雕像', kind: 'omen' }]);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'upper-north' });
         const idolValidation = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'upper-north', useIdol: true }),
@@ -932,6 +936,7 @@ it('叛徒忽略事件符号读取房间符号，不受运行时抽牌顺序影�
         core.deckCounts.event = core.eventOrder.length;
         const mightBefore = core.currentExplorer.traits.might;
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '2', { roomId: targetRoomId! });
         const validation = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(
@@ -1100,6 +1105,7 @@ it('最后一张同区域房间会封死区域时要求先调整已有板块', (
         expect(preview?.orientationOptions.length).toBeGreaterThan(0);
         expect(preview?.tileAdjustmentOptions.length).toBeGreaterThan(0);
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
         const movesBeforeRejectedExplore = core.movesRemaining;
         const validation = BetrayalDomain.validate(
             { core, sys: {} as never },

@@ -85,6 +85,7 @@ function createMatch(matchID = 'match-1', metadata = createMetadata()): TestMatc
         connections: new Map(),
         spectatorSockets: new Set(),
         offlineTimers: new Map(),
+        unloaded: false,
         syncedPlayers: [],
     };
 }
@@ -96,6 +97,7 @@ function createHarness(options?: {
     freshMetadata?: MatchMetadata;
     controllerType?: 'human' | 'ai';
 }) {
+    let activeMatch = options?.activeMatch;
     const socketIndex = new Map<string, MatchConnectionSocketInfo>();
     if (options?.socketInfo) {
         socketIndex.set('socket-1', options.socketInfo);
@@ -112,11 +114,12 @@ function createHarness(options?: {
 
     const hooks: MatchConnectionLifecycleHooks<TestMatch> = {
         getActiveMatch: vi.fn((matchID) => (
-            options?.activeMatch?.matchID === matchID ? options.activeMatch : undefined
+            activeMatch?.matchID === matchID ? activeMatch : undefined
         )),
-        loadMatch: vi.fn(async (matchID) => (
-            options?.loadedMatch?.matchID === matchID ? options.loadedMatch : undefined
-        )),
+        loadMatch: vi.fn(async (matchID) => {
+            activeMatch = options?.loadedMatch?.matchID === matchID ? options.loadedMatch : undefined;
+            return activeMatch;
+        }),
         getSocketInfo: (socketId) => socketIndex.get(socketId),
         setSocketInfo: (socketId, info) => {
             socketIndex.set(socketId, info);

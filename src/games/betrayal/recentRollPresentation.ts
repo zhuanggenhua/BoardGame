@@ -63,6 +63,7 @@ function isAcknowledgeableRecentRollDisplay(
     return false;
   }
   return (
+    recentRoll.kind === "deathPrevention" ||
     recentRoll.kind === "eventRolledDamage" ||
     recentRoll.kind === "attackRoll" ||
     recentRoll.kind === "hauntActionTraitCheck" ||
@@ -151,7 +152,7 @@ export function resolveRecentRollAcknowledgementPresentation(
   const hasAcknowledgement = Boolean(
     core.recentRoll &&
       isAcknowledgeableRecentRollDisplay(core.recentRoll) &&
-      recentRollDecisionPlayerIds.has(core.recentRoll.playerId),
+      (core.recentRoll.kind === "deathPrevention" || recentRollDecisionPlayerIds.has(core.recentRoll.playerId)),
   );
   const requiredPlayerIds =
     hasAcknowledgement && core.recentRoll

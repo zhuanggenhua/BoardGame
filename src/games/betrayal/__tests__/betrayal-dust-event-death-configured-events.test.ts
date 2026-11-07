@@ -692,6 +692,12 @@ it('灰尘吊死鬼全属性检定失败扣到骷髅时也触发头骨死亡保�
             kind: 'event',
             title: '吊死鬼',
         });
+        expect(core.recentAllTraitCheck).toBeNull();
+        expect(core.pendingEventChoice?.effect.mode).toBe('allTraitChecks');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain('1');
+        for (const [index, trait] of (['might', 'speed', 'knowledge', 'sanity'] as const).entries()) {
+            core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE, '1', { trait }, 110 + index, createBetrayalScriptedRandom(1, 1, 2, 2));
+        }
         expect(core.recentAllTraitCheck?.results.every((result) => !result.passed)).toBe(true);
         expect(core.recentRoll?.kind).toBe('deathPrevention');
         expect(core.recentRoll?.latestLabel).toBe('正常死亡');

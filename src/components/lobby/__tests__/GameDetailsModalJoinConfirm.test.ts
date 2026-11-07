@@ -2638,6 +2638,59 @@ describe('GameDetailsModal create room ai entry', () => {
         });
     });
 
+    it('公开房间不含 ownerKey 时保留本地房主记录并允许认领自己的空房间', async () => {
+        markGamePackageInstalled();
+        vi.mocked(matchStatus.getOwnerActiveMatch).mockReturnValue({
+            matchID: 'private-owner-room', gameName: 'dicethrone', ownerKey: 'owner-1', ownerType: 'guest',
+        });
+        vi.mocked(lobbySocket.subscribe).mockImplementationOnce((_gameId, callback) => {
+            callback([{ matchID: 'private-owner-room', gameName: 'dicethrone', players: [{ id: 0 }, { id: 1 }], totalSeats: 2 }]);
+            return () => {};
+        });
+        vi.mocked(matchStatus.claimSeat).mockResolvedValueOnce({ success: true, credentials: 'host-proof' });
+        render(createElement(GameDetailsModal, baseProps));
+        const join = await screen.findByTestId('room-list-join-private-owner-room');
+        expect(matchStatus.clearOwnerActiveMatch).not.toHaveBeenCalled();
+        expect(join).not.toBeDisabled();
+        fireEvent.click(join);
+        await waitFor(() => expect(matchStatus.claimSeat).toHaveBeenCalledWith('dicethrone', 'private-owner-room', '0', expect.any(Object)));
+    });
+
+    it('guest 房主登录后重复恢复仍保留 guest 房间身份并使用私有凭证', async () => {
+        markGamePackageInstalled();
+        authState.user = { id: 'signed-in-user', username: 'Member' };
+        authState.token = 'signed-in-token';
+        let owner = { matchID: 'guest-login-room', gameName: 'dicethrone', ownerKey: 'owner-1', ownerType: 'guest' as const };
+        vi.mocked(matchStatus.getOwnerActiveMatch).mockImplementation(() => owner);
+        vi.mocked(matchStatus.setOwnerActiveMatch).mockImplementation((next) => { owner = next as typeof owner; });
+        vi.mocked(matchStatus.readStoredMatchCredentials).mockReturnValue(buildStored({ matchID: owner.matchID, gameName: 'dicethrone', playerID: '0', credentials: 'guest-host-proof' }));
+        vi.mocked(lobbySocket.subscribe).mockImplementationOnce((_gameId, callback) => {
+            callback([{ matchID: owner.matchID, gameName: 'dicethrone', ownerType: 'guest', players: [{ id: 0 }, { id: 1 }], totalSeats: 2 }]);
+            return () => {};
+        });
+        vi.mocked(matchStatus.claimSeat).mockResolvedValue({ success: true, credentials: 'guest-host-proof' });
+        render(createElement(GameDetailsModal, baseProps));
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+            fireEvent.click(await screen.findByTestId('room-list-join-guest-login-room'));
+            await waitFor(() => expect(matchStatus.claimSeat).toHaveBeenCalledTimes(attempt));
+            await waitFor(() => expect(matchStatus.setOwnerActiveMatch).toHaveBeenCalledTimes(attempt));
+            expect(owner).toMatchObject({ ownerType: 'guest', ownerKey: 'owner-1' });
+            expect(matchStatus.claimSeat).toHaveBeenLastCalledWith('dicethrone', owner.matchID, '0', expect.objectContaining({ ownerCredentials: 'guest-host-proof' }));
+            expect(vi.mocked(matchStatus.claimSeat).mock.lastCall?.[3].token).toBeUndefined();
+        }
+    });
+
+    it('公开 ownerKey 不能为没有本地所有权的空房间启用认领', async () => {
+        markGamePackageInstalled();
+        vi.mocked(lobbySocket.subscribe).mockImplementationOnce((_gameId, callback) => {
+            callback([{ matchID: 'unproven-room', gameName: 'dicethrone', players: [{ id: 0 }, { id: 1 }], totalSeats: 2, ownerKey: 'owner-1' }]);
+            return () => {};
+        });
+        render(createElement(GameDetailsModal, baseProps));
+        expect(await screen.findByTestId('room-list-join-unproven-room')).toBeDisabled();
+        expect(matchStatus.setOwnerActiveMatch).not.toHaveBeenCalled();
+    });
+
     it('仅有本地旧房主状态时，会隐藏创建按钮并保留返回/强制退出入口', async () => {
         markGamePackageInstalled();
         vi.mocked(matchStatus.getOwnerActiveMatch).mockImplementation(() => ({

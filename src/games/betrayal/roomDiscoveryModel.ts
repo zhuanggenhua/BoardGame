@@ -898,7 +898,7 @@ export function resolveRoomPlacementPreview(
         entryEdge: placement.entryEdge,
         deckKind,
         skippedRoomName: skippedRoomTemplate?.name,
-        buriedRoomNames: roomDraw.resolution.buriedRoomTiles.map((room) => room.name),
+        buriedRoomNames: roomDraw.resolution.buriedRoomTiles.filter((room) => room.reason !== 'areaMismatch').map((room) => room.name),
         room: {
             name: roomTemplate.name,
             hint: roomTemplate.hint,
@@ -963,17 +963,21 @@ function makeSelectedRoomSummary(
     };
 }
 
+export function resolveLegacyRoomDiscoveryEntries(core: BetrayalCore, floor: BetrayalRoomFloor): BetrayalRoomDiscoveryDeckEntry[] {
+    const pool = core.roomDiscoveryOrderByFloor[floor];
+    const discoveredCount = core.rooms.filter((room) => room.floor === floor && room.state === 'discovered' && !room.startingTile).length;
+    return pool.map((_, offset) => ({
+        floor,
+        room: cloneRoomTemplate(pool[(discoveredCount + offset) % pool.length]!),
+    }));
+}
+
 function resolveLegacyRoomDraw(
     core: BetrayalCore,
     floor: BetrayalRoomFloor,
     options: ResolveRoomDrawOptions = {},
 ): ResolvedRoomDraw {
-    const pool = core.roomDiscoveryOrderByFloor[floor];
-    const discoveredCount = core.rooms.filter((room) => room.floor === floor && room.state === 'discovered' && !room.startingTile).length;
-    const orderedEntries = pool.map((_, offset) => ({
-        floor,
-        room: cloneRoomTemplate(pool[(discoveredCount + offset) % pool.length]!),
-    }));
+    const orderedEntries = resolveLegacyRoomDiscoveryEntries(core, floor);
     const buriedRoomTiles: BetrayalBuriedRoomTileSummary[] = [];
     let skippedRoomTemplate: RoomTemplate | null = null;
     let selectedEntry: BetrayalRoomDiscoveryDeckEntry | null = null;
@@ -1028,6 +1032,9 @@ export function resolveRoomDraw(
     floor: BetrayalRoomFloor,
     options: ResolveRoomDrawOptions = {},
 ): ResolvedRoomDraw {
+    if (core.pendingRoomPlacement) {
+        return core.pendingRoomPlacement.draw;
+    }
     const deck = core.roomDiscoveryDeck?.length
         ? core.roomDiscoveryDeck.map(cloneRoomDiscoveryDeckEntry)
         : makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor);

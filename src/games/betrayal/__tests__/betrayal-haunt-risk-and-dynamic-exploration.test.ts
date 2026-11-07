@@ -96,6 +96,7 @@ it('作祟阶段探索新房间会正常结算发现，但不会再进行作祟�
 
         expect(core.phase).toBe('haunt');
         expect(core.rooms.some((room) => room.state === 'unexplored')).toBe(true);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: targetRoomId! });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: targetRoomId! }),

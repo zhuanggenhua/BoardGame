@@ -25,7 +25,7 @@ import {
     setEventRolledDamageRecentRollFromSnapshot,
 } from './eventEffectResolutionModel';
 import { buryEventCardToBottom } from './eventDeckModel';
-import { applyDustEventEffectDeathIfNeeded } from './deathStateReadModel';
+import { applyEventEffectDeathIfNeeded } from './deathStateReadModel';
 import type {
     BetrayalCore,
     BetrayalEndgameResult,
@@ -41,7 +41,7 @@ import {
     resolveHauntFirstPlayerResolutionForTrigger,
     resolveHauntTraitorResolutionForTrigger,
 } from './hauntTraitorResolutionModel';
-import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
+import { resolveDustTraitorVictoryResult, resolveMummyAllHeroesDefeatedVictoryResult } from './hauntVictoryModel';
 import { collectMummyGirlByExplorerIfPresent } from './mummyHauntRules';
 import {
     buryPossessionCardToBottom,
@@ -167,7 +167,9 @@ export function applyBetrayalRoomExploredState(
     applyBetrayalRoomExploredPlacementState(core, event.payload);
     core.movesRemaining = 0;
     core.turnEndedByDiscovery = true;
-    applyRoomDrawResolutionToCore(core, event.payload.roomDrawResolution);
+    if (!core.pendingRoomPlacement) applyRoomDrawResolutionToCore(core, event.payload.roomDrawResolution);
+    core.pendingRoomPlacement = null;
+    core.roomRevealSequence = (core.roomRevealSequence ?? 0) + 1;
     core.exploreIndex += event.payload.skippedRoomWithHolySymbol ? 2 : 1;
     core.highlightedDeckKind = event.payload.deckKind;
     core.latestDiscovery = cloneDiscoverySummary(event.payload.discovery);
@@ -198,6 +200,9 @@ export function applyBetrayalRoomExploredState(
     if (
         event.payload.deckKind === 'event'
         && !event.payload.skippedEventWithTraitorPower
+        // Historical events carrying a card name used to rotate that card.
+        // Preserve replay compatibility; new skip events carry no name.
+        && (!event.payload.skippedEventWithIdol || Boolean(event.payload.skippedEventWithIdol.name))
         && !event.payload.skippedEventWithUponReflection
         && !event.payload.nextPendingEventChoice
         && !event.payload.eventRollPending
@@ -285,7 +290,7 @@ export function applyBetrayalRoomExploredState(
             core.turnEndedByDiscovery = false;
         }
     } else if (event.payload.skippedEventWithIdol) {
-        // 雕像仍消耗这次事件牌堆顺序，但不结算事件效果。
+        // 雕像跳过事件符号，不抽取或移动事件牌。
     } else if (
         event.payload.deckKind === 'event'
         && event.payload.eventEffect
@@ -296,7 +301,7 @@ export function applyBetrayalRoomExploredState(
             Boolean(event.payload.eventEffect.results?.length)
         ) {
             applyEventEffect(core, event.payload.eventEffect);
-            applyDustEventEffectDeathIfNeeded(core);
+            applyEventEffectDeathIfNeeded(core);
         }
         core.pendingEventChoice = {
             id: `${event.payload.playerId}-${event.payload.roomId}-${event.timestamp}`,
@@ -389,7 +394,7 @@ export function applyBetrayalRoomExploredState(
     };
     const scenarioCompletedResult = pendingDamageAllocationAfterEventDraw
         ? null
-        : resolveDustTraitorVictoryResult(nextCore);
+        : resolveDustTraitorVictoryResult(nextCore) ?? resolveMummyAllHeroesDefeatedVictoryResult(nextCore);
     if (scenarioCompletedResult) {
         return { core: nextCore, scenarioCompletedResult };
     }

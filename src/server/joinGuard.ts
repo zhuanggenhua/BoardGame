@@ -17,7 +17,7 @@ export type JoinGuardResult = {
     message?: string;
     ownerKey?: string;
     requesterKey?: string;
-    reason?: 'not_owner' | 'invalid_token' | 'missing_owner';
+    reason?: 'not_owner' | 'invalid_token' | 'missing_owner' | 'guest_owner_proof_unavailable';
 };
 
 const resolveOwnerKey = (metadata?: MatchMetadata | null, state?: StoredMatchState | null): string | undefined => {
@@ -70,6 +70,19 @@ export const evaluateEmptyRoomJoinGuard = ({
             status: 403,
             message: 'Room owner is required',
             reason: 'missing_owner',
+        };
+    }
+
+    // Credentials count as occupancy, so an empty guest room has no stored
+    // owner-seat proof. A guestId or legacy setup ownerKey is not authentication.
+    if (typeof ownerKey === 'string' && ownerKey.startsWith('guest:')) {
+        return {
+            allowed: false,
+            isEmptyRoom: true,
+            status: 409,
+            message: 'GUEST_OWNER_PROOF_UNAVAILABLE',
+            reason: 'guest_owner_proof_unavailable',
+            ownerKey,
         };
     }
 

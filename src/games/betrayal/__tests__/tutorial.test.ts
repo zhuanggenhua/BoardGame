@@ -146,7 +146,7 @@ describe('Betrayal 教程配置', () => {
 
     it('默认教程沿真实基础回合主线推进，只有叛徒视角另列目录章节', () => {
         const manifest = tutorialCatalog.tutorials['basic-setup-and-turn']?.manifest;
-        expect(manifest?.revision).toBe(7);
+        expect(manifest?.revision).toBe(8);
         expect(manifest?.steps.map((step) => step.id)).toEqual([
             'setup-runtime',
             'objective-and-turn',
@@ -261,6 +261,7 @@ describe('Betrayal 教程配置', () => {
             payload: action.payload,
         }))).toEqual([
             { commandType: 'MOVE_TO_ROOM', playerId: '1', payload: { roomId: 'entrance-hall' } },
+            { commandType: 'REVEAL_ROOM', playerId: '1', payload: { roomId: 'ground-east' } },
             { commandType: 'EXPLORE_ROOM', playerId: '1', payload: { roomId: 'ground-east' } },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1', payload: undefined },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '0', payload: undefined },
@@ -286,6 +287,7 @@ describe('Betrayal 教程配置', () => {
             payload: action.payload,
         }))).toEqual([
             { commandType: 'MOVE_TO_ROOM', playerId: '2', payload: { roomId: 'ground-east' } },
+            { commandType: 'REVEAL_ROOM', playerId: '2', payload: { roomId: 'frontier-ground-east-east' } },
             { commandType: 'EXPLORE_ROOM', playerId: '2', payload: { roomId: 'frontier-ground-east-east' } },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '2', payload: undefined },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '0', payload: undefined },
@@ -343,6 +345,7 @@ describe('Betrayal 教程配置', () => {
             playerId: action.playerId,
             payload: action.payload,
         }))).toEqual([
+            { commandType: 'REVEAL_ROOM', playerId: '1', payload: { roomId: 'frontier-ground-east-south' } },
             { commandType: 'EXPLORE_ROOM', playerId: '1', payload: { roomId: 'frontier-ground-east-south' } },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1', payload: undefined },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '0', payload: undefined },
@@ -589,7 +592,7 @@ describe('Betrayal 教程配置', () => {
         expect(manifest?.steps.find((step) => step.id === 'explore-upper')?.highlightTarget).toBe('betrayal-room-ground-north');
         expect(actionSteps.map((step) => step.allowedCommands)).toEqual([
             ['MOVE_TO_ROOM'],
-            [],
+            ['REVEAL_ROOM'],
             [],
             ['EXPLORE_ROOM'],
             ['ROLL_EVENT'],
@@ -797,6 +800,7 @@ describe('Betrayal 教程配置', () => {
             playerId: action.playerId,
             payload: action.payload,
         }))).toEqual([
+            { commandType: 'REVEAL_ROOM', playerId: '1', payload: { roomId: 'ground-east' } },
             { commandType: 'EXPLORE_ROOM', playerId: '1', payload: { roomId: 'ground-east' } },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1', payload: undefined },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '0', payload: undefined },
@@ -823,6 +827,7 @@ describe('Betrayal 教程配置', () => {
             payload: action.payload,
         }))).toEqual([
             { commandType: 'MOVE_TO_ROOM', playerId: '2', payload: { roomId: 'ground-east' } },
+            { commandType: 'REVEAL_ROOM', playerId: '2', payload: { roomId: 'frontier-ground-east-east' } },
             { commandType: 'EXPLORE_ROOM', playerId: '2', payload: { roomId: 'frontier-ground-east-east' } },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '2', payload: undefined },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '0', payload: undefined },
@@ -850,6 +855,7 @@ describe('Betrayal 教程配置', () => {
             playerId: action.playerId,
             payload: action.payload,
         }))).toEqual([
+            { commandType: 'REVEAL_ROOM', playerId: '1', payload: { roomId: 'frontier-ground-east-south' } },
             { commandType: 'EXPLORE_ROOM', playerId: '1', payload: { roomId: 'frontier-ground-east-south' } },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '1', payload: undefined },
             { commandType: 'ACKNOWLEDGE_CARD_RESOLUTION', playerId: '0', payload: undefined },

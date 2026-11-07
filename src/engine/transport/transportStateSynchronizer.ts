@@ -36,6 +36,14 @@ export class TransportStateSynchronizer {
         return this.stripForTransport(match.state, { stripEventStream: true });
     }
 
+    /** Batch confirmations sent to clients must use the same private view as sync. */
+    buildBatchConfirmationState(match: Pick<TransportStateProjectionMatch, 'engineConfig' | 'state'>, playerID: string): unknown {
+        if (match.engineConfig.transportView || match.engineConfig.randomSyncPolicy === 'server-only') {
+            return this.stripForTransport(this.applyPlayerView(match, playerID), { stripEventStream: true });
+        }
+        return this.buildAuthoritativeState(match);
+    }
+
     clearAllBaselines(match: Pick<TransportStateProjectionMatch, 'lastBroadcastedViews'>): void {
         match.lastBroadcastedViews.clear();
     }
@@ -51,10 +59,10 @@ export class TransportStateSynchronizer {
     }): void {
         const viewState = this.stripForTransport(this.applyPlayerView(args.match, args.playerID));
         const matchPlayers = buildTransportMatchPlayers(args.match);
-        args.socket.emit('state:sync', args.match.matchID, viewState, matchPlayers, {
-            seed: args.match.randomSeed,
-            cursor: args.match.getRandomCursor(),
-        }, {
+        const randomMeta = args.match.engineConfig.randomSyncPolicy === 'server-only'
+            ? undefined
+            : { seed: args.match.randomSeed, cursor: args.match.getRandomCursor() };
+        args.socket.emit('state:sync', args.match.matchID, viewState, matchPlayers, randomMeta, {
             stateID: args.match.stateID,
         });
 

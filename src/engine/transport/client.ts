@@ -45,7 +45,7 @@ export interface GameTransportClientConfig {
         state: unknown,
         matchPlayers: MatchPlayerInfo[],
         meta?: StateUpdateMeta,
-        randomMeta?: RandomSyncMeta,
+        randomMeta?: RandomSyncMeta | null,
     ) => void;
     /** 连接状态变更回调 */
     onConnectionChange?: (connected: boolean) => void;

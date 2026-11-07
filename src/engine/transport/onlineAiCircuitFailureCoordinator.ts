@@ -110,7 +110,20 @@ export class OnlineAiCircuitFailureCoordinator<TMatch extends OnlineAiCircuitFai
             stateID: args.match.stateID,
             progressMarker: args.progressMarker ?? null,
         });
-        const privateReplay = capturePrivateFeedbackReplay(args.match);
+        const randomCursor = args.match.getRandomCursor?.();
+        const trigger = {
+            source: 'online-ai-watchdog' as const,
+            commandType: args.commandType,
+            playerId: args.playerId,
+            payload: args.commandPayload,
+            stateIdBefore: args.match.stateID,
+            stateIdAfter: args.match.stateID,
+            randomCursorBefore: randomCursor,
+            randomCursorAfter: randomCursor,
+            reason,
+            progressMarker: args.progressMarker ?? undefined,
+        };
+        const privateReplay = capturePrivateFeedbackReplay(args.match, trigger);
         await this.hooks.reportRecoveryFeedback({
             matchId: args.match.matchID,
             gameId: args.match.gameId,
@@ -126,6 +139,19 @@ export class OnlineAiCircuitFailureCoordinator<TMatch extends OnlineAiCircuitFai
             }),
             privateReplay: privateReplay.data,
             privateReplayError: privateReplay.error,
+            randomCursor,
+            diagnosticSnapshots: {
+                before: args.match.state,
+                at: args.match.state,
+                after: args.match.state,
+            },
+            lastCommand: {
+                commandType: args.commandType,
+                playerId: args.playerId,
+                stateId: args.match.stateID,
+                afterStateId: args.match.stateID,
+                ...(randomCursor !== undefined ? { randomCursor, afterRandomCursor: randomCursor } : {}),
+            },
             ...resolveTransportFeedbackCorrelation({
                 matchId: args.match.matchID,
                 state: args.match.state,

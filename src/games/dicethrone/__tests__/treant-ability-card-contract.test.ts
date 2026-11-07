@@ -13,7 +13,12 @@ import { getAvailableAbilityIds, getPlayerDieFace } from '../domain/rules';
 import { NATURE_TOUCH_2, ROOTED_2, SHATTERING_FIST_2, SHATTERING_FIST_3, TEND_CARE_2, VENGEFUL_VINES_2, WILD_GROWTH_2, WILD_ROAR_2 } from '../heroes/treant/abilities';
 import { TREANT_CARDS } from '../heroes/treant/cards';
 import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
-import { createHeroMatchup, createQueuedRandom } from './test-utils';
+import { executePipeline } from '../../../engine/pipeline';
+import { getCurrentInteractionData, getCurrentInteractionSummary } from '../../../engine/testing/interactionTestFacade';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import type { MatchState } from '../../../engine/types';
+import { DiceThroneDomain } from '../domain';
+import { createHeroMatchup, createQueuedRandom, testSystems } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
@@ -47,6 +52,41 @@ const seedCurrentDefenseDice = (core: DiceThroneCore, playerId: string, values: 
             isKept: false,
         };
     });
+};
+
+const advanceAttackThroughPipeline = (state: MatchState<DiceThroneCore>, playerId: string) => {
+    state.sys.phase = 'defensiveRoll';
+    state.core.phase = 'defensiveRoll';
+    return executePipeline(
+        { domain: DiceThroneDomain, systems: testSystems },
+        state,
+        { type: 'ADVANCE_PHASE', playerId, payload: {}, timestamp: 100 } as any,
+        createQueuedRandom([1]),
+        Object.keys(state.core.players),
+    );
+};
+
+const respondToChoiceThroughPipeline = (
+    state: MatchState<DiceThroneCore>,
+    playerId: string,
+    labelKey: string,
+) => {
+    const interaction = getCurrentInteractionSummary(state);
+    const options = getCurrentInteractionData<{ options?: Array<{ id: string; labelKey?: string }> }>(state)?.options ?? [];
+    const option = options.find((candidate) => candidate.labelKey === labelKey);
+    if (!interaction.id || !option) throw new Error(`Rooted option missing: ${labelKey}`);
+    return executePipeline(
+        { domain: DiceThroneDomain, systems: testSystems },
+        state,
+        {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId,
+            payload: { interactionId: interaction.id, optionId: option.id },
+            timestamp: 101,
+        } as any,
+        createQueuedRandom([1]),
+        Object.keys(state.core.players),
+    );
 };
 
 const createTreantTeamMatchup = () => {
@@ -243,31 +283,16 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         };
 
         seedCurrentDefenseDice(state.core, '1', [4, 5, 1]);
-        const defenseEvents = resolveAttack(state.core, createQueuedRandom([4, 5, 1]), undefined, 100);
-        let next = applyEvents(state.core, defenseEvents);
-        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
-        expect(choiceEvent).toBeDefined();
-        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
-            option.labelKey === 'choices.treantRooted.s2_a0_d0_none'
-        );
-        expect(selectedOption).toBeDefined();
+        const defense = advanceAttackThroughPipeline(state, '1');
+        expect(defense.success).toBe(true);
+        expect(defense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
+        expect(getCurrentInteractionSummary(defense.state).kind).toBe('simple-choice');
 
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: {
-                playerId: '1',
-                sourceAbilityId: 'rooted',
-                customId: selectedOption.customId,
-                value: selectedOption.value,
-            },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 101,
-        } as DiceThroneEvent);
-        expect(next.players['1'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
-
-        const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
-        next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(46);
+        const choice = respondToChoiceThroughPipeline(defense.state, '1', 'choices.treantRooted.s2_a0_d0_none');
+        expect(choice.success).toBe(true);
+        expect(choice.state.core.players['1'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(2);
+        expect(choice.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(46);
+        expect(choice.state.core.pendingAttack).toBeNull();
     });
 
     it('Rooted II 防御应掷 4 骰，并在两树灵时选择 1 名玩家获得生命源泉', () => {
@@ -289,36 +314,19 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         };
 
         seedCurrentDefenseDice(state.core, '1', [6, 6, 1, 4]);
-        const defenseEvents = resolveAttack(state.core, createQueuedRandom([6, 6, 1, 4]), undefined, 100);
-        expect(defenseEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
-        let next = applyEvents(state.core, defenseEvents);
-        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
-        expect(choiceEvent).toBeDefined();
-        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
-            option.labelKey === 'choices.treantRooted.none_p0'
-        );
-        expect(selectedOption).toBeDefined();
+        const defense = advanceAttackThroughPipeline(state, '1');
+        expect(defense.success).toBe(true);
+        expect(defense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
+        expect(getCurrentInteractionSummary(defense.state).kind).toBe('simple-choice');
 
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: {
-                playerId: '1',
-                sourceAbilityId: 'rooted',
-                customId: selectedOption.customId,
-                value: selectedOption.value,
-            },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 101,
-        } as DiceThroneEvent);
-        expect(next.players['1'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
-
-        const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
-        next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(48);
-        expect(next.pendingAttack).toBeNull();
-        expect(next.pendingDamage).toBeUndefined();
-        expect(next.pendingBonusDiceSettlement).toBeUndefined();
-        expect(next.lastResolvedAttackDamage).toBe(2);
+        const choice = respondToChoiceThroughPipeline(defense.state, '1', 'choices.treantRooted.none_p0');
+        expect(choice.success).toBe(true);
+        expect(choice.state.core.players['1'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
+        expect(choice.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(48);
+        expect(choice.state.core.pendingAttack).toBeNull();
+        expect(choice.state.core.pendingDamage).toBeUndefined();
+        expect(choice.state.core.pendingBonusDiceSettlement).toBeUndefined();
+        expect(choice.state.core.lastResolvedAttackDamage).toBe(2);
     });
 
     it('upgrade-rooted-2 打出后应通过真实升级链把防御入口切到 4 骰 rooted', () => {
@@ -577,36 +585,20 @@ describe('DiceThrone Treant 能力与卡牌合同', () => {
         };
 
         seedCurrentDefenseDice(state.core, '1', [4, 5, 6, 6]);
-        const defenseEvents = resolveAttack(state.core, createQueuedRandom([4, 5, 6, 6]), undefined, 100);
-        expect(defenseEvents.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
-        let next = applyEvents(state.core, defenseEvents);
-        const choiceEvent = defenseEvents.find(event => event.type === 'CHOICE_REQUESTED');
-        expect(choiceEvent).toBeDefined();
-        const selectedOption = (choiceEvent as any).payload.options.find((option: { labelKey?: string }) =>
-            option.labelKey === 'choices.treantRooted.s0_a1_d0_p1'
-        );
-        expect(selectedOption).toBeDefined();
+        const defense = advanceAttackThroughPipeline(state, '1');
+        expect(defense.success).toBe(true);
+        expect(defense.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(50);
+        expect(getCurrentInteractionSummary(defense.state).kind).toBe('simple-choice');
 
-        next = reduce(next, {
-            type: 'CHOICE_RESOLVED',
-            payload: {
-                playerId: '1',
-                sourceAbilityId: 'rooted',
-                customId: selectedOption.customId,
-                value: selectedOption.value,
-            },
-            sourceCommandType: 'RESOLVE_CHOICE',
-            timestamp: 101,
-        } as DiceThroneEvent);
-        expect(next.players['1'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(0);
-        expect(next.players['1'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(1);
-        expect(next.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
-
-        const attackEvents = resolveAttack(next, createQueuedRandom([1]), { includePreDefense: false }, 200);
-        const damageEvent = attackEvents.find(event => event.type === 'DAMAGE_DEALT');
+        const choice = respondToChoiceThroughPipeline(defense.state, '1', 'choices.treantRooted.s0_a1_d0_p1');
+        expect(choice.success).toBe(true);
+        expect(choice.state.core.players['1'].tokens[TOKEN_IDS.TREANT_SEEDLING]).toBe(0);
+        expect(choice.state.core.players['1'].tokens[TOKEN_IDS.TREANT_SAPLING]).toBe(1);
+        expect(choice.state.core.players['0'].tokens[TOKEN_IDS.LIFE_SAP]).toBe(1);
+        const damageEvent = choice.events.find(event => event.type === 'DAMAGE_DEALT');
         expect((damageEvent as any).payload.amount).toBe(3);
-        next = applyEvents(next, attackEvents);
-        expect(next.players['1'].resources[RESOURCE_IDS.HP]).toBe(47);
+        expect(choice.state.core.players['1'].resources[RESOURCE_IDS.HP]).toBe(47);
+        expect(choice.state.core.pendingAttack).toBeNull();
     });
 
     it('Rooted 防御在不可防御攻击中不得执行', () => {

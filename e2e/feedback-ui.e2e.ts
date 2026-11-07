@@ -229,6 +229,87 @@ test.describe('反馈 UI E2E', () => {
         await expect(myFeedbackModal).toContainText('你还没有提交过反馈');
     });
 
+    test('我的反馈按服务端分页读取，删除末页最后一条后返回仍有数据的上一页', async ({ page }) => {
+        const user: StoredUser = {
+            id: 'feedback_pagination_user',
+            username: '分页玩家',
+            email: 'feedback-pagination@example.com',
+            emailVerified: true,
+            role: 'user',
+            banned: false,
+            feedbackPoints: 0,
+            avatar: null,
+        };
+        await seedLoggedInUser(page, user);
+        await mockCommonAuthedApis(page, user);
+
+        const records = Array.from({ length: 7 }, (_, index) => ({
+            _id: `pagination_feedback_${index + 1}`,
+            contentPreview: `分页反馈${index + 1}`,
+            hasEmbeddedImage: false,
+            type: 'bug',
+            status: 'open',
+            gameName: 'dicethrone',
+            createdAt: '2026-06-06T10:00:00.000Z',
+        }));
+        const requestedPages: number[] = [];
+        await page.route('**/admin-api/feedback?*', async (route) => {
+            const url = new URL(route.request().url());
+            if (url.searchParams.get('mineOnly') !== 'true') {
+                await route.fallback();
+                return;
+            }
+            const requestedPage = Number(url.searchParams.get('page') ?? 1);
+            const pageSize = Number(url.searchParams.get('limit') ?? 6);
+            requestedPages.push(requestedPage);
+            await route.fulfill({
+                status: 200,
+                json: {
+                    items: records.slice((requestedPage - 1) * pageSize, requestedPage * pageSize),
+                    total: records.length,
+                },
+            });
+        });
+        await page.route('**/admin-api/feedback/*', async (route) => {
+            if (route.request().method() !== 'DELETE') {
+                await route.fallback();
+                return;
+            }
+            const id = new URL(route.request().url()).pathname.split('/').at(-1);
+            const index = records.findIndex((record) => record._id === id);
+            if (index >= 0) records.splice(index, 1);
+            await route.fulfill({ status: 200, json: { ok: true } });
+        });
+
+        await waitForFrontendRoute(page, '/');
+        await page.goto('/', { waitUntil: 'domcontentloaded' });
+        await openUserMenu(page);
+        await page.getByTestId('user-menu-my-feedback').click();
+        const modal = page.getByTestId('my-feedback-modal');
+        await expect(modal.getByTestId('my-feedback-item')).toHaveCount(6);
+        await expect(modal).toContainText('分页反馈1');
+        await expect(modal).not.toContainText('分页反馈7');
+        await expect(modal).toContainText('第 1 / 2 页');
+        await expect.poll(() => requestedPages.at(-1)).toBe(1);
+
+        await modal.getByRole('button', { name: '下一页' }).click();
+        await expect(modal).toContainText('分页反馈7');
+        await expect(modal).not.toContainText('分页反馈1');
+        await expect(modal).toContainText('第 2 / 2 页');
+        expect(requestedPages.at(-1)).toBe(2);
+        await page.screenshot({ path: `${SCREENSHOT_DIR}/04-my-feedback-server-page-two.png`, fullPage: true });
+
+        page.once('dialog', async (dialog) => {
+            expect(dialog.message()).toContain('确定删除这条反馈');
+            await dialog.accept();
+        });
+        await modal.getByTestId('my-feedback-delete').click();
+        await expect(modal).toContainText('分页反馈1');
+        await expect(modal).toContainText('第 1 / 1 页');
+        expect(requestedPages.slice(-2)).toEqual([2, 1]);
+        await page.screenshot({ path: `${SCREENSHOT_DIR}/05-my-feedback-returned-to-page-one.png`, fullPage: true });
+    });
+
     test('反馈提交成功后应显示积分 +1 toast，并同步更新右上角积分', async ({ page }) => {
         const user: StoredUser = {
             id: 'feedback_user_2',

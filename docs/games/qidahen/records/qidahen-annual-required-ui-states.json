@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "tutorial",
+  "reviewFile": ".visual-review.json",
+  "reviewerKind": "subagent",
+  "basis": "正常年度行动链、当前正式界面、用户指定交互和首次独特视觉状态。纯数值与同构重复动作由领域测试及完整行为日志验收。",
+  "requiredStates": [
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "frontier-goal",
+      "viewport": "desktop",
+      "reason": "前线目标与轮盘本体操作、合法地区和教程推荐可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "opening-move",
+      "viewport": "desktop",
+      "reason": "前线目标与轮盘本体操作、合法地区和教程推荐可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "farm-action",
+      "viewport": "desktop",
+      "reason": "前线目标与轮盘本体操作、合法地区和教程推荐可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "reclaim-action",
+      "viewport": "desktop",
+      "reason": "前线目标与轮盘本体操作、合法地区和教程推荐可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "reclaim-target",
+      "viewport": "desktop",
+      "reason": "前线目标与轮盘本体操作、合法地区和教程推荐可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-action",
+      "viewport": "desktop",
+      "reason": "手牌征召的入口、支付、合法本土与部队方式可理解"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-payment",
+      "viewport": "desktop",
+      "reason": "手牌征召的入口、支付、合法本土与部队方式可理解"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-source",
+      "viewport": "desktop",
+      "reason": "手牌征召的入口、支付、合法本土与部队方式可理解"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-troops",
+      "viewport": "desktop",
+      "reason": "手牌征召的入口、支付、合法本土与部队方式可理解"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "recruit-payment-inspect",
+      "viewport": "desktop",
+      "reason": "放大镜展示实际支付卡面且可关闭"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "midyear",
+      "viewport": "desktop",
+      "reason": "年中首次发生及超限弃牌入口可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "hand-limit",
+      "viewport": "desktop",
+      "reason": "年中首次发生及超限弃牌入口可辨"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "upgrade-card",
+      "viewport": "desktop",
+      "reason": "实际军备牌及来源到兵牌到目标的出兵顺序"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "dispatch-source",
+      "viewport": "desktop",
+      "reason": "实际军备牌及来源到兵牌到目标的出兵顺序"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "dispatch-troops",
+      "viewport": "desktop",
+      "reason": "实际军备牌及来源到兵牌到目标的出兵顺序"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "dispatch-troops-selected",
+      "viewport": "desktop",
+      "reason": "实际军备牌及来源到兵牌到目标的出兵顺序"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "dispatch-target",
+      "viewport": "desktop",
+      "reason": "实际军备牌及来源到兵牌到目标的出兵顺序"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "tactic-card",
+      "viewport": "desktop",
+      "reason": "战术候选与选中反馈能对应实际卡牌"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "tactic-card-selected",
+      "viewport": "desktop",
+      "reason": "战术候选与选中反馈能对应实际卡牌"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-artillery-rolling",
+      "viewport": "desktop",
+      "reason": "炮兵骑兵步兵投掷及阶段结果可辨且靠近战场"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-artillery-damage",
+      "viewport": "desktop",
+      "reason": "炮兵骑兵步兵投掷及阶段结果可辨且靠近战场"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-cavalry-rolling",
+      "viewport": "desktop",
+      "reason": "炮兵骑兵步兵投掷及阶段结果可辨且靠近战场"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-cavalry-damage",
+      "viewport": "desktop",
+      "reason": "炮兵骑兵步兵投掷及阶段结果可辨且靠近战场"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-infantry-rolling",
+      "viewport": "desktop",
+      "reason": "炮兵骑兵步兵投掷及阶段结果可辨且靠近战场"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-infantry-damage",
+      "viewport": "desktop",
+      "reason": "炮兵骑兵步兵投掷及阶段结果可辨且靠近战场"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "battle-real-time",
+      "viewport": "desktop",
+      "reason": "连续真实投掷动作及阶段承接"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "occupy",
+      "viewport": "desktop",
+      "reason": "战后选择及展开战报的不同交互状态"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "occupy-report",
+      "viewport": "desktop",
+      "reason": "战后选择及展开战报的不同交互状态"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "diplomacy-target",
+      "viewport": "desktop",
+      "reason": "外交目标与结果、雇佣入口与合法目标"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "diplomacy-finish",
+      "viewport": "desktop",
+      "reason": "外交目标与结果、雇佣入口与合法目标"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "hire-action",
+      "viewport": "desktop",
+      "reason": "外交目标与结果、雇佣入口与合法目标"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "hire-target",
+      "viewport": "desktop",
+      "reason": "外交目标与结果、雇佣入口与合法目标"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "save-hand",
+      "viewport": "desktop",
+      "reason": "保留手牌的局面用途及新年进入"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "new-year",
+      "viewport": "desktop",
+      "reason": "保留手牌的局面用途及新年进入"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "maintain-shanhai",
+      "viewport": "desktop",
+      "reason": "维护支付与不同墙线放弃的实际对象关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "abandon-jinzhou",
+      "viewport": "desktop",
+      "reason": "维护支付与不同墙线放弃的实际对象关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "abandon-inner-wall",
+      "viewport": "desktop",
+      "reason": "维护支付与不同墙线放弃的实际对象关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "abandon-outer-wall",
+      "viewport": "desktop",
+      "reason": "维护支付与不同墙线放弃的实际对象关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "upkeep-datong",
+      "viewport": "desktop",
+      "reason": "地区耗损支付及选中牌身份反馈"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "upkeep-yehe",
+      "viewport": "desktop",
+      "reason": "地区耗损支付及选中牌身份反馈"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "upkeep-yehe-selected",
+      "viewport": "desktop",
+      "reason": "地区耗损支付及选中牌身份反馈"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "upkeep-pyongyang",
+      "viewport": "desktop",
+      "reason": "地区耗损支付及选中牌身份反馈"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "upkeep-pyongyang-selected",
+      "viewport": "desktop",
+      "reason": "地区耗损支付及选中牌身份反馈"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "hand-scroll-end",
+      "viewport": "desktop",
+      "reason": "长手牌滚动末端可达且放大和支付入口可读"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "claim-year",
+      "viewport": "desktop",
+      "reason": "纪年领取、行动顺位和当前势力人物候选"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "new-order",
+      "viewport": "desktop",
+      "reason": "纪年领取、行动顺位和当前势力人物候选"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "year-character",
+      "viewport": "desktop",
+      "reason": "纪年领取、行动顺位和当前势力人物候选"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "year-character-inspect",
+      "viewport": "desktop",
+      "reason": "人物卡放大可读及返回当前选择"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "training-kind",
+      "viewport": "desktop",
+      "reason": "次年训练模式、兵牌和本土征兵目标的操作关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "training-target",
+      "viewport": "desktop",
+      "reason": "次年训练模式、兵牌和本土征兵目标的操作关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "training-second-target",
+      "viewport": "desktop",
+      "reason": "次年训练模式、兵牌和本土征兵目标的操作关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "training-recruit-target",
+      "viewport": "desktop",
+      "reason": "次年训练模式、兵牌和本土征兵目标的操作关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "training-finish",
+      "viewport": "desktop",
+      "reason": "次年训练模式、兵牌和本土征兵目标的操作关系"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "callout-region-choice",
+      "viewport": "desktop",
+      "reason": "外置兵牌依照正式所属地区完成合法选择，确认后恢复示范检查点"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "finish",
+      "viewport": "desktop",
+      "reason": "教程完成时的正式结束入口"
+    },
+    {
+      "chainId": "qidahen-annual-desktop",
+      "uiStateId": "post-tutorial-continue",
+      "viewport": "desktop",
+      "reason": "完成教程并在同一正式对局执行下一次轮盘输入后的局面"
+    }
+  ]
+}

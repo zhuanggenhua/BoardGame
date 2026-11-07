@@ -580,11 +580,19 @@ async function closeBoardMagnifyIfVisible(page: Page): Promise<void> {
 
 async function waitForCardSpotlightClear(page: Page): Promise<void> {
     await page.waitForTimeout(250);
-    const overlays = page.getByTestId('card-spotlight-overlay');
-    const overlay = overlays.first();
-    if (!(await overlay.isVisible({ timeout: 500 }).catch(() => false))) return;
-
-    await expect(overlays, '阶段截图前卡牌特写必须自动退场，避免把提示图当作流程证据').toHaveCount(0, { timeout: 10000 });
+    for (let count = 0; count < 20; count += 1) {
+        const overlay = page.getByTestId('card-spotlight-overlay').first();
+        if (!(await overlay.isVisible({ timeout: 500 }).catch(() => false))) return;
+        const itemId = await overlay.getAttribute('data-spotlight-item-id');
+        const backdrop = page.getByTestId('spotlight-container-root').filter({ has: overlay }).first();
+        await backdrop.click({ position: { x: 5, y: 5 } });
+        await expect.poll(async () => {
+            const current = page.getByTestId('card-spotlight-overlay').first();
+            return !(await current.isVisible().catch(() => false))
+                || (await current.getAttribute('data-spotlight-item-id')) !== itemId;
+        }, { timeout: 10000, message: '点击空白处后卡牌特写应关闭或进入下一张' }).toBe(true);
+    }
+    throw new Error('卡牌特写队列超过 20 项，无法完成阶段截图');
 }
 
 async function clickVisibleDie(page: Page, dieIndex: number): Promise<void> {

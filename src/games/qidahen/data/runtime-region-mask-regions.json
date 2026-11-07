@@ -375,6 +375,12 @@
       "id": "city-region-15",
       "name": "辽北",
       "color": "#4dd559",
+    "labelBounds": {
+      "left": 887,
+      "top": 347,
+      "width": 14,
+      "height": 31
+    },
       "seed": {
         "x": 882,
         "y": 369

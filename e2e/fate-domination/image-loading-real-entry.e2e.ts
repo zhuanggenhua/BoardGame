@@ -33,7 +33,7 @@ test('真实牌桌独立卡图加载与恢复：合法牌库顺序代表态保�
         const slot = page.locator('.fd-runtime-deployment-slot:not(:disabled)').first();
         await expect(slot).toBeVisible({timeout: 20000});
         await slot.click();
-        await page.getByTestId('fate-domination-primary-action').click();
+        await expect.poll(()=>page.evaluate(()=>(window as any).__BG_TEST_HARNESS__.state.get().core.players['0'].locationId)).toBe('workshop');
         const fixture = await page.evaluate(async () => {
             const harness = (window as any).__BG_TEST_HARNESS__, state = harness.state.get();
             const player = state.core.players['0'], before = player.deck.map((card: any) => card.id);

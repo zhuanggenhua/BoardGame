@@ -74,7 +74,7 @@ describe('Betrayal data-tutorial-id 属性', () => {
 
     it('移动和探索教程的真实地图输入按固定步骤推进', () => {
         expect(boardSource).toContain('tutorialStep?.id === "open-move-targets"');
-        expect(boardSource).toContain('tutorialStep?.id === "explore-upper"');
+        expect(readGameSource('tutorial.ts')).toContain("advanceOnEvents: [{ type: 'ROOM_REVEALED', match: { playerId: '0' } }]");
     });
 
     it('Board 已接入教程桥，而不是只留 tutorial manifest', () => {

@@ -155,12 +155,7 @@ function withDerivedCharacterBadges(character: CharacterDefinition): CharacterDe
 }
 
 export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = ([
-    {
-        id: 'doctor_strange',
-        nameKey: 'characters.doctor_strange',
-        setupOptionStatus: 'in_progress',
-        setupOptionStatusReason: 'UI 修复与当前版本截图验收实施中，等待真人确认进入完成态',
-    },
+    { id: 'doctor_strange', nameKey: 'characters.doctor_strange' },
     { id: 'thor', nameKey: 'characters.thor', setupOptionStatus: 'in_progress', setupOptionStatusReason: '索尔完整玩法已实施，真人完成态确认前保持实施中' },
     { id: 'monk', nameKey: 'characters.monk' },
     { id: 'barbarian', nameKey: 'characters.barbarian' },
@@ -379,7 +374,12 @@ export interface PendingAttack {
      */
     deferredAttackModifierCardIds?: string[];
     /** 奇异博士依赖主攻击目标的前置操作；多人模式选定 defenderId 后、攻击结算前恢复。 */
-    deferredDoctorStrangeOperations?: Array<{ sourceId: string; operation: string; values?: number[] }>;
+    deferredDoctorStrangeOperations?: Array<{
+        sourceId: string;
+        operation: string;
+        values?: number[];
+        continuationRequestId?: string;
+    }>;
     extraRoll?: {
         value?: number;
         resolved?: boolean;

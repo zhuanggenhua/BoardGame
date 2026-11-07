@@ -1,5 +1,8 @@
+import { isDeepStrictEqual } from 'node:util';
 import type {
     MatchStorage,
+    MatchReplacementStorage,
+    MatchReplacementSnapshot,
     MatchAuthMetadataProvider,
     MatchMetadata,
     ClaimSeatMetadataInput,
@@ -12,7 +15,6 @@ import type {
 } from '../../engine/transport/storage';
 import { mongoStorage, MongoStorage } from './MongoStorage';
 import logger from '../../../server/logger';
-import { decideDuplicateOwnerRoomAction } from '../duplicateOwnerRooms';
 
 const DISCONNECT_GRACE_MS = 5 * 60 * 1000;
 
@@ -71,67 +73,75 @@ const hasFetchResult = (result: FetchResult, opts: FetchOpts): boolean => {
 class InMemoryStorage {
     private readonly stateMap = new Map<string, StoredMatchState>();
     private readonly metadataMap = new Map<string, MatchMetadata>();
-    private readonly metadataMutationChains = new Map<string, Promise<void>>();
+    private readonly replacementSnapshots = new WeakMap<object, {
+        matchID: string; state: StoredMatchState; metadata: MatchMetadata;
+        stateIdentity: StoredMatchState; metadataIdentity: MatchMetadata;
+    }>();
 
     createMatch(matchID: string, data: CreateMatchData): void {
-        this.stateMap.set(matchID, data.initialState);
-        this.metadataMap.set(matchID, data.metadata);
+        const prepared = structuredClone(data);
+        if (this.stateMap.has(matchID) || this.metadataMap.has(matchID)) {
+            throw new Error(`MATCH_ID_EXISTS:${matchID}`);
+        }
+        this.stateMap.set(matchID, prepared.initialState);
+        this.metadataMap.set(matchID, prepared.metadata);
     }
 
     setState(matchID: string, state: StoredMatchState): void {
-        this.stateMap.set(matchID, state);
+        if (!this.stateMap.has(matchID) || !this.metadataMap.has(matchID)) return;
+        this.stateMap.set(matchID, structuredClone(state));
     }
 
     setMetadata(matchID: string, metadata: MatchMetadata): void {
-        this.metadataMap.set(matchID, metadata);
+        if (!this.stateMap.has(matchID) || !this.metadataMap.has(matchID)) return;
+        this.metadataMap.set(matchID, structuredClone(metadata));
     }
 
     async claimSeatMetadata(
         matchID: string,
         input: ClaimSeatMetadataInput,
     ): Promise<ClaimSeatMetadataResult> {
-        return this.runMetadataMutation(matchID, () => {
-            const metadata = this.metadataMap.get(matchID);
-            if (!metadata) {
-                return { playerExists: false };
-            }
+        // No await inside this read/modify/write: one synchronous critical section.
+        const metadata = this.metadataMap.get(matchID);
+        if (!metadata) {
+            return { playerExists: false };
+        }
 
-            const player = metadata.players[input.playerID];
-            if (!player) {
-                return { metadata, playerExists: false };
-            }
+        const player = metadata.players[input.playerID];
+        if (!player) {
+            return { metadata: structuredClone(metadata), playerExists: false };
+        }
 
-            const existingCredentials = typeof player.credentials === 'string' && player.credentials.trim()
-                ? player.credentials
-                : undefined;
-            const playerCredentials = existingCredentials ?? input.playerCredentials;
-            const nextPlayer = {
-                ...player,
-                credentials: playerCredentials,
-                name: player.name || input.playerName || player.name,
-            };
-            const nextMetadata: MatchMetadata = {
-                ...metadata,
-                updatedAt: input.updatedAt ?? Date.now(),
-                players: {
-                    ...metadata.players,
-                    [input.playerID]: nextPlayer,
-                },
-            };
-            this.metadataMap.set(matchID, nextMetadata);
-            return { metadata: nextMetadata, playerExists: true, playerCredentials };
-        });
+        const existingCredentials = typeof player.credentials === 'string' && player.credentials.trim()
+            ? player.credentials
+            : undefined;
+        const playerCredentials = existingCredentials ?? input.playerCredentials;
+        const nextPlayer = {
+            ...player,
+            credentials: playerCredentials,
+            name: player.name || input.playerName || player.name,
+        };
+        const nextMetadata: MatchMetadata = {
+            ...metadata,
+            updatedAt: input.updatedAt ?? Date.now(),
+            players: {
+                ...metadata.players,
+                [input.playerID]: nextPlayer,
+            },
+        };
+        this.metadataMap.set(matchID, nextMetadata);
+        return { metadata: structuredClone(nextMetadata), playerExists: true, playerCredentials };
     }
 
     fetch(matchID: string, opts: FetchOpts): FetchResult {
         const result: FetchResult = {};
-        if (opts.state) result.state = this.stateMap.get(matchID);
-        if (opts.metadata) result.metadata = this.metadataMap.get(matchID);
+        if (opts.state) result.state = structuredClone(this.stateMap.get(matchID));
+        if (opts.metadata) result.metadata = structuredClone(this.metadataMap.get(matchID));
         return result;
     }
 
     fetchAuthMetadata(matchID: string): MatchMetadata | undefined {
-        return this.metadataMap.get(matchID);
+        return structuredClone(this.metadataMap.get(matchID));
     }
 
     wipe(matchID: string): void {
@@ -161,26 +171,45 @@ class InMemoryStorage {
             .map(([key]) => key);
     }
 
-    private async runMetadataMutation<T>(matchID: string, mutator: () => T): Promise<T> {
-        const previous = this.metadataMutationChains.get(matchID) ?? Promise.resolve();
-        let release: () => void = () => undefined;
-        const current = new Promise<void>((resolve) => {
-            release = resolve;
+    fetchMatchForReplacement(matchID: string): MatchReplacementSnapshot | undefined {
+        const state = this.stateMap.get(matchID);
+        const metadata = this.metadataMap.get(matchID);
+        if (!state || !metadata) return undefined;
+        const token = Object.freeze({});
+        this.replacementSnapshots.set(token, {
+            matchID, state: structuredClone(state), metadata: structuredClone(metadata),
+            stateIdentity: state, metadataIdentity: metadata,
         });
-        this.metadataMutationChains.set(matchID, previous.then(() => current, () => current));
-        await previous.catch(() => undefined);
-        try {
-            return mutator();
-        } finally {
-            release();
-            if (this.metadataMutationChains.get(matchID) === current) {
-                this.metadataMutationChains.delete(matchID);
-            }
-        }
+        return { state: structuredClone(state), metadata: structuredClone(metadata), token };
     }
+
+    replaceMatchIfUnchanged(
+        sourceMatchID: string, snapshot: MatchReplacementSnapshot,
+        nextMatchID: string, data: CreateMatchData,
+    ): 'replaced' | 'conflict' {
+        const expected = snapshot.token && typeof snapshot.token === 'object'
+            ? this.replacementSnapshots.get(snapshot.token) : undefined;
+        const prepared = structuredClone(data);
+        if (!expected || expected.matchID !== sourceMatchID || sourceMatchID === nextMatchID
+            || this.stateMap.has(nextMatchID) || this.metadataMap.has(nextMatchID)
+            // Identity rejects delete/recreate (ABA), equality covers the full value.
+            || this.stateMap.get(sourceMatchID) !== expected.stateIdentity
+            || this.metadataMap.get(sourceMatchID) !== expected.metadataIdentity
+            || !isDeepStrictEqual(this.stateMap.get(sourceMatchID), expected.state)
+            || !isDeepStrictEqual(this.metadataMap.get(sourceMatchID), expected.metadata)) {
+            return 'conflict';
+        }
+        this.stateMap.set(nextMatchID, prepared.initialState);
+        this.metadataMap.set(nextMatchID, prepared.metadata);
+        this.stateMap.delete(sourceMatchID);
+        this.metadataMap.delete(sourceMatchID);
+        this.replacementSnapshots.delete(snapshot.token as object);
+        return 'replaced';
+    }
+
 }
 
-export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
+export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider, MatchReplacementStorage {
     private readonly mongo: MongoStorage;
     private readonly memory: InMemoryStorage;
     private readonly persistentEnabled: boolean;
@@ -188,6 +217,9 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
     private readonly matchStorage = new Map<string, StorageTarget>();
     private readonly memoryOwnerIndex = new Map<string, string>();
     private readonly memoryMatchOwner = new Map<string, string>();
+    private readonly replacementSnapshots = new WeakMap<object, {
+        matchID: string; target: StorageTarget; snapshot: MatchReplacementSnapshot;
+    }>();
 
     constructor(
         mongo: MongoStorage,
@@ -210,6 +242,11 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
     }
 
     async createMatch(matchID: string, data: CreateMatchData): Promise<void> {
+        // Complete cloning before any route or owner index mutation.
+        data = structuredClone(data);
+        if (this.memory.fetch(matchID, { metadata: true }).metadata) {
+            throw new Error(`MATCH_ID_EXISTS:${matchID}`);
+        }
         const setupData = resolveSetupDataFromCreateMatch(data);
         const target = this.persistentEnabled
             ? resolveStorageTarget(setupData, this.persistGuestRooms)
@@ -221,25 +258,77 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
                 const existingMatchID = this.memoryOwnerIndex.get(ownerKey);
                 if (existingMatchID) {
                     const { metadata: existingMetadata } = this.memory.fetch(existingMatchID, { metadata: true });
-                    const decision = decideDuplicateOwnerRoomAction(existingMetadata);
-                    if (decision.action === 'cleanup') {
-                        this.wipeMemoryMatch(existingMatchID);
-                        this.matchStorage.delete(existingMatchID);
-                    } else {
-                        const existingGameName = existingMetadata?.gameName ?? data.metadata.gameName;
-                        throw new Error(`ACTIVE_MATCH_EXISTS:${existingGameName}:${existingMatchID}`);
-                    }
+                    // All owner replacements require the snapshot CAS capability.
+                    const existingGameName = existingMetadata?.gameName ?? data.metadata.gameName;
+                    throw new Error(`ACTIVE_MATCH_EXISTS:${existingGameName}:${existingMatchID}`);
                 }
+            }
+            this.memory.createMatch(matchID, data);
+            if (ownerKey) {
                 this.memoryOwnerIndex.set(ownerKey, matchID);
                 this.memoryMatchOwner.set(matchID, ownerKey);
             }
             this.matchStorage.set(matchID, 'memory');
-            this.memory.createMatch(matchID, data);
             return;
         }
 
-        this.matchStorage.set(matchID, 'mongo');
         await this.mongo.createMatch(matchID, data);
+        this.matchStorage.set(matchID, 'mongo');
+    }
+
+    async fetchMatchForReplacement(matchID: string): Promise<MatchReplacementSnapshot | undefined> {
+        let target: StorageTarget = 'memory';
+        let snapshot = this.memory.fetchMatchForReplacement(matchID);
+        if (!snapshot && this.persistentEnabled) {
+            target = 'mongo';
+            snapshot = await this.mongo.fetchMatchForReplacement(matchID);
+        }
+        if (!snapshot) return undefined;
+        const token = Object.freeze({});
+        this.replacementSnapshots.set(token, { matchID, target, snapshot });
+        return { state: structuredClone(snapshot.state), metadata: structuredClone(snapshot.metadata), token };
+    }
+
+    async replaceMatchIfUnchanged(
+        sourceMatchID: string, snapshot: MatchReplacementSnapshot,
+        nextMatchID: string, data: CreateMatchData,
+    ): Promise<'replaced' | 'conflict'> {
+        const expected = snapshot.token && typeof snapshot.token === 'object'
+            ? this.replacementSnapshots.get(snapshot.token) : undefined;
+        const prepared = structuredClone(data);
+        const setupData = resolveSetupDataFromCreateMatch(prepared);
+        const target = this.persistentEnabled
+            ? resolveStorageTarget(setupData, this.persistGuestRooms) : 'memory';
+        if (!expected || expected.matchID !== sourceMatchID || expected.target !== target
+            || sourceMatchID === nextMatchID || this.memory.fetch(nextMatchID, { metadata: true }).metadata) {
+            return 'conflict';
+        }
+        const nextOwner = setupData.ownerKey;
+        if (target === 'memory' && nextOwner) {
+            const ownerMatch = this.memoryOwnerIndex.get(nextOwner);
+            if (ownerMatch && ownerMatch !== sourceMatchID) return 'conflict';
+        }
+        // The memory branch, including both derived indexes, never yields.
+        // Mongo's backend CAS is the atomic boundary, not the route cache.
+        const result = target === 'memory'
+            ? this.memory.replaceMatchIfUnchanged(sourceMatchID, expected.snapshot, nextMatchID, prepared)
+            : await this.mongo.replaceMatchIfUnchanged(sourceMatchID, expected.snapshot, nextMatchID, prepared);
+        if (result !== 'replaced') return result;
+        if (target === 'memory') {
+            const oldOwner = this.memoryMatchOwner.get(sourceMatchID);
+            if (oldOwner && this.memoryOwnerIndex.get(oldOwner) === sourceMatchID) {
+                this.memoryOwnerIndex.delete(oldOwner);
+            }
+            this.memoryMatchOwner.delete(sourceMatchID);
+            if (nextOwner) {
+                this.memoryOwnerIndex.set(nextOwner, nextMatchID);
+                this.memoryMatchOwner.set(nextMatchID, nextOwner);
+            }
+        }
+        this.matchStorage.delete(sourceMatchID);
+        this.matchStorage.set(nextMatchID, target);
+        this.replacementSnapshots.delete(snapshot.token as object);
+        return 'replaced';
     }
 
     async setState(matchID: string, state: StoredMatchState): Promise<void> {
@@ -262,7 +351,7 @@ export class HybridStorage implements MatchStorage, MatchAuthMetadataProvider {
             return;
         }
         if (target === 'memory') {
-            const nextMetadata = this.applyDisconnectionSince(metadata);
+            const nextMetadata = this.applyDisconnectionSince(structuredClone(metadata));
             this.memory.setMetadata(matchID, nextMetadata);
             return;
         }

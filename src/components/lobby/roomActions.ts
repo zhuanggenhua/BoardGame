@@ -268,6 +268,9 @@ export const resolveCreateRoomErrorStatus = (error: unknown): number | null => {
 export const buildCreateRoomErrorTip = (error: unknown): { messageKey: string } | null => {
     const { combined } = normalizeCreateRoomErrorText(error);
 
+    if (combined.includes('guest_owner_proof_')) {
+        return { messageKey: 'error.guestOwnerProofRequired' };
+    }
     if (combined.includes('failed to fetch') || combined.includes('networkerror')) {
         return { messageKey: 'error.createRoomNetwork' };
     }

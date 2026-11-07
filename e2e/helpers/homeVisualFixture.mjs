@@ -15,30 +15,39 @@ export async function createHomeVisualFixture({ roomCount = 5 } = {}) {
     const http = createServer();
     const io = new Server(http, { cors: { origin: true, credentials: true }, parser, path: '/lobby-socket' });
     let version = 0;
-    io.on('connection', socket => {
-        socket.on('lobby:subscribe', ({ gameId }) => {
-            const games = gameId === 'all' ? ['dicethrone', 'summonerwars', 'smashup'] : [gameId];
-            const matches = games.flatMap((gameName, gameIndex) => Array.from({ length: roomCount }, (_, i) => ({ matchID: `${gameName === 'dicethrone' ? 'd1ce' : (0xab00 + gameIndex).toString(16)}${i.toString(16).padStart(4, '0')}`, gameName, roomName: ['周末轻松对战', '新手友好 · 欢迎加入', '老友切磋，来一局', '英雄练习与策略交流', '夜间休闲房'][i % 5], totalSeats: i % 2 ? 4 : 2, players: [{ id: 0, name: ['山间晚风', '棋逢对手', '阿橙', '白夜', '麦芽'][i % 5], isConnected: true }, ...(i === 2 ? [{ id: 1, name: '小满', isConnected: true }] : [])], createdAt: Date.now() - i * 60000, updatedAt: Date.now(), ownerType: 'guest', isLocked: i === 3, status: i === 2 ? 'playing' : 'waiting' })));
+    let roomCounts = {};
+    const subscriptions = new Map();
+    const publish = (socket, gameId) => {
+            const games = gameId === 'all' ? [...new Set(['dicethrone', 'summonerwars', 'smashup', ...Object.keys(roomCounts)])] : [gameId];
+            const matches = games.flatMap((gameName, gameIndex) => Array.from({ length: roomCounts[gameName] ?? roomCount }, (_, i) => ({ matchID: `${gameName === 'dicethrone' ? 'd1ce' : (0xab00 + gameIndex).toString(16)}${i.toString(16).padStart(4, '0')}`, gameName, roomName: ['周末轻松对战', '新手友好 · 欢迎加入', '老友切磋，来一局', '英雄练习与策略交流', '夜间休闲房'][i % 5], totalSeats: i % 2 ? 4 : 2, players: [{ id: 0, name: ['山间晚风', '棋逢对手', '阿橙', '白夜', '麦芽'][i % 5], isConnected: true }, ...(i === 2 ? [{ id: 1, name: '小满', isConnected: true }] : [])], createdAt: Date.now() - i * 60000, updatedAt: Date.now(), ownerType: 'guest', isLocked: i === 3, status: i === 2 ? 'playing' : 'waiting' })));
             socket.emit('lobby:update', { gameId, version: ++version, matches });
-        });
+    };
+    io.on('connection', socket => {
+        const subscribed = new Set();
+        subscriptions.set(socket, subscribed);
+        socket.on('lobby:subscribe', ({ gameId }) => { subscribed.add(gameId); publish(socket, gameId); });
+        socket.on('lobby:unsubscribe', ({ gameId }) => subscribed.delete(gameId));
+        socket.on('disconnect', () => subscriptions.delete(socket));
     });
     await new Promise(resolve => http.listen(0, '127.0.0.1', resolve));
-    return { url: `http://127.0.0.1:${http.address().port}`, close: () => new Promise(resolve => io.close(resolve)) };
+    return { url: `http://127.0.0.1:${http.address().port}`, close: () => new Promise(resolve => io.close(resolve)), setRoomCounts(next) { roomCounts = next; for (const [socket, games] of subscriptions) for (const gameId of games) publish(socket, gameId); } };
 }
 
-export async function installHomeVisualData(context, { socketUrl, authenticated = false, favorites = visualFavorites } = {}) {
+export async function installHomeVisualData(context, { socketUrl, authenticated = false, favorites = visualFavorites, style = 'modern' } = {}) {
     const requests = [];
-    await context.addInitScript(({ socketUrl, authenticated, favorites, user, visualToken }) => {
+    await context.addInitScript(({ socketUrl, authenticated, favorites, style, user, visualToken }) => {
         localStorage.setItem('i18nextLng', 'zh-CN');
-        localStorage.setItem('bg_home_entry_style', 'modern');
-        localStorage.setItem('bg_home_entry_style_version', 'modern-default-v3');
+        if (style !== null) {
+            localStorage.setItem('bg_home_entry_style', style);
+            localStorage.setItem('bg_home_entry_style_version', 'modern-default-v3');
+        }
         localStorage.setItem('bg_guest_game_library', JSON.stringify(favorites));
         window.__FORCE_GAME_SERVER_URL__ = socketUrl;
         if (authenticated) {
             localStorage.setItem('auth_token', visualToken);
             localStorage.setItem('auth_user', JSON.stringify(user));
         }
-    }, { socketUrl, authenticated, favorites, user: visualUser, visualToken });
+    }, { socketUrl, authenticated, favorites, style, user: visualUser, visualToken });
     await context.route('**/*', async route => {
         const url = new URL(route.request().url());
         const p = url.pathname;

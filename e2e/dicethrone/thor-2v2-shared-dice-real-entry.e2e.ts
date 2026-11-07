@@ -613,7 +613,7 @@ const playRerollCardAsTeammate = async (
     const hintTitle = thorPage.getByTestId('dice-interaction-hint-title');
     const hintDetail = thorPage.getByTestId('dice-interaction-hint-detail');
     await expect(hint).toBeVisible();
-    await expectDiceHintSurface(thorPage, 'game-hints-top-center');
+    await expectDiceHintSurface(thorPage, 'dice-tray-left-center');
     await expect(hintTitle).toHaveText(input.repeatedDie ? '选择重投骰子（0/2）' : '选择重投骰子（0/5）');
     await expect(hintDetail).toHaveCount(0);
     await expect(thorPage.locator('[data-testid^="die-button-"]')).toHaveCount(5);
@@ -645,16 +645,16 @@ const playRerollCardAsTeammate = async (
             await expect(hintDetail).toHaveCount(0);
             await thorPage.locator('[data-testid="die-button-0"]').click();
             await expect(thorPage.locator('[data-testid="die-button-0"]')).toHaveAttribute('data-selection-count', '2');
-            await expect(hintTitle).toHaveText('选择重投骰子（2/2）');
+            await expect(hintTitle).toHaveText('完成');
         } else {
             await thorPage.locator('[data-testid="die-button-0"]').click();
             await thorPage.locator('[data-testid="die-button-1"]').click();
             await expect(hintTitle).toHaveText('选择重投骰子（2/5）');
         }
     }, [
-        { name: 'visible-selection-progress', expected: input.repeatedDie ? '选择重投骰子（2/2）' : '选择重投骰子（2/5）', read: snapshot => asRecords(asRecord(snapshot.visible.elements).diceHintTitle)[0]?.text ?? null },
+        { name: 'visible-selection-progress', expected: input.repeatedDie ? '完成' : '选择重投骰子（2/5）', read: snapshot => asRecords(asRecord(snapshot.visible.elements).diceHintTitle)[0]?.text ?? null },
     ]);
-    await captureThorEvidenceScreen(capture, thorPage, `${input.label}-原有进度提示和双按钮确认`, 'select-reroll-dice', 'target-highlight', '索尔直接点选骰子后，原有进度提示和确认入口同步更新', '原骰盘骰子本体被选中，提示表达当前已选数量');
+    await captureThorEvidenceScreen(capture, thorPage, `${input.label}-原有提示和双按钮确认`, 'select-reroll-dice', 'target-highlight', '索尔直接点选骰子后，原有提示和确认入口同步更新', '原骰盘骰子本体被选中，提示按原流程显示进度或完成');
     await expect(thorPage.getByTestId('dice-interaction-confirm-button')).toBeEnabled();
     await expect(thorPage.getByTestId('dice-interaction-confirm-button')).toHaveText('确认');
     await recordThorEvidenceStep(match, capture, thorPage, 'confirm-reroll-dice', '索尔按原确认按钮提交并等待服务端骰子重掷事件', async () => {

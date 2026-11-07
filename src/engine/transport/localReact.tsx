@@ -17,6 +17,8 @@ export interface LocalGameProviderProps {
     config: GameEngineConfig;
     numPlayers: number;
     seed: string;
+    /** 可选固定场景随机源；seed 仍负责会话与持久化身份。 */
+    randomSeed?: string;
     setupData?: unknown;
     children: ReactNode;
     onCommandRejected?: (commandType: string, error: string) => void;
@@ -33,6 +35,7 @@ export function LocalGameProvider({
     config,
     numPlayers,
     seed,
+    randomSeed,
     setupData,
     children,
     onCommandRejected,
@@ -48,6 +51,7 @@ export function LocalGameProvider({
         config,
         numPlayers,
         seed,
+        randomSeed,
         setupData,
         onCommandRejected,
         seatControllers,

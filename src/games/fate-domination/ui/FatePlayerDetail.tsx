@@ -47,7 +47,7 @@ export function FatePlayerDetail({ core, playerId, viewerId, servantBack, skillB
                 <nav aria-label={t('ui.playerDetail.switchPlayerNav')}>{visibleCore.playerIds.map(id => {
                     const other = projectFatePlayer(visibleCore, id, viewerId);
                     return <button key={id} type="button" aria-label={t('ui.playerDetail.switchPlayer', { number: Number(id) + 1, name: other.master?.name ?? '' })} aria-current={id === playerId ? 'page' : undefined} onClick={() => onPlayer(id)}>
-                        <OptimizedImage src={fateTokenAsset(other.player.masterId)} alt=""/>
+                        <span className="fd-detail-tab-avatar" data-eliminated={other.player.eliminated?'true':undefined}><OptimizedImage src={fateTokenAsset(other.player.masterId)} alt=""/></span>
                         <span><small>{t('ui.playerDetail.player', { number: Number(id) + 1 })}</small>{other.master?.name ?? t('ui.playerDetail.master')}</span>
                     </button>;
                 })}</nav>

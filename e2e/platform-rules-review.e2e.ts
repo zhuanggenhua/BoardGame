@@ -8,12 +8,11 @@ import { createHomeVisualFixture } from './helpers/homeVisualFixture.mjs';
 import { createRulesPdf } from './helpers/gameRulesFixture.mjs';
 
 test.describe.configure({ mode: 'serial' });
-const base = 'http://127.0.0.1:4273';
+let base: string;
 const mongoUri = process.env.MONGO_URI ?? '';
-if (mongoUri !== 'mongodb://127.0.0.1:37022/home_rules_upload_20261101') throw new Error('后台审核验收只允许任务数据库及 37022 端口');
-const out = path.resolve(process.env.BG_REVIEW_EVIDENCE_DIR || 'test-results/evidence-screenshots/platform/home-rules-review-20261101');
-const internal = path.resolve(process.env.BG_REVIEW_INTERNAL_DIR || '.tmp/home-rules-review-20261101-internal');
-mkdirSync(out, { recursive: true }); mkdirSync(internal, { recursive: true });
+const runId = process.env.PLATFORM_E2E_RUN_ID;
+const out = path.resolve(process.env.BG_REVIEW_EVIDENCE_DIR || `test-results/evidence-screenshots/_temporary/home/rules-review/${runId || 'missing-run'}`);
+const internal = path.resolve(process.env.BG_REVIEW_INTERNAL_DIR || `.tmp/home-rules-review/${runId || 'missing-run'}`);
 const sha = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 const files = ['vite.config.ts', 'src/pages/admin/CreatorReview.tsx', 'src/pages/admin/creator-review.css', 'src/pages/admin/components/AdminLayout.tsx',
     'src/components/external/GameRulesDocumentLink.tsx', 'src/components/external/game-rules-document.css', 'src/components/home/PlatformUploadWorkspace.tsx',
@@ -41,7 +40,15 @@ async function installSession(context: BrowserContext, session: { token: string;
         (window as unknown as { __FORCE_GAME_SERVER_URL__: string }).__FORCE_GAME_SERVER_URL__ = socketUrl;
     }, { ...session, socketUrl: fixture.url });
 }
-test.beforeAll(async ({ request }) => {
+test.beforeAll(async ({ request }, info) => {
+    const isolation = process.env.PLATFORM_E2E_ISOLATION_ID;
+    if (!isolation || !/^[a-z0-9-]+$/.test(isolation) || !runId
+        || mongoUri !== `mongodb://127.0.0.1:37022/boardgame_home_acceptance_${isolation}`) {
+        throw new Error('后台审核验收必须使用首页独立 runtime、37022 端口及本轮唯一数据库');
+    }
+    base = String(info.project.use.baseURL || '');
+    if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(base)) throw new Error('后台审核验收必须使用隔离本机前端');
+    mkdirSync(out, { recursive: true }); mkdirSync(internal, { recursive: true });
     db = await mongoose.createConnection(mongoUri).asPromise(); fixture = await createHomeVisualFixture({ roomCount: 0 });
     const nonce = Date.now();
     for (const [index, role] of ['user', 'admin'].entries()) {
@@ -51,8 +58,9 @@ test.beforeAll(async ({ request }) => {
     }
 });
 test.afterAll(async () => {
+    if (!db) return;
     await fixture?.close(); await db?.close();
-    writeFileSync(path.join(out, 'capture-record.json'), JSON.stringify({ sources, media, internalMedia, steps, capturedAt: new Date().toISOString(), environment: { base, mongo: mongoUri, storage: '.tmp/home-rules-upload-20261101-ugc', apiMocked: false, lobbySocketFixture: true } }, null, 2));
+    writeFileSync(path.join(out, 'capture-record.json'), JSON.stringify({ sources, media, internalMedia, steps, capturedAt: new Date().toISOString(), environment: { base, mongo: mongoUri, storage: process.env.UGC_LOCAL_PATH, apiMocked: false, lobbySocketFixture: true } }, null, 2));
 });
 
 for (const mobile of [false, true]) test(`${mobile ? '手机' : '桌面'}后台实际驳回、修订重送与批准发布`, async ({ request }) => {

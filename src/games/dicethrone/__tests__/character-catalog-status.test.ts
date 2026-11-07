@@ -27,17 +27,12 @@ describe('DiceThrone 角色目录生命周期状态合同', () => {
         }
     });
 
-    it('奇异博士当前范围审计后保持实施中，真人确认完成态前仍显示标记', () => {
+    it('奇异博士完成后可选择且不显示实施中标记', () => {
         const doctorStrange = DICETHRONE_CHARACTER_CATALOG.find((character) => character.id === 'doctor_strange');
 
-        expect(doctorStrange?.setupOptionStatus).toBe('in_progress');
-        expect(doctorStrange?.setupOptionStatusReason).toContain('真人确认');
-        expect(getImplementationInProgressBadge('doctor_strange')).toMatchObject({
-            id: 'implementation_in_progress',
-            labelKey: 'common:status_tags.under_construction',
-            tone: 'warning',
-            variant: 'disabled-overlay',
-        });
+        expect(doctorStrange?.setupOptionStatus).toBeUndefined();
+        expect(doctorStrange?.setupOptionStatusReason).toBeUndefined();
+        expect(getImplementationInProgressBadge('doctor_strange')).toBeUndefined();
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.map((character) => character.id)).toContain('doctor_strange');
         const firstInProgressIndex = DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.findIndex(character => character.setupOptionStatus === 'in_progress');
         expect(DICETHRONE_PLAYER_VISIBLE_CHARACTER_CATALOG.slice(firstInProgressIndex)

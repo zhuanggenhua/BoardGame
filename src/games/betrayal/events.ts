@@ -1,3 +1,4 @@
+import type { BetrayalRoomRevealedPayload } from './roomRevealModel';
 import type { GameEvent } from '../../engine/types';
 import type { BetrayalHauntRevealResolution } from './scenarioConfig';
 import type { BetrayalBloodFromStoneSetupPlacement } from './bloodFromStoneSetupReadModel';
@@ -82,6 +83,7 @@ export const EVENTS = {
     SCENARIO_CARD_CONFIRMED: 'SCENARIO_CARD_CONFIRMED',
     SCENARIO_STARTED: 'SCENARIO_STARTED',
     EXPLORER_MOVED: 'EXPLORER_MOVED',
+    ROOM_REVEALED: 'ROOM_REVEALED',
     ROOM_EXPLORED: 'ROOM_EXPLORED',
     EVENT_CHOICE_RESOLVED: 'EVENT_CHOICE_RESOLVED',
     EVENT_ROLLED: 'EVENT_ROLLED',
@@ -159,6 +161,7 @@ export type BetrayalEvent =
         bloodFromStoneTurnStartVisibleStoneCherubIds?: string[];
         bloodFromStoneNewLineOfSightDamageRoll?: BetrayalBloodFromStoneGazeDamageRoll;
     }>
+    | GameEvent<typeof EVENTS.ROOM_REVEALED, BetrayalRoomRevealedPayload>
     | GameEvent<typeof EVENTS.ROOM_EXPLORED, {
         playerId: string;
         roomId: string;
@@ -198,8 +201,9 @@ export type BetrayalEvent =
             passiveBonus?: number;
             branchThresholds?: { min: number; label: string; effect: UseEffectProfile }[];
         };
+        // Older replays may carry a name, but new skip events never draw a card.
         skippedEventWithIdol?: {
-            name: string;
+            name?: string;
         };
         skippedEventWithTraitorPower?: boolean;
         skippedEventWithUponReflection?: boolean;

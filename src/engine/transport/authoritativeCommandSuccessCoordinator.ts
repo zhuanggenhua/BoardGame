@@ -35,10 +35,15 @@ export type AuthoritativeCommandSuccessCoordinatorHooks<
         playerId: string;
         seatControllerType: AuthoritativeCommandSeatControllerType;
         commandType: string;
+        commandPayload: unknown;
         event: GameEvent;
         progressMarkerBefore: string;
         preCommandSeatView: MatchState<unknown>;
+        afterState: MatchState<unknown>;
+        stateIdBefore: number;
+        stateIdAfter: number;
         randomCursorBefore?: number;
+        randomCursorAfter?: number;
     }) => Promise<FeedbackPayload | null>;
     buildPostTrainingState: (match: TMatch, playerId: string) => MatchState<unknown>;
     trainingDataCapture: Pick<TrainingDataCapture, 'recordDecisionSample'>;
@@ -82,6 +87,7 @@ export class AuthoritativeCommandSuccessCoordinator<
         progressMarkerBeforeCommand: string;
         preCommandSeatView: MatchState<unknown>;
         randomCursorBefore?: number;
+        randomCursorAfter?: number;
         suppressBroadcast?: boolean;
         captureTrainingData?: boolean;
     }): Promise<boolean> {
@@ -111,10 +117,15 @@ export class AuthoritativeCommandSuccessCoordinator<
                 playerId: args.playerId,
                 seatControllerType: args.seatControllerType,
                 commandType: args.commandType,
+                commandPayload: args.commandPayload,
                 event: event as GameEvent,
                 progressMarkerBefore: args.progressMarkerBeforeCommand,
                 preCommandSeatView: args.preCommandSeatView,
+                afterState: args.execution.result.state,
+                stateIdBefore: args.stateIdBefore,
+                stateIdAfter: args.stateIdBefore + 1,
                 randomCursorBefore: args.randomCursorBefore,
+                randomCursorAfter: args.randomCursorAfter,
             });
             if (feedback) {
                 unsatisfiableInteractionFeedback = feedback;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { MatchState, PlayerId } from '../../types';
 import type { GameEngineConfig } from '../engineConfig';
-import type { MatchMetadata, MatchStorage, StoredMatchState } from '../storage';
+import type { FetchResult, MatchMetadata, MatchStorage, StoredMatchState } from '../storage';
 import {
     MatchRoomRegistry,
     resolveStoredRandomCursor,
@@ -134,6 +134,87 @@ describe('MatchRoomRegistry', () => {
         await expect(registry.load('missing-metadata')).resolves.toBeUndefined();
         await expect(registry.load('missing-game')).resolves.toBeUndefined();
         expect([...registry.values()]).toEqual([]);
+    });
+
+    it('delete 使在途旧读取失效，但不阻止之后重新加载同一 ID', async () => {
+        const stored = { state: createStoredState(), metadata: createMetadata() };
+        const storage = createStorage({ 'match-1': stored });
+        let finishOldRead!: (result: FetchResult) => void;
+        vi.mocked(storage.fetch).mockImplementationOnce(() => new Promise(resolve => {
+            finishOldRead = resolve;
+        }));
+        const registry = new MatchRoomRegistry({
+            storage,
+            gameIndex: new Map([['test-game', createEngineConfig()]]),
+        });
+
+        const oldLoad = registry.getOrLoad('match-1');
+        expect(registry.delete('match-1')).toBe(false);
+        const newMatch = await registry.getOrLoad('match-1');
+        finishOldRead(stored);
+
+        await expect(oldLoad).resolves.toBeUndefined();
+        expect(newMatch).toBeDefined();
+        expect(registry.get('match-1')).toBe(newMatch);
+    });
+
+    it('并发加载同一房间共用一个 runtime，保留所有调用者的连接', async () => {
+        const storage = createStorage({
+            'match-1': { state: createStoredState(), metadata: createMetadata() },
+        });
+        const registry = new MatchRoomRegistry({
+            storage,
+            gameIndex: new Map([['test-game', createEngineConfig()]]),
+        });
+
+        const [first, second] = await Promise.all([
+            registry.getOrLoad('match-1'), registry.getOrLoad('match-1'),
+        ]);
+        first!.connections.set('0', new Set(['socket-0']));
+        second!.connections.set('1', new Set(['socket-1']));
+
+        expect(first).toBe(second);
+        expect(registry.get('match-1')?.connections.size).toBe(2);
+    });
+
+    it('被取消的旧读取先结束时，不得清除仍在途的新加载', async () => {
+        const stored = { state: createStoredState(), metadata: createMetadata() };
+        const storage = createStorage({ 'match-1': stored });
+        const finishReads: Array<(result: FetchResult) => void> = [];
+        vi.mocked(storage.fetch).mockImplementation(() => new Promise(resolve => {
+            finishReads.push(resolve);
+        }));
+        const registry = new MatchRoomRegistry({
+            storage,
+            gameIndex: new Map([['test-game', createEngineConfig()]]),
+        });
+
+        const oldLoad = registry.load('match-1');
+        registry.delete('match-1');
+        const newLoad = registry.load('match-1');
+        finishReads[0](stored);
+        await expect(oldLoad).resolves.toBeUndefined();
+        const concurrentLoad = registry.getOrLoad('match-1');
+        expect(finishReads).toHaveLength(2);
+        finishReads[1](stored);
+        const newMatch = await newLoad;
+
+        await expect(concurrentLoad).resolves.toBe(newMatch);
+        expect(registry.get('match-1')).toBe(newMatch);
+    });
+
+    it('加载失败后允许重新读取，不缓存失败或丢弃后续加载', async () => {
+        const storage = createStorage({
+            'match-1': { state: createStoredState(), metadata: createMetadata() },
+        });
+        vi.mocked(storage.fetch).mockRejectedValueOnce(new Error('storage unavailable'));
+        const registry = new MatchRoomRegistry({
+            storage,
+            gameIndex: new Map([['test-game', createEngineConfig()]]),
+        });
+
+        await expect(registry.load('match-1')).rejects.toThrow('storage unavailable');
+        await expect(registry.load('match-1')).resolves.toBeDefined();
     });
 
     it('replaceMetadata 与 mergeMetadata 只修改 active cache，不建立第二份状态', async () => {

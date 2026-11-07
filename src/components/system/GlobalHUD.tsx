@@ -6,10 +6,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
 import './global-hud.css';
+import '../home/platform-display-theme.css';
 import { PlatformAudioSettings } from './PlatformAudioSettings';
 import { HomeStyleSettings } from '../home/HomeStyleSettings';
 import { isHomeEntryRoute, persistHomeEntryStyle, resolveHomeEntryStyle, subscribeHomeEntryStyleChange } from '../../lib/homeV2Routing';
-import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw, Moon, Sun } from 'lucide-react';
+import { MessageSquare, Settings, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw, Moon, Sun } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import type { AndroidLiveUpdateActivityState } from '../../lib/mobile/androidLiveUpdates';
 import { isNativeAndroidRuntime } from '../../lib/mobile/androidRuntime';
@@ -29,7 +30,6 @@ import {
 const HUD_MODAL_NS = 'hud';
 export const GLOBAL_HUD_FAB_Z_INDEX = UI_Z_INDEX.globalHudFab;
 const LazyFriendsChatModal = lazy(() => import('../social/FriendsChatModal').then(m => ({ default: m.FriendsChatModal })));
-const LazyAboutModal = lazy(() => import('./AboutModal').then(m => ({ default: m.AboutModal })));
 const LazyFeedbackModal = lazy(() => import('./FeedbackModal').then(m => ({ default: m.FeedbackModal })));
 
 const IDLE_OTA_ACTIVITY_STATE: AndroidLiveUpdateActivityState = {
@@ -72,7 +72,6 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
 
     const totalBadge = unreadTotal + requests.length;
 
-    const [showAbout, setShowAbout] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
     const [socialModalId, setSocialModalId] = useState<string | null>(null);
@@ -224,7 +223,7 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
                 closePanel();
                 document.querySelector<HTMLButtonElement>('[data-fab-id="settings"]')?.focus();
             };
-            return <div className="space-y-4" onKeyDown={event => {
+            return <div className="space-y-4 select-none" onKeyDown={event => {
             if (event.key !== 'Escape') return;
             event.preventDefault(); event.stopPropagation(); closeSettings();
         }}>
@@ -270,14 +269,6 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
             onClick: handleCheckAppUpdate,
         });
     }
-
-    // 4. 关于
-    items.push({
-        id: 'about',
-        icon: <Info size={20} />,
-        label: t('hud.actions.about'),
-        onClick: () => setShowAbout((prev) => !prev)
-    });
 
     // 5. 反馈
     items.push({
@@ -332,14 +323,10 @@ export const GlobalHUD = ({ feedbackGameOptions = [] }: GlobalHUDProps) => {
                 isDark={isDark}
                 items={items}
                 position="bottom-right"
+                movePanelsWithMenu={isHomeEntryRoute(location.pathname)}
                 zIndex={GLOBAL_HUD_FAB_Z_INDEX}
             />
 
-            {showAbout && (
-                <Suspense fallback={null}>
-                    <LazyAboutModal onClose={() => setShowAbout(false)} showSponsors={!(homeStyle === 'modern' && isHomeEntryRoute(location.pathname))} />
-                </Suspense>
-            )}
             {showFeedback && (
                 <Suspense fallback={null}>
                     <LazyFeedbackModal

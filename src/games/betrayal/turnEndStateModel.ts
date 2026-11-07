@@ -23,7 +23,7 @@ import {
     cloneMagicCameraRuntimeState,
 } from './hauntRuntimeSetupModel';
 import { isBetrayalPlayerControllingMonster } from './hauntScenarioReadModel';
-import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
+import { resolveDustTraitorVictoryResult, resolveMummyAllHeroesDefeatedVictoryResult } from './hauntVictoryModel';
 import {
     createBloodFromStoneTurnStartVisibility,
     createInitialMonsterTurnRuntimeState,
@@ -524,7 +524,7 @@ export function applyBetrayalTurnEndRollAcknowledgedState(
         });
         const scenarioCompletedResult = resolveDustTraitorVictoryResult(core, {
             deferForRabbitFoot: false,
-        });
+        }) ?? resolveMummyAllHeroesDefeatedVictoryResult(core, { deferForRabbitFoot: false });
         if (scenarioCompletedResult) {
             return { core, scenarioCompletedResult };
         }

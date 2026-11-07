@@ -82,6 +82,7 @@ export type MatchRoomOnlineLoadingModel = {
 };
 
 export type MatchRoomOnlineRematchModel = {
+    onTransitionChange?: (matchId: string, pending: boolean) => void;
     matchId: string;
     playerId?: string;
     autoAcceptedPlayerIds: string[];
@@ -246,6 +247,7 @@ const MatchRoomOnlineRematchBridge = ({
 }) => {
     return (
         <RematchProvider
+            onTransitionChange={rematch.onTransitionChange}
             matchId={rematch.matchId}
             playerId={rematch.playerId}
             isMultiplayer={true}

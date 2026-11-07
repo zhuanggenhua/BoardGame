@@ -1,9 +1,10 @@
+import { SPECTATOR_PLAYER_ID } from '../../engine/playerView';
 import type { BetrayalCore } from "./game";
 import { isHauntScenarioOpeningDiscovery } from "./latestDiscoveryPresentation";
 import type { BetrayalScenarioCardCandidate } from "./scenarioConfig";
 
 export type ScenarioReaderAudience = "all" | "heroes" | "traitor";
-export type ScenarioReaderScope = "all" | "heroes" | "traitor";
+export type ScenarioReaderScope = "all" | "heroes" | "traitor" | "public";
 
 export type ScenarioReaderSection = {
   id: string;
@@ -314,6 +315,7 @@ export function resolveScenarioReaderScope(
   core: BetrayalCore,
   viewerPlayerId: string,
 ): ScenarioReaderScope {
+  if (viewerPlayerId === SPECTATOR_PLAYER_ID) return "public";
   const teamModel = core.scenarioRuntime.hauntTraitorResolution?.teamModel;
   const isOneTraitorHaunt =
     core.phase === "haunt" &&
@@ -364,6 +366,7 @@ function isScenarioSectionVisibleForScope(
   if (scope === "all") {
     return true;
   }
+  if (scope === "public") return section.audiences.includes("all");
   return section.audiences.includes("all") || section.audiences.includes(scope);
 }
 
@@ -391,6 +394,7 @@ export function findScenarioOpeningNarrationSection(
       SCENARIO_READER_CINEMATIC_SECTION_IDS.has(section.id) &&
       isScenarioSectionVisibleForScope(section, scope),
   );
+  if (scope === "public") return cinematicSections[0] ?? null;
   if (scope !== "all") {
     return (
       cinematicSections.find((section) => section.audiences.includes(scope)) ??

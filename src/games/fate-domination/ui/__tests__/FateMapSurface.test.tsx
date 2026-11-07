@@ -56,16 +56,17 @@ it('提供战力轨道的透明避让区域，教学提示不遮住正在讲解�
  expect([landmark!.style.left,landmark!.style.top,landmark!.style.width,landmark!.style.height]).toEqual(['1438px','0px','489px','1179px']);
 });
 
-it('未开始移动时常规入口覆盖印刷费用箭头，选目标时移除入口并显示目标选中态',()=>{
+it('未开始移动时常规入口覆盖印刷费用箭头，选目标时移除入口并提供直接执行目标',()=>{
  const core=createReplayAdapter(FateDominationDomain,'movement-print-target').setup(['0','1','2']).core;
  const onPawn=vi.fn();const props={core,locale:'zh-CN',legalLocations:[] as const,onLocation:vi.fn(),onInspect:vi.fn(),onPawn,movementOrigin:'workshop' as const};
  const view=render(<FateMapSurface {...props}/>);
  const exit=screen.getByRole('button',{name:'从魔术工房开始常规移动'});
  expect([exit.style.left,exit.style.top,exit.style.width,exit.style.height]).toEqual(['1216px','318px','199px','51px']);
  fireEvent.click(exit);expect(onPawn).toHaveBeenCalledOnce();
- view.rerender(<FateMapSurface {...props} moving legalLocations={['miyama']} selectedLocation="miyama"/>);
+ view.rerender(<FateMapSurface {...props} moving legalLocations={['miyama']}/>);
  expect(screen.queryByRole('button',{name:'从魔术工房开始常规移动'})).toBeNull();
- expect(screen.getByTestId('fate-domination-location-miyama').getAttribute('aria-pressed')).toBe('true');
+ fireEvent.click(screen.getByTestId('fate-domination-location-miyama'));
+ expect(props.onLocation).toHaveBeenCalledWith('miyama');
 });
 
 it('HUD交互状态变化不会重建地图观察或读取HUD安全边距',()=>{

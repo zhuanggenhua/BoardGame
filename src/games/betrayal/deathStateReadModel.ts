@@ -7,6 +7,7 @@ import {
 import { createBetrayalMonsterFromDefinition } from './domain/monsterDefinitions';
 import {
     isDustHaunt,
+    isMummyHaunt,
     resolveJackSpiritSpawnRoomId,
 } from './hauntScenarioReadModel';
 import {
@@ -205,8 +206,8 @@ export function addFeverishMonsterForPlayer(core: BetrayalCore, playerId: string
     ];
 }
 
-export function applyDustEventEffectDeathIfNeeded(core: BetrayalCore): void {
-    if (!isDustHaunt(core) || !isExplorerDead(core.currentExplorer)) {
+export function applyEventEffectDeathIfNeeded(core: BetrayalCore): void {
+    if ((!isDustHaunt(core) && !isMummyHaunt(core)) || !isExplorerDead(core.currentExplorer)) {
         return;
     }
     markDeadExplorer(core, core.currentExplorer.playerId);

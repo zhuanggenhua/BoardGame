@@ -18,6 +18,7 @@ type CinematicNarrationPanelProps = {
   presentation?: "panel" | "stage";
   coordinateSpace?: "in-shell" | "portal";
   actionSlot?: React.ReactNode;
+  scrollContent?: boolean;
   testId?: string;
   className?: string;
 };
@@ -31,6 +32,7 @@ export function CinematicNarrationPanel({
   presentation = "panel",
   coordinateSpace = "in-shell",
   actionSlot,
+  scrollContent = false,
   testId,
   className = "",
 }: CinematicNarrationPanelProps) {
@@ -45,7 +47,7 @@ export function CinematicNarrationPanel({
       data-cinematic-narration={variant}
       data-cinematic-stage={isStage ? "standalone" : undefined}
       data-cinematic-coordinate={isStage ? coordinateSpace : undefined}
-      className={`betrayal-cinematic-narration relative flex min-h-full overflow-hidden text-[#f5e6c7] ${
+      className={`betrayal-cinematic-narration relative flex min-h-full ${scrollContent ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"} text-[#f5e6c7] ${
         isStage
           ? "border-y border-[rgba(242,207,130,0.30)] bg-[#030605] shadow-[0_24px_90px_rgba(0,0,0,0.44)]"
           : "border border-[rgba(222,184,92,0.44)] bg-[#030506] shadow-[0_18px_46px_rgba(0,0,0,0.42),inset_0_0_0_1px_rgba(255,224,143,0.08)]"
@@ -97,7 +99,7 @@ export function CinematicNarrationPanel({
         </div>
 
         <div
-          className={`mx-auto flex min-h-0 max-w-[680px] flex-1 flex-col justify-center ${
+          className={`mx-auto flex max-w-[680px] flex-col justify-center ${scrollContent ? "min-h-fit flex-none" : "min-h-0 flex-1"} ${
             compact ? "gap-2 py-3" : "gap-4 py-8"
           }`}
         >

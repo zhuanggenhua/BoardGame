@@ -688,7 +688,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                                 
                                                 // 2. 广播新房间地址给其他玩家（在跳转前广播）
                                                 const newRoomUrl = `/play/${gameId}/match/${createResult.matchID}`;
-                                                matchSocket.broadcastNewRoom(newRoomUrl);
+                                                matchSocket.broadcastNewRoom(newRoomUrl, newCredentials);
                                                 
                                                 // 3. 退出旧房间并准备延迟销毁（如果有凭据）
                                                 let oldCredentials: string | null = null;

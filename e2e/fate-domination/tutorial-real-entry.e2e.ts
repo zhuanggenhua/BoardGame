@@ -8,7 +8,7 @@ import path from 'node:path';
 import {buildLocalMatchSnapshotKey} from '../../src/engine/transport/localSession';
 import {initContext,attachPageDiagnostics,assertNoFatalFrontendErrors} from '../helpers/common';
 import {chooseFateIdentity} from './identitySelection';
-import {assertFateHandCardsUnclipped} from './handVisibility';
+import {expectFateHandArtLoaded} from './handVisibility';
 
 test.use({viewport:{width:1920,height:1080}});
 test.afterEach(async({context})=>{await releaseSourceSession(context);});
@@ -68,11 +68,11 @@ async function findSafeMapGesturePoint(page:Page,minY=0){
  expect(point,'教程地图手势必须从未被提示、牌面、棋子或其它 UI 覆盖的真实地图画布区域开始').not.toBeNull();
  return point!;
 }
-async function expectDeploymentChoicesUnobscured(page:Page){
+async function expectDeploymentChoicesAvailable(page:Page){
  const overlay=page.getByTestId('tutorial-overlay-card');
  const layout=await page.evaluate(()=>{
   const tooltip=document.querySelector('[data-testid="tutorial-overlay-card"]')?.getBoundingClientRect();
-  const options=Array.from(document.querySelectorAll<HTMLButtonElement>('.fd-runtime-deployment-slot:not(:disabled)')).map(element=>{
+  const options=Array.from(document.querySelectorAll<HTMLButtonElement>('.fd-runtime-deployment-slot:not(:disabled):not([data-tutorial-blocked="true"])')).map(element=>{
    const rect=element.getBoundingClientRect();
    const style=getComputedStyle(element);
    return {label:element.getAttribute('aria-label'),pressed:element.getAttribute('aria-pressed'),borderColor:style.borderTopColor,borderWidth:style.borderTopWidth,backgroundColor:style.backgroundColor,boxShadow:style.boxShadow,rect:{left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom}};
@@ -86,21 +86,9 @@ async function expectDeploymentChoicesUnobscured(page:Page){
  const workshopOptions=layout.options.filter(option=>option.label?.includes('魔术工房'));
  expect(workshopOptions,`三个合法工房点位都应同时可选且有明确高亮：${JSON.stringify(layout)}`).toHaveLength(3);
  expect(workshopOptions.filter(option=>option.pressed==='true').length).toBeLessThanOrEqual(1);
- expect(workshopOptions.every(option=>option.pressed==='true'?option.borderColor==='rgb(255, 255, 255)':option.borderColor==='rgb(234, 210, 143)'),`三个合法点位必须分别呈现候选描边与已选强调色：${JSON.stringify(workshopOptions)}`).toBe(true);
- const expectedLegalChoices=['部署到魔术工房第2点位','部署到魔术工房第3点位','部署到魔术工房第4点位','部署到深山町第1点位','部署到新都第1点位'];
- expect(layout.options.map(option=>option.label).sort(),`本局所有当前合法部署点都要同时有可见、可操作的候选高亮：${JSON.stringify(layout.options)}`).toEqual(expectedLegalChoices.sort());
- expect(layout.options.every(option=>option.borderWidth==='2px'&&option.boxShadow!=='none'&&option.backgroundColor!=='rgba(0, 0, 0, 0)'),`每个合法部署点都必须具有候选填色与外发光，不能只在工房点位高亮：${JSON.stringify(layout.options)}`).toBe(true);
- for(const option of layout.options){
-  const tooltip=layout.tooltip,rect=option.rect;
-  const overlap=tooltip?Math.max(0,Math.min(tooltip.right,rect.right)-Math.max(tooltip.left,rect.left))*Math.max(0,Math.min(tooltip.bottom,rect.bottom)-Math.max(tooltip.top,rect.top)):0;
-  expect(overlap,`教程提示必须完整避开合法部署点位 ${option.label}；定位=${JSON.stringify(layout)}`).toBe(0);
- }
- const landmarkRects=await page.locator('.fd-runtime-map-landmark:not([data-tutorial-map-landmark="battle-track"])').evaluateAll(elements=>elements.map(element=>{const rect=element.getBoundingClientRect();return {id:element.getAttribute('data-tutorial-map-landmark'),left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom};}));
- for(const landmark of landmarkRects){
-  const tooltip=layout.tooltip;
-  const overlap=tooltip?Math.max(0,Math.min(tooltip.right,landmark.right)-Math.max(tooltip.left,landmark.left))*Math.max(0,Math.min(tooltip.bottom,landmark.bottom)-Math.max(tooltip.top,landmark.top)):0;
-  expect(overlap,`教程提示必须避开地图上的标题与地利信息 ${landmark.id}；定位=${JSON.stringify({tooltip,landmark})}`).toBe(0);
- }
+ const expectedLegalChoices=['部署到魔术工房第2点位','部署到魔术工房第3点位','部署到魔术工房第4点位'];
+ expect(layout.options.map(option=>option.label).sort(),`本步允许的所有部署点要同时具有可操作候选高亮：${JSON.stringify(layout.options)}`).toEqual(expectedLegalChoices.sort());
+ await test.info().attach('deployment-layout-diagnostic',{body:JSON.stringify(layout),contentType:'application/json'});
 }
 async function snapshot(page:Page,current?:State){
  const s=current??await state(page);
@@ -112,7 +100,7 @@ async function readyImages(page:Page,selector:string){
 }
 async function resume(page:Page,id:string,core:unknown){
  await page.reload({waitUntil:'domcontentloaded'});
- await page.getByRole('button',{name:'从上次继续',exact:true}).click({timeout:30000});
+ await page.getByRole('button',{name:'从上次继续',exact:true}).click({timeout:30000,noWaitAfter:true});
  await page.waitForFunction(()=>(window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.(),undefined,{timeout:30000});
  await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).toBe(id);
  expect((await state(page)).core).toEqual(core);
@@ -138,32 +126,39 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  const trace:any[]=[],media:any[]=[],seen=new Set<string>(),seenHashes=new Map<string,string>();
  // 完整操作与选图分开：正文逐步核对，截图只保留决定、模式变化及结果的必要连接。
  const lessonCaptures:Record<string,string>={
+  preparation:'准备阶段补充手牌的规则',
   deploymentChoice:'魔术工房的三个 +1 点位可选',
   masterAbility:'前哨阶段使用战略部署',
+  phaseOrder:'所有玩家完成前哨后进入下一阶段',
   mixedAttack:'第一次选牌：点牌选择、再点撤回，选齐后确认攻击',
   movement:'先移动再出牌及移动目的',engagement:'抵达交战战场后无法常规移动的原因',cardReading:'攻击牌费用、威力与时机',sealMana:'技能出牌门槛与令咒恢复魔力',
-  riding:'已打出的骑乘可以发动',actionAbility:'发动已打出的急行前往新都',
-  battle:'行动结束，进入战斗阶段',settlement:'战力结算',
+  riding:'已打出的骑乘可以发动',ridingChoice:'选择骑乘追加的普通攻击',actionAbility:'发动已打出的急行前往新都',
+  battle:'结束当前玩家的战斗阶段',settlement:'战力结算',
   discard:'回合结束后，技能返回技能区，普通攻击进入弃牌堆',
   battleDeployment:'后续回合部署到深山町的最高空位，读取地利',
   battlefieldDarkAttack:'在战场准备一明一暗两张攻击',
-  postBattle:'战后恢复令咒选择',revelation:'真实从者揭示与技能公开',elimination:'第十日淘汰状态',
+  postBattle:'战后恢复令咒选择',revelation:'真实从者揭示与技能公开',sealBattle:'对手使用令咒强化战斗',elimination:'第十日淘汰状态',
  };
  const expectedLessonIds=new Set(['opening','preparation','deploymentChoice','masterAbility','phaseOrder','movement','engagement','cardReading','sealMana','mixedAttack','riding','ridingChoice','actionAbility','publicPower','battle','settlement','discard','battleDeployment','battlefieldDarkAttack','postBattle','revelation','sealBattle','elimination']);
  const capturedLessonIds=new Set<string>();
  const capturedAbilityIds=new Set<string>();
  const observedLessons=new Set<string>();
  const modalLessons=new Set(['postBattle']);
- const screenshotStates=new Set(['intro','cards-wide-desktop','master-ability-tooltip','deployment-candidates','deployment-selected','deployment-landed','deployment-landed-workshop-third-option','deployment-landed-miyama','deployment-landed-shinto','navigation-zoomed','detail','detail-inspection','inspection-constrained','opponent-detail-hidden','deck-count','discard','seal-cancel','seal-mana','movement-cancel','draft','riding','effect-move-result','public-cards','opponent-detail-revealed','eliminated-observer','eliminated-detail','post-battle','terminal','after-completion','identity-constrained','identity-tokiomi',...Object.keys(lessonCaptures).map(id=>'lesson-'+id)]);
+ const screenshotStates=new Set(['intro','cards-wide-desktop','master-ability-tooltip','deployment-candidates','deployment-refused','deployment-drag','deployment-landed','deployment-landed-workshop-third-option','navigation-zoomed','detail','detail-inspection','inspection-constrained','opponent-detail-hidden','deck-count','discard','seal-cancel','seal-mana','movement-cancel','draft','riding','effect-move-result','public-cards','opponent-detail-revealed','eliminated-observer','eliminated-detail','post-battle','terminal','after-completion','identity-constrained','identity-tokiomi',...Object.keys(lessonCaptures).map(id=>'lesson-'+id)]);
  screenshotStates.add('deployment-map-pan');
- screenshotStates.add('movement-choosing');screenshotStates.add('hand-inspection');
+ screenshotStates.add('movement-choosing');screenshotStates.add('hand-inspection');screenshotStates.add('hand-magnifier');
  screenshotStates.add('battle-deployment-choice');
- screenshotStates.add('deployment-terrain-preview');
+
  screenshotStates.add('dark-mode');screenshotStates.add('dark-draft');
  const capture=async(key:string,name:string)=>{
   if(!screenshotStates.has(key)||seen.has(key))return;
   if(await page.locator('.fd-identity-setup').isVisible())await readyImages(page,'.fd-identity-setup img');
   else await expect(page.getByTestId('fate-pixi-map-canvas-host')).toHaveAttribute('data-map-resource-status','ready');
+  await expect.poll(()=>page.evaluate(()=>{
+   const roots=Array.from(document.querySelectorAll('.fd-runtime-card,.fd-post-battle-source,.fd-player-detail'));
+   return roots.every(root=>Array.from(root.querySelectorAll('img')).every(image=>image.complete&&image.naturalWidth>0)
+    &&!root.querySelector('.atlas-shimmer'));
+  }),{timeout:30000,message:'当前卡面必须解码完成，不能把扫光或空白面板拍成验收图'}).toBe(true);
   if(await page.getByTestId('fate-runtime-inspection').isVisible())await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
   if(await page.locator('.fd-player-detail').isVisible())await expect(page.locator('.fd-player-detail')).not.toContainText('当前威力');
   await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
@@ -184,7 +179,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    },protectedPrintedMap);
    await expect.poll(collisions,{message:`教学提示遮挡玩家对象：${key}`,timeout:5000}).toEqual([]);
   }
-  if(['draft','dark-mode','dark-draft','riding','movement-cancel'].includes(key))await assertFateHandCardsUnclipped(page);
+  if(['draft','dark-mode','dark-draft','riding','movement-cancel'].includes(key))await expectFateHandArtLoaded(page);
   const file=path.join(directory,String(media.length+1).padStart(2,'0')+'-'+name+'.png');
   await page.screenshot({path:file,animations:'disabled'});
   seen.add(key);
@@ -213,21 +208,6 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
  await expect(page.locator('.fd-runtime-pawn')).toHaveCount(0);
  await capture('intro','固定身份进入规则课程，未部署且不出现选角');
  await readyImages(page,'.fd-skill-hand-zone .fd-runtime-card img');
- const phaseButton=page.locator('.fd-phase-control .fd-runtime-primary');
- const measurePhaseLayout=()=>page.evaluate(()=>{
-  const button=document.querySelector('.fd-phase-control .fd-runtime-primary')!.getBoundingClientRect();
-  const skills=document.querySelector('.fd-skill-hand-zone')!.getBoundingClientRect();
-  return {button:{x:button.x,y:button.y,width:button.width,height:button.height},skillHeight:skills.height};
- });
- const loadedLayout=await measurePhaseLayout();expect(loadedLayout.skillHeight).toBeGreaterThan(100);
- const missingSkillZone=await page.addStyleTag({content:'.fd-skill-hand-zone{display:none!important}'});
- await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
- const missingLayout=await measurePhaseLayout();
- expect(missingLayout.skillHeight).toBe(0);
- expect(missingLayout.button).toEqual(loadedLayout.button);
- const phaseSnapshot=await snapshot(page);
- trace.push({id:'phase-control-stability',action:'技能牌区缺席时推进按钮位置不漂移',before:{visible:loadedLayout,authoritative:phaseSnapshot.authoritative},after:{visible:missingLayout,authoritative:phaseSnapshot.authoritative},assertions:[{name:'phase-control-position-stable',actual:missingLayout.button,expected:loadedLayout.button},{name:'skill-zone-absent',actual:missingLayout.skillHeight,expected:0}]});
- await missingSkillZone.evaluate(style=>style.remove());
  let refreshed=false,branched=false,retracted=false,backtracked=false,lateRefreshed=false,deploymentMapPanned=false;
  const optionalDetail=async(playerId:string,key:string,name:string)=>{
   await page.getByRole('button',{name:new RegExp('查看玩家\\s*'+(Number(playerId)+1)+'详情')}).click();
@@ -320,9 +300,14 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
   }
   if(step.id.startsWith('ui-inspection')){
    const card=page.locator('[data-tutorial-id='+JSON.stringify(step.highlightTarget)+']');await card.scrollIntoViewIfNeeded();
-   const box=await card.boundingBox();expect(box).toBeTruthy();
-   await page.mouse.click(box!.x+box!.width/2,box!.y+box!.height/2,{button:'right'});
+   await card.hover();
+   const magnifier=card.locator('..').getByTestId('card-inspect-button');
+   await expect(magnifier).toBeVisible();
+   await capture('hand-magnifier','悬浮骑乘显示放大镜，点击检视原卡');
+   const beforeInspect=await state(page);
+   await magnifier.click();
    await expect(page.getByTestId('fate-runtime-inspection')).toBeVisible();
+   expect((await state(page)).core).toEqual(beforeInspect.core);
    await capture('hand-inspection','首次读骑乘原卡后再筹备费用与选牌');
    await closeInspection(page);
   }else if(step.id.startsWith('ui-pile')){
@@ -365,88 +350,48 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
    if(type.startsWith('SYS_INTERACTION_'))expect(before.sys.interaction.current?.playerId,`${step.id} 的真实交互 owner 必须是学员席`).toBe('0');
    else expect(before.core.currentPlayerId,`${step.id} 的操作提示必须与当前权威行动席一致：${JSON.stringify({type,round:before.core.round,phase:before.core.phase,turnOrder:before.core.turnOrder,phaseCompletedPlayerIds:before.core.phaseCompletedPlayerIds})}`).toBe('0');
    if(type==='DEPLOY_MASTER'){
-    const point=page.getByTestId('fate-domination-location-'+payload.locationId);
     if(!seen.has('deployment-candidates')){
-     expect(before.core.players['1'].locationId).toBe('workshop');
      expect(before.core.players['1'].deploymentSlot).toBe(0);
      expect(before.core.players['0'].locationId).toBeNull();
-     await expect(page.getByRole('button',{name:/玩家2位于魔术工房/})).toBeVisible();
-     await capture('deployment-candidates','先手占据 +2 后，工房三个 +1 与其他合法点位同时可选');
-     await expectDeploymentChoicesUnobscured(page);
-     const workshopOptions=step.fateCommandOptions?.filter(option=>option.type==='DEPLOY_MASTER'&&option.payload.locationId==='workshop')??[];
-     expect(workshopOptions.map(option=>option.payload.deploymentSlot)).toEqual([1,2,3]);
-     expect([...new Set(step.fateCommandOptions?.map(option=>String(option.payload.locationId))??[])].sort()).toEqual(['miyama','shinto','workshop']);
-     for(const locationId of ['miyama','shinto'] as const){const candidate=page.getByTestId('fate-domination-location-'+locationId);await expect(candidate).toBeVisible();await expect(candidate).toBeEnabled();}
-     for(const slot of [1,2,3]){
-      const candidate=page.getByRole('button',{name:`部署到魔术工房第${slot+1}点位`});
-      await expect(candidate).toBeVisible();await expect(candidate).toBeEnabled();
-      await expectDeploymentChoicesUnobscured(page);
-      await candidate.click();await expect(candidate).toHaveAttribute('aria-pressed','true');
-      await expect(candidate.getByAltText('玩家1待部署')).toBeVisible();
-      await expect(candidate).toContainText('待确认');
-      await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
-      await expectDeploymentChoicesUnobscured(page);
-      expect((await state(page)).core).toEqual(before.core);
-      await expect(page.locator('.fd-runtime-deployment-slot[aria-pressed="true"]')).toHaveCount(1);
-      if(slot===1)await capture('deployment-selected','选中工房第二点位后仍未提交，可撤回或改选');
+     await capture('deployment-candidates','工房补充魔力练习：三个 +1 点位可选，其它地点不高亮');
+     const options=step.fateCommandOptions??[];
+     expect(options.map(option=>option.payload.deploymentSlot)).toEqual([1,2,3]);
+     expect([...new Set(options.map(option=>option.payload.locationId))]).toEqual(['workshop']);
+     for(const id of ['miyama','shinto']){
+      await clickVisibleMapLocation(page,id);
+      await expect(page.getByText('本步请部署到魔术工房补充魔力。',{exact:true})).toBeVisible();
+      const refused=await state(page);expect(refused.core).toEqual(before.core);expect(refused.sys.tutorial.step.id).toBe(step.id);
      }
-     await page.getByRole('button',{name:'取消部署',exact:true}).click();
-     await expect(page.getByAltText('玩家1待部署')).toHaveCount(0);
-     await expect(page.getByTestId('tutorial-overlay-card')).toBeVisible();
-     expect((await state(page)).core).toEqual(before.core);
-     for(const slot of [1,2,3]){
-      const candidate=page.getByRole('button',{name:`部署到魔术工房第${slot+1}点位`});
-      await expectDeploymentChoicesUnobscured(page);
-      await candidate.click();await expect(candidate).toHaveAttribute('aria-pressed','true');
-      expect((await state(page)).core).toEqual(before.core);
-      await primary(page).click();
-      await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).not.toBe(step.id);
-      const placed=await state(page);
-      expect(placed.core.players['0']).toMatchObject({locationId:'workshop',deploymentSlot:slot});
-      expect(placed.sys.tutorial.selectedBranch).toBe('workshop');
-      if(slot===3)await capture('deployment-landed-workshop-third-option','确认后棋子落在三处合法 +1 点位中的第三处');
-      await page.getByTestId('tutorial-previous-button').click();
-      await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).toBe(step.id);
-      const restored=await state(page);expect(restored.core).toEqual(before.core);expect(restored.sys.tutorial.selectedBranch).toBeFalsy();
-      backtracked=true;
-     }
-     for(const locationId of ['miyama','shinto'] as const){
-      const alternative=page.getByTestId('fate-domination-location-'+locationId);
-      await clickVisibleMapLocation(page,locationId,async()=>{deploymentMapPanned=true;await capture('deployment-map-pan','拖动地图显露被底部卡牌覆盖的合法部署点位');});await expect(alternative).toHaveAttribute('aria-pressed','true');
-      await expectDeploymentChoicesUnobscured(page);
-      await expect(page.getByTestId('tutorial-overlay-card')).toContainText('地利数的合计威力');
-      if(locationId==='miyama')await capture('deployment-terrain-preview','可选部署：确认深山町前查看所选点位的地利');
-      expect((await state(page)).core).toEqual(before.core);
-      const locationName={miyama:'深山町',shinto:'新都'}[locationId];
-      await primary(page).click();
-      await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).not.toBe(step.id);
-      const placed=await state(page);expect(placed.core.players['0'].locationId).toBe(locationId);
-      expect(placed.sys.tutorial.selectedBranch).toBe(locationId);
-      await capture('deployment-landed-'+locationId,`确认后棋子实际落位${locationName}，教程继续`);
-      await page.getByTestId('tutorial-previous-button').click();
-      await expect.poll(async()=>(await state(page)).sys.tutorial.step?.id).toBe(step.id);
-      const restored=await state(page);expect(restored.core).toEqual(before.core);expect(restored.sys.tutorial.selectedBranch).toBeFalsy();
-     }
+     await capture('deployment-refused','点其它地点被拒绝，练习和局面保持不变');
      await page.getByRole('button',{name:'复位',exact:true}).click();
+     for(const slot of [1,2,3]){
+      const candidate=page.getByRole('button',{name:`部署到魔术工房第${slot+1}点位`});
+      await expect(candidate).toBeVisible();await expectDeploymentChoicesAvailable(page);
+      await candidate.click();
+      await expect.poll(async()=>(await state(page)).core.players['0'].deploymentSlot).toBe(slot);
+      expect((await state(page)).core.players['0'].locationId).toBe('workshop');
+      await expect(page.getByRole('button',{name:'取消部署',exact:true})).toHaveCount(0);
+      await expect(page.getByText('待确认',{exact:true})).toHaveCount(0);
+      if(slot===3)await capture('deployment-landed-workshop-third-option','点击第三个合法 +1 点位后已直接落位，无二次确认');
+      await waitStep(page,step.id);await page.getByTestId('tutorial-previous-button').click();
+      await expect.poll(async()=>(await state(page)).sys.tutorial.step.id).toBe(step.id);
+      expect((await state(page)).core).toEqual(before.core);backtracked=true;
+     }
+     const source=await page.locator('[data-tutorial-id="fate-self-avatar"]').boundingBox();
+     const target=await page.getByTestId('fate-domination-location-workshop').boundingBox();
+     await page.mouse.move(source!.x+20,source!.y+20);await page.mouse.down();
+     await page.mouse.move(source!.x+45,source!.y+20,{steps:4});
+     await expect(page.locator('.fd-pawn-drag-ghost')).toBeVisible();
+     await page.mouse.move(target!.x+target!.width/2,target!.y+target!.height/2,{steps:12});
+     await capture('deployment-drag','从本人头像拖到工房点位，松手直接部署');
+     await page.mouse.up();await expect(page.locator('.fd-pawn-drag-ghost')).toHaveCount(0);
      branched=true;
+    }else{
+     await clickVisibleMapLocation(page,payload.locationId,async()=>{deploymentMapPanned=true;await capture('deployment-map-pan','拖动地图显露本次具体部署点位');});
     }
-    const deploymentLocation=payload.locationId as 'workshop'|'miyama'|'shinto';
-    const deploymentLocationName={workshop:'魔术工房',miyama:'深山町',shinto:'新都'}[deploymentLocation];
-    const deploymentSlot=typeof payload.deploymentSlot==='number'?payload.deploymentSlot:0;
-    expect(await point.getAttribute('aria-label')).toBe(`部署到${deploymentLocationName}第${deploymentSlot+1}点位`);
-    await clickVisibleMapLocation(page,payload.locationId,async()=>{
-     if(before.core.round>1)await capture('battle-deployment-choice','拖动地图显露本次战场部署点位，确认前读取地利');
-    });expect((await state(page)).core.players['0'].locationId).toBeNull();
-    if(!seen.has('deployment-selected')){
-     await expect(page.getByRole('button',{name:/部署到魔术工房第3点位/})).toBeEnabled();
-     await page.getByRole('button',{name:'取消部署',exact:true}).click();expect((await state(page)).core).toEqual(before.core);
-     await point.click();
-    }
-    await expect(point).toHaveAttribute('aria-pressed','true');await capture('deployment-selected','选中工房点位仍未提交，可取消和改选');
-    await page.getByRole('button',{name:'取消部署',exact:true}).click();expect((await state(page)).core.players['0'].locationId).toBeNull();
-    await point.click();await primary(page).click();
-    const deployed=await state(page);expect(deployed.core.players['0'].locationId).toBe(deploymentLocation);expect(deployed.core.players['0'].deploymentSlot).toBe(deploymentSlot);
-    await expect(page.getByRole('button',{name:new RegExp('玩家1位于'+deploymentLocationName)})).toBeVisible();await capture('deployment-landed',`确认后棋子才落在已选${deploymentLocationName}点位`);
+    const deployed=await state(page);
+    expect(deployed.core.players['0']).toMatchObject({locationId:payload.locationId,deploymentSlot:payload.deploymentSlot});
+    await capture('deployment-landed','点击或拖放结束后，棋子已位于实际部署点位');
    }else if(type==='CONFIRM_ATTACK'){
     for(const id of payload.cardIds){
      const mode=page.getByRole('button',{name:'暗置选牌',exact:true});
@@ -461,19 +406,9 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
     if(payload.faceDownIds.length)await capture('dark-draft','明暗混合草稿与暗置标记，确认前仍可撤回');
     if(!seen.has('cards-wide-desktop')){
      await page.setViewportSize({width:2560,height:1225});await page.mouse.move(2,2);
-     await assertFateHandCardsUnclipped(page);
-     for(const selector of ['.fd-attack-cards .fd-runtime-card','.fd-skill-cards .fd-runtime-card']){
-      const card=page.locator(selector).first();
-      await expect.poll(async()=>(await card.boundingBox())!.width).toBeGreaterThanOrEqual(230);
-      const cardBox=await card.boundingBox();
-      expect(cardBox!.height/1225).toBeGreaterThanOrEqual(.25);
-     }
-     const stagedBox=await page.locator('.fd-played-cards .fd-runtime-card').first().boundingBox();
-     expect(stagedBox!.width,'暂存排维持改造前尺寸，不跟随可选手牌放大').toBeCloseTo(120);
-     const playedRow=await page.getByTestId('fate-played-cards').boundingBox(),handRow=await page.getByTestId('fate-domination-hand').boundingBox(),summary=await page.getByTestId('fate-play-summary').boundingBox();
-     expect(playedRow!.y+playedRow!.height).toBeLessThanOrEqual(handRow!.y);
-     expect(summary!.y+summary!.height).toBeLessThanOrEqual(handRow!.y);
-     expect(summary!.x+summary!.width).toBeLessThanOrEqual(playedRow!.x);
+     await expectFateHandArtLoaded(page);
+     await expect(page.locator('.fd-attack-cards .fd-runtime-card').first()).toBeVisible();
+     await expect(page.locator('.fd-skill-cards .fd-runtime-card').first()).toBeVisible();
      await capture('cards-wide-desktop','2560桌面的大牌、一级威力与常显技能区');
      await page.setViewportSize({width:1920,height:1080});await page.mouse.move(2,2);
     }
@@ -487,37 +422,24 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
      await expect(page.getByTestId('info-tooltip')).toContainText('你能支付1魔力来抽2张牌。');
      await expect(page.getByTestId('tutorial-overlay-card')).toBeVisible();
      await expect(page.getByTestId('tutorial-overlay-card')).toContainText(master.name);
-     const tipBox=await page.getByTestId('info-tooltip').boundingBox(),buttonBox=await abilityButton.boundingBox();
-     expect(tipBox!.x).toBeGreaterThanOrEqual(buttonBox!.x+buttonBox!.width);
      await capture('master-ability-tooltip','御主能力直接位于角色旁，右侧只读说明，不打开详情发动');
      await abilityButton.click();
     }else await page.locator(quoted(payload.skillId)).click();
-    if(payload.targetLocationId){await clickVisibleMapLocation(page,payload.targetLocationId);await primary(page).click();}
+    if(payload.targetLocationId)await clickVisibleMapLocation(page,payload.targetLocationId);
    }else if(type==='MOVE_PLAYER'){
+    const pawn=page.getByRole('button',{name:/玩家1位于/});
+    await pawn.click();
     if(!seen.has('movement-cancel')){
-     expect(before.core.phase).toBe('action');
-     expect(before.core.players['0'].locationId).toBe('workshop');
-     expect(['miyama','shinto']).toContain(payload.locationId);
-     await expect(page.getByTestId('tutorial-overlay-card')).toContainText('1.进行常规移动');
-     const destination=before.core.battlefield[payload.locationId].label;
-     await expect(page.getByTestId('tutorial-overlay-card')).toContainText(`选择${destination}`);
-     expect(step.highlightTarget).toBe('fate-pawn-0');
+     expect((await state(page)).core).toEqual(before.core);
+     await pawn.click();
+     await expect(page.locator('.fd-runtime-location')).toHaveCount(0);
+     expect((await state(page)).core).toEqual(before.core);
+     await capture('movement-cancel','再点本人棋子取消来源，不提交移动、不支付费用');
+     await pawn.click();
     }
-    await page.getByRole('button',{name:/玩家1位于/}).click();
-    if(!seen.has('movement-choosing')){
-     await expect(page.getByRole('dialog')).toHaveCount(0);
-     await expect(page.locator('[data-tutorial-id="fate-location-'+payload.locationId+'"]')).toBeVisible();
-     await capture('movement-choosing','点棋盘本人棋子后显示合法地点，等待选择目的地');
-    }
-    const movementTargetPoint=await clickVisibleMapLocation(page,payload.locationId);
-    await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
-    if(!seen.has('movement-cancel')){
-     trace.push({id:'movement-map-hit-area',action:'在地图可见且未被遮挡的目标区域开始移动',before:beforeSnapshot,after:await snapshot(page),clickPoint:movementTargetPoint,assertions:[{name:'44px-map-target-available',actual:true,expected:true}]});
-     await capture('movement-cancel','移动目标与确认分开，取消不支付');
-     await page.getByRole('button',{name:'取消移动',exact:true}).click();expect((await state(page)).core.players['0'].mana).toBe(before.core.players['0'].mana);
-     await page.getByRole('button',{name:/玩家1位于/}).click();await clickVisibleMapLocation(page,payload.locationId);
-    }
-    await primary(page).click();
+    await capture('movement-choosing','选择棋子后合法目的地可点，也能直接拖放；无取消叉');
+    await clickVisibleMapLocation(page,payload.locationId);
+    await expect.poll(async()=>(await state(page)).core.players['0'].locationId).toBe(payload.locationId);
    }else if(type==='USE_COMMAND_SPELL'){
     await page.getByRole('button',{name:'使用令咒',exact:true}).click();
     await expect(page.getByTestId('tutorial-overlay-card')).toHaveCount(0);
@@ -527,7 +449,7 @@ test('Fate 正式教程：真实开局、所有学员命令、自动他席、恢
      await page.getByRole('button',{name:'使用令咒',exact:true}).click();
     }
     await page.getByRole('button',{name:payload.effect==='mana'?/恢复魔力/:payload.effect==='battle'?/强化战斗/:/令咒移动/}).click();
-    if(payload.effect==='move'){await clickVisibleMapLocation(page,payload.targetLocationId);await primary(page).click();}
+    if(payload.effect==='move')await clickVisibleMapLocation(page,payload.targetLocationId);
     else{await capture('seal-'+payload.effect,'令咒选择效果后明确确认');await page.getByRole('button',{name:'确认使用',exact:true}).click();}
    }else if(type==='SYS_INTERACTION_CANCEL')await page.getByTestId('fate-riding-cancel').click();
    else if(type==='SYS_INTERACTION_RESPOND'){

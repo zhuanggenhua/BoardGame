@@ -54,6 +54,27 @@ type TutorialTooltipStyles = {
   style: React.CSSProperties;
   arrowClass: string;
   placement: string;
+  anchorArrowPoints?: string;
+};
+
+const getAnchorArrowPoints = (
+  tooltip: { left: number; top: number; right: number; bottom: number },
+  target: { left: number; top: number; right: number; bottom: number },
+): string | undefined => {
+  const startX = clampNumber((target.left + target.right) / 2, tooltip.left, tooltip.right);
+  const startY = clampNumber((target.top + target.bottom) / 2, tooltip.top, tooltip.bottom);
+  const targetX = clampNumber(startX, target.left, target.right);
+  const targetY = clampNumber(startY, target.top, target.bottom);
+  const distance = Math.hypot(targetX - startX, targetY - startY);
+  if (distance <= 3) return undefined;
+  const directionX = (targetX - startX) / distance;
+  const directionY = (targetY - startY) / distance;
+  const baseX = startX - directionX * 2 - tooltip.left;
+  const baseY = startY - directionY * 2 - tooltip.top;
+  const length = Math.min(18, distance - 3);
+  const tipX = startX + directionX * length - tooltip.left;
+  const tipY = startY + directionY * length - tooltip.top;
+  return `${baseX - directionY * 6},${baseY + directionX * 6} ${baseX + directionY * 6},${baseY - directionX * 6} ${tipX},${tipY}`;
 };
 
 const areStyleObjectsEqual = (
@@ -72,6 +93,7 @@ const areTooltipStylesEqual = (
 ) =>
   left.arrowClass === right.arrowClass &&
   left.placement === right.placement &&
+  left.anchorArrowPoints === right.anchorArrowPoints &&
   areStyleObjectsEqual(left.style, right.style);
 
 const getCompactTutorialPanelMetrics = (
@@ -850,6 +872,9 @@ export const TutorialOverlay: React.FC = () => {
         style: styles,
         arrowClass: `${arrowBase} ${selectedPlacement?.arrow ?? ""}`,
         placement: selectedPlacement?.placement ?? pos,
+        anchorArrowPoints: currentStep.tooltipArrow === 'anchor' && typeof styles.left === 'number' && typeof styles.top === 'number'
+          ? getAnchorArrowPoints({ left: styles.left, top: styles.top, right: styles.left + actualTooltipWidth, bottom: styles.top + tooltipHeight }, targetBounds)
+          : undefined,
       });
     };
 
@@ -1053,9 +1078,17 @@ export const TutorialOverlay: React.FC = () => {
         }}
       >
         {/* 样式三角箭头 */}
-        <div
-          className={`absolute w-0 h-0 border-solid ${tooltipStyles.arrowClass}`}
-        />
+        {currentStep.tooltipArrow === 'anchor' && tooltipStyles.anchorArrowPoints && (
+          <svg
+            data-testid="tutorial-anchor-arrow" aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+          >
+            <polygon points={tooltipStyles.anchorArrowPoints} fill="#fcfbf9" stroke="#c9b995" strokeWidth={1.5} />
+          </svg>
+        )}
+        {currentStep.tooltipArrow !== 'anchor' && (
+          <div className={`absolute w-0 h-0 border-solid ${tooltipStyles.arrowClass}`} />
+        )}
 
         {/* 内容卡片 */}
         <div

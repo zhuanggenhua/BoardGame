@@ -87,7 +87,6 @@ export function createTestRoutes(
             matchId,
             playerId,
             credentials,
-            existing.metadata,
         );
 
         if (!authorized) {

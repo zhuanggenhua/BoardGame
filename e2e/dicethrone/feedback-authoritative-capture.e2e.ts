@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import mongoose from 'mongoose';
 import { gunzipSync } from 'node:zlib';
 import { setChineseLocale } from '../helpers/common';
-import { cleanupDTMatch, dispatchDiceThroneCommand, readDiceThroneHarnessState, readyAndStartGame, selectCharacter, setupOnlineMatch, waitForGameBoard } from '../helpers/dicethrone';
+import { cleanupDTMatch, readDiceThroneHarnessState, readyAndStartGame, selectCharacter, setupOnlineMatch, waitForGameBoard } from '../helpers/dicethrone';
 import { injectMatchState } from '../helpers/state-injection';
 
-test('在线双人反馈保存服务器权威现场且公开接口不泄漏', async ({ browser, baseURL }) => {
+test('在线双人手动与首次自动反馈都保存触发瞬间权威现场', async ({ browser, baseURL }) => {
     test.setTimeout(240_000);
     const uri = process.env.FEEDBACK_CAPTURE_E2E_MONGO_URI;
     if (!uri || uri !== process.env.MONGO_URI || !uri.includes('/feedback_capture_e2e')) throw new Error('必须使用本轮隔离测试数据库');
@@ -55,6 +55,18 @@ test('在线双人反馈保存服务器权威现场且公开接口不泄漏', as
             return typeof stored?.privateReplay === 'string';
         }, { timeout: 30_000 }).toBe(true);
         expect(String(stored._id)).toBe(_id);
+        const diagnosticPacket = (typeof stored.diagnosticPacket === 'string'
+            ? JSON.parse(stored.diagnosticPacket)
+            : stored.diagnosticPacket) as {
+            snapshots?: { at?: Record<string, unknown> };
+            randomCursor?: number;
+        };
+        expect(JSON.stringify(diagnosticPacket)).not.toContain('"hand"');
+        expect(JSON.stringify(diagnosticPacket)).not.toContain('randomSeed');
+        expect(String(stored.actionLog)).not.toContain('"hand"');
+        expect(String(stored.actionLog)).not.toContain('randomSeed');
+        expect(String(stored.stateSnapshot)).not.toContain('"hand"');
+        expect(String(stored.stateSnapshot)).not.toContain('randomSeed');
         const archive = JSON.parse(gunzipSync(Buffer.from(stored.privateReplay, 'base64')).toString());
         expect(archive.matchId).toBe(match.matchId);
         expect(archive.gameId).toBe('dicethrone');
@@ -64,7 +76,7 @@ test('在线双人反馈保存服务器权威现场且公开接口不泄漏', as
         expect(archive.randomSeed).toBeTruthy();
         expect(typeof archive.randomCursor).toBe('number');
         const publicDetail = await page.request.get(`/admin-api/feedback/${_id}`);
-        expect(publicDetail.ok()).toBe(true);
+        expect(publicDetail.status()).toBe(404);
         expect(await publicDetail.text()).not.toContain(stored.privateReplay);
         expect((await page.request.get(`/admin-api/feedback/${_id}/private-replay`)).status()).toBe(401);
 
@@ -82,9 +94,103 @@ test('在线双人反馈保存服务器权威现场且公开接口不泄漏', as
         expect(receipt.randomCursor).toBe(archive.randomCursor);
         await expect.poll(async () => (await readDiceThroneHarnessState<{ sys: { phase: string } }>(match.guestPage)).sys.phase)
             .toBe(before.sys.phase);
-        await dispatchDiceThroneCommand(page, { type: 'ADVANCE_PHASE', playerId: '0' });
+        const advancePhaseThroughPlayerUI = async () => {
+            const control = page.locator('[data-tutorial-id="advance-phase-button"]').first();
+            await expect(control).toBeVisible();
+            await expect(control).toBeEnabled();
+            await control.click();
+        };
+        await advancePhaseThroughPlayerUI();
         await expect.poll(async () => (await readDiceThroneHarnessState<{ sys: { phase: string } }>(page)).sys.phase)
             .toBe(advancedPhase);
+
+        await page.unroute('**/feedback');
+        const autoBefore = await readDiceThroneHarnessState<{ sys: { phase: string; stateId?: number; revision?: number } }>(page);
+        let releaseAutoPost!: () => void;
+        let autoPostReached!: () => void;
+        const autoPostPaused = new Promise<void>(resolve => { autoPostReached = resolve; });
+        const autoPostRelease = new Promise<void>(resolve => { releaseAutoPost = resolve; });
+        let autoPostCount = 0;
+        let autoRequestBody: Record<string, unknown> | undefined;
+        await page.route('**/feedback', async route => {
+            if (route.request().method() !== 'POST') return route.continue();
+            autoPostCount += 1;
+            autoRequestBody = route.request().postDataJSON() as Record<string, unknown>;
+            autoPostReached();
+            await autoPostRelease;
+            await route.continue();
+        });
+        const autoResponsePromise = page.waitForResponse(r => new URL(r.url()).pathname === '/feedback' && r.request().method() === 'POST');
+        await page.evaluate(() => {
+            window.dispatchEvent(new ErrorEvent('error', {
+                message: 'feedback-first-trigger-e2e',
+                error: new Error('feedback-first-trigger-e2e'),
+            }));
+        });
+        try {
+            await autoPostPaused;
+            await advancePhaseThroughPlayerUI();
+            await expect.poll(async () => (await readDiceThroneHarnessState<{ sys: { phase: string } }>(page)).sys.phase,
+                { timeout: 10_000 }).not.toBe(autoBefore.sys.phase);
+        } finally {
+            releaseAutoPost();
+        }
+        const autoResponse = await autoResponsePromise;
+        expect(autoResponse.ok()).toBe(true);
+        const autoFeedbackId = (await autoResponse.json() as { _id: string })._id;
+        const autoDiagnostic = JSON.parse(String(autoRequestBody?.diagnosticPacket ?? '{}')) as {
+            captureId?: string;
+            correlation?: Record<string, unknown>;
+            missingFields?: string[];
+            commandTraceTail?: Array<{ commandId?: string; commandType?: string }>;
+            lastCommand?: { commandId?: string; commandType?: string };
+            randomCursor?: number;
+            snapshots?: { at?: { sys?: { phase?: string } } };
+        };
+        expect(autoRequestBody).toMatchObject({ source: 'client-window-error', autoReportKind: 'window-error' });
+        expect(autoDiagnostic.captureId).toEqual(expect.any(String));
+        expect(autoDiagnostic.correlation).toMatchObject({ matchId: match.matchId });
+        expect(autoDiagnostic.correlation?.stateId).toEqual(expect.any(Number));
+        expect(autoDiagnostic.correlation?.stateRevision).toEqual(expect.any(Number));
+        expect(autoDiagnostic.randomCursor).toEqual(expect.any(Number));
+        expect(autoDiagnostic.lastCommand?.commandId).toEqual(expect.any(String));
+        expect(autoDiagnostic.lastCommand?.commandType).toBe('ADVANCE_PHASE');
+        expect(autoDiagnostic.commandTraceTail).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                commandId: autoDiagnostic.lastCommand?.commandId,
+                commandType: 'ADVANCE_PHASE',
+            }),
+        ]));
+        expect(autoDiagnostic.snapshots?.at?.sys?.phase).toBe(autoBefore.sys.phase);
+        expect(autoDiagnostic.missingFields).toContain('correlation.roomId');
+        let autoStored: any;
+        await expect.poll(async () => {
+            autoStored = await db.collection('feedbacks').findOne({ _id: new mongoose.Types.ObjectId(autoFeedbackId) });
+            return typeof autoStored?.privateReplay === 'string';
+        }, { timeout: 30_000 }).toBe(true);
+        expect(autoStored.reporterType).toBe('system');
+        expect(autoStored.errorContext?.message).toBe('feedback-first-trigger-e2e');
+        const autoArchive = JSON.parse(gunzipSync(Buffer.from(autoStored.privateReplay, 'base64')).toString());
+        expect(autoArchive.matchId).toBe(match.matchId);
+        expect(autoArchive.state.sys.phase).toBe(autoBefore.sys.phase);
+        expect(autoArchive.state.core.players['0'].hand).toBeDefined();
+        expect(autoArchive.randomSeed).toBeTruthy();
+        expect(typeof autoArchive.randomCursor).toBe('number');
+        const autoPublicDetail = await page.request.get(`/admin-api/feedback/${autoFeedbackId}`);
+        expect(autoPublicDetail.ok()).toBe(true);
+        expect(await autoPublicDetail.text()).not.toContain(autoStored.privateReplay);
+
+        await page.evaluate(() => {
+            window.dispatchEvent(new ErrorEvent('error', {
+                message: 'feedback-first-trigger-e2e',
+                error: new Error('feedback-first-trigger-e2e'),
+            }));
+        });
+        await page.waitForTimeout(500);
+        expect(autoPostCount).toBe(1);
+        expect(await db.collection('feedbacks').countDocuments({
+            content: '[auto][window.error] feedback-first-trigger-e2e',
+        })).toBe(1);
     } finally {
         await cleanupDTMatch(match);
         await db.close();

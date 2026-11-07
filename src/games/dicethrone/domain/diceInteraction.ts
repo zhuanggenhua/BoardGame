@@ -5,6 +5,8 @@ import type { InteractionDescriptor as DtInteractionDescriptor } from './core-ty
 export interface DiceModifyResult {
     /** 固定结果有多个候选时，当前选择的结果；尚未修改任何骰子。 */
     targetValue?: number;
+    /** copy 模式首选来源骰；保持命令顺序时不能依赖数字键对象的枚举顺序。 */
+    sourceDieId?: number;
     /** 骰子修改映射：dieId → newValue */
     modifications: Record<number, number>;
     /** 已修改的骰子数量 */
@@ -73,6 +75,7 @@ export function diceModifyReducer(
                 // 第一颗：记录源骰子（值不变）
                 return {
                     ...current,
+                    sourceDieId: step.dieId,
                     modifications: { [step.dieId]: step.dieValue },
                     modCount: 1,
                 };
@@ -131,11 +134,17 @@ export function diceModifyToCommands(
     result: DiceModifyResult,
     maxSelectCount?: number,
 ): Array<{ type: string; payload: unknown }> {
-    const modificationEntries = Object.entries(result.modifications)
+    const entries = Object.entries(result.modifications)
         .filter(([, newValue]) => newValue !== undefined)
-        .slice(0, typeof maxSelectCount === 'number' && maxSelectCount > 0 ? maxSelectCount : undefined);
+    const modificationEntries = result.sourceDieId === undefined
+        ? entries
+        : [
+            ...entries.filter(([dieId]) => Number(dieId) === result.sourceDieId),
+            ...entries.filter(([dieId]) => Number(dieId) !== result.sourceDieId),
+        ];
 
     return modificationEntries
+        .slice(0, typeof maxSelectCount === 'number' && maxSelectCount > 0 ? maxSelectCount : undefined)
         .map(([dieId, newValue]) => ({
             type: 'MODIFY_DIE',
             payload: { dieId: Number(dieId), newValue },

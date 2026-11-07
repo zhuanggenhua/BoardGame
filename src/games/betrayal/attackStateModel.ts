@@ -34,10 +34,10 @@ import {
     resolveMagicCameraHeroVictoryResult,
     resolveMagicCameraTraitorVictoryResult,
     resolveMummyTraitorVictoryResult,
+    resolveMummyAllHeroesDefeatedVictoryResult,
 } from './hauntVictoryModel';
 import { applyBetrayalMonsterDamageOutcome } from './monsterReadModel';
 import {
-    createMummyEndgameResult,
     resolveMummyForcedDamageTraits,
 } from './mummyHauntRules';
 import {
@@ -409,12 +409,13 @@ export function applyBetrayalHauntAttackResolvedState(
             && !core.scenarioRuntime.deadExplorerPlayerIds.includes(explorer.playerId)
         ));
         if (livingHeroes.length === 0) {
-            return {
-                core,
-                scenarioCompletedResult: isMummyHaunt(core)
-                    ? createMummyEndgameResult(core, 'traitor')
-                    : createBetrayalCrimsonJackTraitorVictoryResult(core),
-            };
+            const scenarioCompletedResult = isMummyHaunt(core)
+                ? resolveMummyAllHeroesDefeatedVictoryResult(core)
+                : createBetrayalCrimsonJackTraitorVictoryResult(core);
+            if (scenarioCompletedResult) return { core, scenarioCompletedResult };
+            // Keep the defeated attacker's turn stable while their death-prevention roll can be rerolled.
+            const synced = syncCurrentExplorerProjection(core);
+            return { core: { ...synced, activityLog: appendActivity(synced, event.payload.logText, 'warning') } };
         }
     }
     const tone = event.payload.outcome === 'hero-defeated' ? 'warning' : 'accent';

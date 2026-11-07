@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "gameId": "qidahen",
+  "evidenceCategory": "independent",
+  "reviewerKind": "subagent",
+  "reviewFile": ".visual-review.json",
+  "basis": "PC布局边界独立代表态，先真实恢复合法年度检查点，再实际交战、滚动和继续。属于内部恢复验证，不与连续教程展示图混组。",
+  "requiredStates": [
+    {
+      "chainId": "qidahen-layout-960",
+      "uiStateId": "before-battle",
+      "viewport": "desktop-960",
+      "reason": "真实交战入口和当前局面"
+    },
+    {
+      "chainId": "qidahen-layout-960",
+      "uiStateId": "battle",
+      "viewport": "desktop-960",
+      "reason": "开放骰区与实际战场关系"
+    },
+    {
+      "chainId": "qidahen-layout-960",
+      "uiStateId": "post-report-selection",
+      "viewport": "desktop-960",
+      "reason": "表现关闭后地图恢复且战后选择入口可用"
+    },
+    {
+      "chainId": "qidahen-layout-640",
+      "uiStateId": "before-battle",
+      "viewport": "desktop-640",
+      "reason": "真实交战入口和当前局面"
+    },
+    {
+      "chainId": "qidahen-layout-640",
+      "uiStateId": "battle",
+      "viewport": "desktop-640",
+      "reason": "空间不足时权威战报可读且聊天和继续入口可用"
+    },
+    {
+      "chainId": "qidahen-layout-640",
+      "uiStateId": "post-report-selection",
+      "viewport": "desktop-640",
+      "reason": "表现关闭后地图恢复且战后选择入口可用"
+    },
+    {
+      "chainId": "qidahen-layout-640",
+      "uiStateId": "battle-phase-1",
+      "viewport": "desktop-640",
+      "reason": "实际滚动后阶段标题、骰值和继续入口可辨"
+    },
+    {
+      "chainId": "qidahen-layout-640",
+      "uiStateId": "battle-phase-2",
+      "viewport": "desktop-640",
+      "reason": "实际滚动后阶段标题、骰值和继续入口可辨"
+    },
+    {
+      "chainId": "qidahen-layout-320",
+      "uiStateId": "before-battle",
+      "viewport": "desktop-320",
+      "reason": "真实交战入口和当前局面"
+    },
+    {
+      "chainId": "qidahen-layout-320",
+      "uiStateId": "battle",
+      "viewport": "desktop-320",
+      "reason": "空间不足时权威战报可读且聊天和继续入口可用"
+    },
+    {
+      "chainId": "qidahen-layout-320",
+      "uiStateId": "post-report-selection",
+      "viewport": "desktop-320",
+      "reason": "表现关闭后地图恢复且战后选择入口可用"
+    },
+    {
+      "chainId": "qidahen-layout-320",
+      "uiStateId": "battle-phase-1",
+      "viewport": "desktop-320",
+      "reason": "实际滚动后阶段标题、骰值和继续入口可辨"
+    },
+    {
+      "chainId": "qidahen-layout-320",
+      "uiStateId": "battle-phase-2",
+      "viewport": "desktop-320",
+      "reason": "实际滚动后阶段标题、骰值和继续入口可辨"
+    }
+  ]
+}

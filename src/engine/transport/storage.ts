@@ -181,3 +181,40 @@ export const isMatchAuthMetadataProvider = (
 ): storage is MatchStorage & MatchAuthMetadataProvider => {
     return typeof (storage as Partial<MatchAuthMetadataProvider>).fetchAuthMetadata === 'function';
 };
+
+/** A consistent read used only with the issuing storage instance's CAS capability. */
+export interface MatchReplacementSnapshot {
+    state: StoredMatchState;
+    metadata: MatchMetadata;
+    /** Opaque, storage-owned identity. Callers must not construct or inspect it. */
+    token: unknown;
+}
+
+/**
+ * Optional, atomic single-room replacement. This is not an owner-wide unique lock.
+ * `conflict` guarantees this operation made no change. A thrown write error may
+ * have an uncertain outcome; callers must not retry, delete, or claim preservation.
+ */
+export interface MatchReplacementStorage {
+    fetchMatchForReplacement(matchID: string): Promise<MatchReplacementSnapshot | undefined>;
+    replaceMatchIfUnchanged(
+        sourceMatchID: string,
+        snapshot: MatchReplacementSnapshot,
+        nextMatchID: string,
+        data: CreateMatchData,
+    ): Promise<'replaced' | 'conflict'>;
+}
+
+export const isMatchReplacementStorage = (
+    storage: MatchStorage,
+): storage is MatchStorage & MatchReplacementStorage => (
+    typeof (storage as Partial<MatchReplacementStorage>).fetchMatchForReplacement === 'function'
+    && typeof (storage as Partial<MatchReplacementStorage>).replaceMatchIfUnchanged === 'function'
+);
+
+export class MatchReplacementOutcomeUnknownError extends Error {
+    constructor(cause: unknown) {
+        super('Match replacement write outcome is unknown; do not retry or delete either room.', { cause });
+        this.name = 'MatchReplacementOutcomeUnknownError';
+    }
+}

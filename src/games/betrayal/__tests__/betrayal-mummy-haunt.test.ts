@@ -960,6 +960,8 @@ it('木乃伊攻击奖励阶段的攻击骰盘由投骰者确认后进入奖励�
             100,
             createBetrayalScriptedRandom(2, 2, 2, 2, 1, 1, 1, 1, 1),
         );
+        expect(core.activityLog[0]?.text).toContain('可选择造成伤害或偷取');
+        expect(core.activityLog[0]?.text).not.toContain('physical damage');
         expect(core.recentRoll).toMatchObject({
             kind: 'attackRoll',
             playerId: traitorId,
@@ -1074,6 +1076,161 @@ it('木乃伊攻击奖励偷取目标失效时拒绝偷取，但仍可选择造�
         )).toMatchObject({ valid: true });
     });
 
+it('木乃伊作祟最后一名英雄死于火炉房时叛徒获胜', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [heroId, otherHeroId] = core.playerIds.filter((id) => id !== traitorId);
+        core.scenarioRuntime.deadExplorerPlayerIds = [otherHeroId];
+        placeActiveTestExplorerInRoom(core, heroId, 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房', hint: '结束回合受到伤害', tags: ['伤害'],
+            discoveryReward: null, visualId: 'furnaceRoom', endTurnEffect: 'physicalDamage1',
+        });
+        setTestTraitTrack(core, heroId, 'might', [1], 0, 0);
+        setTestExplorerInventory(core, heroId, []);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, heroId, {});
+        expect(core.pendingDamageAllocation).toMatchObject({ sourceTitle: '火炉房', amount: 1 });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, heroId, { traits: ['might'] });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain(heroId);
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({ hauntId: 'mummy-rampage', outcome: 'traitor' });
+    });
+
+it('木乃伊作祟最后英雄的头骨死亡检定可先使用兔脚重掷', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [heroId, otherHeroId] = core.playerIds.filter((id) => id !== traitorId);
+        core.scenarioRuntime.deadExplorerPlayerIds = [otherHeroId];
+        placeActiveTestExplorerInRoom(core, heroId, 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房', hint: '结束回合受到伤害', tags: ['伤害'],
+            discoveryReward: null, visualId: 'furnaceRoom', endTurnEffect: 'physicalDamage1',
+        });
+        setTestTraitTrack(core, heroId, 'might', [1], 0, 0);
+        setTestExplorerInventory(core, heroId, [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ]);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, heroId, {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, heroId,
+            { traits: ['might'] }, 100, createBetrayalScriptedRandom(1, 2, 2));
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(BetrayalDomain.validate({ core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, heroId, { cardId: 'rope', dieIndex: 0 })).valid).toBe(true);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, heroId,
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(3));
+        expect(core.recentRoll?.latestLabel).toBe('阻止死亡');
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain(heroId);
+        expect(core.endgameResult).toBeNull();
+    });
+
+it('木乃伊作祟最后英雄放弃重掷后触发叛徒胜利', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [heroId, otherHeroId] = core.playerIds.filter((id) => id !== traitorId);
+        core.scenarioRuntime.deadExplorerPlayerIds = [otherHeroId];
+        placeActiveTestExplorerInRoom(core, heroId, 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房', hint: '结束回合受到伤害', tags: ['伤害'],
+            discoveryReward: null, visualId: 'furnaceRoom', endTurnEffect: 'physicalDamage1',
+        });
+        setTestTraitTrack(core, heroId, 'might', [1], 0, 0);
+        setTestExplorerInventory(core, heroId, [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ]);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, heroId, {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, heroId,
+            { traits: ['might'] }, 100, createBetrayalScriptedRandom(1, 2, 2));
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(BetrayalDomain.validate({ core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, heroId, { cardId: 'rope', dieIndex: 0 })).valid).toBe(true);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.ACKNOWLEDGE_TURN_END_ROLL, heroId, {});
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({ hauntId: 'mummy-rampage', outcome: 'traitor' });
+    });
+
+it('木乃伊作祟最后英雄兔脚重掷失败后触发叛徒胜利', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const [heroId, otherHeroId] = core.playerIds.filter((id) => id !== traitorId);
+        core.scenarioRuntime.deadExplorerPlayerIds = [otherHeroId];
+        placeActiveTestExplorerInRoom(core, heroId, 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房', hint: '结束回合受到伤害', tags: ['伤害'],
+            discoveryReward: null, visualId: 'furnaceRoom', endTurnEffect: 'physicalDamage1',
+        });
+        setTestTraitTrack(core, heroId, 'might', [1], 0, 0);
+        setTestExplorerInventory(core, heroId, [
+            { id: 'skull', name: '头骨', kind: 'omen' },
+            { id: 'rope', name: '兔脚', kind: 'item' },
+        ]);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, heroId, {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, heroId,
+            { traits: ['might'] }, 100, createBetrayalScriptedRandom(1, 2, 2));
+        expect(core.recentRoll?.kind).toBe('deathPrevention');
+        expect(core.recentRoll?.latestLabel).toBe('正常死亡');
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+        expect(BetrayalDomain.validate({ core, sys: {} as never },
+            createBetrayalCommand(BETRAYAL_COMMANDS.USE_RABBIT_FOOT, heroId, { cardId: 'rope', dieIndex: 0 })).valid).toBe(true);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.USE_RABBIT_FOOT, heroId,
+            { cardId: 'rope', dieIndex: 0 }, 101, createBetrayalScriptedRandom(1));
+        expect(core.phase).toBe('endgame');
+        expect(core.endgameResult).toMatchObject({ hauntId: 'mummy-rampage', outcome: 'traitor' });
+    });
+
+it('木乃伊作祟仍有其他英雄生存时，火炉房死亡不会提前结束游戏', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const heroId = core.playerIds.find((id) => id !== traitorId)!;
+        placeActiveTestExplorerInRoom(core, heroId, 'ground-north');
+        setDiscoveredTestRoom(core, 'ground-north', {
+            name: '火炉房', hint: '结束回合受到伤害', tags: ['伤害'],
+            discoveryReward: null, visualId: 'furnaceRoom', endTurnEffect: 'physicalDamage1',
+        });
+        setTestTraitTrack(core, heroId, 'might', [1], 0, 0);
+        setTestExplorerInventory(core, heroId, []);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.END_TURN, heroId, {});
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, heroId, { traits: ['might'] });
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).toContain(heroId);
+        expect(core.phase).toBe('haunt');
+        expect(core.endgameResult).toBeNull();
+    });
+
+it('木乃伊伤害将速度降至最低数字后扣力量，未达力量骷髅时英雄存活', () => {
+        let core = createFirstScenarioHauntCore();
+        const traitorId = core.scenarioRuntime.traitorPlayerId!;
+        const heroId = core.playerIds.find((id) => id !== traitorId)!;
+        const mummyId = core.scenarioRuntime.mummy!.mummyMonsterId;
+        const mummyRoom = core.monsters.find((monster) => monster.id === mummyId)!.roomId;
+        activateTestExplorer(core, traitorId);
+        findTestExplorer(core, heroId).roomId = mummyRoom;
+        setTestTraitTrack(core, heroId, 'speed', [1, 1, 1, 1], 2, 2);
+        setTestTraitTrack(core, heroId, 'might', [1, 1, 1, 1], 2, 2);
+        setTestExplorerInventory(core, heroId, []);
+        core.scenarioRuntime.mummy!.girlHolderPlayerId = null;
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MONSTER_ATTACK_HERO, traitorId,
+            { monsterId: mummyId, targetPlayerId: heroId }, 100,
+            createBetrayalScriptedRandom(2, 2, 2, 2, 0, 0, 0, 0, 2));
+        expect(core.pendingDamageAllocation).toMatchObject({
+            amount: 3,
+            forcedTraitSequence: ['speed', 'speed', 'might'],
+        });
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, heroId,
+            { traits: ['speed', 'speed', 'might'] });
+        const hero = findTestExplorer(core, heroId);
+        expect(hero.traitTracks.speed.position).toBe(hero.traitTracks.speed.criticalPosition);
+        expect(hero.traitTracks.might.position).toBeGreaterThan(hero.traitTracks.might.skullPosition);
+        expect(core.scenarioRuntime.deadExplorerPlayerIds).not.toContain(heroId);
+    });
+
 it('木乃伊选择造成伤害后必须先扣速度，最后一名英雄死亡时按木乃伊横行结算', () => {
         let core = createFirstScenarioHauntCore();
         const traitorId = core.scenarioRuntime.traitorPlayerId!;
@@ -1106,12 +1263,12 @@ it('木乃伊选择造成伤害后必须先扣速度，最后一名英雄死亡�
             playerId: targetHeroId,
             damageKind: 'physical',
             allowSkull: true,
-            forcedTraitSequence: ['speed', 'speed', 'speed', 'might', 'might', 'might'],
+            forcedTraitSequence: ['speed', 'speed', 'might', 'might', 'might'],
         });
         expect(BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.RESOLVE_DAMAGE_ALLOCATION, targetHeroId!, {
-                traits: ['might', 'speed', 'speed', 'speed', 'might', 'might'],
+                traits: ['might', 'speed', 'speed', 'might', 'might'],
             }),
         )).toMatchObject({
             valid: false,

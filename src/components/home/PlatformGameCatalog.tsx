@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 import { PlatformGameCard, type PlatformCatalogGame } from './PlatformGameCard';
+import type { LobbyGamePlayerCounts } from '../../hooks/useLobbyStats';
 import './platform-catalog.css';
 
 export type { PlatformCatalogGame } from './PlatformGameCard';
@@ -20,10 +21,12 @@ interface PlatformGameCatalogProps {
     onFavorite: (id: string, next: boolean) => void;
     favoritePending?: boolean;
     onIntent?: (id: string) => void;
+    playerCountsByGame?: Readonly<Record<string, LobbyGamePlayerCounts>>;
+    hasPlayerCounts?: boolean;
 }
 
 /** Registry-backed cards. Collection data and room navigation remain caller-owned. */
-export function PlatformGameCatalog({ heading, filters, beforeGames, games, favoriteIds, mode, onOpen, onFavorite, onIntent, favoritePending = false, query: controlledQuery, onQueryChange, showSearch = true }: PlatformGameCatalogProps) {
+export function PlatformGameCatalog({ heading, filters, beforeGames, games, favoriteIds, mode, onOpen, onFavorite, onIntent, playerCountsByGame, hasPlayerCounts = false, favoritePending = false, query: controlledQuery, onQueryChange, showSearch = true }: PlatformGameCatalogProps) {
     const { t } = useTranslation(['lobby', 'common']);
     const mobile = useMobileViewport();
     const [queries, setQueries] = useState({ discover: '', library: '' });
@@ -55,7 +58,8 @@ export function PlatformGameCatalog({ heading, filters, beforeGames, games, favo
         <div className="platform-game-grid">
             {visibleGames.map(game => <PlatformGameCard key={game.id} game={game} mode={mode}
                 favorite={favoriteIds.has(game.id)} favoritePending={favoritePending}
-                onOpen={onOpen} onFavorite={onFavorite} onIntent={onIntent} />)}
+                onOpen={onOpen} onFavorite={onFavorite} onIntent={onIntent}
+                playerCounts={playerCountsByGame?.[game.id.toLowerCase()]} hasPlayerCounts={hasPlayerCounts} />)}
         </div>
         {!visibleGames.length && <p className="platform-catalog-empty" role="status">{t(query || mode === 'discover' ? 'platform.noSearchResults' : 'platform.emptyLibrary', {
             defaultValue: query || mode === 'discover' ? '没有找到匹配的游戏' : '还没有收藏游戏，去发现页点星标添加',

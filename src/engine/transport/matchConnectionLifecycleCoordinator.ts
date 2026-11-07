@@ -19,6 +19,7 @@ export type MatchConnectionLifecycleMatch = {
     connections: Map<string, Set<string>>;
     spectatorSockets: Set<string>;
     offlineTimers: Map<string, ReturnType<typeof setTimeout>>;
+    unloaded: boolean;
 };
 
 export type MatchConnectionLifecycleHooks<TMatch extends MatchConnectionLifecycleMatch> = {
@@ -30,7 +31,6 @@ export type MatchConnectionLifecycleHooks<TMatch extends MatchConnectionLifecycl
     removeSocketFromPreviousMatch: (socketId: string, info: MatchConnectionSocketInfo) => void;
     readFreshAuthMetadata: (
         matchID: string,
-        fallback: MatchMetadata,
     ) => Promise<MatchMetadata | undefined>;
     validateCommandAuth: (
         matchID: string,
@@ -147,8 +147,12 @@ export class MatchConnectionLifecycleCoordinator<TMatch extends MatchConnectionL
 
         if (playerID !== null) {
             const authMetadata = reusedActiveMatch
-                ? await this.hooks.readFreshAuthMetadata(matchID, match.metadata) ?? match.metadata
+                ? await this.hooks.readFreshAuthMetadata(matchID)
                 : match.metadata;
+            if (!authMetadata || match.unloaded || this.hooks.getActiveMatch(matchID) !== match) {
+                socket.emit('error', matchID, 'match_not_found');
+                return;
+            }
             const authorized = await this.hooks.validateCommandAuth(
                 matchID,
                 playerID,
@@ -156,9 +160,16 @@ export class MatchConnectionLifecycleCoordinator<TMatch extends MatchConnectionL
                 authMetadata,
             );
             if (!authorized) {
-                socket.emit('error', matchID, 'unauthorized');
+                const retired = match.unloaded || this.hooks.getActiveMatch(matchID) !== match;
+                socket.emit('error', matchID, retired ? 'match_not_found' : 'unauthorized');
                 return;
             }
+        }
+
+        // 读取 / 鉴权期间房间可能已被替换，不能把旧 runtime 重新登记到 socket。
+        if (match.unloaded || this.hooks.getActiveMatch(matchID) !== match) {
+            socket.emit('error', matchID, 'match_not_found');
+            return;
         }
 
         this.registerSocket({ socket, match, matchID, playerID, credentials });

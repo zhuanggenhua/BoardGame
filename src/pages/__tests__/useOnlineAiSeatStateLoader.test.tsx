@@ -96,7 +96,8 @@ describe('useOnlineAiSeatStateLoader', () => {
         });
         expect(result.current.onlineAiSeatControllers['1']).toEqual({ type: 'local-ai', difficulty: 'normal' });
         expect(matchApi.claimSeat).toHaveBeenCalledWith('summonerwars', 'match-1', '1', {
-            guestId: 'guest-owner',
+            guestId: 'fallback-guest',
+            ownerCredentials: 'human-credential',
             playerName: 'AI Opponent',
         });
         expect(JSON.parse(localStorage.getItem('match_ai_creds_match-1') || '{}')).toEqual({

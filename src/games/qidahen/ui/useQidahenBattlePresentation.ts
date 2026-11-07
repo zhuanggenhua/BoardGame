@@ -22,5 +22,12 @@ export function useQidahenBattlePresentation(core: QidahenCore) {
         previousCore.current = core;
     }, [core, identity, active]);
     const complete = React.useCallback(() => setCompleted(identity), [identity]);
-    return { identity, active, rolls: rollsFor(core), displayCore: active && before ? before : core, complete };
+    const battle = (active ? before?.pendingTargetAction : null) ?? core.pendingTargetAction ?? core.postBattleSelection;
+    const participants = battle ? {
+        attackerFactionId: battle.attackerFactionId,
+        defenderFactionId: 'defenderFactionId' in battle ? battle.defenderFactionId : battle.originalController,
+        defenderLabel: 'defenderLabel' in battle ? battle.defenderLabel : battle.originalControlLabel,
+    } : null;
+    const committedPieceIds = active ? battle?.forceCommitments?.flatMap(force => force.selectedSpecialPieceIds ?? []) ?? [] : [];
+    return { identity, active, rolls: rollsFor(core), displayCore: active && before ? before : core, participants, committedPieceIds, complete };
 }

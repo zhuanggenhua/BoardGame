@@ -35,6 +35,7 @@ export class MatchRoomUnloadCoordinator<TMatch extends MatchRoomUnloadMatch> {
     unloadMatch(matchID: string, options?: { disconnectSockets?: boolean }): boolean {
         const match = this.hooks.getMatch(matchID);
         if (!match) {
+            this.hooks.deleteMatch(matchID);
             return false;
         }
 

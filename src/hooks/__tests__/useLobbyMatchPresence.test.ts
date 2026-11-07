@@ -214,7 +214,7 @@ describe('matchSocket shared connection', () => {
 
         const { matchSocket, REMATCH_EVENTS, MATCH_CHAT_EVENTS } = await import('../../services/matchSocket');
 
-        matchSocket.joinMatch('m1', 'p1');
+        matchSocket.joinMatch('m1', 'p1', { credentials: 'proof-1' });
         matchSocket.joinChat('m1');
 
         expect(acquireConnectionMock).toHaveBeenCalledTimes(2);
@@ -230,6 +230,7 @@ describe('matchSocket shared connection', () => {
         expect(fakeSocket.emit).toHaveBeenCalledWith(REMATCH_EVENTS.JOIN_MATCH, {
             matchId: 'm1',
             playerId: 'p1',
+            credentials: 'proof-1',
         });
         expect(fakeSocket.emit).toHaveBeenCalledWith(MATCH_CHAT_EVENTS.JOIN, { matchId: 'm1' });
 
@@ -313,22 +314,24 @@ describe('matchSocket shared connection', () => {
         const stateSpy = vi.fn();
         const unsubscribe = matchSocket.subscribeState(stateSpy);
 
-        matchSocket.joinMatch('m1', 'p1');
+        matchSocket.joinMatch('m1', 'p1', { credentials: 'proof-1' });
         expect(acquireConnectionMock).toHaveBeenCalledTimes(1);
         expect(fakeSocket.emit).toHaveBeenCalledWith(REMATCH_EVENTS.JOIN_MATCH, {
             matchId: 'm1',
             playerId: 'p1',
+            credentials: 'proof-1',
         });
 
         matchSocket.leaveMatch();
         expect(releaseConnectionMock).toHaveBeenCalledTimes(1);
         expect(fakeSocket.off).toHaveBeenCalledWith(REMATCH_EVENTS.STATE_UPDATE, expect.any(Function));
 
-        matchSocket.joinMatch('m2', 'p2');
+        matchSocket.joinMatch('m2', 'p2', { credentials: 'proof-2' });
         expect(acquireConnectionMock).toHaveBeenCalledTimes(2);
         expect(fakeSocket.emit).toHaveBeenCalledWith(REMATCH_EVENTS.JOIN_MATCH, {
             matchId: 'm2',
             playerId: 'p2',
+            credentials: 'proof-2',
         });
 
         const nextState = { votes: { p2: true }, ready: false, revision: 1 };
@@ -359,11 +362,12 @@ describe('matchSocket shared connection', () => {
 
         const { matchSocket, REMATCH_EVENTS } = await import('../../services/matchSocket');
 
-        matchSocket.joinMatch('m-ai', '0', { autoAcceptedPlayerIds: ['1', '1', ' 2 '] });
+        matchSocket.joinMatch('m-ai', '0', { credentials: 'proof-ai', autoAcceptedPlayerIds: ['1', '1', ' 2 '] });
 
         expect(fakeSocket.emit).toHaveBeenCalledWith(REMATCH_EVENTS.JOIN_MATCH, {
             matchId: 'm-ai',
             playerId: '0',
+            credentials: 'proof-ai',
             autoAcceptedPlayerIds: ['1', '2'],
         });
 

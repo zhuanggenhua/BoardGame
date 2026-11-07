@@ -21,6 +21,7 @@ import {
     resolveBloodFromStoneHauntVictoryResult,
     resolveDustTraitorVictoryResult,
     resolveHelpingHandsSoloVictoryResult,
+    resolveMummyAllHeroesDefeatedVictoryResult,
 } from './hauntVictoryModel';
 import { createMummyEndgameResult } from './mummyHauntRules';
 import { resolveRecommendedAction } from './recommendedActionReadModel';
@@ -44,6 +45,9 @@ function resolveAllHeroesDefeatedVictoryResult(
     targetPlayerId: string,
     sourceTitle: string,
 ): BetrayalEndgameResult | null {
+    if (isMummyHaunt(core)) {
+        return resolveMummyAllHeroesDefeatedVictoryResult(core);
+    }
     if (
         sourceTitle !== '攻击'
         && sourceTitle !== '木乃伊攻击'
@@ -123,7 +127,10 @@ export function applyBetrayalDamageAllocationAftermathState(
         }
         const scenarioCompletedResult = resolveDefeatVictoryResult(core, target.playerId, pending.sourceTitle);
         if (scenarioCompletedResult) {
-            return { core, scenarioCompletedResult };
+            return {
+                core: { ...core, activityLog: appendActivity(core, event.payload.logText, 'warning') },
+                scenarioCompletedResult,
+            };
         }
     }
     const synced = syncCurrentExplorerProjection(core);

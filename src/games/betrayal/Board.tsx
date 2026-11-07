@@ -369,6 +369,8 @@ export default function BetrayalBoard({
   playerID,
   matchData,
   isMultiplayer,
+  isConnected,
+  reset,
   seatControllers,
   locale,
 }: Props) {
@@ -484,6 +486,7 @@ export default function BetrayalBoard({
   const viewerPlayerId = String(
     playerID ?? baseCore.currentPlayer ?? baseCore.playerIds[0] ?? "0",
   );
+  const readerViewerPlayerId = gameMode?.isSpectator ? SPECTATOR_PLAYER_ID : viewerPlayerId;
   const viewerSeatController =
     seatControllers?.[viewerPlayerId] ?? baseCore.seatControllers?.[viewerPlayerId];
   const { turnIntroKey, dismissTurnIntro } = useBetrayalTurnIntro({
@@ -1066,7 +1069,7 @@ export default function BetrayalBoard({
     () =>
       resolveBetrayalScenarioReaderPresentation({
         core,
-        viewerPlayerId,
+        viewerPlayerId: readerViewerPlayerId,
         referenceScenarioOpeningStageActive,
         referenceScenarioOpeningStageIncluded,
         referenceScenarioBookSpreadIndex,
@@ -1082,7 +1085,7 @@ export default function BetrayalBoard({
       referenceScenarioBookSpreadIndex,
       scenarioStartOpeningCinematicKey,
       t,
-      viewerPlayerId,
+      readerViewerPlayerId,
     ],
   );
   const {
@@ -1228,7 +1231,7 @@ export default function BetrayalBoard({
       (tutorialScenarioStepId === "hero-attack-objective" ||
         tutorialScenarioStepId === "jack-spirit-objective" ||
         tutorialScenarioStepId === "traitor-objective");
-    const openPlan = resolveScenarioReaderOpenPlan(core, viewerPlayerId, {
+    const openPlan = resolveScenarioReaderOpenPlan(core, readerViewerPlayerId, {
       mode: shouldAdvanceScenarioReferenceTutorial
         ? "tutorialObjective"
         : "manualReview",
@@ -1284,7 +1287,7 @@ export default function BetrayalBoard({
     referenceScenarioBookSpreadCount,
     referenceScenarioOpeningSection,
     tutorialStep?.id,
-    viewerPlayerId,
+    readerViewerPlayerId,
   ]);
 
   React.useEffect(() => {
@@ -1400,6 +1403,19 @@ export default function BetrayalBoard({
         lastUsedInventoryCardId?: string | null;
       } = {},
     ) => {
+      // Online views omit undisclosed decks; do not run the authority reducer
+      // locally against incomplete data. The server response drives the UI.
+      if (isMultiplayer) {
+        // Remember the user's intent only for post-confirmation status text;
+        // usedCardIdsThisTurn remains the authority for whether it succeeded.
+        if (options.lastUsedInventoryCardId) {
+          setPreviewState((previousState) => ({
+            ...previousState,
+            lastUsedInventoryCardId: options.lastUsedInventoryCardId ?? null,
+          }));
+        }
+        return;
+      }
       const command = {
         type,
         payload,
@@ -1442,7 +1458,7 @@ export default function BetrayalBoard({
             : nextPreviewState.dismissedRecentRollId,
       }));
     },
-    [baseCore, viewerPlayerId],
+    [baseCore, isMultiplayer, viewerPlayerId],
   );
 
   const handleSelectExplorer = React.useCallback(
@@ -1852,8 +1868,8 @@ export default function BetrayalBoard({
     [core],
   );
   const explorableRoomSlotIds = React.useMemo(
-    () => new Set(explorableRoomSlots.map((room) => room.id)),
-    [explorableRoomSlots],
+    () => new Set(core.pendingRoomPlacement ? [] : explorableRoomSlots.map((room) => room.id)),
+    [explorableRoomSlots, core.pendingRoomPlacement],
   );
   const crossFloorMoveTargetRooms = React.useMemo(
     () => moveTargetRooms.filter((room) => room.floor !== currentExplorerFloor),
@@ -2011,9 +2027,9 @@ export default function BetrayalBoard({
     },
     [isTutorialActive, nextStep, selectedRoomMapFloor, tutorialStep?.id],
   );
-  const canDeclareHolySymbolExplore = canUseHolySymbolForDiscovery(core);
+  const canDeclareHolySymbolExplore = Boolean(core.pendingRoomPlacement && !core.pendingRoomPlacement.usedHolySymbol && canUseHolySymbolForDiscovery(core));
   const useHolySymbolForExplore =
-    previewState.useHolySymbolForExplore && canDeclareHolySymbolExplore;
+    core.pendingRoomPlacement?.usedHolySymbol === true;
   const interactionHelpingHandsStatus =
     resolveHelpingHandsMonsterTurnStatus(core);
   const interactionBloodFromStoneStatus =
@@ -2026,6 +2042,7 @@ export default function BetrayalBoard({
   );
   const canStartExploreSelection = Boolean(
     (core.phase === "preHaunt" || core.phase === "haunt") &&
+    !gameMode?.isSpectator &&
     !core.turnEndedByDiscovery &&
     core.currentPlayer === viewerPlayerId &&
     !isExclusiveMonsterTurnForCurrentPlayer &&
@@ -2055,13 +2072,13 @@ export default function BetrayalBoard({
   const pendingRoomPlacementPreview =
     React.useMemo<BetrayalRoomPlacementPreview | null>(
       () =>
-        previewState.pendingRoomPlacementSlotId
+        core.pendingRoomPlacement?.playerId === viewerPlayerId && !gameMode?.isSpectator
           ? resolveRoomPlacementPreview(core, {
-              roomId: previewState.pendingRoomPlacementSlotId,
+              roomId: core.pendingRoomPlacement.roomId,
               useHolySymbol: useHolySymbolForExplore,
             })
           : null,
-      [core, previewState.pendingRoomPlacementSlotId, useHolySymbolForExplore],
+      [core, viewerPlayerId, gameMode?.isSpectator, useHolySymbolForExplore],
     );
   const pendingRoomOrientationOptions = React.useMemo(
     () => pendingRoomPlacementPreview?.orientationOptions ?? [],
@@ -2126,10 +2143,10 @@ export default function BetrayalBoard({
     previewState.pendingRoomTileAdjustment,
   ]);
   const pendingRoomPlacementFailureText =
-    previewState.pendingRoomPlacementFailure
+    (previewState.pendingRoomPlacementFailure || core.latestRoomDrawResolution?.exhausted)
       ? t("board.rooms.floorExhausted", {
           floor: resolveFloorLabel(
-            previewState.pendingRoomPlacementFailure.floor,
+            previewState.pendingRoomPlacementFailure?.floor ?? core.latestRoomDrawResolution!.requestedFloor,
           ),
         })
       : null;
@@ -3392,7 +3409,7 @@ export default function BetrayalBoard({
           coreRecentRollDisplayKey ?? previousState.dismissedRecentRollId,
       }));
     }
-    const openPlan = resolveScenarioReaderOpenPlan(core, viewerPlayerId, {
+    const openPlan = resolveScenarioReaderOpenPlan(core, readerViewerPlayerId, {
       mode: "hauntReveal",
       hasOpeningSection: Boolean(referenceScenarioOpeningSection),
       bookSpreadCount: referenceScenarioBookSpreadCount,
@@ -3418,7 +3435,7 @@ export default function BetrayalBoard({
     referenceScenarioOpeningSection,
     scenarioReaderOpen,
     shouldShowHauntRevealCue,
-    viewerPlayerId,
+    readerViewerPlayerId,
   ]);
   const visibleDustProgressItems = shouldShowHauntRevealCue
     ? []
@@ -4391,7 +4408,13 @@ export default function BetrayalBoard({
     );
   }, [canStartExploreSelection, previewState.interactionMode]);
 
+  React.useEffect(() => {
+    if (!core.pendingRoomPlacement || core.pendingRoomPlacement.playerId !== viewerPlayerId) return;
+    setPreviewState((previous) => ({ ...previous, interactionMode: "explore", pendingRoomPlacementSlotId: core.pendingRoomPlacement!.roomId }));
+  }, [core.pendingRoomPlacement, viewerPlayerId]);
+
   const handleExploreAction = React.useCallback(() => {
+    if (core.pendingRoomPlacement) return;
     setPreviewState((previousState) => {
       if (previousState.interactionMode === "explore") {
         if (
@@ -4423,56 +4446,14 @@ export default function BetrayalBoard({
         selectedMonsterAttackMonsterId: null,
       };
     });
-  }, [canStartExploreSelection, core.recommendedAction]);
+  }, [canStartExploreSelection, core.recommendedAction, core.pendingRoomPlacement]);
 
   const handlePrepareExploreRoom = React.useCallback(
     (roomId: string) => {
-      const placementPreview = resolveRoomPlacementPreview(core, {
-        roomId,
-        useHolySymbol: useHolySymbolForExplore,
-      });
-      if (!placementPreview) {
-        const exhaustedSlot =
-          explorableRoomSlots.find((room) => room.id === roomId) ?? null;
-        setPreviewState((previousState) => ({
-          ...previousState,
-          pendingRoomPlacementSlotId: null,
-          pendingRoomPlacementFailure: exhaustedSlot
-            ? { roomId, floor: exhaustedSlot.floor }
-            : null,
-          pendingRoomOrientationTurns: 0,
-          pendingRoomTileAdjustment: null,
-          interactionMode: "explore",
-        }));
-        return;
-      }
-      setPreviewState((previousState) => ({
-        ...previousState,
-        pendingRoomPlacementSlotId: roomId,
-        pendingRoomPlacementFailure: null,
-        pendingRoomOrientationTurns: placementPreview.defaultOrientationTurns,
-        pendingRoomTileAdjustment: null,
-        interactionMode: "explore",
-      }));
-      if (
-        isTutorialActive &&
-        tutorialStep?.id === "explore-upper" &&
-        tutorialStep?.requireAction === true &&
-        tutorialStep?.allowedCommands?.length === 0
-      ) {
-        nextStep("auto");
-      }
+      if (core.pendingRoomPlacement || !canStartExploreSelection) return;
+      dispatchCommand(BETRAYAL_COMMANDS.REVEAL_ROOM, { roomId });
     },
-    [
-      core,
-      explorableRoomSlots,
-      isTutorialActive,
-      nextStep,
-      tutorialStep?.allowedCommands?.length,
-      tutorialStep?.id,
-      tutorialStep?.requireAction,
-      useHolySymbolForExplore,
-    ],
+    [core.pendingRoomPlacement, canStartExploreSelection, dispatchCommand],
   );
 
   const handleRotateRoomPlacement = React.useCallback(
@@ -4522,8 +4503,8 @@ export default function BetrayalBoard({
   );
 
   const handleCancelRoomPlacement = React.useCallback(() => {
-    setPreviewState(resolveRoomPlacementCancellationState);
-  }, []);
+    if (!core.pendingRoomPlacement) setPreviewState(resolveRoomPlacementCancellationState);
+  }, [core.pendingRoomPlacement]);
 
   const handleSelectRoomTileAdjustment = React.useCallback(
     (option: BetrayalRoomTileAdjustmentOption) => {
@@ -4551,18 +4532,6 @@ export default function BetrayalBoard({
       return;
     }
     dispatchCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, payload);
-    setPreviewState((previousState) => ({
-      ...previousState,
-      useHolySymbolForExplore: false,
-      useIdolForExplore: false,
-      ignoreEventSymbolWithTraitorPower: false,
-      pendingRoomPlacementSlotId: null,
-      pendingRoomPlacementFailure: null,
-      pendingRoomOrientationTurns: 0,
-      pendingRoomTileAdjustment: null,
-      interactionMode: "default",
-      selectedMonsterAttackMonsterId: null,
-    }));
   }, [
     dispatchCommand,
     pendingRoomPlacementPreview,
@@ -4574,18 +4543,9 @@ export default function BetrayalBoard({
   ]);
 
   const handleToggleHolySymbolExplore = React.useCallback(() => {
-    if (!canDeclareHolySymbolExplore) {
-      return;
-    }
-    setPreviewState((previousState) => ({
-      ...previousState,
-      pendingRoomPlacementSlotId: null,
-      pendingRoomPlacementFailure: null,
-      pendingRoomOrientationTurns: 0,
-      pendingRoomTileAdjustment: null,
-      useHolySymbolForExplore: !previousState.useHolySymbolForExplore,
-    }));
-  }, [canDeclareHolySymbolExplore]);
+    if (!canDeclareHolySymbolExplore || !core.pendingRoomPlacement) return;
+    dispatchCommand(BETRAYAL_COMMANDS.REVEAL_ROOM, { roomId: core.pendingRoomPlacement.roomId, useHolySymbol: true });
+  }, [canDeclareHolySymbolExplore, core.pendingRoomPlacement, dispatchCommand]);
 
   const handleToggleIdolExplore = React.useCallback(() => {
     if (!canDeclareIdolExplore) {
@@ -7050,7 +7010,7 @@ export default function BetrayalBoard({
                   onOpenExplorerDetails={openExplorerDetails}
                   movableExplorerPlayerId={mapObjectInteraction.canSelectExplorer ? core.currentExplorer.playerId : null}
                   onToggleExplorerMove={handleMoveAction}
-                  canDirectMove={mapObjectInteraction.canMoveToRoom}
+                  canDirectMove={mapObjectInteraction.canMoveToRoom && !core.pendingRoomPlacement}
                   canShowPassiveMoveTargets={mapObjectInteraction.canSelectExplorer}
                   canDirectExplore={mapObjectInteraction.canExplore}
                   onSelectMonsterTarget={handleSelectMonsterTarget}
@@ -7507,11 +7467,15 @@ export default function BetrayalBoard({
           />
         ) : null}
         {core.phase === "endgame" ? (
-          <EndgameScreen
-            core={core}
-            matchData={matchData}
-            effectiveLocale={effectiveLocale}
-          />
+          runtimeViewport.width > 0 && runtimeViewport.width <= MOBILE_MAX_VIEWPORT_WIDTH ? (
+            <HudPortal>
+              <div className="betrayal-mobile-endgame pointer-events-auto fixed inset-0 z-[240]">
+                <EndgameScreen core={core} matchData={matchData} effectiveLocale={effectiveLocale} playerID={playerID} reset={reset} isMultiplayer={isMultiplayer} isConnected={isConnected} />
+              </div>
+            </HudPortal>
+          ) : (
+            <EndgameScreen core={core} matchData={matchData} effectiveLocale={effectiveLocale} playerID={playerID} reset={reset} isMultiplayer={isMultiplayer} isConnected={isConnected} />
+          )
         ) : null}
       </div>
     </UndoProvider>

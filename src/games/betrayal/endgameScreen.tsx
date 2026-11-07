@@ -1,5 +1,7 @@
 import React from "react";
-import { BookOpen, ChevronRight, Footprints, House, RotateCcw, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useMatchRoomExit } from "../../contexts/MatchRoomExitContext";
+import { BookOpen, ChevronRight, Footprints, House, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OptimizedImage } from "../../components/common/media/OptimizedImage";
 import type { MatchPlayerInfo } from "../../engine/transport/protocol";
@@ -10,6 +12,9 @@ import {
   resolveEndgameNarrationSectionId,
 } from "./scenarioReader";
 import { resolveEndgameExplorerName } from "./playerPresentation";
+import { resolveEndgameDeathRoll } from "./endgameDeathRoll";
+import { EndgameActionLog } from "./endgameActionLog";
+import { EndgameRematchActions, type EndgameRematchProps } from "./endgameRematchActions";
 import { TRAIT_LABEL_LOCAL } from "./traitTrackSurface";
 import { BETRAYAL_TRAIT_MARKER_ASSETS } from "./traitAssets";
 import {
@@ -25,15 +30,35 @@ export function EndgameScreen({
   core,
   matchData,
   effectiveLocale,
-}: {
+  playerID,
+  reset,
+  isMultiplayer,
+  isConnected,
+}: EndgameRematchProps & {
   core: BetrayalCore;
   matchData?: MatchPlayerInfo[];
   effectiveLocale: string;
 }) {
   const { t } = useTranslation("game-betrayal");
+  const navigate = useNavigate();
+  const matchRoomExit = useMatchRoomExit();
+  const handleBackToLobby = () => {
+    if (matchRoomExit) {
+      void matchRoomExit.exitToLobby();
+      return;
+    }
+    navigate("/");
+  };
+  const [showActionLog, setShowActionLog] = React.useState(false);
+  const logButtonRef = React.useRef<HTMLButtonElement>(null);
+  React.useEffect(() => {
+    if (!showActionLog) logButtonRef.current?.focus();
+  }, [showActionLog]);
   const result = core.endgameResult;
   const endgameDossier = resolveEndgameHauntDossier(core);
+  const deathRoll = resolveEndgameDeathRoll(core);
   const allExplorers = [core.currentExplorer, ...core.otherExplorers];
+  const deathRollExplorer = deathRoll && allExplorers.find((explorer) => explorer.playerId === deathRoll.playerId);
   const survivorsWon =
     result?.outcome === "survivors" || result?.outcome === "solo";
   const hauntWon = result?.outcome === "haunt";
@@ -98,6 +123,15 @@ export function EndgameScreen({
     setEndingNarrationOpen(true);
   }, [endgameNarrationIdentity]);
 
+  // The phone HUD is rendered in a separate portal above the board shell.
+  // Suppress it for the whole endgame so it cannot intercept result controls.
+  React.useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    const root = document.documentElement;
+    root.setAttribute("data-betrayal-endgame", "true");
+    return () => root.removeAttribute("data-betrayal-endgame");
+  }, []);
+
   React.useEffect(() => {
     if (typeof document === "undefined") {
       return undefined;
@@ -115,6 +149,8 @@ export function EndgameScreen({
 
   return (
     <div
+      inert={showActionLog}
+      aria-hidden={showActionLog || undefined}
       data-testid="betrayal-endgame-screen"
       data-tutorial-id="betrayal-endgame-screen"
       className="absolute inset-0 z-[240] flex h-full min-h-full flex-col overflow-hidden bg-transparent text-[#f1e8d4]"
@@ -142,7 +178,18 @@ export function EndgameScreen({
             text={t(endgameNarrationKey)}
             variant={endgameNarrationVariant}
             presentation="stage"
+            scrollContent={Boolean(deathRoll)}
             actionSlot={
+              <div className="flex max-w-full flex-col items-center gap-3">
+              {deathRoll && (
+                <div data-testid="betrayal-endgame-recent-death-roll" className="max-w-full break-words rounded border border-[rgba(242,207,130,0.35)] bg-[rgba(8,10,9,0.88)] px-4 py-2 text-center text-sm text-[#f5e6c7]">
+                  <div>{t("board.endgame.recentDeathRoll", { name: deathRollExplorer ? resolveEndgameExplorerName(deathRollExplorer, matchData) : deathRoll.playerId })}</div>
+                  <div className="text-xs text-[#c7b99c]">{t("board.endgame.deathRollNotCause")}</div>
+                  {deathRoll.previousDice && <div>{t("board.endgame.beforeReroll")}: {deathRoll.previousDice.join(" · ")}</div>}
+                  <div>{t(deathRoll.previousDice ? "board.endgame.afterReroll" : "board.endgame.dice")}: {deathRoll.dice.join(" · ")}{deathRoll.bonus !== 0 ? ` + ${deathRoll.bonus}` : ""}</div>
+                  <div>{t("board.endgame.deathRollTotal", { total: deathRoll.total, threshold: deathRoll.minTotal })} · {t(deathRoll.total >= deathRoll.minTotal ? "board.endgame.deathCheckPassed" : "board.endgame.deathCheckFailed")}</div>
+                </div>
+              )}
               <button
                 type="button"
                 data-testid="betrayal-endgame-ending-continue"
@@ -152,13 +199,14 @@ export function EndgameScreen({
                 {t("board.endgame.continueToReport")}
                 <ChevronRight size={16} aria-hidden="true" />
               </button>
+              </div>
             }
             className="h-full min-h-full w-full"
           />
         </section>
       ) : (
-      <div className="mx-auto flex h-full min-h-full w-full max-w-[1760px] p-4">
-        <div className="relative flex min-h-full w-full flex-col overflow-hidden border border-[#876a3c] bg-[rgba(9,15,13,0.95)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
+      <div className="betrayal-endgame-report-scroll mx-auto flex h-full min-h-full w-full max-w-[1760px] p-4">
+        <div className="betrayal-endgame-report-frame relative flex min-h-full w-full flex-col overflow-hidden border border-[#876a3c] bg-[rgba(9,15,13,0.95)] shadow-[0_24px_60px_rgba(0,0,0,0.42)]">
           <div className="pointer-events-none absolute inset-0 border border-[rgba(216,191,129,0.14)]" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(132,170,82,0.08),transparent_28%)]" />
           <div className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(90deg,rgba(38,51,44,0.03)_0_2px,rgba(0,0,0,0)_2px_26px)]" />
@@ -167,7 +215,7 @@ export function EndgameScreen({
           <div className="pointer-events-none absolute bottom-1 left-1 h-4 w-4 border-b border-l border-[rgba(216,191,129,0.6)]" />
           <div className="pointer-events-none absolute bottom-1 right-1 h-4 w-4 border-b border-r border-[rgba(216,191,129,0.6)]" />
 
-          <header className="relative grid min-h-[118px] grid-cols-[minmax(300px,1fr)_1.42fr_minmax(330px,1fr)] divide-x divide-[#5e4b2e] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.985),rgba(8,14,13,0.95))] px-5 py-3">
+          <header className="betrayal-endgame-report-header relative grid min-h-[118px] grid-cols-[minmax(300px,1fr)_1.42fr_minmax(330px,1fr)] divide-x divide-[#5e4b2e] border-b border-[#6a5637] bg-[linear-gradient(180deg,rgba(10,16,14,0.985),rgba(8,14,13,0.95))] px-5 py-3">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.3),transparent)]" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.18),transparent)]" />
             <div className="relative flex items-center overflow-hidden px-4 py-2.5">
@@ -236,7 +284,7 @@ export function EndgameScreen({
             </div>
           </header>
 
-          <main className="grid min-h-0 flex-1 grid-cols-[336px_minmax(0,1.22fr)_304px] gap-0 px-4 pb-3 pt-3">
+          <main className="betrayal-endgame-report-main grid min-h-0 flex-1 grid-cols-[336px_minmax(0,1.22fr)_304px] gap-0 px-4 pb-3 pt-3">
             <section className="relative flex min-h-0 flex-col gap-3 px-2 pb-1 pt-1 pr-4">
               <div className="pointer-events-none absolute right-0 top-2 bottom-2 w-px bg-[linear-gradient(180deg,transparent,rgba(214,191,129,0.2),rgba(214,191,129,0.2),transparent)]" />
               <div className="relative overflow-hidden px-3 py-3">
@@ -505,20 +553,15 @@ export function EndgameScreen({
                 </div>
               </div>
 
-              <div className="flex shrink-0 gap-3 pb-1">
-                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
-                  <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
-                  <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
-                  <RotateCcw size={22} />
-                  <span>{t("board.endgame.rematch")}</span>
-                </button>
-                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
+              <div className="betrayal-endgame-report-actions flex shrink-0 gap-3 pb-1">
+                <EndgameRematchActions playerID={playerID} reset={reset} isMultiplayer={isMultiplayer} isConnected={isConnected} matchData={matchData} />
+                <button type="button" onClick={handleBackToLobby} className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
                   <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
                   <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                   <House size={22} />
                   <span>{t("board.endgame.lobby")}</span>
                 </button>
-                <button className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
+                <button type="button" ref={logButtonRef} onClick={() => setShowActionLog(true)} className="relative inline-flex min-w-[138px] items-center justify-center gap-3 overflow-hidden border border-[#7d643a] bg-[linear-gradient(180deg,rgba(18,25,21,0.96),rgba(10,15,13,0.98))] px-4 py-2.5 text-[17px] font-semibold tracking-[0.12em] text-[#ddb774] shadow-[inset_0_0_0_1px_rgba(221,183,116,0.08)]">
                   <span className="pointer-events-none absolute inset-1 border border-[rgba(214,191,129,0.12)]" />
                   <span className="pointer-events-none absolute inset-x-4 top-1 h-px bg-[linear-gradient(90deg,transparent,rgba(214,191,129,0.34),transparent)]" />
                   <BookOpen size={22} />
@@ -620,6 +663,7 @@ export function EndgameScreen({
         </div>
       </div>
       )}
+      {showActionLog && <EndgameActionLog matchData={matchData} locale={effectiveLocale} onClose={() => setShowActionLog(false)} />}
     </div>
   );
 }

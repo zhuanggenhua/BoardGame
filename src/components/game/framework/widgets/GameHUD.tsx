@@ -27,7 +27,6 @@ import { FabMenu, type FabAction, type FabMenuPosition } from '../../../system/F
 import { UNDO_COMMANDS } from '../../../../engine';
 import type { ManualForceEndAiPhaseResult } from '../../../../engine/transport/protocol';
 import { AudioControlSection } from './AudioControlSection';
-import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -41,7 +40,7 @@ import {
     buildActionLogRows,
     createStateBackedActionLogPlayerLabel,
 } from '../../utils/actionLogFormat';
-import { ActionLogSegments } from './ActionLogSegments';
+import { ActionLogPanel } from './ActionLogPanel';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../registry/cardPreviewRegistry';
 import { copyToClipboard } from '../../../../lib/utils';
 import { OpponentOfflineBanner } from './OpponentOfflineBanner';
@@ -415,7 +414,6 @@ export const GameHUD = ({
     };
 
     // 弹窗
-    const [showAbout, setShowAbout] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     const [socialModalId, setSocialModalId] = useState<string | null>(null);
 
@@ -428,34 +426,13 @@ export const GameHUD = ({
         label: t('hud.actions.actionLog'),
         mobilePopoverVerticalAnchor: 'column',
         content: (
-            <div className="flex flex-col gap-2 pr-0.5 sm:pr-1">
-                {actionLogRows.length === 0 ? (
-                    <div className="text-xs text-white/40 text-center py-6">
-                        {t('hud.actionLog.empty')}
-                    </div>
-                ) : (
-                    <div className="flex flex-col gap-2">
-                        {actionLogRows.map((row) => (
-                            <div key={row.id} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2.5" data-testid="hud-action-log-row">
-                                <div className="flex flex-col gap-1 text-[10px] text-white/50 sm:flex-row sm:items-center sm:justify-between" data-testid="hud-action-log-meta">
-                                    <span className="font-mono leading-none">{row.timeLabel}</span>
-                                    <span className="font-semibold leading-tight text-white/70 break-words sm:max-w-[10rem] sm:text-right">{row.playerLabel}</span>
-                                </div>
-                                <div className="mt-1.5 break-words text-xs leading-relaxed text-white/90">
-                                    <ActionLogSegments
-                                        segments={row.segments}
-                                        locale={locale}
-                                        playerId={row.actorId}
-                                        characterId={getActionLogCharacterId(row.actorId)}
-                                        getCardPreviewRef={getCardPreviewRef}
-                                        cardPreviewMaxDim={cardPreviewMaxDim}
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+            <ActionLogPanel
+                rows={actionLogRows}
+                locale={locale}
+                getCharacterId={getActionLogCharacterId}
+                getCardPreviewRef={getCardPreviewRef}
+                cardPreviewMaxDim={cardPreviewMaxDim}
+            />
         ),
     };
 
@@ -465,7 +442,7 @@ export const GameHUD = ({
     const useChatAsMain = isOnline || isTutorial;
     const canForceEndAiPhase = Boolean(showForceEndAiPhase && onForceEndAiPhase);
     const topModalId = stack[stack.length - 1]?.id ?? null;
-    const hasLocalClosableForegroundUi = Boolean(showAbout || showFeedback || socialModalId || stack.length > 0);
+    const hasLocalClosableForegroundUi = Boolean(showFeedback || socialModalId || stack.length > 0);
     const canForceDismissPopup = Boolean(showForceDismissPopup || onForceDismissPopup || hasLocalClosableForegroundUi);
     const handleForceEndAiPhaseClick = useCallback(async (closePanel: () => void) => {
         if (!onForceEndAiPhase || isForceEndingAiPhase) {
@@ -527,9 +504,6 @@ export const GameHUD = ({
                 } else if (showFeedback) {
                     setShowFeedback(false);
                     handled = true;
-                } else if (showAbout) {
-                    setShowAbout(false);
-                    handled = true;
                 }
             }
 
@@ -547,7 +521,6 @@ export const GameHUD = ({
         closeTop,
         isForceDismissingPopup,
         onForceDismissPopup,
-        showAbout,
         showFeedback,
         socialModalId,
         topModalId,
@@ -590,7 +563,7 @@ export const GameHUD = ({
         icon: <Settings size={20} />,
         label: t('hud.actions.settings'),
         content: (
-            <div>
+            <div className="select-none">
                 {/* 本地同屏模式信息 */}
                 {isLocal && (
                     <div className="mb-4 p-3 rounded-lg bg-neon-blue/10 border border-neon-blue/30">
@@ -1032,7 +1005,6 @@ export const GameHUD = ({
                 hudPlacement={hudPlacement}
             />
 
-            {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
             {showFeedback && (
                 <FeedbackModal
                     onClose={() => setShowFeedback(false)}

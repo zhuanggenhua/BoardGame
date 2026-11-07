@@ -35,7 +35,7 @@ import {
 import { resolveHumanAcknowledgementPlayerIds } from './acknowledgementReadModel';
 import { isDustHaunt } from './hauntScenarioReadModel';
 import { cloneHauntTraitorResolution } from './hauntTraitorResolutionModel';
-import { resolveDustTraitorVictoryResult } from './hauntVictoryModel';
+import { resolveDustTraitorVictoryResult, resolveMummyAllHeroesDefeatedVictoryResult } from './hauntVictoryModel';
 import {
     BETRAYAL_TRAIT_LABEL as TRAIT_LABEL,
     cloneUseEffect,
@@ -486,7 +486,7 @@ export function applyBetrayalRecentRollRerollState(
         core.usedCardIdsThisTurn = [...core.usedCardIdsThisTurn, event.payload.cardId];
         const scenarioCompletedResult = resolveDustTraitorVictoryResult(core, {
             deferForRabbitFoot: false,
-        });
+        }) ?? resolveMummyAllHeroesDefeatedVictoryResult(core, { deferForRabbitFoot: false });
         if (scenarioCompletedResult) {
             return { core, scenarioCompletedResult };
         }

@@ -1,3 +1,7 @@
+import { SPECTATOR_PLAYER_ID } from '../../engine/playerView';
+import { createRoomRevealSystem } from './roomRevealSystem';
+import { applyRoomReveal, clonePendingRoomPlacement, projectRoomRevealState, resolveRoomReveal, validateRoomReveal, type BetrayalPendingRoomPlacement } from './roomRevealModel';
+import { projectBetrayalEventForPresentation } from './eventStreamProjection';
 import { resolveBetrayalLocalRuntimeControlledPlayerId } from './localRuntimeControl';
 import { createBaseSystems, createGameEngine } from '../../engine';
 import { registerGameAiRuntime } from '../../engine/ai';
@@ -128,6 +132,7 @@ import {
 } from './bloodFromStoneSetupReadModel';
 import {
     applyBetrayalCorpseLootedState,
+    buryDustDeadTraitorPossessions,
     createBetrayalCorpseLootedPayload,
     resolveCorpseLootTargets,
 } from './deathStateReadModel';
@@ -170,7 +175,9 @@ import {
     findMummyWeddingOmenCard,
 } from './mummyHauntRules';
 import {
+    resolveDustTraitorVictoryResult,
     resolveMummyTraitorVictoryResult,
+    resolveMummyAllHeroesDefeatedVictoryResult,
 } from './hauntVictoryModel';
 import {
     canCureTheDust,
@@ -355,7 +362,6 @@ import {
     cloneRoomTemplate,
     groupRoomDiscoveryDeckByFloor,
     isRoomOrientationTurns,
-    makeRoomDiscoveryDeckFromFloorPools,
     orientDoorwaysForPlacement,
     resolveExplorableRoomSlots,
     resolveRoomDraw,
@@ -1120,6 +1126,10 @@ export interface BetrayalCore {
     otherExplorers: BetrayalExplorerSummary[];
     monsters: BetrayalMonsterSummary[];
     drawOrder: BetrayalDeckKind[];
+    roomRevealSequence?: number;
+    /** Public counts only; ordered room tiles remain server-only. */
+    roomDiscoveryCountsByFloor?: Record<BetrayalRoomFloor, number>;
+    pendingRoomPlacement?: BetrayalPendingRoomPlacement | null;
     roomDiscoveryDeck: BetrayalRoomDiscoveryDeckEntry[];
     roomDiscoveryOrderByFloor: Record<BetrayalRoomFloor, RoomTemplate[]>;
     buriedRoomTiles: BetrayalBuriedRoomTileSummary[];
@@ -1257,7 +1267,8 @@ function cloneCore(core: BetrayalCore): BetrayalCore {
         otherExplorers: core.otherExplorers.map(cloneExplorerSummary),
         monsters: core.monsters.map(cloneMonster),
         drawOrder: [...core.drawOrder],
-        roomDiscoveryDeck: (core.roomDiscoveryDeck ?? makeRoomDiscoveryDeckFromFloorPools(core.roomDiscoveryOrderByFloor))
+        pendingRoomPlacement: core.pendingRoomPlacement ? clonePendingRoomPlacement(core.pendingRoomPlacement) : null,
+        roomDiscoveryDeck: (core.roomDiscoveryDeck ?? [])
             .map(cloneRoomDiscoveryDeckEntry),
         roomDiscoveryOrderByFloor: {
             ground: core.roomDiscoveryOrderByFloor.ground.map(cloneRoomTemplate),
@@ -1718,11 +1729,14 @@ function maskDustRuntimeForPlayer(
         sicknessTokensByPlayerId: Object.fromEntries(
             Object.entries(dust.sicknessTokensByPlayerId).map(([playerId, tokens]) => [
                 playerId,
-                tokens.map((token) => (
-                    playerId === viewingPlayerId
-                        ? { ...token }
-                        : { ...token, value: null }
-                )),
+                // Token identity encodes its original owner. Never send the
+                // stable authority ID: it would let players track a known
+                // value after a private exchange. Holder/slot IDs are only
+                // presentation keys and are not accepted by game commands.
+                tokens.map((token, index) => ({
+                    id: `visible-sickness-slot-${playerId}-${index}`,
+                    value: playerId === viewingPlayerId ? token.value : null,
+                })),
             ]),
         ),
         permanentTraitorPlayerIds: dust.permanentTraitorPlayerIds.includes(viewingPlayerId)
@@ -1738,7 +1752,10 @@ function maskDustRuntimeForPlayer(
 }
 
 function createBetrayalPlayerView(state: BetrayalCore, viewingPlayerId: PlayerId): BetrayalCore {
-    const view = cloneCore(state);
+    const view = projectRoomRevealState(cloneCore(state));
+    // Legacy shuffled draw-order seed data is not used by live gameplay.
+    // Keep it on the authoritative state, but never send it to a seat.
+    view.drawOrder = [];
     if (view.scenarioRuntime.dust) {
         view.scenarioRuntime.dust = maskDustRuntimeForPlayer(view.scenarioRuntime.dust, viewingPlayerId);
     }
@@ -1747,6 +1764,21 @@ function createBetrayalPlayerView(state: BetrayalCore, viewingPlayerId: PlayerId
             view.scenarioRuntime.uponReflection,
             viewingPlayerId,
         );
+    }
+    // Pending haunt setup is a second copy of the private runtime. Apply the
+    // same viewer-specific mask before it can be sent during the roll stage.
+    const eventSnapshot = view.recentRoll?.eventEffectSnapshot;
+    if (eventSnapshot) {
+        // Retain public pre-effect traits and rolled damage for presentation;
+        // rollback deck order remains exclusively in the authoritative state.
+        eventSnapshot.possessionOrderByKindBeforeEffect = { item: [], omen: [] };
+    }
+    const pending = view.pendingEventRollResolution;
+    if (pending?.dustSetup) {
+        pending.dustSetup = maskDustRuntimeForPlayer(pending.dustSetup, viewingPlayerId);
+    }
+    if (pending?.uponReflectionSetup) {
+        pending.uponReflectionSetup = maskUponReflectionRuntimeForPlayer(pending.uponReflectionSetup, viewingPlayerId);
     }
     const deathPreventionRuntime = view.recentRoll?.deathPrevention?.scenarioRuntimeBeforeDefeat;
     if (deathPreventionRuntime?.dust) {
@@ -1892,6 +1924,7 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
     const core = state.core;
     const canReuseDuringHaunt = core.phase === 'haunt' && (
         command.type === BETRAYAL_COMMANDS.EXPLORE_ROOM
+        || command.type === BETRAYAL_COMMANDS.REVEAL_ROOM
         || command.type === BETRAYAL_COMMANDS.USE_ROOM_EFFECT
         || command.type === BETRAYAL_COMMANDS.USE_POSSESSION
         || command.type === BETRAYAL_COMMANDS.RESOLVE_EVENT_CHOICE
@@ -2007,11 +2040,18 @@ function validatePreHauntAction(state: MatchState<BetrayalCore>, command: Betray
             }
             return { valid: true };
         }
+        case BETRAYAL_COMMANDS.REVEAL_ROOM:
+            return validateRoomReveal(core, command.playerId, command.payload);
         case BETRAYAL_COMMANDS.EXPLORE_ROOM: {
+            const pending = core.pendingRoomPlacement;
+            if (!pending || pending.playerId !== command.playerId || (command.payload.roomId && command.payload.roomId !== pending.roomId)) {
+                return { valid: false, error: '请先从指定门揭示房间，再完成该房间放置。' };
+            }
+            if (command.payload.useHolySymbol && !pending.usedHolySymbol) {
+                return { valid: false, error: '请先使用圣符揭示替换板块，再确认放置。' };
+            }
             const explorableSlots = resolveExplorableRoomSlots(core);
-            const nextSlot = command.payload.roomId
-                ? explorableSlots.find((room) => room.id === command.payload.roomId) ?? null
-                : explorableSlots[0] ?? null;
+            const nextSlot = explorableSlots.find((room) => room.id === pending.roomId) ?? null;
             if (!nextSlot) {
                 return { valid: false, error: '当前没有可探索房间。' };
             }
@@ -2397,6 +2437,7 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
                 }
             }
             return validatePreHauntAction({ ...state, core: { ...core, phase: 'preHaunt' } }, command);
+        case BETRAYAL_COMMANDS.REVEAL_ROOM:
         case BETRAYAL_COMMANDS.EXPLORE_ROOM:
             if (isDead) {
                 return { valid: false, error: '死亡探索者不能探索新房间。' };
@@ -3128,6 +3169,9 @@ function validateHauntAction(state: MatchState<BetrayalCore>, command: BetrayalC
 
 function validateCommand(state: MatchState<BetrayalCore>, command: BetrayalCommand): ValidationResult {
     const core = state.core;
+    if (core.pendingRoomPlacement && command.type !== BETRAYAL_COMMANDS.EXPLORE_ROOM && command.type !== BETRAYAL_COMMANDS.REVEAL_ROOM) {
+        return { valid: false, error: '请立即选择朝向并完成已揭示房间的放置。' };
+    }
     if (core.phase === 'haunt') {
         return validateHauntAction(state, command);
     }
@@ -3242,6 +3286,10 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
         case BETRAYAL_COMMANDS.MOVE_TO_ROOM: {
             const payload = resolveBetrayalExplorerMovedPayload(core, command, random);
             return payload ? [nowEvent(EVENTS.EXPLORER_MOVED, payload, timestamp)] : [];
+        }
+        case BETRAYAL_COMMANDS.REVEAL_ROOM: {
+            const payload = resolveRoomReveal(core, command.playerId, command.payload);
+            return payload ? [nowEvent(EVENTS.ROOM_REVEALED, payload, timestamp)] : [];
         }
         case BETRAYAL_COMMANDS.EXPLORE_ROOM: {
             const payload = resolveBetrayalRoomExploredPayload(core, {
@@ -3497,7 +3545,7 @@ function executeCommand(state: MatchState<BetrayalCore>, command: BetrayalComman
                 choice: 'damage' as const,
                 damageToHero: pending.damageToHero,
                 damageKind: 'physical' as const,
-                logText: `${pending.monsterName}选择造成 ${pending.damageToHero} 点 physical damage`,
+                logText: `${pending.monsterName}选择造成 ${pending.damageToHero} 点物理伤害`,
             }, timestamp)];
         }
         case BETRAYAL_COMMANDS.MOVE_HELPING_HANDS_TROLL_HAND: {
@@ -4046,6 +4094,8 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
         case EVENTS.EXPLORER_MOVED: {
             return applyBetrayalExplorerMovedState(core, event);
         }
+        case EVENTS.ROOM_REVEALED:
+            return applyRoomReveal(core, event.payload);
         case EVENTS.ROOM_EXPLORED: {
             const resolution = applyBetrayalRoomExploredState(core, event, DEFAULT_BETRAYAL_RANDOM);
             if (resolution.scenarioCompletedResult) {
@@ -4107,10 +4157,14 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             return resolution.core;
         }
         case EVENTS.EVENT_ROLLED: {
-            return applyBetrayalEventRolledState(core, event).core;
+            const resolution = applyBetrayalEventRolledState(core, event);
+            return reduceScenarioCompletionStateResolution(resolution, event.timestamp);
         }
         case EVENTS.EVENT_ROLL_FINALIZED: {
             const resolution = applyBetrayalEventRollFinalizedState(core, event);
+            if (resolution.scenarioCompletedResult) {
+                return reduceScenarioCompletionStateResolution(resolution, event.timestamp);
+            }
             if (resolution.hauntTriggeredPayload) {
                 return reduceEvent(resolution.core, nowEvent(EVENTS.HAUNT_TRIGGERED, resolution.hauntTriggeredPayload, event.timestamp));
             }
@@ -4328,6 +4382,14 @@ function reduceEvent(state: BetrayalCore, event: BetrayalEvent): BetrayalCore {
             if (core.recentRoll?.id !== event.payload.rollId) {
                 return core;
             }
+            if (event.payload.isFullyAcknowledged && core.recentRoll.kind === 'deathPrevention') {
+                buryDustDeadTraitorPossessions(core, core.recentRoll.playerId, { deferForRabbitFoot: false });
+                const scenarioCompletedResult = resolveDustTraitorVictoryResult(core, { deferForRabbitFoot: false })
+                    ?? resolveMummyAllHeroesDefeatedVictoryResult(core, { deferForRabbitFoot: false });
+                if (scenarioCompletedResult) {
+                    return reduceScenarioCompletionStateResolution({ core, scenarioCompletedResult }, event.timestamp);
+                }
+            }
             core.recentRoll = event.payload.isFullyAcknowledged
                 ? null
                 : {
@@ -4473,6 +4535,8 @@ export const BetrayalDomain: DomainCore<BetrayalCore, BetrayalCommand, BetrayalE
     execute: executeCommand,
     reduce: reduceEvent,
     playerView: createBetrayalPlayerView,
+    // Spectators are not a player seat and must not inherit any seat's secrets.
+    spectatorView: (state) => createBetrayalPlayerView(state, SPECTATOR_PLAYER_ID),
     isGameOver: (state) => {
         if (state.phase !== 'endgame' || !state.endgameResult) {
             return undefined;
@@ -4631,13 +4695,16 @@ const shouldSuppressBetrayalActiveTurnRecovery = (args: {
 };
 
 const systems = [
+    createRoomRevealSystem(),
     ...createBaseSystems<BetrayalCore>({
+        eventStream: { projectEvent: projectBetrayalEventForPresentation },
         actionLog: {
             commandAllowlist: BETRAYAL_ACTION_LOG_ALLOWLIST,
             formatEntry: formatBetrayalActionEntry,
         },
         undo: {
             snapshotCommandAllowlist: BETRAYAL_UNDO_ALLOWLIST,
+            clearHistoryOnEventTypes: [EVENTS.ROOM_REVEALED, EVENTS.ROOM_EXPLORED],
         },
     }),
     createCheatSystem<BetrayalCore>(),
@@ -4653,6 +4720,18 @@ const baseEngineConfig = createGameEngine<BetrayalCore, BetrayalCommand, Betraya
 
 export const engineConfig = {
     ...baseEngineConfig,
+    randomSyncPolicy: 'server-only' as const,
+    // Drawn cards and public counts remain in core; undisclosed ordered decks
+    // are server authority only. Local games do not use this transport hook.
+    transportView: (state: MatchState<BetrayalCore>) => ({
+        ...state,
+        sys: { ...state.sys, tutorial: { ...state.sys.tutorial, checkpoints: undefined } },
+        core: {
+            ...projectRoomRevealState(state.core),
+            eventOrder: [],
+            possessionOrderByKind: { item: [], omen: [] },
+        },
+    }),
     resolveLocalRuntimeControlledPlayerId: resolveBetrayalLocalRuntimeControlledPlayerId,
     onlineAiRecovery: {
         publicPregameLegalActionPhases: ['characterSelect'],

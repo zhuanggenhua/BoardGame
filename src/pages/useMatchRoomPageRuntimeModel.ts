@@ -77,6 +77,7 @@ export type MatchRoomPageSessionStateModel = Pick<
 
 export type MatchRoomPageExitFlowModel = Pick<
     ReturnType<typeof useMatchRoomExitFlow>,
+    | 'handleRematchTransitionChange'
     | 'isLeaving'
     | 'navigateBackToLobby'
     | 'handleLeaveRoom'
@@ -117,6 +118,7 @@ export type MatchRoomTutorialStageAdapter = {
 };
 
 export type MatchRoomOnlineConnectionStageAdapter = {
+    onRematchTransitionChange?: MatchRoomPageExitFlowModel['handleRematchTransitionChange'];
     engineConfig: MatchRoomPageRuntimeSetupModel['engineConfig'];
     latencyConfig: MatchRoomPageRuntimeSetupModel['latencyConfig'];
     onError: MatchRoomPageStageControllersModel['handleGameError'];
@@ -235,6 +237,7 @@ export function resolveMatchRoomTutorialProgressNumPlayers(args: {
 }
 
 function buildMatchRoomOnlineConnectionStageAdapter(args: {
+    exitFlow: MatchRoomPageExitFlowModel;
     runtimeSetup: MatchRoomPageRuntimeSetupModel;
     stageControllers: MatchRoomPageStageControllersModel;
     sessionState: MatchRoomPageSessionStateModel;
@@ -244,6 +247,7 @@ function buildMatchRoomOnlineConnectionStageAdapter(args: {
     return {
         engineConfig: runtimeSetup.engineConfig,
         latencyConfig: runtimeSetup.latencyConfig,
+        onRematchTransitionChange: args.exitFlow.handleRematchTransitionChange,
         onError: stageControllers.handleGameError,
         onReady: stageControllers.resetOnlineTransportError,
         transportError: stageControllers.onlineTransportError,
@@ -395,6 +399,7 @@ function buildMatchRoomOnlineStageAdapter(args: {
         board: runtimeSetup.onlineBoard,
         boardRenderer: runtimeSetup.onlineBoardRenderer,
         connection: buildMatchRoomOnlineConnectionStageAdapter({
+            exitFlow,
             runtimeSetup,
             stageControllers,
             sessionState,

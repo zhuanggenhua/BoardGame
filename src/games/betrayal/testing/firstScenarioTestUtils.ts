@@ -10,6 +10,7 @@ import {
   type BetrayalCore,
   type BetrayalTraitKey,
 } from "../game";
+import { resolveExplorableRoomSlots } from "../roomDiscoveryModel";
 import { BETRAYAL_COMMANDS } from "../commands";
 import type {
   BetrayalCommand,
@@ -157,6 +158,12 @@ export function applyBetrayalCommand<Type extends keyof BetrayalCommandMap>(
   finalizeEventRoll = true,
 ): BetrayalCore {
   syncLegacyTestCoreTraitTracks(core);
+  if (type === BETRAYAL_COMMANDS.EXPLORE_ROOM && !core.pendingRoomPlacement) {
+    const explore = payload as BetrayalCommandMap['EXPLORE_ROOM'];
+    const roomId = explore.roomId ?? resolveExplorableRoomSlots(core)[0]?.id;
+    core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, playerId, { roomId: roomId! }, timestamp, random, false);
+    if (explore.useHolySymbol) core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, playerId, { roomId: roomId!, useHolySymbol: true }, timestamp, random, false);
+  }
   const nextCommand = createBetrayalCommand(type, playerId, payload, timestamp);
   const validation = BetrayalDomain.validate(stateOf(core), nextCommand);
   if (!validation.valid) {

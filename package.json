@@ -26,7 +26,7 @@
     "dev:flowise": "powershell -ExecutionPolicy Bypass -File ..\\flowise-fork\\boardgame\\scripts\\start-boardgame-local.ps1",
     "dev:flowise:open": "powershell -ExecutionPolicy Bypass -File ..\\flowise-fork\\boardgame\\scripts\\start-boardgame-local.ps1 -OpenBrowser",
     "smoke:startup": "node scripts/infra/startup-smoke-test.mjs",
-    "prebuild": "node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs",
+    "prebuild": "node scripts/verify/operation-guide-assets.mjs && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs",
     "build": "node --max-old-space-size=8192 scripts/infra/vite-cli-safe.mjs build --config vite.config.ts --configLoader bundle && node scripts/deploy/prune-web-dist-assets.mjs",
     "build:full": "tsc -b && node --max-old-space-size=8192 scripts/infra/vite-cli-safe.mjs build --config vite.config.ts --configLoader bundle && node scripts/deploy/prune-web-dist-assets.mjs",
     "build:web:prune-assets": "node scripts/deploy/prune-web-dist-assets.mjs --target web",

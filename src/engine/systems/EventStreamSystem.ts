@@ -5,7 +5,7 @@
  * 与 LogSystem 解耦，避免日志重建导致的重复触发。
  */
 
-import type { EventStreamEntry, EventStreamState, GameEvent, MatchState } from '../types';
+import type { EventStreamEntry, EventStreamState, GameEvent, MatchState, PlayerId } from '../types';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 
@@ -16,6 +16,8 @@ import { SYSTEM_IDS } from './types';
 export interface EventStreamSystemConfig {
     /** 最大事件条目数 */
     maxEntries?: number;
+    /** Optional per-player presentation projection; authority retains full events. */
+    projectEvent?: (event: GameEvent, playerId: PlayerId) => GameEvent;
 }
 
 export interface EventStreamDelta {
@@ -45,6 +47,20 @@ export function createEventStreamSystem<TCore>(
                 nextId: 1,
             },
         }),
+
+        playerView: config.projectEvent ? (state, playerId) => {
+            const stream = state.sys.eventStream;
+            if (!stream) return {};
+            return {
+                eventStream: {
+                    ...stream,
+                    entries: stream.entries.map((entry) => ({
+                        id: entry.id,
+                        event: config.projectEvent!(entry.event, playerId),
+                    })),
+                },
+            };
+        } : undefined,
 
         afterEvents: ({ state, events }): HookResult<TCore> | void => {
             if (!events || events.length === 0) return;

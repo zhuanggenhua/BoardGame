@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { createHash } from 'crypto';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 import type { AudioEvent } from '../../../lib/audio/types';
@@ -48,6 +49,13 @@ const registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8')) as {
     entries: Array<{ key: string; src: string }>;
 };
 const registryByKey = new Map(registry.entries.map((entry) => [entry.key, entry]));
+const commonManifest = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'public', 'assets', 'common', 'assets-manifest.json'), 'utf-8')) as {
+    files: Record<string, { variants?: Record<string, { sha256?: string; bytes?: number; mime?: string }> }>;
+};
+const getCommonManifestKey = (source: string) => {
+    const parsed = path.posix.parse(source.replace(/\\/g, '/'));
+    return path.posix.join('audio', parsed.dir, 'compressed', parsed.name);
+};
 
 const configuredKeys = [
     ...BETRAYAL_FOOTSTEP_KEYS,
@@ -179,7 +187,7 @@ describe('山屋惊魂音频配置', () => {
         expect(hauntRule?.group).toBe('battle');
     });
 
-    it('关键音效不重复，所有 key 均有注册表和本地压缩实体', () => {
+    it('关键音效不重复，所有 key 均有注册表和发布清单；本地实体存在时校验哈希', () => {
         const criticalSounds = BETRAYAL_AUDIO_CONFIG.criticalSounds ?? [];
         expect(new Set(criticalSounds).size).toBe(criticalSounds.length);
         expect(criticalSounds).toContain(BETRAYAL_SCENARIO_PAGE_TURN_KEY);
@@ -203,7 +211,16 @@ describe('山屋惊魂音频配置', () => {
                 'compressed',
                 parsed.base,
             );
-            expect(fs.existsSync(compressedPath), `山屋惊魂音频缺少本地压缩实体: ${compressedPath}`).toBe(true);
+            const manifestKey = getCommonManifestKey(entry!.src);
+            const variant = commonManifest.files[manifestKey]?.variants?.ogg;
+            expect(variant, `山屋惊魂音频缺少发布清单 OGG 项: ${manifestKey}`).toMatchObject({ mime: 'audio/ogg' });
+            expect(variant?.bytes).toBeGreaterThan(0);
+            expect(variant?.sha256).toMatch(/^[0-9a-f]{64}$/);
+            if (fs.existsSync(compressedPath)) {
+                const bytes = fs.readFileSync(compressedPath);
+                expect(bytes.length, `本地音频大小不符: ${compressedPath}`).toBe(variant?.bytes);
+                expect(createHash('sha256').update(bytes).digest('hex'), `本地音频哈希不符: ${compressedPath}`).toBe(variant?.sha256);
+            }
         }
     });
 });

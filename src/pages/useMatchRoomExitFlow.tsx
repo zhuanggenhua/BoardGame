@@ -32,6 +32,7 @@ type UseMatchRoomExitFlowArgs = {
 
 type UseMatchRoomExitFlowResult = {
     isLeaving: boolean;
+    handleRematchTransitionChange: (matchId: string, pending: boolean) => void;
     navigateBackToLobby: () => void;
     handleLeaveRoom: () => Promise<void>;
     handleDestroyRoom: () => Promise<void>;
@@ -57,6 +58,11 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
     const toast = useToast();
     const { openModal, closeModal, closeAll } = useModalStack();
     const [isLeaving, setIsLeaving] = useState(false);
+    // Projection only: RematchProvider owns the attempt and its timeout.
+    const [rematchPendingMatchId, setRematchPendingMatchId] = useState<string | null>(null);
+    const handleRematchTransitionChange = useCallback((sourceMatchId: string, pending: boolean) => {
+        setRematchPendingMatchId(current => pending ? sourceMatchId : current === sourceMatchId ? null : current);
+    }, []);
     const destroyModalIdRef = useRef<string | null>(null);
     const forceExitModalIdRef = useRef<string | null>(null);
 
@@ -97,6 +103,7 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
         onlineTransportError,
         matchStatusErrorKind,
         onConfirmedMissingMatch: handleConfirmedMissingMatch,
+        rematchInProgress: rematchPendingMatchId === matchId,
     });
 
     const handleForceExitLocal = useCallback(() => {
@@ -249,6 +256,7 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
 
     return {
         isLeaving,
+        handleRematchTransitionChange,
         navigateBackToLobby,
         handleLeaveRoom,
         handleDestroyRoom,

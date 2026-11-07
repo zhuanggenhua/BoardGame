@@ -132,7 +132,7 @@ describe('七大恨手牌决策托盘', () => {
         core.selectedPaymentCardIds = [core.handCards[0].id];
         core.regions = [];
         const { actions } = mountTray(core);
-        expect(screen.getByTestId('qidahen-action-payment-hint').textContent).toContain('选择目标地区');
+        expect(screen.getByTestId('qidahen-action-payment-hint').textContent).toContain('选择出兵地区');
         fireEvent.click(screen.getByRole('button', { name: '确认执行' }));
         expect(actions.onConfirmSelectedAction).not.toHaveBeenCalled();
     });

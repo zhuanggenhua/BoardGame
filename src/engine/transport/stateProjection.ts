@@ -125,7 +125,10 @@ export function applyMatchPlayerView(
     match: Pick<TransportStateProjectionMatch, 'engineConfig' | 'state'>,
     playerID: string | null,
 ): unknown {
-    return applyPlayerViewToState(match.engineConfig, match.state, playerID);
+    const view = applyPlayerViewToState(match.engineConfig, match.state, playerID);
+    return match.engineConfig.transportView
+        ? match.engineConfig.transportView(view, playerID)
+        : view;
 }
 
 export function buildTransportMatchPlayers(

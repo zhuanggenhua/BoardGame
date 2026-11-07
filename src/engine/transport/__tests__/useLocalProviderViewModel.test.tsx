@@ -1,9 +1,10 @@
 /* @vitest-environment happy-dom */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { MatchState } from '../../types';
 import { TRANSPORT_BATCH_COMMAND } from '../../batchDispatchCommand';
 import { useLocalProviderViewModel } from '../useLocalProviderViewModel';
+import { clearCurrentGameFeedbackContext, getCurrentGameFeedbackContext, setCurrentGameFeedbackContext } from '../../../lib/feedback/gameFeedbackContext';
 
 type TestState = MatchState<{
     activePlayerId: string;
@@ -32,6 +33,8 @@ const createState = (): TestState => ({
 });
 
 describe('useLocalProviderViewModel', () => {
+    afterEach(() => clearCurrentGameFeedbackContext());
+
     it('固定本地视角下，应为 UI dispatch 显式注入 __internalPlayerId', () => {
         const dispatch = vi.fn();
         const { result } = renderHook(() => useLocalProviderViewModel({
@@ -115,6 +118,35 @@ describe('useLocalProviderViewModel', () => {
             interactionId: 'interaction-0',
             optionId: 'confirm',
         });
+    });
+
+    it('本地命令进入派发边界后即记录尝试，即使引擎派发抛错也保留安全摘要', () => {
+        const secretPayload = 'private-choice-payload-canary';
+        const state = createState();
+        const dispatch = vi.fn(() => { throw new Error('dispatch rejected'); });
+        setCurrentGameFeedbackContext({ state, scopeId: 'local-dispatch-reject', playerId: '1', isLocalMode: true });
+        const { result } = renderHook(() => useLocalProviderViewModel({
+            state,
+            dispatch,
+            reset: vi.fn(),
+            playerIds: ['0', '1'],
+            seatControllers: {},
+            localPregameControlledPlayerId: null,
+            followCurrentTurnPlayer: false,
+            localPlayerId: '1',
+            randomCursor: 8,
+        }));
+
+        expect(() => act(() => {
+            result.current.dispatch('SYS_INTERACTION_RESPOND', {
+                interactionId: 'choice-1',
+                optionId: secretPayload,
+            });
+        })).toThrow('dispatch rejected');
+
+        const trace = getCurrentGameFeedbackContext()?.latestCommand;
+        expect(trace).toMatchObject({ commandType: 'SYS_INTERACTION_RESPOND', playerId: '1', randomCursor: 8 });
+        expect(JSON.stringify(trace)).not.toContain(secretPayload);
     });
 
     it('内部批量命令应逐条执行，并给每条业务命令注入本地视角玩家', () => {

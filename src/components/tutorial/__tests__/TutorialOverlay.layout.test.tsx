@@ -110,5 +110,18 @@ describe('TutorialOverlay 真实几何变化后的定位', () => {
         const dx = Math.max(0, attached.x - target.right, target.left - attached.x - 320);
         const dy = Math.max(0, attached.y - target.bottom, target.top - attached.y - tooltipHeight);
         expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(28);
+        expect(screen.queryByTestId('tutorial-anchor-arrow')).toBeNull();
+
+        // 显式指认对象时，避让后的短箭头仍朝向实际对象，默认布局与位置保持原语义。
+        tutorial.mockReturnValue({ ...context, currentStep: { ...step, id: 'direct-anchor', tooltipAnchorTarget: 'layout-target', tooltipArrow: 'anchor' } });
+        view.rerender(<TutorialOverlay />); tick();
+        expect(box()).toEqual(attached);
+        const points = screen.getByTestId('tutorial-anchor-arrow').querySelector('polygon')!.getAttribute('points')!
+            .split(/[ ,]+/).map(Number);
+        expect(points).toHaveLength(6);
+        const tipX = attached.x + points[4], tipY = attached.y + points[5];
+        const tipDx = Math.max(0, target.left - tipX, tipX - target.right);
+        const tipDy = Math.max(0, target.top - tipY, tipY - target.bottom);
+        expect(Math.hypot(tipDx, tipDy)).toBeCloseTo(Math.max(3, Math.hypot(dx, dy) - 18), 2);
     });
 });

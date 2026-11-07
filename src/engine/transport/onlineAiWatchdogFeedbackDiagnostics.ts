@@ -295,6 +295,7 @@ export function buildOnlineAiRecoveryStateSnapshot(args: {
     progressMarker: string;
     blockerFingerprint: string | null;
     aiSummary: OnlineAiRecoveryAiSummary;
+    gameStateSummary?: Record<string, unknown> | null;
 }): string {
     const interactionState = args.state.sys?.interaction as { isBlocked?: unknown } | undefined;
     const diagnostics = buildOnlineAiFeedbackDiagnosticsContext({
@@ -329,6 +330,7 @@ export function buildOnlineAiRecoveryStateSnapshot(args: {
         seatControllerType: args.aiSummary.seatControllerType,
         legalActions: args.aiSummary.legalActions,
         aiDecisionPreview: args.aiSummary.decisionPreview,
+        ...(args.gameStateSummary ? { gameStateSummary: cloneOnlineAiDiagnosticValue(args.gameStateSummary) } : {}),
         responseWindow: diagnostics.sharedResponseWindow,
         pendingDamage: diagnostics.pendingDamage,
         ...(refereeReplay ? { refereeReplay } : {}),

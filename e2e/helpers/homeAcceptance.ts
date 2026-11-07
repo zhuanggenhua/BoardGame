@@ -52,6 +52,7 @@ const sourceHash = createHash('sha256');
 sourcePaths.push('src/components/home/PlatformNavigation.tsx', 'src/components/home/platform-navigation.css', 'src/components/home/platform-home.css', 'src/components/home/platform-motion.css', 'src/components/home/HomeGameDetailsPresentation.tsx', 'src/components/common/overlays/ModalBase.tsx', 'e2e/home-motion.e2e.ts');
 sourcePaths.push('src/components/system/ModalStackRoot.tsx', 'src/contexts/ModalStackContext.tsx', 'src/hooks/routing/useUrlModal.ts');
 sourcePaths.push('src/components/home/PlatformGameCard.tsx', 'e2e/home-steam-hover.e2e.ts');
+sourcePaths.push('src/components/lobby/GameList.tsx', 'src/components/game/framework/ImplementationStatusRibbon.tsx', 'src/components/game/framework/CharacterSelectionBadge.tsx');
 sourcePaths.push('src/components/common/i18n/LanguageSwitcher.tsx', 'src/components/common/i18n/platform-language.css');
 for (const path of sourcePaths) sourceHash.update(path).update(readFileSync(path));
 export const sourceRevision = `${execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()}:${sourceHash.digest('hex')}`;
@@ -149,6 +150,21 @@ export async function login(page: Page, account: Account) {
     const body = await response.json();
     expect(body.data.user.id).toBe(account.id);
     await expect(page.getByTestId('user-menu-trigger')).toBeVisible();
+}
+
+export async function openPlatformProfile(page: Page) {
+    const menuLabel = /^(菜单|Menu)$/;
+    const profileLabel = /^(个人主页|Profile)$/;
+    const desktopEntry = page.getByRole('navigation', { name: menuLabel })
+        .getByRole('button', { name: profileLabel });
+    if (await desktopEntry.count() > 0) {
+        await desktopEntry.click();
+    } else {
+        await page.getByRole('button', { name: menuLabel }).click();
+        await page.getByRole('dialog', { name: menuLabel })
+            .getByRole('button', { name: profileLabel }).click();
+    }
+    await expect(page.getByTestId('profile-page')).toBeVisible();
 }
 
 export async function settings(page: Page) {

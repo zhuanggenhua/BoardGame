@@ -58,6 +58,12 @@
     "disabledDescription": "已恢复为仅长连接模式，正在重新连接。"
   },
   "rematch": {
+    "stillWaiting": "重赛请求等待时间较长，结果暂未确认。请勿重复发起，收到结果后会继续处理。",
+    "outcomeUnknown": "重赛结果暂时无法确认。请先返回大厅查看房间，勿重复发起重赛。",
+    "setupUnsupported": "当前房间配置无法安全复用，本次重赛未替换原对局。请返回大厅创建新房间。",
+    "failed": "未能完成重赛。请返回大厅确认房间状态后再试。",
+    "waitTimeout": "等待新房间超时。请返回大厅查看房间状态。",
+    "missingCredentials": "缺少座位凭据，请重新加入房间后重试。",
     "playAgain": "再来一局",
     "votePlayAgain": "再来一局",
     "cancelVote": "取消投票",

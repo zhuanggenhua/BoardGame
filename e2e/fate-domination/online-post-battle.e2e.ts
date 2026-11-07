@@ -143,6 +143,16 @@ for (const round of [10, 11]) test(`真实联网战后选择先收口再${round 
             await record('observe-eliminated', '用该席真实凭证进入淘汰后的本人观战视角', async () => {
                 await seedMatchCredentials(context, 'fate-domination', matchId, '2', observerCredential);
                 await page.goto(`/play/fate-domination/match/${matchId}?playerID=2`, {waitUntil: 'domcontentloaded'});
+                await expect(page.getByLabel('本人席位')).toBeVisible();
+                await page.waitForFunction(()=>Boolean((window as any).__BG_TEST_HARNESS__?.state?.get?.()));
+                const clientElimination=await page.evaluate(()=>{
+                    const state=(window as any).__BG_TEST_HARNESS__.state.get();
+                    return {round:state.core.round,phase:state.core.phase,players:Object.values(state.core.players).map((player:any)=>({id:player.id,eliminated:player.eliminated,mana:player.mana,commandSpells:player.commandSpells})),selfDescription:document.querySelector('.fd-self-identity')?.getAttribute('aria-description'),selfSlash:document.querySelector('.fd-self-dock .fd-avatar-elimination')!==null};
+                });
+                const serverElimination=await read();
+                await writeFile(path.join(run.stagingDir,'eliminated-view-readback.json'),JSON.stringify({client:clientElimination,server:{round:serverElimination.core.round,phase:serverElimination.core.phase,players:Object.values(serverElimination.core.players).map(player=>({id:player.id,eliminated:player.eliminated,mana:player.mana,commandSpells:player.commandSpells}))}},null,2));
+                expect(serverElimination.core.players['2'].eliminated).toBe(true);
+                expect(clientElimination.players.find(player=>player.id==='2')?.eliminated).toBe(true);
                 await expect(page.getByLabel('本人席位').locator('[aria-description="已淘汰，观战中"] .fd-avatar-elimination')).toBeVisible();
                 await expect(page.getByTestId('fate-domination-primary-action')).toBeDisabled();
                 await expect(page.getByRole('button', {name: '使用令咒', exact: true})).toBeDisabled();

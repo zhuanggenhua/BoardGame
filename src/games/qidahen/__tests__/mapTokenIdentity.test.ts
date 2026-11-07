@@ -29,4 +29,5 @@ describe('地图标记的正式地区身份', () => {
         expect(tokens.find(token => token.id === 'diplomacy-marker-city-region-18')?.regionId).toBe('city-region-18');
         expect(tokens.find(token => token.id === 'test-drought')?.regionId).toBe('city-region-18');
     });
+
 });

@@ -242,6 +242,7 @@ export function executeCardCommand(
                     damageDealt: 0,
                     timestamp,
                     damageOrigin: 'card',
+                    resolutionSequenceId: `upgrade-card:${actingPlayerId}:${card.id}:${timestamp}`,
                 };
                 const effectEvents = resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random });
                 events.push(...effectEvents);
@@ -324,6 +325,7 @@ export function executeCardCommand(
                         timestamp,
                         damageOrigin: 'card',
                         isAttackModifierCard: card.isAttackModifier,
+                        resolutionSequenceId: `play-card:${actingPlayerId}:${card.id}:${timestamp}`,
                     };
                     effectEvents.push(...resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random }));
                 }
@@ -403,6 +405,7 @@ export function executeCardCommand(
                     state,
                     damageDealt: 0,
                     timestamp,
+                    resolutionSequenceId: `play-upgrade-card:${state.activePlayerId}:${card.id}:${timestamp}`,
                 };
                 const effectEvents = resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random });
                 events.push(...effectEvents);

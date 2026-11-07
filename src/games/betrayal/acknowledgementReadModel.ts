@@ -200,6 +200,7 @@ export function resolveRecentRollRequiredPlayerIds(
         return Array.from(new Set(configuredPlayerIds));
     }
     const publicJudgementKinds: BetrayalRecentRollState['kind'][] = [
+        'deathPrevention',
         'eventTraitCheck',
         'eventDiceRoll',
         'eventRolledDamage',
@@ -257,13 +258,14 @@ export function resolveAcknowledgeableRecentRoll(
     const currentDecisionPlayerIds = new Set(
         [core.currentPlayer, core.activePlayerId].filter((playerId): playerId is string => Boolean(playerId)),
     );
-    if (!recentRoll || !currentDecisionPlayerIds.has(recentRoll.playerId)) {
+    if (!recentRoll || (recentRoll.kind !== 'deathPrevention' && !currentDecisionPlayerIds.has(recentRoll.playerId))) {
         return null;
     }
     if (recentRoll.roomEndTurn?.nextPlayerId || recentRoll.deathPrevention?.nextPlayerId) {
         return null;
     }
     const acknowledgeableKinds: BetrayalRecentRollState['kind'][] = [
+        'deathPrevention',
         'eventTraitCheck',
         'eventDiceRoll',
         'eventRolledDamage',

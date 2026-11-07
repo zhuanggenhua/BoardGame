@@ -147,6 +147,8 @@ it('没有雕像或不是事件符号板块时，不能声明用雕像跳过事�
         let core = createStartedFirstScenarioCore();
         core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.MOVE_TO_ROOM, '0', { roomId: 'hallway' });
 
+        const beforeReveal = structuredClone(core);
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
         const withoutIdol = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north', useIdol: true }),
@@ -156,6 +158,7 @@ it('没有雕像或不是事件符号板块时，不能声明用雕像跳过事�
             expect(withoutIdol.error).toContain('不能使用雕像');
         }
 
+        core = beforeReveal;
         core.currentExplorer = {
             ...core.currentExplorer,
             inventory: [{ id: 'idol', name: '雕像', kind: 'omen' }],
@@ -165,6 +168,7 @@ it('没有雕像或不是事件符号板块时，不能声明用雕像跳过事�
         core.drawOrder = ['item'];
         setNextDiscoverySymbolRoomsForAllFloors(core, 'item');
 
+        core = applyBetrayalCommand(core, BETRAYAL_COMMANDS.REVEAL_ROOM, '0', { roomId: 'ground-north' });
         const nonEventRoom = BetrayalDomain.validate(
             { core, sys: {} as never },
             createBetrayalCommand(BETRAYAL_COMMANDS.EXPLORE_ROOM, '0', { roomId: 'ground-north', useIdol: true }),

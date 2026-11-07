@@ -69,6 +69,7 @@ class MatchSocketService {
     private isConnecting = false;
     private currentMatchId: string | null = null;
     private currentPlayerId: string | null = null;
+    private currentCredentials: string | null = null;
     private currentChatMatchId: string | null = null;
     private currentChatIdentity: MatchChatIdentity = {};
     private currentEmoteMatchId: string | null = null;
@@ -212,7 +213,7 @@ class MatchSocketService {
             return;
         }
 
-        if (this.currentMatchId && this.currentPlayerId) {
+        if (this.currentMatchId && this.currentPlayerId && this.currentCredentials) {
             this.socket.emit(REMATCH_EVENTS.JOIN_MATCH, this.buildJoinMatchPayload(this.currentMatchId, this.currentPlayerId));
         }
 
@@ -300,7 +301,12 @@ class MatchSocketService {
         });
     }
 
-    joinMatch(matchId: string, playerId: string, options?: { autoAcceptedPlayerIds?: string[] }): void {
+    joinMatch(matchId: string, playerId: string, options?: { autoAcceptedPlayerIds?: string[]; credentials?: string }): void {
+        if (!options?.credentials) {
+            this.leaveMatch();
+            return;
+        }
+        this.currentCredentials = options.credentials;
         this.currentMatchId = matchId;
         this.currentPlayerId = playerId;
         this.currentAutoAcceptedPlayerIds = this.normalizeAutoAcceptedPlayerIds(options?.autoAcceptedPlayerIds ?? []);
@@ -325,10 +331,11 @@ class MatchSocketService {
         )];
     }
 
-    private buildJoinMatchPayload(matchId: string, playerId: string): { matchId: string; playerId: string; autoAcceptedPlayerIds?: string[] } {
+    private buildJoinMatchPayload(matchId: string, playerId: string): { matchId: string; playerId: string; credentials: string; autoAcceptedPlayerIds?: string[] } {
         return {
             matchId,
             playerId,
+            credentials: this.currentCredentials!,
             ...(this.currentAutoAcceptedPlayerIds.length > 0
                 ? { autoAcceptedPlayerIds: this.currentAutoAcceptedPlayerIds }
                 : {}),
@@ -338,7 +345,7 @@ class MatchSocketService {
     setAutoAcceptedPlayerIds(playerIds: string[]): void {
         this.currentAutoAcceptedPlayerIds = this.normalizeAutoAcceptedPlayerIds(playerIds);
 
-        if (this.socket?.connected && this.currentMatchId && this.currentPlayerId) {
+        if (this.socket?.connected && this.currentMatchId && this.currentPlayerId && this.currentCredentials) {
             this.socket.emit(REMATCH_EVENTS.JOIN_MATCH, this.buildJoinMatchPayload(this.currentMatchId, this.currentPlayerId));
         }
     }
@@ -350,6 +357,7 @@ class MatchSocketService {
 
         this.currentMatchId = null;
         this.currentPlayerId = null;
+        this.currentCredentials = null;
         this.currentAutoAcceptedPlayerIds = [];
         this.currentState = { votes: {}, ready: false, revision: 0 };
         this.lastAcceptedRevision = 0;
@@ -473,7 +481,7 @@ class MatchSocketService {
             return;
         }
 
-        if (!this.currentMatchId || !this.currentPlayerId) {
+        if (!this.currentMatchId || !this.currentPlayerId || !this.currentCredentials) {
             log.warn('vote_skipped_not_joined');
             return;
         }
@@ -485,18 +493,21 @@ class MatchSocketService {
         this.socket.emit(REMATCH_EVENTS.VOTE);
     }
 
-    broadcastNewRoom(url: string): void {
+    broadcastNewRoom(url: string, credentials?: string): void {
         if (!this.socket?.connected) {
             log.warn('broadcast_new_room_skipped_not_connected');
             return;
         }
 
-        if (!this.currentMatchId) {
+        if (!this.currentMatchId || this.currentPlayerId !== '0' || !this.currentCredentials) {
             log.warn('broadcast_new_room_skipped_not_joined');
             return;
         }
 
-        this.socket.emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, { url });
+        const match = /^\/play\/[a-zA-Z0-9_-]+\/match\/([a-zA-Z0-9_-]+)$/.exec(url);
+        if (!match || !credentials) return;
+        // Only server-verified IDs and P0 proof cross the wire, never a navigation URL.
+        this.socket.emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, { matchID: match[1], credentials });
     }
 
     subscribeState(callback: RematchStateCallback): () => void {

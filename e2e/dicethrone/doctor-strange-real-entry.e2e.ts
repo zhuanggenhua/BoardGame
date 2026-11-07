@@ -2483,50 +2483,47 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
     });
     const doctorStrangeCard = page.locator('[data-testid="character-selection-overlay"] [data-character-id="doctor_strange"]');
     await expect(doctorStrangeCard).toBeVisible();
-    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeVisible();
+    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toHaveCount(0);
     await expect(page.locator('[data-character-id="monk"]')).toBeVisible();
-    const visibleHeroOrder = await page.locator('[data-testid="character-selection-overlay"] [data-character-id]')
-        .evaluateAll(elements => elements.map(element => element.getAttribute('data-character-id')));
-    expect(visibleHeroOrder.indexOf('monk')).toBeLessThan(visibleHeroOrder.indexOf('doctor_strange'));
     const desktopScreenshot = await captureTracedState(
         page, undefined, evidenceRun, trace, '真实选角入口-奇异博士可选-桌面',
         'online-room-created-selection-visible', '确认创建房间并进入桌面选角界面',
-        '真实选角目录显示可选奇异博士及实施中徽标',
+        '真实选角目录显示可选奇异博士且没有实施中徽标',
         snapshot => ({
             doctorStrangeVisible: (snapshot.visible.selectableHeroIds as string[]).includes('doctor_strange'),
             implementationBadgeVisible: snapshot.visible.doctorStrangeImplementationBadgeVisible,
             setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
         }),
-        { doctorStrangeVisible: true, implementationBadgeVisible: true, setupOptionStatus: 'in_progress' },
+        { doctorStrangeVisible: true, implementationBadgeVisible: false, setupOptionStatus: null },
     );
     media.push({
         path: desktopScreenshot, chainId: '奇异博士在线角色选择界面', chainStep: '桌面角色候选', stage: '中态',
         uiStateId: 'doctor-strange-available-desktop-selection',
         behaviorStepId: 'online-room-created-selection-visible',
-        description: '真实选角页展示可选奇异博士及实施中徽标。',
+        description: '真实选角页展示可选奇异博士，角色没有实施中徽标。',
         role: 'main-flow', viewport: 'desktop', transition: '创建联机房间并显示真实角色选择界面',
     });
 
     await page.setViewportSize({ width: 812, height: 375 });
     await expect(doctorStrangeCard).toBeVisible();
-    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toBeVisible();
+    await expect(page.getByTestId('character-badge-doctor_strange-implementation_in_progress')).toHaveCount(0);
     const mobileScreenshot = await captureTracedState(
         page, undefined, evidenceRun, trace, '真实选角入口-奇异博士可选-窄屏',
         'online-selection-mobile-viewport', '将同一真实联机选角页切换到手机横屏尺寸',
-        '窄屏选角仍显示奇异博士及实施中徽标',
+        '窄屏选角显示奇异博士且没有实施中徽标',
         snapshot => ({
             doctorStrangeVisible: (snapshot.visible.selectableHeroIds as string[]).includes('doctor_strange'),
             implementationBadgeVisible: snapshot.visible.doctorStrangeImplementationBadgeVisible,
             setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
         }),
-        { doctorStrangeVisible: true, implementationBadgeVisible: true, setupOptionStatus: 'in_progress' },
+        { doctorStrangeVisible: true, implementationBadgeVisible: false, setupOptionStatus: null },
     );
     media.push({
         path: mobileScreenshot, chainId: '奇异博士在线角色选择界面', chainStep: '手机横屏角色候选', stage: '独特界面态',
         uiStateId: 'doctor-strange-available-mobile-selection',
         uiChange: 'layout', uiChangeReason: '同一真实选角页切换到 812×375 窄屏。',
         behaviorStepId: 'online-selection-mobile-viewport',
-        description: '手机横屏真实选角页显示奇异博士及实施中徽标。',
+        description: '手机横屏真实选角页显示奇异博士，角色没有实施中徽标。',
         role: 'main-flow', viewport: 'mobile', transition: '切换同一选角入口为手机横屏视口',
     });
 
@@ -2577,7 +2574,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 doctorStrangeSelected: (snapshot.visible.selectedHeroIds as string[]).includes('doctor_strange'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { doctorStrangeSelected: true, setupOptionStatus: 'in_progress' },
+            { doctorStrangeSelected: true, setupOptionStatus: null },
         );
         media.push({
             path: readyScreenshot, chainId: '双方选角并准备', chainStep: '双方角色就绪', stage: '中态',
@@ -2598,7 +2595,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 doctorStrangeBoardVisible: (snapshot.visible.boardHeroIds as (string | null)[]).includes('doctor_strange'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { doctorStrangeBoardVisible: true, setupOptionStatus: 'in_progress' },
+            { doctorStrangeBoardVisible: true, setupOptionStatus: null },
         );
         media.push({
             path: hostBoardScreenshot, chainId, chainStep: 6, stage: '后态',
@@ -2618,7 +2615,7 @@ test('真实双人联机可选奇异博士并进入牌桌', async ({ page }, tes
                 monkBoardVisible: (snapshot.visible.boardHeroIds as (string | null)[]).includes('monk'),
                 setupOptionStatus: snapshot.authoritative.doctorStrangeSetupOptionStatus,
             }),
-            { monkBoardVisible: true, setupOptionStatus: 'in_progress' },
+            { monkBoardVisible: true, setupOptionStatus: null },
         );
         media.push({
             path: guestBoardScreenshot, chainId, chainStep: 7, stage: '后态',

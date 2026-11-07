@@ -193,7 +193,7 @@ export interface ServerToClientEvents {
         state: unknown,
         matchPlayers: MatchPlayerInfo[],
         /** 随机数同步元数据（种子+游标），供客户端乐观引擎构建同步随机数生成器 */
-        randomMeta?: RandomSyncMeta,
+        randomMeta?: RandomSyncMeta | null,
         /** 全量同步基线元数据，供客户端建立后续 patch 连续性校验基线 */
         syncMeta?: SyncStateMeta,
     ) => void;

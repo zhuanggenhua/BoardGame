@@ -1,3 +1,4 @@
+import {CardInspectButton} from '../../../components/common/overlays/CardInspectButton';
 import {CardPreview} from '../../../components/common/media/CardPreview';
 import {fateCardPreview} from '../data/cardArtwork';
 import './identityArtwork';
@@ -27,6 +28,8 @@ interface Props {
     requestedCardId?: string;
     canSelectCard?: (id: string, faceDown?: boolean) => boolean;
     onSelect: (id: string, faceDown?: boolean) => void;
+    onRejectCard?: (id:string,faceDown?:boolean,ability?:boolean)=>void;
+    onReject?: (reason:string)=>void;
     onPlaySkill: (id: string) => void;
     canPlayAbility?: (id: string) => boolean;
     onInspect: (assetPath: string, name: string, pinned?: boolean) => void;
@@ -43,20 +46,15 @@ interface Props {
 }
 
 /** The attack and skill hands stay separate; played cards remain direct card objects. */
-export function FateHandSurface({player, power, skills, canSelect, canSelectCard, onSelect, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice, requestedCardId, rollbackRevision = 0}: Props) {
+export function FateHandSurface({player, power, skills, canSelect, canSelectCard, onSelect, onRejectCard, onReject, onPlaySkill, canPlayAbility, onInspect, onDismissHoverInspection, shouldSuppressFocusPreview, ridingChoice, requestedCardId, rollbackRevision = 0}: Props) {
     const { t } = useTranslation('game-fate-domination');
     const interactionScope = JSON.stringify([player.id, canSelect, ridingChoice?.interactionId ?? null, ridingChoice?.round ?? null, rollbackRevision]);
     const [faceDownState, setFaceDownState] = useState<{scope: string; value: boolean}>({scope: '', value: false});
     const [ridingSelectionState, setRidingSelectionState] = useState<{scope: string; ids: string[]}>({scope: '', ids: []});
     const surface = useRef<HTMLDivElement>(null);
-    useLayoutEffect(()=>{
-        if(!requestedCardId)return;
-        const cards=surface.current?.querySelectorAll<HTMLElement>('[data-focus-card]');
-        const card=Array.from(cards??[]).find(element=>element.dataset.cardId===requestedCardId||element.dataset.focusCard===`skill-${player.id}-${requestedCardId}`);
-        const row=card?.closest<HTMLElement>('.fd-runtime-card-row');
-        if(card&&row)row.scrollLeft=card.offsetLeft-row.offsetLeft-(row.clientWidth-card.offsetWidth)/2;
-    },[requestedCardId,player.id,rollbackRevision]);
     const focusedCard = useRef<{key: string; element: HTMLElement} | null>(null);
+    const dismissPreview=useRef(onDismissHoverInspection);
+    dismissPreview.current=onDismissHoverInspection;
     const touchInspection = useTouchLongPress<string,{assetPath:string;name:string}>({
         enabled:true,durationMs:500,moveCancelPx:10,clickBlockMs:500,
         onLongPress:(_key,card)=>onInspect(card.assetPath,card.name,true),
@@ -77,6 +75,9 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
         const cards = surface.current?.querySelectorAll<HTMLButtonElement>('[data-focus-card]');
         Array.from(cards ?? []).find(card => card.dataset.focusCard === focusedCard.current?.key)?.focus({preventScroll: true});
     }, [player.hand, player.selectedAttackIds, player.activeAttackIds, player.activeSkills]);
+    // 卡牌换区或来源消失后，旧 hover 不能滞留；持久检视由 Board 独立保留。
+    const previewScope=JSON.stringify([player.hand.map(card=>card.id),player.selectedAttackIds,player.activeAttackIds,player.activeSkills]);
+    useLayoutEffect(()=>dismissPreview.current?.(),[previewScope]);
 
     const faceDownMode = faceDownState.scope === interactionScope && faceDownState.value;
     const ridingSelection = ridingSelectionState.scope === interactionScope ? ridingSelectionState.ids : [];
@@ -93,20 +94,21 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
         && ridingSelection.every(id => ridingCandidateIds.has(id)) && ridingCost <= player.mana);
     const playedIds = [...new Set([...player.activeAttackIds, ...player.activeSkills, ...player.selectedAttackIds])];
     const staged = player.selectedAttackIds.length > 0;
-    const readySkills = skills.filter(item => !player.activeSkills.includes(item.skill.id) && !player.selectedAttackIds.includes(item.skill.id));
+    const readySkillIds = new Set(skills.filter(item => !player.activeSkills.includes(item.skill.id) && !player.selectedAttackIds.includes(item.skill.id)).map(item=>item.skill.id));
     const canUseHoverPreview = () => typeof window !== 'undefined'
         && typeof window.matchMedia === 'function'
         && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     const renderSkill = ({skill, assetPath, available, abilityAvailable}: FateSkillCardView, active = false, stagedSkill = false) => (
+        <div key={skill.id} className="fd-runtime-card-shell group">
         <motion.button
-            layout
+            layout="position"
             layoutId={`fate-skill-${player.id}-${skill.id}`}
             key={skill.id}
             type="button"
-            className={`fd-runtime-card${stagedSkill ? ' is-staged' : !ridingChoice && (active ? abilityAvailable : available) ? ' is-available' : ''}`}
+            className={`fd-runtime-card${requestedCardId===skill.id?' is-requested':''}${stagedSkill ? ' is-staged' : !ridingChoice && (active ? abilityAvailable : available&&!faceDownMode) ? ' is-available' : ''}`}
             aria-label={t('ui.hand.skillAction', { action: stagedSkill ? t('ui.hand.actions.retract') : active ? t('ui.hand.actions.activate') : t('ui.hand.actions.select'), name: skill.name })}
-            aria-disabled={Boolean(ridingChoice) || (active ? !abilityAvailable : !available)}
+            aria-disabled={Boolean(ridingChoice) || (active ? !abilityAvailable : !stagedSkill&&(!available||faceDownMode))}
             data-focus-card={`skill-${player.id}-${skill.id}`}
             data-tutorial-id={`fate-card-${skill.id}`}
             data-card-zone={stagedSkill ? 'staged-skill' : active ? 'active-skill' : 'skill'}
@@ -121,16 +123,18 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             onContextMenu={event => {event.preventDefault(); onInspect(assetPath, skill.name, true);}}
             onClick={() => {
                 if(touchInspection.shouldBlockClick(`skill-${skill.id}`))return;
-                if (ridingChoice) return;
+                if (ridingChoice) {onReject?.(t('feedback.ridingOnlyAttacks'));return;}
                 if (active) {
-                    if (abilityAvailable) onPlaySkill(skill.id);
-                } else if (stagedSkill || available) {
+                    if (abilityAvailable) onPlaySkill(skill.id);else onRejectCard?.(skill.id,false,true);
+                } else if (stagedSkill || (available&&!faceDownMode)) {
                     onSelect(skill.id);
-                }
+                } else onRejectCard?.(skill.id,faceDownMode);
             }}
         >
             <OptimizedImage src={assetPath} alt={skill.name}/>
         </motion.button>
+        <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:skill.name})} sourceCardId={skill.id} onInspect={()=>onInspect(assetPath,skill.name,true)} buttonSize="32px" className="fd-card-inspect"/>
+        </div>
     );
 
     const renderAttack = (card: CardInstance, isStaged = false, committed = false) => {
@@ -148,8 +152,9 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             || (ridingSelection.length < 3 && ridingCost + ridingCardCost <= player.mana)));
         const selectable = ridingChoice ? canToggleRiding : canSelect && (canSelectCard?.(card.id, faceDownMode) ?? true);
         return (
+            <div key={card.id} className="fd-runtime-card-shell group">
             <motion.button
-                layout
+                layout="position"
                 layoutId={`fate-card-${card.id}`}
                 key={card.id}
                 type="button"
@@ -176,20 +181,23 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                     if(touchInspection.shouldBlockClick(card.id))return;
                     if (ridingChoice) {
                         if (ridingCandidateIds.has(card.id) && (ridingSelected || canToggleRiding)) toggleRidingSelection(card.id);
+                        else onReject?.(t(!ridingCandidateIds.has(card.id)?'feedback.ridingOnlyAttacks':ridingSelection.length>=3?'feedback.ridingMaximum':'error.notEnoughMana'));
                         return;
                     }
                     if (committed) {
                         if (abilityAvailable) onPlaySkill(card.id);
                         else onInspect(definition.assetPath, definition.name, true);
-                    } else if (selectable) {
+                    } else if (isStaged || selectable) {
                         onSelect(card.id, faceDownMode || undefined);
-                    }
+                    } else onRejectCard?.(card.id,faceDownMode);
                 }}
                 aria-disabled={ridingChoice ? !selectable : !isStaged && !committed && !selectable}
             >
                 <CardPreview previewRef={fateCardPreview(definition.assetPath)} title={definition.name} style={{width: '100%'}}/>
                 {((player.faceDownAttackIds ?? []).includes(card.id) || (player.selectedFaceDownIds ?? []).includes(card.id)) && <span className="fd-face-down-label">{t('ui.hand.faceDown')}</span>}
             </motion.button>
+            <CardInspectButton ariaLabel={t('ui.hand.enlargeCard',{name:definition.name})} sourceCardId={card.id} onInspect={()=>onInspect(definition.assetPath,definition.name,true)} buttonSize="32px" className="fd-card-inspect"/>
+            </div>
         );
     };
 
@@ -210,7 +218,6 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
             onFocusCapture={event => {
                 const element = (event.target as HTMLElement).closest<HTMLElement>('[data-focus-card]');
                 focusedCard.current = element?.dataset.focusCard ? {key: element.dataset.focusCard, element} : null;
-                element?.scrollIntoView?.({block: 'nearest', inline: 'nearest'});
             }}
             onBlurCapture={event => {
                 if ((!event.relatedTarget && (event.target as HTMLElement).isConnected) || (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node))) focusedCard.current = null;
@@ -226,7 +233,7 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                 </div>}
                 <div className="fd-runtime-play-area" data-testid="fate-play-area">
                     <div className="fd-play-summary" data-testid="fate-play-summary">
-                        <span>{staged ? t('ui.hand.preparedToPlay') : t('ui.hand.played')} · {staged ? player.selectedAttackIds.length : playedIds.length}</span>
+                        {playedIds.length>0&&<span>{staged ? t('ui.hand.preparedToPlay') : t('ui.hand.played')} · {staged ? player.selectedAttackIds.length : playedIds.length}</span>}
                         <strong className="fd-play-power">{staged ? t('ui.hand.expectedTotalPower') : t('ui.hand.totalPower')} {power}</strong>
                     </div>
                     <div className="fd-runtime-card-row fd-hand-parallel fd-played-cards" data-testid="fate-played-cards" style={{'--card-count': Math.max(1, playedIds.length)} as CSSProperties}>
@@ -240,8 +247,9 @@ export function FateHandSurface({player, power, skills, canSelect, canSelectCard
                 </div>
             </section>
             <section data-tutorial-id="fate-skills" className="fd-runtime-hand-zone fd-skill-hand-zone" aria-label={t('ui.hand.skillCards')}>
-                <div className="fd-runtime-card-row fd-hand-parallel fd-skill-cards" style={{'--card-count': Math.max(1, readySkills.length)} as CSSProperties}>
-                    {readySkills.map(item => renderSkill(item))}
+                <div className="fd-runtime-card-row fd-hand-parallel fd-skill-cards" style={{'--card-count': Math.max(3, skills.length)} as CSSProperties}>
+                    {skills.map(item=><div key={item.skill.id} className="fd-skill-slot" data-skill-slot={item.skill.id}>{readySkillIds.has(item.skill.id)?renderSkill(item):null}</div>)}
+                    {Array.from({length:Math.max(0,3-skills.length)},(_,index)=><div key={`empty-${index}`} className="fd-skill-slot" aria-hidden="true"/>)}
                 </div>
             </section>
         </div>

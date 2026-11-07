@@ -113,13 +113,13 @@ describe('MatchRoomUnloadCoordinator', () => {
         vi.useRealTimers();
     });
 
-    it('房间不存在时返回 false，不触发任何卸载副作用', () => {
+    it('房间未激活时返回 false，但仍删除在途加载，不触发运行时卸载副作用', () => {
         const harness = createHarness();
 
         expect(harness.coordinator.unloadMatch('missing-match')).toBe(false);
 
         expect(harness.hooks.markRuntimeUnloaded).not.toHaveBeenCalled();
-        expect(harness.hooks.deleteMatch).not.toHaveBeenCalled();
+        expect(harness.hooks.deleteMatch).toHaveBeenCalledWith('missing-match');
         expect(harness.hooks.clearRecoveryState).not.toHaveBeenCalled();
         expect(harness.hooks.clearCircuitState).not.toHaveBeenCalled();
     });

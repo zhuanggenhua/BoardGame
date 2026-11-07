@@ -143,7 +143,9 @@ export const ChoiceObjectSelection: React.FC<ChoiceObjectSelectionProps> = ({
             canCancel={false}
             allowBackgroundInteraction
             onCancel={() => undefined}
-            confirmLabelKey={!selectedValue && skipOption ? skipOption.label : 'common.confirm'}
+            confirmLabelKey={!selectedValue && skipOption
+                ? skipOption.label
+                : 'common.confirm'}
         />
     );
 };

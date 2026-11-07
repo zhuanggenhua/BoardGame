@@ -1,4 +1,4 @@
-import { test, expect, initHome, login, openGame, capture, record } from './helpers/homeAcceptance';
+import { test, expect, initHome, login, openGame, openPlatformProfile, capture, record } from './helpers/homeAcceptance';
 
 for (const mobile of [false, true]) test(`${mobile?'手机':'桌面'}对局记录来自实际完成对局、账户隔离并可从加载失败重试`,async({browser,accounts},info)=>{
     info.setTimeout(100_000);
@@ -26,10 +26,8 @@ for (const mobile of [false, true]) test(`${mobile?'手机':'桌面'}对局记�
         await page.getByTestId('home-active-match-leave').click();
         await page.locator('[data-platform-dialog="confirm"]').getByRole('button',{name:'确定',exact:true}).click();
         await expect(page.getByTestId('home-active-match-banner')).toHaveCount(0);
-        await page.getByTestId('user-menu-trigger').click();
         const response=page.waitForResponse(r=>r.url().endsWith('/auth/profile/matches')&&r.request().method()==='GET');
-        await page.getByTestId('user-menu-profile').click();
-        await expect(page.getByTestId('profile-page')).toBeVisible();
+        await openPlatformProfile(page);
         const loaded=await response;expect(loaded.ok()).toBe(true);
         const rows=page.locator(`[data-testid="match-history-row"][data-match-id="${matchID}"]`);
         await expect(rows).toHaveCount(1);await expect(rows).toContainText('井字棋');await expect(rows).toContainText('胜利');
@@ -38,9 +36,8 @@ for (const mobile of [false, true]) test(`${mobile?'手机':'桌面'}对局记�
         await capture(page,`${mobile?'手机':'桌面'}-真实对局记录`);
         await page.getByRole('navigation',{name:'菜单'}).getByRole('button',{name:'发现',exact:true}).click();
         await page.route('**/auth/profile/matches',route=>route.fulfill({status:503,body:'unavailable'}));
-        await page.getByTestId('user-menu-trigger').click();
         const failed=page.waitForResponse(r=>r.url().endsWith('/auth/profile/matches')&&r.request().method()==='GET'&&r.status()===503);
-        await page.getByTestId('user-menu-profile').click();
+        await openPlatformProfile(page);
         expect((await failed).status()).toBe(503);
         await expect(page.getByTestId('profile-page')).toBeVisible();
         await expect(page.getByRole('alert')).toContainText('对局记录加载失败',{timeout:15_000});
@@ -52,8 +49,7 @@ for (const mobile of [false, true]) test(`${mobile?'手机':'桌面'}对局记�
         await expect(rows).toHaveCount(1);
         const anonymous=await guest.request.get(loaded.url());expect(anonymous.status()).toBe(401);
         // 游客对局可在登录时合法归属到账户，隔离断言使用没有参赛的独立浏览器身份。
-        const third=await outsider.newPage();await initHome(third);await login(third,accounts.bob);await third.getByTestId('user-menu-trigger').click();
-        await third.getByTestId('user-menu-profile').click();
+        const third=await outsider.newPage();await initHome(third);await login(third,accounts.bob);await openPlatformProfile(third);
         await expect(third.getByText('暂无对局记录',{exact:true})).toBeVisible();
         await expect(third.getByTestId('match-history-row')).toHaveCount(0);
         await record(`${mobile?'手机':'桌面'}-真实记录与隔离`,{matchID,realFiveMoves:true,winner:'0',ownerResult:'win',otherAccountRows:0,anonymousStatus:401,retryRecovered:true});

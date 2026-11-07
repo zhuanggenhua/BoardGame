@@ -1,4 +1,5 @@
 import type { QidahenRuntimeRegionPoint } from './runtimeRegionOwnership';
+import { placeQidahenMapObject } from './mapObjectPlacement';
 
 export const QIDAHEN_POPULATION_SIZE = 26;
 const CLEARANCE = QIDAHEN_POPULATION_SIZE / 2 + 2;
@@ -80,26 +81,9 @@ export function layoutQidahenPopulation(
     for (const region of ordered) {
         const site = sites.get(region.id)!;
         const preferred = { x: region.x * width + 20, y: region.y * height + 22 };
-        let point: Point | undefined;
-        let best = Infinity;
-        for (const candidate of site.candidates) {
-            const score = squaredDistance(candidate, preferred);
-            if (score < best && free(candidate)) { point = candidate; best = score; }
-        }
-        const callout = !point;
-        if (!point) {
-            // 当前辽西等狭窄分区无法容纳整块；邻近空位仍由短引线明确归属。
-            best = Infinity;
-            for (let dy = -160; dy <= 160; dy += 2) {
-                for (let dx = -160; dx <= 160; dx += 2) {
-                    const score = dx ** 2 + dy ** 2;
-                    if (score < (CLEARANCE + 7) ** 2 || score >= best) continue;
-                    const candidate = { x: site.anchor.x + dx, y: site.anchor.y + dy };
-                    if (free(candidate)) { point = candidate; best = score; }
-                }
-            }
-        }
-        if (!point) throw new Error(`人口标记没有可用位置：${region.id}`);
+        const placement = placeQidahenMapObject(site, preferred, free, CLEARANCE + 7);
+        if (!placement) throw new Error(`人口标记没有可用位置：${region.id}`);
+        const { point, callout } = placement;
         // 每区保留稳定的几何槽位；人口从零变正时不挤走邻区读数。
         if (region.population > 0) result.push({ regionId: region.id, point, anchor: site.anchor, callout });
         obstacles.push({ ...point, half });
