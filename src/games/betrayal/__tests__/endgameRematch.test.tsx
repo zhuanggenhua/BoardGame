@@ -19,6 +19,7 @@ import { playMummyScenarioToTraitorVictory } from '../testing/firstScenarioTestU
 const mocks = vi.hoisted(() => ({ vote: vi.fn(), playAgain: vi.fn(), error: vi.fn(), warning: vi.fn(), reset: null as null | (() => Promise<void>), state: null as null | ((value: RematchVoteState) => void) }));
 vi.mock('../../../services/matchSocket', () => ({ matchSocket: {
   joinMatch: vi.fn(), leaveMatch: vi.fn(), isSocketConnected: () => true, setAutoAcceptedPlayerIds: vi.fn(), vote: mocks.vote,
+  subscribeRematchConnection: (callback: (connected: boolean) => void) => { callback(true); return () => {}; },
   subscribeState: (cb: (state: RematchVoteState) => void) => { mocks.state = cb; return () => {}; },
   subscribeReset: (cb: () => Promise<void>) => { mocks.reset = cb; return () => {}; }, subscribeNewRoom: () => () => {}, broadcastNewRoom: vi.fn(),
 } }));
@@ -93,4 +94,12 @@ describe('Betrayal result rematch uses formal platform owners', () => {
     expect(mocks.error).toHaveBeenCalledWith(expect.objectContaining({ key: 'rematch.setupUnsupported' }));
     expect(reset).not.toHaveBeenCalled(); expect(screen.getByTestId('betrayal-endgame-result-report')).toBeInTheDocument();
   });
+});
+
+vi.mock('../../../hooks/match/matchCredentialTransaction', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../hooks/match/matchCredentialTransaction')>();
+    let queue = Promise.resolve<unknown>(undefined);
+    return { ...actual, withMatchCredentialWrite: <T,>(write: () => T): Promise<T> => {
+        const result = queue.then(write); queue = result.catch(() => {}); return result;
+    } };
 });

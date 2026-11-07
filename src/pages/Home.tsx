@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { AuthModal } from '../components/auth/AuthModal';
 import { useNavigate } from 'react-router-dom';
 import {
+    captureMatchCredentialSelection,
     claimSeat,
     clearMatchCredentials,
     exitMatch,
@@ -293,7 +294,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
 
     useEffect(() => {
         if (!suppressedOwnerMatchId) return;
-        clearOwnerActiveMatch(suppressedOwnerMatchId);
+        void clearOwnerActiveMatch(suppressedOwnerMatchId, { ifSuppressed: true });
     }, [suppressedOwnerMatchId]);
 
     useEffect(() => {
@@ -576,14 +577,14 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         };
         setMyMatchRole(resolvedRole);
 
+        const requestSelection = captureMatchCredentialSelection();
         void matchApi.getMatch(localMatchRole.gameName, localMatchRole.matchID, { expectedStatuses: [404] })
             .then(match => {
                 if (cancelled) return;
                 const stored = readStoredMatchCredentials(localMatchRole.matchID);
                 const validation = validateStoredMatchSeat(stored, match.players, localMatchRole.playerID);
                 if (validation.shouldClear) {
-                    clearMatchCredentials(localMatchRole.matchID);
-                    clearOwnerActiveMatch(localMatchRole.matchID);
+                    void clearMatchCredentials(localMatchRole.matchID, undefined, { expectedSelection: requestSelection });
                     setActiveMatch(null);
                     setMyMatchRole(null);
                     setLocalStorageTick((t) => t + 1);
@@ -608,8 +609,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                         markMatchCleanupNoticeSeen(notice);
                         toastWarning({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
                     }
-                    clearMatchCredentials(localMatchRole.matchID);
-                    clearOwnerActiveMatch(localMatchRole.matchID);
+                    void clearMatchCredentials(localMatchRole.matchID, undefined, { expectedSelection: requestSelection });
                     setActiveMatch(null);
                     setMyMatchRole(null);
                     setLocalStorageTick((t) => t + 1);
@@ -667,6 +667,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         }
 
         let cancelled = false;
+        const requestSelection = captureMatchCredentialSelection();
 
         void matchApi.getMatch(gameName, matchID, { expectedStatuses: [404] })
             .then(() => {
@@ -703,8 +704,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                     markMatchCleanupNoticeSeen(notice);
                     toastWarning({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
                 }
-                clearMatchCredentials(matchID);
-                clearOwnerActiveMatch(matchID);
+                void clearMatchCredentials(matchID, undefined, { expectedSelection: requestSelection });
                 setActiveMatch(null);
                 setMyMatchRole(null);
                 setLocalStorageTick((t) => t + 1);
@@ -723,6 +723,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
     }, [activeMatchGameName, activeMatchId, lobbyPresence.isMissing, missingMatchConfirmRetryTick, toastWarning]);
 
     const handleReconnect = () => {
+        const requestSelection = captureMatchCredentialSelection();
         if (!activeMatch || !myMatchRole) return;
 
         // 优先使用 myMatchRole 中保存的游戏名，否则回退到 activeMatch 中的游戏名，最后默认 tictactoe
@@ -752,7 +753,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                         gameId,
                         activeMatch.matchID,
                         myMatchRole.playerID || '0',
-                        { token, playerName: user.username }
+                        { token, playerName: user.username, expectedSelection: requestSelection }
                     );
                     if (claimResult.success) {
                         console.log(
@@ -769,9 +770,9 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                     console.warn(
                         `[Home] action=claim-seat-failed matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} userId=${user.id} error=${claimResult.error || ''} status=${claimResult.status || ''}`
                     );
+                    if (claimResult.error === 'selection_changed') return;
                     if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
-                        clearMatchCredentials(activeMatch.matchID);
-                        clearOwnerActiveMatch(activeMatch.matchID);
+                        await clearMatchCredentials(activeMatch.matchID, undefined, { expectedSelection: claimResult.expectedSelection });
                         setActiveMatch(null);
                         setMyMatchRole(null);
                         setLocalStorageTick((t) => t + 1);
@@ -788,7 +789,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                         gameId,
                         activeMatch.matchID,
                         myMatchRole.playerID || '0',
-                        { guestId, playerName: guestName }
+                        { guestId, playerName: guestName, expectedSelection: requestSelection }
                     );
                     if (claimResult.success) {
                         console.log(
@@ -805,9 +806,9 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                     console.warn(
                         `[Home] action=claim-seat-guest-failed matchID=${activeMatch.matchID} playerID=${myMatchRole.playerID || '0'} guestId=${guestId} error=${claimResult.error || ''} status=${claimResult.status || ''}`
                     );
+                    if (claimResult.error === 'selection_changed') return;
                     if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
-                        clearMatchCredentials(activeMatch.matchID);
-                        clearOwnerActiveMatch(activeMatch.matchID);
+                        await clearMatchCredentials(activeMatch.matchID, undefined, { expectedSelection: claimResult.expectedSelection });
                         setActiveMatch(null);
                         setMyMatchRole(null);
                         setLocalStorageTick((t) => t + 1);
@@ -819,12 +820,12 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                 // 无凭证：让服务端直接分配可用席位
                 const playerName = user?.username || getGuestName();
                 const guestId = user?.id ? undefined : getGuestId();
-                const { success, playerID: assignedPlayerID, error } = await rejoinMatch(
+                const { success, playerID: assignedPlayerID, error, expectedSelection } = await rejoinMatch(
                     gameId,
                     activeMatch.matchID,
                     undefined,
                     playerName,
-                    { guestId },
+                    { guestId, expectedSelection: requestSelection },
                 );
                 if (success && assignedPlayerID) {
                     void prefetchOnlineMatchRoute().catch(() => {
@@ -834,9 +835,9 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
                     return;
                 }
 
+                if (error === 'selection_changed') return;
                 if (error === 'not_found' || error === 'forbidden' || error === 'unauthorized') {
-                    clearMatchCredentials(activeMatch.matchID);
-                    clearOwnerActiveMatch(activeMatch.matchID);
+                    await clearMatchCredentials(activeMatch.matchID, undefined, { expectedSelection });
                     setActiveMatch(null);
                     setMyMatchRole(null);
                     setLocalStorageTick((t) => t + 1);
@@ -877,7 +878,6 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
 
     const handleForceExitLocal = useCallback((matchID: string) => {
         clearMatchCredentials(matchID);
-        clearOwnerActiveMatch(matchID);
         setActiveMatch(null);
         setMyMatchRole(null);
         setPendingAction(null);
@@ -952,8 +952,6 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
         }
 
         // 成功后后端释放座位，本地状态同步更新
-        clearMatchCredentials(pendingAction.matchID);
-        clearOwnerActiveMatch(pendingAction.matchID);
         setPendingAction(null);
         setLocalStorageTick(t => t + 1);
     }, [

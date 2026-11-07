@@ -126,6 +126,10 @@ export function useMatchRoomAutoJoin(args: {
                     setIsAutoJoining(false);
                     return;
                 }
+                if (error === 'selection_changed') {
+                    setIsAutoJoining(false);
+                    return;
+                }
                 if (error === 'room_full') {
                     finishWithError(roomFullText);
                     return;

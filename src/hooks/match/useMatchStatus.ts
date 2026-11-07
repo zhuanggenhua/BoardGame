@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as matchApi from '../../services/matchApi';
+import { withMatchCredentialWrite, credentialWriteFailed, MatchCredentialStorageError } from './matchCredentialTransaction';
 import { GAME_SERVER_URL } from '../../config/server';
 import {
     getLocalStorage,
@@ -86,6 +87,22 @@ const OWNER_ACTIVE_MATCH_SUPPRESS_KEY = 'owner_active_match_suppressed';
 const MATCH_CLEANUP_NOTICE_KEY = 'match_cleanup_notice';
 const MATCH_CLEANUP_NOTICE_SEEN_KEY = 'match_cleanup_notice_seen';
 
+// Used only by the synchronous callback of the origin-wide writer. The changed
+// bit is captured before releasing that callback; no-op reads/prunes emit nothing.
+let credentialMutationChanged = false;
+const writeCredentialItem = (key: string, value: string): boolean => {
+    if (readLocalStorageItem(key) === value) return true;
+    if (!writeLocalStorageItem(key, value)) throw new MatchCredentialStorageError();
+    credentialMutationChanged = true;
+    return true;
+};
+const removeCredentialItem = (key: string): boolean => {
+    if (readLocalStorageItem(key) === null) return true;
+    if (!removeLocalStorageItem(key)) throw new MatchCredentialStorageError();
+    credentialMutationChanged = true;
+    return true;
+};
+
 const parseOwnerActiveMatchSuppression = (raw: string | null): string[] => {
     if (!raw) return [];
     try {
@@ -101,12 +118,9 @@ const parseOwnerActiveMatchSuppression = (raw: string | null): string[] => {
 
 const saveOwnerActiveMatchSuppression = (matchIDs: string[]): void => {
     if (matchIDs.length === 0) {
-        removeLocalStorageItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY);
+        if (!removeCredentialItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY)) throw new MatchCredentialStorageError();
     } else {
-        writeLocalStorageItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY, JSON.stringify(matchIDs));
-    }
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('owner-active-match-changed'));
+        if (!writeCredentialItem(OWNER_ACTIVE_MATCH_SUPPRESS_KEY, JSON.stringify(matchIDs))) throw new MatchCredentialStorageError();
     }
 };
 
@@ -119,14 +133,14 @@ export function isOwnerActiveMatchSuppressed(matchID: string): boolean {
     return getSuppressedOwnerActiveMatches().includes(matchID);
 }
 
-export function suppressOwnerActiveMatch(matchID: string): void {
+function suppressOwnerActiveMatchLocked(matchID: string): void {
     if (!matchID) return;
     const current = getSuppressedOwnerActiveMatches();
     if (current.includes(matchID)) return;
     saveOwnerActiveMatchSuppression([...current, matchID]);
 }
 
-export function clearOwnerActiveMatchSuppression(matchID?: string): void {
+function clearOwnerActiveMatchSuppressionLocked(matchID?: string): void {
     const current = getSuppressedOwnerActiveMatches();
     if (current.length === 0) return;
     if (!matchID) {
@@ -165,6 +179,8 @@ export interface OwnerActiveMatch {
 }
 
 export interface ExitMatchResult {
+    /** Selection after this operation's proof-fenced local cleanup. */
+    expectedSelection?: string;
     success: boolean;
     cleanedLocal?: boolean;
     error?: 'not_found' | 'forbidden' | 'server_error' | 'network' | 'unknown';
@@ -202,9 +218,12 @@ export type RejoinMatchError =
     | 'forbidden'
     | 'unauthorized'
     | 'network'
-    | 'invalid_response';
+    | 'invalid_response'
+    | 'selection_changed';
 
 export interface RejoinMatchResult {
+    /** Local cleanup fence, never sent to the server or logged. */
+    expectedSelection?: string;
     success: boolean;
     playerID?: string;
     credentials?: string;
@@ -237,16 +256,13 @@ const resolveRejoinMatchError = (err: unknown): { error: Exclude<RejoinMatchErro
     };
 };
 
-export function clearMatchCredentials(matchID: string): void {
+function clearMatchCredentialsLocked(matchID: string): void {
     if (!matchID) return;
-    removeLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
-    removeLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
+    if (!removeCredentialItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`)) throw new MatchCredentialStorageError();
+    if (!removeCredentialItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`)) throw new MatchCredentialStorageError();
 
     // 让同一标签页监听器（Home 活跃对局横幅、lobby 弹窗）立即刷新。
     // 原生 `storage` 事件不会在同一 document 触发。
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('match-credentials-changed'));
-    }
 }
 
 export function readStoredAiSeatCredentials(matchID: string): StoredAiSeatCredentials {
@@ -263,22 +279,21 @@ export function readStoredAiSeatCredentials(matchID: string): StoredAiSeatCreden
     }
 }
 
-export function persistAiSeatCredentials(matchID: string, seatCredentials: StoredAiSeatCredentials): void {
+function persistAiSeatCredentialsLocked(matchID: string, seatCredentials: StoredAiSeatCredentials): void {
     if (!matchID) return;
     const normalized = Object.fromEntries(
         Object.entries(seatCredentials).filter((entry): entry is [string, string] => Boolean(entry[0]) && Boolean(entry[1])),
     );
     if (Object.keys(normalized).length === 0) {
-        removeLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`);
+        if (!removeCredentialItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`)) throw new MatchCredentialStorageError();
     } else {
-        writeLocalStorageItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(normalized));
-    }
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('match-credentials-changed'));
+        if (!writeCredentialItem(`${MATCH_AI_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(normalized))) throw new MatchCredentialStorageError();
     }
 }
 
 export type ClaimSeatOptions = {
+    owner?: OwnerActiveMatch;
+    expectedSelection?: string;
     token?: string;
     guestId?: string;
     ownerCredentials?: string;
@@ -291,9 +306,12 @@ export type ClaimSeatError =
     | 'not_found'
     | 'server_error'
     | 'invalid_response'
+    | 'selection_changed'
     | 'network';
 
 export type ClaimSeatResult = {
+    /** Local cleanup fence, never sent to the server or logged. */
+    expectedSelection?: string;
     success: boolean;
     credentials?: string;
     status?: number;
@@ -309,6 +327,7 @@ export async function claimSeat(
     playerID: string,
     options: ClaimSeatOptions
 ): Promise<ClaimSeatResult> {
+    const expectedSelection = options.expectedSelection ?? captureMatchCredentialSelection();
     try {
         const normalizedGameName = (gameName || 'tictactoe').toLowerCase();
         const baseUrl = GAME_SERVER_URL || '';
@@ -355,7 +374,7 @@ export async function claimSeat(
                 playerID,
                 error,
             });
-            return { success: false, status, error };
+            return { success: false, status, error, expectedSelection };
         }
 
         const data = await response.json().catch(() => null) as { playerCredentials?: string } | null;
@@ -364,20 +383,21 @@ export async function claimSeat(
             return { success: false, error: 'invalid_response' };
         }
 
-        persistMatchCredentials(matchID, {
+        const savedSelection = await saveMatchCredentialSelection(matchID, {
             playerID,
             credentials,
             matchID,
             gameName: normalizedGameName,
             playerName: options.playerName,
-        });
+        }, { owner: options.owner, expectedSelection });
+        if (savedSelection === null) return { success: false, error: 'selection_changed' };
 
-        return { success: true, credentials };
+        return { success: true, credentials, expectedSelection: savedSelection };
     } catch (err) {
         console.error('[claimSeat] 请求异常:', {
             errorName: err instanceof Error ? err.name : typeof err,
         });
-        return { success: false, error: 'network' };
+        return { success: false, error: 'network', expectedSelection };
     }
 }
 
@@ -393,26 +413,20 @@ export function getOwnerActiveMatch(): OwnerActiveMatch | null {
     }
 }
 
-export function setOwnerActiveMatch(payload: OwnerActiveMatch): void {
+function setOwnerActiveMatchLocked(payload: OwnerActiveMatch): void {
     if (!payload?.matchID) return;
-    clearOwnerActiveMatchSuppression(payload.matchID);
-    writeLocalStorageItem(OWNER_ACTIVE_MATCH_KEY, JSON.stringify({
+    clearOwnerActiveMatchSuppressionLocked(payload.matchID);
+    if (!writeCredentialItem(OWNER_ACTIVE_MATCH_KEY, JSON.stringify({
         ...payload,
         updatedAt: Date.now(),
-    }));
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('owner-active-match-changed'));
-    }
+    }))) throw new MatchCredentialStorageError();
 }
 
-export function clearOwnerActiveMatch(matchID?: string): void {
+function clearOwnerActiveMatchLocked(matchID?: string): void {
     const existing = getOwnerActiveMatch();
     if (!existing) return;
     if (matchID && existing.matchID !== matchID) return;
-    removeLocalStorageItem(OWNER_ACTIVE_MATCH_KEY);
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('owner-active-match-changed'));
-    }
+    if (!removeCredentialItem(OWNER_ACTIVE_MATCH_KEY)) throw new MatchCredentialStorageError();
 }
 
 const parseStoredCredentials = (raw: string | null): StoredMatchCredentials | null => {
@@ -491,7 +505,16 @@ export function getLatestStoredMatchCredentials(): StoredMatchCredentials | null
     return sorted[0] || null;
 }
 
-export function pruneStoredMatchCredentials(keepMatchID?: string): string | null {
+/** Snapshot a selection before a network request; metadata-only patches do not change it. */
+export function captureMatchCredentialSelection(): string {
+    return JSON.stringify({
+        seats: listStoredMatchCredentials().map(({ matchID, playerID, credentials, updatedAt }) =>
+            ({ matchID, playerID, credentials, updatedAt })).sort((a, b) => a.matchID.localeCompare(b.matchID)),
+        owner: getOwnerActiveMatch(),
+    });
+}
+
+function pruneStoredMatchCredentialsLocked(keepMatchID?: string): string | null {
     const all = listStoredMatchCredentials();
     if (all.length === 0) return null;
 
@@ -505,30 +528,25 @@ export function pruneStoredMatchCredentials(keepMatchID?: string): string | null
     const toRemove = all.filter(item => item.matchID !== keepId);
     if (toRemove.length > 0) {
         toRemove.forEach(item => {
-            removeLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${item.matchID}`);
+            clearMatchCredentialsLocked(item.matchID);
         });
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('match-credentials-changed'));
-        }
     }
 
     const ownerActive = getOwnerActiveMatch();
     if (ownerActive?.matchID && ownerActive.matchID !== keepId) {
-        clearOwnerActiveMatch(ownerActive.matchID);
+        clearOwnerActiveMatchLocked(ownerActive.matchID);
     }
 
     return keepId;
 }
 
-export function persistMatchCredentials(
+function persistMatchCredentialsLocked(
     matchID: string,
     data: StoredMatchCredentials,
-    options?: { enforceSingle?: boolean }
+    options?: { enforceSingle?: boolean; owner?: OwnerActiveMatch; expectedSelection?: string }
 ): void {
-    if (!matchID) return;
-    if (options?.enforceSingle !== false) {
-        pruneStoredMatchCredentials(matchID);
-    }
+    if (!matchID) throw new MatchCredentialStorageError();
+    if (options?.owner && options.owner.matchID !== matchID) throw new MatchCredentialStorageError();
     const existing = parseStoredCredentials(readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`));
     const payload: StoredMatchCredentials = {
         ...(existing && typeof existing === 'object' ? existing : {}),
@@ -536,26 +554,158 @@ export function persistMatchCredentials(
         matchID,
         updatedAt: Date.now(),
     };
-    writeLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(payload));
-    if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('match-credentials-changed'));
-    }
+    if (!writeCredentialItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify(payload))) throw new MatchCredentialStorageError();
+    if (options?.owner) setOwnerActiveMatchLocked(options.owner);
+    if (options?.enforceSingle !== false) pruneStoredMatchCredentialsLocked(matchID);
+}
+
+function commitCredentialChange<T>(change: () => T): Promise<T> {
+    return withMatchCredentialWrite(() => {
+        const storage = getLocalStorage();
+        if (!storage) throw new MatchCredentialStorageError();
+        // The read-only facade intentionally tolerates denied storage. A writer
+        // must instead fail, never mistake an unreadable store for an empty one.
+        storage.getItem(OWNER_ACTIVE_MATCH_KEY);
+        credentialMutationChanged = false;
+        const result = change();
+        return { result, changed: credentialMutationChanged };
+    }).then(({ result, changed }) => {
+        if (changed && typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('match-credentials-changed'));
+            window.dispatchEvent(new Event('owner-active-match-changed'));
+        }
+        return result;
+    });
 }
 
 /** Save a committed rematch without superseding a room chosen while it was pending. */
 export function persistRematchOwnerCredentials(
     sourceMatchID: string,
     data: StoredMatchCredentials & { playerID: '0'; credentials: string },
-): boolean {
-    const isRelated = (id: string) => id === sourceMatchID || id === data.matchID;
-    if (listStoredMatchCredentials().some(record => !isRelated(record.matchID))) return false;
-    const active = getOwnerActiveMatch();
-    if (active && !isRelated(active.matchID)) return false;
-    const existing = readStoredMatchCredentials(data.matchID);
-    // A later claim may already have rotated this room's proof or selected another seat.
-    if (existing?.credentials && (existing.credentials !== data.credentials || existing.playerID !== '0')) return false;
-    persistMatchCredentials(data.matchID, data);
-    return readStoredMatchCredentials(data.matchID)?.credentials === data.credentials;
+    owner?: OwnerActiveMatch,
+    sourceCredentials?: string,
+): Promise<boolean> {
+    return commitCredentialChange(() => {
+        const source = readStoredMatchCredentials(sourceMatchID);
+        if (sourceCredentials && source?.credentials && source.credentials !== sourceCredentials) return false;
+        const isRelated = (id: string) => id === sourceMatchID || id === data.matchID;
+        if (listStoredMatchCredentials().some(record => !isRelated(record.matchID))) return false;
+        const active = getOwnerActiveMatch();
+        if (active && !isRelated(active.matchID)) return false;
+        const existing = readStoredMatchCredentials(data.matchID);
+        if (existing?.credentials && (existing.credentials !== data.credentials || existing.playerID !== '0')) return false;
+        persistMatchCredentialsLocked(data.matchID, data, { owner });
+        return true;
+    });
+}
+
+function saveMatchCredentialSelection(matchID: string, data: StoredMatchCredentials,
+    options?: { enforceSingle?: boolean; owner?: OwnerActiveMatch; expectedSelection?: string }): Promise<string | null> {
+    return commitCredentialChange(() => {
+        if (options?.expectedSelection !== undefined && captureMatchCredentialSelection() !== options.expectedSelection) return null;
+        persistMatchCredentialsLocked(matchID, data, options);
+        return captureMatchCredentialSelection();
+    });
+}
+
+export async function persistMatchCredentials(matchID: string, data: StoredMatchCredentials,
+    options?: { enforceSingle?: boolean; owner?: OwnerActiveMatch; expectedSelection?: string }): Promise<boolean> {
+    return await saveMatchCredentialSelection(matchID, data, options) !== null;
+}
+
+function clearMatchCredentialSelection(matchID: string, expected?: Pick<StoredMatchCredentials, 'credentials' | 'playerID'>, options?: { suppressOwner?: boolean; expectedSelection?: string }): Promise<string | null> {
+    const observed = readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
+    return commitCredentialChange(() => {
+        if (options?.expectedSelection !== undefined && captureMatchCredentialSelection() !== options.expectedSelection) return null;
+        const current = readStoredMatchCredentials(matchID);
+        if (expected ? current?.credentials !== expected.credentials || current?.playerID !== expected.playerID
+            : readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`) !== observed) return null;
+        clearMatchCredentialsLocked(matchID);
+        clearOwnerActiveMatchLocked(matchID);
+        if (options?.suppressOwner) suppressOwnerActiveMatchLocked(matchID);
+        return captureMatchCredentialSelection();
+    }).catch(() => { credentialWriteFailed(); return null; });
+}
+
+export async function clearMatchCredentials(matchID: string, expected?: Pick<StoredMatchCredentials, 'credentials' | 'playerID'>,
+    options?: { suppressOwner?: boolean; expectedSelection?: string }): Promise<boolean> {
+    return await clearMatchCredentialSelection(matchID, expected, options) !== null;
+}
+
+export function persistAiSeatCredentials(matchID: string, data: StoredAiSeatCredentials): Promise<boolean> {
+    const observed = readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
+    return commitCredentialChange(() => {
+        if (!observed || readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`) !== observed) return false;
+        persistAiSeatCredentialsLocked(matchID, data);
+        return true;
+    }).catch(credentialWriteFailed);
+}
+
+export function setOwnerActiveMatch(data: OwnerActiveMatch, options?: { expectedSelection?: string }): Promise<boolean> {
+    return commitCredentialChange(() => {
+        if (options?.expectedSelection !== undefined && captureMatchCredentialSelection() !== options.expectedSelection) return false;
+        // A deferred owner confirmation must not override another room's seat.
+        if (listStoredMatchCredentials().some(record => record.matchID !== data.matchID)) return false;
+        setOwnerActiveMatchLocked(data);
+        return true;
+    }).catch(credentialWriteFailed);
+}
+
+export function clearOwnerActiveMatch(matchID?: string, options?: { ifSuppressed?: boolean }): Promise<boolean> {
+    // Capture the target, never turn an old queued clear into "clear whichever is current".
+    const observed = readLocalStorageItem(OWNER_ACTIVE_MATCH_KEY);
+    const target = matchID ?? getOwnerActiveMatch()?.matchID;
+    return commitCredentialChange(() => {
+        if (readLocalStorageItem(OWNER_ACTIVE_MATCH_KEY) !== observed) return false;
+        if (options?.ifSuppressed && (!target || !isOwnerActiveMatchSuppressed(target))) return false;
+        if (target) clearOwnerActiveMatchLocked(target);
+        return true;
+    }).catch(credentialWriteFailed);
+}
+
+export function pruneStoredMatchCredentials(keepMatchID?: string): Promise<string | null> {
+    return commitCredentialChange(() => {
+        if (keepMatchID && getLatestStoredMatchCredentials()?.matchID !== keepMatchID) return null;
+        return pruneStoredMatchCredentialsLocked(keepMatchID);
+    }).catch(() => { credentialWriteFailed(); return null; });
+}
+
+export function suppressOwnerActiveMatch(matchID: string): Promise<boolean> {
+    return commitCredentialChange(() => { suppressOwnerActiveMatchLocked(matchID); return true; }).catch(credentialWriteFailed);
+}
+
+export function clearOwnerActiveMatchSuppression(matchID?: string): Promise<boolean> {
+    return commitCredentialChange(() => { clearOwnerActiveMatchSuppressionLocked(matchID); return true; }).catch(credentialWriteFailed);
+}
+
+/** Continue a join after discarding its invalid old seat, without adopting another tab's selection. */
+export function discardStaleMatchSeat(matchID: string, expectedSelection: string): Promise<string | null> {
+    return commitCredentialChange(() => {
+        if (captureMatchCredentialSelection() !== expectedSelection) return null;
+        clearMatchCredentialsLocked(matchID);
+        clearOwnerActiveMatchLocked(matchID);
+        return captureMatchCredentialSelection();
+    }).catch(() => { credentialWriteFailed(); return null; });
+}
+
+/** Metadata refreshes never reselect a room or resurrect a proof read before another tab's choice. */
+export function updateStoredMatchMetadata(matchID: string, patch: Pick<StoredMatchCredentials, 'gameName' | 'playerName'>): Promise<boolean> {
+    return commitCredentialChange(() => {
+        const current = readStoredMatchCredentials(matchID);
+        if (!current) return false;
+        if (!writeCredentialItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`, JSON.stringify({ ...current, ...patch }))) throw new MatchCredentialStorageError();
+        return true;
+    }).catch(credentialWriteFailed);
+}
+
+export function updateStoredMatchPlayerName(playerName: string): Promise<boolean> {
+    return commitCredentialChange(() => {
+        for (const current of listStoredMatchCredentials()) {
+            if (!current.playerName || current.playerName === playerName) continue;
+            if (!writeCredentialItem(`${MATCH_CREDENTIALS_PREFIX}${current.matchID}`, JSON.stringify({ ...current, playerName }))) throw new MatchCredentialStorageError();
+        }
+        return true;
+    }).catch(credentialWriteFailed);
 }
 
 /**
@@ -600,9 +750,8 @@ export async function destroyMatch(
                     matchID,
                     playerID,
                 });
-                clearMatchCredentials(matchID);
-                clearOwnerActiveMatch(matchID);
-                return { success: true, cleanedLocal: true, error: 'not_found' };
+                const clearedSelection = await clearMatchCredentialSelection(matchID, { playerID, credentials });
+                return { success: true, cleanedLocal: true, error: 'not_found', expectedSelection: clearedSelection ?? undefined };
             }
 
             if (response.status === 403) {
@@ -626,9 +775,8 @@ export async function destroyMatch(
             throw new Error(message || response.statusText);
         }
 
-        clearMatchCredentials(matchID);
-        clearOwnerActiveMatch(matchID);
-        return { success: true };
+        const clearedSelection = await clearMatchCredentialSelection(matchID, { playerID, credentials });
+        return { success: true, expectedSelection: clearedSelection ?? undefined };
     } catch (err) {
         console.error('[destroyMatch] 销毁房间失败:', err);
         return { success: false, error: 'network' };
@@ -839,15 +987,15 @@ export async function leaveMatch(
             credentials,
         });
         // 清理本地凭证
-        clearMatchCredentials(matchID);
-        return { success: true };
+        const clearedSelection = await clearMatchCredentialSelection(matchID, { playerID, credentials });
+        return { success: true, expectedSelection: clearedSelection ?? undefined };
     } catch (err: unknown) {
         console.error('离开房间失败:', err);
         const resolvedError = resolveExitMatchError(err);
         // 404 说明房间已不存在，视为成功并清理凭据
         if (resolvedError.error === 'not_found') {
-            clearMatchCredentials(matchID);
-            return { success: true, cleanedLocal: true, error: resolvedError.error };
+            const clearedSelection = await clearMatchCredentialSelection(matchID, { playerID, credentials });
+            return { success: true, cleanedLocal: true, error: resolvedError.error, expectedSelection: clearedSelection ?? undefined };
         }
         return { success: false, error: resolvedError.error };
     }
@@ -877,8 +1025,9 @@ export async function rejoinMatch(
     matchID: string,
     playerID: string | undefined,
     playerName: string,
-    options?: { guestId?: string }
+    options?: { guestId?: string; expectedSelection?: string }
 ): Promise<RejoinMatchResult> {
+    const expectedSelection = options?.expectedSelection ?? captureMatchCredentialSelection();
     try {
         const { playerCredentials, playerID: assignedPlayerID } = await matchApi.joinMatch(gameName, matchID, {
             playerID,
@@ -893,29 +1042,16 @@ export async function rejoinMatch(
             };
         }
 
-        // 保存新凭证
-        const storageKey = `match_creds_${matchID}`;
-        let existing: Record<string, unknown> | null = null;
-        try {
-            const raw = readLocalStorageItem(storageKey);
-            if (raw) {
-                const parsed = JSON.parse(raw);
-                existing = typeof parsed === 'object' && parsed !== null ? parsed : null;
-            }
-        } catch {
-            existing = null;
-        }
-
-        persistMatchCredentials(matchID, {
-            ...(existing || {}),
+        const savedSelection = await saveMatchCredentialSelection(matchID, {
             playerID: resolvedPlayerID,
             credentials: playerCredentials,
             matchID,
             gameName,
             playerName,
-        });
+        }, { expectedSelection });
+        if (savedSelection === null) return { success: false, error: 'selection_changed' };
 
-        return { success: true, playerID: resolvedPlayerID, credentials: playerCredentials };
+        return { success: true, playerID: resolvedPlayerID, credentials: playerCredentials, expectedSelection: savedSelection };
     } catch (err: unknown) {
         console.error('重新加入房间失败:', err);
         const resolvedError = resolveRejoinMatchError(err);
@@ -923,8 +1059,8 @@ export async function rejoinMatch(
             || resolvedError.error === 'unauthorized'
             || resolvedError.error === 'forbidden';
         if (shouldClearLocal) {
-            clearMatchCredentials(matchID);
+            await clearMatchCredentials(matchID, undefined, { expectedSelection });
         }
-        return { success: false, ...resolvedError };
+        return { success: false, ...resolvedError, expectedSelection };
     }
 }

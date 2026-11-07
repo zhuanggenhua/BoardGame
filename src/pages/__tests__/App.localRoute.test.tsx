@@ -258,10 +258,10 @@ describe('App local route', () => {
         render(<App />);
 
         await waitFor(() => {
-            expect(routeGuardMocks.clearMatchCredentials).toHaveBeenCalledWith('VN_Zn4ofCG2');
+            expect(routeGuardMocks.clearMatchCredentials).toHaveBeenCalledWith('VN_Zn4ofCG2', undefined, { suppressOwner: true });
         });
-        expect(routeGuardMocks.clearOwnerActiveMatch).toHaveBeenCalledWith('VN_Zn4ofCG2');
-        expect(routeGuardMocks.suppressOwnerActiveMatch).toHaveBeenCalledWith('VN_Zn4ofCG2');
+        expect(routeGuardMocks.clearOwnerActiveMatch).not.toHaveBeenCalled();
+        expect(routeGuardMocks.suppressOwnerActiveMatch).not.toHaveBeenCalled();
         expect(routeGuardMocks.toastWarning).toHaveBeenCalledWith(
             { kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' },
             undefined,

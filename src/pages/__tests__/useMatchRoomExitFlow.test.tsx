@@ -73,10 +73,10 @@ describe('useMatchRoomExitFlow', () => {
         }));
 
         await waitFor(() => {
-            expect(mocks.clearMatchCredentials).toHaveBeenCalledWith('VN_Zn4ofCG2');
+            expect(mocks.clearMatchCredentials).toHaveBeenCalledWith('VN_Zn4ofCG2', undefined, { suppressOwner: true });
         });
-        expect(mocks.clearOwnerActiveMatch).toHaveBeenCalledWith('VN_Zn4ofCG2');
-        expect(mocks.suppressOwnerActiveMatch).toHaveBeenCalledWith('VN_Zn4ofCG2');
+        expect(mocks.clearOwnerActiveMatch).not.toHaveBeenCalled();
+        expect(mocks.suppressOwnerActiveMatch).not.toHaveBeenCalled();
         expect(mocks.toastWarning).toHaveBeenCalledWith(
             { kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' },
             undefined,

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     clearMatchCredentials,
-    clearOwnerActiveMatch,
     readStoredMatchCredentials,
     validateStoredMatchSeat,
 } from '../hooks/match/useMatchStatus';
@@ -167,8 +166,7 @@ export function useMatchRoomSeatValidation(args: {
             return;
         }
 
-        clearMatchCredentials(matchId);
-        clearOwnerActiveMatch(matchId);
+        void clearMatchCredentials(matchId, stored ?? undefined);
         onLocalStateCleared();
         showWarningToast({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
     }, [

@@ -9,6 +9,7 @@ import { FoldLinePageFlipStage } from '../components/home-v2/FoldLinePageFlipSta
 import { HomeVersionFooter } from '../components/home/HomeVersionFooter';
 import { HomeV2DangerConfirmModal } from '../components/common/overlays/HomeV2DangerConfirmModal';
 import {
+    captureMatchCredentialSelection,
     claimSeat,
     destroyMatch as destroyOwnedMatch,
     getLatestStoredMatchCredentials,
@@ -265,6 +266,7 @@ export const HomeV2 = () => {
         const guestId = user?.id ? undefined : getOrCreateGuestId();
         const guestName = getGuestName(t, guestId);
         setIsDestroyingMatch(true);
+        let requestSelection = captureMatchCredentialSelection();
         try {
             const storedCredentials = readStoredMatchCredentials(pendingDestroyMatch.matchID);
             let destroyPlayerID = storedCredentials?.playerID ?? pendingDestroyMatch.playerID ?? '0';
@@ -272,6 +274,7 @@ export const HomeV2 = () => {
 
             if (!destroyCredentials || destroyPlayerID !== '0') {
                 const claimResult = await claimSeat(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', {
+                    expectedSelection: requestSelection,
                     token: token ?? undefined,
                     guestId,
                     playerName: user?.username ?? guestName,
@@ -280,6 +283,7 @@ export const HomeV2 = () => {
                     toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
                     return;
                 }
+                requestSelection = claimResult.expectedSelection ?? requestSelection;
                 destroyPlayerID = '0';
                 destroyCredentials = claimResult.credentials;
             }
@@ -287,6 +291,7 @@ export const HomeV2 = () => {
             let result = await destroyOwnedMatch(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, destroyPlayerID, destroyCredentials);
             if (!result.success && result.error === 'forbidden') {
                 const claimResult = await claimSeat(pendingDestroyMatch.gameName, pendingDestroyMatch.matchID, '0', {
+                    expectedSelection: requestSelection,
                     token: token ?? undefined,
                     guestId,
                     playerName: user?.username ?? guestName,

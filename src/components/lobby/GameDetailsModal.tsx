@@ -7,7 +7,7 @@ import * as matchApi from '../../services/matchApi';
 import { getLocalMatchPreferences, updateLocalMatchPreferences } from '../../api/user-settings';
 import { useAuth } from '../../contexts/AuthContext';
 import { lobbySocket, type LobbyMatch } from '../../services/lobbySocket';
-import { claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, isOwnerActiveMatchSuppressed, suppressOwnerActiveMatch, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistAiSeatCredentials, persistMatchCredentials, isMatchNotFoundError } from '../../hooks/match/useMatchStatus';
+import { captureMatchCredentialSelection, discardStaleMatchSeat, claimSeat, exitMatch, getOwnerActiveMatch, setOwnerActiveMatch, clearOwnerActiveMatch, isOwnerActiveMatchSuppressed, clearMatchCredentials, readStoredMatchCredentials, listStoredMatchCredentials, getLatestStoredMatchCredentials, pruneStoredMatchCredentials, persistAiSeatCredentials, persistMatchCredentials, isMatchNotFoundError } from '../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName, getOwnerKey as resolveOwnerKey, getOwnerType as resolveOwnerType } from '../../hooks/match/ownerIdentity';
 import { ConfirmModal } from '../common/overlays/ConfirmModal';
 import { HomeGameDetailsPresentation as GameDetailsPresentation } from '../home/HomeGameDetailsPresentation';
@@ -503,7 +503,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         const ownerActive = getOwnerActiveMatch();
         const ownerKey = getOwnerKey();
         if (ownerActive?.matchID && isOwnerActiveMatchSuppressed(ownerActive.matchID)) {
-            clearOwnerActiveMatch(ownerActive.matchID);
+            void clearOwnerActiveMatch(ownerActive.matchID, { ifSuppressed: true });
             return null;
         }
         if (ownerKey && ownerActive?.matchID && ownerActive.ownerKey === ownerKey) {
@@ -783,12 +783,6 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         }
     };
 
-    const clearLocalActiveMatchState = (matchID: string) => {
-        clearMatchCredentials(matchID);
-        clearOwnerActiveMatch(matchID);
-        setLocalStorageTick((t) => t + 1);
-    };
-
     const openCreateRoomModal = async () => {
         if (isPreparingCreateRoom) return;
         const namespace = `game-${gameId}`;
@@ -832,7 +826,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
     const tryClaimSeat = async (
         matchID: string,
         gameName: string,
-        options?: { navigateOnSuccess?: boolean },
+        options?: { navigateOnSuccess?: boolean; expectedSelection?: string },
     ) => {
         setMatchEntryLoadingPhase('joining');
         const activeOwner = getOwnerActiveMatch();
@@ -841,27 +835,29 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         const ownerCredentials = storedOwner?.playerID === '0' ? storedOwner.credentials : undefined;
         const roomOwnerType = localOwner?.ownerType ?? rooms.find(room => room.matchID === matchID)?.ownerType ?? getOwnerType();
         const useGuestProof = roomOwnerType === 'guest' && !!ownerCredentials;
+        const claimedOwner = {
+            matchID, gameName,
+            ownerKey: localOwner?.ownerKey ?? (roomOwnerType === 'guest' ? resolveOwnerKey(undefined, getGuestId()) : getOwnerKey()),
+            ownerType: roomOwnerType,
+        };
         const claimResult = user?.id && token && !useGuestProof
-            ? await claimSeat(gameName, matchID, '0', { token, playerName: user.username })
+            ? await claimSeat(gameName, matchID, '0', { token, playerName: user.username, owner: claimedOwner, expectedSelection: options?.expectedSelection })
             : await claimSeat(gameName, matchID, '0', {
                 guestId: getGuestId(),
                 ...(ownerCredentials ? { ownerCredentials } : {}),
                 playerName: user?.username ?? getGuestName(),
+                owner: claimedOwner,
+                expectedSelection: options?.expectedSelection,
             });
         if (!claimResult.success) {
             if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
-                clearMatchCredentials(matchID);
-                clearOwnerActiveMatch(matchID);
+                const nextSelection = claimResult.expectedSelection === undefined ? null
+                    : await discardStaleMatchSeat(matchID, claimResult.expectedSelection);
                 setLocalStorageTick((t) => t + 1);
+                return { success: false, error: claimResult.error, expectedSelection: nextSelection ?? undefined };
             }
-            return { success: false, error: claimResult.error };
+            return { success: false, error: claimResult.error, expectedSelection: claimResult.expectedSelection };
         }
-        setOwnerActiveMatch({
-            matchID,
-            gameName,
-            ownerKey: localOwner?.ownerKey ?? (roomOwnerType === 'guest' ? resolveOwnerKey(undefined, getGuestId()) : getOwnerKey()),
-            ownerType: roomOwnerType,
-        });
         setLocalStorageTick(t => t + 1);
         setShowCreateRoomModal(false);
         // 通知大厅刷新，确保其他玩家能看到房间状态更新
@@ -873,7 +869,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             onNavigate?.();
             navigate(`/play/${gameName}/match/${matchID}?playerID=0`);
         }
-        return { success: true, credentials: claimResult.credentials };
+        return { success: true, credentials: claimResult.credentials, expectedSelection: claimResult.expectedSelection };
     };
 
     const handleRoomCreatedButEnterFailed = useCallback((params: {
@@ -932,6 +928,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             logger.warn('[GameDetailsModal] create-room 被重复触发，已忽略');
             return;
         }
+        const requestSelection = captureMatchCredentialSelection();
         createRoomInFlightRef.current = true;
         let shouldPreserveLoading = false;
         setIsLoading(true);
@@ -1084,24 +1081,24 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                 const ownerPlayerName = user?.username || getGuestName();
                 const ownerCredentials = result.ownerCredentials;
                 if (ownerCredentials) {
-                    persistMatchCredentials(matchID, {
+                    const saved = await persistMatchCredentials(matchID, {
                         playerID: result.ownerPlayerID || '0',
                         credentials: ownerCredentials,
                         matchID,
                         gameName: gameId,
                         playerName: ownerPlayerName,
-                    });
-                    setOwnerActiveMatch({
+                    }, { owner: {
                         matchID,
                         gameName: gameId,
                         ownerKey: getOwnerKey(),
                         ownerType: getOwnerType(),
-                    });
+                    }, expectedSelection: requestSelection });
+                    if (!saved) return;
                     setLocalStorageTick((t) => t + 1);
                     setShowCreateRoomModal(false);
                     lobbySocket.requestRefresh(normalizedGameId);
                 } else {
-                    const claimResult = await tryClaimSeat(matchID, gameId, { navigateOnSuccess: false });
+                    const claimResult = await tryClaimSeat(matchID, gameId, { navigateOnSuccess: false, expectedSelection: requestSelection });
                     if (!claimResult.success) {
                         console.error('[handleCreateRoom] claim-seat 失败', { matchID, error: claimResult.error });
                         handleRoomCreatedButEnterFailed({
@@ -1116,7 +1113,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
 
                 if (enableAi) {
                     const aiSeatEntries = Object.entries(normalizedSeatControllers).filter(([, controller]) => controller.type !== 'human');
-                    persistAiSeatCredentials(matchID, {});
+                    if (!await persistAiSeatCredentials(matchID, {})) throw new Error('AI credentials could not be saved locally');
 
                     if (aiSeatEntries.length > 0) {
                         appendMatchLoadTrace({
@@ -1147,7 +1144,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                                     };
                                 const response = await matchApi.claimSeat(gameId, matchID, playerId, claimOptions);
                                 aiSeatCredentials[playerId] = response.playerCredentials;
-                                persistAiSeatCredentials(matchID, aiSeatCredentials);
+                                if (!await persistAiSeatCredentials(matchID, aiSeatCredentials)) throw new Error('AI credentials could not be saved locally');
                             } catch (error) {
                                 failureCount += 1;
                                 logger.error('[GameDetailsModal] AI 座位占座失败', {
@@ -1179,7 +1176,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                         });
                     }
                 } else {
-                    persistAiSeatCredentials(matchID, {});
+                    if (!await persistAiSeatCredentials(matchID, {})) throw new Error('AI credentials could not be saved locally');
                 }
 
                 logMobileRuntimeCritical('GameDetailsModal', 'create-room-navigate-match', {
@@ -1256,7 +1253,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             }
             if (existingGameName && existingMatchID) {
                 if (!options?.forceReplaceOwnerRoom && canForceReplace && getOwnerType() === 'user') {
-                    const claimResult = await tryClaimSeat(existingMatchID, existingGameName);
+                    const claimResult = await tryClaimSeat(existingMatchID, existingGameName, { expectedSelection: requestSelection });
                     if (claimResult.success) {
                         lobbySocket.requestRefresh(normalizedGameId);
                         shouldPreserveLoading = true;
@@ -1273,25 +1270,25 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                     return;
                 }
 
-                setOwnerActiveMatch({
-                    matchID: existingMatchID,
-                    gameName: existingGameName,
-                    ownerKey: getOwnerKey(),
-                    ownerType: getOwnerType(),
-                });
                 if (options?.forceReplaceOwnerRoom) {
+                    const ownerSaved = await setOwnerActiveMatch({
+                        matchID: existingMatchID, gameName: existingGameName,
+                        ownerKey: getOwnerKey(), ownerType: getOwnerType(),
+                    }, { expectedSelection: requestSelection });
+                    if (!ownerSaved) return;
                     lobbySocket.requestRefresh(normalizedGameId);
                     toast.warning({ kind: 'i18n', key: 'error.activeMatchExists', ns: 'lobby' });
                     return;
                 }
-                const claimResult = await tryClaimSeat(existingMatchID, existingGameName);
+                const claimResult = await tryClaimSeat(existingMatchID, existingGameName, { expectedSelection: requestSelection });
                 if (claimResult.success) {
                     lobbySocket.requestRefresh(normalizedGameId);
                     shouldPreserveLoading = true;
                     return;
                 }
                 toast.warning({ kind: 'i18n', key: 'error.activeMatchExists', ns: 'lobby' });
-                void handleJoinRoom(existingMatchID, existingGameName);
+                if (claimResult.expectedSelection === undefined) return;
+                void handleJoinRoom(existingMatchID, existingGameName, undefined, claimResult.expectedSelection);
                 lobbySocket.requestRefresh(normalizedGameId);
                 setShowCreateRoomModal(false);
                 return;
@@ -1324,8 +1321,9 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         }
     };
 
-    const handleJoinRoom = async (matchID: string, overrideGameName?: string, password?: string) => {
+    const handleJoinRoom = async (matchID: string, overrideGameName?: string, password?: string, inheritedSelection?: string) => {
         let shouldPreserveLoading = false;
+        let requestSelection = inheritedSelection ?? captureMatchCredentialSelection();
         // 检查是否有已保存的凭证（重连场景）
         const savedCreds = localStorage.getItem(`match_creds_${matchID}`);
         if (savedCreds) {
@@ -1344,11 +1342,14 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
 
                 try {
                     const matchInfo = await matchApi.getMatch(roomGameName, matchID);
+                    if (captureMatchCredentialSelection() !== requestSelection) return;
                     const seat = matchInfo.players.find(p => String(p.id) === String(data?.playerID));
                     const seatTakenByOther = !!(seat?.name && storedPlayerName && seat.name !== storedPlayerName);
 
                     if (!seat || seatTakenByOther) {
-                        clearMatchCredentials(matchID);
+                        const nextSelection = await discardStaleMatchSeat(matchID, requestSelection);
+                        if (nextSelection === null) return;
+                        requestSelection = nextSelection;
                     } else {
                         // 直接重连：让服务端/客户端用凭据校验
                         void prefetchOnlineMatchRoute().catch(() => {
@@ -1361,10 +1362,14 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                     }
                 } catch (error) {
                     console.warn('校验本地凭据失败，改为重新加入', error);
-                    clearMatchCredentials(matchID);
+                    const nextSelection = await discardStaleMatchSeat(matchID, requestSelection);
+                        if (nextSelection === null) return;
+                        requestSelection = nextSelection;
                 }
             } else {
-                clearMatchCredentials(matchID);
+                const nextSelection = await discardStaleMatchSeat(matchID, requestSelection);
+                        if (nextSelection === null) return;
+                        requestSelection = nextSelection;
             }
         }
 
@@ -1412,7 +1417,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         setMatchEntryLoadingPhase('joining');
         const canClaimSeat = isLocallyOwnedRoom(matchID);
         if (canClaimSeat) {
-            const claimResult = await tryClaimSeat(matchID, roomGameName);
+            const claimResult = await tryClaimSeat(matchID, roomGameName, { expectedSelection: requestSelection });
             if (claimResult.success) {
                 shouldPreserveLoading = true;
                 return;
@@ -1441,13 +1446,14 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                 throw new Error('join response missing playerID');
             }
 
-            persistMatchCredentials(matchID, {
+            const saved = await persistMatchCredentials(matchID, {
                 playerID: joinedPlayerID,
                 credentials: playerCredentials,
                 matchID,
                 gameName: roomGameName,
                 playerName,
-            });
+            }, { expectedSelection: requestSelection });
+            if (!saved) return;
 
             setLocalStorageTick(t => t + 1);
 
@@ -1509,7 +1515,8 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         }
 
         setPendingJoin(null);
-        void handleJoinRoom(nextJoin.matchID, nextJoin.gameName);
+        if (result.expectedSelection === undefined) return;
+        void handleJoinRoom(nextJoin.matchID, nextJoin.gameName, undefined, result.expectedSelection);
     });
 
     const handleCancelJoin = useEffectEvent(() => {
@@ -1538,9 +1545,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
     });
 
     const handleForceExitLocal = (matchID: string) => {
-        suppressOwnerActiveMatch(matchID);
-        clearMatchCredentials(matchID);
-        clearOwnerActiveMatch(matchID);
+        void clearMatchCredentials(matchID, undefined, { suppressOwner: true });
         setLocalStorageTick((t) => t + 1);
         toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
     };
@@ -1613,24 +1618,25 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                 return;
             }
 
+            const requestSelection = captureMatchCredentialSelection();
             let result = await exitMatch(gameName, matchID, myPlayerID, myCredentials, isHost);
-            console.log('[LobbyModal] 执行完成', { result });
+            console.log('[LobbyModal] 执行完成', { success: result.success, error: result.error, cleanedLocal: result.cleanedLocal });
 
             // 403 forbidden 时尝试 claim-seat 刷新凭证后重试（凭证可能因其他会话被覆盖）
             if (!result.success && result.error === 'forbidden' && isHost) {
                 console.log('[LobbyModal] 403 forbidden，尝试 claim-seat 刷新凭证');
                 let claimResult: { success: boolean; credentials?: string };
                 if (user?.id && token) {
-                    claimResult = await claimSeat(gameName, matchID, myPlayerID, { token, playerName: user.username });
+                    claimResult = await claimSeat(gameName, matchID, myPlayerID, { token, playerName: user.username, expectedSelection: requestSelection });
                 } else {
                     const guestId = getGuestId();
                     const guestName = getGuestName();
-                    claimResult = await claimSeat(gameName, matchID, myPlayerID, { guestId, playerName: guestName });
+                    claimResult = await claimSeat(gameName, matchID, myPlayerID, { guestId, playerName: guestName, expectedSelection: requestSelection });
                 }
                 if (claimResult.success && claimResult.credentials) {
                     console.log('[LobbyModal] claim-seat 成功，重试销毁');
                     result = await exitMatch(gameName, matchID, myPlayerID, claimResult.credentials, isHost);
-                    console.log('[LobbyModal] 重试结果', { result });
+                    console.log('[LobbyModal] 重试结果', { success: result.success, error: result.error, cleanedLocal: result.cleanedLocal });
                 }
             }
 
@@ -1858,7 +1864,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         const ownerActive = getOwnerActiveMatch();
         const ownerKey = getOwnerKey();
         if (ownerActive?.matchID && isOwnerActiveMatchSuppressed(ownerActive.matchID)) {
-            clearOwnerActiveMatch(ownerActive.matchID);
+            void clearOwnerActiveMatch(ownerActive.matchID, { ifSuppressed: true });
             return null;
         }
         if (ownerKey && ownerActive?.matchID && ownerActive.ownerKey === ownerKey) {
@@ -1881,6 +1887,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             return true;
         }
 
+        const requestSelection = captureMatchCredentialSelection();
         const matchID = activeMatch.matchID;
         const gameName = activeMatch.gameName;
         let playerID = activeMatch.myPlayerID;
@@ -1892,20 +1899,19 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
                 await matchApi.getMatch(gameName, matchID);
             } catch (error) {
                 if (isMatchNotFoundError(error)) {
-                    clearLocalActiveMatchState(matchID);
+                    const cleared = await discardStaleMatchSeat(matchID, requestSelection);
                     lobbySocket.requestRefresh(gameName);
-                    return true;
+                    return cleared !== null;
                 }
                 toast.error({ kind: 'i18n', key: 'error.actionFailed', ns: 'lobby' });
                 return false;
             }
 
-            const claimResult = await tryClaimSeat(matchID, gameName, { navigateOnSuccess: false });
+            const claimResult = await tryClaimSeat(matchID, gameName, { navigateOnSuccess: false, expectedSelection: requestSelection });
             if (!claimResult.success) {
                 if (claimResult.error === 'unauthorized' || claimResult.error === 'forbidden' || claimResult.error === 'not_found') {
-                    clearLocalActiveMatchState(matchID);
                     lobbySocket.requestRefresh(gameName);
-                    return true;
+                    return claimResult.expectedSelection !== undefined;
                 }
                 toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
                 return false;
@@ -1917,9 +1923,9 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
         }
 
         if (!playerID || !credentials) {
-            clearLocalActiveMatchState(matchID);
+            const cleared = await discardStaleMatchSeat(matchID, requestSelection);
             lobbySocket.requestRefresh(gameName);
-            return true;
+            return cleared !== null;
         }
 
         const exitResult = await exitMatch(gameName, matchID, playerID, credentials, isHost);
@@ -1928,9 +1934,8 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
             return false;
         }
 
-        clearLocalActiveMatchState(matchID);
         lobbySocket.requestRefresh(gameName);
-        return true;
+        return exitResult.expectedSelection !== undefined;
     };
 
     const handleOpenCreateRoom = async () => {
@@ -1960,13 +1965,13 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
 
         activeMatchCheckRef.current = activeMatch.matchID;
 
+        const requestSelection = captureMatchCredentialSelection();
         matchApi.getMatch(activeMatch.gameName, activeMatch.matchID)
             .catch((err) => {
                 const status = (err as { status?: number }).status;
                 const message = (err as { message?: string }).message ?? '';
                 if (status === 404 || message.includes('404')) {
-                    clearMatchCredentials(activeMatch.matchID);
-                    clearOwnerActiveMatch(activeMatch.matchID);
+                    void clearMatchCredentials(activeMatch.matchID, undefined, { expectedSelection: requestSelection });
                     setLocalStorageTick((t) => t + 1);
                     toast.warning({ kind: 'i18n', key: 'error.activeMatchStale', ns: 'lobby' });
                     return;

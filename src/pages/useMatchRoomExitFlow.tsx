@@ -7,10 +7,8 @@ import { useToast } from '../contexts/ToastContext';
 import { navigateBackToLobbyWithModalCleanup } from '../lib/navigation/navigateBackToLobbyWithModalCleanup';
 import {
     clearMatchCredentials,
-    clearOwnerActiveMatch,
     destroyMatch,
     leaveMatch,
-    suppressOwnerActiveMatch,
 } from '../hooks/match/useMatchStatus';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { useMissingMatchConfirmation } from './matchMissingConfirmation';
@@ -76,11 +74,9 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
 
     const clearMatchLocalState = useCallback(() => {
         if (!matchId) return;
-        clearMatchCredentials(matchId);
-        clearOwnerActiveMatch(matchId);
+        void clearMatchCredentials(matchId, undefined, { suppressOwner: true });
         // 关键：强制退出时，也要增加对当前房间的“主页活跃对局”抑制，
         // 确保即使在跨标签页同步延迟时，主页也能立即排除此房间。
-        suppressOwnerActiveMatch(matchId);
     }, [matchId]);
 
     const handleConfirmedMissingMatch = useCallback(() => {
@@ -179,10 +175,8 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
             return;
         }
 
-        clearMatchLocalState();
         navigateBackToLobby();
     }, [
-        clearMatchLocalState,
         credentials,
         gameId,
         matchId,

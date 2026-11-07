@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import {
-    persistMatchCredentials,
+    updateStoredMatchMetadata,
     readStoredMatchCredentials,
     type StoredMatchCredentials,
 } from '../hooks/match/useMatchStatus';
@@ -65,11 +65,7 @@ export function useMatchRoomRouteStorageSync(args: {
         if (!matchId || !gameId) return;
         const stored = readStoredMatchCredentials(matchId);
         if (!stored || stored.gameName === gameId) return;
-        persistMatchCredentials(matchId, {
-            ...stored,
-            matchID: stored.matchID || matchId,
-            gameName: gameId,
-        });
+        void updateStoredMatchMetadata(matchId, { gameName: gameId });
     }, [gameId, matchId]);
 
     useEffect(() => {

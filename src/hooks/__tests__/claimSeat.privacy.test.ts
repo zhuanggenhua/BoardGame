@@ -14,7 +14,7 @@ describe('claimSeat failure diagnostics', () => {
             error: 'forbidden', credentials: PRIVATE_MARKER,
         }), { status: 403 })));
         expect(await claimSeat('betrayal', 'room', '0', { ownerCredentials: PRIVATE_MARKER }))
-            .toEqual({ success: false, status: 403, error: 'forbidden' });
+            .toMatchObject({ success: false, status: 403, error: 'forbidden' });
         expect(warn).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ status: 403, error: 'forbidden' }));
         expect(JSON.stringify(warn.mock.calls)).not.toContain(PRIVATE_MARKER);
     });
@@ -23,7 +23,7 @@ describe('claimSeat failure diagnostics', () => {
         const log = vi.spyOn(console, 'error').mockImplementation(() => {});
         vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError(PRIVATE_MARKER)));
         expect(await claimSeat('betrayal', 'room', '0', { ownerCredentials: PRIVATE_MARKER }))
-            .toEqual({ success: false, error: 'network' });
+            .toMatchObject({ success: false, error: 'network' });
         expect(log).toHaveBeenCalledWith(expect.any(String), { errorName: 'TypeError' });
         expect(log.mock.calls.flat().some(value => value instanceof Error)).toBe(false);
         expect(JSON.stringify(log.mock.calls)).not.toContain(PRIVATE_MARKER);

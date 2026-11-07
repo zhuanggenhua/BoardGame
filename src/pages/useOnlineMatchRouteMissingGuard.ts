@@ -3,9 +3,7 @@ import type { NavigateFunction } from 'react-router-dom';
 import type { ToastContextType } from '../contexts/ToastContext';
 import {
     clearMatchCredentials,
-    clearOwnerActiveMatch,
     isMatchNotFoundError,
-    suppressOwnerActiveMatch,
 } from '../hooks/match/useMatchStatus';
 import { navigateBackToLobbyWithModalCleanup } from '../lib/navigation/navigateBackToLobbyWithModalCleanup';
 import * as matchApi from '../services/matchApi';
@@ -19,9 +17,7 @@ type UseOnlineMatchRouteMissingGuardArgs = {
 };
 
 export function clearMissingOnlineMatchRouteState(matchId: string): void {
-    clearMatchCredentials(matchId);
-    clearOwnerActiveMatch(matchId);
-    suppressOwnerActiveMatch(matchId);
+    void clearMatchCredentials(matchId, undefined, { suppressOwner: true });
 }
 
 export function useOnlineMatchRouteMissingGuard(args: UseOnlineMatchRouteMissingGuardArgs): void {

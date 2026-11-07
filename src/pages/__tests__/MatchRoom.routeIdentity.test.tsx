@@ -926,3 +926,11 @@ describe('MatchRoom route identity integration', () => {
         });
     });
 });
+
+vi.mock('../../hooks/match/matchCredentialTransaction', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../hooks/match/matchCredentialTransaction')>();
+    let queue = Promise.resolve<unknown>(undefined);
+    return { ...actual, withMatchCredentialWrite: <T,>(write: () => T): Promise<T> => {
+        const result = queue.then(write); queue = result.catch(() => {}); return result;
+    } };
+});

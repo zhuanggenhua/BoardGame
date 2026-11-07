@@ -142,12 +142,13 @@ vi.mock('../../../hooks/match/ownerIdentity', () => ({
 }));
 
 vi.mock('../../../hooks/match/useMatchStatus', () => ({
+    captureMatchCredentialSelection: vi.fn(() => 'selection'),
     claimSeat: vi.fn(),
     clearOwnerActiveMatch: vi.fn(),
     destroyMatch: vi.fn(),
     getLatestStoredMatchCredentials: vi.fn(() => null),
     getOwnerActiveMatch: vi.fn(() => mockOwnerActiveMatch),
-    persistMatchCredentials: vi.fn(),
+    persistMatchCredentials: vi.fn().mockResolvedValue(true),
     readStoredMatchCredentials: vi.fn(() => null),
     setOwnerActiveMatch: vi.fn(),
 }));
@@ -450,6 +451,10 @@ describe('HomeV2 GameDetails locked room join', () => {
             playerCredentials: 'cred-1',
         });
 
+        vi.mocked(matchStatus.persistMatchCredentials).mockImplementationOnce(async () => {
+            mockOwnerActiveMatch = { matchID: 'chosen-in-other-tab', gameName: 'betrayal', ownerType: 'guest' };
+            return true;
+        });
         render(createElement(GameDetailsRight, {
             game: {
                 id: 'tictactoe',
@@ -487,10 +492,12 @@ describe('HomeV2 GameDetails locked room join', () => {
             playerID: '1',
             credentials: 'cred-1',
             gameName: 'tictactoe',
-        }));
+        }), { expectedSelection: 'selection' });
         await waitFor(() => {
             expect(navigateMock).toHaveBeenCalledWith('/play/tictactoe/match/match-locked-1?playerID=1');
         });
+        expect(matchStatus.clearOwnerActiveMatch).not.toHaveBeenCalled();
+        expect(mockOwnerActiveMatch?.matchID).toBe('chosen-in-other-tab');
     });
 
     it('Android 原生运行时 package-managed 游戏会显示圆球下载入口，并在展开卡片后触发安装请求', async () => {
@@ -646,16 +653,18 @@ describe('HomeV2 GameDetails locked room join', () => {
         mockMatches = [{ ...mockMatches[0], isLocked: false }];
         Reflect.deleteProperty(mockMatches[0], 'ownerKey');
         mockOwnerActiveMatch = { matchID: 'match-locked-1', gameName: 'tictactoe', ownerKey: 'owner-1', ownerType: 'guest' };
-        vi.mocked(matchStatus.setOwnerActiveMatch).mockImplementation(next => { mockOwnerActiveMatch = next; });
         vi.mocked(matchStatus.readStoredMatchCredentials).mockReturnValue({ matchID: 'match-locked-1', gameName: 'tictactoe', playerID: '0', credentials: 'guest-host-proof' });
-        vi.mocked(matchStatus.claimSeat).mockResolvedValue({ success: true, credentials: 'guest-host-proof' });
+        vi.mocked(matchStatus.claimSeat).mockImplementation(async (_game, _match, _seat, options) => {
+            if (options.owner) mockOwnerActiveMatch = options.owner;
+            return { success: true, credentials: 'guest-host-proof', expectedSelection: 'selection' };
+        });
         render(createElement(GameDetailsRight, { game: {
             id: 'tictactoe', type: 'game', enabled: true, titleKey: 'games.tictactoe.title', descriptionKey: 'games.tictactoe.description',
             category: 'abstract', playersKey: 'games.tictactoe.players', icon: 'XO', playerOptions: [2],
         } }));
         for (let attempt = 1; attempt <= 2; attempt += 1) {
             fireEvent.click(screen.getByRole('button', { name: /加锁房间/ }));
-            await waitFor(() => expect(matchStatus.setOwnerActiveMatch).toHaveBeenCalledTimes(attempt));
+            await waitFor(() => expect(matchStatus.claimSeat).toHaveBeenCalledTimes(attempt));
             expect(mockOwnerActiveMatch).toMatchObject({ ownerType: 'guest', ownerKey: 'owner-1' });
             expect(matchStatus.claimSeat).toHaveBeenLastCalledWith('tictactoe', 'match-locked-1', '0', expect.objectContaining({ ownerCredentials: 'guest-host-proof' }));
             expect(vi.mocked(matchStatus.claimSeat).mock.lastCall?.[3].token).toBeUndefined();
@@ -722,4 +731,27 @@ describe('HomeV2 GameDetails locked room join', () => {
             expect(screen.queryByText('我的房间')).not.toBeInTheDocument();
         });
     });
+    it('destroy 403 recovery retains the first selection instead of adopting another tab', async () => {
+        mockMatches = [{ ...mockMatches[0], matchID: 'owned', roomName: '我的房间', isLocked: false, ownerKey: 'owner-1' }];
+        mockOwnerActiveMatch = { matchID: 'owned', gameName: 'tictactoe', ownerType: 'guest', ownerKey: 'owner-1' };
+        vi.mocked(matchStatus.readStoredMatchCredentials).mockReturnValue({ matchID: 'owned', playerID: '0', credentials: 'before', gameName: 'tictactoe' });
+        vi.mocked(matchStatus.captureMatchCredentialSelection).mockReturnValue('first-selection');
+        let release!: (result: { success: false; error: 'forbidden' }) => void;
+        vi.mocked(matchStatus.destroyMatch).mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+        vi.mocked(matchStatus.claimSeat).mockResolvedValueOnce({ success: false, error: 'selection_changed' });
+        render(createElement(GameDetailsRight, { game: {
+            id: 'tictactoe', type: 'game', enabled: true, titleKey: 'games.tictactoe.title', descriptionKey: 'games.tictactoe.description',
+            category: 'abstract', playersKey: 'games.tictactoe.players', icon: 'XO', playerOptions: [2],
+        } }));
+        fireEvent.click(screen.getByTestId('home-v2-active-room-destroy-button'));
+        fireEvent.click(await screen.findByTestId('home-v2-destroy-room-confirm'));
+        await waitFor(() => expect(matchStatus.destroyMatch).toHaveBeenCalledTimes(1));
+        vi.mocked(matchStatus.captureMatchCredentialSelection).mockReturnValue('other-tab-selection');
+        await act(async () => { release({ success: false, error: 'forbidden' }); });
+        expect(matchStatus.claimSeat).toHaveBeenCalledWith('tictactoe', 'owned', '0', expect.objectContaining({ expectedSelection: 'first-selection' }));
+        expect(matchStatus.destroyMatch).toHaveBeenCalledTimes(1);
+        expect(matchStatus.clearOwnerActiveMatch).not.toHaveBeenCalled();
+        expect(navigateMock).not.toHaveBeenCalled();
+    });
+
 });

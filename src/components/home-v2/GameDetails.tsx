@@ -10,14 +10,13 @@ import { preloadWarmImages, resolveCriticalImages, UI_Z_INDEX } from '../../core
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import {
+    captureMatchCredentialSelection,
     claimSeat,
-    clearOwnerActiveMatch,
     destroyMatch as destroyOwnedMatch,
     getLatestStoredMatchCredentials,
     getOwnerActiveMatch,
     readStoredMatchCredentials,
     persistMatchCredentials,
-    setOwnerActiveMatch,
 } from '../../hooks/match/useMatchStatus';
 import {
     readStoredLocalMatchPreferences,
@@ -1430,6 +1429,7 @@ export const Right = ({ game }: RightProps) => {
             return;
         }
         if (!game) return;
+        const requestSelection = captureMatchCredentialSelection();
         createRoomInFlightRef.current = true;
         setIsLoading(true);
         prewarmInitialGameImages(game.id, i18n.language, '提交创建房间');
@@ -1494,10 +1494,15 @@ export const Right = ({ game }: RightProps) => {
             );
 
             const claimResult = await claimSeat(game.id, result.matchID, '0', {
+                expectedSelection: requestSelection,
                 token: token ?? undefined,
                 guestId,
                 ownerCredentials: result.ownerCredentials,
                 playerName: user?.username ?? guestName,
+                owner: {
+                    matchID: result.matchID, gameName: game.id,
+                    ownerKey, ownerType: getOwnerType(user?.id),
+                },
             });
 
             if (!claimResult.success) {
@@ -1505,12 +1510,6 @@ export const Right = ({ game }: RightProps) => {
                 return;
             }
 
-            setOwnerActiveMatch({
-                matchID: result.matchID,
-                gameName: game.id,
-                ownerKey,
-                ownerType: getOwnerType(user?.id),
-            });
 
             setShowCreateRoomModal(false);
             navigateToMatch(result.matchID, '0');
@@ -1535,6 +1534,7 @@ export const Right = ({ game }: RightProps) => {
     };
 
     const handleJoinRoom = async (matchID: string, password?: string) => {
+        const requestSelection = captureMatchCredentialSelection();
         if (!game) return;
         setIsLoading(true);
         try {
@@ -1562,21 +1562,22 @@ export const Right = ({ game }: RightProps) => {
                 const ownerCredentials = storedOwner?.playerID === '0' ? storedOwner.credentials : undefined;
                 const useGuestProof = roomOwnerType === 'guest' && !!ownerCredentials;
                 const claimResult = await claimSeat(game.id, matchID, '0', {
+                    expectedSelection: requestSelection,
                     token: useGuestProof ? undefined : token ?? undefined,
                     guestId: useGuestProof ? getOrCreateGuestId() : guestId,
                     ownerCredentials,
                     playerName: user?.username ?? guestName,
+                    owner: {
+                        matchID, gameName: game.id,
+                        ownerKey: recordedOwner?.ownerKey ?? (roomOwnerType === 'guest' ? getOwnerKey(undefined, getOrCreateGuestId()) : ownerKey),
+                        ownerType: roomOwnerType,
+                    },
                 });
                 if (!claimResult.success) {
                     toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
                     return;
                 }
-                setOwnerActiveMatch({
-                    matchID,
-                    gameName: game.id,
-                    ownerKey: recordedOwner?.ownerKey ?? (roomOwnerType === 'guest' ? getOwnerKey(undefined, getOrCreateGuestId()) : ownerKey),
-                    ownerType: roomOwnerType,
-                });
+
                 navigateToMatch(matchID, '0');
                 return;
             }
@@ -1605,18 +1606,14 @@ export const Right = ({ game }: RightProps) => {
                 data: Object.keys(joinData).length > 0 ? joinData : undefined,
             });
 
-            persistMatchCredentials(matchID, {
+            const saved = await persistMatchCredentials(matchID, {
                 matchID,
                 playerID: String(openSeat.id),
                 credentials: joinResult.playerCredentials,
                 gameName: game.id,
                 playerName: user?.username ?? guestName,
-            });
-
-            const ownerActive = getOwnerActiveMatch();
-            if (ownerActive?.matchID && ownerActive.matchID !== matchID) {
-                clearOwnerActiveMatch(ownerActive.matchID);
-            }
+            }, { expectedSelection: requestSelection });
+            if (!saved) return;
 
             navigateToMatch(matchID, String(openSeat.id));
         } catch (error) {
@@ -1643,12 +1640,14 @@ export const Right = ({ game }: RightProps) => {
         const roomGameName = (roomSummary?.gameName || storedCredentials?.gameName || game.id || 'tictactoe').toLowerCase();
 
         setIsDestroyingRoom(true);
+        let requestSelection = captureMatchCredentialSelection();
         try {
             let destroyPlayerID = storedCredentials?.playerID ?? '0';
             let destroyCredentials = storedCredentials?.credentials ?? null;
 
             if (!destroyCredentials || destroyPlayerID !== '0') {
                 const claimResult = await claimSeat(roomGameName, matchID, '0', {
+                    expectedSelection: requestSelection,
                     token: token ?? undefined,
                     guestId,
                     playerName: user?.username ?? guestName,
@@ -1657,6 +1656,7 @@ export const Right = ({ game }: RightProps) => {
                     toast.error({ kind: 'i18n', key: 'error.ownerClaimFailed', ns: 'lobby' });
                     return;
                 }
+                requestSelection = claimResult.expectedSelection ?? requestSelection;
                 destroyPlayerID = '0';
                 destroyCredentials = claimResult.credentials;
             }
@@ -1664,6 +1664,7 @@ export const Right = ({ game }: RightProps) => {
             let result = await destroyOwnedMatch(roomGameName, matchID, destroyPlayerID, destroyCredentials);
             if (!result.success && result.error === 'forbidden') {
                 const claimResult = await claimSeat(roomGameName, matchID, '0', {
+                    expectedSelection: requestSelection,
                     token: token ?? undefined,
                     guestId,
                     playerName: user?.username ?? guestName,

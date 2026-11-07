@@ -1,6 +1,7 @@
 import { RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useGameMode } from '../../contexts/GameModeContext';
+import { useRematch } from '../../contexts/RematchContext';
 import { useEndgame } from '../../hooks/game/useEndgame';
 import { RematchActions } from '../../components/game/framework/widgets/RematchActions';
 import type { MatchPlayerInfo } from '../../engine/transport/protocol';
@@ -17,9 +18,10 @@ export interface EndgameRematchProps {
 export function EndgameRematchActions({ playerID = null, reset, isMultiplayer, isConnected, matchData }: EndgameRematchProps) {
     const { t } = useTranslation('game-betrayal');
     const gameMode = useGameMode();
+    const { isConnected: rematchConnected } = useRematch();
     const online = isMultiplayer ?? gameMode?.isMultiplayer ?? false;
     const spectator = gameMode?.isSpectator === true || (online && playerID === null);
-    const unavailable = spectator || (online ? isConnected === false : !reset);
+    const unavailable = spectator || (online ? isConnected === false || !rematchConnected : !reset);
     const { overlayProps } = useEndgame({
         result: undefined,
         isGameOverOverride: true,

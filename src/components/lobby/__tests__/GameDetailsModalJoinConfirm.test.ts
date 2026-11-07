@@ -376,10 +376,12 @@ vi.mock('../../../services/lobbySocket', () => ({
 }));
 
 vi.mock('../../../hooks/match/useMatchStatus', () => ({
+    captureMatchCredentialSelection: vi.fn(() => 'selection'),
+    discardStaleMatchSeat: vi.fn().mockResolvedValue('selection'),
     claimSeat: vi.fn(),
     exitMatch: vi.fn(),
     getOwnerActiveMatch: vi.fn(() => null),
-    setOwnerActiveMatch: vi.fn(),
+    setOwnerActiveMatch: vi.fn().mockResolvedValue(true),
     clearOwnerActiveMatch: vi.fn(),
     isOwnerActiveMatchSuppressed: vi.fn(() => false),
     suppressOwnerActiveMatch: vi.fn(),
@@ -388,8 +390,8 @@ vi.mock('../../../hooks/match/useMatchStatus', () => ({
     listStoredMatchCredentials: vi.fn(() => []),
     getLatestStoredMatchCredentials: vi.fn(() => null),
     pruneStoredMatchCredentials: vi.fn(),
-    persistAiSeatCredentials: vi.fn(),
-    persistMatchCredentials: vi.fn(),
+    persistAiSeatCredentials: vi.fn().mockResolvedValue(true),
+    persistMatchCredentials: vi.fn().mockResolvedValue(true),
     isMatchNotFoundError: (err: unknown) => String(err).includes('404'),
 }));
 
@@ -2662,18 +2664,21 @@ describe('GameDetailsModal create room ai entry', () => {
         authState.token = 'signed-in-token';
         let owner = { matchID: 'guest-login-room', gameName: 'dicethrone', ownerKey: 'owner-1', ownerType: 'guest' as const };
         vi.mocked(matchStatus.getOwnerActiveMatch).mockImplementation(() => owner);
-        vi.mocked(matchStatus.setOwnerActiveMatch).mockImplementation((next) => { owner = next as typeof owner; });
+
         vi.mocked(matchStatus.readStoredMatchCredentials).mockReturnValue(buildStored({ matchID: owner.matchID, gameName: 'dicethrone', playerID: '0', credentials: 'guest-host-proof' }));
         vi.mocked(lobbySocket.subscribe).mockImplementationOnce((_gameId, callback) => {
             callback([{ matchID: owner.matchID, gameName: 'dicethrone', ownerType: 'guest', players: [{ id: 0 }, { id: 1 }], totalSeats: 2 }]);
             return () => {};
         });
-        vi.mocked(matchStatus.claimSeat).mockResolvedValue({ success: true, credentials: 'guest-host-proof' });
+        vi.mocked(matchStatus.claimSeat).mockImplementation(async (_game, _match, _player, options) => {
+            if (options.owner) owner = options.owner as typeof owner;
+            return { success: true, credentials: 'guest-host-proof', expectedSelection: 'selection' };
+        });
         render(createElement(GameDetailsModal, baseProps));
         for (let attempt = 1; attempt <= 2; attempt += 1) {
             fireEvent.click(await screen.findByTestId('room-list-join-guest-login-room'));
             await waitFor(() => expect(matchStatus.claimSeat).toHaveBeenCalledTimes(attempt));
-            await waitFor(() => expect(matchStatus.setOwnerActiveMatch).toHaveBeenCalledTimes(attempt));
+            expect(matchStatus.claimSeat).toHaveBeenLastCalledWith('dicethrone', owner.matchID, '0', expect.objectContaining({ owner: expect.objectContaining({ ownerType: 'guest' }) }));
             expect(owner).toMatchObject({ ownerType: 'guest', ownerKey: 'owner-1' });
             expect(matchStatus.claimSeat).toHaveBeenLastCalledWith('dicethrone', owner.matchID, '0', expect.objectContaining({ ownerCredentials: 'guest-host-proof' }));
             expect(vi.mocked(matchStatus.claimSeat).mock.lastCall?.[3].token).toBeUndefined();
@@ -2819,7 +2824,7 @@ describe('GameDetailsModal create room ai entry', () => {
                 'mage-wars',
                 'match-old',
                 '0',
-                { token: 'jwt-token', playerName: 'Alice' },
+                expect.objectContaining({ token: 'jwt-token', playerName: 'Alice', owner: expect.objectContaining({ matchID: 'match-old' }), expectedSelection: 'selection' }),
             );
             expect(navigateMock).toHaveBeenCalledWith('/play/mage-wars/match/match-old?playerID=0');
         });

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../../services/matchSocket', () => ({ matchSocket: {
   joinMatch: vi.fn(), leaveMatch: vi.fn(), isSocketConnected: () => true,
+  subscribeRematchConnection: (callback: (connected: boolean) => void) => { callback(true); return () => {}; },
   subscribeState: () => () => {}, subscribeReset: (callback: () => Promise<void>) => { mocks.reset = callback; return () => {}; },
   subscribeNewRoom: (callback: (url: string) => void) => { mocks.newRoom = callback; return () => {}; },
   broadcastNewRoom: mocks.broadcast, setAutoAcceptedPlayerIds: vi.fn(), vote: vi.fn(),
@@ -20,9 +21,10 @@ vi.mock('../../services/matchSocket', () => ({ matchSocket: {
 vi.mock('../../hooks/match/useMatchStatus', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../match/useMatchStatus')>();
   return { ...actual, clearMatchCredentials: mocks.clearMatchCredentials, readStoredMatchCredentials: () => mocks.stored, claimSeat: mocks.claimSeat,
-    setOwnerActiveMatch: (owner: Parameters<typeof actual.setOwnerActiveMatch>[0]) => {
-      mocks.setOwnerActiveMatch(owner);
-      actual.setOwnerActiveMatch(owner);
+    persistRematchOwnerCredentials: async (...args: Parameters<typeof actual.persistRematchOwnerCredentials>) => {
+      const saved = await actual.persistRematchOwnerCredentials(...args);
+      if (saved && args[2]) mocks.setOwnerActiveMatch(args[2]);
+      return saved;
     },
   };
 });
@@ -67,6 +69,14 @@ describe('rematch does not silently reset the multiplayer client on failure', ()
     expect(JSON.stringify(log.mock.calls)).not.toContain('PRIVATE_CREDENTIAL');
     await reset();
     expect(mocks.playAgain).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not broadcast or navigate when a committed room proof cannot be stored', async () => {
+    vi.spyOn(await import('../../lib/browserStorage'), 'writeLocalStorageItem').mockReturnValue(false);
+    mount(); await reset();
+    expect(mocks.broadcast).not.toHaveBeenCalled();
+    expect(window.location.pathname).toBe('/play/betrayal/match/old');
+    expect(mocks.showError).toHaveBeenCalledWith(expect.objectContaining({ key: 'rematch.credentialsNotSaved' }));
   });
 
   it('keeps the original match on missing credentials', async () => {
@@ -118,7 +128,7 @@ describe('rematch joins the server-created room', () => {
 
   it('reclaims the new guest room with saved P0 proof after a logged-in rematch', async () => {
     const actual = await vi.importActual<typeof import('../match/useMatchStatus')>('../match/useMatchStatus');
-    actual.setOwnerActiveMatch({ matchID: 'old', gameName: 'betrayal', ownerType: 'guest', ownerKey: 'guest:original-guest' });
+    await actual.setOwnerActiveMatch({ matchID: 'old', gameName: 'betrayal', ownerType: 'guest', ownerKey: 'guest:original-guest' });
     mocks.auth = { user: { id: 'u1', username: 'Account' }, token: 'token' };
     const fetchMock = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ playerCredentials: 'new-seat-proof' }), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
@@ -291,14 +301,14 @@ it('preserves the existing authenticated debug successor notification without a 
 describe('late owner create response respects the current local selection', () => {
   it('saves committed proof after leaving to Home without navigating or broadcasting', async () => {
     const actual = await vi.importActual<typeof import('../match/useMatchStatus')>('../match/useMatchStatus');
-    actual.persistMatchCredentials('old', { matchID: 'old', playerID: '0', credentials: 'PRIVATE_CREDENTIAL', gameName: 'betrayal' });
+    await actual.persistMatchCredentials('old', { matchID: 'old', playerID: '0', credentials: 'PRIVATE_CREDENTIAL', gameName: 'betrayal' });
     let release!: (value: unknown) => void;
     mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
     const view = mount(); let pending!: Promise<void>;
     act(() => { pending = mocks.reset!(); });
     view.unmount(); window.location.href = 'http://localhost/?game=betrayal';
     await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'committed-proof', ownerType: 'guest' }); await pending; });
-    actual.pruneStoredMatchCredentials(); // Home's actual single-room consumer.
+    await actual.pruneStoredMatchCredentials(); // Home's actual single-room consumer.
     expect(actual.getLatestStoredMatchCredentials()).toMatchObject({ matchID: 'new', playerID: '0', credentials: 'committed-proof' });
     expect(actual.readStoredMatchCredentials('old')).toBeNull();
     expect(actual.getOwnerActiveMatch()).toMatchObject({ matchID: 'new', ownerType: 'guest' });
@@ -314,8 +324,8 @@ describe('late owner create response respects the current local selection', () =
     mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
     const view = mount(); let pending!: Promise<void>;
     act(() => { pending = mocks.reset!(); }); view.unmount();
-    actual.persistMatchCredentials('chosen', { matchID: 'chosen', playerID: '1', credentials: 'chosen-proof' });
-    actual.setOwnerActiveMatch({ matchID: 'chosen', gameName: 'betrayal', ownerType: 'user' });
+    await actual.persistMatchCredentials('chosen', { matchID: 'chosen', playerID: '1', credentials: 'chosen-proof' });
+    await actual.setOwnerActiveMatch({ matchID: 'chosen', gameName: 'betrayal', ownerType: 'user' });
     const before = { ...localStorage };
     const changed = vi.fn(); window.addEventListener('match-credentials-changed', changed);
     window.addEventListener('owner-active-match-changed', changed);
@@ -323,7 +333,7 @@ describe('late owner create response respects the current local selection', () =
     await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'late-proof', ownerType: 'guest' }); await pending; });
     expect({ ...localStorage }).toEqual(before);
     expect(changed).not.toHaveBeenCalled();
-    actual.pruneStoredMatchCredentials();
+    await actual.pruneStoredMatchCredentials();
     expect(actual.getLatestStoredMatchCredentials()?.matchID).toBe('chosen');
     expect(actual.getOwnerActiveMatch()?.matchID).toBe('chosen');
     expect(window.location.pathname).toBe('/play/betrayal/match/chosen');
@@ -355,8 +365,8 @@ it.each(['pointer-only', 'rotated-successor'] as const)('does not overwrite a la
   mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
   const view = mount(); let pending!: Promise<void>;
   act(() => { pending = mocks.reset!(); }); view.unmount();
-  if (mode === 'pointer-only') actual.setOwnerActiveMatch({ matchID: 'chosen', gameName: 'betrayal' });
-  else actual.persistMatchCredentials('new', { matchID: 'new', playerID: '0', credentials: 'newer-rotated-proof' });
+  if (mode === 'pointer-only') await actual.setOwnerActiveMatch({ matchID: 'chosen', gameName: 'betrayal' });
+  else await actual.persistMatchCredentials('new', { matchID: 'new', playerID: '0', credentials: 'newer-rotated-proof' });
   const before = { ...localStorage };
   await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'late-proof', ownerType: 'guest' }); await pending; });
   expect({ ...localStorage }).toEqual(before);
@@ -431,4 +441,12 @@ describe('owner long-wait notice is informational, not a request deadline', () =
     expect(request.fetch).toHaveBeenCalledTimes(1);
     expect(mocks.broadcast).not.toHaveBeenCalled();
   });
+});
+
+vi.mock('../match/matchCredentialTransaction', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../match/matchCredentialTransaction')>();
+    let queue = Promise.resolve<unknown>(undefined);
+    return { ...actual, withMatchCredentialWrite: <T,>(write: () => T): Promise<T> => {
+        const result = queue.then(write); queue = result.catch(() => {}); return result;
+    } };
 });

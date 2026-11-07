@@ -6,7 +6,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { matchSocket, type RematchVoteState } from '../services/matchSocket';
-import { persistRematchOwnerCredentials, readStoredMatchCredentials, setOwnerActiveMatch } from '../hooks/match/useMatchStatus';
+import { persistRematchOwnerCredentials, readStoredMatchCredentials } from '../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getOwnerKey } from '../hooks/match/ownerIdentity';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
@@ -85,6 +85,7 @@ export function RematchProvider({
     // 多人模式：连接 socket
     useEffect(() => {
         if (!isMultiplayer || !matchId || !playerId) {
+            setIsConnected(false);
             return;
         }
 
@@ -101,7 +102,7 @@ export function RematchProvider({
         matchSocket.joinMatch(matchId, playerId, {
             autoAcceptedPlayerIds: autoAcceptedPlayerIdsRef.current, credentials: readStoredMatchCredentials(matchId)?.credentials,
         });
-        setIsConnected(matchSocket.isSocketConnected());
+        const unsubConnection = matchSocket.subscribeRematchConnection(setIsConnected);
 
         // 订阅状态更新
         const unsubState = matchSocket.subscribeState((newState) => {
@@ -155,20 +156,17 @@ export function RematchProvider({
                         // Create already issued the P0 seat proof. Save it even after
                         // an in-app leave, but never replace a later selected room.
                         if (matchInfoRef.current.matchId !== currentMatchId) return;
-                        const saved = persistRematchOwnerCredentials(currentMatchId, {
+                        const saved = await persistRematchOwnerCredentials(currentMatchId, {
                             matchID: nextMatchID, playerID: '0', credentials: ownerCredentials,
                             gameName, playerName: fallbackPlayerName,
-                        });
+                        }, {
+                            matchID: nextMatchID, gameName, ownerType: nextOwnerType,
+                            ownerKey: getOwnerKey(nextOwnerType === 'user' ? user?.id : undefined, guestId),
+                        }, credentials);
                         if (!saved) {
                             if (isCurrentAttempt()) finishTransition();
                             return;
                         }
-                        setOwnerActiveMatch({
-                            matchID: nextMatchID,
-                            gameName,
-                            ownerType: nextOwnerType,
-                            ownerKey: getOwnerKey(nextOwnerType === 'user' ? user?.id : undefined, guestId),
-                        });
                         if (!isCurrentAttempt()) return;
                         clearResetTimeout();
                         matchSocket.broadcastNewRoom(`/play/${gameName}/match/${nextMatchID}`, ownerCredentials);
@@ -181,7 +179,9 @@ export function RematchProvider({
                             (error as matchApi.MatchApiError)?.code === 'REMATCH_SETUP_UNSUPPORTED'
                                 ? 'rematch.setupUnsupported'
                                 : (error as matchApi.MatchApiError)?.code === 'ROOM_REPLACEMENT_OUTCOME_UNKNOWN'
-                                    ? 'rematch.outcomeUnknown' : 'rematch.failed' });
+                                    ? 'rematch.outcomeUnknown'
+                                    : (error as { code?: string })?.code === 'ROOM_CREDENTIAL_STORAGE_UNAVAILABLE'
+                                        ? 'rematch.credentialsNotSaved' : 'rematch.failed' });
                         finishTransition();
                         return;
                     }
@@ -220,6 +220,7 @@ export function RematchProvider({
             active = false;
             finishTransition();
             unsubState();
+            unsubConnection();
             unsubReset();
             unsubNewRoom();
             matchSocket.leaveMatch();

@@ -1,9 +1,10 @@
+import { updateStoredMatchPlayerName } from '../hooks/match/useMatchStatus';
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import i18n from '../lib/i18n';
 import { normalizeDeveloperGameIds } from '../lib/developerGameAccess';
 import { refreshAccessToken } from '../lib/authRefresh';
-import { getLocalStorage, readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
+import { readLocalStorageItem, removeLocalStorageItem, writeLocalStorageItem } from '../lib/browserStorage';
 import { getOrCreateGuestId } from '../hooks/match/ownerIdentity';
 
 export type UserRole = 'user' | 'developer' | 'admin';
@@ -528,25 +529,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             writeLocalStorageItem('auth_token', data.token);
         }
 
-        // 同步更新所有已存储的 match credentials 中的 playerName，
-        // 避免 validateStoredMatchSeat 因 name_mismatch 清除凭据
-        const storage = getLocalStorage();
-        const newUsername = updatedUser.username;
-        for (let i = 0; storage && i < storage.length; i++) {
-            const key = storage.key(i);
-            if (!key || !key.startsWith('match_creds_')) continue;
-            try {
-                const raw = storage.getItem(key);
-                if (!raw) continue;
-                const creds = JSON.parse(raw);
-                if (creds?.playerName && creds.playerName !== newUsername) {
-                    creds.playerName = newUsername;
-                    storage.setItem(key, JSON.stringify(creds));
-                }
-            } catch {
-                // 忽略解析失败
-            }
-        }
+        await updateStoredMatchPlayerName(updatedUser.username);
 
         return updatedUser;
     }, [token, user]);

@@ -8,7 +8,7 @@ import { useDebug } from '../../../../contexts/DebugContext';
 import { useGameMode } from '../../../../contexts/GameModeContext';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { matchSocket } from '../../../../services/matchSocket';
-import { destroyMatch, persistMatchCredentials } from '../../../../hooks/match/useMatchStatus';
+import { captureMatchCredentialSelection, destroyMatch, persistMatchCredentials } from '../../../../hooks/match/useMatchStatus';
 import { getOrCreateGuestId, getGuestName as resolveGuestName } from '../../../../hooks/match/ownerIdentity';
 import { UI_Z_INDEX } from '../../../../core';
 import { GameClientContext } from '../../../../engine/transport/reactContext';
@@ -658,6 +658,7 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                             // 联机模式：先广播新房间，然后创建并跳转
                                             setIsCreatingRoom(true);
                                             try {
+                                                const requestSelection = captureMatchCredentialSelection();
                                                 const playerName = user?.username || getGuestName();
                                                 const guestId = user?.id ? undefined : getGuestId();
                                                 
@@ -688,8 +689,9 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                                 
                                                 // 2. 广播新房间地址给其他玩家（在跳转前广播）
                                                 const newRoomUrl = `/play/${gameId}/match/${createResult.matchID}`;
-                                                matchSocket.broadcastNewRoom(newRoomUrl, newCredentials);
+
                                                 
+                                                if (captureMatchCredentialSelection() !== requestSelection) return;
                                                 // 3. 退出旧房间并准备延迟销毁（如果有凭据）
                                                 let oldCredentials: string | null = null;
                                                 if (currentMatchId && currentPlayerID) {
@@ -707,7 +709,6 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                                         } catch (leaveError) {
                                                             console.warn('[DebugPanel] 离开旧房间失败（可忽略）:', leaveError);
                                                         }
-                                                        localStorage.removeItem(`match_creds_${currentMatchId}`);
                                                     }
                                                 }
 
@@ -720,14 +721,16 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                                 }
                                                 
                                                 // 4. 保存新凭据
-                                                persistMatchCredentials(createResult.matchID, {
+                                                const saved = await persistMatchCredentials(createResult.matchID, {
                                                     playerID: '0',
                                                     credentials: newCredentials,
                                                     matchID: createResult.matchID,
                                                     gameName: gameId,
                                                     playerName,
-                                                });
+                                                }, { expectedSelection: requestSelection });
+                                                if (!saved) return;
                                                 
+                                                matchSocket.broadcastNewRoom(newRoomUrl, newCredentials);
                                                 console.log('[DebugPanel] 准备跳转到新房间', { url: newRoomUrl });
                                                 
                                                 // 5. 跳转到新房间

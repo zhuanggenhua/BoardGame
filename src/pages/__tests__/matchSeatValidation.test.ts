@@ -401,12 +401,12 @@ describe('match-credentials-changed lifecycle', () => {
         localStorage.clear();
     });
 
-    it('persistMatchCredentials 会立刻写入 localStorage，并通知同页监听器刷新 stored seat', () => {
+    it('persistMatchCredentials 完成写入后通知同页监听器刷新 stored seat', async () => {
         const handler = vi.fn();
         window.addEventListener('match-credentials-changed', handler);
 
         try {
-            persistMatchCredentials('match-1', {
+            await persistMatchCredentials('match-1', {
                 matchID: 'match-1',
                 playerID: '0',
                 credentials: 'cred-0',
@@ -425,8 +425,8 @@ describe('match-credentials-changed lifecycle', () => {
         }
     });
 
-    it('clearMatchCredentials 会立刻清空 localStorage，并通知同页监听器避免页面继续沿用旧 seat', () => {
-        persistMatchCredentials('match-1', {
+    it('clearMatchCredentials 完成清理后通知同页监听器避免沿用旧 seat', async () => {
+        await persistMatchCredentials('match-1', {
             matchID: 'match-1',
             playerID: '0',
             credentials: 'cred-0',
@@ -436,7 +436,7 @@ describe('match-credentials-changed lifecycle', () => {
         window.addEventListener('match-credentials-changed', handler);
 
         try {
-            clearMatchCredentials('match-1');
+            await clearMatchCredentials('match-1');
 
             expect(readStoredMatchCredentials('match-1')).toBeNull();
             expect(handler).toHaveBeenCalledTimes(1);
@@ -6147,9 +6147,9 @@ describe('Home 活跃对局缺房确认', () => {
 
         await waitFor(() => {
             expect(getMatchMock).toHaveBeenCalledTimes(3);
-            expect(clearMatchCredentialsMock).toHaveBeenCalledWith('match-1');
+            expect(clearMatchCredentialsMock).toHaveBeenCalledWith('match-1', expect.objectContaining({ matchID: 'match-1' }));
         });
-        expect(clearOwnerActiveMatchMock).toHaveBeenCalledWith('match-1');
+        expect(clearOwnerActiveMatchMock).not.toHaveBeenCalled();
         expect(markMatchCleanupNoticeSeenMock).toHaveBeenCalled();
         expect(toastWarningMock).toHaveBeenCalledWith({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
         await waitFor(() => {
@@ -6199,8 +6199,8 @@ describe('Home 活跃对局缺房确认', () => {
             await flushEffects();
 
             expect(getMatchMock).toHaveBeenCalledTimes(3);
-            expect(clearMatchCredentialsMock).toHaveBeenCalledWith('match-1');
-            expect(clearOwnerActiveMatchMock).toHaveBeenCalledWith('match-1');
+            expect(clearMatchCredentialsMock).toHaveBeenCalledWith('match-1', expect.objectContaining({ matchID: 'match-1' }));
+            expect(clearOwnerActiveMatchMock).not.toHaveBeenCalled();
             expect(toastWarningMock).toHaveBeenCalledWith({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
         } finally {
             vi.useRealTimers();
@@ -6260,10 +6260,18 @@ describe('Home 活跃对局缺房确认', () => {
         });
 
         await waitFor(() => {
-            expect(clearMatchCredentialsMock).toHaveBeenCalledWith('match-1');
-            expect(clearOwnerActiveMatchMock).toHaveBeenCalledWith('match-1');
+            expect(clearMatchCredentialsMock).toHaveBeenCalledWith('match-1', expect.objectContaining({ matchID: 'match-1' }));
+            expect(clearOwnerActiveMatchMock).not.toHaveBeenCalled();
         });
         expect(markMatchCleanupNoticeSeenMock).toHaveBeenCalled();
         expect(toastWarningMock).toHaveBeenCalledWith({ kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' });
     });
+});
+
+vi.mock('../../hooks/match/matchCredentialTransaction', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../hooks/match/matchCredentialTransaction')>();
+    let queue = Promise.resolve<unknown>(undefined);
+    return { ...actual, withMatchCredentialWrite: <T,>(write: () => T): Promise<T> => {
+        const result = queue.then(write); queue = result.catch(() => {}); return result;
+    } };
 });

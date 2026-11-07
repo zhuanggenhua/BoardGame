@@ -5,12 +5,13 @@ import * as ts from 'typescript';
 
 // Reuse actual production callback bodies without executing server startup or Mongo.
 const source = ts.createSourceFile('server.ts', readFileSync(resolve(process.cwd(), 'server.ts'), 'utf8'), ts.ScriptTarget.Latest, true);
-export function productionCallback<T = (ctx: Record<string, unknown>, next?: () => Promise<void>) => Promise<void>>(kind: 'create' | 'errors' | 'cleanup' | 'detail' | 'successor' | 'rematchJoin', environment: Record<string, unknown>) {
+export function productionCallback<T = (ctx: Record<string, unknown>, next?: () => Promise<void>) => Promise<void>>(kind: 'create' | 'errors' | 'cleanup' | 'detail' | 'successor' | 'rematchJoin' | 'rematchVote', environment: Record<string, unknown>) {
     let callback: ts.Expression | undefined;
     function visit(node: ts.Node) {
         if (ts.isCallExpression(node)) {
             const owner = node.expression.getText(source);
             if (kind === 'rematchJoin' && owner === 'socket.on' && node.arguments[0]?.getText(source) === 'REMATCH_EVENTS.JOIN_MATCH') callback = node.arguments[1];
+            if (kind === 'rematchVote' && owner === 'socket.on' && node.arguments[0]?.getText(source) === 'REMATCH_EVENTS.VOTE') callback = node.arguments[1];
             if (kind === 'create' && owner === 'router.post' && node.arguments[0]
                 && ts.isStringLiteral(node.arguments[0]) && node.arguments[0].text === '/games/:name/create') callback = node.arguments[1];
             if (kind === 'detail' && owner === 'router.get' && node.arguments[0]

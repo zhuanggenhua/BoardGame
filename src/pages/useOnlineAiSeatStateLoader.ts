@@ -104,8 +104,10 @@ export function useOnlineAiSeatStateLoader(
             });
             if (cancelled) return;
             if (haveAiSeatCredentialsChanged(storedAiSeatCredentials, state.seatCredentials)) {
-                persistAiSeatCredentials(matchId, state.seatCredentials);
+                const saved = await persistAiSeatCredentials(matchId, state.seatCredentials);
+                if (!saved) return;
             }
+            if (cancelled) return;
             setOnlineAiSeatControllers((prev) => (
                 haveAiSeatControllersChanged(prev, state.seatControllers) ? state.seatControllers : prev
             ));

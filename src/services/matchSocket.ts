@@ -56,6 +56,7 @@ export type MatchEmoteSendReason =
     | 'rate_limited';
 
 export type RematchStateCallback = (state: RematchVoteState) => void;
+export type RematchConnectionCallback = (connected: boolean) => void;
 export type RematchResetCallback = () => void;
 export type NewRoomCallback = (url: string) => void;
 export type MatchChatCallback = (message: MatchChatMessage) => void;
@@ -67,6 +68,7 @@ class MatchSocketService {
     private boundSocket: Socket | null = null;
     private isConnected = false;
     private isConnecting = false;
+    private rematchConnected = false;
     private currentMatchId: string | null = null;
     private currentPlayerId: string | null = null;
     private currentCredentials: string | null = null;
@@ -76,6 +78,7 @@ class MatchSocketService {
     private currentEmotePlayerId: string | null = null;
     private currentAutoAcceptedPlayerIds: string[] = [];
     private stateCallbacks: Set<RematchStateCallback> = new Set();
+    private rematchConnectionCallbacks: Set<RematchConnectionCallback> = new Set();
     private resetCallbacks: Set<RematchResetCallback> = new Set();
     private newRoomCallbacks: Set<NewRoomCallback> = new Set();
     private chatCallbacks: Set<MatchChatCallback> = new Set();
@@ -85,23 +88,30 @@ class MatchSocketService {
     private lastAcceptedRevision = 0;
 
     private readonly handleConnect = () => {
+        // Votes are held in server memory, so a new connection may rejoin a
+        // recreated revision-0 state. Keep monotonicity within this connection.
+        this.lastAcceptedRevision = 0;
+        this.setRematchConnected(false);
         this.isConnected = true;
         this.isConnecting = false;
         this.syncActiveChannels();
     };
 
     private readonly handleDisconnect = () => {
+        this.setRematchConnected(false);
         this.isConnected = false;
         this.isConnecting = false;
     };
 
     private readonly handleConnectError = (error: Error) => {
         log.error('connect_error', { message: error.message });
+        this.setRematchConnected(false);
         this.isConnected = false;
         this.isConnecting = false;
     };
 
     private readonly handleStateUpdate = (state: RematchVoteState) => {
+        if (!this.socket?.connected || !this.currentMatchId || !this.currentPlayerId || !this.currentCredentials) return;
         const incomingRevision = state.revision ?? 0;
         if (incomingRevision < this.lastAcceptedRevision) {
             log.warn('drop_stale_rematch_state', {
@@ -119,6 +129,8 @@ class MatchSocketService {
             revision: state.revision,
         });
         this.notifyStateCallbacks(state);
+        // The server emits this only after the authenticated JOIN has finished.
+        this.setRematchConnected(true);
     };
 
     private readonly handleReset = () => {
@@ -140,6 +152,18 @@ class MatchSocketService {
     private readonly handleEmoteShow = (payload: MatchEmoteEvent) => {
         this.notifyEmoteCallbacks(payload);
     };
+
+    private setRematchConnected(connected: boolean): void {
+        if (this.rematchConnected === connected) return;
+        this.rematchConnected = connected;
+        this.rematchConnectionCallbacks.forEach((callback) => {
+            try {
+                callback(connected);
+            } catch (error) {
+                log.error('rematch_connection_callback_failed', { error });
+            }
+        });
+    }
 
     connect(): void {
         const sharedSocket = this.ensureSocketConnection();
@@ -306,6 +330,7 @@ class MatchSocketService {
             this.leaveMatch();
             return;
         }
+        this.setRematchConnected(false);
         this.currentCredentials = options.credentials;
         this.currentMatchId = matchId;
         this.currentPlayerId = playerId;
@@ -351,6 +376,7 @@ class MatchSocketService {
     }
 
     leaveMatch(): void {
+        this.setRematchConnected(false);
         if (this.socket?.connected) {
             this.socket.emit(REMATCH_EVENTS.LEAVE_MATCH);
         }
@@ -481,7 +507,7 @@ class MatchSocketService {
             return;
         }
 
-        if (!this.currentMatchId || !this.currentPlayerId || !this.currentCredentials) {
+        if (!this.currentMatchId || !this.currentPlayerId || !this.currentCredentials || !this.rematchConnected) {
             log.warn('vote_skipped_not_joined');
             return;
         }
@@ -516,6 +542,12 @@ class MatchSocketService {
         return () => {
             this.stateCallbacks.delete(callback);
         };
+    }
+
+    subscribeRematchConnection(callback: RematchConnectionCallback): () => void {
+        this.rematchConnectionCallbacks.add(callback);
+        callback(this.rematchConnected);
+        return () => { this.rematchConnectionCallbacks.delete(callback); };
     }
 
     subscribeReset(callback: RematchResetCallback): () => void {
@@ -572,6 +604,7 @@ class MatchSocketService {
         this.isConnecting = false;
         this.currentAutoAcceptedPlayerIds = [];
         this.stateCallbacks.clear();
+        this.rematchConnectionCallbacks.clear();
         this.resetCallbacks.clear();
         this.newRoomCallbacks.clear();
         this.chatCallbacks.clear();
