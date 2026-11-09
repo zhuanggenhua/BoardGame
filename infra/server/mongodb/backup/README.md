@@ -5,6 +5,7 @@
 ## 安装
 
 ```bash
+sudo install -o root -g root -m 0755 ../boardgame-mongodb-guarded-dump /usr/local/sbin/boardgame-mongodb-guarded-dump
 sudo install -o root -g root -m 0755 boardgame-mongodb-backup /usr/local/sbin/boardgame-mongodb-backup
 sudo install -o root -g root -m 0644 boardgame-mongodb-backup.service /etc/systemd/system/boardgame-mongodb-backup.service
 sudo install -o root -g root -m 0644 boardgame-mongodb-backup.timer /etc/systemd/system/boardgame-mongodb-backup.timer

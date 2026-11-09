@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Keep the dump outside MongoDB's memory cgroup and preserve host headroom.
+container=boardgame-mongodb
+database=boardgame
+unit="boardgame-mongodb-dump-$$"
+unit_started=false
+child=
+
+read_meminfo() {
+  local key value rest
+  while read -r key value rest; do
+    case "$key" in
+      MemTotal:) mem_total_kib=$value ;;
+      MemAvailable:) mem_available_kib=$value ;;
+    esac
+  done < /proc/meminfo
+}
+
+cleanup() {
+  if [[ "$unit_started" == true ]] && kill -0 "$child" 2>/dev/null; then
+    systemctl kill -s SIGKILL "$unit.service" >/dev/null 2>&1 || true
+    kill "$child" 2>/dev/null || true
+    wait "$child" 2>/dev/null || true
+    systemctl stop "$unit.service" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+
+# A daily backup and replica export must never run together.
+exec 9>/run/lock/boardgame-mongodb-dump.lock
+if ! flock -w 300 9; then
+  echo 'MongoDB dump lock is busy' >&2
+  exit 75
+fi
+
+read_meminfo
+floor_kib=$((mem_total_kib / 10 + 44 * 1024))
+start_deadline=$((SECONDS + 300))
+if ((mem_available_kib < floor_kib + 64 * 1024)); then
+  echo "Waiting for safe memory headroom before MongoDB dump: ${mem_available_kib} KiB available" >&2
+fi
+while ((mem_available_kib < floor_kib + 64 * 1024)); do
+  if ((SECONDS >= start_deadline)); then
+    echo "Insufficient available memory to start MongoDB dump after waiting: ${mem_available_kib} KiB" >&2
+    exit 75
+  fi
+  sleep 5
+  read_meminfo
+done
+
+pid=$(docker inspect -f '{{.State.Pid}}' "$container")
+if [[ ! "$pid" =~ ^[0-9]+$ ]] || ((pid <= 1)); then
+  echo 'MongoDB container is not running' >&2
+  exit 1
+fi
+
+systemd-run --quiet --wait --pipe --unit="$unit" \
+  --property=MemoryMax=56M --property=CPUQuota=15% --property=Nice=15 \
+  --property=RuntimeMaxSec=900 --setenv=GOMEMLIMIT=20MiB --setenv=GOMAXPROCS=1 \
+  --setenv=MONGO_TARGET_PID="$pid" --setenv=MONGO_DATABASE="$database" \
+  /bin/bash -o pipefail -c \
+  '/usr/bin/nsenter -t "$MONGO_TARGET_PID" -m -n -r -- /usr/bin/mongodump --host=127.0.0.1 --db="$MONGO_DATABASE" --numParallelCollections=1 --archive | /usr/bin/gzip -1' &
+child=$!
+unit_started=true
+minimum_kib=$mem_available_kib
+while kill -0 "$child" 2>/dev/null; do
+  read_meminfo
+  ((mem_available_kib < minimum_kib)) && minimum_kib=$mem_available_kib
+  if ((mem_available_kib < floor_kib)); then
+    echo "MongoDB dump stopped: available memory ${mem_available_kib} KiB is below safety floor ${floor_kib} KiB" >&2
+    exit 75
+  fi
+  sleep 0.1
+done
+
+if wait "$child"; then
+  unit_started=false
+  echo "MongoDB dump completed; minimum available memory ${minimum_kib} KiB" >&2
+else
+  status=$?
+  systemctl stop "$unit.service" >/dev/null 2>&1 || true
+  unit_started=false
+  echo "MongoDB dump failed with status $status" >&2
+  exit "$status"
+fi

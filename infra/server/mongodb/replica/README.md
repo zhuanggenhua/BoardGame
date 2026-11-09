@@ -9,3 +9,5 @@
 - Acer 不参与生产写入，不与云端做双写，也不假装是 MongoDB 自动选主副本集。
 
 这是 RPO 约 15 分钟的被动备份链路。自动故障切换仍需要先验证 Acer 应用版本、公网入口和会话恢复，再配置 Cloudflare Load Balancing。
+
+云端导出依赖 `/usr/local/sbin/boardgame-mongodb-guarded-dump`；安装时先将 `../boardgame-mongodb-guarded-dump` 安装到该路径。内存不足时最多等待 5 分钟，仍不足则导出失败并保留上一次快照；需检查 systemd 日志，不应将旧快照视为已更新。

@@ -2,8 +2,6 @@
 set -Eeuo pipefail
 
 backup_dir=/var/backups/boardgame/mongodb
-container=boardgame-mongodb
-database=boardgame
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 final="$backup_dir/boardgame-${stamp}.archive.gz"
 
@@ -11,7 +9,7 @@ install -d -o root -g root -m 0700 "$backup_dir"
 tmp=$(mktemp "$backup_dir/.boardgame-${stamp}.XXXXXX.archive.gz")
 trap 'rm -f "$tmp"' EXIT
 
-docker exec "$container" mongodump --db="$database" --archive --gzip > "$tmp"
+/usr/local/sbin/boardgame-mongodb-guarded-dump > "$tmp"
 gzip -t "$tmp"
 test -s "$tmp"
 chmod 0600 "$tmp"

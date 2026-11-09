@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-database=boardgame
-container=boardgame-mongodb
 replica_dir=/home/admin/boardgame-replica
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 install -d -o admin -g admin -m 0700 "$replica_dir"
 tmp=$(mktemp "$replica_dir/.boardgame-latest.${stamp}.XXXXXX.archive.gz")
 trap 'rm -f "$tmp"' EXIT
 
-docker exec "$container" mongodump --db="$database" --archive --gzip > "$tmp"
+/usr/local/sbin/boardgame-mongodb-guarded-dump > "$tmp"
 gzip -t "$tmp"
 test -s "$tmp"
 chmod 0600 "$tmp"

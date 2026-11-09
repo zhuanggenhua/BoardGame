@@ -3,6 +3,7 @@ Description=Refresh latest BoardGame MongoDB snapshot every 15 minutes
 
 [Timer]
 OnBootSec=5m
+OnActiveSec=15m
 OnUnitActiveSec=15m
 Persistent=true
 Unit=boardgame-mongodb-replica-export.service
