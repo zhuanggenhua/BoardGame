@@ -5,6 +5,8 @@
  * MongoStorage / HybridStorage 将适配此接口。
  */
 
+import type { RematchRecoveryReceipt } from '../../shared/rematchRecovery';
+
 // ============================================================================
 // 元数据类型
 // ============================================================================
@@ -23,6 +25,8 @@ export interface PlayerMetadata {
  * 对局元数据
  */
 export interface MatchMetadata {
+    /** Server-only, never part of public setup, state, lobby or socket DTOs. */
+    rematchRecovery?: RematchRecoveryReceipt;
     gameName: string;
     players: Record<string, PlayerMetadata>;
     createdAt: number;

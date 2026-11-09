@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { DebugProvider } from './contexts/DebugContext';
 import { TutorialProvider } from './contexts/TutorialContext';
+import { RematchRecoveryGate } from './components/system/RematchRecoveryGate';
 import { AuthProvider } from './contexts/AuthContext';
 import { SocialProvider } from './contexts/SocialContext';
 import { CursorPreferenceProvider } from './core/cursor/CursorPreferenceContext';
@@ -452,7 +453,7 @@ const App = () => {
         <ToastProvider>
           <ModalStackProvider>
             <AuthProvider>
-              <AppContent />
+              <RematchRecoveryGate><AppContent /></RematchRecoveryGate>
             </AuthProvider>
           </ModalStackProvider>
         </ToastProvider>

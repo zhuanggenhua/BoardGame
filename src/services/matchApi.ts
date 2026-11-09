@@ -5,6 +5,7 @@
  * 路由结构：/games/:name/:matchID/...
  */
 
+import type { RematchRecoveryRequest, RecoveredRematch } from '../shared/rematchRecovery';
 import { getGameServerUrl } from '../config/server';
 
 // ============================================================================
@@ -40,6 +41,7 @@ export interface CreateMatchResult {
     ownerPlayerID?: string;
     ownerCredentials?: string;
     ownerType?: 'user' | 'guest';
+    ownerKey?: string;
 }
 
 export interface JoinMatchOptions {
@@ -66,6 +68,7 @@ const baseUrl = (): string => getGameServerUrl() || '';
 
 type ApiRequestOptions = {
     expectedStatuses?: number[];
+    signal?: AbortSignal;
 };
 
 export interface MatchApiError extends Error {
@@ -104,11 +107,12 @@ const buildApiError = (status: number, text: string, fallbackStatusText: string)
     return error;
 };
 
-async function apiPost<T = unknown>(url: string, body: unknown, extraHeaders?: Record<string, string>): Promise<T> {
+async function apiPost<T = unknown>(url: string, body: unknown, extraHeaders?: Record<string, string>, signal?: AbortSignal): Promise<T> {
     let response: Response;
     try {
         response = await fetch(url, {
             method: 'POST',
+            signal,
             headers: { 'Content-Type': 'application/json', ...extraHeaders },
             body: JSON.stringify(body),
         });
@@ -146,6 +150,7 @@ async function apiGet<T = unknown>(url: string, options: ApiRequestOptions = {})
     try {
         response = await fetch(url, {
             cache: 'no-store',
+            signal: options.signal,
         });
     } catch (error) {
         console.error('[matchApi] GET fetch failed', {
@@ -299,15 +304,21 @@ export async function claimSeat(
 export async function playAgain(
     gameName: string,
     matchID: string,
-    options: { playerID: string; credentials: string; token?: string; playerName?: string },
-): Promise<{ nextMatchID: string; ownerCredentials?: string; ownerType?: 'user' | 'guest' }> {
-    const { matchID: nextMatchID, ownerCredentials, ownerType } = await apiPost<CreateMatchResult>(
+    options: { playerID: string; credentials: string; token?: string; playerName?: string; recovery?: RematchRecoveryRequest },
+): Promise<{ nextMatchID: string; ownerCredentials?: string; ownerType?: 'user' | 'guest'; ownerKey?: string }> {
+    const { matchID: nextMatchID, ownerCredentials, ownerType, ownerKey } = await apiPost<CreateMatchResult>(
         `${baseUrl()}/games/${gameName}/create`,
         {
-            rematch: { matchID, playerID: options.playerID, credentials: options.credentials },
+            rematch: { matchID, playerID: options.playerID, credentials: options.credentials, ...(options.recovery ? { recovery: options.recovery } : {}) },
             playerName: options.playerName,
         },
         options.token ? { Authorization: `Bearer ${options.token}` } : undefined,
     );
-    return { nextMatchID, ownerCredentials, ownerType };
+    return { nextMatchID, ownerCredentials, ownerType, ...(ownerKey ? { ownerKey } : {}) };
+}
+
+/** Read-only recovery. Never retries creation or rotates the seat. */
+export function recoverRematch(gameName: string, sourceMatchID: string, recovery: RematchRecoveryRequest, token?: string, signal?: AbortSignal): Promise<RecoveredRematch> {
+    return apiPost(`${baseUrl()}/games/${gameName}/${recovery.nextMatchID}/rematch-recovery`,
+        { sourceMatchID, token: recovery.token }, token ? { Authorization: `Bearer ${token}` } : undefined, signal);
 }

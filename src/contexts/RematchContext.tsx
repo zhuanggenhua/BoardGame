@@ -6,8 +6,9 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { matchSocket, type RematchVoteState } from '../services/matchSocket';
-import { persistRematchOwnerCredentials, readStoredMatchCredentials } from '../hooks/match/useMatchStatus';
-import { getOrCreateGuestId, getOwnerKey } from '../hooks/match/ownerIdentity';
+import { readStoredMatchCredentials } from '../hooks/match/useMatchStatus';
+import { preparePendingRematch, completePendingRematch, requestPendingRematchRecovery, type PendingRematch } from '../hooks/match/pendingRematchRecovery';
+import { getLocalStorage } from '../lib/browserStorage';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import * as matchApi from '../services/matchApi';
@@ -137,32 +138,31 @@ export function RematchProvider({
                         if (!isCurrentAttempt()) return;
                         showWarning({ kind: 'i18n', ns: 'common', key: 'rematch.stillWaiting' });
                     }, OWNER_REMATCH_WAIT_NOTICE_MS);
+                    let pending: PendingRematch | undefined;
                     try {
                         console.log('[RematchContext] P0 发起 playAgain', { gameName, currentMatchId });
                         const fallbackPlayerName = playerName || user?.username || `玩家${currentPlayerId}`;
-                        const { nextMatchID, ownerCredentials, ownerType } = await matchApi.playAgain(gameName, currentMatchId, {
+                        const rawAuth = getLocalStorage()?.getItem('auth_token');
+                        const sameAuth = () => authRef.current.user?.id === user?.id && authRef.current.token === token
+                            && getLocalStorage()?.getItem('auth_token') === rawAuth;
+                        pending = await preparePendingRematch({ sourceMatchID: currentMatchId, gameName,
+                            playerName: fallbackPlayerName, authUserID: user?.id ?? null });
+                        if (!sameAuth()) { if (isCurrentAttempt()) finishTransition(); return; }
+                        const { nextMatchID, ownerCredentials, ownerType, ownerKey } = await matchApi.playAgain(gameName, currentMatchId, {
                             playerID: currentPlayerId,
                             credentials,
                             token: token ?? undefined,
                             playerName: fallbackPlayerName,
+                            recovery: { nextMatchID: pending.nextMatchID, token: pending.token },
                         });
-                        if (typeof nextMatchID !== 'string' || !nextMatchID.trim() || nextMatchID === currentMatchId
+                        if (nextMatchID !== pending.nextMatchID || !ownerKey
                             || typeof ownerCredentials !== 'string' || !ownerCredentials.trim()
                             || (ownerType !== 'guest' && ownerType !== 'user')) {
                             throw new Error('[RematchContext] invalid-create-response');
                         }
-                        const nextOwnerType = ownerType;
-                        const guestId = nextOwnerType === 'guest' ? getOrCreateGuestId() : undefined;
-                        // Create already issued the P0 seat proof. Save it even after
-                        // an in-app leave, but never replace a later selected room.
                         if (matchInfoRef.current.matchId !== currentMatchId) return;
-                        const saved = await persistRematchOwnerCredentials(currentMatchId, {
-                            matchID: nextMatchID, playerID: '0', credentials: ownerCredentials,
-                            gameName, playerName: fallbackPlayerName,
-                        }, {
-                            matchID: nextMatchID, gameName, ownerType: nextOwnerType,
-                            ownerKey: getOwnerKey(nextOwnerType === 'user' ? user?.id : undefined, guestId),
-                        }, credentials);
+                        const saved = await completePendingRematch(pending, { matchID: nextMatchID, ownerPlayerID: '0',
+                            ownerCredentials, ownerType, ownerKey }, sameAuth);
                         if (!saved) {
                             if (isCurrentAttempt()) finishTransition();
                             return;
@@ -182,7 +182,10 @@ export function RematchProvider({
                                     ? 'rematch.outcomeUnknown'
                                     : (error as { code?: string })?.code === 'ROOM_CREDENTIAL_STORAGE_UNAVAILABLE'
                                         ? 'rematch.credentialsNotSaved' : 'rematch.failed' });
-                        finishTransition();
+                        if (pending && (error as matchApi.MatchApiError)?.code !== 'REMATCH_SETUP_UNSUPPORTED') {
+                            clearResetTimeout();
+                            requestPendingRematchRecovery();
+                        } else finishTransition();
                         return;
                     }
                 } else {

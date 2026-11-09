@@ -85,7 +85,7 @@ vi.mock('../../lib/mobile/mobileRuntime', () => ({
 
 vi.mock('../../contexts/DebugContext', () => ({ DebugProvider: PassThrough }));
 vi.mock('../../contexts/TutorialContext', () => ({ TutorialProvider: PassThrough }));
-vi.mock('../../contexts/AuthContext', () => ({ AuthProvider: PassThrough }));
+vi.mock('../../contexts/AuthContext', () => ({ AuthProvider: PassThrough, useAuth: () => ({ user: null, token: null, isLoading: false }) }));
 vi.mock('../../contexts/SocialContext', () => ({ SocialProvider: PassThrough }));
 vi.mock('../../core/cursor/CursorPreferenceContext', () => ({ CursorPreferenceProvider: PassThrough }));
 vi.mock('../../contexts/ModalStackContext', () => ({

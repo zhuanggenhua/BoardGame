@@ -1,0 +1,128 @@
+{
+  "scope": "CPU regression tests; no browser, GPU run, screenshot or visual acceptance",
+  "visualAcceptance": "NOT_RUN",
+  "results": [
+    {
+      "name": "Regression demonstrates that the old reset drifts",
+      "status": "PASS"
+    },
+    {
+      "name": "Exact overview pose survives 120 frames of prior rotate/pan momentum",
+      "status": "PASS"
+    },
+    {
+      "name": "Exact detail pose survives 120 frames of prior rotate/pan momentum",
+      "status": "PASS"
+    },
+    {
+      "name": "Exact top pose survives 120 frames of prior rotate/pan momentum",
+      "status": "PASS"
+    },
+    {
+      "name": "Pose helper restores controls flags after a failed resize",
+      "status": "PASS"
+    },
+    {
+      "name": "Repeated bfcache cycles preserve the scene and refresh its size",
+      "status": "PASS"
+    },
+    {
+      "name": "Ordinary pageshow does not trigger unnecessary resize, listener unbind works",
+      "status": "PASS"
+    },
+    {
+      "name": "Batching preserves triangle count and cuts mesh submissions by at least 85%",
+      "status": "PASS"
+    },
+    {
+      "name": "Transparent wineglasses and switchable candle flames stay independent",
+      "status": "PASS"
+    },
+    {
+      "name": "cutaway/neutral: every visible triangle, material, normal, UV and render flag is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "cutaway/warm: every visible triangle, material, normal, UV and render flag is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "full/neutral: every visible triangle, material, normal, UV and render flag is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "full/warm: every visible triangle, material, normal, UV and render flag is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "floor/neutral: every visible triangle, material, normal, UV and render flag is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "floor/warm: every visible triangle, material, normal, UV and render flag is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "All merged bounds remain finite and contain every vertex",
+      "status": "PASS"
+    },
+    {
+      "name": "Batching is idempotent and preserves independently visible wall groups",
+      "status": "PASS"
+    }
+  ],
+  "oldResetDriftMetres": 4.697921791292408,
+  "originalStats": {
+    "meshes": 790,
+    "uniqueGeometries": 790,
+    "triangles": 78086
+  },
+  "batchedStats": {
+    "meshes": 58,
+    "uniqueGeometries": 58,
+    "triangles": 78086
+  },
+  "batchResult": {
+    "mergedInputs": 768,
+    "batches": 36
+  },
+  "maxAttributeError": 1.1920928955078125e-7,
+  "visibleMeshCounts": [
+    {
+      "mode": "cutaway",
+      "light": "neutral",
+      "before": 609,
+      "after": 39
+    },
+    {
+      "mode": "cutaway",
+      "light": "warm",
+      "before": 618,
+      "after": 48
+    },
+    {
+      "mode": "full",
+      "light": "neutral",
+      "before": 769,
+      "after": 47
+    },
+    {
+      "mode": "full",
+      "light": "warm",
+      "before": 778,
+      "after": 56
+    },
+    {
+      "mode": "floor",
+      "light": "neutral",
+      "before": 391,
+      "after": 24
+    },
+    {
+      "mode": "floor",
+      "light": "warm",
+      "before": 400,
+      "after": 33
+    }
+  ]
+}

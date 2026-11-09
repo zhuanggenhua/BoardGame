@@ -58,6 +58,10 @@
     "disabledDescription": "已恢复为仅长连接模式，正在重新连接。"
   },
   "rematch": {
+    "recovering": "正在恢复重赛房间",
+    "recoveryPending": "暂时无法确认重赛结果。原房间凭据已保留，请稍后重试恢复。",
+    "retryRecovery": "重试恢复",
+    "returnLobby": "返回大厅",
     "credentialsNotSaved": "新房间已创建，但本机未能保存入场凭据。请勿重复创建房间。",
     "stillWaiting": "重赛请求等待时间较长，结果暂未确认。请勿重复发起，收到结果后会继续处理。",
     "outcomeUnknown": "重赛结果暂时无法确认。请先返回大厅查看房间，勿重复发起重赛。",

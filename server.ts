@@ -45,6 +45,8 @@ import {
 } from './src/server/duplicateOwnerRooms';
 import { applyRematchVoteToggle, isAuthenticatedRematchPlayer, resolveRematchPlayerGroups } from './src/server/rematch';
 import { prepareRematchCreate, RematchCreateError } from './src/server/rematchSetup';
+import { createRematchRecoveryReceipt, recoverCommittedRematch } from './src/server/rematchRecovery';
+import { parseRematchRecoveryRequest, type RematchRecoveryRequest, type RecoveredRematch } from './src/shared/rematchRecovery';
 import {
     createMatchEmoteRateLimiter,
     type MatchEmoteRejectReason,
@@ -138,14 +140,14 @@ const resolveAutoAcceptedRematchPlayerIds = async (
 };
 
 const scheduleRematchStateReset = (matchId: string): void => {
+    const completedRound = rematchStateByMatch.get(matchId);
+    if (!completedRound?.ready) return;
     setTimeout(() => {
-        const currentState = rematchStateByMatch.get(matchId);
-        if (currentState) {
-            currentState.votes = {};
-            currentState.ready = false;
-            currentState.revision += 1;
-            lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, currentState);
-        }
+        if (rematchStateByMatch.get(matchId) !== completedRound) return;
+        // A new object retires every authentication read from the completed round.
+        const nextRound: RematchVoteState = { votes: {}, ready: false, revision: completedRound.revision + 1 };
+        rematchStateByMatch.set(matchId, nextRound);
+        lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, nextRound);
     }, 1000);
 };
 
@@ -804,11 +806,31 @@ router.post('/games/:name/create', async (ctx) => {
     const requestedOwnerName = typeof body?.playerName === 'string' && body.playerName.trim()
         ? body.playerName.trim()
         : undefined;
+    let recovery: RematchRecoveryRequest | undefined;
+    let authenticatedUserId: string | undefined;
     let rematch: Awaited<ReturnType<typeof prepareRematchCreate>> | undefined;
     let replacement: { matchID: string; snapshot: MatchReplacementSnapshot } | undefined;
     if (body && Object.hasOwn(body, 'rematch')) {
         const rawToken = claimSeatUtils.parseBearerToken(ctx.get('authorization'));
         const user = rawToken ? claimSeatUtils.verifyGameToken(rawToken, JWT_SECRET) : null;
+        authenticatedUserId = user?.userId;
+        const request = body.rematch as Record<string, unknown> | undefined;
+        if (request && Object.hasOwn(request, 'recovery')) {
+            const parsed = parseRematchRecoveryRequest(request.recovery);
+            if (!parsed || typeof request.matchID !== 'string' || request.playerID !== '0'
+                || parsed.nextMatchID === request.matchID) {
+                ctx.status = 400; ctx.body = { error: 'REMATCH_RECOVERY_INVALID' }; return;
+            }
+            recovery = parsed;
+            const committed = await recoverCommittedRematch({ fetch: storage.fetch.bind(storage), gameName,
+                sourceMatchID: request.matchID, recovery, authenticatedUserId });
+            if (committed.exists) {
+                ctx.set('Cache-Control', 'no-store');
+                ctx.status = committed.result ? 200 : 409;
+                ctx.body = committed.result ?? { error: 'REMATCH_RECOVERY_UNAVAILABLE' };
+                return;
+            }
+        }
         try {
             rematch = await prepareRematchCreate({
                 gameName, request: body.rematch, authenticatedUserId: user?.userId,
@@ -823,6 +845,15 @@ router.post('/games/:name/create', async (ctx) => {
             });
         } catch (error) {
             if (!(error instanceof RematchCreateError)) throw error;
+            // A concurrent identical request can commit between target precheck
+            // and source lookup. Confirm once; never replay the destructive write.
+            if (recovery && error.code === 'REMATCH_SOURCE_NOT_FOUND' && request) {
+                const committed = await recoverCommittedRematch({ fetch: storage.fetch.bind(storage), gameName,
+                    sourceMatchID: request.matchID as string, recovery, authenticatedUserId });
+                if (committed.result) {
+                    ctx.set('Cache-Control', 'no-store'); ctx.body = committed.result; return;
+                }
+            }
             ctx.status = error.status;
             ctx.body = { error: error.code };
             return;
@@ -925,7 +956,7 @@ router.post('/games/:name/create', async (ctx) => {
         replacement = { matchID: old.matchID, snapshot: old.snapshot };
     }
 
-    const matchID = nanoid(11);
+    const matchID = recovery?.nextMatchID ?? nanoid(11);
     const seed = nanoid(16);
     const playerIds = Array.from({ length: numPlayers }, (_, i) => String(i));
 
@@ -994,6 +1025,10 @@ router.post('/games/:name/create', async (ctx) => {
         ...createInitialOwnerSeat({ ownerKey, ownerType, ownerName, generateCredentials: () => nanoid(21) }),
     };
     const ownerCredentials = metadata.players['0'].credentials;
+    if (recovery && rematch && ownerCredentials) {
+        metadata.rematchRecovery = createRematchRecoveryReceipt({ sourceMatchID: rematch.sourceMatchID,
+            token: recovery.token, ownerCredentials, ownerKey, ownerType });
+    }
 
     const createMatchData = {
         initialState: {
@@ -1004,6 +1039,7 @@ router.post('/games/:name/create', async (ctx) => {
         },
         metadata,
     };
+    let recoveredCreateResult: RecoveredRematch | undefined;
     if (replacement) {
         if (!isMatchReplacementStorage(storage)) {
             ctx.status = 409;
@@ -1019,14 +1055,29 @@ router.post('/games/:name/create', async (ctx) => {
             );
         } catch (error) {
             if (!(error instanceof MatchReplacementOutcomeUnknownError)) throw error;
+            if (recovery && rematch) {
+                const committed = await recoverCommittedRematch({ fetch: storage.fetch.bind(storage), gameName,
+                    sourceMatchID: rematch.sourceMatchID, recovery, authenticatedUserId }).catch(() => undefined);
+                if (committed?.result) recoveredCreateResult = committed.result;
+            }
             // The server could not establish whether the single atomic write
             // committed. Never retry or claim that the original room survived.
-            ctx.status = 503;
-            ctx.body = { error: 'ROOM_REPLACEMENT_OUTCOME_UNKNOWN' };
-            logger.warn('room_replacement_outcome_unknown', { matchID: replacement.matchID, nextMatchID: matchID });
-            return;
+            if (!recoveredCreateResult) {
+                ctx.status = 503;
+                ctx.body = { error: 'ROOM_REPLACEMENT_OUTCOME_UNKNOWN' };
+                logger.warn('room_replacement_outcome_unknown', { matchID: replacement.matchID, nextMatchID: matchID });
+                return;
+            }
+            result = 'replaced';
         }
         if (result !== 'replaced') {
+            if (recovery && rematch) {
+                const committed = await recoverCommittedRematch({ fetch: storage.fetch.bind(storage), gameName,
+                    sourceMatchID: rematch.sourceMatchID, recovery, authenticatedUserId });
+                if (committed.result) {
+                    ctx.set('Cache-Control', 'no-store'); ctx.body = committed.result; return;
+                }
+            }
             ctx.status = 409;
             ctx.body = { error: 'ROOM_REPLACEMENT_CONFLICT' };
             return;
@@ -1057,14 +1108,32 @@ router.post('/games/:name/create', async (ctx) => {
         }
     }
 
-    ctx.body = {
+    ctx.body = recoveredCreateResult ?? {
         matchID,
         ownerPlayerID: ownerCredentials ? '0' : undefined,
         ownerCredentials,
-        ...(rematch ? { ownerType } : {}),
+        ...(rematch ? { ownerType, ...(recovery ? { ownerKey } : {}) } : {}),
     };
 
+    if (recovery) ctx.set('Cache-Control', 'no-store');
     setTimeout(() => void lobbyCoordinator.handleMatchCreated(matchID, gameName), 100);
+});
+
+// Read only: recovering a lost create response must never create another room.
+router.post('/games/:name/:matchID/rematch-recovery', async (ctx) => {
+    ctx.set('Cache-Control', 'no-store');
+    const gameName = normalizeGameName(ctx.params.name);
+    const body = ctx.request.body as { sourceMatchID?: unknown; token?: unknown } | undefined;
+    const recovery = parseRematchRecoveryRequest({ nextMatchID: ctx.params.matchID, token: body?.token });
+    if (!gameName || !isSupportedGame(gameName) || !recovery || typeof body?.sourceMatchID !== 'string') {
+        ctx.status = 400; ctx.body = { error: 'REMATCH_RECOVERY_INVALID' }; return;
+    }
+    const rawToken = claimSeatUtils.parseBearerToken(ctx.get('authorization'));
+    const user = rawToken ? claimSeatUtils.verifyGameToken(rawToken, JWT_SECRET) : null;
+    const committed = await recoverCommittedRematch({ fetch: storage.fetch.bind(storage), gameName,
+        sourceMatchID: body.sourceMatchID, recovery, authenticatedUserId: user?.userId });
+    ctx.status = committed.result ? 200 : 404;
+    ctx.body = committed.result ?? { error: 'REMATCH_RECOVERY_UNAVAILABLE' };
 });
 
 // POST /games/:name/:matchID/join — 加入对局
@@ -1540,6 +1609,7 @@ lobbySocketIO.on('connection', (socket) => {
         const matchId = socket.data.rematchMatchId as string | undefined;
         const ownerKey = socket.data.rematchOwnerKey as string | undefined;
         const gameName = socket.data.rematchGameName as string | undefined;
+        const joinRevision = socket.data.rematchJoinRevision;
         if (!matchId || socket.data.rematchPlayerId !== '0' || !ownerKey || !gameName
             || typeof data?.matchID !== 'string' || data.matchID === matchId) return;
         const metadata = await fetchRematchMetadata(data.matchID);
@@ -1547,7 +1617,8 @@ lobbySocketIO.on('connection', (socket) => {
             ? metadata.setupData as { ownerKey?: unknown } : undefined;
         if (!metadata || metadata.gameName !== gameName || setup?.ownerKey !== ownerKey
             || !isAuthenticatedRematchPlayer(metadata, '0', data.credentials)
-            || socket.data.rematchMatchId !== matchId) return;
+            || socket.data.rematchMatchId !== matchId
+            || socket.data.rematchJoinRevision !== joinRevision) return;
         socket.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, {
             url: `/play/${encodeURIComponent(gameName)}/match/${encodeURIComponent(data.matchID)}`,
         });
@@ -1561,9 +1632,15 @@ lobbySocketIO.on('connection', (socket) => {
         const state = rematchStateByMatch.get(matchId);
         if (!state || state.ready) return;
         const autoAcceptedPlayerIds = normalizeRematchPlayerIds(socket.data.rematchAutoAcceptedPlayerIds);
+        const joinRevision = socket.data.rematchJoinRevision;
+        const credentials = socket.data.rematchCredentials;
         const metadata = await fetchRematchMetadata(matchId);
-        if (!isAuthenticatedRematchPlayer(metadata, playerId, socket.data.rematchCredentials)
-            || socket.data.rematchMatchId !== matchId) return;
+        // Authentication must still belong to the same joined session and vote
+        // round. A leave/rejoin or completed round can overtake the storage read.
+        if (!isAuthenticatedRematchPlayer(metadata, playerId, credentials)
+            || socket.data.rematchMatchId !== matchId
+            || socket.data.rematchJoinRevision !== joinRevision
+            || rematchStateByMatch.get(matchId) !== state || state.ready) return;
         const nextState = applyRematchVoteToggle(state, {
             playerId,
             autoAcceptedPlayerIds,

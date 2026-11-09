@@ -1,0 +1,39 @@
+{
+  "node": "24.1.0",
+  "targeted": {
+    "files": 16,
+    "passed": 203,
+    "failed": 0
+  },
+  "consumers": {
+    "files": 6,
+    "passed": 112,
+    "failed": 2,
+    "baseline_reproduced_failures": 2
+  },
+  "seat_validation": {
+    "files": 1,
+    "passed": 150,
+    "failed": 3,
+    "baseline_reproduced_failures": 3
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 11
+  },
+  "server_bundle": "passed",
+  "vite_production_build": "passed",
+  "typecheck": {
+    "passed": false,
+    "baseline_TS2551": [
+      "src/pages/devtools/cutscene/cutsceneDemoRuntime.ts:1785",
+      "src/pages/devtools/cutscene/cutsceneDemoRuntime.ts:1821"
+    ]
+  },
+  "diff_check": "passed",
+  "security_review": "passed",
+  "real_mongo": "not_run",
+  "chromium": "not_run",
+  "git_push": false,
+  "deployment": false
+}

@@ -47,9 +47,10 @@ const reset = async () => { await act(async () => { await mocks.reset!(); }); };
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  vi.spyOn(crypto, 'getRandomValues').mockImplementation((array) => { (array as Uint8Array).fill(0); return array; });
   mocks.stored = { gameName: 'Betrayal', playerName: 'Tester', credentials: 'PRIVATE_CREDENTIAL' };
   mocks.auth = { user: null, token: null };
-  mocks.playAgain.mockResolvedValue({ nextMatchID: 'new', ownerCredentials: 'NEW_PRIVATE_CREDENTIAL', ownerType: 'guest' });
+  mocks.playAgain.mockResolvedValue({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'NEW_PRIVATE_CREDENTIAL', ownerType: 'guest', ownerKey: 'guest:original-guest' });
   mocks.claimSeat.mockResolvedValue({ success: true, credentials: 'seat' });
   window.location.href = 'http://localhost/play/betrayal/match/old';
 });
@@ -102,7 +103,7 @@ describe('rematch does not silently reset the multiplayer client on failure', ()
   });
 
   it.each([undefined, '', {}, 71])('does not broadcast or navigate if create returned invalid owner proof %j', async ownerCredentials => {
-    mocks.playAgain.mockResolvedValue({ nextMatchID: 'new', ownerType: 'guest', ownerCredentials });
+    mocks.playAgain.mockResolvedValue({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerType: 'guest', ownerKey: 'guest:original-guest', ownerCredentials });
     mount();
     await reset();
     expect(mocks.localReset).not.toHaveBeenCalled();
@@ -120,10 +121,10 @@ describe('rematch joins the server-created room', () => {
     await reset();
     expect(mocks.playAgain).toHaveBeenCalledWith('betrayal', 'old', expect.objectContaining({ credentials: 'PRIVATE_CREDENTIAL', token: 'token' }));
     expect(mocks.claimSeat).not.toHaveBeenCalled();
-    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/new', 'NEW_PRIVATE_CREDENTIAL');
-    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/new?playerID=0');
+    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA', 'NEW_PRIVATE_CREDENTIAL');
+    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA?playerID=0');
     expect(mocks.localReset).not.toHaveBeenCalled();
-    expect(mocks.setOwnerActiveMatch).toHaveBeenCalledWith({ matchID: 'new', gameName: 'betrayal', ownerType: 'guest', ownerKey: 'guest:original-guest' });
+    expect(mocks.setOwnerActiveMatch).toHaveBeenCalledWith({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA', gameName: 'betrayal', ownerType: 'guest', ownerKey: 'guest:original-guest' });
   });
 
   it('reclaims the new guest room with saved P0 proof after a logged-in rematch', async () => {
@@ -134,9 +135,9 @@ describe('rematch joins the server-created room', () => {
     vi.stubGlobal('fetch', fetchMock);
     mount();
     await reset();
-    expect(actual.getOwnerActiveMatch()).toMatchObject({ matchID: 'new', ownerType: 'guest', ownerKey: 'guest:original-guest' });
-    expect(actual.readStoredMatchCredentials('new')).toMatchObject({ playerID: '0', credentials: 'NEW_PRIVATE_CREDENTIAL' });
-    await actual.claimSeat('betrayal', 'new', '0', { token: 'token' });
+    expect(actual.getOwnerActiveMatch()).toMatchObject({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerType: 'guest', ownerKey: 'guest:original-guest' });
+    expect(actual.readStoredMatchCredentials('AAAAAAAAAAAAAAAAAAAAAA')).toMatchObject({ playerID: '0', credentials: 'NEW_PRIVATE_CREDENTIAL' });
+    await actual.claimSeat('betrayal', 'AAAAAAAAAAAAAAAAAAAAAA', '0', { token: 'token' });
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(request.headers).not.toHaveProperty('Authorization');
     expect(JSON.parse(String(request.body))).toMatchObject({ playerID: '0', ownerCredentials: 'NEW_PRIVATE_CREDENTIAL' });
@@ -144,7 +145,7 @@ describe('rematch joins the server-created room', () => {
 
   it('preserves account ownership when using the issued seat proof', async () => {
     mocks.auth = { user: { id: 'u1', username: 'Account' }, token: 'token' };
-    mocks.playAgain.mockResolvedValue({ nextMatchID: 'new', ownerCredentials: 'proof', ownerType: 'user' });
+    mocks.playAgain.mockResolvedValue({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'proof', ownerType: 'user', ownerKey: 'user:u1' });
     mount();
     await reset();
     expect(mocks.claimSeat).not.toHaveBeenCalled();
@@ -155,9 +156,9 @@ describe('rematch joins the server-created room', () => {
     vi.useFakeTimers();
     mount('1');
     await reset();
-    act(() => { mocks.newRoom!('/play/betrayal/match/new'); });
+    act(() => { mocks.newRoom!('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA'); });
     await act(async () => { vi.advanceTimersByTime(8000); });
-    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/new?join=true');
+    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA?join=true');
     expect(mocks.showError).not.toHaveBeenCalled();
     expect(mocks.localReset).not.toHaveBeenCalled();
   });
@@ -197,8 +198,8 @@ describe('rematch retirement does not win the page navigation race', () => {
     view.rerender(<RematchExitHarness missing />);
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(mocks.clearMatchCredentials).not.toHaveBeenCalled();
-    act(() => { mocks.newRoom!('/play/betrayal/match/new'); });
-    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/new?join=true');
+    act(() => { mocks.newRoom!('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA'); });
+    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA?join=true');
     expect(mocks.toastWarning).not.toHaveBeenCalled();
   });
 
@@ -207,11 +208,11 @@ describe('rematch retirement does not win the page navigation race', () => {
     mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
     const view = render(<RematchExitHarness playerId="0" />);
     let pending!: Promise<void>;
-    act(() => { pending = mocks.reset!(); });
+    await act(async () => { pending = mocks.reset!(); await Promise.resolve(); });
     view.rerender(<RematchExitHarness playerId="0" missing />);
     expect(mocks.navigate).not.toHaveBeenCalled();
-    await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'proof', ownerType: 'guest' }); await pending; });
-    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/new', 'proof');
+    await act(async () => { release({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
+    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA', 'proof');
     expect(mocks.navigate).not.toHaveBeenCalled();
   });
 
@@ -233,11 +234,11 @@ describe('rematch transition lifetime boundaries', () => {
     await reset();
     view.rerender(<RematchExitHarness aiSeats={[]} missing />);
     expect(mocks.navigate).not.toHaveBeenCalled();
-    act(() => { mocks.newRoom!('/play/betrayal/match/new'); });
-    expect(window.location.pathname).toBe('/play/betrayal/match/new');
+    act(() => { mocks.newRoom!('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA'); });
+    expect(window.location.pathname).toBe('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA');
   });
 
-  it('releases missing-room deferral after an owner create failure', async () => {
+  it('keeps missing-room deferral after an uncertain create failure for recovery', async () => {
     let rejectClaim!: (reason: unknown) => void;
     mocks.playAgain.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectClaim = reject; }));
     const view = render(<RematchExitHarness playerId="0" />);
@@ -246,7 +247,8 @@ describe('rematch transition lifetime boundaries', () => {
     view.rerender(<RematchExitHarness playerId="0" missing />);
     expect(mocks.navigate).not.toHaveBeenCalled();
     await act(async () => { rejectClaim(new Error('claim failed')); await pending; });
-    expect(mocks.navigate).toHaveBeenCalledWith('/?game=betrayal', { replace: true });
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    expect(mocks.clearMatchCredentials).not.toHaveBeenCalled();
     expect(mocks.broadcast).not.toHaveBeenCalled();
   });
 
@@ -261,9 +263,9 @@ describe('rematch transition lifetime boundaries', () => {
     await act(async () => { vi.advanceTimersByTime(8000); });
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(mocks.showError).not.toHaveBeenCalled();
-    await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'proof', ownerType: 'guest' }); await pending; });
-    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/new', 'proof');
-    expect(mocks.setOwnerActiveMatch).toHaveBeenCalledWith(expect.objectContaining({ matchID: 'new' }));
+    await act(async () => { release({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
+    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA', 'proof');
+    expect(mocks.setOwnerActiveMatch).toHaveBeenCalledWith(expect.objectContaining({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA' }));
     expect(mocks.navigate).not.toHaveBeenCalled();
   });
 
@@ -272,11 +274,11 @@ describe('rematch transition lifetime boundaries', () => {
     mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
     const view = render(<RematchExitHarness playerId="0" />);
     let pending!: Promise<void>;
-    act(() => { pending = mocks.reset!(); });
+    await act(async () => { pending = mocks.reset!(); await Promise.resolve(); });
     view.rerender(<RematchExitHarness matchId="other" playerId="1" />);
     await reset();
     view.rerender(<RematchExitHarness matchId="other" playerId="1" missing />);
-    await act(async () => { release({ nextMatchID: 'late', ownerCredentials: 'proof', ownerType: 'guest' }); await pending; });
+    await act(async () => { release({ nextMatchID: 'late', ownerCredentials: 'proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(mocks.claimSeat).not.toHaveBeenCalled();
     expect(mocks.broadcast).not.toHaveBeenCalled();
@@ -305,13 +307,13 @@ describe('late owner create response respects the current local selection', () =
     let release!: (value: unknown) => void;
     mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
     const view = mount(); let pending!: Promise<void>;
-    act(() => { pending = mocks.reset!(); });
+    await act(async () => { pending = mocks.reset!(); await Promise.resolve(); });
     view.unmount(); window.location.href = 'http://localhost/?game=betrayal';
-    await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'committed-proof', ownerType: 'guest' }); await pending; });
+    await act(async () => { release({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'committed-proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
     await actual.pruneStoredMatchCredentials(); // Home's actual single-room consumer.
-    expect(actual.getLatestStoredMatchCredentials()).toMatchObject({ matchID: 'new', playerID: '0', credentials: 'committed-proof' });
+    expect(actual.getLatestStoredMatchCredentials()).toMatchObject({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA', playerID: '0', credentials: 'committed-proof' });
     expect(actual.readStoredMatchCredentials('old')).toBeNull();
-    expect(actual.getOwnerActiveMatch()).toMatchObject({ matchID: 'new', ownerType: 'guest' });
+    expect(actual.getOwnerActiveMatch()).toMatchObject({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerType: 'guest', ownerKey: 'guest:original-guest' });
     expect(window.location.pathname).toBe('/');
     expect(mocks.broadcast).not.toHaveBeenCalled();
     expect(mocks.claimSeat).not.toHaveBeenCalled();
@@ -323,14 +325,14 @@ describe('late owner create response respects the current local selection', () =
     let release!: (value: unknown) => void;
     mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
     const view = mount(); let pending!: Promise<void>;
-    act(() => { pending = mocks.reset!(); }); view.unmount();
+    await act(async () => { pending = mocks.reset!(); await Promise.resolve(); }); view.unmount();
     await actual.persistMatchCredentials('chosen', { matchID: 'chosen', playerID: '1', credentials: 'chosen-proof' });
     await actual.setOwnerActiveMatch({ matchID: 'chosen', gameName: 'betrayal', ownerType: 'user' });
     const before = { ...localStorage };
     const changed = vi.fn(); window.addEventListener('match-credentials-changed', changed);
     window.addEventListener('owner-active-match-changed', changed);
     window.location.href = 'http://localhost/play/betrayal/match/chosen';
-    await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'late-proof', ownerType: 'guest' }); await pending; });
+    await act(async () => { release({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'late-proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
     expect({ ...localStorage }).toEqual(before);
     expect(changed).not.toHaveBeenCalled();
     await actual.pruneStoredMatchCredentials();
@@ -346,8 +348,8 @@ describe('late owner create response respects the current local selection', () =
     const actual = await vi.importActual<typeof import('../match/useMatchStatus')>('../match/useMatchStatus');
     mount(); await reset();
     expect(mocks.claimSeat).not.toHaveBeenCalled();
-    expect(actual.readStoredMatchCredentials('new')).toMatchObject({ playerID: '0', credentials: 'NEW_PRIVATE_CREDENTIAL' });
-    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/new', 'NEW_PRIVATE_CREDENTIAL');
+    expect(actual.readStoredMatchCredentials('AAAAAAAAAAAAAAAAAAAAAA')).toMatchObject({ playerID: '0', credentials: 'NEW_PRIVATE_CREDENTIAL' });
+    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA', 'NEW_PRIVATE_CREDENTIAL');
   });
 });
 
@@ -364,11 +366,11 @@ it.each(['pointer-only', 'rotated-successor'] as const)('does not overwrite a la
   let release!: (value: unknown) => void;
   mocks.playAgain.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
   const view = mount(); let pending!: Promise<void>;
-  act(() => { pending = mocks.reset!(); }); view.unmount();
+  await act(async () => { pending = mocks.reset!(); await Promise.resolve(); }); view.unmount();
   if (mode === 'pointer-only') await actual.setOwnerActiveMatch({ matchID: 'chosen', gameName: 'betrayal' });
-  else await actual.persistMatchCredentials('new', { matchID: 'new', playerID: '0', credentials: 'newer-rotated-proof' });
+  else await actual.persistMatchCredentials('AAAAAAAAAAAAAAAAAAAAAA', { matchID: 'AAAAAAAAAAAAAAAAAAAAAA', playerID: '0', credentials: 'newer-rotated-proof' });
   const before = { ...localStorage };
-  await act(async () => { release({ nextMatchID: 'new', ownerCredentials: 'late-proof', ownerType: 'guest' }); await pending; });
+  await act(async () => { release({ nextMatchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'late-proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
   expect({ ...localStorage }).toEqual(before);
   expect(mocks.broadcast).not.toHaveBeenCalled();
 });
@@ -387,7 +389,7 @@ describe('owner long-wait notice is informational, not a request deadline', () =
   it('warns once after15s, keeps the same request and accepts a late success', async () => {
     vi.useFakeTimers(); const request = await holdProductionCreate();
     const view = render(<RematchExitHarness playerId="0" />); let pending!: Promise<void>;
-    act(() => { pending = mocks.reset!(); });
+    await act(async () => { pending = mocks.reset!(); await Promise.resolve(); });
     view.rerender(<RematchExitHarness playerId="0" missing />);
     await act(async () => { vi.advanceTimersByTime(14999); });
     expect(mocks.toastWarning).not.toHaveBeenCalled();
@@ -401,9 +403,9 @@ describe('owner long-wait notice is informational, not a request deadline', () =
     expect(mocks.showError).not.toHaveBeenCalled();
     expect(mocks.navigate).not.toHaveBeenCalled();
     expect(mocks.clearMatchCredentials).not.toHaveBeenCalled();
-    await act(async () => { request.release({ matchID: 'new', ownerCredentials: 'late-proof', ownerType: 'guest' }); await pending; });
-    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/new', 'late-proof');
-    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/new?playerID=0');
+    await act(async () => { request.release({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'late-proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
+    expect(mocks.broadcast).toHaveBeenCalledWith('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA', 'late-proof');
+    expect(window.location.pathname + window.location.search).toBe('/play/betrayal/match/AAAAAAAAAAAAAAAAAAAAAA?playerID=0');
   });
 
   it('does not warn after a response completed before the threshold', async () => {
@@ -416,16 +418,16 @@ describe('owner long-wait notice is informational, not a request deadline', () =
   it.each([1000, 16000])('does not keep notifying or force navigation after leaving at%dms', async leaveAt => {
     vi.useFakeTimers(); const request = await holdProductionCreate();
     const view = mount(); let pending!: Promise<void>;
-    act(() => { pending = mocks.reset!(); });
+    await act(async () => { pending = mocks.reset!(); await Promise.resolve(); });
     await act(async () => { vi.advanceTimersByTime(leaveAt); });
     expect(mocks.toastWarning).toHaveBeenCalledTimes(leaveAt < 15000 ? 0 : 1);
     view.unmount(); window.location.href = 'http://localhost/?game=betrayal';
     const warningsAtExit = mocks.toastWarning.mock.calls.length;
     await act(async () => { vi.advanceTimersByTime(60000); });
     expect(mocks.toastWarning).toHaveBeenCalledTimes(warningsAtExit);
-    await act(async () => { request.release({ matchID: 'new', ownerCredentials: 'late-proof', ownerType: 'guest' }); await pending; });
+    await act(async () => { request.release({ matchID: 'AAAAAAAAAAAAAAAAAAAAAA', ownerCredentials: 'late-proof', ownerType: 'guest', ownerKey: 'guest:original-guest' }); await pending; });
     const actual = await vi.importActual<typeof import('../match/useMatchStatus')>('../match/useMatchStatus');
-    expect(actual.readStoredMatchCredentials('new')?.credentials).toBe('late-proof');
+    expect(actual.readStoredMatchCredentials('AAAAAAAAAAAAAAAAAAAAAA')?.credentials).toBe('late-proof');
     expect(window.location.pathname).toBe('/');
     expect(mocks.broadcast).not.toHaveBeenCalled();
     expect(mocks.showError).not.toHaveBeenCalled();
@@ -433,7 +435,7 @@ describe('owner long-wait notice is informational, not a request deadline', () =
 
   it('keeps an eventual unknown server outcome distinct from failure', async () => {
     vi.useFakeTimers(); const request = await holdProductionCreate();
-    mount(); let pending!: Promise<void>; act(() => { pending = mocks.reset!(); });
+    mount(); let pending!: Promise<void>; await act(async () => { pending = mocks.reset!(); await Promise.resolve(); });
     await act(async () => { vi.advanceTimersByTime(15000); });
     expect(mocks.toastWarning).toHaveBeenCalledWith(expect.objectContaining({ key: 'rematch.stillWaiting' }));
     await act(async () => { request.release({ error: 'ROOM_REPLACEMENT_OUTCOME_UNKNOWN' }, 503); await pending; });

@@ -72,9 +72,9 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
         });
     }, [closeAll, gameId, navigate]);
 
-    const clearMatchLocalState = useCallback(() => {
+    const clearMatchLocalState = useCallback((discardPending = false) => {
         if (!matchId) return;
-        void clearMatchCredentials(matchId, undefined, { suppressOwner: true });
+        void clearMatchCredentials(matchId, undefined, { suppressOwner: true, ...(discardPending ? { discardPending: true } : {}) });
         // 关键：强制退出时，也要增加对当前房间的“主页活跃对局”抑制，
         // 确保即使在跨标签页同步延迟时，主页也能立即排除此房间。
     }, [matchId]);
@@ -103,7 +103,7 @@ export function useMatchRoomExitFlow(args: UseMatchRoomExitFlowArgs): UseMatchRo
     });
 
     const handleForceExitLocal = useCallback(() => {
-        clearMatchLocalState();
+        clearMatchLocalState(true);
         navigateBackToLobby();
     }, [clearMatchLocalState, navigateBackToLobby]);
 

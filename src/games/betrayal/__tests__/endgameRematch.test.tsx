@@ -25,11 +25,11 @@ vi.mock('../../../services/matchSocket', () => ({ matchSocket: {
 } }));
 vi.mock('../../../contexts/AuthContext', () => ({ useAuth: () => ({ user: null, token: null }) }));
 vi.mock('../../../contexts/ToastContext', () => ({ useToast: () => ({ error: mocks.error, warning: mocks.warning }) }));
-vi.mock('../../../hooks/match/useMatchStatus', () => ({ readStoredMatchCredentials: () => ({ gameName: 'betrayal', credentials: 'synthetic-proof', playerName: 'Alice' }), persistRematchOwnerCredentials: vi.fn(), setOwnerActiveMatch: vi.fn() }));
+vi.mock('../../../hooks/match/useMatchStatus', async (importOriginal) => ({ ...await importOriginal<typeof import('../../../hooks/match/useMatchStatus')>(), readStoredMatchCredentials: () => ({ gameName: 'betrayal', credentials: 'synthetic-proof', playerName: 'Alice' }), persistRematchOwnerCredentials: vi.fn(), setOwnerActiveMatch: vi.fn() }));
 vi.mock('../../../services/matchApi', () => ({ playAgain: mocks.playAgain }));
 vi.mock('../../../components/common/media/OptimizedImage', () => ({ OptimizedImage: ({ src, alt }: React.ImgHTMLAttributes<HTMLImageElement>) => <img alt={alt} data-src={src} /> }));
 
-beforeEach(() => { vi.clearAllMocks(); mocks.reset = null; mocks.state = null; });
+beforeEach(() => { vi.clearAllMocks(); localStorage.clear(); mocks.reset = null; mocks.state = null; });
 afterEach(cleanup);
 async function i18nForTest() {
   const i18n = i18next.createInstance(); await i18n.use(initReactI18next).init({ lng: 'zh-CN', defaultNS: 'game-betrayal', resources: { 'zh-CN': { 'game-betrayal': locale, common } }, interpolation: { escapeValue: false } }); return i18n;

@@ -1,0 +1,19 @@
+{
+  "candidate": "A3 / B3 art studies",
+  "date": "2026-11-08",
+  "cpuChecks": {
+    "passed": 43,
+    "failed": 0
+  },
+  "typecheck": "PASS",
+  "build": "PASS",
+  "buildWarning": "Main JS chunk exceeds 500 kB",
+  "browserRun": "NOT_RUN",
+  "gpuRun": "NOT_RUN",
+  "screenshots": "NOT_RUN",
+  "visualAcceptance": "NOT_RUN",
+  "actualUIInteractions": "NOT_RUN",
+  "measuredPerformance": "NOT_RUN",
+  "formalGameRulesIntegrated": false,
+  "deployed": false
+}

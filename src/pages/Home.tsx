@@ -877,7 +877,7 @@ export const Home = ({ homeStyle = 'modern' }: HomeProps) => {
     };
 
     const handleForceExitLocal = useCallback((matchID: string) => {
-        clearMatchCredentials(matchID);
+        void clearMatchCredentials(matchID, undefined, { discardPending: true });
         setActiveMatch(null);
         setMyMatchRole(null);
         setPendingAction(null);

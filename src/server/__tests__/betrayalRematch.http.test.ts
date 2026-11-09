@@ -2,6 +2,10 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { randomBytes } from 'node:crypto';
+import jwt from 'jsonwebtoken';
+import { claimSeatUtils } from '../claimSeat';
+import * as recoveryServer from '../rematchRecovery';
+import * as recoveryShared from '../../shared/rematchRecovery';
 import Koa from 'koa';
 import Router from '@koa/router';
 import bodyParser from 'koa-bodyparser';
@@ -20,7 +24,7 @@ import { isAuthenticatedRematchPlayer } from '../rematch';
 import * as rematchSetup from '../rematchSetup';
 import * as ownerProof from '../guestRoomOwnership';
 import * as duplicateRooms from '../duplicateOwnerRooms';
-import { buildMatchDetailPayload } from '../lobbyMatch';
+import { buildMatchDetailPayload, buildLobbyMatch } from '../lobbyMatch';
 import { productionCallback } from './helpers/productionServerCallback';
 
 // Real loopback HTTP/socket, production callbacks, Betrayal setup and memory CAS.
@@ -58,20 +62,20 @@ async function harness(extraSetup: Record<string, unknown> = {}, holdCreateRespo
     const initial = (await gameTransport.setupMatch('old', 'betrayal', ['0', '1', '2'], 'synthetic-seed', settings))!;
     const metadata: MatchMetadata = {
         gameName: 'betrayal', createdAt: Date.now(), updatedAt: Date.now(), setupData: settings,
-        players: { '0': { id: 0, name: 'Owner', ownerKey, credentials: ownerProofValue }, '1': { id: 1, name: 'Follower', credentials: 'follower-proof' }, '2': { id: 2 } },
+        players: { '0': { id: 0, name: 'Owner', ownerKey: settings.ownerKey, credentials: ownerProofValue }, '1': { id: 1, name: 'Follower', credentials: 'follower-proof' }, '2': { id: 2 } },
     };
     await storage.createMatch('old', { initialState: { G: initial.state, _stateID: 0, randomSeed: 'synthetic-seed', randomCursor: initial.randomCursor }, metadata });
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const REMATCH_EVENTS = { JOIN_MATCH: 'rematch:join', STATE_UPDATE: 'rematch:stateUpdate', DEBUG_NEW_ROOM: 'debug:newRoom' };
     const env: Record<string, unknown> = {
-        ...rematchSetup, ...ownerProof, ...duplicateRooms, storage, gameTransport, logger, lobbySocketIO, REMATCH_EVENTS, isAuthenticatedRematchPlayer,
+        ...rematchSetup, ...recoveryServer, ...recoveryShared, ...ownerProof, ...duplicateRooms, storage, gameTransport, logger, lobbySocketIO, REMATCH_EVENTS, isAuthenticatedRematchPlayer,
         fetchRematchMetadata: async (id: string) => (await storage.fetch(id, { metadata: true })).metadata,
         resolveAutoAcceptedRematchPlayerIds: async () => ['2'],
         isMatchReplacementStorage, MatchReplacementOutcomeUnknownError,
         normalizeGameName: (name: string) => name.toLowerCase(), isSupportedGame: (name: string) => name === 'betrayal',
         GAME_SERVER_MANIFEST: [{ manifest, engineConfig }], resolveAllowedPlayerCountsForGame, isSupportedPlayerCount,
         supportsOwnerMatchLookup: () => true, nanoid: (n: number) => randomBytes(n).toString('hex').slice(0, n),
-        claimSeatUtils: { parseBearerToken: () => null, verifyGameToken: () => null }, JWT_SECRET: 'synthetic-only',
+        claimSeatUtils, JWT_SECRET: 'synthetic-only',
         process: { env: { NODE_ENV: 'production' } }, setTimeout: vi.fn(),
         lobbyCoordinator: { handleMatchCreated: vi.fn(), emitMatchEnded: vi.fn(), forgetLobbyMatch: vi.fn() },
         matchSubscribers: new Map(), rematchStateByMatch: new Map(), chatHistoryByMatch: new Map(), buildMatchDetailPayload,
@@ -83,6 +87,7 @@ async function harness(extraSetup: Record<string, unknown> = {}, holdCreateRespo
     env.cleanupReplacedMatchRuntime = productionCallback('cleanup', env);
     const router = new Router();
     router.post('/games/:name/create', productionCallback<Koa.Middleware>('create', env));
+    router.post('/games/:name/:matchID/rematch-recovery', productionCallback<Koa.Middleware>('recovery', env));
     router.get('/games/:name/:matchID', productionCallback<Koa.Middleware>('detail', env));
     app.use(async (ctx, next) => { await next(); if (ctx.path.endsWith('/create')) await holdCreateResponse; });
     app.use(productionCallback<Koa.Middleware>('errors', env));
@@ -111,8 +116,8 @@ async function harness(extraSetup: Record<string, unknown> = {}, holdCreateRespo
     const sync = async (socket: Socket, id: string, credentials = ownerProofValue) => {
         const response = once(socket, 'state:sync'); socket.emit('sync', id, '0', credentials); return response;
     };
-    const rematch = async (credentials = ownerProofValue, signal?: AbortSignal) => {
-        const response = await fetch(`${base}/games/betrayal/create`, { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rematch: { matchID: 'old', playerID: '0', credentials } }) });
+    const rematch = async (credentials = ownerProofValue, signal?: AbortSignal, recovery?: recoveryShared.RematchRecoveryRequest, token?: string) => {
+        const response = await fetch(`${base}/games/betrayal/create`, { method: 'POST', signal, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ rematch: { matchID: 'old', playerID: '0', credentials, ...(recovery ? { recovery } : {}) } }) });
         return { status: response.status, body: await response.json() as Record<string, string> };
     };
     return { base, storage, gameTransport, connect, sync, rematch, joinFollower };
@@ -199,7 +204,7 @@ it('delivers the successor to an authenticated follower while the owner HTTP res
 }, 15000);
 
 
-// Characterization of an unresolved recovery boundary, not a recovery PASS.
+// Legacy clients without a durable recovery descriptor still cannot use the old proof.
 it('a lost creator response after commit leaves a successor that old guest proof cannot recover', async () => {
     let release!: () => void;
     const h = await harness({}, new Promise<void>(resolve => { release = resolve; }));
@@ -224,4 +229,67 @@ it('a lost creator response after commit leaves a successor that old guest proof
         expect(detail.players[0]).not.toHaveProperty('credentials');
         expect(notification).toEqual({ url: `/play/betrayal/match/${nextMatchID}` });
     } finally { release(); await request; }
+});
+
+
+const durable = { nextMatchID: 'abcdefghijklmnopqrstuv', token: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ' };
+const recoverHttp = async (base: string, overrides: { game?: string; target?: string; source?: string; secret?: string; bearer?: string } = {}) => {
+    const response = await fetch(`${base}/games/${overrides.game ?? 'betrayal'}/${overrides.target ?? durable.nextMatchID}/rematch-recovery`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...(overrides.bearer ? { Authorization: `Bearer ${overrides.bearer}` } : {}) },
+        body: JSON.stringify({ sourceMatchID: overrides.source ?? 'old', token: overrides.secret ?? durable.token }),
+    });
+    return { status: response.status, cache: response.headers.get('cache-control'), body: await response.json() };
+};
+it('recovers a lost HTTP create response, syncs P0, preserves receipt after runtime writes, and leaks nothing publicly', async () => {
+    let release!: () => void;
+    const h = await harness({}, new Promise<void>(resolve => { release = resolve; }));
+    const follower = await h.joinFollower(); const notified = once(follower, 'debug:newRoom');
+    const controller = new AbortController();
+    const request = h.rematch(ownerProofValue, controller.signal, durable).catch(error => error as Error);
+    try {
+        const notification = await notified; controller.abort(); expect(await request).toBeInstanceOf(Error);
+        const result = await recoverHttp(h.base);
+        expect(result.status).toBe(200); expect(result.cache).toBe('no-store');
+        expect(result.body.matchID).toBe(durable.nextMatchID);
+        expect(await h.gameTransport.validateTestAccess(durable.nextMatchID, '0', ownerProofValue)).toBe(false);
+        const socket = await h.connect(); const synced = await h.sync(socket, durable.nextMatchID, result.body.ownerCredentials);
+        expect(synced[0]).toBe(durable.nextMatchID);
+        const detail = await (await fetch(`${h.base}/games/betrayal/${durable.nextMatchID}`)).json();
+        const stored = (await h.storage.fetch(durable.nextMatchID, { metadata: true })).metadata!;
+        expect(stored.rematchRecovery).toBeDefined();
+        const lobby = buildLobbyMatch(durable.nextMatchID, stored);
+        const publicData = JSON.stringify({ detail, lobby, synced, notification });
+        for (const secret of [durable.token, result.body.ownerCredentials, stored.rematchRecovery!.tokenHash,
+            stored.rematchRecovery!.issuedCredentialHash, 'rematchRecovery']) expect(publicData).not.toContain(secret);
+        expect((await recoverHttp(h.base)).body).toEqual(result.body);
+    } finally { release(); await request; }
+});
+it('recovery HTTP rejects wrong token/source/game/target and replays no rotated, cleared or removed proof', async () => {
+    const h = await harness(); await h.rematch(ownerProofValue, undefined, durable);
+    for (const overrides of [{ secret: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq' }, { source: 'other' },
+        { game: 'unknown' }, { target: 'zyxwvutsrqponmlkjihgfe' }]) {
+        const failed = await recoverHttp(h.base, overrides);
+        expect(failed.status).toBeGreaterThanOrEqual(400); expect(failed.cache).toBe('no-store');
+        expect(failed.body).not.toHaveProperty('ownerCredentials');
+    }
+    const metadata = (await h.storage.fetch(durable.nextMatchID, { metadata: true })).metadata!;
+    for (const credentials of ['rotated', undefined]) {
+        metadata.players['0'].credentials = credentials; await h.storage.setMetadata(durable.nextMatchID, metadata);
+        expect((await recoverHttp(h.base)).status).toBe(404);
+        const replay = await h.rematch(ownerProofValue, undefined, durable);
+        expect(replay.status).toBe(409); expect(replay.body).not.toHaveProperty('ownerCredentials');
+    }
+    await h.storage.wipe(durable.nextMatchID);
+    expect((await recoverHttp(h.base)).status).toBe(404);
+    expect((await h.rematch(ownerProofValue, undefined, durable)).status).toBe(404);
+});
+it('account recovery requires a valid JWT for the bound owner, even with the recovery secret', async () => {
+    const h = await harness({ ownerType: 'user', ownerKey: 'user:owner' });
+    const token = jwt.sign({ userId: 'owner' }, 'synthetic-only', { expiresIn: '1h' });
+    expect((await h.rematch(ownerProofValue, undefined, durable, token)).status).toBe(200);
+    for (const bearer of [undefined, 'invalid', jwt.sign({ userId: 'other' }, 'synthetic-only')]) {
+        const result = await recoverHttp(h.base, { bearer }); expect(result.status).toBe(404);
+        expect(result.body).not.toHaveProperty('ownerCredentials');
+    }
+    expect((await recoverHttp(h.base, { bearer: token })).status).toBe(200);
 });

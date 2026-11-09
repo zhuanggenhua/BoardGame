@@ -1,0 +1,79 @@
+{
+  "scope": "CPU geometry and source contracts only; no graphics or browser execution",
+  "visualAcceptance": "NOT_RUN",
+  "results": [
+    {
+      "name": "A3 is independent paper geometry with six chairs and six printed plates",
+      "status": "PASS"
+    },
+    {
+      "name": "Both directions keep the same diagonal orientation and tabletop footprint",
+      "status": "PASS"
+    },
+    {
+      "name": "Paper chair back contains a real cut-through hole",
+      "status": "PASS"
+    },
+    {
+      "name": "B3 includes curved cabinet, gathered fabric, framed portraits and restrained age details",
+      "status": "PASS"
+    },
+    {
+      "name": "Curtains have actual depth variation and valid normals",
+      "status": "PASS"
+    },
+    {
+      "name": "Window and portraits remain inside non-door wall sections",
+      "status": "PASS"
+    },
+    {
+      "name": "All new material maps are deterministic and self-contained",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 geometry, normals, UVs and world matrices contain no non-finite values",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 dining assembly stays inside the room tile",
+      "status": "PASS"
+    },
+    {
+      "name": "Repeated wall modes work independently in both directions",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 overview remains inside portrait and landscape horizontal projection bounds",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 batching preserves triangle count and independent wall partitions",
+      "status": "PASS"
+    },
+    {
+      "name": "Direction controls are connected to visibility-only switching without resetting comparison camera",
+      "status": "PASS"
+    }
+  ],
+  "abstract": {
+    "before": {
+      "meshes": 159,
+      "uniqueGeometries": 159,
+      "triangles": 6348
+    },
+    "after": {
+      "meshes": 20,
+      "uniqueGeometries": 20,
+      "triangles": 6348
+    },
+    "batch": {
+      "mergedInputs": 156,
+      "batches": 17
+    }
+  },
+  "detailed": {
+    "meshes": 790,
+    "uniqueGeometries": 790,
+    "triangles": 78086
+  }
+}

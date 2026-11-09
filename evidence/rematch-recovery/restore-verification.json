@@ -1,0 +1,7 @@
+{
+  "base": "33c10d5fda7bfca1082d37a8bff825d70fc52629",
+  "files_verified": 27,
+  "apply_check": "passed",
+  "applied_bytes_equal": "all changed and added files match",
+  "patch_sha256": "6f5c9045e30963e4f8f4a783737f5c1f51560aab60e6c09b247c9287d57966fd"
+}

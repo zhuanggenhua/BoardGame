@@ -1,0 +1,20 @@
+{
+  "name": "betrayal-dining-room-art-studies-a3-b3",
+  "private": true,
+  "version": "0.3.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5195 --strictPort",
+    "build": "vite build && node checks/standalone.mjs",
+    "check": "node checks/geometry.mjs && node checks/regressions.mjs && node checks/art-directions.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "0.182.0"
+  },
+  "devDependencies": {
+    "@types/three": "0.182.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.1"
+  }
+}

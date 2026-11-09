@@ -1545,7 +1545,7 @@ export const GameDetailsModal = ({ presentation = 'modal', favoriteControl, isOp
     });
 
     const handleForceExitLocal = (matchID: string) => {
-        void clearMatchCredentials(matchID, undefined, { suppressOwner: true });
+        void clearMatchCredentials(matchID, undefined, { suppressOwner: true, discardPending: true });
         setLocalStorageTick((t) => t + 1);
         toast.warning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
     };

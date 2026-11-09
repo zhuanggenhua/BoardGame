@@ -3,6 +3,8 @@ import { isDeepStrictEqual } from 'node:util';
 import { describe, expect, it, vi } from 'vitest';
 import { isAuthenticatedRematchPlayer } from '../rematch';
 import * as rematchSetup from '../rematchSetup';
+import * as recoveryServer from '../rematchRecovery';
+import * as recoveryShared from '../../shared/rematchRecovery';
 import * as ownerProof from '../guestRoomOwnership';
 import * as duplicateRooms from '../duplicateOwnerRooms';
 import { MatchReplacementOutcomeUnknownError, type MatchMetadata } from '../../engine/transport/storage';
@@ -45,7 +47,7 @@ function harness(options: { old?: MatchMetadata; credentials?: string; body?: Re
     const notifyRematchSuccessor = vi.fn();
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const env = {
-        ...rematchSetup, ...ownerProof, ...duplicateRooms, storage, cleanupMatchRoom, cleanupReplacedMatchRuntime, gameTransport, logger, notifyRematchSuccessor,
+        ...rematchSetup, ...recoveryServer, ...recoveryShared, ...ownerProof, ...duplicateRooms, storage, cleanupMatchRoom, cleanupReplacedMatchRuntime, gameTransport, logger, notifyRematchSuccessor,
         isMatchReplacementStorage: () => !options.unsupportedStorage, MatchReplacementOutcomeUnknownError,
         normalizeGameName: (name: string) => name, isSupportedGame: () => true,
         GAME_SERVER_MANIFEST: [{ manifest: { id: old.gameName }, engineConfig: {} }],
@@ -59,7 +61,7 @@ function harness(options: { old?: MatchMetadata; credentials?: string; body?: Re
     const ctx = {
         params: { name: old.gameName }, request: { body: options.body ?? { rematch: { matchID: 'old', playerID: '0', credentials: options.credentials ?? 'synthetic-proof' } } },
         method: 'POST', path: `/games/${old.gameName}/create`, get: () => '',
-        status: 200, body: undefined as unknown,
+        status: 200, body: undefined as unknown, set: vi.fn(),
         throw: (status: number, message: string) => { throw Object.assign(new Error(message), { status }); },
     };
     const run = () => productionCallback('errors', env)(ctx, () => productionCallback('create', env)(ctx));
@@ -209,4 +211,61 @@ it('notifies only current authenticated non-owner source subscribers with a URL,
     expect(sockets.get('valid')!.emit.mock.calls).toEqual([['debug:newRoom', { url: '/play/betrayal/match/next' }]]);
     for (const [id, client] of sockets) if (id !== 'valid') expect(client.emit).not.toHaveBeenCalled();
     expect(JSON.stringify([...sockets.values()].flatMap(client => client.emit.mock.calls))).not.toContain('secret');
+});
+
+
+describe('durable rematch response recovery', () => {
+    const recovery = { nextMatchID: 'abcdefghijklmnopqrstuv', token: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ' };
+    const body = { rematch: { matchID: 'old', playerID: '0', credentials: 'synthetic-proof', recovery } };
+
+    it('commits a recoverable successor and replays it after the source was removed', async () => {
+        const h = harness({ body }); await h.run();
+        expect(h.ctx.status).toBe(200);
+        expect(h.ctx.body).toMatchObject({ matchID: recovery.nextMatchID, ownerCredentials: 'synthetic-new-21' });
+        expect(h.rooms.get(recovery.nextMatchID)?.rematchRecovery).toMatchObject({ sourceMatchID: 'old' });
+        expect(JSON.stringify(h.rooms.get(recovery.nextMatchID))).not.toContain(recovery.token);
+        const first = h.ctx.body;
+        await h.run();
+        expect(h.ctx.body).toEqual(first);
+        expect(h.gameTransport.setupMatch).toHaveBeenCalledTimes(1);
+        expect(h.storage.replaceMatchIfUnchanged).toHaveBeenCalledTimes(1);
+    });
+
+    it('recovers a committed but uncertain write without creating or deleting again', async () => {
+        const h = harness({ body, uncertainWrite: true }); await h.run();
+        expect(h.ctx.status).toBe(200);
+        expect(h.ctx.body).toMatchObject({ matchID: recovery.nextMatchID, ownerCredentials: 'synthetic-new-21' });
+        expect(h.storage.replaceMatchIfUnchanged).toHaveBeenCalledTimes(1);
+        expect(h.cleanupReplacedMatchRuntime).toHaveBeenCalledTimes(1);
+        expect(h.notifyRematchSuccessor).toHaveBeenCalledTimes(1);
+        expect(h.storage.createMatch).not.toHaveBeenCalled();
+    });
+    it('two same-request CAS candidates return only the committed winner credential', async () => {
+        const h = harness({ body }); let sequence = 0;
+        h.env.nanoid = (n: number) => n === 21 ? `candidate-${++sequence}` : `random-${n}`;
+        let arrived = 0; let release!: () => void;
+        const barrier = new Promise<void>(resolve => { release = resolve; });
+        h.gameTransport.setupMatch.mockImplementation(async () => {
+            if (++arrived === 2) release(); await barrier;
+            return { state: {}, randomCursor: 0 };
+        });
+        const second = { ...h.ctx, request: { body } };
+        await Promise.all([h.run(), productionCallback('errors', h.env)(second, () => productionCallback('create', h.env)(second))]);
+        expect(h.ctx.status).toBe(200); expect(second.status).toBe(200); expect(second.body).toEqual(h.ctx.body);
+        expect((h.ctx.body as { ownerCredentials: string }).ownerCredentials).toBe(h.rooms.get(recovery.nextMatchID)!.players['0'].credentials);
+        expect(h.rooms.size).toBe(1); expect(h.storage.replaceMatchIfUnchanged).toHaveBeenCalledTimes(2);
+        expect(h.notifyRematchSuccessor).toHaveBeenCalledTimes(1);
+    });
+    it('target collision never overwrites an unrelated room or removes the source', async () => {
+        const h = harness({ body }); h.rooms.set(recovery.nextMatchID, sourceRoom());
+        await h.run(); expect(h.ctx.status).toBe(409); expect(h.rooms.size).toBe(2);
+        expect(h.storage.replaceMatchIfUnchanged).not.toHaveBeenCalled(); expect(h.gameTransport.setupMatch).not.toHaveBeenCalled();
+    });
+    it('confirms a winner that commits between target precheck and source lookup', async () => {
+        const h = harness({ body }); await h.run(); const result = h.ctx.body;
+        h.storage.fetch.mockResolvedValueOnce({ metadata: undefined, state: { G: { core: {} } } });
+        await h.run(); expect(h.ctx.status).toBe(200); expect(h.ctx.body).toEqual(result);
+        expect(h.storage.replaceMatchIfUnchanged).toHaveBeenCalledTimes(1);
+    });
+
 });

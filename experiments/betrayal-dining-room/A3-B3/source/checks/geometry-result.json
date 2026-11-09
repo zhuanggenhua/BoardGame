@@ -1,0 +1,63 @@
+{
+  "scope": "CPU-side procedural geometry and resource smoke check only",
+  "visualAcceptance": "NOT_RUN",
+  "results": [
+    {
+      "name": "Six configured chairs and six place settings are constructed",
+      "status": "PASS"
+    },
+    {
+      "name": "All vertex positions and world transforms are finite",
+      "status": "PASS"
+    },
+    {
+      "name": "Inferred furniture dimensions are coherent",
+      "status": "PASS"
+    },
+    {
+      "name": "Every chair faces toward its assigned setting",
+      "status": "PASS"
+    },
+    {
+      "name": "Furniture feet touch their support surface within 1mm",
+      "status": "PASS"
+    },
+    {
+      "name": "All six dinner plates contact tabletop or runner within 1mm",
+      "status": "PASS"
+    },
+    {
+      "name": "Portrait overview camera fits visible room width with margin",
+      "status": "PASS"
+    },
+    {
+      "name": "Dining furniture remains inside the room footprint",
+      "status": "PASS"
+    },
+    {
+      "name": "Rug corners fit inside the room",
+      "status": "PASS"
+    },
+    {
+      "name": "Wall state changes are reversible and reject invalid state",
+      "status": "PASS"
+    },
+    {
+      "name": "Neutral and warm presets are distinct and neutral candle light is disabled",
+      "status": "PASS"
+    },
+    {
+      "name": "All three camera presets have finite position and target",
+      "status": "PASS"
+    },
+    {
+      "name": "All texture pixels are generated locally with correct data sizes",
+      "status": "PASS"
+    }
+  ],
+  "stats": {
+    "meshes": 790,
+    "uniqueGeometries": 790,
+    "triangles": 78086
+  }
+}

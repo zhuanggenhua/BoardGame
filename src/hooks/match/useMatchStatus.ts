@@ -1,3 +1,4 @@
+import { isPendingRematchSource, PENDING_REMATCH_KEY } from './pendingRematchStorage';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as matchApi from '../../services/matchApi';
 import { withMatchCredentialWrite, credentialWriteFailed, MatchCredentialStorageError } from './matchCredentialTransaction';
@@ -584,8 +585,10 @@ export function persistRematchOwnerCredentials(
     data: StoredMatchCredentials & { playerID: '0'; credentials: string },
     owner?: OwnerActiveMatch,
     sourceCredentials?: string,
+    commitGuard?: () => boolean,
 ): Promise<boolean> {
     return commitCredentialChange(() => {
+        if (commitGuard && !commitGuard()) return false;
         const source = readStoredMatchCredentials(sourceMatchID);
         if (sourceCredentials && source?.credentials && source.credentials !== sourceCredentials) return false;
         const isRelated = (id: string) => id === sourceMatchID || id === data.matchID;
@@ -613,13 +616,15 @@ export async function persistMatchCredentials(matchID: string, data: StoredMatch
     return await saveMatchCredentialSelection(matchID, data, options) !== null;
 }
 
-function clearMatchCredentialSelection(matchID: string, expected?: Pick<StoredMatchCredentials, 'credentials' | 'playerID'>, options?: { suppressOwner?: boolean; expectedSelection?: string }): Promise<string | null> {
+function clearMatchCredentialSelection(matchID: string, expected?: Pick<StoredMatchCredentials, 'credentials' | 'playerID'>, options?: { suppressOwner?: boolean; expectedSelection?: string; protectPending?: boolean; discardPending?: boolean }): Promise<string | null> {
     const observed = readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`);
     return commitCredentialChange(() => {
         if (options?.expectedSelection !== undefined && captureMatchCredentialSelection() !== options.expectedSelection) return null;
+        if (options?.protectPending && isPendingRematchSource(matchID)) return null;
         const current = readStoredMatchCredentials(matchID);
         if (expected ? current?.credentials !== expected.credentials || current?.playerID !== expected.playerID
             : readLocalStorageItem(`${MATCH_CREDENTIALS_PREFIX}${matchID}`) !== observed) return null;
+        if (options?.discardPending && isPendingRematchSource(matchID)) removeCredentialItem(PENDING_REMATCH_KEY);
         clearMatchCredentialsLocked(matchID);
         clearOwnerActiveMatchLocked(matchID);
         if (options?.suppressOwner) suppressOwnerActiveMatchLocked(matchID);
@@ -628,8 +633,8 @@ function clearMatchCredentialSelection(matchID: string, expected?: Pick<StoredMa
 }
 
 export async function clearMatchCredentials(matchID: string, expected?: Pick<StoredMatchCredentials, 'credentials' | 'playerID'>,
-    options?: { suppressOwner?: boolean; expectedSelection?: string }): Promise<boolean> {
-    return await clearMatchCredentialSelection(matchID, expected, options) !== null;
+    options?: { suppressOwner?: boolean; expectedSelection?: string; discardPending?: boolean }): Promise<boolean> {
+    return await clearMatchCredentialSelection(matchID, expected, { ...options, protectPending: !options?.discardPending }) !== null;
 }
 
 export function persistAiSeatCredentials(matchID: string, data: StoredAiSeatCredentials): Promise<boolean> {
@@ -656,6 +661,7 @@ export function clearOwnerActiveMatch(matchID?: string, options?: { ifSuppressed
     const observed = readLocalStorageItem(OWNER_ACTIVE_MATCH_KEY);
     const target = matchID ?? getOwnerActiveMatch()?.matchID;
     return commitCredentialChange(() => {
+        if (target && isPendingRematchSource(target)) return false;
         if (readLocalStorageItem(OWNER_ACTIVE_MATCH_KEY) !== observed) return false;
         if (options?.ifSuppressed && (!target || !isOwnerActiveMatchSuppressed(target))) return false;
         if (target) clearOwnerActiveMatchLocked(target);
@@ -681,7 +687,7 @@ export function clearOwnerActiveMatchSuppression(matchID?: string): Promise<bool
 /** Continue a join after discarding its invalid old seat, without adopting another tab's selection. */
 export function discardStaleMatchSeat(matchID: string, expectedSelection: string): Promise<string | null> {
     return commitCredentialChange(() => {
-        if (captureMatchCredentialSelection() !== expectedSelection) return null;
+        if (captureMatchCredentialSelection() !== expectedSelection || isPendingRematchSource(matchID)) return null;
         clearMatchCredentialsLocked(matchID);
         clearOwnerActiveMatchLocked(matchID);
         return captureMatchCredentialSelection();
