@@ -66,6 +66,10 @@ export function injectRawBlockingInteraction<TCore>(
     };
 }
 
+export function clearCurrentInteraction<TCore>(state: MatchState<TCore>): void {
+    state.sys.interaction = { ...state.sys.interaction, current: undefined };
+}
+
 export function getCurrentInteractionSummary<TCore>(state: MatchState<TCore>): {
     id?: string;
     kind?: string;

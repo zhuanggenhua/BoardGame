@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
-import { createRespondToPromptCommand, getCurrentInteractionData, getCurrentInteractionSummary, getPromptOptions } from '../../../engine/testing/interactionTestFacade';
+import { clearCurrentInteraction, createRespondToPromptCommand, getCurrentInteractionData, getCurrentInteractionSummary, getPromptOptions, injectRawBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
 import type { MatchState, RandomFn, TutorialStepSnapshot } from '../../../engine/types';
-import type { SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_COMMANDS, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import { createAnnualBattleTutorialSteps, resolveAnnualDispatchTutorialStep, validateAnnualDispatchTutorialStep } from '../annualDispatchTutorial';
 import { createInitialCore } from '../domain/initialCoreSetup';
 import { QIDAHEN_TURN_RESOLUTION_FRAME, type QidahenTurnResolutionData } from '../domain/turnResolutionTypes';
@@ -33,8 +33,8 @@ function battle(state: MatchState<QidahenCore>, battleStep: QidahenPendingTarget
     state.core.pendingTargetAction = pending;
     const playerId = battleStep === 'defender-declaration' ? '1' : battleStep === 'retreat' && retreatFactionId === 'mongol' ? '1' : '0';
     const options = battleStep === 'defender-declaration' ? ['defender-fight'] : battleStep === 'retreat' ? ['rear-guard', 'rout'] : ['fight'];
-    state.sys.interaction.current = { id: 'battle-prompt', kind: 'simple-choice', playerId,
-        data: { sourceId: 'qidahen:pending-target', options: options.map(id => ({ id })) } } as unknown as typeof state.sys.interaction.current;
+    injectRawBlockingInteraction(state, { id: 'battle-prompt', kind: 'simple-choice', playerId,
+        data: { sourceId: 'qidahen:pending-target', options: options.map(id => ({ id })) } });
 }
 
 const mapStep = (id: string): TutorialStepSnapshot => ({ id, content: 'old', allowedTargets: ['fixed'],
@@ -96,7 +96,7 @@ describe('年度教程按正式调度和战斗状态分支', () => {
         expect(validateAnnualDispatchTutorialStep(state, roll)).toBe(true);
         const resolved = resolveAnnualDispatchTutorialStep(state, roll);
         expect(resolved.allowedCommands).toContain('PLAY_TACTIC_CARD');
-        expect(resolved.allowedCommands).toContain('SYS_INTERACTION_RESPOND');
+        expect(resolved.allowedCommands).toContain(INTERACTION_COMMANDS.RESPOND);
         expect(resolved.waitForAnimation).toBe(true);
         expect(resolved.content).toContain('battle-roll-no-tactic');
         const followup = steps.find(step => step.id === 'battle-roll-followup')!;
@@ -106,7 +106,7 @@ describe('年度教程按正式调度和战斗状态分支', () => {
         state.core.turnPhase = 'post-battle-decision'; state.core.pendingTargetAction = null;
         state.core.postBattleSelection = { actionId: 'wheel-dispatch', attackerFactionId: 'ming',
             choices: [{ id: 'occupy', mode: 'occupy' }, { id: 'withdraw', mode: 'withdraw' }] } as QidahenPostBattleSelection;
-        state.sys.interaction.current = null;
+        clearCurrentInteraction(state);
         expect(validateAnnualDispatchTutorialStep(state, post)).toBe(true);
         expect(resolveAnnualDispatchTutorialStep(state, post).allowedTargets).toBeUndefined();
         expect(post.advanceOnEvents).toBeUndefined();
@@ -166,7 +166,7 @@ it.each(['friendly', 'enemy', 'destroyed', 'no-dice', 'legacy-destroyed', 'legac
         ? ['cavalry', 'infantry', 'artillery'].map(kind => pieces.find(piece => piece.troopKind === kind)!)
         : [mode.includes('no-dice') ? pieces.find(piece => piece.troopKind === 'artillery')! : pieces[0]];
     choose(chosenPieces.map(piece => piece.id));
-    const target: TutorialStepSnapshot = { id: 'dispatch-target', content: 'target', requireAction: true, allowedCommands: ['SYS_INTERACTION_RESPOND'] };
+    const target: TutorialStepSnapshot = { id: 'dispatch-target', content: 'target', requireAction: true, allowedCommands: [INTERACTION_COMMANDS.RESPOND] };
     const manifest = { id: 'dispatch-pipeline-test', steps: [target, ...createAnnualBattleTutorialSteps([]), { id: 'done', content: 'done', infoStep: true }],
         stepValidator: (match: MatchState<unknown>, step: TutorialStepSnapshot) => validateAnnualDispatchTutorialStep(match as MatchState<QidahenCore>, step) ?? true,
         resolveStep: (match: MatchState<unknown>, step: TutorialStepSnapshot) => resolveAnnualDispatchTutorialStep(match as MatchState<QidahenCore>, step) };

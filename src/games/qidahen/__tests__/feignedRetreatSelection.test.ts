@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
+import { createRespondToPromptCommand } from '../../../engine/testing/interactionTestFacade';
 import type { Command, MatchState, RandomFn } from '../../../engine/types';
 import { engineConfig } from '../game';
 import { QidahenDomain } from '../domain';
@@ -320,8 +321,7 @@ describe('七大恨诈败诱敌', () => {
         expect(diceCalls).toBe(actualDice);
         diceCalls = 0;
         const secondOffer = declare();
-        const skipped = run(secondOffer, { type: 'SYS_INTERACTION_RESPOND', playerId: '2',
-            payload: { interactionId: secondOffer.sys.interaction?.current?.id, optionId: 'skip' } });
+        const skipped = run(secondOffer, createRespondToPromptCommand(secondOffer, { playerId: '2', optionId: 'skip' }));
         expect(diceCalls).toBe(0);
         expect(skipped.sys.eventStream.entries.some(entry => entry.event.type === 'QIDAHEN_BATTLE_ROLLED')).toBe(false);
     });
@@ -332,9 +332,7 @@ describe('七大恨诈败诱敌', () => {
         let diceCalls = 0;
         const counted: RandomFn = { ...random, d: () => { diceCalls += 1; return 4; } };
         const result = executePipeline({ domain: engineConfig.domain, systems: engineConfig.systems as any }, state,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: {
-                interactionId: state.sys.interaction?.current?.id, optionId: 'cavalry-plunder-attacker',
-            } }, counted, ['0', '1', '2']);
+            createRespondToPromptCommand(state, { playerId: '0', optionId: 'cavalry-plunder-attacker' }), counted, ['0', '1', '2']);
         expect(result.success).toBe(true);
         expect(result.state.core.feignedRetreatSelection).not.toBeNull();
         expect(diceCalls).toBe(0);

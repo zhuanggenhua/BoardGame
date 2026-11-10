@@ -1,6 +1,8 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { injectRawBlockingInteraction } from '../../../engine/testing/interactionTestFacade';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import type { MatchState } from '../../../engine/types';
 import { createAnnualChronologyPaymentStep, createAnnualSeasonTutorialSteps,
     resolveAnnualSeasonTutorialStep, validateAnnualSeasonTutorialStep } from '../annualSeasonTutorial';
@@ -75,15 +77,15 @@ describe('年度教程按真实结算生成耗损与纪年步骤', () => {
         const first = choice.candidates[0].id;
         const step = resolveAnnualSeasonTutorialStep(state, createAnnualSeasonTutorialSteps([])[0]);
         state.sys.tutorial = { ...state.sys.tutorial, active: true, step };
-        state.sys.interaction.current = { id: 'upkeep-input', kind: 'simple-choice', playerId: '0',
+        injectRawBlockingInteraction(state, { id: 'upkeep-input', kind: 'simple-choice', playerId: '0',
             data: { sourceId: QIDAHEN_TURN_RESOLUTION_CHOICE, title: choice.title,
                 multi: { min: 1, max: 2 }, options: choice.candidates.map(candidate => ({ ...candidate, value: { kind: 'upkeep' } })) },
-        } as unknown as typeof state.sys.interaction.current;
+        });
         const dispatch = vi.fn();
         const hook = renderHook(() => useQidahenTurnInput(state, '0', dispatch, false));
         act(() => hook.result.current.toggle(first));
         act(() => hook.result.current.confirm());
         expect(dispatch).toHaveBeenCalledOnce();
-        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', { interactionId: 'upkeep-input', optionIds: [first] });
+        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, { interactionId: 'upkeep-input', optionIds: [first] });
     });
 });
